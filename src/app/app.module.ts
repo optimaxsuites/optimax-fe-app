@@ -4,7 +4,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -75,6 +75,9 @@ import { MatGridListModule } from '@angular/material/grid-list';
 
 import { NgSelectModule } from '@ng-select/ng-select';
 import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-splitting-modal/bill-splitting-modal.component';
+import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
+import { MessageService } from 'primeng/api';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
 @NgModule({
   declarations: [
@@ -156,6 +159,23 @@ import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-spli
     ButtonComponent,
     SideModalComponent
   ],
+
+   providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS,
+    },
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi()),
+    MessageService,
+
+  ],
+
   bootstrap: [AppComponent]
 })
 export class AppExpensesModule {}

@@ -23,7 +23,19 @@ export interface Expense {
   category?: CategoryDTO;
   tax?: TaxDTO;
   scheduledPayment?: ScheduledPaymentDTO;
+  recurringPayment?: any;
+  billSplit?: BillSplitDTO;
+  taxPercentage?: number;
+  date?: string;
+  signature?: string | null;
+  receiptFile?: File | null;
+  invoiceFile?: File | null;
+  employeeReceiptFile?: File | null;
 }
+
+
+
+export type PaidByBackend = 'COMPANY' | 'EMPLOYEE';
 
 export interface CategoryDTO {
   id: number;
@@ -116,7 +128,10 @@ export interface PersonShareDTO {
   providedIn: 'root'
 })
 export class ExpenseService {
-  private apiUrl = 'https://be.optimaxsuites.com/x/api/v2/exp/expenses';
+  private apiHost = 'https://be.optimaxsuites.com';
+  private baseUrl = `${this.apiHost}/x/api/v2/exp`;
+  private expenseUrl = `${this.baseUrl}/expenses`;
+
   private expensesSubject = new BehaviorSubject<Expense[]>([]);
   public expenses$ = this.expensesSubject.asObservable();
 
@@ -124,63 +139,127 @@ export class ExpenseService {
     this.loadExpenses();
   }
 
-  private loadExpenses(): void {
-    this.http.get<Expense[]>(this.apiUrl).pipe(
-      catchError(this.handleError)
-    ).subscribe(expenses => {
-      this.expensesSubject.next(expenses);
-    });
-  }
-
-  private handleError(error: any): Observable<never> {
-    console.error('An error occurred:', error);
+   private handleError(error: any): Observable<never> {
+    console.log('ERROR FOUND!');
+    console.log('Error status:', error.status);
+    console.log('Error message:', error.message);
+    console.log('Full error:', error);  
+    
     return throwError(() => new Error('Something bad happened; please try again later.'));
   }
 
+  private loadExpenses(): void {
+    this.http.get<Expense[]>(this.expenseUrl).pipe(
+      catchError(this.handleError)
+    ).subscribe({
+      next: (expenses) => this.expensesSubject.next(expenses),
+      error: (err) => console.error('Error loading initial expenses:', err)
+    });
+  }
+
+
   getExpenses(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(this.apiUrl).pipe( 
+    return this.http.get<Expense[]>(this.expenseUrl).pipe( 
       tap(expenses => this.expensesSubject.next(expenses)),
       catchError(this.handleError)
     );
   }
 
   getExpenseById(id: number): Observable<Expense> {
-    return this.http.get<Expense>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.get<Expense>(`${this.expenseUrl}/${id}`).pipe(
       catchError(this.handleError)
     );
   }
 
   addExpense(expense: Expense): Observable<Expense> {
-    return this.http.post<Expense>(this.apiUrl, expense).pipe( 
+    return this.http.post<Expense>(this.expenseUrl, expense).pipe( 
       tap(() => this.loadExpenses()),
       catchError(this.handleError)
     );
   }
 
   updateExpense(id: number, updatedExpense: Expense): Observable<Expense> { 
-    return this.http.put<Expense>(`${this.apiUrl}/${id}`, updatedExpense).pipe(
+    return this.http.put<Expense>(`${this.expenseUrl}/${id}`, updatedExpense).pipe(
       tap(() => this.loadExpenses()),
       catchError(this.handleError)
     );
   }
 
   deleteExpense(id: number): Observable<void> { 
-    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete<void>(`${this.expenseUrl}/${id}`).pipe(
       tap(() => this.loadExpenses()),
       catchError(this.handleError)
     );
   }
 
-  uploadCompanyReceipt(id: number, file: File): Observable<Expense> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<Expense>(`${this.apiUrl}/${id}/company-receipt`, formData);
+  getCategories(): Observable<CategoryDTO[]> {
+    return this.http.get<CategoryDTO[]>(`${this.baseUrl}/categories`).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  uploadEmployeeReceipt(id: number, file: File): Observable<Expense> {
+  addCategory(category: CategoryDTO): Observable<CategoryDTO> {
+    return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, category).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getMerchants(): Observable<MerchantDTO[]> {
+    return this.http.get<MerchantDTO[]>(`${this.baseUrl}/merchants`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addMerchant(merchant: MerchantDTO): Observable<MerchantDTO> {
+    return this.http.post<MerchantDTO>(`${this.baseUrl}/merchants`, merchant).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getTaxRates(): Observable<TaxDTO[]> {
+    return this.http.get<TaxDTO[]>(`${this.baseUrl}/taxes`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addTaxRate(tax: TaxDTO): Observable<TaxDTO> {
+    return this.http.post<TaxDTO>(`${this.baseUrl}/taxes`, tax).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getEmployeeReceipt(expenseId: string) : Observable<Blob> {
+    return this.http.get(`${this.expenseUrl}/${expenseId}/employee-receipt`, {
+      responseType: 'blob'
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  uploadEmployeeReceipt(expenseId: string, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<Expense>(`${this.apiUrl}/${id}/employee-receipt`, formData);
+    return this.http.post<Expense>(`${this.expenseUrl}/${expenseId}/employee-receipt`, formData).pipe(
+      catchError(this.handleError)
+        );
   }
+
+  getCompanyReceipt(expenseId: string): Observable<Blob> {
+    return this.http.get(`${this.expenseUrl}/${expenseId}/company-receipt`, {
+      responseType: 'blob'
+    }).pipe(
+      catchError(this.handleError)
+    );
+  } 
+
+  uploadCompanyReceipt(expenseId: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Expense>(`${this.expenseUrl}/${expenseId}/company-receipt`, formData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  
 
 }

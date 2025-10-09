@@ -55,7 +55,7 @@
  <div class="filter-left">
           <button
             class="btn btn-danger"
-            [disabled]="!selectedRequests?.length"
+            [disabled]="!selectedRequests.length"
             (click)="deleteSelected()"
           >
             <span class="material-icons btn-icon">delete</span>
@@ -70,7 +70,7 @@
       <div class="filter-right">
         <div class="filter-group">
         <button class="btn btn-success"
-        [disabled]="!selectedRequests?.length"
+        [disabled]="!selectedRequests.length"
         (click)="bulkApprove()"
         >
           <span class="material-icons btn-icon">check_circle</span>
@@ -81,7 +81,7 @@
       
         <div class="filter-group">
         <button class="btn btn-danger"
-        [disabled]="!selectedRequests?.length"
+        [disabled]="!selectedRequests.length"
         (click)="bulkReject()"
         >
           <span class="material-icons btn-icon">cancel</span>

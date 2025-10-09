@@ -2,17 +2,12 @@
   <!-- Header Section -->
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-2">
-      <button
-        type="button"
-        class="text-gray-600 hover:text-gray-800"
-        (click)="goBack()"
-      >
+      <button type="button" class="text-gray-600 hover:text-gray-800" (click)="goBack()">
         <i class="fa-solid fa-arrow-left text-lg"></i>
       </button>
       <h1 class="text-2x1 font-bold text-gray-800">New Expense Request</h1>
     </div>
   </div>
-
   <!-- Notice Box -->
   <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
     <div class="flex items-start">
@@ -26,7 +21,6 @@
       </div>
     </div>
   </div>
-
   <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)" class="w-full">
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -44,42 +38,25 @@
               <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
                 Expense Name <span class="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                [(ngModel)]="expenseSummary.name"
-                required
+              <input type="text" id="name" name="name" [(ngModel)]="expenseSummary.name" required
                 placeholder="Enter expense name"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-colors"
-              />
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-colors" />
               <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.name">
                 Name is required.
               </p>
             </div>
-
             <!-- Category -->
             <div class="col-span-2 md:col-span-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Category <span class="text-red-500">*</span>
               </label>
               <div class="flex gap-2">
-                <ng-select
-                  [items]="categories"
-                  bindLabel="name"
-                  bindValue="name"
-                  [(ngModel)]="expenseSummary.category"
-                  name="category"
-                  required
-                  placeholder="Select a category"
-                  class="flex-1"
-                >
+                <ng-select [items]="categories" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.category"
+                  name="category" required placeholder="Select a category" class="flex-1">
                 </ng-select>
-                <button
-                  type="button"
+                <button type="button"
                   class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
-                  (click)="openModal('category')"
-                >
+                  (click)="openModal('category')">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -87,29 +64,18 @@
                 Category is required.
               </p>
             </div>
-
             <!-- Merchant -->
             <div class="col-span-2 md:col-span-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Merchant <span class="text-red-500">*</span>
               </label>
               <div class="flex gap-2">
-                <ng-select
-                  [items]="merchants"
-                  bindLabel="name"
-                  bindValue="name"
-                  [(ngModel)]="expenseSummary.merchant"
-                  name="merchant"
-                  required
-                  placeholder="Select a merchant"
-                  class="flex-1"
-                >
+                <ng-select [items]="merchants" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.merchant"
+                  name="merchant" required placeholder="Select a merchant" class="flex-1">
                 </ng-select>
-                <button
-                  type="button"
+                <button type="button"
                   class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
-                  (click)="openModal('merchant')"
-                >
+                  (click)="openModal('merchant')">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -117,26 +83,18 @@
                 Merchant is required.
               </p>
             </div>
-
             <!-- Description -->
             <div class="col-span-2">
               <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
                 Description <span class="text-red-500">*</span>
               </label>
-              <textarea
-                id="description"
-                name="description"
-                rows="4"
-                [(ngModel)]="expenseSummary.description"
-                required
+              <textarea id="description" name="description" rows="4" [(ngModel)]="expenseSummary.description" required
                 placeholder="Enter description"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-              ></textarea>
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
               <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.description">
                 Description is required.
               </p>
             </div>
-
             <!-- Paid By -->
             <div class="col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -144,30 +102,17 @@
               </label>
               <div class="flex flex-wrap gap-4">
                 <label class="inline-flex items-center">
-                  <input
-                    type="radio"
-                    [(ngModel)]="expenseSummary.paidBy"
-                    name="paidBy"
-                    value="company"
-                    class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300"
-                    required
-                  />
+                  <input type="radio" [(ngModel)]="expenseSummary.paidBy" name="paidBy" value="COMPANY"
+                    class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300" required />
                   <span class="ml-2 text-sm text-gray-700">Company</span>
                 </label>
                 <label class="inline-flex items-center">
-                  <input
-                    type="radio"
-                    [(ngModel)]="expenseSummary.paidBy"
-                    name="paidBy"
-                    value="employee"
-                    class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300"
-                    required
-                  />
+                  <input type="radio" [(ngModel)]="expenseSummary.paidBy" name="paidBy" value="EMPLOYEE"
+                    class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300" required />
                   <span class="ml-2 text-sm text-gray-700">Employee (reimburse)</span>
                 </label>
               </div>
             </div>
-
             <!-- Employee Receipt Upload -->
             <div class="col-span-2" *ngIf="expenseSummary.paidBy === 'employee'">
               <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -175,10 +120,8 @@
               </label>
               <div
                 class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
-                (click)="employeeReceiptInput.click()"
-                (dragover)="onDragOver($event)"
-                (drop)="onFileDrop($event, 'employeeReceipt')"
-              >
+                (click)="employeeReceiptInput.click()" (dragover)="onDragOver($event)"
+                (drop)="onFileDrop($event, 'employeeReceipt')">
                 <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                 <p class="text-sm text-gray-600" *ngIf="!employeeReceiptFile">
                   Click or drag and drop to upload Employee Receipt
@@ -189,441 +132,415 @@
                 <p class="text-xs text-gray-500 mt-1">
                   Supported formats: JPG, PNG, PDF (max 10MB)
                 </p>
-                <input
-                  type="file"
-                  #employeeReceiptInput
-                  class="hidden"
-                  (change)="onFileSelect($event, 'employeeReceipt')"
-                  accept=".jpg,.png,.pdf"
-                />
+                <input type="file" #employeeReceiptInput class="hidden"
+                  (change)="onFileSelect($event, 'employeeReceipt')" accept=".jpg,.png,.pdf" />
               </div>
             </div>
-
             <!-- Event Date -->
             <div class="col-span-2 md:col-span-1">
               <label for="event-date" class="block text-sm font-medium text-gray-700 mb-1">
                 Event Date <span class="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                id="event-date"
-                name="eventDate"
-                [(ngModel)]="expenseSummary.eventDate"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-              />
+              <input type="date" id="event-date" name="eventDate" [(ngModel)]="expenseSummary.eventDate" required
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
               <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
                 Event Date is required.
               </p>
             </div>
           </div>
         </div>
- <!--Advanced payment section -->
-        <div class="floating-box form-subsection">
-  <div class="section-header">Advanced Payment Option</div>
-<div>
-  <!-- Show button if no advanced payment yet -->
-  @if (!advancedPaymentData && !showAdvancedPayment) {
-    <button type="button"
-      class="px-4 py-2 bg-customBlue text-white rounded schedule-payment-btn"
-      (click)="showAdvancedPayment = true">
-      Scheduled Payment
-    </button>
-  }
-  
-  @if (showAdvancedPayment) {
-    <div class="form-group mt-3">
-      <app-recurring-payment-modal
-        (save)="onAdvancedPaymentSave($event)"
-        (cancel)="onAdvancedPaymentCancel()"
-      ></app-recurring-payment-modal>
-    </div>
-  }
-   <!-- Show reciept of schduled payment -->
-  @if (advancedPaymentData && !showAdvancedPayment) {
-    <div class="mt-3 p-3 border rounded bg-gray-50">
-      <h4 class="font-semibold">Recurring Payment Configured</h4>
-      <p>Type: {{ advancedPaymentData.type }}</p>
-      @if (advancedPaymentData.type === 'recurring') {
-        <p>Frequency: {{ advancedPaymentData.frequency }}</p>
-      }
-      <p>Start: {{ advancedPaymentData.startDate | date }}</p>
-      @if (advancedPaymentData.endDate) {
-        <p>End: {{ advancedPaymentData.endDate | date }}</p>
-      }
-      @if (advancedPaymentData.occurrences) {
-        <p>Occurrences: {{ advancedPaymentData.occurrences }}</p>
-      }
+        <!-- Financial Information -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+            Financial Information
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Quantity -->
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                Quantity <span class="text-red-500">*</span>
+              </label>
+              <input type="number" id="quantity" name="quantity" [(ngModel)]="expenseSummary.quantity" required
+                placeholder="Enter quantity"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
+                Quantity is required.
+              </p>
+            </div>
 
-      <button type="button"
-        class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn"
-        (click)="showAdvancedPayment = true">
-        Edit Recurring Payment
-      </button>
-      <button type="button"
-        class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2  cancel-split-btn"
-        (click)="advancedPaymentData = undefined">
-        Remove
-      </button>
-    </div>
-  }
-  </div>
+            <!-- Currency -->
+            <div>
+              <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">
+                Currency
+              </label>
+              <select id="currency" [(ngModel)]="selectedCurrency" name="currency"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue">
+                <option *ngFor="let c of availableCurrencies" [value]="c">
+                  {{ c }}
+                </option>
+              </select>
+            </div>
 
-<!-- end of scheduled payment -->
+            <!-- Amount -->
+            <div>
+              <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
+                Amount <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="amount" name="amount" [value]="formatAmount(expenseSummary.amount)"
+                (input)="updateAmount($event)" required placeholder="Enter amount"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.amount">
+                Amount is required.
+              </p>
+            </div>
+            <!-- Tax Percentage -->
+            <div class="col-span-2 md:col-span-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Tax Percentage (%)
+              </label>
+              <div class="flex gap-2">
+                <ng-select [items]="taxRates" bindLabel="name" bindValue="rate"
+                  [(ngModel)]="expenseSummary.taxPercentage" name="taxPercentage" placeholder="Select a tax rate"
+                  class="flex-1">
+                  <ng-option *ngFor="let tax of taxRates" [value]="tax.rate">
+                    {{ tax.rate }}% - {{ tax.name }}
+                  </ng-option>
+                </ng-select>
+                <button type="button"
+                  class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
+                  (click)="openModal('tax')">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Advanced Payment Options -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+            Advanced Payment Options
+          </h2>
 
-  <!-- beginning ofBill Splitting Option -->
+          <!-- Scheduled Payment Section -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-md font-medium text-gray-700">Scheduled Payment</h3>
+              <span class="text-xs text-gray-500">Optional</span>
+            </div>
 
-  <!-- Button to open -->
-  <button
-    *ngIf="!billSplitData && !showBillSplit"
-    type="button"
-    class="px-4 py-2 bg-customBlue text-white rounded split-bill-btn"
-    (click)="openBillSplit()"
-  >
-    Split Bill
-  </button>
-  <!-- Bill Split Form -->
-  <div *ngIf="showBillSplit" class="mt-3 border p-3 rounded">
-    <h4 class="font-semibold">Bill Split</h4>
-    <!-- Method -->
-    <label>Split Method:</label>
-    <select [(ngModel)]="billSplitData!.method" name="splitMethod" class="border px-2 py-1 rounded">
-      <option value="equal">Equal</option>
-      <option value="percentage">Percentage</option>
-      <option value="amount">Custom Amount</option>
-    </select>
-    <!-- Number of participants -->
-    <div class="mt-3">
-      <label>Number of People:</label>
-      <input
-        type="number"
-        [(ngModel)]="numParticipants"
-        (change)="generateParticipants()"
-        min="2"
-        max="9"
-        class="border px-2 py-1 rounded w-24"
-      />
-    </div>
-<!-- Participant inputs -->
-    <div *ngFor="let p of billSplitData?.participants; let i = index" class="mt-3 border p-2 rounded">
-      <label>Name</label>
-      <input
-        type="text"
-        [(ngModel)]="p.name"
-        name="participantName{{ i }}"
-        placeholder="Enter name"
-        class="border px-2 py-1 rounded w-full"
-      />
-<!-- Percentage -->
-      <div *ngIf="billSplitData?.method === 'percentage'" class="mt-2">
-        <label>Percentage (%)</label>
-        <input
-          type="number"
-          [(ngModel)]="p.sharePercent"
-          name="sharePercent{{ i }}"
-          min="0"
-          max="100"
-          class="border px-2 py-1 rounded w-32"
-        />
-      </div>
-<!-- Amount -->
-      <div *ngIf="billSplitData?.method === 'amount'" class="mt-2">
-        <label>Amount</label>
-        <input
-          type="number"
-          [(ngModel)]="p.shareAmount"
-          name="shareAmount{{ i }}"
-          min="0"
-          class="border px-2 py-1 rounded w-32"
-        />
-      </div>
-<!-- Equal (readonly) -->
-      <div *ngIf="billSplitData?.method === 'equal'" class="mt-2">
-        <strong>Share: {{ p.shareAmount | currency: selectedCurrency }} </strong>
-      </div>
-    </div>
-<!-- Validation Error -->
-    <div *ngIf="splitError" class="text-red-600 mt-2">
-      {{ splitError }}
-    </div>
-<!-- Actions -->
-    <div class="mt-3">
-      <button type="button" class="px-3 py-1 bg-green-600 text-white rounded save-split-btn" (click)="saveBillSplit()">
-        Save Split
-      </button>
-      <button type="button" class="px-3 py-1 bg-red-500 text-white rounded ml-2 cancel-split-btn" (click)="removeBillSplit()">
-        Cancel
-      </button>
-    </div>
-  </div>
-<!-- Saved Summary -->
-  <div *ngIf="billSplitData && !showBillSplit" class="mt-3 p-3 border rounded bg-gray-50">
-    <h4 class="font-semibold">Bill Split Summary</h4>
-    <div *ngFor="let p of billSplitData.participants">
-      {{ p.name }} - {{ p.shareAmount | currency:selectedCurrency }}
-      <span *ngIf="billSplitData.method === 'percentage'"> ({{ p.sharePercent }}%)</span>
-    </div>
+            <!-- Initial State - No Payment Configured -->
+            @if (!advancedPaymentData && !showAdvancedPayment) {
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-calendar-days text-gray-400 text-lg mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">No payment schedule configured</p>
+                    <p class="text-xs text-gray-500">Set up recurring or scheduled payments</p>
+                  </div>
+                </div>
+                <button type="button"
+                  class="px-4 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center"
+                  (click)="showAdvancedPayment = true">
+                  <i class="fa-solid fa-calendar-plus mr-2"></i>Schedule Payment
+                </button>
+              </div>
+            </div>
+            }
 
-    <button type="button" class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn" (click)="showBillSplit = true">
-      Edit Split
-    </button>
-    <button type="button" class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2 cancel-split-btn" (click)="removeBillSplit()">
-      Remove Split
-    </button>
-  </div>
-</div>
+            <!-- Configuration State - Payment Setup Form -->
+            <!-- Schedule Payment Modal Section -->
+            @if (showAdvancedPayment) {
+            <div class="border border-blue-200 rounded-lg bg-blue-50 p-4 mt-3">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-medium text-blue-800">Configure Payment Schedule</h4>
+                  <p class="text-sm text-blue-600">Set up recurring or one-time scheduled payments</p>
+                </div>
+                <button type="button" class="text-blue-600 hover:text-blue-800 transition"
+                  (click)="onAdvancedPaymentCancel()">
+                  <i class="fa-solid fa-times text-lg"></i>
+                </button>
+              </div>
 
-<!-- end of bill splitting -->
-  </div>
-  <!-- end advanced payment option -->
-        <div class="form-right">
-          <!-- <h4>Upload Receipt</h4> -->
-        <div class="upload-container" (click)="fileInput.click()" (dragover)="onDragOver($event)"
-          (drop)="onFileDrop($event, 'receipt')">
+              <!-- Payment Configuration Content -->
+              <div class="bg-white rounded-lg p-4 border border-blue-100">
+                <app-recurring-payment-modal (save)="onAdvancedPaymentSave($event)"
+                  (cancel)="onAdvancedPaymentCancel()"></app-recurring-payment-modal>
+              </div>
+              <!-- Action Buttons -->
+              <div class="flex gap-3 justify-end mt-4 pt-4 border-t border-blue-200">
+                <button type="button"
+                  class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition flex items-center"
+                  (click)="onAdvancedPaymentCancel()">
+                  <i class="fa-solid fa-times mr-2"></i>Cancel
+                </button>
+                <button type="button"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
+                  (click)="onAdvancedPaymentSave(advancedPaymentData!)">
+                  <i class="fa-solid fa-check mr-2"></i>Save Schedule
+                </button>
+              </div>
+            </div>
+            }
 
+            <!-- Configured State - Payment Summary -->
+            @if (advancedPaymentData && !showAdvancedPayment) {
+            <div class="border border-green-200 rounded-lg bg-green-50 p-4 mt-3">
+              <div class="flex items-start justify-between">
+                <div class="flex items-start">
+                  <i class="fa-solid fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-green-800">Recurring Payment Configured</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                      <div class="text-sm">
+                        <span class="font-medium text-green-700">Type:</span>
+                        <span class="ml-1 text-green-600">{{ advancedPaymentData.type | titlecase }}</span>
+                      </div>
+                      @if (advancedPaymentData.type === 'recurring') {
+                      <div class="text-sm">
+                        <span class="font-medium text-green-700">Frequency:</span>
+                        <span class="ml-1 text-green-600">{{ advancedPaymentData.frequency | titlecase }}</span>
+                      </div>
+                      }
+                      <div class="text-sm">
+                        <span class="font-medium text-green-700">Start Date:</span>
+                        <span class="ml-1 text-green-600">{{ advancedPaymentData.startDate | date:'mediumDate' }}</span>
+                      </div>
+                      @if (advancedPaymentData.endDate) {
+                      <div class="text-sm">
+                        <span class="font-medium text-green-700">End Date:</span>
+                        <span class="ml-1 text-green-600">{{ advancedPaymentData.endDate | date:'mediumDate' }}</span>
+                      </div>
+                      }
+                      @if (advancedPaymentData.occurrences) {
+                      <div class="text-sm">
+                        <span class="font-medium text-green-700">Occurrences: </span>
+                        <span class="ml-1 text-green-600"> {{ advancedPaymentData.occurrences }} </span>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button type="button"
+                    class="px-3 py-1 bg-white border border-blue-500 text-blue-500 rounded text-sm hover:bg-blue-50 transition"
+                    (click)="showAdvancedPayment = true">
+                    <i class="fa-solid fa-pen mr-1"></i>Edit
+                  </button>
+                  <button type="button"
+                    class="px-3 py-1 bg-white border border-red-500 text-red-500 rounded text-sm hover:bg-red-50 transition"
+                    (click)="advancedPaymentData = undefined">
+                    <i class="fa-solid fa-trash mr-1"></i>Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            }
+          </div>
           <!-- Bill Splitting Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-md font-medium text-gray-700">Bill Splitting</h3>
               <span class="text-xs text-gray-500">Optional</span>
             </div>
-            
+
             <!-- Initial State - No Split Configured -->
             @if (!billSplitData && !showBillSplit) {
-              <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <i class="fa-solid fa-receipt text-gray-400 text-lg mr-3"></i>
-                    <div>
-                      <p class="text-sm font-medium text-gray-700">No bill split configured</p>
-                      <p class="text-xs text-gray-500">Split expense among multiple participants</p>
-                    </div>
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-receipt text-gray-400 text-lg mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">No bill split configured</p>
+                    <p class="text-xs text-gray-500">Split expense among multiple participants</p>
                   </div>
-                  <button
-                    type="button"
-                    class="px-4 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center"
-                    (click)="openBillSplit()"
-                  >
-                    <i class="fa-solid fa-receipt mr-2"></i>Split Bill
-                  </button>
                 </div>
+                <button type="button"
+                  class="px-4 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center"
+                  (click)="openBillSplit()">
+                  <i class="fa-solid fa-receipt mr-2"></i>Split Bill
+                </button>
               </div>
+            </div>
             }
 
             <!-- Configuration State - Split Setup Form -->
             @if (showBillSplit) {
-              <div class="border border-blue-200 rounded-lg bg-blue-50 p-4 mt-3">
-                <div class="flex items-center justify-between mb-4">
-                  <h4 class="font-medium text-blue-800">Configure Bill Split</h4>
-                  <button
-                    type="button"
-                    class="text-blue-600 hover:text-blue-800 text-sm"
-                    (click)="removeBillSplit()"
-                  >
-                    <i class="fa-solid fa-times mr-1"></i>Cancel
-                  </button>
-                </div>
-                
-                <!-- Configuration Options -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      <i class="fa-solid fa-diagram-project mr-1"></i>Split Method
-                    </label>
-                    <select
-                      [(ngModel)]="billSplitData!.method"
-                      name="splitMethod"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                    >
-                      <option value="equal">Equal Split</option>
-                      <option value="percentage">By Percentage</option>
-                      <option value="amount">Custom Amounts</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      <i class="fa-solid fa-users mr-1"></i>Number of People
-                    </label>
-                    <input
-                      type="number"
-                      [(ngModel)]="numParticipants"
-                      (change)="generateParticipants()"
-                      min="2"
-                      max="9"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                    />
-                  </div>
-                </div>
+            <div class="border border-blue-200 rounded-lg bg-blue-50 p-4 mt-3">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-medium text-blue-800">Configure Bill Split</h4>
+                <button type="button" class="text-blue-600 hover:text-blue-800 text-sm" (click)="removeBillSplit()">
+                  <i class="fa-solid fa-times mr-1"></i>Cancel
+                </button>
+              </div>
 
-                <!-- Participants List -->
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-3">
-                    <i class="fa-solid fa-user-friends mr-1"></i>Participants
+              <!-- Configuration Options -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fa-solid fa-diagram-project mr-1"></i>Split Method
                   </label>
-                  <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                    <div *ngFor="let p of billSplitData?.participants; let i = index"
-                        class="p-3 border border-gray-200 rounded-md bg-white shadow-sm">
-                      <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700">Participant {{ i + 1 }}</span>
-                        <span class="text-xs text-gray-500">#{{ i + 1 }}</span>
-                      </div>
-                      <!-- Participant Name -->
-                      <input
-                        type="text"
-                        [(ngModel)]="p.name"
-                        [name]="'participantName' + i"
-                        placeholder="Enter participant name"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue mb-3"
-                      />
-
-                      <!-- Percentage-based Split -->
-                      @if (billSplitData?.method === 'percentage') {
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Percentage Share (%)
-                          </label>
-                          <div class="flex items-center">
-                            <input
-                              type="number"
-                              [(ngModel)]="p.sharePercent"
-                              [name]="'sharePercent' + i"
-                              min="0"
-                              max="100"
-                              step="0.01"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                            />
-                            <span class="ml-2 text-sm text-gray-500">%</span>
-                          </div>
-                        </div>
-                      }
-
-                      <!-- Amount-based Split -->
-                      @if (billSplitData?.method === 'amount') {
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Amount Share
-                          </label>
-                          <div class="flex items-center">
-                            <span class="mr-2 text-sm text-gray-500">{{ selectedCurrency }}</span>
-                            <input
-                              type="number"
-                              [(ngModel)]="p.shareAmount"
-                              [name]="'shareAmount' + i"
-                              min="0"
-                              step="0.01"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                            />
-                          </div>
-                        </div>
-                      }
-
-                      <!-- Equal Split Display -->
-                      @if (billSplitData?.method === 'equal') {
-                        <div class="text-sm font-medium text-green-600 bg-green-50 p-2 rounded">
-                          <i class="fa-solid fa-equals mr-1"></i>
-                          Equal Share: {{ p.shareAmount | currency:selectedCurrency }}
-                        </div>
-                      }
-                    </div>
-                  </div>
+                  <select [(ngModel)]="billSplitData!.method" name="splitMethod"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue">
+                    <option value="equal">Equal Split</option>
+                    <option value="percentage">By Percentage</option>
+                    <option value="amount">Custom Amounts</option>
+                  </select>
                 </div>
 
-                <!-- Error Display -->
-                @if (splitError) {
-                  <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-                    <i class="fa-solid fa-exclamation-triangle text-red-500 mr-2"></i>
-                    <p class="text-sm text-red-600">{{ splitError }}</p>
-                  </div>
-                }
-
-                <!-- Action Buttons -->
-                <div class="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition flex items-center"
-                    (click)="removeBillSplit()"
-                  >
-                    <i class="fa-solid fa-times mr-2"></i>Cancel
-                  </button>
-                  <button
-                    type="button"
-                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center"
-                    (click)="saveBillSplit()"
-                  >
-                    <i class="fa-solid fa-check mr-2"></i>Save Split
-                  </button>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fa-solid fa-users mr-1"></i>Number of People
+                  </label>
+                  <input type="number" [(ngModel)]="numParticipants" (change)="generateParticipants()" min="2" max="9"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
                 </div>
               </div>
+              <!-- Participants List -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                  <i class="fa-solid fa-user-friends mr-1"></i>Participants
+                </label>
+                <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  <div *ngFor="let p of billSplitData?.participants; let i = index"
+                    class="p-3 border border-gray-200 rounded-md bg-white shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-sm font-medium text-gray-700">Participant {{ i + 1 }}</span>
+                      <span class="text-xs text-gray-500">#{{ i + 1 }}</span>
+                    </div>
+
+                    <input type="text" [(ngModel)]="p.name" [name]="'participantName' + i"
+                      placeholder="Enter participant name"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue mb-3" />
+
+                    <!-- Percentage-based Split -->
+                    @if (billSplitData?.method === 'percentage') {
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Percentage Share (%)
+                      </label>
+                      <div class="flex items-center">
+                        <input type="number" [(ngModel)]="p.sharePercent" [name]="'sharePercent' + i" min="0" max="100"
+                          step="0.01"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                        <span class="ml-2 text-sm text-gray-500">%</span>
+                      </div>
+                    </div>
+                    }
+
+                    <!-- Amount-based Split -->
+                    @if (billSplitData?.method === 'amount') {
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Amount Share
+                      </label>
+                      <div class="flex items-center">
+                        <span class="mr-2 text-sm text-gray-500">{{ selectedCurrency }}</span>
+                        <input type="number" [(ngModel)]="p.shareAmount" [name]="'shareAmount' + i" min="0" step="0.01"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                      </div>
+                    </div>
+                    }
+
+                    <!-- Equal Split Display -->
+                    @if (billSplitData?.method === 'equal') {
+                    <div class="text-sm font-medium text-green-600 bg-green-50 p-2 rounded">
+                      <i class="fa-solid fa-equals mr-1"></i>
+                      Equal Share: {{ p.shareAmount | currency:selectedCurrency }}
+                    </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              <!-- Error Display -->
+              @if (splitError) {
+              <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
+                <i class="fa-solid fa-exclamation-triangle text-red-500 mr-2"></i>
+                <p class="text-sm text-red-600">{{ splitError }}</p>
+              </div>
+              }
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2 justify-end">
+                <button type="button"
+                  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition flex items-center"
+                  (click)="removeBillSplit()">
+                  <i class="fa-solid fa-times mr-2"></i>Cancel
+                </button>
+                <button type="button"
+                  class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center"
+                  (click)="saveBillSplit()">
+                  <i class="fa-solid fa-check mr-2"></i>Save Split
+                </button>
+              </div>
+            </div>
             }
 
             <!-- Configured State - Split Summary -->
             @if (billSplitData && !showBillSplit) {
-              <div class="border border-green-200 rounded-lg bg-green-50 p-4 mt-3">
-                <div class="flex items-start justify-between mb-3">
-                  <div class="flex items-start">
-                    <i class="fa-solid fa-check-circle text-green-500 mt-1 mr-3"></i>
-                    <div>
-                      <h4 class="font-semibold text-green-800">Bill Split Configured</h4>
-                      <p class="text-sm text-green-600 mt-1">
-                        Method: {{ billSplitData.method | titlecase }} Split •
-                        {{ billSplitData.participants.length }} Participants
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex gap-2">
-                    <button
-                      type="button"
-                      class="px-3 py-1 bg-white border border-blue-500 text-blue-500 rounded text-sm hover:bg-blue-50 transition"
-                      (click)="showBillSplit = true"
-                    >
-                      <i class="fa-solid fa-pen mr-1"></i>Edit
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 bg-white border border-red-500 text-red-500 rounded text-sm hover:bg-red-50 transition"
-                      (click)="removeBillSplit()"
-                    >
-                      <i class="fa-solid fa-trash mr-1"></i>Remove
-                    </button>
+            <div class="border border-green-200 rounded-lg bg-green-50 p-4 mt-3">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-start">
+                  <i class="fa-solid fa-check-circle text-green-500 mt-1 mr-3"></i>
+                  <div>
+                    <h4 class="font-semibold text-green-800">Bill Split Configured</h4>
+                    <p class="text-sm text-green-600 mt-1">
+                      Method: {{ billSplitData.method | titlecase }} Split •
+                      {{ billSplitData.participants.length }} Participants
+                    </p>
                   </div>
                 </div>
-                <!-- Participants Summary -->
-                <div class="mt-3 border-t border-green-200 pt-3">
-                  <h5 class="text-sm font-medium text-green-700 mb-2">Split Summary:</h5>
-                  <div class="space-y-2">
-                    <div *ngFor="let p of billSplitData.participants"
-                        class="flex justify-between items-center text-sm bg-white/50 p-2 rounded">
-                      <span class="text-green-800 font-medium">{{ p.name }}</span>
-                      <div class="text-right">
-                        <span class="text-green-600">{{ p.shareAmount | currency:selectedCurrency }}</span>
-                        <span *ngIf="billSplitData.method === 'percentage'"
-                              class="text-green-500 text-xs ml-2">({{ p.sharePercent }}%)</span>
-                      </div>
+                <div class="flex gap-2">
+                  <button type="button"
+                    class="px-3 py-1 bg-white border border-blue-500 text-blue-500 rounded text-sm hover:bg-blue-50 transition"
+                    (click)="showBillSplit = true">
+                    <i class="fa-solid fa-pen mr-1"></i>Edit
+                  </button>
+                  <button type="button"
+                    class="px-3 py-1 bg-white border border-red-500 text-red-500 rounded text-sm hover:bg-red-50 transition"
+                    (click)="removeBillSplit()">
+                    <i class="fa-solid fa-trash mr-1"></i>Remove
+                  </button>
+                </div>
+              </div>
+
+              <!-- Participants Summary -->
+              <div class="mt-3 border-t border-green-200 pt-3">
+                <h5 class="text-sm font-medium text-green-700 mb-2">Split Summary:</h5>
+                <div class="space-y-2">
+                  <div *ngFor="let p of billSplitData.participants"
+                    class="flex justify-between items-center text-sm bg-white/50 p-2 rounded">
+                    <span class="text-green-800 font-medium">{{ p.name }}</span>
+                    <div class="text-right">
+                      <span class="text-green-600">{{ p.shareAmount | currency:selectedCurrency }}</span>
+                      <span *ngIf="billSplitData.method === 'percentage'" class="text-green-500 text-xs ml-2">({{
+                        p.sharePercent }}%)</span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
             }
           </div>
         </div>
       </div>
-
       <!-- Right Column - Document Upload -->
       <div class="lg:col-span-1">
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-6">
           <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
             Document Upload
           </h2>
+
           <div class="flex flex-col items-center gap-4">
-            <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+            <div
+              class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
               <i class="fas fa-file-upload text-4xl text-gray-400"></i>
             </div>
+
             <div
               class="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
-              (click)="fileInput.click()"
-              (dragover)="onDragOver($event)"
-              (drop)="onFileDrop($event, 'receipt')"
-            >
+              (click)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onFileDrop($event, 'receipt')">
               <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
               <p class="text-sm text-gray-600" *ngIf="!receiptFile">
                 Click or drag and drop to upload Document
@@ -634,255 +551,238 @@
               <p class="text-xs text-gray-500 mt-1">
                 Supported formats: JPG, PNG, PDF (max 10MB)
               </p>
-              <input
-                type="file"
-                #fileInput
-                class="hidden"
-                (change)="onFileSelect($event, 'receipt')"
-                accept=".jpg,.png,.pdf"
-              />
+              <input type="file" #fileInput class="hidden" (change)="onFileSelect($event, 'receipt')"
+                accept=".jpg,.png,.pdf" />
             </div>
           </div>
         </div>
       </div>
     </div>
-
     <!-- Form Buttons -->
     <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-      <button
-        type="button"
-        class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-        (click)="cancelExpenses()"
-      >
+      <button type="button" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+        (click)="cancelExpenses()">
         Cancel
       </button>
-      <button
-        type="submit"
-        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
-      >
+      <button type="submit"
+        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2">
         <i class="fa-solid fa-paper-plane"></i>
         Submit Expense
       </button>
     </div>
   </form>
-
   <!-- Modals (keep existing modal code as is) -->
   <app-side-modal *ngIf="showCategoryModal" (close)="closeModal('category')">
-      <div class="p-6">
-          <div class="flex justify-between items-center h-auto mb-6">
-            <h2 class="text-xl font-bold text-gray-800">Categories</h2>
-            <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)=" closeModal('category')">
-              <i class="fa-solid fa-times"></i>
-            </button>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
-            <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Category</h3>
-
-              <div class="grid grid-cols-1 gap-4 mb-4">
-                <div>
-                  <label for="categoryName" class="block text-xl font-medium text-gray-700 mb-1">
-                    Category Name <span class="text-red-500"></span>
-                  </label>
-
-                  <input
-                    class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                    [(ngModel)]="newCategoryData.name" name="categoryName" #categoryName="ngModel" required
-                    placeholder="Enter category name" id="name" />
-
-                  <div *ngIf="categoryName.invalid && categoryName.touched" class="text-red-500 text-sm mt-1">
-                    Category name is required.
-                  </div>
-                </div>
-
-                <div>
-                  <label for="categoryDescription" class="block text-xl font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                    rows="3" [(ngModel)]="newCategoryData.description" placeholder="Enter category description"
-                    id="categoryDescription"></textarea>
-                </div>
-              </div>
-
-              <div class="flex justify-end mt-4">
-                <button type="button"
-                  class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-                  [disabled]="!newCategoryData.name?.trim()"
-                  (click)="addNewCategory()">
-                  <i class="fa-solid fa-plus"></i>
-                  Add Category
-                </button>
-              </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
-            <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Categories</h3>
-            <div *ngIf="categories.length === 0" class="text-center py-4 text-gray-500">
-              No Categories found. Create your first category above.</div>
-
-            <ul *ngIf="categories.length > 0" class="divide-y divide-gray-200">
-              <li *ngFor="let category of categories" class="py-3 flex justify-between items-center">
-                <div class="flex items-center">
-                  <div
-                    class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
-                    <i class="fa-solid fa-folder"></i>
-                  </div>
-
-                  <div>
-                    <div class="font-medium text-gray-700">{{ category.name }}</div>
-                    <div class="text-sm text-gray-600">{{ category.description || 'No description provided'}}</div>
-                  </div>
-                </div>
-
-                <button class="text-red-500 hover:text-red-700 transition" (click)="removeCategory(category.id)">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-  </app-side-modal>
-
-  <app-side-modal *ngIf="showMerchantModal" (close)="closeModal('merchant')">
     <div class="p-6">
-    <div class="flex justify-between items-center h-auto mb-6">
-      <h2 class="text-xl font-bold text-gray-800">Merchants</h2>
-      <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('merchant')">
-        <i class="fa-solid fa-times"></i>
-      </button>
-    </div>
+      <div class="flex justify-between items-center h-auto mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Categories</h2>
+        <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)=" closeModal('category')">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
-      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Merchant</h3>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+        <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Category</h3>
 
-      <form (ngSubmit)="addNewMerchant()">
         <div class="grid grid-cols-1 gap-4 mb-4">
           <div>
-            <label for="merchantName" class="block text-xl font-medium text-gray-700 mb-1">
-              Merchant Name
+            <label for="categoryName" class="block text-xl font-medium text-gray-700 mb-1">
+              Category Name <span class="text-red-500"></span>
             </label>
-            <input type="text" id="merchantName" [(ngModel)]="newMerchantData.name" name="merchantName" required
-              placeholder="Enter merchant name"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+
+            <input
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              [(ngModel)]="newCategoryData.name" name="categoryName" #categoryName="ngModel" required
+              placeholder="Enter category name" id="name" />
+
+            <div *ngIf="categoryName.invalid && categoryName.touched" class="text-red-500 text-sm mt-1">
+              Category name is required.
+            </div>
           </div>
+
           <div>
-            <label for="merchantPhone" class="block text-xl font-medium text-gray-700 mb-1">
-              Phone number
+            <label for="categoryDescription" class="block text-xl font-medium text-gray-700 mb-1">
+              Description
             </label>
-            <input type="tel" id="merchantPhone" [(ngModel)]="newMerchantData.phoneNumber" name="merchantPhone"
-              placeholder="Enter phone number"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
-          </div>
-          <div>
-            <label for="merchantAddress" class="block text-xl font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <textarea id="merchantAddress" [(ngModel)]="newMerchantData.address" name="merchantAddress" rows="2"
-              placeholder="Enter address"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
-          </div>
-          <div>
-            <label for="merchantEmail" class="block text-xl font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input type="email" id="merchantEmail" [(ngModel)]="newMerchantData.emailAddress" name="merchantEmail"
-              placeholder="Enter email address"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
-          </div>
-          <div>
-            <label for="contactPersonName" class="block text-xl font-medium text-gray-700 mb-1">
-              Contact Person Name
-            </label>
-            <input type="text" id="contactPersonName" [(ngModel)]="newMerchantData.contactPersonName" name="contactPersonName"
-              placeholder="Enter contact person name"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+            <textarea
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              rows="3" [(ngModel)]="newCategoryData.description" placeholder="Enter category description"
+              id="categoryDescription"></textarea>
           </div>
         </div>
+
         <div class="flex justify-end mt-4">
-          <button type="submit"
+          <button type="button"
             class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-            [disabled]="!newMerchantData.name?.trim()">
+            [disabled]="!newCategoryData.name?.trim()" (click)="addNewCategory()">
             <i class="fa-solid fa-plus"></i>
-            Add Merchant
+            Add Category
           </button>
         </div>
-      </form>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
-      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Merchants</h3>
-      <div *ngIf="merchants.length === 0" class="text-center py-4 text-gray-500">
-        No Merchants found. Create your first merchant above.
       </div>
-      <ul *ngIf="merchants.length > 0" class="divide-y divide-gray-200">
-        <li *ngFor="let merchant of merchants" class="py-3 flex justify-between items-center">
-          <div class="flex items-center">
-            <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
-              <i class="fa-solid fa-store"></i>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+        <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Categories</h3>
+        <div *ngIf="categories.length === 0" class="text-center py-4 text-gray-500">
+          No Categories found. Create your first category above.</div>
+
+        <ul *ngIf="categories.length > 0" class="divide-y divide-gray-200">
+          <li *ngFor="let category of categories" class="py-3 flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+                <i class="fa-solid fa-folder"></i>
+              </div>
+
+              <div>
+                <div class="font-medium text-gray-700">{{ category.name }}</div>
+                <div class="text-sm text-gray-600">{{ category.description || 'No description provided'}}</div>
+              </div>
+            </div>
+
+            <button class="text-red-500 hover:text-red-700 transition" (click)="removeCategory(category.id)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </app-side-modal>
+  <app-side-modal *ngIf="showMerchantModal" (close)="closeModal('merchant')">
+    <div class="p-6">
+      <div class="flex justify-between items-center h-auto mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Merchants</h2>
+        <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('merchant')">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+        <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Merchant</h3>
+
+        <form (ngSubmit)="addNewMerchant()">
+          <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+              <label for="merchantName" class="block text-xl font-medium text-gray-700 mb-1">
+                Merchant Name
+              </label>
+              <input type="text" id="merchantName" [(ngModel)]="newMerchantData.name" name="merchantName" required
+                placeholder="Enter merchant name"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
             </div>
             <div>
-              <div class="font-medium text-gray-700">{{ merchant.name }}</div>
-              <div class="text-sm text-gray-600">{{ merchant.emailAddress || 'No email provided' }}</div>
+              <label for="merchantPhone" class="block text-xl font-medium text-gray-700 mb-1">
+                Phone number
+              </label>
+              <input type="tel" id="merchantPhone" [(ngModel)]="newMerchantData.phoneNumber" name="merchantPhone"
+                placeholder="Enter phone number"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+            </div>
+            <div>
+              <label for="merchantAddress" class="block text-xl font-medium text-gray-700 mb-1">
+                Address
+              </label>
+              <textarea id="merchantAddress" [(ngModel)]="newMerchantData.address" name="merchantAddress" rows="2"
+                placeholder="Enter address"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
+            </div>
+            <div>
+              <label for="merchantEmail" class="block text-xl font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input type="email" id="merchantEmail" [(ngModel)]="newMerchantData.emailAddress" name="merchantEmail"
+                placeholder="Enter email address"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+            </div>
+            <div>
+              <label for="contactPersonName" class="block text-xl font-medium text-gray-700 mb-1">
+                Contact Person Name
+              </label>
+              <input type="text" id="contactPersonName" [(ngModel)]="newMerchantData.contactPersonName"
+                name="contactPersonName" placeholder="Enter contact person name"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
             </div>
           </div>
-        </li>
-      </ul>
-    </div>
-  </div>
+          <div class="flex justify-end mt-4">
+            <button type="submit"
+              class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+              [disabled]="!newMerchantData.name?.trim()">
+              <i class="fa-solid fa-plus"></i>
+              Add Merchant
+            </button>
+          </div>
+        </form>
+      </div>
 
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+        <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Merchants</h3>
+        <div *ngIf="merchants.length === 0" class="text-center py-4 text-gray-500">
+          No Merchants found. Create your first merchant above.
+        </div>
+        <ul *ngIf="merchants.length > 0" class="divide-y divide-gray-200">
+          <li *ngFor="let merchant of merchants" class="py-3 flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+                <i class="fa-solid fa-store"></i>
+              </div>
+              <div>
+                <div class="font-medium text-gray-700">{{ merchant.name }}</div>
+                <div class="text-sm text-gray-600">{{ merchant.emailAddress || 'No email provided' }}</div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
   </app-side-modal>
 
   <app-side-modal *ngIf="showTaxModal" (close)="closeModal('tax')">
- <div class="p-6">
-    <div class="flex justify-between items-center h-auto mb-6">
-      <h2 class="text-xl font-bold text-gray-800">Tax Rates</h2>
-      <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('tax')">
-        <i class="fa-solid fa-times"></i>
-      </button>
-    </div>
+    <div class="p-6">
+      <div class="flex justify-between items-center h-auto mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Tax Rates</h2>
+        <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('tax')">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
-      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Tax Rate</h3>
-      <form (ngSubmit)="addNewTaxRate()">
-        <div class="grid grid-cols-1 gap-4 mb-4">
-          <div>
-            <label for="taxName" class="block text-sm font-medium text-gray-700 mb-1">
-              Tax Name
-            </label>
-            <input type="text" id="taxName" [(ngModel)]="newTaxData.name" name="taxName" required
-              placeholder="Enter tax name (e.g., VAT, Sales Tax)"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+        <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Tax Rate</h3>
+        <form (ngSubmit)="addNewTaxRate()">
+          <div class="grid grid-cols-1 gap-4 mb-4">
+            <div>
+              <label for="taxName" class="block text-sm font-medium text-gray-700 mb-1">
+                Tax Name
+              </label>
+              <input type="text" id="taxName" [(ngModel)]="newTaxData.name" name="taxName" required
+                placeholder="Enter tax name (e.g., VAT, Sales Tax)"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+            </div>
+            <div>
+              <label for="taxRate" class="block text-sm font-medium text-gray-700 mb-1">
+                Tax Rate (%)
+              </label>
+              <input type="number" id="taxRate" [(ngModel)]="newTaxData.rate" name="taxRate" min="0" max="100"
+                step="0.01" required placeholder="Enter tax percentage"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+            </div>
+            <div>
+              <label for="taxDescription" class="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea id="taxDescription" [(ngModel)]="newTaxData.description" name="taxDescription" rows="3"
+                placeholder="Enter tax description"
+                class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
+            </div>
           </div>
-          <div>
-            <label for="taxRate" class="block text-sm font-medium text-gray-700 mb-1">
-              Tax Rate (%)
-            </label>
-            <input type="number" id="taxRate" [(ngModel)]="newTaxData.rate" name="taxRate" min="0" max="100" step="0.01" required
-              placeholder="Enter tax percentage"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          <div class="flex justify-end mt-4">
+            <button type="submit"
+              class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+              [disabled]="!newTaxData.name?.trim() || newTaxData.rate < 0">
+              <i class="fa-solid fa-plus"></i>
+              Add Tax Rate
+            </button>
           </div>
-          <div>
-            <label for="taxDescription" class="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea id="taxDescription" [(ngModel)]="newTaxData.description" name="taxDescription" rows="3"
-              placeholder="Enter tax description"
-              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
-          </div>
-        </div>
-        <div class="flex justify-end mt-4">
-          <button type="submit"
-            class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-            [disabled]="!newTaxData.name?.trim() || (newTaxData.rate ?? 0) < 0">
-            <i class="fa-solid fa-plus"></i>
-            Add Tax Rate
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
   </app-side-modal>
-
   <p-toast></p-toast>
