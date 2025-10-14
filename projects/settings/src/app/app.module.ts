@@ -78,6 +78,7 @@ import { UsersComponent } from './ui/view/user-setting/users/users.component';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { BranchesComponent } from './ui/view/pos/branches/branches.component';
+import { ChangePasswordComponent } from './change-password/change-password.component';
 
 //
 
@@ -103,6 +104,7 @@ import { BranchesComponent } from './ui/view/pos/branches/branches.component';
     UsersComponent,
     RolesNpermissionComponent,
     BranchesComponent,
+    ChangePasswordComponent,
   ],
   imports: [
     // BrowserModule,
