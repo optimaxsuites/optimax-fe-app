@@ -13,6 +13,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 export class ExpenseTableComponent implements OnInit {
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
+
+  
   searchTerm: string = '';
   // FIX: Allow selectedExpense to be null to match its initialization.
   selectedExpense: Expense | null = null;
