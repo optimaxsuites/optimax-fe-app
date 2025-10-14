@@ -113,7 +113,7 @@ export class InventoryReportComponent implements OnInit {
       startDate: [startDate],
       endDate: [endDate],
       branchIds: [[]],
-      shift: ['']
+      // shift: ['']
     });
 
     console.log('Form initialized with dynamic dates:', {
@@ -157,7 +157,7 @@ export class InventoryReportComponent implements OnInit {
       startDate: this.formatDate(formValue.startDate),
       endDate: this.formatDate(formValue.endDate),
       branchIds: formValue.branchIds?.length ? formValue.branchIds : [],
-      shift: formValue.shift || null
+      // shift: formValue.shift || null
     };
 
     console.log('Sending payload to API:', payload);
