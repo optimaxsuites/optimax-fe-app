@@ -165,7 +165,7 @@
                                 {{ product.name }}
                               </h4>
                               <p class="text-customBlue font-semibold text-xl">
-                                ₦{{ product.sellingPrice }}
+                                {{ formatPrice(product.sellingPrice) }}
                               </p>
                             </div>
 
@@ -266,7 +266,7 @@
                       {{ product.quantity }} items left
                     </p>
                     <p class="text-customBlue font-semibold text-lg">
-                      ₦{{ product.sellingPrice }}
+                      {{ formatPrice(product.sellingPrice) }}
                     </p>
                   </div>
 
@@ -355,7 +355,7 @@
                 {{ data.value.product.name }}
               </h4>
               <p class="text-lg text-gray-600 mt-1">
-                {{ data.value.product.sellingPrice | currency:'₦' }} each
+                {{ formatPrice(data.value.product.sellingPrice) }} each
               </p>
             </div>
 
@@ -504,7 +504,7 @@
       <div class="flex justify-between items-center mb-4">
         <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
         <span class="md:text-3xl font-bold text-[#2EB270]">
-          {{ convertedCartProducts().subtotal | currency:'₦' }}
+          {{ formatPrice(convertedCartProducts().subtotal) }}
         </span>
       </div>
 

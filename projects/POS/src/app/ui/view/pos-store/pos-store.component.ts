@@ -78,21 +78,18 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
   
-  // Converted cart products for display
-  convertedCartProducts = computed<ConvertedCartProducts>(() => {
-    const cart = this.cartService.getCart();
-    return Array.from(cart.items).reduce<ConvertedCartProducts>(
-      (acc, [_, { product: currProduct, quantity: currQuantity }]) => {
-        acc.products.push(...Array(currQuantity).fill(currProduct));
-        acc.discount += this._productHelper.getDiscount(currProduct) * currQuantity;
-        acc.subtotal += this._productHelper.getPrice(currProduct) * currQuantity;
-        acc.tax += this._productHelper.getTax(currProduct) * currQuantity;
-        acc.total += this._productHelper.getRate(currProduct) * currQuantity;
-        return acc;
-      },
-      { products: [], subtotal: cart.subtotal, tax: 0, discount: 0, total: cart.subtotal }
-    );
-  });
+convertedCartProducts = computed<ConvertedCartProducts>(() => {
+  const cart = this.cartService.getCart();
+  return {
+    products: Array.from(cart.items).flatMap(([_, { product, quantity }]) => 
+      Array(quantity).fill(product)
+    ),
+    subtotal: cart.subtotal, // Use the cart service's calculated subtotal
+    tax: 0,
+    discount: 0,
+    total: cart.subtotal
+  };
+});
 
   // Category options for dropdown
   categoryOptions = computed(() => {
@@ -543,13 +540,27 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     return product.quantity > 0;
   }
 
-  /**
-   * Format price for display
-   */
-  formatPrice(price: number): string {
-    return `₦${price.toLocaleString('en-NG')}`;
+ formatPrice(price: any): string {
+  try {
+    let priceValue: number;
+    
+    if (price === undefined || price === null) {
+      priceValue = 0;
+    } else if (typeof price === 'string') {
+      priceValue = parseFloat(price);
+      if (isNaN(priceValue)) priceValue = 0;
+    } else if (typeof price === 'number') {
+      priceValue = price;
+    } else {
+      priceValue = 0;
+    }
+    
+    return `₦${priceValue.toLocaleString('en-NG')}`;
+  } catch (error) {
+    console.warn('Error formatting price:', error);
+    return '₦0';
   }
-
+}
   /**
    * Get stock status text
    */
