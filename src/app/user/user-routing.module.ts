@@ -144,6 +144,7 @@ const routes: Routes = [
       path: 'category/:categoryName',  // ADD THIS ROUTE
       component: CategoryProductsComponent,
     },
+  { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
   ]
 }
 ];
