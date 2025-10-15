@@ -220,7 +220,8 @@ export class PosServiceService {
       switchMap((products: any[]) => {
         console.log(products);
         const enrichedProducts$ = products.map((product) => {
-          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product?.productImages[0]?.imgNo}`;
+          const imageNo = product.productImages[0]?.name === "default_product.jpg" && product.productImages.length > 1 ? product.productImages[1]?.imgNo : product.productImages[0]?.imgNo
+          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageNo}`;
 
           return forkJoin([
             this.imageCacheService.getImage(remoteImageUrl),

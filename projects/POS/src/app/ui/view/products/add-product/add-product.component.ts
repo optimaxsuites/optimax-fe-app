@@ -285,19 +285,14 @@ export class AddProductComponent {
 	configureBarcode: boolean = false;
 	barcodes = [
 		{ label: "CODE128 ", value: "CODE128" },
-		// { label: 'CODE128 A/B/C', value: 'CODE128' },
+
 		{ label: "EAN-13", value: "EAN13" },
 		{ label: "EAN-8", value: "EAN8" },
-		// { label: 'EAN-5', value: 'EAN5' },
-		// { label: 'EAN-2', value: 'EAN2' },
+
 		{ label: "UPC (A)", value: "UPC" },
 		{ label: "UPC (E)", value: "UPC" },
 		{ label: "ITF", value: "ITF" },
-		// { label: 'ITF-14', value: 'ITF14' },
-		// { label: 'MSI10', value: 'MSI10' },
-		// { label: 'MSI11', value: 'MSI11' },
-		// { label: 'MSI1010', value: 'MSI1010' },
-		// { label: 'MSI1110', value: 'MSI1110' },
+
 
 		{ label: "Codabar", value: "Codabar" },
 		{ label: "CODE39", value: "CODE39" },
@@ -1666,7 +1661,7 @@ async updateProduct() {
     }
 
     const formValues = this.productForm.value;
-    const hasNewImage = formValues.image instanceof File;
+    const hasNewImage = this.productImages.length > 0
 
     console.log('Form values:', formValues);
     console.log('Has new image:', hasNewImage);
@@ -1708,13 +1703,18 @@ async updateProduct() {
     
     // If there's a new image, add it and set replacement flags
     if (hasNewImage) {
-        formData.append("files", formValues.image);
-        formData.append("replaceImages", "true");
-        formData.append("clearExistingImages", "true");
+		this.productImages.forEach((image, index) => {
+			if (image.file) {
+			  formData.append("files", image.file);
+			}
+		  });
+        // formData.append("files", formValues.image);
+        // formData.append("replaceImages", "true");
+        // formData.append("clearExistingImages", "true");
     } else if (this.activeItem.productImages && this.activeItem.productImages.length > 0) {
         // Keep the existing images if no new image is provided
         const existingImages = this.activeItem.productImages.map((img: any) => img.id);
-        formData.append("existingImageIds", JSON.stringify(existingImages));
+        // formData.append("existingImageIds", JSON.stringify(existingImages));
     }
 
     try {
