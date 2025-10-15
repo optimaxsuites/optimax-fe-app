@@ -27,28 +27,28 @@ export class PosSettingComponent {
       component: BusInfoSettingComponent,
     },
     {
-      name: 'Product & Inventory Settings',
-      subSetting: ['Price', 'unit', 'stock', 'stock alerts'],
+      name: 'E-store Settings',
+      subSetting: ['Payment information', 'stock alerts'],
       icon: 'pi pi-receipt',
       component: PAndISettingComponent,
     },
-    {
-      name: 'Payment Settings',
-      subSetting: [
-        'Salary Structure',
-        'Deductions and Overtime',
-        'Bonuses and Benefits',
-        'Payslip',
-      ],
-      icon: 'pi pi-receipt',
-      component: null,
-    },
-    {
-      name: 'Report Settings',
-      subSetting: ['Customize', 'export sales', 'stock reports'],
-      icon: 'pi pi-receipt',
-      component: null,
-    },
+    // {
+    //   name: 'Payment Settings',
+    //   subSetting: [
+    //     'Salary Structure',
+    //     'Deductions and Overtime',
+    //     'Bonuses and Benefits',
+    //     'Payslip',
+    //   ],
+    //   icon: 'pi pi-receipt',
+    //   component: null,
+    // },
+    // {
+    //   name: 'Report Settings',
+    //   subSetting: ['Customize', 'export sales', 'stock reports'],
+    //   icon: 'pi pi-receipt',
+    //   component: null,
+    // },
     {
       name: 'Branches & Location',
       subSetting: [
@@ -60,17 +60,17 @@ export class PosSettingComponent {
       icon: 'pi pi-receipt',
       component: BranchesComponent,
     },
-    {
-      name: 'Customization Settings',
-      subSetting: [
-        'Salary Structure',
-        'Deductions and Overtime',
-        'Bonuses and Benefits',
-        'Payslip',
-      ],
-      icon: 'pi pi-receipt',
-      component: null,
-    },
+    // {
+    //   name: 'Customization Settings',
+    //   subSetting: [
+    //     'Salary Structure',
+    //     'Deductions and Overtime',
+    //     'Bonuses and Benefits',
+    //     'Payslip',
+    //   ],
+    //   icon: 'pi pi-receipt',
+    //   component: null,
+    // },
   ];
 
   selectedComp = null;
