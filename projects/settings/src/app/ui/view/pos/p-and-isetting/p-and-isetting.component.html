@@ -1,0 +1,312 @@
+<div class="p-6 bg-gray-50 min-h-screen">
+  <header class="relative mb-4">
+    <div class="flex items-center mb-4">
+      <h3 class="text-xl font-semibold text-gray-800">
+        <span class="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          E-Store Configuration
+        </span>
+      </h3>
+    </div>
+
+    <nav class="border-b border-gray-200">
+      <ul class="flex space-x-6 -mb-px">
+        <li>
+          <a
+            (click)="setActiveTab('payment')"
+            [ngClass]="{
+              'border-b-2 border-customBlue  text-gray-900 font-medium': activeTab === 'payment',
+              'text-gray-700 hover:text-gray-900': activeTab !== 'payment'
+            }"
+            class="inline-block py-2 px-1 cursor-pointer transition duration-150 ease-in-out"
+          >
+            Payment Setup
+          </a>
+        </li>
+        <li>
+          <a
+            (click)="setActiveTab('delivery')"
+            [ngClass]="{
+              'border-b-2 border-blue-800 text-gray-900 font-medium': activeTab === 'delivery',
+              'text-gray-700 hover:text-gray-900': activeTab !== 'delivery'
+            }"
+            class="inline-block py-2 px-1 cursor-pointer transition duration-150 ease-in-out"
+          >
+            Delivery Settings
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <button class="absolute top-0 right-0 px-4 py-2 bg-customBlue text-white font-medium rounded-md hover:bg-customBlueHover transition duration-150 shadow-md">
+      Save Changes
+    </button>
+  </header>
+
+  <div class="mt-6">
+    
+    <ng-container *ngIf="activeTab === 'payment'">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h4 class="text-xl font-semibold mb-6 text-gray-800">
+          Paystack Payment Account Setup (6 Steps)
+        </h4>
+
+        <div class="space-y-6 border-l-4 border-blue-500 pl-4">
+
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 1: Create a Paystack Account</h5>
+            <p class="text-blue-600 mt-1">
+              👉
+              <a href="https://paystack.com/signup" target="_blank" class="hover:underline">Click here to sign up on Paystack</a>
+            </p>
+            <ul class="list-disc list-inside text-gray-600 ml-2">
+              <li>Enter your email, password, and business details.</li>
+              <li>Verify your email address.</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 2: Complete Business Verification (KYC)</h5>
+            <ul class="list-disc list-inside text-gray-600 ml-2">
+              <li>In your Paystack dashboard, go to <strong>Settings → Compliance / KYC</strong>.</li>
+              <li>Upload the required documents:
+                <ul class="list-circle list-inside ml-4 text-sm mt-1">
+                  <li><strong>Individuals</strong> → Govt. ID + Proof of Address + Bank details.</li>
+                  <li><strong>Registered Businesses</strong> → CAC documents, Directors’ ID, Proof of Address.</li>
+                </ul>
+              </li>
+              <li>Wait for Paystack to approve your account (usually 1–3 business days).</li>
+              <li class="text-green-600 font-medium">Without verification, you cannot access live API keys.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 3: Add Bank Account for Settlements</h5>
+            <ul class="list-disc list-inside text-gray-600 ml-2">
+              <li>In dashboard, go to <strong>Settings → Payouts / Bank Accounts</strong>.</li>
+              <li>Add your bank name + account number.</li>
+              <li>Funds from customer payments will be settled into this bank account.</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 4: Get Your API Keys</h5>
+            <ul class="list-disc list-inside text-gray-600 ml-2">
+              <li>Log in to your dashboard: <a href="https://dashboard.paystack.com" target="_blank" class="text-blue-600 hover:underline">https://dashboard.paystack.com</a></li>
+              <li>Go to <strong>Settings → API Keys & Webhooks</strong>.</li>
+              <li>Copy your <strong>Live Public Key</strong> and <strong>Live Secret Key</strong>.</li>
+              <li class="mt-2 p-2 bg-gray-100 rounded text-sm font-mono text-red-700">⚠️ Important: Never share your Secret Key publicly. Only paste it inside this ERP system.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 5: Paste API Keys Into This ERP</h5>
+            <p class="text-gray-600 mb-3">Return to your ERP system’s Payment Settings page and paste the keys below:</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="livePublicKey" class="block text-sm font-medium text-gray-700">Live Public Key</label>
+                <input
+                  type="text"
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                  id="livePublicKey"
+                  placeholder="pk_live_xxxxxxxxxxxxxxxxxx"
+                />
+              </div>
+              <div>
+                <label for="liveSecretKey" class="block text-sm font-medium text-gray-700">Live Secret Key</label>
+                <input
+                  type="password"
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                  id="liveSecretKey"
+                  placeholder="sk_live_xxxxxxxxxxxxxxxxxx"
+                />
+              </div>
+            </div>
+            <button class="mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition duration-150 shadow-md">Test & Save Paystack Keys</button>
+          </div>
+
+          <div>
+            <h5 class="text-lg font-semibold text-gray-900">Step 6: Verify Connection</h5>
+            <ul class="list-disc list-inside text-gray-600 ml-2">
+              <li>Our ERP will test your Paystack keys upon saving.</li>
+              <li>If valid, you’ll see a <strong class="text-green-600">“Connected Successfully”</strong> message.</li>
+              <li><strong class="text-green-600">Done!</strong> All payments will now be processed via Paystack. 🎉</li>
+            </ul>
+          </div>
+
+          <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 rounded-md mt-6">
+            <h6 class="font-bold">⚠️ Note for Users:</h6>
+            <ul class="list-disc list-inside ml-2 text-sm">
+              <li>Test Keys are only for trial and will not send money to your bank.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    
+    <ng-container *ngIf="activeTab === 'delivery'">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h4 class="text-xl font-semibold mb-4 text-gray-800">Delivery and Shipping Rate Settings</h4>
+
+        <form class="space-y-6">
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Select Branch for Configuration</label>
+            <select class="mt-1 block w-full md:w-1/2 border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                <option selected>Main Branch - Lagos Island</option>
+                <option>Branch B - Abuja FCT</option>
+                <option>Branch C - Port Harcourt</option>
+            </select>
+            <small class="text-xs text-gray-500 mt-1 block">Rates configured here apply to orders fulfilled by the selected branch. You may have other branches.</small>
+          </div>
+
+          <div>
+            <label for="expressCutOff" class="block text-sm font-medium text-gray-700">Express Delivery Cut-Off Time</label>
+            <input 
+              type="time" 
+              class="mt-1 block w-auto border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" 
+              id="expressCutOff" 
+              [(ngModel)]="expressCutOffTime" 
+              name="expressTime"
+            >
+            <small class="text-xs text-blue-600 mt-1 block">
+              Orders placed before {{ expressCutOffTime }} for express delivery in city will be dispatched same day.
+            </small>
+          </div>
+
+          <hr class="my-6">
+
+          <h5 class="text-lg font-semibold mb-4">Configurable Delivery Options (Rates in ₦)</h5>
+          
+          <div class="overflow-x-auto border border-gray-200 rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+              
+              <thead class="bg-blue-600 text-white">
+                <tr>
+                  <th scope="col" class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider w-1/12">
+                    </th>
+                  <th scope="col" class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider w-3/12">
+                    Delivery Option
+                  </th>
+                  <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider w-2/12">
+                    Min Fee / Base Fee
+                  </th>
+                  <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider w-3/12">
+                    Max Fee / Rate Per KM
+                  </th>
+                  <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider w-1/12">
+                    Show Daily
+                  </th>
+                  <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider w-1/12">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </th>
+                </tr>
+              </thead>
+              
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let option of deliveryOptions" class="hover:bg-gray-50">
+                  
+                  <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-900">
+                    <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                  </td>
+                  
+                  <td class="py-3 px-4">
+                    <div class="mb-1">
+                      <input 
+                        type="text" 
+                        class="w-full font-medium border border-gray-300 rounded-md shadow-sm p-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
+                        [(ngModel)]="option.name" 
+                        name="optionName_{{option.id}}" 
+                      >
+                    </div>
+                    <div>
+                      <input 
+                        type="text" 
+                        class="w-full text-xs text-gray-500 border border-gray-300 rounded-md shadow-sm p-1 focus:ring-blue-500 focus:border-blue-500" 
+                        [(ngModel)]="option.description" 
+                        name="optionDesc_{{option.id}}" 
+                      >
+                    </div>
+                  </td>
+                  
+                  <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-900">
+                    <label class="sr-only">Min Fee</label>
+                    <input 
+                      type="number" 
+                      class="w-full text-center border border-gray-300 rounded-md shadow-sm p-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
+                      [(ngModel)]="option.minFee" 
+                      name="minFee_{{option.id}}" 
+                      placeholder="0"
+                    >
+                  </td>
+
+                  <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-900">
+                    <ng-container *ngIf="option.rateType === 'range'">
+                      <label class="sr-only">Max Fee</label>
+                      <input 
+                        type="number" 
+                        class="w-full text-center border border-gray-300 rounded-md shadow-sm p-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
+                        [(ngModel)]="option.maxFee" 
+                        name="maxFee_{{option.id}}" 
+                        placeholder="0"
+                      >
+                    </ng-container>
+
+                    <ng-container *ngIf="option.rateType === 'per-km'">
+                      <label class="block text-xs font-medium text-gray-500 mb-1 text-center">Rate Per KM (₦)</label>
+                      <input 
+                        type="number" 
+                        class="w-full text-center border border-blue-400 rounded-md shadow-sm p-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
+                        [(ngModel)]="option.pricePerKm" 
+                        name="pricePerKm_{{option.id}}" 
+                        placeholder="e.g. 500"
+                      >
+                    </ng-container>
+
+                    <span *ngIf="option.rateType === 'fixed'" class="text-xs text-gray-400 font-medium block text-center py-2">Fixed Fee</span>
+                  </td>
+
+                  <td class="py-3 px-4 whitespace-nowrap text-center">
+                    <label class="sr-only">Is Visible</label>
+                    <input 
+                      type="checkbox" 
+                      class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" 
+                      [(ngModel)]="option.isVisible" 
+                      name="isVisible_{{option.id}}"
+                    >
+                  </td>
+                  
+                  <td class="py-3 px-4 text-center whitespace-nowrap text-sm font-medium">
+                    <button type="button" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="mt-4">
+            <button 
+              (click)="addDeliveryOption()" 
+              type="button" 
+              class="px-4 py-2 bg-customBlue text-white font-medium rounded-md hover:bg-customBlueHover transition duration-150 shadow-md"
+            >
+              Add New Option
+            </button>
+          </div>
+
+          <div class="pt-6 border-t border-gray-200">
+            <button class="px-6 py-3 bg-customBlue text-white font-medium rounded-md hover:bg-customBlueHover transition duration-150 shadow-lg">Final Save Delivery Settings</button>
+          </div>
+        </form>
+      </div>
+    </ng-container>
+  </div>
+</div>
