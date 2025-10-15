@@ -30,6 +30,8 @@ export class ViewProductComponent {
 	branches: any[] = [];
 	originalProducts: any[] = [];
 	selectedBranchIds: string[] = [];
+	activeItemImages: string[] = []
+	mainProductImage: string = 'assets/image loading placeholder.png'
 
 	private readonly defaultVariant: VariantDTO = {
 		id: 0,
@@ -56,6 +58,18 @@ export class ViewProductComponent {
 						d.productBranch?.branchId,
 				)
 				.filter((id: number) => !!id) || [];
+
+
+		this._productHelper.getImageUrls(this.activeItem.productImages).subscribe((urls: any) => {
+					this.activeItemImages = urls;
+					this.mainProductImage = urls.length ? urls[0] : 'assets/image loading placeholder.png';
+		});
+				  
+	   
+	}
+
+	setAsMainImage(imageUrl: string){
+		this.mainProductImage = imageUrl
 	}
 
 	openViewProduct() {
