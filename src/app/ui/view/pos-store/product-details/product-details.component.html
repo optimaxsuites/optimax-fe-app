@@ -141,32 +141,32 @@
               </div>
               
               <!-- Thumbnail Gallery -->
-              @if (hasMultipleImages()) {
-                <div class="grid grid-cols-4 md:grid-cols-5 gap-3">
-                  @for (image of allImages(); track image.id; let i = $index) {
-                    <button
-                      class="relative bg-gray-50 rounded-lg border-2 transition-all duration-200 hover:border-customBlue overflow-hidden group h-24"
-                      [class.border-customBlue]="i === selectedImageIndex()"
-                      [class.border-gray-200]="i !== selectedImageIndex()"
-                      (click)="selectImage(i)"
-                    >
-                      <img 
-                        [src]="getProductImage(product()!, image) | async" 
-                        [alt]="product()!.name"
-                        class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
-                        (error)="handleImageError($event)"
-                      />
-                      
-                      <!-- Active Indicator Overlay -->
-                      @if (i === selectedImageIndex()) {
-                        <div class="absolute inset-0 bg-customBlue/20 flex items-center justify-center">
-                          <i class="fa-solid fa-check text-customBlue text-xl"></i>
-                        </div>
-                      }
-                    </button>
-                  }
-                </div>
-              }
+             @if (hasMultipleImages()) {
+  <div class="grid grid-cols-4 md:grid-cols-5 gap-3">
+    @for (image of allImages(); track image.id; let i = $index) {
+      <button
+        class="relative bg-gray-50 rounded-lg border-2 transition-all duration-200 hover:border-customBlue overflow-hidden group h-24"
+        [class.border-customBlue]="i === selectedImageIndex()"
+        [class.border-gray-200]="i !== selectedImageIndex()"
+        (click)="selectImage(i)"
+      >
+        <img 
+          [src]="getThumbnailImage(product()!, image) | async" 
+          [alt]="product()!.name"
+          class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
+          (error)="handleImageError($event)"
+        />
+        
+        <!-- Active Indicator Overlay -->
+        @if (i === selectedImageIndex()) {
+          <div class="absolute inset-0 bg-customBlue/20 flex items-center justify-center">
+            <i class="fa-solid fa-check text-customBlue text-xl"></i>
+          </div>
+        }
+      </button>
+    }
+  </div>
+}
             </div>
 
             <!-- Product Information -->
@@ -339,45 +339,87 @@
       </div>
 
       <!-- Related Products -->
-      @if (relatedProducts().length > 0) {
-        <div class="mt-16">
-          <h2 class="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
-              <div 
-                class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group"
-                (click)="navigateToProductDetails(relatedProduct.id)"
-              >
-                <div class="bg-gray-50 overflow-hidden flex items-center justify-center h-48 group-hover:bg-gray-100 transition-colors">
-                  <img 
-                    [src]="getProductImage(relatedProduct) | async" 
-                    [alt]="relatedProduct.name"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    (error)="handleImageError($event)"
-                  />
-                </div>
-                <div class="p-4">
-                  <h3 class="font-medium text-gray-800 text-base line-clamp-2 capitalize mb-3">
-                    {{ relatedProduct.name }}
-                  </h3>
-                  <div class="flex items-center justify-between">
-                    <span class="text-customBlue font-semibold text-lg">
-                      ₦{{ relatedProduct.sellingPrice }}
-                    </span>
-<button 
-  class="bg-customGreen text-white p-2.5 rounded-full text-sm hover:bg-customGreen/90 transition-colors"
-  (click)="$event.stopPropagation(); addRelatedToCart(relatedProduct)"
-  [disabled]="!relatedProduct.quantity || relatedProduct.quantity === 0"
->
-  <i class="fa-solid fa-plus"></i>
+     <button *ngIf="showScrollToTop()" (click)="scrollToTop()"
+  class="fixed bottom-6 right-6 z-40 bg-customBlue text-white px-6 py-4 rounded-full shadow-lg hover:bg-customBlueHover transition-all duration-300 transform hover:scale-110"
+  aria-label="Scroll to top">
+  <i class="fa-solid fa-chevron-up text-lg"></i>
 </button>
-                  </div>
-                </div>
-              </div>
+
+<!-- Update the Related Products section in your template -->
+@if (relatedProducts().length > 0) {
+  <div class="mt-16">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-2xl font-bold text-gray-900">Related Products</h2>
+      
+      <!-- Related Products Pagination -->
+      @if (totalRelatedPages() > 1) {
+        <div class="flex items-center space-x-2">
+          <button (click)="previousRelatedPage()" [disabled]="currentRelatedPage() === 1"
+            class="px-3 py-1 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+
+          @for (page of getRelatedPageNumbers(); track page) {
+            @if (page === '...') {
+              <span class="px-2 text-gray-500 text-sm">...</span>
+            } @else {
+              <button (click)="goToRelatedPage($any(page))" 
+                [class.bg-customBlue]="currentRelatedPage() === page"
+                [class.text-white]="currentRelatedPage() === page" 
+                [class.bg-white]="currentRelatedPage() !== page"
+                [class.text-gray-700]="currentRelatedPage() !== page"
+                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm min-w-[36px]">
+                {{ page }}
+              </button>
             }
+          }
+
+          <button (click)="nextRelatedPage()" [disabled]="currentRelatedPage() === totalRelatedPages()"
+            class="px-3 py-1 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      @for (relatedProduct of paginatedRelatedProducts(); track relatedProduct.id) {
+        <div 
+          class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group"
+          (click)="navigateToProductDetails(relatedProduct.id)"
+        >
+          <div class="bg-gray-50 overflow-hidden flex items-center justify-center h-48 group-hover:bg-gray-100 transition-colors">
+            <img 
+              [src]="getProductImage(relatedProduct) | async" 
+              [alt]="relatedProduct.name"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              (error)="handleImageError($event)"
+            />
+          </div>
+          <div class="p-4">
+            <h3 class="font-medium text-gray-800 text-base line-clamp-2 capitalize mb-3">
+              {{ relatedProduct.name }}
+            </h3>
+            <div class="flex items-center justify-between">
+              <span class="text-customBlue font-semibold text-lg">
+                ₦{{ relatedProduct.sellingPrice }}
+              </span>
+              <button 
+                class="bg-customGreen text-white p-2.5 rounded-full text-sm hover:bg-customGreen/90 transition-colors"
+                (click)="$event.stopPropagation(); addRelatedToCart(relatedProduct)"
+                [disabled]="!relatedProduct.quantity || relatedProduct.quantity === 0"
+              >
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
           </div>
         </div>
       }
+    </div>
+  </div>
+}
+
+
     }
 
     <!-- Error State -->

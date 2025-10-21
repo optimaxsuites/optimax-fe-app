@@ -1,4 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 interface ProductSuggestion {
   id: number;
@@ -26,8 +28,10 @@ export class StoreHeaderComponent implements OnChanges {
   @Input() isCartEmpty: boolean = true;
   @Input() totalCartItems: number = 0;
   @Input() user: { name: string; isGuest: boolean } = { name: 'Guest', isGuest: true };
-  @Input() allProducts: any[] = []; // Add this input for product data
-
+  @Input() allProducts: any[] = [];
+  @Input() selectedBranch: any = null;
+  
+  @Output() mobileCategoryNavigate = new EventEmitter<string>();
   @Output() categoryChange = new EventEmitter<string>();
   @Output() searchChange = new EventEmitter<string>();
   @Output() toggleCart = new EventEmitter<void>();
@@ -38,7 +42,6 @@ export class StoreHeaderComponent implements OnChanges {
 
   // Desktop state
   isBranchDropdownOpen = false;
-  selectedBranch: any = null;
   isUserDropdownOpen = false;
   isAuthModalOpen = false;
   authModalMode: 'login' | 'signup' = 'login';
@@ -54,6 +57,11 @@ export class StoreHeaderComponent implements OnChanges {
   isMobileMenuOpen = false;
   isMobile = false;
 
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
   ngOnInit(): void {
     this.checkScreenSize();
   }
@@ -64,8 +72,7 @@ export class StoreHeaderComponent implements OnChanges {
   }
 
   private checkScreenSize(): void {
-    this.isMobile = window.innerWidth < 768; // md breakpoint
-    // Close mobile menu when switching to desktop
+    this.isMobile = window.innerWidth < 768;
     if (!this.isMobile) {
       this.isMobileMenuOpen = false;
     }
@@ -73,19 +80,30 @@ export class StoreHeaderComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['allProducts'] && this.allProducts) {
-      // You can preprocess data here if needed
+      // Preprocess data if needed
     }
     
     if (changes['branches'] && this.branches.length > 0 && !this.selectedBranch) {
-      // Auto-select first branch if available
       this.selectedBranch = this.branches[0];
     }
+  }
+
+  // FIXED: Handle category change on mobile - navigate instead of filter
+  onMobileCategoryChange(category: string): void {
+    console.log('Mobile category change:', category);
+    if (category && category !== 'All') {
+      // Always navigate to category page on mobile
+      this.navigateToCategoryPage(category);
+    } else {
+      // For "All", use normal filtering
+      this.onCategoryChange(category);
+    }
+    this.closeMobileMenu();
   }
 
   // Mobile menu methods
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
-    // Close other dropdowns when opening mobile menu
     if (this.isMobileMenuOpen) {
       this.isBranchDropdownOpen = false;
       this.isUserDropdownOpen = false;
@@ -121,7 +139,6 @@ export class StoreHeaderComponent implements OnChanges {
   }
 
   onSearchBlur(): void {
-    // Small timeout to allow click events to register before hiding
     setTimeout(() => {
       this.showSuggestions = false;
     }, 200);
@@ -174,7 +191,7 @@ export class StoreHeaderComponent implements OnChanges {
           productCount: productCount
         };
       })
-      .slice(0, 5); // Limit to 5 categories
+      .slice(0, 5);
 
     // Find matching products
     this.productSuggestions = this.allProducts
@@ -191,9 +208,8 @@ export class StoreHeaderComponent implements OnChanges {
         price: product.sellingPrice || 0,
         image: product.imageUrl || product.images?.[0]
       }))
-      .slice(0, 10); // Limit to 10 products
+      .slice(0, 10);
 
-    // Combine suggestions (categories first, then products)
     this.searchSuggestions = [
       ...this.categorySuggestions,
       ...this.productSuggestions
@@ -205,11 +221,9 @@ export class StoreHeaderComponent implements OnChanges {
   // Suggestion selection
   selectSuggestion(index: number): void {
     if (index < this.categorySuggestions.length) {
-      // Category suggestion selected
       const category = this.categorySuggestions[index];
       this.selectCategorySuggestion(category);
     } else {
-      // Product suggestion selected
       const productIndex = index - this.categorySuggestions.length;
       const product = this.productSuggestions[productIndex];
       this.selectProductSuggestion(product);
@@ -219,8 +233,23 @@ export class StoreHeaderComponent implements OnChanges {
   selectCategorySuggestion(category: CategorySuggestion): void {
     this.searchText = '';
     this.showSuggestions = false;
-    this.categoryChange.emit(category.name);
+    
+    // Always navigate to category page for suggestions
+    this.navigateToCategoryPage(category.name);
     this.closeMobileMenu();
+  }
+
+  // Navigate to category page
+  navigateToCategoryPage(categoryName: string): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    if (currentUuid) {
+      this.router.navigate(['/store', currentUuid, 'category', categoryName.toLowerCase()], {
+        queryParams: { 
+          branch: this.selectedBranch?.id || '',
+          branchName: this.selectedBranch?.name || ''
+        }
+      });
+    }
   }
 
   selectProductSuggestion(product: ProductSuggestion): void {
@@ -233,7 +262,6 @@ export class StoreHeaderComponent implements OnChanges {
   // User dropdown methods
   toggleUserDropdown(): void {
     this.isUserDropdownOpen = !this.isUserDropdownOpen;
-    // Close other dropdowns when opening user dropdown
     if (this.isUserDropdownOpen) {
       this.isBranchDropdownOpen = false;
       this.isMobileMenuOpen = false;
@@ -294,8 +322,9 @@ export class StoreHeaderComponent implements OnChanges {
     this.userAction.emit();
   }
 
-  // Branch selection methods
+  // FIXED: Branch selection methods
   selectBranch(branch: any): void {
+    console.log('Branch selected:', branch);
     this.selectedBranch = branch;
     this.isBranchDropdownOpen = false;
     this.branchChange.emit(branch);
@@ -304,26 +333,25 @@ export class StoreHeaderComponent implements OnChanges {
 
   toggleBranchDropdown(): void {
     this.isBranchDropdownOpen = !this.isBranchDropdownOpen;
-    // Close other dropdowns when opening branch dropdown
     if (this.isBranchDropdownOpen) {
       this.isUserDropdownOpen = false;
-      this.isMobileMenuOpen = false;
+      if (!this.isMobile) {
+        this.isMobileMenuOpen = false;
+      }
     }
   }
 
-  // Close all dropdowns when clicking outside (optional enhancement)
+  // Close all dropdowns when clicking outside
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
     
-    // Close dropdowns if click is outside
     if (!target.closest('.relative')) {
       this.isBranchDropdownOpen = false;
       this.isUserDropdownOpen = false;
       this.showSuggestions = false;
     }
     
-    // Close mobile menu if click is outside mobile menu area
     if (this.isMobileMenuOpen && !target.closest('.md\\:hidden') && !target.closest('button')) {
       this.isMobileMenuOpen = false;
     }

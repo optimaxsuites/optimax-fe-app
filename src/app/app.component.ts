@@ -104,7 +104,7 @@ export class AppComponent implements OnInit{
   async userLoginAction(): Promise<void> {
     console.log("logginging in...");
     const loginDetails = {
-      username: 'ayaobasheba',
+      username: 'damilola',
       password: '123456',
       project: 'ERP',
       apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',

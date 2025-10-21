@@ -1,16 +1,29 @@
 <div class="h-screen flex flex-col bg-gray-50">
   <!-- Scroll to Top Button -->
-  <button *ngIf="showScrollToTop" (click)="scrollToTop()"
-    class="fixed bottom-6 right-6 z-40 bg-customBlue text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-110"
-    aria-label="Scroll to top">
-    <i class="fa-solid fa-chevron-up text-lg"></i>
-  </button>
-
-  <app-store-header [branches]="branches" [categoryOptions]="categoryOptions()" [selectedCategory]="selectedCategory()"
-    [searchText]="searchText()" [isCartEmpty]="isCartEmpty()" [totalCartItems]="getTotalCartItems()" [user]="user()"
-    (categoryChange)="changeCategory($event)" (searchChange)="changeSearchInput($event)" (toggleCart)="toggleCart()"
-    [allProducts]="allProducts" (productSelect)="onProductSelect($event)"
-    (searchSubmit)="onSearchSubmit($event)"></app-store-header>
+<button *ngIf="showScrollToTop()" 
+        (click)="scrollToTop()"
+        class="fixed bottom-6 right-6 z-50 bg-customBlue text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-110"
+        aria-label="Scroll to top">
+  <i class="fa-solid fa-chevron-up text-lg"></i>
+</button>
+<app-store-header 
+  [branches]="branches" 
+  [selectedBranch]="selectedBranch()"
+  [categoryOptions]="categoryOptions()" 
+  [selectedCategory]="selectedCategory()"
+  [searchText]="searchText()" 
+  [isCartEmpty]="isCartEmpty()" 
+  [totalCartItems]="getTotalCartItems()" 
+  [user]="user()"
+  [allProducts]="allProducts"
+  (categoryChange)="changeCategory($event)" 
+  (searchChange)="changeSearchInput($event)" 
+  (toggleCart)="toggleCart()"
+  (productSelect)="onProductSelect($event)"
+  (searchSubmit)="onSearchSubmit($event)"
+  (branchChange)="onBranchChange($event)"
+  (mobileCategoryNavigate)="onMobileCategoryNavigate($event)">
+</app-store-header>
 
   <!-- Main Content with Cart Sidebar -->
   <div class="flex-1 flex overflow-hidden">
@@ -70,7 +83,7 @@
         </div>
 
         <!-- All Products Section Skeleton -->
-        <div class="mt-8 md:px-[4rem] px-[2rem]">
+        <div  class="mt-8 md:px-[4rem] px-[2rem]">
           <!-- Section Header Skeleton -->
           <div class="flex justify-between items-center mb-4">
             <div class="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
@@ -113,19 +126,140 @@
       @if (isContentReady() && !isLoading()) {
         <!-- Category Sections -->
         <div class="mb-8">
-          <div class="flex md:flex-row flex-col md:items-center justify-between w-full md:py-[8rem] py-[4rem] md:px-[4rem] px-[1rem] gap-3" id="bg-box">
-            <div class="flex gap-3">
-              <img src="assets/price-tag.png" alt="Price-tag" class="md:w-32 w-20">
-              <div>
-                <h2 class="font-bold text-gray-800 mb-4 md:text-[4rem] text-[2rem] md:leading-[3.8rem] leading-[2rem]">
-                  Everything you need,<br /> in one place.
-                </h2>
-                <span class="md:text-[1.7rem] text-md md:hidden block">A Shopping experience tailored just for you</span>
+<div class="banner-container w-full px-[1rem] md:px-[4rem]">
+  <div class="premium-banner bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 md:p-10 text-gray-800 overflow-hidden relative border border-gray-200 shadow-lg">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-[0.03]">
+      <div class="pattern-grid pattern-gray-400 w-full h-full"></div>
+    </div>
+    
+    <!-- Floating decorative elements -->
+    <div class="absolute -top-6 -right-6 w-24 h-24 bg-customBlue/10 rounded-full block"></div>
+    <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-customGreen/10 rounded-full block"></div>
+    
+    <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-8">
+      <!-- Text Content - NOW FIRST ON MOBILE -->
+      <div class="flex-1 max-w-2xl order-1">
+        <div class="inline-flex items-center bg-customBlue/10 text-customBlue px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6 border border-customBlue/20">
+          <i class="fa-solid fa-bolt mr-2"></i>
+          Limited Time Offer - Up to 40% OFF
+        </div>
+        
+        <h1 class="text-2xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4 leading-tight">
+          Everything You Need,
+          <span class="block text-customBlue mt-1 md:mt-2">In One Place</span>
+        </h1>
+        
+        <p class="text-sm md:text-lg lg:text-xl text-gray-600 mb-6 md:mb-8 max-w-xl leading-relaxed">
+          Discover our carefully curated collection of premium products with exclusive deals, 
+          fast shipping, and exceptional customer service.
+        </p>
+        
+        <!-- Stats -->
+        <div class="flex flex-wrap gap-4 md:gap-6 mb-6 md:mb-8">
+          <div class="flex items-center justify-center gap-2">
+            <div class="w-14 h-14 bg-gradient-to-br from-customGreen/20 to-customGreen/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-truck-fast text-customGreen text-xl"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm md:text-lg">100%</div>
+              <div class="text-xs md:text-sm text-gray-500">Fast Delivery</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-center gap-2">
+            <div class="w-14 h-14 bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-shield-halved text-amber-500 text-xl"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm md:text-lg">100%</div>
+              <div class="text-xs md:text-sm text-gray-500">Secure Payments</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-center gap-2">
+<div class="w-14 h-14 bg-gradient-to-br from-customBlue/20 to-customBlue/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-headset text-customBlue text-xl"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm md:text-lg">24/7</div>
+              <div class="text-xs md:text-sm text-gray-500">Customer Support</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 md:gap-4">
+          <button (click)="scrollToAllProducts()" 
+                  class="bg-customBlue hover:bg-customBlueHover text-white px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-1 text-sm md:text-base">
+            <i class="fa-solid fa-bag-shopping mr-2 md:mr-3"></i>
+            Shop Now
+          </button>
+        </div>
+      </div>
+      
+      <!-- Fading Image Container -->
+      <div class="flex-shrink-0 w-full lg:w-2/5 relative order-2 lg:order-2 mt-6 lg:mt-0">
+        <div class="relative">
+          <!-- Image container with fading effect -->
+          <div class="bg-white rounded-2xl p-3 md:p-4 shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="fading-image-container relative h-48 md:h-64 lg:h-80 rounded-xl overflow-hidden">
+              <!-- All images stacked with fade transitions -->
+              <img src="https://images.unsplash.com/photo-1607082350899-7e105aa886ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                   alt="Happy Shopping Experience" 
+                   class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000">
+              
+              <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                   alt="Shopping Bags" 
+                   class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+              
+              <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                   alt="E-commerce Shopping" 
+                   class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+              
+              <img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                   alt="Online Shopping" 
+                   class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+            </div>
+          </div>
+          
+          <!-- Floating elements - Hidden on mobile -->
+          <div class="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-customGreen text-white rounded-2xl font-bold shadow-xl transform  text-xs md:text-sm flex items-center">
+             <div class="flex flex-col items-center lg:items-end text-center lg:text-right">
+          <div class="flex items-center gap-3 p-4 bg-white/90 rounded-2xl border border-gray-100 backdrop-blur-sm">
+            <div class="relative">
+              <div class="w-14 h-14 bg-gradient-to-br from-customBlue to-customGreen rounded-2xl flex items-center justify-center">
+                <i class="fa-solid fa-star text-white text-lg"></i>
+              </div>
+              <div class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-check text-white text-xs"></i>
+              </div>
+            </div>
+            <div>
+              <p class="font-bold text-gray-900 text-sm">Trusted by</p>
+              <p class="text-customBlue font-semibold">1000+ Customers</p>
+              <div class="flex items-center gap-1 mt-1">
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <span class="text-xs text-gray-600 ml-1">4.9/5</span>
               </div>
             </div>
           </div>
+          </div>
+          </div>
+          
+          <!-- Shopping cart icon floating - Hidden on mobile -->
+          <!-- <div class="absolute -bottom-2 -left-2 md:-bottom-3 md:-left-3 bg-white p-2 md:p-3 rounded-full shadow-lg border block">
+            <i class="fa-solid fa-cart-shopping text-customBlue text-lg md:text-xl"></i>
+          </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-          <div class="flex flex-col gap-[2rem] pb-4 md:px-[4rem] px-[1rem]">
+          <div class="flex flex-col gap-[2rem] pb-4 mt-[1rem] md:px-[4rem] px-[1rem]">
             @for (category of getCategoryList(); track category) {
               <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
                 <div class="flex flex-row justify-between items-center border-gray-200 bg-customBlue border">
@@ -230,7 +364,7 @@
         </div> <!-- Close Category Sections -->
 
         <!-- All Products Section with Pagination -->
-        <div class="mt-8 md:px-[4rem] px-[2rem]">
+        <div #allProductsSection id="all-products-section"  class="mt-8 md:px-[4rem] px-[2rem]">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-bold text-gray-800">All Products</h2>
             <div class="text-sm text-gray-600">
@@ -566,5 +700,6 @@
   </nav>
 </div>
 }
+
 
 </div>

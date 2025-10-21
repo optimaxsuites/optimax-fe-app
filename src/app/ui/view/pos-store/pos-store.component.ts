@@ -1,5 +1,6 @@
-// pos-store.component.ts - CORRECTED VERSION
-import { Component, computed, OnInit, signal, effect, OnDestroy } from '@angular/core';
+// pos-store.component.ts - FIXED VERSION
+
+import { Component, computed, OnInit, signal, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
 import { ActivatedRoute } from '@angular/router'; 
@@ -9,6 +10,7 @@ import { PosServiceService } from '../../service/pos-service.service';
 import { ProductHelperService } from '../../service/product-helper.service';
 import { Router } from '@angular/router';
 import { StoreCartService } from '../../service/store-cart.service'; 
+import { MetadataService } from '../../service/metadata.service';
 
 type ProductDataMap = Map<string, ProductData[]>;
 
@@ -27,6 +29,8 @@ type ConvertedCartProducts = {
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
   private _allProducts: ProductData[] = [];
+  @ViewChild('allProductsSection') allProductsSection!: ElementRef;
+
   private static readonly _fuseOptions: IFuseOptions<ProductData> = {
     keys: [
       { name: 'sku', weight: 2 },
@@ -38,32 +42,32 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     threshold: 0.333,
   };
 
+  // Product data
   allProducts: ProductData[] = [];
-
   productData = signal<ProductDataMap>(new Map());
+
+  // UI State
   readonly defaultCategory = 'All';
   selectedCategory = signal(this.defaultCategory);
-
-  private _productsInChosenCategory = computed(
-    () => this.productData().get(this.selectedCategory()) ?? this._allProducts
-  );
-
+  selectedBranch = signal<any>(null);
   user = signal({ name: 'Guest', isGuest: true });
   branches: any[] = [];
   searchText = signal('');
+  
+  // FIXED: Separate loading states for skeleton and content
   isLoading = signal(true);
   isContentReady = signal(false);
+  private hasShownSkeleton = false; // Track if skeleton has been shown
 
-  // Pagination signals - FIXED
+  // Pagination
   currentPage = signal(1);
   itemsPerPage = signal(20);
   totalPages = signal(0);
 
-  private readonly _fuse = new Fuse<ProductData>(
-    this._productsInChosenCategory(),
-    PosStoreComponent._fuseOptions
-  );
+  // Search
+  private _fuse!: Fuse<ProductData>;
 
+  // Cart & UI State
   isSidebarVisible = true;
   isCartOpen = false;
   isHamburgerMenuOpen = false;
@@ -71,27 +75,33 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   isPaymentModalOpen = false;
   isCartSidebarVisible = true;
   selectedProduct: ProductData | null = null;
-  showScrollToTop = false;
+  
+  // FIXED: Use signal for scroll to top visibility
+  showScrollToTop = signal(false);
+
+  // Computed properties
+  private _productsInChosenCategory = computed(
+    () => this.productData().get(this.selectedCategory()) ?? this._allProducts
+  );
 
   // Cart signals
   cartProducts = computed(() => this.cartService.cart().items);
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
-  
-convertedCartProducts = computed<ConvertedCartProducts>(() => {
-  const cart = this.cartService.getCart();
-  return {
-    products: Array.from(cart.items).flatMap(([_, { product, quantity }]) => 
-      Array(quantity).fill(product)
-    ),
-    subtotal: cart.subtotal, // Use the cart service's calculated subtotal
-    tax: 0,
-    discount: 0,
-    total: cart.subtotal
-  };
-});
 
-  // Category options for dropdown
+  convertedCartProducts = computed<ConvertedCartProducts>(() => {
+    const cart = this.cartService.getCart();
+    return {
+      products: Array.from(cart.items).flatMap(([_, { product, quantity }]) =>
+        Array(quantity).fill(product)
+      ),
+      subtotal: cart.subtotal,
+      tax: 0,
+      discount: 0,
+      total: cart.subtotal,
+    };
+  });
+
   categoryOptions = computed(() => {
     const options = [
       { label: this.defaultCategory, value: this.defaultCategory },
@@ -107,22 +117,28 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     return options;
   });
 
-  // Paginated products for "All Products" section
   paginatedProducts = computed(() => {
     if (!this.isContentReady()) return [];
-    
+
     const allProducts = this.filteredProducts();
     const startIndex = (this.currentPage() - 1) * this.itemsPerPage();
     const endIndex = startIndex + this.itemsPerPage();
     return allProducts.slice(startIndex, endIndex);
   });
 
-  // Filtered products based on search
   filteredProducts = computed(() => {
     if (!this.searchText() || !this._productsInChosenCategory().length) {
       return this._productsInChosenCategory();
     }
-    this._fuse.setCollection(this._productsInChosenCategory());
+
+    if (!this._fuse) {
+      this._fuse = new Fuse<ProductData>(
+        this._productsInChosenCategory(),
+        PosStoreComponent._fuseOptions
+      );
+    } else {
+      this._fuse.setCollection(this._productsInChosenCategory());
+    }
 
     const searchResults = this._fuse
       .search(this.searchText())
@@ -132,33 +148,21 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     else return searchResults;
   });
 
-  // FIXED: Update total pages computation
   totalPagesComputed = computed(() => {
     const totalItems = this.filteredProducts().length;
     return Math.ceil(totalItems / this.itemsPerPage());
   });
 
-  // FIXED: Simplified pagination effect
-  private updatePagination = effect(() => {
-    const totalItems = this.filteredProducts().length;
-    const calculatedTotalPages = Math.ceil(totalItems / this.itemsPerPage());
-    
-    this.totalPages.set(calculatedTotalPages);
-    
-    // Reset to page 1 if current page is beyond new total pages
-    if (this.currentPage() > calculatedTotalPages && calculatedTotalPages > 0) {
-      this.currentPage.set(1);
-    }
-  });
+  // Image fading functionality
+  private currentImageIndex = 0;
+  private totalImages = 4;
+  private fadeInterval: any;
 
-  // Search results state
-  didSearchHaveResults = computed<'no_search_yet' | 'no' | 'yes'>(() => {
-    if (!this.searchText() || !this._productsInChosenCategory().length)
-      return 'no_search_yet';
-    else if (this.filteredProducts() === this._productsInChosenCategory())
-      return 'no';
-    else return 'yes';
-  });
+  // Category scroll states
+  categoryScrollStates = new Map<
+    string,
+    { canScrollLeft: boolean; canScrollRight: boolean }
+  >();
 
   constructor(
     private _posService: PosServiceService,
@@ -167,99 +171,254 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     private _productHelper: ProductHelperService,
     private _paymentService: PaymentServiceService,
     private cartService: StoreCartService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private metadataService: MetadataService
   ) {}
 
+  // FIXED: Use HostListener for scroll events
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    // Show button when scrolled down more than 300px
+    this.showScrollToTop.set(scrollPosition > 300);
+  }
+
   ngOnInit(): void {
+    this.initializeComponent();
+  }
+
+  private initializeComponent(): void {
+    this._fuse = new Fuse<ProductData>([], PosStoreComponent._fuseOptions);
+
     // Load branches
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
+      if (branches.length > 0 && !this.selectedBranch()) {
+        const initialBranch = branches[0];
+        this.selectedBranch.set(initialBranch);
+        this.metadataService.setSelectedBranch(initialBranch.id);
+      }
     });
 
-    // Load products with proper loading sequence
-    this.loadProducts();
-
-    this.addScrollListener();
+    this.subscribeToEnrichedProducts();
+    this.startImageFading();
   }
 
-  private addScrollListener(): void {
-    window.addEventListener('scroll', () => {
-      this.showScrollToTop = window.scrollY > 300;
+  private subscribeToEnrichedProducts(): void {
+    this.metadataService.enrichedProduct$.subscribe(async (data) => {
+      if (data && data.length > 0) {
+        this.processProductsData(data);
+        this.handleContentLoading();
+      } else {
+        console.log('No enriched products data available, falling back to regular loading');
+        this.loadProductsFallback();
+      }
+    });
+
+    this.metadataService.branches$.subscribe((data) => {
+      if (data && data.length > 0) {
+        this.branches = data;
+      }
     });
   }
 
-  navigateToCategory(category: string): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'category', category.toLowerCase()]);
+  private processProductsData(products: ProductData[]): void {
+    this._allProducts = products;
+    this.allProducts = products;
+
+    const newProductData = new Map<string, ProductData[]>();
+
+    products.forEach((product) => {
+      const categoryName = product.productCategory?.name || 'Uncategorized';
+
+      if (!newProductData.has(categoryName)) {
+        newProductData.set(categoryName, [product]);
+      } else {
+        newProductData.get(categoryName)!.push(product);
+      }
+    });
+
+    this.productData.set(newProductData);
+
+    if (this._fuse) {
+      this._fuse.setCollection(this._productsInChosenCategory());
     }
   }
 
-  /**
-   * Load products with proper skeleton loading sequence
-   */
-  private loadProducts(): void {
+  // FIXED: Show skeleton only on first load
+  private handleContentLoading(): void {
+    if (!this.hasShownSkeleton) {
+      // First load - show skeleton for minimum time
+      this.isLoading.set(true);
+      this.isContentReady.set(false);
+      
+      setTimeout(() => {
+        this.isLoading.set(false);
+        setTimeout(() => {
+          this.isContentReady.set(true);
+          this.updatePagination();
+        }, 300);
+      }, 1500);
+      
+      this.hasShownSkeleton = true;
+    } else {
+      // Subsequent loads - show content immediately
+      this.isLoading.set(false);
+      this.isContentReady.set(true);
+      this.updatePagination();
+    }
+  }
+
+  private loadProductsFallback(): void {
     this._posService.getProducts().subscribe({
       next: (data) => {
-        this._allProducts = data;
-        this.allProducts = data;
-
-        // Process product data into categories
-        data.forEach((iteratedProduct) => {
-          const categoryName = iteratedProduct.productCategory.name;
-
-          if (!this.productData().has(categoryName)) {
-            this.productData.update((oldMap) =>
-              new Map(oldMap).set(categoryName, [iteratedProduct])
-            );
-          } else {
-            this.productData.update((oldMap) => {
-              const existingProductArray = oldMap.get(categoryName);
-              if (!existingProductArray) return new Map(oldMap);
-              existingProductArray.push(iteratedProduct);
-              return new Map(oldMap).set(categoryName, existingProductArray);
-            });
-          }
-        });
-        
-        // Wait for skeleton to complete before showing content
-        this.simulateSkeletonLoading();
+        this.processProductsData(data);
+        this.handleContentLoading();
       },
       error: (error) => {
         console.error('Error loading products', error);
         this.isLoading.set(false);
         this.isContentReady.set(true);
+      },
+    });
+  }
+
+  private updatePagination(): void {
+    const totalItems = this.filteredProducts().length;
+    const calculatedTotalPages = Math.ceil(totalItems / this.itemsPerPage());
+
+    this.totalPages.set(calculatedTotalPages);
+
+    if (this.currentPage() > calculatedTotalPages && calculatedTotalPages > 0) {
+      this.currentPage.set(1);
+    }
+  }
+
+  onBranchChange(branch: any): void {
+    this.selectedBranch.set(branch);
+    this.metadataService.setSelectedBranch(branch.id);
+    
+    // FIXED: Don't show skeleton on branch change, just update content
+    // The products will be automatically updated via the enrichedProduct$ subscription
+  }
+
+  onMobileCategoryNavigate(categoryName: string): void {
+    this.navigateToCategoryPage(categoryName);
+  }
+
+  getCategoryList(): string[] {
+    const categories: string[] = [];
+    this.productData().forEach((_, key) => {
+      if (key !== 'All') {
+        categories.push(key);
       }
     });
+    return categories;
   }
 
-  /**
-   * Simulate minimum skeleton loading time for better UX
-   */
-  private simulateSkeletonLoading(): void {
-    const minSkeletonTime = 1500;
-    
-    setTimeout(() => {
-      this.isLoading.set(false);
-      
-      setTimeout(() => {
-        this.isContentReady.set(true);
-      }, 300);
-    }, minSkeletonTime);
+  getProductsByCategory(category: string): ProductData[] {
+    return this.productData().get(category) || [];
   }
 
-  ngOnDestroy(): void {
-    this.updatePagination.destroy();
-    window.removeEventListener('scroll', () => {
-      this.showScrollToTop = window.scrollY > 300;
-    });
+  getProductImage(product: ProductData) {
+    return this._imgCacheService.getProductImage(product);
   }
 
-  // ============ PAGINATION METHODS ============
+  handleImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.src = 'assets/placeholder-product.jpg';
+  }
 
-  /**
-   * Go to next page
-   */
+  getTotalCartItems(): number {
+    return this.totalCartItems();
+  }
+
+  addToCart(product: ProductData, variant?: VariantDTO): void {
+    this.cartService.addToCart(product, variant);
+  }
+
+  reduceQuantityInCart(product: ProductData): void {
+    const idToUse = product.selectedVariants?.[0]
+      ? `${product.id}-${product.selectedVariants[0].id}`
+      : product.id.toString();
+
+    const currentQuantity = this.cartProducts().get(idToUse)?.quantity || 0;
+    this.cartService.updateQuantity(
+      product,
+      currentQuantity - 1,
+      product.selectedVariants?.[0]
+    );
+  }
+
+  removeFromCart(product: ProductData): void {
+    this.cartService.removeFromCart(product, product.selectedVariants?.[0]);
+  }
+
+  clearCart(): void {
+    this.cartService.clearCart();
+    this.isCartOpen = false;
+  }
+
+  toggleCart(): void {
+    if (window.innerWidth < 768) {
+      this.isCartOpen = !this.isCartOpen;
+    } else {
+      this.isCartSidebarVisible = !this.isCartSidebarVisible;
+    }
+  }
+
+  productQuantityInCart(product: ProductData): number {
+    const idToUse = product.selectedVariants?.[0]
+      ? `${product.id}-${product.selectedVariants[0].id}`
+      : product.id.toString();
+
+    return this.cartProducts().get(idToUse)?.quantity || 0;
+  }
+
+  changeCategory(category: string): void {
+    this.selectedCategory.set(category);
+    this.currentPage.set(1);
+    this.updatePagination();
+  }
+
+  changeSearchInput(text: string): void {
+    this.searchText.set(text);
+    this.currentPage.set(1);
+    this.updatePagination();
+  }
+
+  navigateToCheckout(): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    this.router.navigate(['/store', currentUuid, 'checkout']);
+  }
+
+  navigateToProductDetails(productId: number): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+
+    if (currentUuid) {
+      this.router.navigate(['product-details', productId], {
+        relativeTo: this.route,
+      });
+    } else {
+      console.error('No store UUID found in route parameters');
+    }
+  }
+
+  navigateToCategoryPage(category: string): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    if (currentUuid) {
+      this.router.navigate(
+        ['/store', currentUuid, 'category', category.toLowerCase()],
+        {
+          queryParams: {
+            branch: this.selectedBranch()?.id || '',
+            branchName: this.selectedBranch()?.name || '',
+          },
+        }
+      );
+    }
+  }
+
   nextPage(): void {
     if (this.currentPage() < this.totalPages()) {
       this.currentPage.set(this.currentPage() + 1);
@@ -267,9 +426,6 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     }
   }
 
-  /**
-   * Go to previous page
-   */
   previousPage(): void {
     if (this.currentPage() > 1) {
       this.currentPage.set(this.currentPage() - 1);
@@ -277,9 +433,6 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     }
   }
 
-  /**
-   * Go to specific page
-   */
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages()) {
       this.currentPage.set(page);
@@ -287,21 +440,11 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
     }
   }
 
-  /**
-   * Scroll to top of page
-   */
-  scrollToTop(): void {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  /**
-   * Generate page numbers for pagination with ellipsis logic - FIXED
-   */
   getPageNumbers(): (number | string)[] {
     const total = this.totalPages();
     const current = this.currentPage();
     const pages: (number | string)[] = [];
-    
+
     if (total <= 7) {
       for (let i = 1; i <= total; i++) {
         pages.push(i);
@@ -323,256 +466,13 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
         pages.push(total);
       }
     }
-    
+
     return pages;
   }
 
-  // ============ PRODUCT METHODS ============
-
-  /**
-   * Get list of categories
-   */
-  getCategoryList(): string[] {
-    const categories: string[] = [];
-    this.productData().forEach((_, key) => {
-      if (key !== 'All') {
-        categories.push(key);
-      }
-    });
-    return categories;
-  }
-
-  /**
-   * Get products by category
-   */
-  getProductsByCategory(category: string): ProductData[] {
-    return this.productData().get(category) || [];
-  }
-
-  /**
-   * Get product image with caching
-   */
-  getProductImage(product: ProductData) {
-    return this._imgCacheService.getProductImage(product);
-  }
-
-  /**
-   * Handle image loading errors
-   */
-  handleImageError(event: Event): void {
-    const imgElement = event.target as HTMLImageElement;
-    imgElement.src = 'assets/placeholder-product.jpg';
-  }
-
-  // ============ CART METHODS ============
-
-  /**
-   * Get total cart items count
-   */
-  getTotalCartItems(): number {
-    return this.totalCartItems();
-  }
-
-  /**
-   * Add product to cart
-   */
-  addToCart(product: ProductData, variant?: VariantDTO): void {
-    this.cartService.addToCart(product, variant);
-    this.cartProducts();
-  }
-
-  /**
-   * Reduce quantity in cart
-   */
-  reduceQuantityInCart(product: ProductData): void {
-    const idToUse = product.selectedVariants?.[0] 
-      ? `${product.id}-${product.selectedVariants[0].id}` 
-      : product.id.toString();
-    
-    const currentQuantity = this.cartProducts().get(idToUse)?.quantity || 0;
-    this.cartService.updateQuantity(product, currentQuantity - 1, product.selectedVariants?.[0]);
-    this.cartProducts();
-  }
-
-  /**
-   * Remove product from cart
-   */
-  removeFromCart(product: ProductData): void {
-    this.cartService.removeFromCart(product, product.selectedVariants?.[0]);
-    this.cartProducts();
-  }
-
-  /**
-   * Clear entire cart
-   */
-  clearCart(): void {
-    this.cartService.clearCart();
-    this.isCartOpen = false;
-  }
-
-  /**
-   * Toggle cart visibility (mobile/desktop)
-   */
-  toggleCart(): void {
-    if (window.innerWidth < 768) {
-      this.isCartOpen = !this.isCartOpen;
-    } else {
-      this.isCartSidebarVisible = !this.isCartSidebarVisible;
-    }
-  }
-
-  /**
-   * Get quantity of specific product in cart
-   */
-  productQuantityInCart(product: ProductData): number {
-    const idToUse = product.selectedVariants?.[0] 
-      ? `${product.id}-${product.selectedVariants[0].id}` 
-      : product.id.toString();
-
-    return this.cartProducts().get(idToUse)?.quantity || 0;
-  }
-
-  // ============ EVENT HANDLERS ============
-
-  /**
-   * Handle category change
-   */
-  changeCategory(category: string): void {
-    this.selectedCategory.set(category);
-    this.currentPage.set(1);
-  }
-
-  /**
-   * Handle search input change
-   */
-  changeSearchInput(text: string): void {
-    this.searchText.set(text);
-    this.currentPage.set(1);
-  }
-
-  // ============ NAVIGATION METHODS ============
-
-  /**
-   * Navigate to checkout page
-   */
-  navigateToCheckout(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    this.router.navigate(['/store', currentUuid, 'checkout']);
-  }
-
-  /**
-   * Navigate to product details page
-   */
-  navigateToProductDetails(productId: number): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    
-    if (currentUuid) {
-      this.router.navigate(['product-details', productId], { relativeTo: this.route });
-    } else {
-      console.error('No store UUID found in route parameters');
-    }
-  }
-
-  // ============ UI STATE METHODS ============
-
-  /**
-   * Toggle hamburger menu (mobile)
-   */
-  toggleHamburgerMenu(): void {
-    this.isHamburgerMenuOpen = !this.isHamburgerMenuOpen;
-  }
-
-  /**
-   * Open variant selection modal
-   */
-  openVariantModal(product: ProductData): void {
-    this.selectedProduct = product;
-    this.isVariantModalOpen = true;
-  }
-
-  /**
-   * Close variant selection modal
-   */
-  closeVariantModal(): void {
-    this.isVariantModalOpen = false;
-    this.selectedProduct = null;
-  }
-
-  /**
-   * Open payment modal
-   */
-  openPaymentModal(): void {
-    this.isPaymentModalOpen = true;
-  }
-
-  /**
-   * Close payment modal
-   */
-  closePaymentModal(): void {
-    this.isPaymentModalOpen = false;
-  }
-
-  /**
-   * Toggle sidebar visibility
-   */
-  toggleSidebar(): void {
-    this.isSidebarVisible = !this.isSidebarVisible;
-  }
-
-  // ============ HELPER METHODS ============
-
-  /**
-   * Check if product is in stock
-   */
-  isProductInStock(product: ProductData): boolean {
-    return product.quantity > 0;
-  }
-
- formatPrice(price: any): string {
-  try {
-    let priceValue: number;
-    
-    if (price === undefined || price === null) {
-      priceValue = 0;
-    } else if (typeof price === 'string') {
-      priceValue = parseFloat(price);
-      if (isNaN(priceValue)) priceValue = 0;
-    } else if (typeof price === 'number') {
-      priceValue = price;
-    } else {
-      priceValue = 0;
-    }
-    
-    return `₦${priceValue.toLocaleString('en-NG')}`;
-  } catch (error) {
-    console.warn('Error formatting price:', error);
-    return '₦0';
-  }
-}
-  /**
-   * Get stock status text
-   */
-  getStockStatus(product: ProductData): string {
-    return product.quantity > 0 ? `${product.quantity} available` : 'Out of stock';
-  }
-
-  /**
-   * Get stock status class for styling
-   */
-  getStockStatusClass(product: ProductData): string {
-    return product.quantity > 0 ? 'text-green-600' : 'text-red-600';
-  }
-  
   getDisplayEndIndex(): number {
     const endIndex = this.currentPage() * this.itemsPerPage();
     return Math.min(endIndex, this.filteredProducts().length);
-  }
-
-  navigateToCategoryPage(category: string): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'category', category.toLowerCase()]);
-    }
   }
 
   onProductSelect(productId: number): void {
@@ -582,67 +482,191 @@ convertedCartProducts = computed<ConvertedCartProducts>(() => {
   onSearchSubmit(searchTerm: string): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid && searchTerm.trim()) {
-      this.router.navigate(['/store', currentUuid, 'category', 'search-results'], {
-        queryParams: { search: searchTerm.trim() }
-      });
+      this.router.navigate(
+        ['/store', currentUuid, 'category', 'search-results'],
+        {
+          queryParams: { search: searchTerm.trim() },
+        }
+      );
     }
   }
 
-  // Add scroll state tracking
-  categoryScrollStates = new Map<string, { canScrollLeft: boolean; canScrollRight: boolean }>();
+  toggleHamburgerMenu(): void {
+    this.isHamburgerMenuOpen = !this.isHamburgerMenuOpen;
+  }
 
-  /**
-   * Scroll category left
-   */
+  openVariantModal(product: ProductData): void {
+    this.selectedProduct = product;
+    this.isVariantModalOpen = true;
+  }
+
+  closeVariantModal(): void {
+    this.isVariantModalOpen = false;
+    this.selectedProduct = null;
+  }
+
+  openPaymentModal(): void {
+    this.isPaymentModalOpen = true;
+  }
+
+  closePaymentModal(): void {
+    this.isPaymentModalOpen = false;
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarVisible = !this.isSidebarVisible;
+  }
+
   scrollCategoryLeft(category: string): void {
-    const container = document.querySelector(`[data-category="${category}"]`) as HTMLElement;
+    const container = document.querySelector(
+      `[data-category="${category}"]`
+    ) as HTMLElement;
     if (container) {
       const scrollAmount = container.clientWidth * 0.8;
       container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     }
   }
 
-  /**
-   * Scroll category right
-   */
   scrollCategoryRight(category: string): void {
-    const container = document.querySelector(`[data-category="${category}"]`) as HTMLElement;
+    const container = document.querySelector(
+      `[data-category="${category}"]`
+    ) as HTMLElement;
     if (container) {
       const scrollAmount = container.clientWidth * 0.8;
       container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   }
 
-  /**
-   * Check if can scroll left
-   */
   canScrollLeft(category: string): boolean {
-    const container = document.querySelector(`[data-category="${category}"]`) as HTMLElement;
+    const container = document.querySelector(
+      `[data-category="${category}"]`
+    ) as HTMLElement;
     if (container) {
       return container.scrollLeft > 0;
     }
     return false;
   }
 
-  /**
-   * Check if can scroll right
-   */
   canScrollRight(category: string): boolean {
-    const container = document.querySelector(`[data-category="${category}"]`) as HTMLElement;
+    const container = document.querySelector(
+      `[data-category="${category}"]`
+    ) as HTMLElement;
     if (container) {
-      return container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+      return (
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 1
+      );
     }
     return false;
   }
 
-  /**
-   * Handle scroll events to update arrow states
-   */
   onCategoryScroll(category: string, event: Event): void {
     const container = event.target as HTMLElement;
     this.categoryScrollStates.set(category, {
       canScrollLeft: container.scrollLeft > 0,
-      canScrollRight: container.scrollLeft < (container.scrollWidth - container.clientWidth - 1)
+      canScrollRight:
+        container.scrollLeft <
+        container.scrollWidth - container.clientWidth - 1,
     });
+  }
+
+  scrollToAllProducts(): void {
+    if (this.allProductsSection) {
+      this.allProductsSection.nativeElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }
+
+  isProductInStock(product: ProductData): boolean {
+    return product.quantity > 0;
+  }
+
+  formatPrice(price: any): string {
+    try {
+      let priceValue: number;
+
+      if (price === undefined || price === null) {
+        priceValue = 0;
+      } else if (typeof price === 'string') {
+        priceValue = parseFloat(price);
+        if (isNaN(priceValue)) priceValue = 0;
+      } else if (typeof price === 'number') {
+        priceValue = price;
+      } else {
+        priceValue = 0;
+      }
+
+      return `₦${priceValue.toLocaleString('en-NG')}`;
+    } catch (error) {
+      console.warn('Error formatting price:', error);
+      return '₦0';
+    }
+  }
+
+  getStockStatus(product: ProductData): string {
+    return product.quantity > 0
+      ? `${product.quantity} available`
+      : 'Out of stock';
+  }
+
+  getStockStatusClass(product: ProductData): string {
+    return product.quantity > 0 ? 'text-green-600' : 'text-red-600';
+  }
+
+  private startImageFading(): void {
+    this.fadeInterval = setInterval(() => {
+      this.fadeToNextImage();
+    }, 3000);
+  }
+
+  private fadeToNextImage(): void {
+    const images = document.querySelectorAll('.fading-image');
+    if (images.length === 0) return;
+
+    images[this.currentImageIndex].classList.add('opacity-0');
+    this.currentImageIndex = (this.currentImageIndex + 1) % this.totalImages;
+
+    setTimeout(() => {
+      images[this.currentImageIndex].classList.remove('opacity-0');
+    }, 100);
+  }
+
+  // FIXED: Scroll to top method - multiple approaches for browser compatibility
+  scrollToTop(): void {
+    // Try modern approach first
+    try {
+      window.scrollTo({ 
+        top: 0, 
+        left: 0,
+        behavior: 'smooth' 
+      });
+    } catch (error) {
+      // Fallback for older browsers
+      try {
+        window.scrollTo(0, 0);
+      } catch (e) {
+        // Last resort - scroll body/documentElement
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+    }
+  }
+
+    // Reference to the scrollable main element
+  @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
+
+  // Listen to scroll events on the main scrollable container
+  onMainScroll(event: Event): void {
+    const element = event.target as HTMLElement;
+    const scrollPosition = element.scrollTop;
+    // Show button when scrolled down more than 300px
+    this.showScrollToTop.set(scrollPosition > 300);
   }
 }
