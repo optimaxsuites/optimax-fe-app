@@ -11,41 +11,81 @@
       <div class="flex items-center gap-5 w-full max-w-5xl">
         
         <!-- Location Selector -->
-        <div class="relative flex-shrink-0">
-          <button 
-            class="flex items-center text-gray-700 hover:text-gray-900 text-left capitalize"
-            (click)="toggleBranchDropdown()"
-          >
-            <i class="fa-solid fa-location-dot text-4xl mr-2"></i>
-            <span class="truncate">{{ selectedBranch?.name || 'Select Location' }}</span>
-            <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
-          </button>
+<div class="relative flex-shrink-0">
+  <button 
+    class="flex items-center text-gray-700 hover:text-gray-900 text-left capitalize"
+    (click)="toggleBranchDropdown()"
+  >
+    <i class="fa-solid fa-location-dot text-4xl mr-2"></i>
+    <span class="truncate">{{ selectedBranch?.name || 'Select Location' }}</span>
+    <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
+  </button>
 
-          @if (isBranchDropdownOpen) {
-            <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-4 z-50 border border-gray-200">
-              @for (branch of branches; track branch.id) {
-                <button 
-                  (click)="selectBranch(branch)"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  {{ branch.name }}
-                </button>
+  @if (isBranchDropdownOpen) {
+    <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-4 z-50 border border-gray-200">
+      @for (branch of branches; track branch.id) {
+        <button 
+          (click)="selectBranch(branch)"
+          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          [class.bg-blue-50]="selectedBranch?.id === branch.id"
+        >
+          {{ branch.name }}
+          @if (selectedBranch?.id === branch.id) {
+            <i class="fa-solid fa-check ml-2 text-customGreen text-xs"></i>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<!-- Mobile Branch Dropdown (in mobile menu section) -->
+@if (isMobileMenuOpen) {
+  <div class="px-4 py-3 border-t border-gray-200 bg-white">
+    <!-- Location Selector -->
+    <div class="mb-4">
+      <button 
+        class="flex items-center text-gray-700 hover:text-gray-900 text-left capitalize w-full"
+        (click)="toggleBranchDropdown()"
+      >
+        <i class="fa-solid fa-location-dot text-2xl mr-2"></i>
+        <span class="truncate flex-1">{{ selectedBranch?.name || 'Select Location' }}</span>
+        <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
+      </button>
+
+      @if (isBranchDropdownOpen) {
+        <div class="mt-2 bg-white rounded-md shadow-lg py-2 z-50 border border-gray-200">
+          @for (branch of branches; track branch.id) {
+            <button 
+              (click)="selectBranch(branch)"
+              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex justify-between items-center"
+              [class.bg-blue-50]="selectedBranch?.id === branch.id"
+            >
+              <span>{{ branch.name }}</span>
+              @if (selectedBranch?.id === branch.id) {
+                <i class="fa-solid fa-check text-customGreen text-xs"></i>
               }
-            </div>
+            </button>
           }
         </div>
+      }
+    </div>
 
-        <!-- Category Dropdown -->
-        <select
-          class="w-40 bg-white border border-customBlue rounded-lg px-5 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-customGreen"
-          [value]="selectedCategory" 
-          (change)="onCategoryChange($any($event.target).value)"
-        >
-          <option value="All">All Categories</option>
-          @for (category of categoryOptions; track $index) {
-            <option [value]="category.value">{{ category.label }}</option>
-          }
-        </select>
+    <!-- Category Dropdown - Update to navigate on mobile -->
+<div class="mb-4">
+  <select
+    class="w-full bg-white border border-customBlue rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-customGreen"
+    [value]="selectedCategory" 
+    (change)="onMobileCategoryChange($any($event.target).value)"
+  >
+    <option value="All">All Categories</option>
+    @for (category of categoryOptions; track $index) {
+      <option [value]="category.value">{{ category.label }}</option>
+    }
+  </select>
+</div>
+  </div>
+}
 
         <!-- Search Input with Suggestions -->
         <div class="relative w-[100%]">

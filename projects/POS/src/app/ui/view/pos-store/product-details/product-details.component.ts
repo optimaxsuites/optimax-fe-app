@@ -1,8 +1,9 @@
-// product-details.component.ts - UPDATED VERSION
-import { Component, OnInit, signal, computed } from '@angular/core';
+// product-details.component.ts - CORRECTED VERSION
+import { Component, OnInit, signal, computed, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable } from 'rxjs';
 
-import { ProductData, VariantDTO } from '../../../models/interface';
+import { ProductData, VariantDTO, ProductImageDTO } from '../../../models/interface';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { StoreCartService } from '../../../service/store-cart.service';
@@ -12,16 +13,16 @@ import { StoreCartService } from '../../../service/store-cart.service';
   templateUrl: './product-details.component.html',
   styleUrls: ['./product-details.component.scss']
 })
-export class ProductDetailsComponent implements OnInit {
+export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Signals
   product = signal<ProductData | null>(null);
   isLoading = signal(true);
   quantity = signal(1);
   storeUuid = '';
   
-  // Cart visibility signals - CHANGED TO MATCH POS-STORE
-  isCartOpen = false; // For mobile modal
-  isCartSidebarVisible = false; // For desktop sidebar
+  // Cart visibility signals
+  isCartOpen = false;
+  isCartSidebarVisible = false;
   
   // Image gallery signals
   selectedImageIndex = signal(0);
@@ -36,9 +37,15 @@ export class ProductDetailsComponent implements OnInit {
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
 
-  // Related products
+  // Related products with pagination
   relatedProducts = signal<ProductData[]>([]);
+  currentRelatedPage = signal(1);
+  relatedItemsPerPage = signal(4);
+  totalRelatedPages = signal(1);
 
+  // Scroll to top
+  showScrollToTop = signal(false);
+  
   // Header data
   branches: any[] = [];
   user = signal({ name: 'Guest', isGuest: true });
@@ -48,17 +55,17 @@ export class ProductDetailsComponent implements OnInit {
   // Computed values
   categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
   
-  // Computed for current selected image
-  currentImage = computed(() => {
-    const product = this.product();
-    const index = this.selectedImageIndex();
-    
-    if (!product || !product.productImages || product.productImages.length === 0) {
-      return null;
-    }
-    
-    return product.productImages[index] || product.productImages[0];
-  });
+  // Computed for current selected image - FIXED: No longer affects related products
+currentImage = computed((): ProductImageDTO | undefined => {
+  const product = this.product();
+  const index = this.selectedImageIndex();
+  
+  if (!product || !product.productImages || product.productImages.length === 0) {
+    return undefined;
+  }
+  
+  return product.productImages[index] || product.productImages[0];
+});
   
   // Computed for all product images
   allImages = computed(() => {
@@ -69,6 +76,16 @@ export class ProductDetailsComponent implements OnInit {
   hasMultipleImages = computed(() => {
     return this.allImages().length > 1;
   });
+
+  // Computed for paginated related products
+  paginatedRelatedProducts = computed(() => {
+    const related = this.relatedProducts();
+    const startIndex = (this.currentRelatedPage() - 1) * this.relatedItemsPerPage();
+    const endIndex = startIndex + this.relatedItemsPerPage();
+    return related.slice(startIndex, endIndex);
+  });
+
+  @ViewChild('mainContent') mainContent!: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
@@ -82,6 +99,9 @@ export class ProductDetailsComponent implements OnInit {
     this.storeUuid = this.route.snapshot.paramMap.get('uuid') || '';
     const productId = this.route.snapshot.paramMap.get('id');
     
+    // Add scroll listener for scroll-to-top button
+    this.addScrollListener();
+    
     if (productId) {
       this.loadProductDetails(parseInt(productId));
     } else {
@@ -89,7 +109,12 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
-  // Image Gallery Methods
+  ngOnDestroy(): void {
+    // Clean up scroll listener
+    window.removeEventListener('scroll', this.onScroll.bind(this));
+  }
+
+  // FIXED: Image selection no longer affects related products
   selectImage(index: number): void {
     const images = this.allImages();
     if (index >= 0 && index < images.length) {
@@ -119,17 +144,165 @@ export class ProductDetailsComponent implements OnInit {
     this.isImageModalOpen.set(false);
   }
 
-  // Handle keyboard navigation in modal
-  handleModalKeyPress(event: KeyboardEvent): void {
-    if (event.key === 'ArrowRight') {
-      this.nextImage();
-    } else if (event.key === 'ArrowLeft') {
-      this.previousImage();
-    } else if (event.key === 'Escape') {
-      this.closeImageModal();
+  // Scroll to top functionality
+  scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private addScrollListener(): void {
+    window.addEventListener('scroll', this.onScroll.bind(this));
+  }
+
+  private onScroll(): void {
+    this.showScrollToTop.set(window.scrollY > 300);
+  }
+
+  // FIXED: Related products navigation
+  navigateToRelatedProduct(productId: number): void {
+    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId])
+      .then(() => {
+        // Reload the page to show new product details
+        window.location.reload();
+      });
+  }
+
+  // Alternative method that preserves scroll position
+  navigateToProductDetails(productId: number): void {
+    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId])
+      .then(success => {
+        if (success) {
+          // Reset component state for new product
+          this.product.set(null);
+          this.isLoading.set(true);
+          this.selectedImageIndex.set(0);
+          this.quantity.set(1);
+          
+          // Load new product details
+          this.loadProductDetails(productId);
+          
+          // Scroll to top after a brief delay
+          setTimeout(() => {
+            window.scrollTo(0, 0);
+          }, 100);
+        }
+      });
+  }
+
+  // Related products pagination
+  nextRelatedPage(): void {
+    if (this.currentRelatedPage() < this.totalRelatedPages()) {
+      this.currentRelatedPage.set(this.currentRelatedPage() + 1);
     }
   }
 
+  previousRelatedPage(): void {
+    if (this.currentRelatedPage() > 1) {
+      this.currentRelatedPage.set(this.currentRelatedPage() - 1);
+    }
+  }
+
+  goToRelatedPage(page: number): void {
+    if (page >= 1 && page <= this.totalRelatedPages()) {
+      this.currentRelatedPage.set(page);
+    }
+  }
+
+  getRelatedPageNumbers(): (number | string)[] {
+    const total = this.totalRelatedPages();
+    const current = this.currentRelatedPage();
+    const pages: (number | string)[] = [];
+    
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(total);
+      } else if (current >= total - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = total - 3; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(total);
+      }
+    }
+    
+    return pages;
+  }
+
+  private loadProductDetails(productId: number): void {
+    this.isLoading.set(true);
+    this.selectedImageIndex.set(0);
+    this.currentRelatedPage.set(1);
+    
+    this.posService.getProducts().subscribe({
+      next: (products: ProductData[]) => {
+        const foundProduct = products.find((p: ProductData) => p.id === productId);
+        this.product.set(foundProduct || null);
+        
+        if (foundProduct) {
+          // Preload images for better performance
+          this.imageCacheService.preloadProductImages(foundProduct);
+          this.loadRelatedProducts(foundProduct, products);
+        }
+        
+        this.isLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error loading product details:', error);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  private loadRelatedProducts(currentProduct: ProductData, allProducts: ProductData[]): void {
+    const related = allProducts.filter((p: ProductData) => 
+      p.id !== currentProduct.id && 
+      p.productCategory.id === currentProduct.productCategory.id
+    );
+    
+    this.relatedProducts.set(related);
+    this.totalRelatedPages.set(Math.ceil(related.length / this.relatedItemsPerPage()));
+    
+    // Preload related product images
+    this.imageCacheService.preloadRelatedProductsImages(related);
+  }
+
+ getProductImage(product: ProductData, specificImage?: ProductImageDTO | null): Observable<string> {
+  // For related products, always use their first image
+  if (product.id !== this.product()?.id) {
+    return this.imageCacheService.getProductImage(product);
+  }
+  
+  // For main product with specific image (handle null case)
+  if (specificImage && specificImage.imgNo) {
+    const imageUrl = this.imageCacheService.getImageUrlFromDTO(specificImage);
+    return this.imageCacheService.getImage(imageUrl);
+  }
+  
+  // For main product with selected index
+  if (this.selectedImageIndex() > 0 && product.productImages) {
+    return this.imageCacheService.getProductImageByIndex(product, this.selectedImageIndex());
+  }
+  
+  // Default to first image
+  return this.imageCacheService.getProductImage(product);
+}
+
+  // Update the template method calls for thumbnails
+  getThumbnailImage(product: ProductData, image: ProductImageDTO): Observable<string> {
+    const imageUrl = this.imageCacheService.getImageUrlFromDTO(image);
+    return this.imageCacheService.getImage(imageUrl);
+  }
+
+  // ... rest of your existing methods remain the same
   getTotalCartItems(): number {
     return this.totalCartItems();
   }
@@ -138,7 +311,6 @@ export class ProductDetailsComponent implements OnInit {
     return this.cartService.cart().subtotal;
   }
 
-  // Cart methods 
   toggleCart(): void {
     if (window.innerWidth < 768) {
       this.isCartOpen = !this.isCartOpen;
@@ -147,7 +319,6 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
-  // Add to cart with automatic sidebar on desktop and toast on mobile
   addToCart(product?: ProductData): void {
     const productToAdd = product || this.product();
     if (!productToAdd || !this.isInStock()) return;
@@ -158,17 +329,13 @@ export class ProductDetailsComponent implements OnInit {
     
     this.quantity.set(1);
     
-    //  Show sidebar on desktop, toast on mobile
     if (window.innerWidth >= 768) {
-      // Desktop - automatically show sidebar (like pos-store)
       this.isCartSidebarVisible = true;
     } else {
-      //show toast notification instead of automatically opening modal
-      this.showToastMessage(`added to cart successfully!`);
+      this.showToastMessage(`Added to cart successfully!`);
     }
   }
 
-  // UPDATED: Add variant to cart with same behavior
   addVariantToCart(variant: VariantDTO): void {
     const product = this.product();
     if (!product || variant.quantity === 0) return;
@@ -179,36 +346,27 @@ export class ProductDetailsComponent implements OnInit {
     
     this.quantity.set(1);
     
-    // CHANGED: Show sidebar on desktop, toast on mobile
     if (window.innerWidth >= 768) {
-      // Desktop - automatically show sidebar
       this.isCartSidebarVisible = true;
     } else {
-      // Mobile - show toast notification
       this.showToastMessage(`${product.name} (${variant.name}) added to cart successfully!`);
     }
   }
 
-  // UPDATED: Add related product to cart
   addRelatedToCart(relatedProduct: ProductData): void {
     this.cartService.addToCart(relatedProduct);
     
-    // CHANGED: Show sidebar on desktop, toast on mobile
     if (window.innerWidth >= 768) {
-      // Desktop - automatically show sidebar
       this.isCartSidebarVisible = true;
     } else {
-      // Mobile - show toast notification
       this.showToastMessage(`${relatedProduct.name} added to cart successfully!`);
     }
   }
 
-  // NEW: Show toast message method
   private showToastMessage(message: string): void {
     this.toastMessage.set(message);
     this.showToast.set(true);
     
-    // Auto hide after 3 seconds
     setTimeout(() => {
       this.showToast.set(false);
     }, 3000);
@@ -298,74 +456,11 @@ export class ProductDetailsComponent implements OnInit {
     return this.getSellingPrice() * this.quantity();
   }
 
-  private loadProductDetails(productId: number): void {
-    this.isLoading.set(true);
-    // Reset image selection when loading new product
-    this.selectedImageIndex.set(0);
-    
-    this.posService.getProducts().subscribe({
-      next: (products: ProductData[]) => {
-        const foundProduct = products.find((p: ProductData) => p.id === productId);
-        this.product.set(foundProduct || null);
-        
-        if (foundProduct) {
-          this.loadRelatedProducts(foundProduct);
-        }
-        
-        this.isLoading.set(false);
-      },
-      error: (error: any) => {
-        console.error('Error loading product details:', error);
-        this.isLoading.set(false);
-      }
-    });
-  }
-
-  private loadRelatedProducts(currentProduct: ProductData): void {
-    this.posService.getProducts().subscribe({
-      next: (products: ProductData[]) => {
-        const related = products.filter((p: ProductData) => 
-          p.id !== currentProduct.id && 
-          p.productCategory.id === currentProduct.productCategory.id
-        ).slice(0, 4);
-        
-        this.relatedProducts.set(related);
-      },
-      error: (error: any) => {
-        console.error('Error loading related products:', error);
-      }
-    });
-  }
-
-  // Image handling
-  getProductImage(product: ProductData, specificImage?: any) {
-    // If a specific image is provided, create a modified product object with that image
-    if (specificImage && product.productImages) {
-      const modifiedProduct = {
-        ...product,
-        productImages: [specificImage]
-      };
-      return this.imageCacheService.getProductImage(modifiedProduct);
-    }
-    
-    // If we need a specific image by index, modify the product
-    if (specificImage === undefined && this.selectedImageIndex() > 0 && product.productImages) {
-      const modifiedProduct = {
-        ...product,
-        productImages: [product.productImages[this.selectedImageIndex()]]
-      };
-      return this.imageCacheService.getProductImage(modifiedProduct);
-    }
-    
-    return this.imageCacheService.getProductImage(product);
-  }
-
   handleImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     imgElement.src = 'assets/placeholder-product.jpg';
   }
 
-  // Quantity management
   increaseQuantity(): void {
     if (this.canIncreaseQuantity()) {
       this.quantity.set(this.quantity() + 1);
@@ -378,16 +473,6 @@ export class ProductDetailsComponent implements OnInit {
       this.quantity.set(currentQuantity - 1);
     }
   }
-
-  // Navigation
-  navigateToRelatedProduct(productId: number): void {
-    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
-  }
-
-  navigateToProductDetails(productId: number): void {
-  this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
-}
-
 
   // Header event handlers
   changeCategory(category: string): void {

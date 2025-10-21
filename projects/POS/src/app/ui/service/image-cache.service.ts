@@ -1,8 +1,9 @@
+// image-cache.service.ts - COMPLETE VERSION
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable, of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
-import { ProductData } from '../models/interface';
+import { ProductData, ProductImageDTO } from '../models/interface';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +11,7 @@ import { ProductData } from '../models/interface';
 export class ImageCacheService {
   private _cache = new Map<string, string>();
   private readonly placeholderImage = 'assets/placeholder-product.jpg';
+  private readonly baseUrl = 'https://be.optimaxsuites.com/x/api/v2/pos/products/images/';
 
   constructor(private http: HttpClient) {}
 
@@ -36,14 +38,60 @@ export class ImageCacheService {
   }
 
   getProductImage(product: ProductData): Observable<string> {
-    // Check if product has images and the first image exists with imgNo
-    if (!product.productImages || 
-        !product.productImages.length || 
-        !product.productImages[0]?.imgNo) {
+    if (!product.productImages || !product.productImages.length || !product.productImages[0]?.imgNo) {
       return of(this.placeholderImage);
     }
     
-    const imageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product.productImages[0].imgNo}`;
+    const imageUrl = `${this.baseUrl}${product.productImages[0].imgNo}`;
     return this.getImage(imageUrl);
+  }
+
+  // Get specific product image by index
+  getProductImageByIndex(product: ProductData, index: number = 0): Observable<string> {
+    if (!product.productImages || 
+        !product.productImages.length || 
+        !product.productImages[index]?.imgNo) {
+      return of(this.placeholderImage);
+    }
+    
+    const imageUrl = `${this.baseUrl}${product.productImages[index].imgNo}`;
+    return this.getImage(imageUrl);
+  }
+
+  // Simple preload method
+  preloadProductImages(product: ProductData): void {
+    if (product?.productImages) {
+      product.productImages.forEach((image: ProductImageDTO) => {
+        if (image.imgNo) {
+          const imageUrl = `${this.baseUrl}${image.imgNo}`;
+          const img = new Image();
+          img.src = imageUrl;
+        }
+      });
+    }
+  }
+
+  preloadRelatedProductsImages(products: ProductData[]): void {
+    products.forEach(product => this.preloadProductImages(product));
+  }
+
+  getImageUrlFromDTO(image: ProductImageDTO): string {
+    if (!image?.imgNo) {
+      return this.placeholderImage;
+    }
+    return `${this.baseUrl}${image.imgNo}`;
+  }
+
+  // Clear cache if needed (useful for memory management)
+  clearCache(): void {
+    this._cache.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+    this._cache.clear();
+  }
+
+  // Get cache size for debugging
+  getCacheSize(): number {
+    return this._cache.size;
   }
 }
