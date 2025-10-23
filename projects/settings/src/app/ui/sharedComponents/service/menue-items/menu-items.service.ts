@@ -240,7 +240,35 @@ export class MenuItemsService {
           route: this.navigationLink.getLink('kitchenLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'pi pi-credit-card',
-          description: 'Process payments and manage the customer checkout flow.'
+          description: 'Process payments and manage the customer checkout flow.',
+          doNotRegisterAsPermission: true
+        },
+        {
+          label: 'Kitchen Order Operations',
+          code: 'POS_KITCHEN_ORDER', 
+          route: "",
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: "",
+          description: 'Permission to view kitchen order screens.',
+          isNotSidebarItem: true 
+        },
+        {
+          label: 'Kitchen Cashier Operations',
+          code: 'POS_KITCHEN_CASHIER', 
+          route: "", 
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: "",
+          description: 'Permission to perform till management and checkout tasks.',
+          isNotSidebarItem: true 
+        },
+        {
+          label: 'Kitchen Waiter Operations',
+          code: 'POS_KITCHEN_WAITER',
+          route: "",
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: "",
+          description: 'Permission to manage table orders and serving tasks.',
+          isNotSidebarItem: true 
         },
         {
           label: 'eStore',

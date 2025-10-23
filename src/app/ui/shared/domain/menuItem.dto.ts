@@ -9,5 +9,6 @@ export interface MenuItem {
     locked?: boolean;
     active?: boolean;
     code?: string;
+    isNotSidebarItem? : boolean;
   }
   

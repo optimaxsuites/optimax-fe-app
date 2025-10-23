@@ -43,19 +43,19 @@ const routes: Routes = [
     path: 'order/:uuid',
     component: OrderDetailComponent,
     canActivate: [PermissionGuard],
-      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+      data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
   },
   {
     path: 'refund/:uuid',
     component: OrderRefundComponent,
     canActivate: [PermissionGuard],
-      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+      data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
   },
   {
     path: 'refund-request/:uuid',
     component: RequestDetailsComponent,
     canActivate: [PermissionGuard],
-      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+      data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
 
   },
   {
@@ -77,13 +77,13 @@ const routes: Routes = [
     component: KitchenOrderComponent,
 
     canActivate: [PermissionGuard],
-      data: { appCode: ['kitchen_order', 'kitchen_payment'] }
+      data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
   },
   {
     path: 'kitchen/:uuid',
     component: CheckoutKitchenComponent,
     canActivate: [PermissionGuard],
-      data: { appCode: ['kitchen_order', 'kitchen_payment'] }
+      data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
  
   },
   {

@@ -141,22 +141,32 @@
             <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
             <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
             <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
+            <th class="border border-gray-300 px-4 py-2 text-center">Super</th>
+
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let form of module.appRegister">
             <td class="border border-gray-300 px-4 py-2 capitalize">{{ form.appName }}</td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canView" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canView"
+                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canEdit" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canEdit"
+                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canDelete" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canDelete"
+                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canCreate" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canCreate"
+                     (change)="revokeSuperuserIfPermissionUnchecked(module.title, form.appName)" />
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-center">
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].superuser" 
+                     (change)="updateSuperuserPermissions(module.title, form.appName)" />
             </td>
           </tr>
         </tbody>

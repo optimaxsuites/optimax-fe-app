@@ -43,18 +43,21 @@
       </div>
 
       <ul [ngClass]="{'open': item.open}" *ngIf="item.submenu">
-        <li *ngFor="let subItem of item.submenu">
-          <a [routerLink]="subItem.route"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             [pTooltip]="subItem.label"
-   tooltipPosition="right"
-   [tooltipDisabled]="!sidebarHidden"
-             class="flex gap-4 items-center">
-            <i *ngIf="subItem.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}" [class]="subItem.icon"></i> 
-            <span *ngIf="!sidebarHidden">{{ subItem.label }}</span>
-          </a>
-        </li>
+        <ng-container *ngFor="let subItem of item.submenu">
+          <li *ngIf="!subItem.isNotSidebarItem">
+      
+            <a [routerLink]="subItem.route"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               [pTooltip]="subItem.label"
+               tooltipPosition="right"
+               [tooltipDisabled]="!sidebarHidden"
+               class="flex gap-4 items-center">
+              <i *ngIf="subItem.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}" [class]="subItem.icon"></i> 
+              <span *ngIf="!sidebarHidden">{{ subItem.label }}</span>
+            </a>
+          </li>
+        </ng-container>
       </ul>
     </li>
 

@@ -402,7 +402,43 @@ export class RolesNpermissionComponent {
     return module?.title || 'Unknown';
   }
   
-  
+  /**
+   * Toggles all granular permissions when the Superuser checkbox is changed.
+   * @param moduleTitle The title of the module (e.g., 'HR').
+   * @param formName The name of the form/app register (e.g., 'Employee Records').
+   */
+  updateSuperuserPermissions(moduleTitle: string, formName: string): void {
+    const permissions = this.newRole.permissions[moduleTitle][formName];
+    const isSuperuser = permissions.superuser || false;
+
+    permissions.canView = isSuperuser;
+    permissions.canEdit = isSuperuser;
+    permissions.canDelete = isSuperuser;
+    permissions.canCreate = isSuperuser;
+  }
+
+  /**
+   * Revokes Superuser status if any one granular permission is unchecked.
+   * This is called by the 'change' event on the View, Edit, Delete, and Create checkboxes.
+   * @param moduleTitle The title of the module.
+   * @param formName The name of the form/app register.
+   */
+  revokeSuperuserIfPermissionUnchecked(moduleTitle: string, formName: string): void {
+    const permissions = this.newRole.permissions[moduleTitle][formName];
+
+    // Check if the current state of all four granular permissions is TRUE.
+    const allPermissionsChecked = 
+      permissions.canView &&
+      permissions.canEdit &&
+      permissions.canDelete &&
+      permissions.canCreate;
+
+    // The Superuser status should only be true if ALL others are true.
+    // Otherwise, set Superuser to false.
+    if (permissions.superuser && !allPermissionsChecked) {
+      permissions.superuser = false;
+    }
+  }
 
   
 }

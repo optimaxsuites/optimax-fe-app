@@ -482,23 +482,31 @@ private calculateNewEndDate(baseDate: string | Date, isYearly: boolean): string 
   console.log(this.menuitems)
 
   console.log(moduleInMenu)
+
+  const mainModule = moduleInMenu[0];
     const newApp = {
       id: 0,
       name: this.module.name,
-      title: moduleInMenu[0].label,
+      title: mainModule.label,
       description: this.module.description,
-      shortDescription: moduleInMenu[0].description
+      shortDescription: mainModule.description
     };
   
     this.marketplaceService.registerApp(newApp).subscribe({
       next: async (data) => {
         console.log('✅ Module registered:', data);
-  
-        const submenuApps = (moduleInMenu[0].submenu || []).map((item: any) => ({
+
+        const rawSubmenu = mainModule.submenu || [];
+        
+        const registrableSubmenu = rawSubmenu.filter((item: any) => 
+            item.doNotRegisterAsPermission !== true
+        );
+        
+        const submenuApps = registrableSubmenu.map((item: any) => ({
           id: 0,
           appName: item.label,
           appCode: item.code,
-          description: item.code,
+          description: item.code, 
           moduleId: data.id
         }));
   

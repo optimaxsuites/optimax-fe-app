@@ -63,7 +63,7 @@ export function hasOnlyKitchenPermissions(): boolean {
   console.log("activePermissions", activePermissions);
 
   const kitchenPermissions = activePermissions.filter(
-    (p: any) => p.appRegister?.appCode?.startsWith("kitchen")
+    (p: any) => p.appRegister?.appCode?.startsWith("POS_KITCHEN")
   );
 
   console.log("kitchenPermissions", kitchenPermissions);

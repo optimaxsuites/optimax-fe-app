@@ -13,4 +13,7 @@ export interface MenuItem {
   open?: boolean;
   locked?: boolean;
   active?: boolean;
+
+  isNotSidebarItem?: boolean;
+  doNotRegisterAsPermission?: boolean;
 }
