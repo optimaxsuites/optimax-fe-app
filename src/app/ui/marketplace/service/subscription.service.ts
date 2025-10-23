@@ -32,6 +32,12 @@ export class SubscriptionService {
         .pipe(catchError(this.handleError));
     }
 
+    getOrderRecordById(id: number): Observable<any> {
+      return this.http
+        .get<any>(this.getBaseApiUrl() + `/x/api/v2/sub/subscriptionOrders/${id}`)
+        .pipe(catchError(this.handleError));
+    }
+
     createPaymentRecord(payment: any): Observable<any> {
       return this.http
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/sub/subscriptionPayments", payment)
