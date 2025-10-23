@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuItemsService } from '../../../sharedComponents/service/menue-items/menu-items.service';
 import { ModulesService } from '../../../service/modules.service';
 import { forkJoin } from 'rxjs';
@@ -73,7 +73,7 @@ export class RolesNpermissionComponent {
   permissionKeys = Object.keys(this.newRole.permissions);
   Object = Object
 
-  constructor(private messageService: MessageService, private menuService: MenuItemsService, private moduleService: ModulesService){
+  constructor(private messageService: MessageService, private menuService: MenuItemsService, private moduleService: ModulesService, private confirmationService: ConfirmationService){
   }
 
   ngOnInit(){
@@ -152,9 +152,54 @@ export class RolesNpermissionComponent {
     }
   }
 
-  confirmCompensationDelete(arg0: any,$event: MouseEvent) {
-    throw new Error('Method not implemented.');
+  confirmCompensationDelete(role: any,$event: MouseEvent) {
+    $event.stopPropagation();
+    // const salary = this.getSalaryByLevelId(levelId)
+    this.confirmationService.confirm({
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to clearing of role information for ${role.roleName}. This action is irreversible.`,
+      header: `Delete Role Structure - ${role.roleName}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass:"p-btn-danger p-button-text",
+      rejectButtonStyleClass:"p-btn-cancle p-button-text",
+      acceptIcon:"none",
+      rejectIcon:"none",
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      // styleClass: 'custom-confirm-dialog',
+      accept: () => {
+        this.deleteRole(role , $event);
+      },
+      reject: () => {
+
+      }
+    });
   }
+
+  deleteRole(role: any, $event: MouseEvent) {
+    this.moduleService.deleteRole(role.id).subscribe({
+      next: () => {
+        this.roles = this.roles.filter(r => r.id !== role.id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `Role deleted successfully`,
+          key: 'tl',
+          life: 3000,
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to delete role`,
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    });
+  }
+
+
   editCompensation(role: any,$event: MouseEvent) {
     $event.stopPropagation();
 

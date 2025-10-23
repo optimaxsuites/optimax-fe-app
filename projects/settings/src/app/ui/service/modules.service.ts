@@ -32,6 +32,12 @@ export class ModulesService {
       .pipe(catchError(this.handleError));
     }
 
+    deleteRole(id: number){
+      return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/approle/${id}`)
+      .pipe(catchError(this.handleError));
+    }
+
     createRolePermissions(body: any){
       return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/approlepermission", body)
