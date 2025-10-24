@@ -26,6 +26,12 @@ export class ModulesService {
       .pipe(catchError(this.handleError));
     }
 
+    getBranches(){
+      return this.http
+      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/branches")
+      .pipe(catchError(this.handleError));
+    }
+
     createRole(body: any){
       return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/approle", body)

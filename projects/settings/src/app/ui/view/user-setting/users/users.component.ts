@@ -68,8 +68,11 @@ newUser: user ={
   accessCode: '',
 }
 selectedModule: string = ''; 
-selectedRole: any = {};
+selectedRole: any = null;
+selectedBranch: any = null
 roles: any[] = []
+branches: any[] = []
+
 userLimit = 0
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
@@ -87,9 +90,20 @@ ngOnInit(){
      } 
     });
 
+    this.moduleService.getBranches().subscribe( {
+      next: (data: any[]) => {
+       this.branches = data
+      },
+      error(err: any) {
+       console.log(err)
+      } 
+     });
+
     this.fetchUsers()
 
     this.userLimit = getLimitsForModule('optimaXPOS').users || 0;
+
+    // this.authenticationService.getUserBranch(27).subscribe(branch => console.log(branch))
     
 }
 
@@ -98,9 +112,13 @@ fetchUsers(){
     next: (data) => {
       this.users = data.map((user: { id: number; }) => ({
       ...user,
+      userBranch$: this.authenticationService.getUserBranch(user.id).pipe(
+        map(((userBranch: any) => userBranch?.branch.name ?? ''))
+      ),
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.name ?? ''))
-      )
+      ),
+     
     }));
 
     },
@@ -292,6 +310,82 @@ assignRole(user: any, event: any){
   }
 
   this.authenticationService.userApplicationRole(roleRequest).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Role assigned successfully!',
+          key: 'tl',
+          life: 3000,
+        });
+        // this.editCompensation(user, event)
+        this.fetchUsers()
+      },
+      error: (err) => {
+        console.error(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to assign role, try again later!',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    })
+    }
+  })
+  
+
+
+}
+
+assignBranch(user: any, event: any){
+
+  console.log(user)
+
+  this.authenticationService.getUserBranch(user.id).subscribe({
+    next: (response) => {
+      console.log("User application role:", response);
+      // this.selectedRole = response?.appRole || {};
+          const branchRequest = {
+            id: response ? response.id : 0,
+            userId: user.id,
+            branchId: this.selectedBranch?.id
+      }
+
+      this.authenticationService.userBranch(branchRequest).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Role assigned successfully!',
+              key: 'tl',
+              life: 3000,
+            });
+            // this.editCompensation(user, event)
+            this.fetchUsers()
+          },
+          error: (err) => {
+            console.error(err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to assign role, try again later!',
+              key: 'tl',
+              life: 3000,
+            });
+          }
+        })
+    },
+    error: (error) => {
+      console.error("Error fetching user application role:", error);
+      const branchRequest = {
+        userId: user.id,
+        branchId: this.selectedBranch?.id
+
+  }
+
+  this.authenticationService.userBranch(branchRequest).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
