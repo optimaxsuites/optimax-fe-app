@@ -107,6 +107,8 @@ this.links['userRoles'] = 'user-roles/' +uuidV4();
 this.links['productLink'] = '/admin/pos/product/' +uuidV4();
 this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
 this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
+this.links['esalesLink'] = '/admin/pos/e-store-sales/' +uuidV4();
+
 this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
 this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
 this.links['ingredientLink'] = '/admin/pos/ingredients/' +uuidV4(); 

@@ -227,6 +227,14 @@ export class MenuItemsService {
           description: 'View and manage sales records, transactions, and revenue data.'
         },
         {
+          label: 'eStore Sales',
+          code: 'POS_ESALES',
+          route: this.navigationLink.getLink('esalesLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-receipt',
+          description: 'View and manage sales records, transactions, and revenue data.'
+        },
+        {
           label: 'Checkout',
           code: 'POS_CHKOUT',
           route: this.navigationLink.getLink('checkoutLink'),
