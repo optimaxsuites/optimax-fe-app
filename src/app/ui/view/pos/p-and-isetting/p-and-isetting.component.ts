@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 
-// Interface for a single delivery option item
 interface DeliveryOption {
   id: number;
   name: string;
   description: string;
-  minFee: number | null; // Can be null for a fixed fee or complex rate
-  maxFee: number | null; // Null indicates fixed or no max cap
+  minFee: number | null; 
+  maxFee: number | null; 
   isVisible: boolean;
-  rateType?: 'fixed' | 'range' | 'per-km'; // New field to better define the rate logic
-  pricePerKm?: number | null; // New field for the per-km rate
+  rateType?: 'fixed' | 'range' | 'per-km'; 
+  pricePerKm?: number | null; 
 }
 
 @Component({
@@ -20,16 +19,13 @@ interface DeliveryOption {
 export class PAndISettingComponent {
   // Controls navigation between the two sub-pages
   activeTab: 'payment' | 'delivery' = 'payment';
-
-  // Model for Express Delivery Time Setting (Default is set for display)
   expressCutOffTime: string = '13:00'; 
 
-  // Data for the delivery options table, ready to be edited by the user
   deliveryOptions: DeliveryOption[] = [
     {
       id: 1,
       name: 'Standard Delivery (City)',
-      description: '1-3 business days. Fee is distance-based.',
+      description: '1-3 business days. Fee is calculated as Base Fee + Distance Factor (Max ₦7,000).',
       minFee: 3000,
       maxFee: 7000,
       isVisible: true,
@@ -38,7 +34,7 @@ export class PAndISettingComponent {
     {
       id: 2,
       name: 'Express / Priority (City)',
-      description: 'Same day or next morning.',
+      description: 'Same day or next morning. Higher rate range for speed.',
       minFee: 8000,
       maxFee: 15000,
       isVisible: true,
@@ -47,7 +43,7 @@ export class PAndISettingComponent {
     {
       id: 3,
       name: 'Interstate Delivery (Other States)',
-      description: '3-7 business days. Fee depends on state and weight.',
+      description: '3-7 business days. Fee depends on state, weight, and distance.',
       minFee: 6000,
       maxFee: 20000,
       isVisible: true,
@@ -56,17 +52,16 @@ export class PAndISettingComponent {
     {
       id: 4,
       name: 'Remote Area Surcharge',
-      description: 'Extra fee for difficult-to-reach addresses.',
+      description: 'Extra fixed fee for difficult-to-reach addresses.',
       minFee: 1500,
-      maxFee: null, // Indicates a fixed or minimum fee, not a range
+      maxFee: null, 
       isVisible: true,
       rateType: 'fixed',
     },
-    // NEW DELIVERY OPTION: Rate by Kilometer
     {
       id: 5,
       name: 'Delivery By Kilometer',
-      description: 'Fee is calculated based on distance from branch in KM.',
+      description: 'Fee = Base Fee (₦1000) + Distance in KM * ₦500. For direct courier.',
       minFee: 1000, // Base fee
       maxFee: null,
       isVisible: true,
@@ -76,9 +71,9 @@ export class PAndISettingComponent {
     {
       id: 6,
       name: 'Cash on Delivery (COD) Fee',
-      description: 'Extra fee for COD; available only in certain zones.',
+      description: 'Extra fixed fee for COD; available only in certain zones.',
       minFee: 500,
-      maxFee: null, // Indicates a fixed fee
+      maxFee: null, 
       isVisible: true,
       rateType: 'fixed',
     },
@@ -88,16 +83,27 @@ export class PAndISettingComponent {
     this.activeTab = tab;
   }
 
+  /**
+   * Adds a new, default delivery option to the table.
+   * The new option defaults to a 'fixed' rate type and is initially hidden (isVisible: false).
+   */
   addDeliveryOption(): void {
     const newId = Math.max(0, ...this.deliveryOptions.map(o => o.id)) + 1;
     this.deliveryOptions.push({
       id: newId,
       name: 'New Custom Option',
       description: 'Enter description here.',
-      minFee: null,
+      minFee: 0,
       maxFee: null,
-      isVisible: false, // Default to hidden until configured
-      rateType: 'fixed', // Default new option to fixed rate
+      isVisible: false, 
+      rateType: 'fixed', 
     });
+  }
+
+  deleteDeliveryOption(id: number): void {
+    if (confirm(`Are you sure you want to delete delivery option with ID ${id}?`)) {
+      this.deliveryOptions = this.deliveryOptions.filter(option => option.id !== id);
+      console.log(`Delivery option with ID ${id} deleted.`);
+    }
   }
 }
