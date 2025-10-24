@@ -80,8 +80,6 @@
             <p><strong>Status:</strong> {{ user.accountState }}</p>
             <p><strong>Role:</strong> {{ getRoleNames(user) }}</p>
             <p><strong>Application Role:</strong> {{ user.appRoles$ | async}}</p>
-            <p><strong>Branch:</strong> {{ user.userBranch$ | async}}</p>
-
             <p><strong>eCode:</strong> {{ user.ecode }}</p>
 
 
@@ -103,22 +101,6 @@
                 </ng-select>
             </div>
           <button (click)="assignRole(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
-           </div>
-          <p class="text-nowrap text-customBlue">Assign new Branch</p>
-          <div class="w-full flex gap-4 item-center"> 
-            <div class="w-full">
-               <!-- <label for="role" class="text-customBlue">Role</label> -->
-                <ng-select
-                  [items]="branches"
-                  id="branch"
-                  bindLabel="name"
-                  [multiple]="false"
-                  placeholder="Select branch"
-                  [(ngModel)]="selectedBranch"
-                >
-                </ng-select>
-            </div>
-          <button (click)="assignBranch(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
 
           </div>      
 

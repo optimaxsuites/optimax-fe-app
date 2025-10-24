@@ -110,25 +110,10 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
-  userBranch(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
-
-    return this.http
-      .post<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches`, data)
-      .pipe(catchError(this.handleError));
-  }
-
   getUserApplicationRole(id: number): Observable<any> {
 
     return this.http
       .get<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
-      .pipe(catchError(this.handleError));
-  }
-
-  getUserBranch(id: number): Observable<any> {
-
-    return this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
       .pipe(catchError(this.handleError));
   }
 
