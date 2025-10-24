@@ -1,0 +1,48 @@
+@if(isModalOpen){
+
+  <app-modal class="bg-white dark:bg-gray-800 rounded-lg shadow-lg py-26 w-96 text-white" (close)="closeModal()">
+
+   <div class="py-10">
+  <h2 class="text-xl font-semibold text-gray-900 dark:text-white text-center mb-20">
+    Payment Options
+  </h2>
+
+  <div class="mt-4 space-y-5">
+<label *ngFor="let payment of paymentOptions" 
+       class="flex items-center text-center px-5 w-full py-3 rounded text-lg relative transition-all duration-200"
+       [ngClass]="{
+         'bg-gray-100 hover:bg-gray-200 cursor-pointer': !isPaymentDisabled(payment.value),
+         'bg-gray-200 cursor-not-allowed opacity-70': isPaymentDisabled(payment.value)
+       }">
+  <input type="checkbox" 
+         class="absolute left-3 top-6 transform -translate-y-1/2 w-5 h-5"
+         [checked]="selectedPaymentsToGo.includes(payment.value)"
+         [disabled]="isPaymentDisabled(payment.value)"
+         (change)="togglePayment(payment.value)">
+  <img [src]="payment.image" 
+       alt="" 
+       class="w-24 h-24"
+       [ngClass]="{'opacity-50 grayscale': isPaymentDisabled(payment.value)}">
+  <span class="font-semibold ml-10"
+        [ngClass]="{
+          'text-gray-700': !isPaymentDisabled(payment.value),
+          'text-gray-500': isPaymentDisabled(payment.value)
+        }">
+    {{ payment.label }}
+    <span *ngIf="isPaymentDisabled(payment.value)" class="block text-xs text-gray-500 mt-1">
+      (Currently Unavailable)
+    </span>
+  </span>
+</label>
+  </div>
+
+  <div class="mt-6 flex justify-end">
+    <button (click)="confirmPayment()" class="bg-customBlue hover:bg-customBlueHover text-white px-6 py-3 rounded">
+      Proceed to Payment
+    </button>
+  </div>
+</div>
+
+  </app-modal>
+
+}
