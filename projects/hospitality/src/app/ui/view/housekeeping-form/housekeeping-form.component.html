@@ -1,0 +1,162 @@
+<button
+  pButton
+  icon="pi pi-times"
+  label="Close"
+  class="p-button-secondary mb-4"
+  (click)="goBack()"
+></button>
+
+<div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+  <h2 class="text-xl font-semibold mb-4">Record Found Item</h2>
+  <p class="text-gray-600 mb-4">
+    Please fill in the details of the found item. All fields marked with an
+    asterisk (*) are required.
+  </p>
+
+  <form [formGroup]="foundForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Found By -->
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Found By *
+        </label>
+        <input
+          type="text"
+          formControlName="foundBy"
+          class="w-full p-2 border border-gray-300 rounded-md"
+          placeholder="Name of person who found the item"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            foundForm.get('foundBy')?.invalid &&
+            foundForm.get('foundBy')?.touched
+          "
+        >
+          This field is required
+        </small>
+      </div>
+
+      <!-- Storage Location -->
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Storage Location *
+        </label>
+        <input
+          type="text"
+          formControlName="storageLocation"
+          class="w-full p-2 border border-gray-300 rounded-md"
+          placeholder="Where is it stored?"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            foundForm.get('storageLocation')?.invalid &&
+            foundForm.get('storageLocation')?.touched
+          "
+        >
+          Storage location is required
+        </small>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Found At Location -->
+
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Found At *
+        </label>
+        <input
+          type="text"
+          formControlName="foundAt"
+          class="w-full p-2 border border-gray-300 rounded-md"
+          placeholder="Room number or location"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            foundForm.get('foundAt')?.invalid &&
+            foundForm.get('foundAt')?.touched
+          "
+        >
+          Location is required
+        </small>
+      </div>
+
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700"
+          >Date Found *</label
+        >
+        <p-calendar
+          formControlName="dateFound"
+          [showIcon]="true"
+          dateFormat="dd/mm/yy"
+          [style]="{ width: '100%' }"
+        ></p-calendar>
+        <small
+          class="text-red-500"
+          *ngIf="
+            foundForm.get('dateFound')?.invalid &&
+            foundForm.get('dateFound')?.touched
+          "
+        >
+          Date is required
+        </small>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Description *
+        </label>
+        <textarea
+          formControlName="description"
+          rows="3"
+          class="w-full p-2 border border-gray-300 rounded-md"
+          placeholder="Detailed description of the item"
+        ></textarea>
+        <small
+          class="text-red-500"
+          *ngIf="
+            foundForm.get('description')?.invalid &&
+            foundForm.get('description')?.touched
+          "
+        >
+          Description is required
+        </small>
+      </div>
+
+      <!-- Notes -->
+      <div class="mt-4 space-y-2">
+        <label class="block text-sm font-medium text-gray-700">Notes</label>
+        <textarea
+          formControlName="notes"
+          rows="3"
+          class="w-full p-2 border border-gray-300 rounded-md"
+          placeholder="Additional information"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Hidden field for linked lost item ID -->
+    <input type="hidden" formControlName="linkedLostItemId" />
+
+    <div class="flex justify-end gap-3 pt-4">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="px-4 py-2 text-white bg-customGreen rounded-md hover:bg-customGreenHover"
+        [disabled]="foundForm.invalid"
+      >
+        Record Found Item
+      </button>
+    </div>
+  </form>
+</div>

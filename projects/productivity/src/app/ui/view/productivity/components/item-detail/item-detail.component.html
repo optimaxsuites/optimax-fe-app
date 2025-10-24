@@ -1,0 +1,39 @@
+<div class="item-details">
+  <nav class="tab-nav">
+    <button
+      *ngFor="let tab of tabs"
+      [class.active]="tab === activeTab"
+      (click)="activeTab = tab"
+    >
+      {{ tab }}
+    </button>
+  </nav>
+
+  <div class="tab-content">
+    <ng-container *ngIf="activeTab === 'Table'">
+      <table>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+        </tr>
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.description }}</td>
+          <td>{{ item.startDate  }}</td>
+          <td>{{ item.endDate  }}</td>
+        </tr>
+      </table>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'Card'">
+      <div class="card">
+        <h2>{{ item.name }}</h2>
+        <p>{{ item.description }}</p>
+        <p>Start: {{ item.startDate  }}</p>
+        <p>End: {{ item.endDate }}</p>
+      </div>
+    </ng-container>
+  </div>
+</div>

@@ -1,0 +1,80 @@
+<nav class="rounded-r-2xl" [ngClass]="sidebarClass">
+  <div class="side-bar-header" *ngIf="!sidebarHidden">
+    <img src="assets/logo.png" alt="Logo" />
+  </div>
+  <div class=""    [ngClass]="{
+    'max-w-full mx-auto  pl-8 my-3': sidebarHidden,
+    'absolute -right-4 top-14 z-50': !sidebarHidden
+  }">
+    <button class=" text-xl h-9 w-9 bg-customGreen rounded-full text-white" (click)="onToggleSidebar()">
+      <i *ngIf="sidebarHidden" class="pi pi-angle-right text-xl"></i>
+      <i *ngIf="!sidebarHidden" class="pi pi-angle-left text-xl"></i> 
+      <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
+    </button>
+  </div>
+  <ul>
+    <li *ngFor="let item of menuItems | async as menuItems">
+      <div class="menu-item w-full" (click)="toggleSubMenu(item)">
+        <a *ngIf="!item.submenu"
+           [routerLink]="item.route"
+           routerLinkActive="active"
+           class="flex gap-6 items-center w-full"
+           [pTooltip]="item.label"
+   tooltipPosition="right"
+   [tooltipDisabled]="!sidebarHidden"
+           [routerLinkActiveOptions]="{ exact: true }">
+          <i *ngIf="item.icon" [class]="item.icon"  [ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"></i>  
+          <span *ngIf="!sidebarHidden">{{ item.label }}</span>
+        </a>
+
+        <a 
+          class="flex gap-4 "
+          [pTooltip]="item.label"
+          tooltipPosition="right"
+          [tooltipDisabled]="!sidebarHidden"
+          *ngIf="item.submenu">
+          <i *ngIf="item.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl flex gap-1': sidebarHidden}" [class]="item.icon">
+          <div *ngIf="sidebarHidden"> &#9662;</div>
+
+          </i>
+          <span *ngIf="!sidebarHidden">{{ item.label }} &#9662;</span>
+
+        </a>
+      </div>
+
+      <ul [ngClass]="{'open': item.open}" *ngIf="item.submenu">
+        <ng-container *ngFor="let subItem of item.submenu">
+          <li *ngIf="!subItem.isNotSidebarItem">
+      
+            <a [routerLink]="subItem.route"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               [pTooltip]="subItem.label"
+               tooltipPosition="right"
+               [tooltipDisabled]="!sidebarHidden"
+               class="flex gap-4 items-center">
+              <i *ngIf="subItem.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}" [class]="subItem.icon"></i> 
+              <span *ngIf="!sidebarHidden">{{ subItem.label }}</span>
+            </a>
+          </li>
+        </ng-container>
+      </ul>
+    </li>
+
+    <li *ngIf="isSuperUser()">
+      <div class="menu-item">
+        <a 
+          [routerLink]="marketplace.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [pTooltip]="marketplace.label"
+          tooltipPosition="right"
+          [tooltipDisabled]="!sidebarHidden"
+          class="flex gap-4 items-center">
+          <i *ngIf="marketplace.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="marketplace.icon"></i>
+          <span *ngIf="!sidebarHidden">{{ marketplace.label }}</span>
+        </a>
+      </div>
+    </li>
+  </ul>
+</nav>

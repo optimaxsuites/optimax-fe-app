@@ -1,0 +1,248 @@
+<div class="min-h-screen bg-gray-50 p-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-customBlue">🏦 Sales Reconciliation</h1>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-2xl font-semibold text-customBlue mb-4">🔍 Filters</h2>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <!-- Bank Selector -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-2">Bank</label>
+        <select 
+          [(ngModel)]="selectedBank" 
+          (ngModelChange)="onBankChange()"
+          class="w-full rounded-xl py-4 px-4 text-base border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option *ngFor="let bank of banks" [ngValue]="bank">{{bank.name}}</option>
+        </select>
+      </div>
+
+      <!-- Account Selector -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-2">Account</label>
+        <select 
+          [(ngModel)]="selectedAccount" 
+          (ngModelChange)="onAccountChange()"
+          class="w-full rounded-xl py-4 px-4 text-base border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option *ngFor="let account of selectedBank.accounts" [value]="account">{{account}}</option>
+        </select>
+      </div>
+
+      <!-- Date Range -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-2">Date Range</label>
+        <select 
+          [(ngModel)]="selectedDateRange" 
+          (ngModelChange)="onDateRangeChange()"
+          class="w-full rounded-xl py-4 px-4 text-base border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option *ngFor="let option of dateRangeOptions" [value]="option">{{option}}</option>
+        </select>
+      </div>
+
+      <!-- Payment Type -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-2">Payment Type</label>
+        <select 
+          [(ngModel)]="selectedPaymentType" 
+          (ngModelChange)="onPaymentTypeChange()"
+          class="w-full rounded-xl py-4 px-4 text-base border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option *ngFor="let option of paymentTypeOptions" [value]="option">{{option}}</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700 mb-2">Search</label>
+        <div class="relative">
+          <input 
+            type="text" 
+            placeholder="Search..." 
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            class="w-full border border-1 rounded-xl py-4 px-12 text-base border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Bank Info -->
+    <div class="mt-6 p-5 bg-blue-50 rounded-xl border">
+      <p class="text-lg font-medium text-customBlue">
+        <span class="font-bold">Active Bank:</span> {{selectedBank.name}} • 
+        <span class="font-bold">Account:</span> {{selectedAccount}} • 
+        <span class="font-bold">Reconciling:</span> 15 Jan 2024 → 15 Jan 2024
+      </p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Matched -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-customGreen">
+      <h3 class="text-base font-medium text-gray-500 mb-2">Total Matched</h3>
+      <p class="text-3xl font-bold text-customGreen">{{formatCurrency(summary.matched)}}</p>
+    </div>
+
+    <!-- Delayed -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-yellow-400">
+      <h3 class="text-base font-medium text-gray-500 mb-2">Delayed Transactions</h3>
+      <p class="text-3xl font-bold text-yellow-600">{{formatCurrency(summary.delayed)}}</p>
+    </div>
+
+    <!-- Unmatched -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-red-500">
+      <h3 class="text-base font-medium text-gray-500 mb-2">Unmatched Transactions</h3>
+      <p class="text-3xl font-bold text-red-600">{{formatCurrency(summary.unmatched)}}</p>
+    </div>
+  </div>
+
+  <!-- Toggle View Button -->
+  <div class="flex justify-end mb-4">
+    <button 
+      (click)="toggleSideBySideView()"
+      class="flex items-center px-6 py-3 text-base bg-customBlue text-white rounded-md hover:bg-customBlueHover transition">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+      {{isSideBySideView ? 'Toggle List View' : 'Toggle Side-by-Side View'}}
+    </button>
+  </div>
+
+  <!-- Transactions Section -->
+  <div [class]="isSideBySideView ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'">
+    
+    <!-- ERP Transactions -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="border-b">
+        <button 
+          (click)="toggleErpTransactions()"
+          class="w-full flex justify-between items-center p-6 text-left font-medium text-customBlue hover:bg-gray-50">
+          <span class="text-lg">
+            {{showErpTransactions ? '▾' : '▸'}} Optimax Recorded Transactions ({{erpTransactionCount}})
+          </span>
+          <span class="text-base text-gray-500">Last updated: Today, 09:45 AM</span>
+        </button>
+        
+        <div *ngIf="showErpTransactions" class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-customBlue">
+                <tr>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Date/Time</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Transaction ID</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Item</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Amount</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let transaction of filteredErpTransactions" [class]="getRowHoverClass(transaction.status)">
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.dateTime}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{transaction.id}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.item}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.type}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{formatCurrency(transaction.amount)}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" [class]="getStatusClass(transaction.status)">
+                      {{getStatusIcon(transaction.status)}} {{transaction.delay || transaction.status}}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Transactions -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="border-b">
+        <button 
+          (click)="toggleBankTransactions()"
+          class="w-full flex justify-between items-center p-6 text-left font-medium text-customBlue hover:bg-gray-50">
+          <span class="text-lg">
+            {{showBankTransactions ? '▾' : '▸'}} Bank Transactions ({{bankTransactionCount}})
+          </span>
+          <span class="text-base text-gray-500">Last updated: Today, 09:50 AM</span>
+        </button>
+        
+        <div *ngIf="showBankTransactions" class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-customBlue">
+                <tr>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Date/Time</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Reference ID</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Description</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Amount</th>
+                  <th class="px-6 py-4 text-left text-base font-bold text-white uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let transaction of filteredBankTransactions" [class]="getRowHoverClass(transaction.status)">
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.dateTime}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{transaction.id}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.description}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.type}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{formatCurrency(transaction.amount)}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" [class]="getStatusClass(transaction.status)">
+                      {{getStatusIcon(transaction.status)}} {{transaction.status}}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reconciliation Report -->
+  <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+    <h2 class="text-2xl font-semibold text-customBlue mb-6">📝 Reconciliation Report</h2>
+    <div class="mb-6 space-y-2">
+      <p class="text-lg"><span class="font-medium">Cashier:</span> {{cashier}}</p>
+      <p class="text-lg"><span class="font-medium">Date Range:</span> {{reportDate}}</p>
+      <p class="text-lg"><span class="font-medium">Discrepancies Found:</span> {{discrepanciesCount}}</p>
+    </div>
+    <div class="space-y-3 mb-8">
+      <div *ngFor="let discrepancy of discrepancies" class="flex items-center">
+        <span 
+          class="w-8 h-8 flex items-center justify-center rounded-full mr-3 text-lg"
+          [class]="discrepancy.type === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'">
+          {{discrepancy.icon}}
+        </span>
+        <span class="text-base">{{discrepancy.message}}</span>
+      </div>
+    </div>
+    <div class="flex space-x-4">
+      <button 
+        (click)="exportAsPDF()"
+        class="flex items-center px-6 py-3 text-base bg-customBlue text-white rounded-md hover:bg-customBlueHover transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        Export as PDF
+      </button>
+      <button 
+        (click)="downloadExcel()"
+        class="flex items-center px-6 py-3 text-base bg-customGreen text-white rounded-md hover:bg-customGreenHover transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Download Excel
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,61 +1,91 @@
-import { Component, OnInit } from '@angular/core';
-import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
-import { IndustryDataService } from './ui/service/industry-data.service';
-import { MetadataService } from './ui/service/metadata.service';
-import { RegisterService } from './ui/service/register.service';
-import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
-import { CheckoutService } from './ui/service/checkout.service';
-import { OfflineService } from './ui/service/offline.service';
+import { Component, HostListener, ViewEncapsulation } from '@angular/core';
+import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
+import { BehaviorSubject, firstValueFrom, lastValueFrom, Observable } from 'rxjs';
+import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.service';
+import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
+
+declare global {
+  interface Window {
+  electronAPI: {
+  sendMessage:
+    (message : string) => void;
+  }
+  }
+}
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  encapsulation: ViewEncapsulation.None,
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit{
-  title = 'erp-pos';
 
-  showCloseRegisterModal = false;
-  openingAmount: number = 0;
-  closingAmount: number | null = null;
-  finalizedRegisterData: any = null;
-  private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
-  isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
-  constructor(
-    private authenticationService: AuthenticationService,
-    private industryDataService: IndustryDataService,
-    private metadataService: MetadataService,
-    private registerService: RegisterService,
-    private checkoutService: CheckoutService,
-    private offlineService: OfflineService
-  ) {
-    this.userLoginAction();
-     window.addEventListener('online', () => this._isOffline.next(false));
+export class AppComponent {
+  sendMessage() { window.electronAPI.sendMessage("Hello from Angular!"); }
+  title = 'ERP-FE';
+  sidebarVisible2: boolean = false;
+  syncInProgress = false; 
+  syncMessage = '';
+  ellipsisInterval: any; 
+  screenWidth: number;
+  isLoading = false
+    private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+    isOffline$: Observable<boolean> = this._isOffline.asObservable();
+
+  // Ensure this property exists and is initialized
+  clockedInTime: string | null = null;
+
+  constructor(private menuItemService: MenuItemsService, private router: Router, private checkoutService: CheckoutService, private offlineService: OfflineService) {
+    window.addEventListener('online', () => this._isOffline.next(false));
     window.addEventListener('offline', () => this._isOffline.next(true));
-  }
-
-  ngOnInit(): void {
-    // this.metadataService.fetchMetaData()
-    this.registerService.closeRegister$.subscribe(() => {
-      const storedOpeningAmount = localStorage.getItem('openingAmount');
-      this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
-      this.showCloseRegisterModal = true;
+    this.screenWidth = window.innerWidth;
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.isLoading = true;
+      }
+      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.isLoading = false;
+      }
     });
     window.addEventListener("online", () => this.syncOfflinePayments())
 
- 
   }
 
-    private async syncOfflinePayments() {
-      console.log("🌐 You are now online, preparing to sync...");
-    
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-    
-      const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
-      if (!pendingPayments.length) return;
-    
-      console.log("🔄 Syncing offline payments:", pendingPayments);
-    
+  
+
+  NgOnInit(){
+    // this.menuItemService.loadUnlockedModules()
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    this.screenWidth = window.innerWidth;
+    console.log('Screen width:', this.screenWidth);
+    // Apply logic based on screen width
+  }
+
+  private async syncOfflinePayments() {
+    console.log("🌐 You are now online, preparing to sync...");
+    this.syncInProgress = true;
+    this.startEllipsisAnimation('🌐 Syncing offline data');
+  
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  
+    const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
+    if (!pendingPayments.length) {
+      this.stopEllipsisAnimation('✅ Nothing to sync. All caught up!', true);
+      this.syncInProgress = false;
+      return;
+    }
+
+
+  
+    console.log("🔄 Syncing offline payments:", pendingPayments);
+
+    const OUT_OF_STOCK_ERROR_MESSAGE = "Insuffient order to service your request..."; 
+  
+    try {
       for (const payment of pendingPayments) {
         const now = new Date().toISOString();
         const onlinePaymentPayload = {
@@ -68,7 +98,7 @@ export class AppComponent implements OnInit{
         this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
           next: (paymentId) => {
             let breakdownCount = 0;
-    
+            
             for (const breakdown of payment.breakdowns) {
               breakdown.paymentId = paymentId;
               this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
@@ -80,12 +110,34 @@ export class AppComponent implements OnInit{
                       next: async () => {
                         console.log("✅ Offline payment synced:", payment);
     
-                        await this.offlineService.removePendingPayment(payment.id);
+                        await this.offlineService.removePendingPayment(payment.order.orderNumber);
     
-                       
+                      
                       },
-                      error: (err) =>
-                        console.error("❌ Failed to sync order:", err),
+                      error: async (err) => {
+                        console.log(err)
+                                          // **ERROR PATH: Check for Out-of-Stock Failure**
+                                          const errorMessage = typeof err === 'string' ? err : err.message || JSON.stringify(err);
+
+                                          if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
+                                              console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict. Flagging for manual resync.`);
+                                              
+                                              // Flag the local record for manual inspection/resync
+                                              const flaggedPayment = {
+                                                  ...payment,
+                                                  syncFailed: true,
+                                                  failureReason: `One or more items were out of stock during sync. Resolve inventory before retrying.`,
+                                                  // Include the primary key to ensure the update hits the right record
+                                                  __dbKey: payment.__dbKey 
+                                              };
+                                              
+                                              // Use update to save the flagged state and keep the record
+                                              await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment)); 
+                                              
+                                          } else {
+                                              console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
+                                          }
+                                      },
                     });
                   }
                 },
@@ -97,128 +149,46 @@ export class AppComponent implements OnInit{
           error: (err) => console.error("❌ Failed to sync payment:", err),
         });
       }
-    
-      this.offlineService.clearPendingPayments()
-  }
-
-  async userLoginAction(): Promise<void> {
-    console.log("logginging in...");
-    const loginDetails = {
-      username: 'damilola',
-      password: '123456',
-      project: 'ERP',
-      apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',
-    };
-
-    // if (!loginDetails.username || !loginDetails.password) {
-    //   this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-    //   return;
-    // }
-
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
-      this.loadInitParam(data);
-
-      console.log(data)
-
-      if (data) {
-        this.authenticationService.getUserPrimaryInfoById(data.id).subscribe(
-          (data) => {
-            console.log(data);
-
-            // for some reason, it defaults to "information technology" as of 03-03-2025. FIXED. It depends on the user's login
-            //FIXME - Instead of "Pharmacy", the number 3 is returned >~<
-            this.industryDataService.businessType =
-              data.industry == 3 ? 'Pharmacy' : data.industry;
-          },
-          (error) => {
-            console.error('Error fetching user info:', error);
-          }
-        );
-      }
-    } catch (error) {
-      console.log(error);
+      this.stopEllipsisAnimation('✅ All offline payments synced!', true);
+    } catch (err) {
+        console.error(err);
+        this.stopEllipsisAnimation('❌ Sync failed. Check logs.', true);
     }
+    this.syncInProgress = false;
+
+  
+    // this.offlineService.clearPendingPayments()
   }
 
-  loadInitParam(data: any) {
-    sessionStorage.setItem('role', data.roles);
-    sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', data.fullname);
-    sessionStorage.setItem('email', data.email);
-    sessionStorage.setItem('userid', data.id);
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(
-      tokenStartIndex,
-      data.accessToken.indexOf(';')
-    );
-    sessionStorage.setItem('Token', token);
-    localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
-    sessionStorage['userRegData'] = JSON.stringify(data);
+  // This method should correctly capture the event emitted by ClockInClockOutComponent
+  // onClockInTime(time: string | null) {
+  //   console.log("Received clock-in time:", time);
+  //   this.clockedInTime = time; // Assign the emitted clock-in time
+  // }
 
-    this.getUserBranchInfo(data);
+  private startEllipsisAnimation(baseMessage: string, ) {
+  let dots = 0;
+  this.syncMessage = baseMessage;
 
-
-//  this.authenticationService.getUserApplicationRole(data.id).subscribe({
-//   next: (response) => {
-//     console.log("User application role:", response);
-//     // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
-//     if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
-//     console.log("Super user detected");
-//     sessionStorage.setItem(
-//       "userApplicationRole",
-//       JSON.stringify(response)
-//     );
-//   } else {
-//     sessionStorage.setItem(
-//       "userApplicationRole",
-//       JSON.stringify(response)
-//     );
-//   }
-
-//   },
-//   error: (error) => {
-//     console.error("Error fetching user application role:", error);
-//      const storedRole = sessionStorage.getItem("userApplicationRole");
-//       if (storedRole) {
-//         console.log("Removing invalid userApplicationRole from sessionStorage");
-//         sessionStorage.removeItem("userApplicationRole");
-//       }
-//   }
-// })
+  this.ellipsisInterval = setInterval(() => {
+    dots = (dots + 1) % 4; 
+    this.syncMessage = baseMessage + '.'.repeat(dots);
+  }, 500);
   }
 
-  getUserBranchInfo(data: any) {
-    const userId = sessionStorage.getItem('userid');
-      if (!userId) {
-        return;
-      }
-
-    this.authenticationService.getUserBranchInfoById(userId).subscribe(
-      data => {
-        sessionStorage["userBranchInfoRegData"] = JSON.stringify(data);
-      },
-      error => {
-        console.error('Error fetching user branch info:', error);
-      }
-    );
+  private stopEllipsisAnimation(finalMessage: string, autoClear = false) {
+  if (this.ellipsisInterval) {
+    clearInterval(this.ellipsisInterval);
+    this.ellipsisInterval = null;
   }
+  this.syncMessage = finalMessage;
 
-  onFinalizeRegister(data: any) {
-    // Save finalized register data to localStorage
-    localStorage.setItem('registerFinalized', 'true');
-    localStorage.setItem('registerFinalizedData', JSON.stringify(data));
-    localStorage.setItem('registerState', 'false');
-    localStorage.setItem('closingAmount', String(data.closeAmount));
-    this.finalizedRegisterData = data;
-    this.showCloseRegisterModal = false;
+  if (autoClear) {
+    setTimeout(() => {
+      this.syncMessage = '';
+    }, 3000); 
   }
+}
 
-  onCloseRegisterModal() {
-    this.showCloseRegisterModal = false;
-  }
+
 }
