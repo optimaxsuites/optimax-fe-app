@@ -1,7 +1,6 @@
-// store-order.service.ts - UPDATED with proper payment linking
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, from, forkJoin } from 'rxjs';
+import { Observable, throwError, from } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
 import { PaystackService, PaystackPaymentData } from './paystack.service';
@@ -33,8 +32,8 @@ export class StoreOrderService {
       metadata: {
         custom_fields: [
           {
-            display_name: "Order Number",
-            variable_name: "order_number",
+            display_name: 'Order Number',
+            variable_name: 'order_number',
             value: orderNumber
           }
         ]
@@ -46,15 +45,14 @@ export class StoreOrderService {
   }
 
   // ========== ORDER CREATION METHODS ==========
+  
 
-  // Create order with payment - FIXED VERSION
   createOrderWithPayment(
     orderData: StoreOrderPOST,
     paymentMethod: string,
     paymentReference: string,
     deliveryInfo?: any
   ): Observable<any> {
-    // First create the payment
     return this.createPaymentRecord(
       orderData.totalAmount,
       orderData.orderNumber,
@@ -64,15 +62,13 @@ export class StoreOrderService {
     ).pipe(
       switchMap((paymentResponse: any) => {
         console.log('✅ Payment record created:', paymentResponse);
-        
-        // Now create the order with the payment ID
+
         const orderWithPayment = {
           ...orderData,
           paymentId: paymentResponse.id,
           orderStatus: paymentMethod === 'card' ? 'PAID' : 'UNPAID'
         };
 
-        // Handle delivery info if needed
         if (deliveryInfo && orderData.deliveryFee > 0) {
           return this.createDeliveryInfo(deliveryInfo).pipe(
             switchMap((deliveryResponse: any) => {
@@ -91,9 +87,8 @@ export class StoreOrderService {
     );
   }
 
-  // Simple order creation for cash payments
   createCashOrder(
-    orderData: StoreOrderPOST, 
+    orderData: StoreOrderPOST,
     deliveryInfo?: any
   ): Observable<any> {
     return this.createOrderWithPayment(
@@ -104,13 +99,39 @@ export class StoreOrderService {
     );
   }
 
-  // ========== PRIVATE HELPER METHODS ==========
+  // E-STORE ORDER METHODS 
+  getEStoreOrders(filters: any): Observable<any> {
+    
+    const baseParams: any = { ...filters };
+    const params: any = {};
+    for (const key in baseParams) {
+        const value = baseParams[key];
+        if (value !== undefined && value !== null) {
+            if (typeof value === 'string' && value.trim() === '') {
+                continue; 
+            }
+            params[key] = value;
+        }
+    }
 
-  // Create payment record in our system
+    // Using the E-Store endpoint.
+    const endpoint = '/x/api/v2/pos/orders/get/order/from/eStore';
+    console.log(`Fetching E-Store orders from dedicated endpoint: ${endpoint} with filters:`, params);
+
+    return this.http.get<any>(
+      this.getBaseApiUrl() + endpoint,
+      { params: params }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  //  PRIVATE HELPER METHODS 
+
   private createPaymentRecord(
-    totalAmount: string, 
-    orderNumber: string, 
-    status: string, 
+    totalAmount: string,
+    orderNumber: string,
+    status: string,
     method: string,
     reference: string
   ): Observable<any> {
@@ -134,22 +155,27 @@ export class StoreOrderService {
   }
 
   private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
-    // CRITICAL: Ensure paymentId is set properly
     if (!orderData.paymentId || orderData.paymentId === 0) {
       console.error('❌ Payment ID is missing! Cannot create order without payment.');
       return throwError(() => 'Payment record must be created before order');
     }
 
-    // Clean up the order data - remove null/0 IDs except paymentId which is required
+    // Determine the appropriate delivery status for the creation payload.
+    // Used 'PENDING' for POS/Walk-in orders to satisfy the backend NotNull validation.
+    const defaultDeliveryStatus = orderData.deliveryInfoId && orderData.deliveryInfoId > 0
+        ? 'AWAITING_DELIVERY' // For delivery orders
+        : 'PENDING';        // For walk-in/POS orders
+
     const sanitizedOrderData = {
       ...orderData,
       discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
-      paymentId: orderData.paymentId, // MUST be valid
+      paymentId: orderData.paymentId,
       cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
+      deliveryStatus: defaultDeliveryStatus,
       orderItem: orderData.orderItem.map(item => ({
         ...item,
-        orderId: null, // Backend will set this
+        orderId: null,
         productVariantId: item.productVariantId && item.productVariantId > 0 ? item.productVariantId : null
       }))
     };
@@ -158,7 +184,7 @@ export class StoreOrderService {
     console.log('Full order payload:', JSON.stringify(sanitizedOrderData, null, 2));
 
     return this.http.post<any>(
-      this.getBaseApiUrl() + '/x/api/v2/pos/orders', 
+      this.getBaseApiUrl() + '/x/api/v2/pos/orders',
       sanitizedOrderData
     ).pipe(
       catchError((error) => {
@@ -186,7 +212,7 @@ export class StoreOrderService {
   private mapPaymentMethod(storeMethod: string): string {
     const methodMap: { [key: string]: string } = {
       'cash': 'CASH',
-      'transfer': 'TRANSFER', 
+      'transfer': 'TRANSFER',
       'card': 'CARD',
       'mobile': 'MOBILE_MONEY'
     };
@@ -206,7 +232,7 @@ export class StoreOrderService {
         } else if (error.error.message) {
           errorMessage = error.error.message;
         } else if (error.error.fieldErrors) {
-          const fieldErrors = error.error.fieldErrors.map((err: any) => 
+          const fieldErrors = error.error.fieldErrors.map((err: any) =>
             `${err.field}: ${err.errorCode}`
           ).join(', ');
           errorMessage = `Validation errors: ${fieldErrors}`;
@@ -224,6 +250,8 @@ export class StoreOrderService {
     return throwError(() => errorMessage);
   }
 }
+
+//INTERFACES
 
 export interface StoreOrderPOST {
   id: number;
@@ -245,6 +273,7 @@ export interface StoreOrderPOST {
   estimatedDeliveryTime: string;
   customerEmail: string;
   deliveryInfoId: number | null;
+  deliveryStatus: string; 
 }
 
 export interface StoreOrderItemPOST {
