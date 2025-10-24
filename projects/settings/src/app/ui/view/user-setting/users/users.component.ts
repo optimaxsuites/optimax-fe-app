@@ -247,38 +247,76 @@ submitUser() {
 }
 
 assignRole(user: any, event: any){
-    const roleRequest = {
-          userId: user.id,
-          appRoleId: this.selectedRole?.id
+
+  console.log(user)
+
+  this.authenticationService.getUserApplicationRole(user.id).subscribe({
+    next: (response) => {
+      console.log("User application role:", response);
+      // this.selectedRole = response?.appRole || {};
+          const roleRequest = {
+            id: response ? response.id : 0,
+            userId: user.id,
+            appRoleId: this.selectedRole?.id
+      }
+
+      this.authenticationService.userApplicationRole(roleRequest).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Role assigned successfully!',
+              key: 'tl',
+              life: 3000,
+            });
+            // this.editCompensation(user, event)
+            this.fetchUsers()
+          },
+          error: (err) => {
+            console.error(err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to assign role, try again later!',
+              key: 'tl',
+              life: 3000,
+            });
+          }
+        })
+    },
+    error: (error) => {
+      console.error("Error fetching user application role:", error);
+      const roleRequest = {
+        userId: user.id,
+        appRoleId: this.selectedRole?.id
+  }
+
+  this.authenticationService.userApplicationRole(roleRequest).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Role assigned successfully!',
+          key: 'tl',
+          life: 3000,
+        });
+        // this.editCompensation(user, event)
+        this.fetchUsers()
+      },
+      error: (err) => {
+        console.error(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to assign role, try again later!',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    })
     }
-
-    // this.authenticationService.getUserApplicationRole(user.id).subscribe({
-    //   next: (response) => {
-        
-    //   },
-    //   error: (error) => {
-    //     console.error("Error fetching user application role:", error);
-    //   }
-    // })
-
-    this.authenticationService.userApplicationRole(roleRequest).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Role assigned successfully!'
-          });
-          this.editCompensation(user, event)
-        },
-        error: (err) => {
-          console.error(err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to assign role, try again later!'
-          });
-        }
-      })
+  })
+  
 
 
 }
@@ -383,8 +421,12 @@ activateUser(user: any, $event: any){
                 this.messageService.add({
                   severity: 'success',
                   summary: 'Success',
-                  detail: 'User registered and eCode activated successfully!'
+                  detail: 'User registered and eCode activated successfully!',
+                  key: 'tl',
+                  life: 3000,
                 });
+
+                user.allowEcodeAuth = status;
       },
     })
 }
