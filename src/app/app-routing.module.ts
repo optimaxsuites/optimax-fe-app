@@ -23,6 +23,7 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
 import { SalesComponent } from './ui/view/sales/sales.component';
 import { PermissionGuard } from './ui/permission/permission.guard';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
+import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 
 
 const routes: Routes = [
@@ -35,7 +36,11 @@ const routes: Routes = [
     path: 'user/checkout/cash-payment/:id',
     component: CashPaymentComponent
   },
-  
+  {
+    path: 'e-store-sales/:uuid',
+    component: EStoreSalesComponent,
+    // canActivate: [PermissionGuard],
+  },
 
   {
     path: 'Update-stock/:uuid',

@@ -141,9 +141,9 @@ export class SalesComponent implements OnInit {
         if (!order.createdDate || order.createdDate.length < 3) return false;
         
         const orderDate = new Date(
-          order.createdDate[0],
-          order.createdDate[1] - 1,
-          order.createdDate[2]
+          Number(order.createdDate[0]),
+          Number(order.createdDate[1]) - 1,
+          Number(order.createdDate[2])
         );
         
         return orderDate >= cutoffDate;

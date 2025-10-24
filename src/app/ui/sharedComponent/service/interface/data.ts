@@ -36,6 +36,7 @@ export interface TabConfig {
   hasDropdown?: boolean;
   dropdownOptions?: DropdownOption[]; 
   role?: string
+  data?: any;
 }
 
 export interface DropdownOption {

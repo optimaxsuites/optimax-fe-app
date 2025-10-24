@@ -139,6 +139,8 @@ import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-h
 // import { CategoryProductsComponent } from './ui/view/pos-store/category-products/category-products.component';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { AllProductsComponent } from './ui/view/pos-store/all-products/all-products.component';
+import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
+import { EStoreOrdersListComponent } from './ui/view/sales/e-store-sales/estore-orders-list/estore-orders-list.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
@@ -276,6 +278,8 @@ const dbConfig: DBConfig = {
     // ProductDetailsComponent,
     UpdateStockComponent,
     AllProductsComponent,
+    EStoreSalesComponent,
+    EStoreOrdersListComponent,
     // CategoryProductsComponent,
     // OrderConfirmationComponent,
     // OrderHistoryComponent,

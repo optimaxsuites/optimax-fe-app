@@ -203,25 +203,27 @@ export interface SalesReportBreakdownDTO {
 
 export interface Order {
   salesperson: any;
-  branch: any;
+  branch: any; 
   payment: any;
-  amountTendered: any;
-  orderItem: any;
+  amountTendered: any; 
+  orderItem: any; 
   customer: any;
-  updatedAt: any;
-  orderStatus: any;
-  orderNumber: any;
-  totalAmount: any;
+  updatedAt: any; 
+  orderStatus: any; 
+  orderNumber: any; 
+  totalAmount: any; 
   status: any;
   amount: any;
-  createdDate: any;
+  createdDate: any; 
   timestamp: any;
   name: string;
   cartDiscount: number;
   state: string;
   total: number;
   cart: ProductJSONFormat<"array">[];
-  id: string;
+  id: string; 
+  deliveryMethod?: DeliveryMethod | string;
+  deliveryInfo?: DeliveryInfoDTO | null; 
 }
 
 export type PaymentModes = "card" | "mobile" | "cash" | "loyalty";
@@ -269,7 +271,7 @@ export interface Refund {
   customerName: string;
   refundMeans: string;
   refundReason: string;
-   refundMethod?: string;
+  refundMethod?: string;
   cashierComment: string;
   adminComment?: string;
   status: string;
@@ -466,43 +468,43 @@ export interface CustomerDTO {
 interface HotelProductDTO extends ProductDTO {}
 
 // abstract class Product implements ProductDTO {
-//   constructor(
-//     public readonly id: number,
-//     public readonly name: string,
-//     public readonly code: string,
-//     public readonly description: string,
-//     public readonly sku: string,
-//     public readonly weight: number | null,
-//     public readonly createdBy: string | null,
-//     public readonly partNumber: string,
-//     public readonly tax: number,
-//     public readonly branches: Map<string, BranchDTO>,
-//     public readonly discount: DiscountDTO,
-//     public readonly productCategory: ProductCategoryDTO,
-//     public readonly productImages: ProductImageDTO[],
-//     public readonly variants: VariantDTO[],
-//     public readonly createdDate: string
-//   ) {}
+//   constructor(
+//     public readonly id: number,
+//     public readonly name: string,
+//     public readonly code: string,
+//     public readonly description: string,
+//     public readonly sku: string,
+//     public readonly weight: number | null,
+//     public readonly createdBy: string | null,
+//     public readonly partNumber: string,
+//     public readonly tax: number,
+//     public readonly branches: Map<string, BranchDTO>,
+//     public readonly discount: DiscountDTO,
+//     public readonly productCategory: ProductCategoryDTO,
+//     public readonly productImages: ProductImageDTO[],
+//     public readonly variants: VariantDTO[],
+//     public readonly createdDate: string
+//   ) {}
 
-//   branchData(branchName: string) {
-//     return this.branches.get(branchName) as BranchDTO;
-//   }
+//   branchData(branchName: string) {
+//     return this.branches.get(branchName) as BranchDTO;
+//   }
 
-//   effectiveQuantity(branchName: string) {
-//     return this.branchData(branchName).regularQuantity;
-//   }
+//   effectiveQuantity(branchName: string) {
+//     return this.branchData(branchName).regularQuantity;
+//   }
 
-//   effectivePrice(branchName: string) {
-//     const price = this.branchData(branchName).regularPrice;
+//   effectivePrice(branchName: string) {
+//     const price = this.branchData(branchName).regularPrice;
 
-//     return (
-//       price + (price * this.discount.value) / 100 + (price * this.tax) / 100
-//     );
-//   }
+//     return (
+//       price + (price * this.discount.value) / 100 + (price * this.tax) / 100
+//     );
+//   }
 
-//   supplierId(branchName: string) {
-//     return this.branchData(branchName).supplierId;
-//   }
+//   supplierId(branchName: string) {
+//     return this.branchData(branchName).supplierId;
+//   }
 // }
 
 export const MeasurementUnit = {
@@ -953,7 +955,7 @@ export interface StockMovementByInventory {
   } | null;
 }
 
-// These are the report-related DTOs and other types from the  code that were causing conflicts,
+// These are the report-related DTOs and other types from the  code that were causing conflicts,
 // but which I've included here to ensure the file is complete. I've corrected them where necessary.
 export interface ProductPerformanceReportRequestDTO {
   startDate: string;
@@ -1130,6 +1132,7 @@ export interface DeliveryInfoDTO {
   address: string;
   email: string;
   instructions: string;
+  deliveryStatus?: 'AWAITING_DELIVERY' | 'PACKAGED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'PENDING';
 }
 
 export interface OrderItemsDTO {

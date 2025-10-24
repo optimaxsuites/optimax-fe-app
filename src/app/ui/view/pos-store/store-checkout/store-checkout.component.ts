@@ -303,7 +303,8 @@ private async handleCashPayment(orderData: StoreOrderPOST): Promise<void> {
         ? new Date(Date.now() + 60 * 60000).toISOString()
         : new Date().toISOString(),
       customerEmail: customerEmail,
-      deliveryInfoId: null
+      deliveryInfoId: null,
+      deliveryStatus: 'PENDING_ASSIGNMENT' 
     };
   }
 
