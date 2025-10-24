@@ -389,6 +389,7 @@ private async handleCashPayment(orderData: StoreOrderPOST): Promise<void> {
   goBack(): void {
     this.location.back()
   }
+  
   debugOrderPayload(): void {
     const cartItems = Array.from(this.cartItems.values());
     console.log('🔍 DEBUG - Current Cart State:');

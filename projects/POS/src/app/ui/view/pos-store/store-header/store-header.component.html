@@ -196,41 +196,56 @@
       </button>
       
       <!-- User Dropdown -->
-      @if (isUserDropdownOpen) {
-        <div class="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-          @if (user.isGuest) {
+@if (isUserDropdownOpen) {
+  <div class="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+    @if (user.isGuest) {
             <button 
-              (click)="openAuthModal('login')"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-            >
-              Sign In
-            </button>
-            <button 
-              (click)="openAuthModal('signup')"
-              class="block px-4 py-2 text-sm text-gray-700  hover:bg-gray-200 w-full text-left"
-            >
-              Create Account
-            </button>
-          } @else {
-            <button 
-              class="block px-4 py-2 text-sm text-gray-700 hover:text-customGreenHover hover:bg-gray-200 w-full text-left"
-            >
-              My Profile
-            </button>
-            <button 
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-            >
-              Order History
-            </button>
-            <button 
-              (click)="logout()"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-            >
-              Sign Out
-            </button>
-          }
-        </div>
-      }
+        (click)="navigateToReturnsRefunds()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center justify-between"
+      >
+        <span>Returns & Refunds</span>
+        <i class="fa-solid fa-rotate-left text-customBlue text-xs"></i>
+      </button>
+      <button 
+        (click)="openAuthModal('login')"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Sign In
+      </button>
+      <button 
+        (click)="openAuthModal('signup')"
+        class="block px-4 py-2 text-sm text-gray-700  hover:bg-gray-200 w-full text-left"
+      >
+        Create Account
+      </button>
+    } @else {
+      <button 
+        class="block px-4 py-2 text-sm text-gray-700 hover:text-customGreenHover hover:bg-gray-200 w-full text-left"
+      >
+        My Profile
+      </button>
+      <button 
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Order History
+      </button>
+      <!-- ADD RETURNS & REFUNDS LINK -->
+      <button 
+        (click)="navigateToReturnsRefunds()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center justify-between"
+      >
+        <span>Returns & Refunds</span>
+        <i class="fa-solid fa-rotate-left text-customBlue text-xs"></i>
+      </button>
+      <button 
+        (click)="logout()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Sign Out
+      </button>
+    }
+  </div>
+}
     </div>
 
     <!-- Auth Modal -->
@@ -292,41 +307,57 @@
           </button>
           
           <!-- User Dropdown -->
-          @if (isUserDropdownOpen) {
-            <div class="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-              @if (user.isGuest) {
-                <button 
-                  (click)="openAuthModal('login')"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  Sign In
-                </button>
-                <button 
-                  (click)="openAuthModal('signup')"
-                  class="block px-4 py-2 text-sm text-gray-700  hover:bg-gray-200 w-full text-left"
-                >
-                  Create Account
-                </button>
-              } @else {
-                <button 
-                  class="block px-4 py-2 text-sm text-gray-700 hover:text-customGreenHover hover:bg-gray-200 w-full text-left"
-                >
-                  My Profile
-                </button>
-                <button 
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  Order History
-                </button>
-                <button 
-                  (click)="logout()"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  Sign Out
-                </button>
-              }
-            </div>
-          }
+       <!-- User Dropdown -->
+@if (isUserDropdownOpen) {
+  <div class="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+    @if (user.isGuest) {
+           <button 
+        (click)="navigateToReturnsRefunds()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center justify-between"
+      >
+        <span>Returns & Refunds</span>
+        <i class="fa-solid fa-rotate-left text-customBlue text-xs"></i>
+      </button>
+      <button 
+        (click)="openAuthModal('login')"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Sign In
+      </button>
+      <button 
+        (click)="openAuthModal('signup')"
+        class="block px-4 py-2 text-sm text-gray-700  hover:bg-gray-200 w-full text-left"
+      >
+        Create Account
+      </button>
+    } @else {
+      <button 
+        class="block px-4 py-2 text-sm text-gray-700 hover:text-customGreenHover hover:bg-gray-200 w-full text-left"
+      >
+        My Profile
+      </button>
+      <button 
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Order History
+      </button>
+      <!-- ADD RETURNS & REFUNDS LINK -->
+      <button 
+        (click)="navigateToReturnsRefunds()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center justify-between"
+      >
+        <span>Returns & Refunds</span>
+        <i class="fa-solid fa-rotate-left text-customBlue text-xs"></i>
+      </button>
+      <button 
+        (click)="logout()"
+        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+      >
+        Sign Out
+      </button>
+    }
+  </div>
+}
         </div>
 
         <!-- Cart Button -->

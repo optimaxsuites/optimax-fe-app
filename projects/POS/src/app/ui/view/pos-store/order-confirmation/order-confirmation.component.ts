@@ -398,136 +398,43 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const orderDate = new Date(this.orderDetails.orderDate);
-    
-    // Calculate estimated times for each step
-    const confirmedTime = this.formatTime(orderDate);
-    const preparingTime = this.formatTime(new Date(orderDate.getTime() + 10 * 60000));
-    const onTheWayTime = this.formatTime(new Date(orderDate.getTime() + 20 * 60000));
-    const deliveredTime = this.formatTime(new Date(orderDate.getTime() + 45 * 60000));
+    try {
+      const canvas = this.confettiCanvas.nativeElement;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const myConfetti = confetti.create(canvas, {
+        resize: true,
+        useWorker: true
+      });
 
-    this.deliverySteps = [
-      {
-        status: 'confirmed',
-        label: 'Order Confirmed',
-        icon: '✓',
-        time: confirmedTime,
-        completed: this.isStepCompleted('confirmed'),
-        active: this.isStepActive('confirmed')
-      },
-      {
-        status: 'preparing',
-        label: 'Preparing',
-        icon: '👨‍🍳',
-        time: preparingTime,
-        completed: this.isStepCompleted('preparing'),
-        active: this.isStepActive('preparing')
-      },
-      {
-        status: 'on_the_way',
-        label: 'On the Way',
-        icon: '🚗',
-        time: onTheWayTime,
-        completed: this.isStepCompleted('on_the_way'),
-        active: this.isStepActive('on_the_way')
-      },
-      {
-        status: 'delivered',
-        label: 'Delivered',
-        icon: '🏠',
-        time: deliveredTime,
-        completed: this.isStepCompleted('delivered'),
-        active: this.isStepActive('delivered')
-      }
-    ];
+      myConfetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
 
-    console.log('Delivery tracking initialized:', this.deliverySteps);
+      setTimeout(() => {
+        myConfetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 65,
+          origin: { x: 0 }
+        });
+
+        myConfetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 65,
+          origin: { x: 1 }
+        });
+      }, 300);
+      
+      console.log('🎉 Confetti fired successfully');
+    } catch (error) {
+      console.error('❌ Confetti error:', error);
+    }
   }
-
-  // isStepCompleted(stepStatus: string): boolean {
-  //   const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-  //   const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-  //   const stepStatusIndex = statusOrder.indexOf(stepStatus);
-    
-  //   return stepStatusIndex <= currentStatusIndex;
-  // }
-
-  // isStepActive(stepStatus: string): boolean {
-  //   return this.orderDetails.status === stepStatus;
-  // }
-
-  // getStepClass(step: DeliveryStep): string {
-  //   if (step.completed) {
-  //     return step.active ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white';
-  //   }
-  //   return 'bg-gray-200 text-gray-500';
-  // }
-
-  // getDeliveryProgress(): number {
-  //   const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-  //   const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-  //   return Math.max(25, ((currentStatusIndex + 1) / statusOrder.length) * 100);
-  // }
-
-  // trackDelivery(): void {
-  //   this.showTracking = true;
-  //   // Scroll to tracking section
-  //   setTimeout(() => {
-  //     const element = document.querySelector('.bg-white.shadow-lg');
-  //     if (element) {
-  //       element.scrollIntoView({ behavior: 'smooth' });
-  //     }
-  //   }, 100);
-  // }
-
-  // formatTime(date: Date): string {
-  //   return date.toLocaleTimeString('en-US', {
-  //     hour: '2-digit',
-  //     minute: '2-digit',
-  //     hour12: true
-  //   });
-  // }
-
-  // fireConfetti(): void {
-  //   if (!this.confettiCanvas?.nativeElement) return;
-
-  //   try {
-  //     const canvas = this.confettiCanvas.nativeElement;
-  //     canvas.width = window.innerWidth;
-  //     canvas.height = window.innerHeight;
-      
-  //     const myConfetti = confetti.create(canvas, {
-  //       resize: true,
-  //       useWorker: true
-  //     });
-
-  //     myConfetti({
-  //       particleCount: 150,
-  //       spread: 100,
-  //       origin: { y: 0.6 }
-  //     });
-
-  //     setTimeout(() => {
-  //       myConfetti({
-  //         particleCount: 80,
-  //         angle: 60,
-  //         spread: 65,
-  //         origin: { x: 0 }
-  //       });
-
-  //       myConfetti({
-  //         particleCount: 80,
-  //         angle: 120,
-  //         spread: 65,
-  //         origin: { x: 1 }
-  //       });
-  //     }, 300);
-      
-  //     console.log('🎉 Confetti fired successfully');
-  //   } catch (error) {
-  //     console.error('❌ Confetti error:', error);
-  //   }
-  // }
 
   goToStore(): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');

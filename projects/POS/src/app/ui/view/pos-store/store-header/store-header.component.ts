@@ -279,18 +279,17 @@ export class StoreHeaderComponent implements OnChanges {
     this.isAuthModalOpen = false;
   }
 
-  handleLogin(credentials: {email: string, password: string}): void {
-    console.log('Login attempt:', credentials);
-    this.closeAuthModal();
-    this.user = { name: credentials.email.split('@')[0], isGuest: false };
-  }
+handleLogin(credentials: {username: string, password: string}): void {
+  console.log('Login attempt:', credentials);
+  this.closeAuthModal();
+  this.user = { name: credentials.username, isGuest: false };
+}
 
-  handleSignup(userData: {name: string, email: string, phone: string, password: string}): void {
-    console.log('Signup attempt:', userData);
-    this.closeAuthModal();
-    this.user = { name: userData.name, isGuest: false };
-  }
-
+handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
+  console.log('Signup attempt:', userData);
+  this.closeAuthModal();
+  this.user = { name: userData.username, isGuest: false };
+}
   handleGuest(): void {
     this.closeAuthModal();
     this.user = { name: 'Guest', isGuest: true };
@@ -356,4 +355,18 @@ export class StoreHeaderComponent implements OnChanges {
       this.isMobileMenuOpen = false;
     }
   }
+  navigateToReturnsRefunds(): void {
+  // Get the current store UUID from the route
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  
+  if (currentUuid) {
+    this.router.navigate(['user/checkout/store', currentUuid, 'return-refund']);
+  } else {
+    // Fallback if no UUID is available
+    this.router.navigate(['user/checkout/store/return-refund']);
+  }
+  
+  // Close the dropdown after navigation
+  this.isUserDropdownOpen = false;
+}
 }

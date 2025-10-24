@@ -139,6 +139,9 @@ import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-h
 // import { CategoryProductsComponent } from './ui/view/pos-store/category-products/category-products.component';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { AllProductsComponent } from './ui/view/pos-store/all-products/all-products.component';
+import { VerificationRequiredComponent } from './ui/view/pos-store/verification-required/verification-required.component';
+import { EmailVerificationComponent } from './ui/view/pos-store/email-verification/email-verification.component';
+import { ReturnsRefundsComponent } from './ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 import { EStoreOrdersListComponent } from './ui/view/sales/e-store-sales/estore-orders-list/estore-orders-list.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
@@ -292,6 +295,9 @@ const dbConfig: DBConfig = {
     // ProductDetailsComponent,
     UpdateStockComponent,
     AllProductsComponent,
+    VerificationRequiredComponent,
+    EmailVerificationComponent,
+    ReturnsRefundsComponent,
     EStoreSalesComponent,
     EStoreOrdersListComponent,
     // CategoryProductsComponent,

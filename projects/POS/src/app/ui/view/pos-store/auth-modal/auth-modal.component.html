@@ -1,154 +1,208 @@
-<div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-  <div class="bg-white rounded-lg w-full max-w-md" (click)="$event.stopPropagation()">
-    <!-- Modal Header -->
-    <div class="flex justify-between items-center p-4 border-b">
-      <h2 class="text-xl font-semibold text-gray-800">
-        {{ isLoginMode ? 'Sign In' : 'Create Account' }}
+<!-- auth-modal.component.html -->
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto my-auto transform transition-all">
+    <!-- Header -->
+    <div class="flex justify-between items-center p-6 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">
+        {{ mode === 'login' ? 'Sign In' : 'Create Account' }}
       </h2>
-      <button class="text-gray-400 hover:text-gray-600" (click)="closeModal()">
+      <button 
+        (click)="closeModal()"
+        class="text-gray-400 hover:text-gray-600 transition-colors"
+      >
         <i class="fa-solid fa-times text-xl"></i>
       </button>
     </div>
 
-    <!-- Modal Body -->
-    <div class="p-6">
-      <!-- Toggle between Login and Signup -->
-      <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
-        <button 
-          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors"
-          [class.bg-white]="isLoginMode"
-          [class.text-gray-800]="isLoginMode"
-          [class.text-gray-500]="!isLoginMode"
-          (click)="toggleMode(true)"
-        >
-          Sign In
-        </button>
-        <button 
-          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors"
-          [class.bg-white]="!isLoginMode"
-          [class.text-gray-800]="!isLoginMode"
-          [class.text-gray-500]="isLoginMode"
-          (click)="toggleMode(false)"
-        >
-          Create Account
-        </button>
+    <!-- Success Message -->
+    <div *ngIf="successMessage" class="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+      <div class="flex items-center">
+        <i class="fa-solid fa-circle-check text-green-500 mr-2"></i>
+        <span class="text-green-700 text-sm">{{ successMessage }}</span>
       </div>
+    </div>
 
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+      <div class="flex items-center">
+        <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
+        <span class="text-red-700 text-sm">{{ errorMessage }}</span>
+      </div>
+    </div>
+
+    <!-- Forms -->
+    <div class="p-6">
       <!-- Login Form -->
-      <form *ngIf="isLoginMode" (ngSubmit)="onLogin()" class="space-y-4">
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-            placeholder="Enter your email"
-            required
-          >
-        </div>
-        
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div class="relative">
+      <form *ngIf="mode === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()">
+        <div class="space-y-4">
+          <!-- Username -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
-              [type]="showPassword ? 'text' : 'password'"
-              id="password"
-              name="password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-              placeholder="Enter your password"
-              required
+              type="text"
+              formControlName="username"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Enter your username"
             >
-            <button 
-              type="button" 
-              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              (click)="togglePasswordVisibility()"
-            >
-              <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
-            </button>
+            <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="loginForm.get('username')?.errors?.['required']">Username is required</span>
+              <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters</span>
+              <span *ngIf="loginForm.get('username')?.errors?.['maxlength']">Username must be less than 20 characters</span>
+            </div>
           </div>
+
+          <!-- Password -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              formControlName="password"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Enter your password"
+            >
+            <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+              <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            [disabled]="loginForm.invalid || isLoading"
+            class="w-full bg-customGreen hover:bg-customBlue disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+          >
+            <span *ngIf="!isLoading">Sign In</span>
+            <span *ngIf="isLoading">Signing In...</span>
+          </button>
         </div>
-        
-        <button
-          type="submit"
-          class="w-full bg-customGreen text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors"
-        >
-          Sign In
-        </button>
       </form>
 
       <!-- Signup Form -->
-      <form *ngIf="!isLoginMode" (ngSubmit)="onSignup()" class="space-y-4">
-        <div>
-          <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-            placeholder="Enter your full name"
-            required
-          >
-        </div>
-        
-        <div>
-          <label for="signupEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input
-            type="email"
-            id="signupEmail"
-            name="email"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-            placeholder="Enter your email"
-            required
-          >
-        </div>
-        
-        <div>
-          <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-            placeholder="Enter your phone number"
-            required
-          >
-        </div>
-        
-        <div>
-          <label for="signupPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div class="relative">
+      <form *ngIf="mode === 'signup'" [formGroup]="signupForm" (ngSubmit)="onSignup()">
+        <div class="space-y-4">
+          <!-- Full Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
-              [type]="showPassword ? 'text' : 'password'"
-              id="signupPassword"
-              name="password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-customGreen"
-              placeholder="Create a password"
-              required
+              type="text"
+              formControlName="fullname"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Enter your full name"
             >
-            <button 
-              type="button" 
-              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              (click)="togglePasswordVisibility()"
-            >
-              <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
-            </button>
+            <div *ngIf="signupForm.get('fullname')?.invalid && signupForm.get('fullname')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('fullname')?.errors?.['required']">Full name is required</span>
+              <span *ngIf="signupForm.get('fullname')?.errors?.['maxlength']">Full name must be less than 100 characters</span>
+            </div>
           </div>
+
+          <!-- Username -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <input
+              type="text"
+              formControlName="username"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Choose a username (3-20 characters)"
+            >
+            <div *ngIf="signupForm.get('username')?.invalid && signupForm.get('username')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('username')?.errors?.['required']">Username is required</span>
+              <span *ngIf="signupForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters</span>
+              <span *ngIf="signupForm.get('username')?.errors?.['maxlength']">Username must be less than 20 characters</span>
+              <span *ngIf="signupForm.get('username')?.errors?.['pattern']">Username can only contain letters, numbers, and underscores</span>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              formControlName="email"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Enter your email"
+            >
+            <div *ngIf="signupForm.get('email')?.invalid && signupForm.get('email')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="signupForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+            </div>
+          </div>
+
+          <!-- Phone Number -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              formControlName="phonenumber"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Enter your phone number"
+            >
+            <div *ngIf="signupForm.get('phonenumber')?.invalid && signupForm.get('phonenumber')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('phonenumber')?.errors?.['required']">Phone number is required</span>
+              <span *ngIf="signupForm.get('phonenumber')?.errors?.['pattern']">Please enter a valid phone number (10-15 digits)</span>
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              formControlName="password"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Create a password"
+            >
+            <div *ngIf="signupForm.get('password')?.invalid && signupForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('password')?.errors?.['required']">Password is required</span>
+              <span *ngIf="signupForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+            <input
+              type="password"
+              formControlName="confirmPassword"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-colors"
+              placeholder="Confirm your password"
+            >
+            <div *ngIf="signupForm.get('confirmPassword')?.invalid && signupForm.get('confirmPassword')?.touched" class="text-red-500 text-xs mt-1">
+              <span *ngIf="signupForm.get('confirmPassword')?.errors?.['required']">Please confirm your password</span>
+              <span *ngIf="signupForm.get('confirmPassword')?.errors?.['passwordMismatch']">Passwords do not match</span>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            [disabled]="signupForm.invalid || isLoading"
+            class="w-full bg-customGreen hover:bg-customBlue disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+          >
+            <span *ngIf="!isLoading">Create Account</span>
+            <span *ngIf="isLoading">Creating Account...</span>
+          </button>
         </div>
-        
-        <button
-          type="submit"
-          class="w-full bg-customGreen text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors"
-        >
-          Create Account
-        </button>
       </form>
 
-      <!-- Continue as Guest -->
+      <!-- Mode Switch -->
       <div class="mt-6 text-center">
-        <button 
-          class="text-customGreen hover:underline"
-          (click)="continueAsGuest()"
+        <p class="text-sm text-gray-600">
+          {{ mode === 'login' ? "Don't have an account?" : "Already have an account?" }}
+          <button
+            (click)="switchMode(mode === 'login' ? 'signup' : 'login')"
+            class="text-customGreen hover:text-customBlue font-medium ml-1 transition-colors"
+          >
+            {{ mode === 'login' ? 'Sign up' : 'Sign in' }}
+          </button>
+        </p>
+      </div>
+
+      <!-- Guest Option -->
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <button
+          (click)="onGuest()"
+          class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200"
         >
           Continue as Guest
         </button>

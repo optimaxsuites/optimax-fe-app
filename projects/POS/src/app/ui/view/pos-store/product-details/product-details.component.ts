@@ -109,10 +109,12 @@ currentImage = computed((): ProductImageDTO | undefined => {
     }
   }
 
-  ngOnDestroy(): void {
-    // Clean up scroll listener
-    window.removeEventListener('scroll', this.onScroll.bind(this));
-  }
+ngOnDestroy(): void {
+  // Clean up scroll listener
+  window.removeEventListener('scroll', this.onScroll.bind(this));
+  // Clean up keyboard listener
+  document.removeEventListener('keydown', this.handleKeyDown);
+}
 
   // FIXED: Image selection no longer affects related products
   selectImage(index: number): void {
@@ -136,13 +138,19 @@ currentImage = computed((): ProductImageDTO | undefined => {
     this.selectedImageIndex.set(prevIndex);
   }
 
-  openImageModal(): void {
-    this.isImageModalOpen.set(true);
-  }
+// Update your openImageModal method:
+openImageModal(): void {
+  this.isImageModalOpen.set(true);
+  // Add keyboard event listener
+  document.addEventListener('keydown', this.handleKeyDown);
+}
 
-  closeImageModal(): void {
-    this.isImageModalOpen.set(false);
-  }
+// Update your closeImageModal method:
+closeImageModal(): void {
+  this.isImageModalOpen.set(false);
+  // Remove keyboard event listener
+  document.removeEventListener('keydown', this.handleKeyDown);
+}
 
   // Scroll to top functionality
   scrollToTop(): void {
@@ -486,4 +494,22 @@ currentImage = computed((): ProductImageDTO | undefined => {
   changeBranch(branch: any): void {
     console.log('Branch changed to:', branch);
   }
+
+  // Keyboard navigation for modal
+private handleKeyDown = (event: KeyboardEvent) => {
+  if (!this.isImageModalOpen()) return;
+
+  switch (event.key) {
+    case 'Escape':
+      this.closeImageModal();
+      break;
+    case 'ArrowLeft':
+      this.previousImage();
+      break;
+    case 'ArrowRight':
+      this.nextImage();
+      break;
+  }
+};
+
 }

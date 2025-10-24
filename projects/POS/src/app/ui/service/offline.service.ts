@@ -69,8 +69,8 @@ console.log("caching offline")
   //       }
   // }
 
- async addPendingPayment(payment: any) {
-  try {
+  async addPendingPayment(payment: any) {
+        try {
     const cleanPayment = JSON.parse(JSON.stringify(payment));
     delete cleanPayment.__dbKey;
 
@@ -157,19 +157,19 @@ console.log("caching offline")
         this.pendingTransactions$.next([]);
         console.log('success? ', successDeleted);
         });
-    } 
+}
 
 
-  async clearProducts() {
-    return this.dbService.clear('products').subscribe((successDeleted) => {
-    console.log('success? ', successDeleted);
-  });;
-  }
+async clearProducts() {
+  return this.dbService.clear('products').subscribe((successDeleted) => {
+  console.log('success? ', successDeleted);
+});;
+}
 
-  async clearCategories() {
-    return this.dbService.clear('categories').subscribe((successDeleted) => {
-    console.log('success? ', successDeleted);
-  });;
-  }
+async clearCategories() {
+  return this.dbService.clear('categories').subscribe((successDeleted) => {
+  console.log('success? ', successDeleted);
+});;
+}
 
 }
