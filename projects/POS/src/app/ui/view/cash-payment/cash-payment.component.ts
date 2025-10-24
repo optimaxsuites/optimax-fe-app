@@ -328,6 +328,11 @@ export class CashPaymentComponent implements OnInit {
         }
         return orderItems;
       }),
+      deliveryFee: 0,
+      estimatedReadyTime: "string",
+      estimatedDeliveryTime: "string",
+      customerEmail: "string",
+      deliveryStatus: "CONFIRMED"
     }
   };
 
@@ -440,6 +445,11 @@ export class CashPaymentComponent implements OnInit {
         }
         return orderItems;
       }),
+      deliveryFee: 0,
+      estimatedReadyTime: "string",
+      estimatedDeliveryTime: "string",
+      // customerEmail: "string",
+      deliveryStatus: "CONFIRMED"
     };
     if(this.customerFound) {
       orderPayload.customerId = this.customerFound?.id
