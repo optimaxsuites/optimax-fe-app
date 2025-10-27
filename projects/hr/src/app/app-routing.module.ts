@@ -11,6 +11,8 @@ import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { MasterComponent } from './master.component';
+import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
+import { ProjectComponent } from './ui/view/project/project.component';
 
 const routes: Routes = [
   {
@@ -64,6 +66,10 @@ const routes: Routes = [
   {
     path: 'user/onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
+  },
+  {
+    path: 'project/:uuid',
+    component: ProjectComponent,
   },
 ];
 @NgModule({

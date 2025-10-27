@@ -13,6 +13,6 @@ export class AttendanceComponent {
   tabsConfig: TabConfig[] = [
     { name: 'My attendance', component: MyAttendanceComponent },
     { name: 'Attendance Sheet', component: AttendanceSheetsComponent },
-    { name: 'Time Sheet', component: TimeSheetComponent }
+    // { name: 'Time Sheet', component: TimeSheetComponent }
   ];
 }

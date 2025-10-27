@@ -130,6 +130,7 @@ export class MenuItemsService {
           icon: 'fas fa-user-plus',
           description: 'Handle job postings, candidate applications, interview schedules, and hiring decisions.'
         },
+        { label: 'Project', route: this.navigationLink.getLink('projectLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-check' },
         {
           label: 'Performance',
           code: 'HR_PERF',
