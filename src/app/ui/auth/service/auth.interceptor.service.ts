@@ -28,7 +28,7 @@ export class AuthInterceptor implements HttpInterceptor {
       tenantId = parts[0] || 'optimax';
     }
 
-    const defaultTenantEndpoints = ['/auth/register', '/auth/forgot-password'];
+    const defaultTenantEndpoints = ['/admin/marketplace/:id', '/admin/payment'];
     const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
       request.url.includes(url)
     );
