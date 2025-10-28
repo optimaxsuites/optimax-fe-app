@@ -28,9 +28,13 @@ export class AuthInterceptor implements HttpInterceptor {
       tenantId = parts[0] || 'optimax';
     }
 
-    const defaultTenantEndpoints = ['x/api/v2/sub/subscriptionModules', 'x/api/v2/sub/subscriptionOrders'];
-    const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
-      request.url.includes(url)
+    const defaultTenantEndpoints = [
+      '/x/api/v2/sub/subscriptionModules',
+      '/x/api/v2/sub/subscriptionOrders'
+    ];
+
+    const isDefaultTenantEndpoint = defaultTenantEndpoints.some(path =>
+      request.url.endsWith(path)
     );
 
     let updatedRequest = request.clone({
