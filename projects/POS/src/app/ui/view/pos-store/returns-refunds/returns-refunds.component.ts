@@ -1,7 +1,7 @@
-// returns-refunds.component.ts
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
+import { RefundRequestService } from '../../../service/refund-request.service';
 
 interface ReturnProduct {
   productName: string;
@@ -21,17 +21,126 @@ interface RefundMethod {
   description: string;
 }
 
+interface RefundRequest {
+  id: number;
+  transactionId: string;
+  reasonForRefund: string;
+  cashierComment: string;
+  cashierId: string;
+  refundMeans: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  createdDate: string;
+  updatedDate?: string;
+  status?: string;
+  refundAmount?: number;
+  processedBy?: string;
+}
+
 @Component({
   selector: 'app-returns-refunds',
   templateUrl: './returns-refunds.component.html',
   styleUrls: ['./returns-refunds.component.scss']
 })
-export class ReturnsRefundsComponent {
+export class ReturnsRefundsComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private refundService = inject(RefundRequestService);
+
   returnForm: FormGroup;
   isSubmitting = signal(false);
   currentStep = signal(1);
+  activeSection = signal<'new-request' | 'my-refunds' | 'completed'>('new-request');
+  
+  // Filtering and search
+  statusFilter = signal('all');
+  searchTerm = signal('');
+  
+  // Mock data - replace with actual API calls
+  allRefunds = signal<RefundRequest[]>([
+    {
+      id: 1,
+      transactionId: 'ORD-001',
+      reasonForRefund: 'Defective product',
+      cashierComment: 'Waiting for product inspection',
+      cashierId: 'user123',
+      refundMeans: 'original',
+      customerName: 'John Doe',
+      customerEmail: 'john@example.com',
+      customerPhone: '+1234567890',
+      createdDate: '2024-01-15T10:30:00Z',
+      status: 'pending'
+    },
+    {
+      id: 2,
+      transactionId: 'ORD-002',
+      reasonForRefund: 'Wrong size',
+      cashierComment: 'Refund approved',
+      cashierId: 'user123',
+      refundMeans: 'store-credit',
+      customerName: 'Jane Smith',
+      customerEmail: 'jane@example.com',
+      customerPhone: '+1234567891',
+      createdDate: '2024-01-10T14:20:00Z',
+      status: 'approved'
+    },
+    {
+      id: 3,
+      transactionId: 'ORD-003',
+      reasonForRefund: 'Changed mind',
+      cashierComment: 'Refund processed successfully',
+      cashierId: 'user123',
+      refundMeans: 'bank-transfer',
+      customerName: 'Bob Johnson',
+      customerEmail: 'bob@example.com',
+      customerPhone: '+1234567892',
+      createdDate: '2024-01-05T09:15:00Z',
+      status: 'completed',
+      refundAmount: 150.00,
+      processedBy: 'Cashier001'
+    }
+  ]);
 
-  // Computed properties for step navigation
+  // Computed properties
+  refundRequests = computed(() => 
+    this.allRefunds().filter(refund => refund.status !== 'completed')
+  );
+
+  completedRefunds = computed(() => 
+    this.allRefunds().filter(refund => refund.status === 'completed')
+  );
+
+  filteredRefunds = computed(() => {
+    let refunds = this.refundRequests();
+    
+    if (this.statusFilter() !== 'all') {
+      refunds = refunds.filter(refund => refund.status === this.statusFilter());
+    }
+    
+    if (this.searchTerm()) {
+      const term = this.searchTerm().toLowerCase();
+      refunds = refunds.filter(refund => 
+        refund.transactionId.toLowerCase().includes(term) ||
+        refund.customerName.toLowerCase().includes(term) ||
+        refund.reasonForRefund.toLowerCase().includes(term)
+      );
+    }
+    
+    return refunds;
+  });
+
+  pendingCount = computed(() => 
+    this.refundRequests().filter(refund => refund.status === 'pending').length
+  );
+
+  approvedCount = computed(() => 
+    this.refundRequests().filter(refund => refund.status === 'approved').length
+  );
+
+  totalRequests = computed(() => this.allRefunds().length);
+
+  // Step navigation computed properties
   canGoToStep2 = computed(() => this.currentStep() === 1);
   canGoToStep3 = computed(() => this.currentStep() === 2 && this.returnForm.valid);
   isStep1 = computed(() => this.currentStep() === 1);
@@ -64,12 +173,13 @@ export class ReturnsRefundsComponent {
     }
   ];
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router
-  ) {
+  constructor() {
     this.returnForm = this.createForm();
-    this.addProduct(); // Add initial product form
+    this.addProduct();
+  }
+
+  ngOnInit() {
+    this.loadRefundRequests();
   }
 
   private createForm(): FormGroup {
@@ -134,28 +244,101 @@ export class ReturnsRefundsComponent {
   }
 
   // Form Submission
-  onSubmit(): void {
+  async submitReturnRequest(): Promise<void> {
     if (this.returnForm.valid) {
       this.isSubmitting.set(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        console.log('Return request submitted:', this.returnForm.value);
-        this.isSubmitting.set(false);
+      try {
+        const formData = this.prepareRefundData();
+        const response = await this.refundService.createRefundRequest(formData).toPromise();
         
-        // Show success message and redirect
+        console.log('Return request submitted successfully:', response);
+        
+        // Add to local state
+        this.allRefunds.update(refunds => [formData, ...refunds]);
+        
+        // Show success message
         alert('Your return request has been submitted successfully!');
-        this.router.navigate(['/return-status']);
-      }, 2000);
+        
+        // Switch to my refunds section
+        this.activeSection.set('my-refunds');
+        this.currentStep.set(1);
+        this.returnForm.reset();
+        this.addProduct(); // Reset to initial product form
+        
+      } catch (error) {
+        console.error('Error submitting return request:', error);
+        alert('There was an error submitting your return request. Please try again.');
+      } finally {
+        this.isSubmitting.set(false);
+      }
     } else {
       this.markFormGroupTouched(this.returnForm);
     }
+  }
+
+  private prepareRefundData(): any {
+    const formValue = this.returnForm.value;
+    
+    return {
+      id: 0, // Will be set by backend
+      transactionId: formValue.orderNumber,
+      reasonForRefund: formValue.returnReason,
+      cashierComment: formValue.description, // Using description as cashier comment
+      cashierId: 'user123', // This would be the actual user ID in a real app
+      refundMeans: formValue.refundMethod,
+      customerName: formValue.customerName,
+      customerEmail: formValue.customerEmail,
+      customerPhone: formValue.customerPhone,
+      createdDate: new Date().toISOString(),
+      status: 'pending',
+      refundAmount: this.getTotalRefundAmount()
+    };
   }
 
   saveAsDraft(): void {
     const formData = this.returnForm.value;
     localStorage.setItem('returnRequestDraft', JSON.stringify(formData));
     alert('Return request saved as draft!');
+  }
+
+  // Refund Management Methods
+ loadRefundRequests(): void {
+  this.refundService.getRefundRequests().subscribe({
+    next: (refunds) => {
+      this.allRefunds.set(refunds);
+    },
+    error: (error) => {
+      console.error('Error loading refund requests:', error);
+      this.allRefunds.set([]);
+    }
+  });
+}
+
+  async deleteRefundRequest(id: number): Promise<void> {
+    if (confirm('Are you sure you want to delete this refund request?')) {
+      try {
+        await this.refundService.deleteRefundRequest(id).toPromise();
+        
+        // Remove from local state
+        this.allRefunds.update(refunds => refunds.filter(refund => refund.id !== id));
+        
+        alert('Refund request deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting refund request:', error);
+        alert('There was an error deleting the refund request. Please try again.');
+      }
+    }
+  }
+
+  filterRefunds(): void {
+    // The computed property will automatically update
+    console.log('Filtering refunds...');
+  }
+
+  refreshRefunds(): void {
+    this.loadRefundRequests();
+    alert('Refund requests refreshed!');
   }
 
   // Helper method to mark all form controls as touched
@@ -206,40 +389,5 @@ export class ReturnsRefundsComponent {
     };
     
     return reasonMap[reason] || reason;
-  }
-
-  // FAQ methods
-  faqOpen = signal<{ [key: number]: boolean }>({
-    1: false,
-    2: false,
-    3: false
-  });
-
-  toggleFAQ(index: number): void {
-    this.faqOpen.update(state => ({
-      ...state,
-      [index]: !state[index]
-    }));
-  }
-
-  isFaqOpen(index: number): boolean {
-    return this.faqOpen()[index] || false;
-  }
-
-  // Navigation methods
-  startReturnProcess(): void {
-    this.currentStep.set(2);
-  }
-
-  checkReturnStatus(): void {
-    this.router.navigate(['/return-status']);
-  }
-
-  contactSupport(): void {
-    window.location.href = 'mailto:support@estore.com';
-  }
-
-  liveChat(): void {
-    console.log('Starting live chat...');
   }
 }
