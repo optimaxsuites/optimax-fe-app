@@ -249,6 +249,8 @@ import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { BadgeModule } from 'primeng/badge';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 
 const dbConfig: DBConfig = {
@@ -509,6 +511,9 @@ const dbConfig: DBConfig = {
       CdkScrollable,
       MatTabsModule,
       MatDividerModule,
+      RadioButtonModule,
+      MultiSelectModule,
+
       DropdownModule,
       MatProgressSpinnerModule,
       SidebarModule,
@@ -550,6 +555,7 @@ const dbConfig: DBConfig = {
       FullCalendarModule,
       InputSwitchModule,
       BadgeModule,
+      
       NgxIndexedDBModule.forRoot(dbConfig),
       
       ServiceWorkerModule.register('ngsw-worker.js', {

@@ -128,6 +128,9 @@ import { CreateProjectComponent } from './ui/view/project/project-list/create-pr
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
+import { CalendarModule } from 'primeng/calendar';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 @NgModule({
   declarations: [
@@ -210,6 +213,7 @@ import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/sc
     RouterModule,
     RippleModule,
     DialogModule,
+    CalendarModule,
     ToastModule,
     FormsModule,
     ReactiveFormsModule,
@@ -226,6 +230,8 @@ import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/sc
     StepperModule,
     InputTextModule,
     FloatLabelModule,
+     RadioButtonModule,
+      MultiSelectModule,
     EditorModule,
     MessagesModule,
     MessageModule,
