@@ -29,8 +29,7 @@ export class AuthInterceptor implements HttpInterceptor {
     }
 
     const defaultTenantEndpoints = [
-      '/x/api/v2/sub/subscriptionModules',
-      '/x/api/v2/sub/subscriptionOrders'
+     ''
     ];
 
     const isDefaultTenantEndpoint = defaultTenantEndpoints.some(path =>
