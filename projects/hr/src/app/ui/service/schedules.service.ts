@@ -227,6 +227,12 @@ export class ShiftService {
     );
   }
 
+  //  getMyShifts(): Shift[] {
+  //   return this.shiftRecords.filter(shift =>
+  //     shift.assignedTo.some(emp => emp.name === this.currentEmployee)
+  //   );
+  // }
+
   /** Returns all records belonging to current employee */
   getMyRecords(): ShiftRecord[] {
     const allRecords = this.getShiftRecords();
