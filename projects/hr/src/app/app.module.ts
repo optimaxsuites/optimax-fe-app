@@ -125,6 +125,9 @@ import { MyProjectComponent } from './ui/view/project/my-project/my-project.comp
 import { MyProjectDetailComponent } from './ui/view/project/my-project/my-project-detail/my-project-detail.component';
 import { ProjectDetailComponent } from './ui/view/project/project-list/project-detail/project-detail.component';
 import { CreateProjectComponent } from './ui/view/project/project-list/create-project/create-project.component';
+import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
+import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
+import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
 
 @NgModule({
   declarations: [
@@ -194,6 +197,9 @@ import { CreateProjectComponent } from './ui/view/project/project-list/create-pr
     MyProjectDetailComponent,
     ProjectDetailComponent,
     CreateProjectComponent,
+    SchedulingComponent,
+    MySchedulesComponent,
+    SchedulesComponent,
   ],
   imports: [
     // BrowserModule,

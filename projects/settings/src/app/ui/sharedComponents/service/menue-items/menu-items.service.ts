@@ -130,11 +130,21 @@ export class MenuItemsService {
           icon: 'fas fa-user-plus',
           description: 'Handle job postings, candidate applications, interview schedules, and hiring decisions.'
         },
-        { label: 'Project', route: this.navigationLink.getLink('projectLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-check' },
+        { label: 'Project', 
+          code: 'HR_PROJECT',
+           route: this.navigationLink.getLink('projectLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-check' },
         {
           label: 'Performance',
           code: 'HR_PERF',
           route: this.navigationLink.getLink('performanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Monitor employee performance, set goals, and conduct evaluations.'
+        },
+        {
+          label: 'Work Schedule',
+          code: 'HR_WORK_SCH',
+          route: this.navigationLink.getLink('workScheduleLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-user-clock',
           description: 'Monitor employee performance, set goals, and conduct evaluations.'
@@ -509,7 +519,7 @@ export class MenuItemsService {
     },
     {
       label: 'Human Resources',
-      code: 'Human Resources',
+      code: 'HR',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('HRSettings'),
 

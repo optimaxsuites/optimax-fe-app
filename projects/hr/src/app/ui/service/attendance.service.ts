@@ -15,10 +15,10 @@ export class AttendanceService {
   private readonly CURRENT_KEY = 'attendance_current';
   private employees = [
     { id: 1, name: 'John Doe', department: 'Engineering' },
-    { id: 2, name: 'Jane Smith', department: 'HR' },
+    { id: 2, name: 'Mary Smith', department: 'HR' },
     { id: 3, name: 'Michael Johnson', department: 'Finance' },
     { id: 4, name: 'Sarah Williams', department: 'Marketing' },
-    { id: 5, name: 'Daniel Brown', department: 'Marketing' },
+    { id: 5, name: 'Tunde Ola', department: 'Marketing' },
 
   ];
 
