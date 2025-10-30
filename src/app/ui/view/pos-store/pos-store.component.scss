@@ -494,3 +494,56 @@ html {
 .transition-transform {
   transition: transform 0.2s ease-in-out;
 }
+
+.welcome-banner {
+  background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+  animation: slideDown 0.5s ease-out;
+  position: relative;
+  z-index: 40;
+}
+
+.toast-container {
+  z-index: 1000;
+}
+
+.toast-item {
+  animation: slideInRight 0.3s ease-out;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  &.leaving {
+    animation: slideOutRight 0.3s ease-in;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}

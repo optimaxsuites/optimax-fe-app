@@ -108,51 +108,63 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   }
 
   onLogin(): void {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
-      this.successMessage = '';
+  if (this.loginForm.valid) {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
 
-      const loginData: LoginData = {
-        username: this.loginForm.value.username,
-        password: this.loginForm.value.password
-      };
+    const loginData: LoginData = {
+      username: this.loginForm.value.username,
+      password: this.loginForm.value.password
+    };
 
-      this.authService.login(loginData).subscribe({
-        next: (response) => {
-          this.isLoading = false;
+    this.authService.login(loginData).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        
+        // Check if response exists
+        if (!response) {
+          this.errorMessage = 'Invalid response from server. Please try again.';
+          return;
+        }
+        
+        // Since the API doesn't return 'verified' field, we'll assume login success means verified
+        // If you need to check verification separately, you'll need to make another API call
+        
+        // Check if user needs verification (optional - only if your API has a separate verification check)
+        if (response.verified === false) {
+          this.errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
           
-          if (!response.user.verified) {
-            this.errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
-            
-            this.authService.storePendingVerification({
-              username: loginData.username,
-              email: response.user.email
-            });
-            
-            setTimeout(() => {
-              this.closeModal();
-              const uuid = this.storeUuid || this.getCurrentStoreUuid();
-              this.router.navigate(['/store', uuid, 'verify-required']);
-            }, 2000);
-            return;
-          }
-          
-          this.login.emit(loginData);
-          this.closeModal();
+          this.authService.storePendingVerification({
+            username: loginData.username,
+            email: response.email
+          });
           
           setTimeout(() => {
+            this.closeModal();
             const uuid = this.storeUuid || this.getCurrentStoreUuid();
-            this.router.navigate(['/store', uuid, 'dashboard']);
-          }, 500);
-        },
-        error: (error) => {
-          this.isLoading = false;
-          this.errorMessage = error || 'Login failed. Please check your credentials and try again.';
+            this.router.navigate(['/store', uuid, 'verify-required']);
+          }, 2000);
+          return;
         }
-      });
-    }
+        
+        // Emit login event with credentials
+        this.login.emit(loginData);
+        this.closeModal();
+        
+        // Navigate to dashboard
+        setTimeout(() => {
+          const uuid = this.storeUuid || this.getCurrentStoreUuid();
+          this.router.navigate(['/store', uuid, 'dashboard']);
+        }, 500);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage = error || 'Login failed. Please check your credentials and try again.';
+      }
+    });
   }
+}
 
   onSignup(): void {
     if (this.signupForm.valid) {

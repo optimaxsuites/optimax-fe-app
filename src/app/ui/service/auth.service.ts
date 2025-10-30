@@ -19,32 +19,17 @@ export interface LoginData {
 }
 
 export interface AuthResponse {
-  token: string;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    role: string[];
-    verified: boolean;
-    upi: {
-      fullname: string;
-      email: string;
-      phoneNumber: string;
-      city: string;
-      state: string;
-      country: string;
-      profileImage: string;
-      address: string;
-      clientType: string;
-      companyName: string;
-      industry: string;
-      bio: string;
-      postalCode: string;
-      currency: string;
-      language: string;
-      timeZone: string;
-    };
-  };
+  id: number;
+  username: string;
+  email: string;
+  roles: string[];
+  provider: string;
+  accountId: string;
+  project: string;
+  ecode: string;
+  tokenType: string;
+  accessToken: string;
+  verified?: boolean; // Optional since it's not in the response
 }
 
 export interface SignupResponse {
@@ -66,10 +51,9 @@ export interface PendingVerification {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-
   constructor(private http: HttpClient) {}
 
   private getBaseApiUrl(): string {
@@ -77,43 +61,45 @@ export class AuthService {
   }
 
   private validateAndFormatSignupData(userData: SignupData): any {
-    const formattedPhone = userData.phonenumber.replace(/\D/g, '').substring(0, 15);
+    const formattedPhone = userData.phonenumber
+      .replace(/\D/g, '')
+      .substring(0, 15);
     const username = userData.username.substring(0, 20);
-    const clientType = "Individual".substring(0, 10);
+    const clientType = 'Individual'.substring(0, 10);
     const currentDate = new Date().toISOString();
-    
+
     const apiKey = environment.apiKey || 'default-store-api-key';
     const project = environment.project || 'store';
 
     return {
       username: username,
       email: userData.email,
-      role: ["user"],
+      role: ['user'],
       password: userData.password,
       project: project,
       apiKey: apiKey,
       createdDate: currentDate,
       lastLoginDate: currentDate,
-      createdBy: "system",
+      createdBy: 'system',
       upi: {
         fullname: userData.fullname.substring(0, 100),
         email: userData.email,
         phoneNumber: formattedPhone,
         username: username,
-        city: "",
-        state: "",
-        country: "",
-        profileImage: "",
-        address: "",
+        city: '',
+        state: '',
+        country: '',
+        profileImage: '',
+        address: '',
         clientType: clientType,
-        companyName: "",
-        industry: "",
-        bio: "",
-        postalCode: "",
-        currency: "NGN",
-        language: "en",
-        timeZone: "Africa/Lagos"
-      }
+        companyName: '',
+        industry: '',
+        bio: '',
+        postalCode: '',
+        currency: 'NGN',
+        language: 'en',
+        timeZone: 'Africa/Lagos',
+      },
     };
   }
 
@@ -122,109 +108,140 @@ export class AuthService {
 
     console.log('Sending signup payload:', validatedPayload);
 
-    return this.http.post<any>(
-      this.getBaseApiUrl() + '/x/api/v2/auth/signup', 
-      validatedPayload
-    ).pipe(
-      map((response: any) => {
-        return {
-          success: true,
-          message: 'Account created successfully! Please check your email for verification.',
-          requiresVerification: true,
-          userId: response.user?.id || 0,
-          username: userData.username,
-          email: userData.email
-        };
-      }),
-      catchError((error: HttpErrorResponse) => {
-        // Handle email service errors gracefully
-        if (error.status === 500 && error.error?.message?.includes('MailAuthenticationException')) {
-          const response: SignupResponse = {
+    return this.http
+      .post<any>(
+        this.getBaseApiUrl() + '/x/api/v2/auth/signup',
+        validatedPayload
+      )
+      .pipe(
+        map((response: any) => {
+          return {
             success: true,
-            message: 'Account created! Please check your email for verification.',
+            message:
+              'Account created successfully! Please check your email for verification.',
             requiresVerification: true,
+            userId: response.user?.id || 0,
             username: userData.username,
-            email: userData.email
+            email: userData.email,
           };
-          return of(response);
-        }
-        
-        let errorMessage = 'An unknown error occurred!';
-        if (error.error instanceof ErrorEvent) {
-          errorMessage = `Error: ${error.error.message}`;
-        } else {
-          if (error.status === 500) {
-            errorMessage = 'Server error. Please check your details and try again.';
-          } else if (error.status === 0) {
-            errorMessage = 'Unable to connect to server. Check your internet connection.';
-          } else if (error.status === 400) {
-            errorMessage = error.error?.message || 'Invalid request. Please check your input.';
-          } else {
-            errorMessage = error.error?.message || `Error: ${error.status}`;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          // Handle email service errors gracefully
+          if (
+            error.status === 500 &&
+            error.error?.message?.includes('MailAuthenticationException')
+          ) {
+            const response: SignupResponse = {
+              success: true,
+              message:
+                'Account created! Please check your email for verification.',
+              requiresVerification: true,
+              username: userData.username,
+              email: userData.email,
+            };
+            return of(response);
           }
-        }
-        return throwError(() => errorMessage);
-      })
-    );
+
+          let errorMessage = 'An unknown error occurred!';
+          if (error.error instanceof ErrorEvent) {
+            errorMessage = `Error: ${error.error.message}`;
+          } else {
+            if (error.status === 500) {
+              errorMessage =
+                'Server error. Please check your details and try again.';
+            } else if (error.status === 0) {
+              errorMessage =
+                'Unable to connect to server. Check your internet connection.';
+            } else if (error.status === 400) {
+              errorMessage =
+                error.error?.message ||
+                'Invalid request. Please check your input.';
+            } else {
+              errorMessage = error.error?.message || `Error: ${error.status}`;
+            }
+          }
+          return throwError(() => errorMessage);
+        })
+      );
   }
 
-  login(loginData: LoginData): Observable<AuthResponse> {
-    const loginPayload = {
-      username: loginData.username,
-      password: loginData.password,
-      project: environment.project || 'ERP',
-      apiKey: environment.apiKey || 'ApiKey 6f4fc8aefc712b4e45b2c78fa472c870'
-    };
+ // Update the login method
+login(loginData: LoginData): Observable<AuthResponse> {
+  const loginPayload = {
+    username: loginData.username,
+    password: loginData.password,
+    project: environment.project || 'ERP',
+    apiKey: environment.apiKey || 'ApiKey 6f4fc8aefc712b4e45b2c78fa472c870'
+  };
 
-    return this.http.post<AuthResponse>(
-      this.getBaseApiUrl() + '/x/api/v2/auth/signin', 
-      loginPayload
-    ).pipe(
-      tap(response => {
-        if (response.token) {
-          localStorage.setItem('auth_token', response.token);
-          localStorage.setItem('user_data', JSON.stringify(response.user));
-        }
-      }),
-      catchError(this.handleError)
-    );
-  }
+  return this.http.post<AuthResponse>(
+    this.getBaseApiUrl() + '/x/api/v2/auth/signin', 
+    loginPayload
+  ).pipe(
+    tap(response => {
+      console.log('Login response:', response);
+      
+      // Store the accessToken (not 'token')
+      if (response.accessToken) {
+        localStorage.setItem('auth_token', response.accessToken);
+      }
+      
+      // Store user data
+      const userData = {
+        id: response.id,
+        username: response.username,
+        email: response.email,
+        role: response.roles,
+        verified: response.verified !== false, // Default to true if not provided
+        accountId: response.accountId,
+        project: response.project,
+        ecode: response.ecode
+      };
+      localStorage.setItem('user_data', JSON.stringify(userData));
+    }),
+    catchError(this.handleError)
+  );
+}
 
   verifyEmail(token: string): Observable<any> {
-    return this.http.get<any>(
-      this.getBaseApiUrl() + `/x/api/v2/us/register/verify?token=${token}`
-    ).pipe(
-      tap(() => {
-        console.log('Email verification successful');
-      }),
-      catchError(this.handleError)
-    );
+    return this.http
+      .get<any>(
+        this.getBaseApiUrl() + `/x/api/v2/us/register/verify?token=${token}`
+      )
+      .pipe(
+        tap(() => {
+          console.log('Email verification successful');
+        }),
+        catchError(this.handleError)
+      );
   }
 
   resendVerificationEmail(username: string): Observable<any> {
     const payload = {
       username: username,
       project: environment.project || 'store',
-      apiKey: environment.apiKey || 'default-store-api-key'
+      apiKey: environment.apiKey || 'default-store-api-key',
     };
 
-    return this.http.post<any>(
-      this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink',
-      payload
-    ).pipe(
-      tap(() => {
-        console.log('Verification email resent successfully');
-      }),
-      catchError(this.handleError)
-    );
+    return this.http
+      .post<any>(
+        this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink',
+        payload
+      )
+      .pipe(
+        tap(() => {
+          console.log('Verification email resent successfully');
+        }),
+        catchError(this.handleError)
+      );
   }
 
   checkVerificationStatus(username: string): Observable<VerificationStatus> {
-    return this.http.get<VerificationStatus>(
-      this.getBaseApiUrl() + `/x/api/v2/us/ur/get/user/verified/${username}`
-    ).pipe(
-      catchError(this.handleError)
-    );
+    return this.http
+      .get<VerificationStatus>(
+        this.getBaseApiUrl() + `/x/api/v2/us/ur/get/user/verified/${username}`
+      )
+      .pipe(catchError(this.handleError));
   }
 
   // Password reset functionality
@@ -232,13 +249,15 @@ export class AuthService {
     const payload = {
       email: email,
       project: environment.project || 'store',
-      apiKey: environment.apiKey || 'default-store-api-key'
+      apiKey: environment.apiKey || 'default-store-api-key',
     };
 
-    return this.http.post<any>(
-      this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink',
-      payload
-    ).pipe(catchError(this.handleError));
+    return this.http
+      .post<any>(
+        this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink',
+        payload
+      )
+      .pipe(catchError(this.handleError));
   }
 
   logout(): void {
@@ -290,7 +309,8 @@ export class AuthService {
       } else if (error.status === 404) {
         errorMessage = 'Resource not found. Please try again.';
       } else if (error.status === 0) {
-        errorMessage = 'Unable to connect to server. Check your internet connection.';
+        errorMessage =
+          'Unable to connect to server. Check your internet connection.';
       } else if (error.status === 401) {
         errorMessage = 'Invalid username or password.';
       } else if (error.status === 400) {
