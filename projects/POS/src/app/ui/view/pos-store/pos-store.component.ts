@@ -1,6 +1,4 @@
-// pos-store.component.ts - FIXED VERSION
-
-import { Component, computed, OnInit, signal, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, computed, OnInit, signal, OnDestroy, ViewChild, ElementRef, HostListener, Inject, PLATFORM_ID } from '@angular/core';
 import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
 import { ActivatedRoute } from '@angular/router'; 
@@ -11,6 +9,8 @@ import { ProductHelperService } from '../../service/product-helper.service';
 import { Router } from '@angular/router';
 import { StoreCartService } from '../../service/store-cart.service'; 
 import { MetadataService } from '../../service/metadata.service';
+import { AuthService } from '../../service/auth.service';
+import { isPlatformBrowser } from '@angular/common';
 
 type ProductDataMap = Map<string, ProductData[]>;
 
@@ -21,6 +21,14 @@ type ConvertedCartProducts = {
   discount: number;
   total: number;
 };
+
+interface Toast {
+  id: number;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  leaving?: boolean;
+}
 
 @Component({
   selector: 'app-pos-store',
@@ -42,11 +50,9 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     threshold: 0.333,
   };
 
-  // Product data
   allProducts: ProductData[] = [];
   productData = signal<ProductDataMap>(new Map());
 
-  // UI State
   readonly defaultCategory = 'All';
   selectedCategory = signal(this.defaultCategory);
   selectedBranch = signal<any>(null);
@@ -54,20 +60,16 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   branches: any[] = [];
   searchText = signal('');
   
-  // FIXED: Separate loading states for skeleton and content
   isLoading = signal(true);
   isContentReady = signal(false);
-  private hasShownSkeleton = false; // Track if skeleton has been shown
+  private hasShownSkeleton = false;
 
-  // Pagination
   currentPage = signal(1);
   itemsPerPage = signal(20);
   totalPages = signal(0);
 
-  // Search
   private _fuse!: Fuse<ProductData>;
 
-  // Cart & UI State
   isSidebarVisible = true;
   isCartOpen = false;
   isHamburgerMenuOpen = false;
@@ -76,15 +78,15 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   isCartSidebarVisible = true;
   selectedProduct: ProductData | null = null;
   
-  // FIXED: Use signal for scroll to top visibility
   showScrollToTop = signal(false);
 
-  // Computed properties
+  welcomeBannerVisible = signal(true);
+  toasts = signal<Toast[]>([]);
+
   private _productsInChosenCategory = computed(
     () => this.productData().get(this.selectedCategory()) ?? this._allProducts
   );
 
-  // Cart signals
   cartProducts = computed(() => this.cartService.cart().items);
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
@@ -153,12 +155,10 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     return Math.ceil(totalItems / this.itemsPerPage());
   });
 
-  // Image fading functionality
   private currentImageIndex = 0;
   private totalImages = 4;
   private fadeInterval: any;
 
-  // Category scroll states
   categoryScrollStates = new Map<
     string,
     { canScrollLeft: boolean; canScrollRight: boolean }
@@ -172,25 +172,26 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     private _paymentService: PaymentServiceService,
     private cartService: StoreCartService,
     private route: ActivatedRoute,
-    private metadataService: MetadataService
+    private metadataService: MetadataService,
+    private authService: AuthService,
+    @Inject(PLATFORM_ID) private platformId: any
   ) {}
 
-  // FIXED: Use HostListener for scroll events
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
     const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    // Show button when scrolled down more than 300px
     this.showScrollToTop.set(scrollPosition > 300);
   }
 
   ngOnInit(): void {
     this.initializeComponent();
+    this.initializeUserState();
+    this.checkWelcomeBannerVisibility();
   }
 
   private initializeComponent(): void {
     this._fuse = new Fuse<ProductData>([], PosStoreComponent._fuseOptions);
 
-    // Load branches
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
       if (branches.length > 0 && !this.selectedBranch()) {
@@ -204,13 +205,75 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     this.startImageFading();
   }
 
+  private initializeUserState(): void {
+    // Check authentication status
+    if (this.authService.isAuthenticated()) {
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser) {
+        const displayName = currentUser.upi?.fullname || currentUser.username || 'User';
+        this.user.set({ 
+          name: displayName, 
+          isGuest: false 
+        });
+        
+        // Show welcome back message for returning users
+        this.showWelcomeBackMessage(displayName);
+      }
+    } else {
+      this.user.set({ name: 'Guest', isGuest: true });
+    }
+
+    // Check if user is new
+    this.checkUserStatus();
+  }
+
+  private showWelcomeBackMessage(username: string): void {
+    const greeting = this.getTimeBasedGreeting();
+    this.showToast(
+      `${greeting}`,
+      `Welcome back, ${username}! Great to see you again.`,
+      'success'
+    );
+  }
+
+  private checkUserStatus(): void {
+    // Implement logic to check if user is new or returning
+    // For now, we'll just log it
+    console.log('Checking user status...');
+  }
+
+  private welcomeBannerDismissed(): boolean {
+    // Check if banner was dismissed in current session
+    // You can implement session-based dismissal logic here
+    return false; // Default to not dismissed
+  }
+
+  private checkWelcomeBannerVisibility(): void {
+    // Don't show if already dismissed in this session
+    if (this.welcomeBannerDismissed()) {
+      this.welcomeBannerVisible.set(false);
+      return;
+    }
+    
+    // Check localStorage for previous dismissal
+    if (isPlatformBrowser(this.platformId)) {
+      const wasDismissed = localStorage.getItem('welcomeBannerDismissed');
+      if (wasDismissed === 'true') {
+        this.welcomeBannerVisible.set(false);
+        return;
+      }
+    }
+    
+    // Show banner for new users or guests
+    this.welcomeBannerVisible.set(true);
+  }
+
   private subscribeToEnrichedProducts(): void {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data && data.length > 0) {
         this.processProductsData(data);
         this.handleContentLoading();
       } else {
-        console.log('No enriched products data available, falling back to regular loading');
         this.loadProductsFallback();
       }
     });
@@ -245,10 +308,8 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     }
   }
 
-  // FIXED: Show skeleton only on first load
   private handleContentLoading(): void {
     if (!this.hasShownSkeleton) {
-      // First load - show skeleton for minimum time
       this.isLoading.set(true);
       this.isContentReady.set(false);
       
@@ -262,7 +323,6 @@ export class PosStoreComponent implements OnInit, OnDestroy {
       
       this.hasShownSkeleton = true;
     } else {
-      // Subsequent loads - show content immediately
       this.isLoading.set(false);
       this.isContentReady.set(true);
       this.updatePagination();
@@ -276,7 +336,6 @@ export class PosStoreComponent implements OnInit, OnDestroy {
         this.handleContentLoading();
       },
       error: (error) => {
-        console.error('Error loading products', error);
         this.isLoading.set(false);
         this.isContentReady.set(true);
       },
@@ -294,12 +353,89 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     }
   }
 
+  getTimeBasedGreeting(): string {
+    const hour = new Date().getHours();
+    const emojis = ['🌅', '☀️', '🌙'];
+    
+    if (hour < 12) {
+      return `Good Morning ${emojis[0]}`;
+    } else if (hour < 17) {
+      return `Good Afternoon ${emojis[1]}`;
+    } else {
+      return `Good Evening ${emojis[2]}`;
+    }
+  }
+
+  showToast(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info'): void {
+    const toast: Toast = {
+      id: Date.now(),
+      title,
+      message,
+      type
+    };
+    
+    this.toasts.update(toasts => [...toasts, toast]);
+    
+    setTimeout(() => {
+      this.removeToast(toast.id);
+    }, 5000);
+  }
+
+  removeToast(toastId: number): void {
+    this.toasts.update(toasts => {
+      const toast = toasts.find(t => t.id === toastId);
+      if (toast) {
+        toast.leaving = true;
+      }
+      return [...toasts];
+    });
+    
+    setTimeout(() => {
+      this.toasts.update(toasts => toasts.filter(t => t.id !== toastId));
+    }, 300);
+  }
+
+  hideWelcomeBanner(): void {
+    this.welcomeBannerVisible.set(false);
+    
+    // Save dismissal to localStorage
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('welcomeBannerDismissed', 'true');
+    }
+  }
+
+  handleLogin(credentials: {username: string, password: string}): void {
+    this.user.set({ name: credentials.username, isGuest: false });
+    
+    const greeting = this.getTimeBasedGreeting();
+    this.showToast(
+      `${greeting}`,
+      `Welcome back, ${credentials.username}! Great to see you again.`,
+      'success'
+    );
+  }
+
+  handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
+    this.user.set({ name: userData.username, isGuest: false });
+    
+    const greeting = this.getTimeBasedGreeting();
+    this.showToast(
+      'Account Created! 🎉',
+      `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
+      'success'
+    );
+  }
+
+  closeAuthModal(): void {
+    const modal = document.querySelector('app-auth-modal');
+    if (modal) {
+      modal.remove();
+    }
+  }
+
   onBranchChange(branch: any): void {
     this.selectedBranch.set(branch);
     this.metadataService.setSelectedBranch(branch.id);
-    
-    // FIXED: Don't show skeleton on branch change, just update content
-    // The products will be automatically updated via the enrichedProduct$ subscription
   }
 
   onMobileCategoryNavigate(categoryName: string): void {
@@ -399,8 +535,6 @@ export class PosStoreComponent implements OnInit, OnDestroy {
       this.router.navigate(['product-details', productId], {
         relativeTo: this.route,
       });
-    } else {
-      console.error('No store UUID found in route parameters');
     }
   }
 
@@ -599,7 +733,6 @@ export class PosStoreComponent implements OnInit, OnDestroy {
 
       return `₦${priceValue.toLocaleString('en-NG')}`;
     } catch (error) {
-      console.warn('Error formatting price:', error);
       return '₦0';
     }
   }
@@ -632,9 +765,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
-  // FIXED: Scroll to top method - multiple approaches for browser compatibility
   scrollToTop(): void {
-    // Try modern approach first
     try {
       window.scrollTo({ 
         top: 0, 
@@ -642,11 +773,9 @@ export class PosStoreComponent implements OnInit, OnDestroy {
         behavior: 'smooth' 
       });
     } catch (error) {
-      // Fallback for older browsers
       try {
         window.scrollTo(0, 0);
       } catch (e) {
-        // Last resort - scroll body/documentElement
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
       }
@@ -659,14 +788,11 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     }
   }
 
-    // Reference to the scrollable main element
   @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
 
-  // Listen to scroll events on the main scrollable container
   onMainScroll(event: Event): void {
     const element = event.target as HTMLElement;
     const scrollPosition = element.scrollTop;
-    // Show button when scrolled down more than 300px
     this.showScrollToTop.set(scrollPosition > 300);
   }
 }

@@ -369,4 +369,17 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
   // Close the dropdown after navigation
   this.isUserDropdownOpen = false;
 }
+
+getTimeBasedGreeting(): string {
+  const hour = new Date().getHours();
+  const emojis = ['🌅', '☀️', '🌙'];
+  
+  if (hour < 12) {
+    return `Good Morning ${emojis[0]}`;
+  } else if (hour < 17) {
+    return `Good Afternoon ${emojis[1]}`;
+  } else {
+    return `Good Evening ${emojis[2]}`;
+  }
+}
 }
