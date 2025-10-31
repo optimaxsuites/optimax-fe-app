@@ -109,7 +109,7 @@ export class CashPaymentComponent implements OnInit {
     // if (userInfoString) {
     //   this.businessInfo = JSON.parse(userInfoString);
     // }
-    // if(navigator.onLine) this.syncOfflinePayments()
+    // if(navigator.onLine) this.syncOfflinePayments();
   }
 
 
