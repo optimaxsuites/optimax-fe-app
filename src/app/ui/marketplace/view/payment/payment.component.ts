@@ -551,8 +551,16 @@ private calculateNewEndDate(baseDate: string | Date, isYearly: boolean): string 
       }
     });
   }
+  loadPlanLimits(){
+    this.subscriptionService.restoreLimitsFromCache();
 
+    this.subscriptionService.loadAllModulePlanLimits().subscribe({
+      next: () => console.log('All module plan limits loaded'),
+      error: (err) => console.error('Error loading limits', err)
+    });
+  }
   async completeInstallation() {
+    this.loadPlanLimits()
   await this.menuService.getRegisterApps()
     this.messageService.add({
       severity: 'success',
