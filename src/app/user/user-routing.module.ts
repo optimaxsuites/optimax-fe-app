@@ -20,6 +20,7 @@ import { CategoryProductsComponent } from '../ui/view/pos-store/category-product
 import { VerificationRequiredComponent } from '../ui/view/verification-required/verification-required.component';
 import { EmailVerificationComponent } from '../ui/view/pos-store/email-verification/email-verification.component';
 import { ReturnsRefundsComponent } from '../ui/view/pos-store/returns-refunds/returns-refunds.component';
+import { OrderHistoryComponent } from '../ui/view/pos-store/order-history/order-history.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
@@ -142,6 +143,10 @@ const routes: Routes = [
     {
       path: 'product-details/:id',
       component: ProductDetailsComponent,
+    },
+    {
+      path: 'order-history',
+      component: OrderHistoryComponent
     },
     {
       path: 'category/:categoryName',  // ADD THIS ROUTE

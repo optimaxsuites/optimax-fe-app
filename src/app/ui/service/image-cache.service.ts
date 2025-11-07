@@ -1,4 +1,3 @@
-// image-cache.service.ts - COMPLETE VERSION
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable, of } from 'rxjs';

@@ -1,0 +1,786 @@
+<div class="h-screen flex flex-col bg-gray-50">
+  <!-- <button class="bg-red-500 w-40 h-40 rounded-full absolute bottom-0 " aria-label="Scroll to top" id="scroller">
+    <i class="fa-solid fa-chevron-up text-lg"></i>
+  </button> -->
+
+  @if (welcomeBannerVisible() && !user().isGuest) {
+  <div class="welcome-banner bg-gradient-to-r from-customGreen to-customBlue text-white py-3 px-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-sparkles text-yellow-300"></i>
+        <span class="text-sm md:text-base">
+          {{ getTimeBasedGreeting() }},
+          <span class="font-semibold">{{ user().name }}</span>!
+          Ready to find something amazing today? 🛍️
+        </span>
+      </div>
+      <button class="hover:text-gray-200 transition-colors p-1 rounded-full" (click)="hideWelcomeBanner()"
+        aria-label="Close welcome banner">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+  </div>
+  }
+  <!-- i have fixed everything -->
+  <!-- Toast Notifications -->
+  <div class="toast-container fixed top-4 right-4 z-[100] space-y-2">
+    @for (toast of toasts(); track toast.id) {
+    <div
+      class="toast-item bg-white border-l-4 shadow-lg rounded-lg p-4 max-w-sm transform transition-all duration-300 ease-in-out"
+      [class.border-customGreen]="toast.type === 'success'" [class.border-customBlue]="toast.type === 'info'"
+      [class.border-amber-500]="toast.type === 'warning'" [class.border-red-500]="toast.type === 'error'"
+      [class.opacity-0]="toast.leaving" [class.translate-x-full]="toast.leaving">
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          @switch (toast.type) {
+          @case ('success') {
+          <i class="fa-solid fa-circle-check text-customGreen text-lg"></i>
+          }
+          @case ('info') {
+          <i class="fa-solid fa-circle-info text-customBlue text-lg"></i>
+          }
+          @case ('warning') {
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>
+          }
+          @case ('error') {
+          <i class="fa-solid fa-circle-xmark text-red-500 text-lg"></i>
+          }
+          }
+        </div>
+        <div class="flex-1">
+          <h4 class="font-semibold text-gray-900 text-sm">{{ toast.title }}</h4>
+          <p class="text-gray-600 text-sm mt-1">{{ toast.message }}</p>
+        </div>
+        <button class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          (click)="removeToast(toast.id)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Scroll to Top Button -->
+  <button *ngIf="showScrollToTop()" (click)="scrollToTop()"
+    class="fixed bottom-6 right-6 z-50 bg-customBlue text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-110"
+    aria-label="Scroll to top">
+    <i class="fa-solid fa-chevron-up text-lg"></i>
+  </button>
+  <app-store-header [branches]="branches" [selectedBranch]="selectedBranch()" [categoryOptions]="categoryOptions()"
+    [selectedCategory]="selectedCategory()" [searchText]="searchText()" [isCartEmpty]="isCartEmpty()"
+    [totalCartItems]="getTotalCartItems()" [user]="user()" [allProducts]="allProducts"
+    (categoryChange)="changeCategory($event)" (searchChange)="changeSearchInput($event)" (toggleCart)="toggleCart()"
+    (productSelect)="onProductSelect($event)" (searchSubmit)="onSearchSubmit($event)"
+    (branchChange)="onBranchChange($event)" (mobileCategoryNavigate)="onMobileCategoryNavigate($event)">
+  </app-store-header>
+
+  <!-- Main Content with Cart Sidebar -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Products Area -->
+    <main class="flex-1 overflow-auto p-4">
+      <!-- Skeleton Preloader - Show until content is fully ready -->
+      @if (isLoading() || !isContentReady()) {
+      <div class="skeleton-preloader">
+        <!-- Hero Section Skeleton -->
+        <div
+          class="flex md:flex-row flex-col md:items-center justify-between w-full md:py-[8rem] py-[4rem] md:px-[4rem] px-[1rem] gap-3 mb-8">
+          <div class="flex gap-3">
+            <div class="md:w-32 w-20 h-32 bg-gray-200 rounded animate-pulse"></div>
+            <div class="flex flex-col gap-4">
+              <div class="h-16 w-64 bg-gray-200 rounded animate-pulse"></div>
+              <div class="h-6 w-48 bg-gray-200 rounded animate-pulse md:hidden block"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Sections Skeleton -->
+        <div class="flex flex-col gap-[2rem] pb-4 md:px-[4rem] px-[1rem]">
+          @for (item of [1,2,3]; track item) {
+          <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+            <!-- Category Header Skeleton -->
+            <div class="flex flex-row justify-between items-center border-gray-200 bg-gray-200 border p-3">
+              <div class="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
+              <div class="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+
+            <!-- Category Products Skeleton - Matches actual structure -->
+            <div class="relative p-3">
+              <div class="flex gap-4 overflow-x-auto">
+                @for (product of [1,2,3,4,5,6,7]; track product) {
+                <div
+                  class="flex-shrink-0 bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-col gap-3 md:w-[200px] w-[100px]">
+                  <!-- Image Skeleton -->
+                  <div class="h-44 w-full rounded-xl bg-gray-200 animate-pulse"></div>
+
+                  <!-- Content Skeleton -->
+                  <div class="p-2 flex flex-col justify-between items-start">
+                    <div class="w-full">
+                      <div class="h-5 w-3/4 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                      <div class="h-6 w-16 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                    </div>
+                    <!-- Stock info skeleton -->
+                    <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                    <!-- Button skeleton -->
+                    <div class="h-10 w-full bg-gray-200 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+
+        <!-- All Products Section Skeleton -->
+        <div class="mt-8 md:px-[4rem] px-[2rem]">
+          <!-- Section Header Skeleton -->
+          <div class="flex justify-between items-center mb-4">
+            <div class="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          <!-- Products Grid Skeleton - Matches 6 columns on xl screens -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            @for (item of [1,2,3,4,5,6,7,8,9,10,11,12]; track item) {
+            <div class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-col min-h-[150px]">
+              <!-- Image Skeleton -->
+              <div class="h-44 w-full bg-gray-200 animate-pulse"></div>
+
+              <!-- Content Skeleton -->
+              <div class="p-3 flex flex-col flex-1 justify-between">
+                <div>
+                  <div class="h-5 w-full bg-gray-200 rounded mb-2 animate-pulse"></div>
+                  <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                  <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <!-- Button Skeleton -->
+                <div class="h-10 w-full bg-gray-200 rounded-full animate-pulse mt-2"></div>
+              </div>
+            </div>
+            }
+          </div>
+
+          <!-- Pagination Skeleton -->
+          <div class="flex justify-center items-center space-x-2 mt-8">
+            @for (item of [1,2,3,4,5]; track item) {
+            <div class="h-10 w-10 bg-gray-200 rounded animate-pulse"></div>
+            }
+          </div>
+        </div>
+      </div>
+      }
+
+
+      <!-- Actual Content - Show only when content is fully ready -->
+      @if (isContentReady() && !isLoading()) {
+      <!-- Category Sections -->
+      <div class="mb-8">
+        <div class="banner-container w-full px-[1rem] md:px-[4rem]">
+          <div
+            class="premium-banner bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 md:p-10 text-gray-800 overflow-hidden relative border border-gray-200 shadow-lg">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 opacity-[0.03]">
+              <div class="pattern-grid pattern-gray-400 w-full h-full"></div>
+            </div>
+
+            <!-- Floating decorative elements -->
+            <div class="absolute -top-6 -right-6 w-24 h-24 bg-customBlue/10 rounded-full block"></div>
+            <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-customGreen/10 rounded-full block"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-8">
+              <!-- Text Content - NOW FIRST ON MOBILE -->
+              <div class="flex-1 max-w-2xl order-1">
+                <div
+                  class="inline-flex items-center bg-customBlue/10 text-customBlue px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6 border border-customBlue/20">
+                  <i class="fa-solid fa-bolt mr-2"></i>
+                  Limited Time Offer - Up to 40% OFF
+                </div>
+
+                <h1 class="text-2xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4 leading-tight">
+                  Everything You Need,
+                  <span class="block text-customBlue mt-1 md:mt-2">In One Place</span>
+                </h1>
+
+                <p class="text-sm md:text-lg lg:text-xl text-gray-600 mb-6 md:mb-8 max-w-xl leading-relaxed">
+                  Discover our carefully curated collection of premium products with exclusive deals,
+                  fast shipping, and exceptional customer service.
+                </p>
+
+                <!-- Stats -->
+                <div class="flex flex-wrap gap-4 md:gap-6 mb-6 md:mb-8">
+                  <div class="flex items-center justify-center gap-2">
+                    <div
+                      class="w-14 h-14 bg-gradient-to-br from-customGreen/20 to-customGreen/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <i class="fa-solid fa-truck-fast text-customGreen text-xl"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-sm md:text-lg">100%</div>
+                      <div class="text-xs md:text-sm text-gray-500">Fast Delivery</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-center gap-2">
+                    <div
+                      class="w-14 h-14 bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <i class="fa-solid fa-shield-halved text-amber-500 text-xl"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-sm md:text-lg">100%</div>
+                      <div class="text-xs md:text-sm text-gray-500">Secure Payments</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-center gap-2">
+                    <div
+                      class="w-14 h-14 bg-gradient-to-br from-customBlue/20 to-customBlue/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <i class="fa-solid fa-headset text-customBlue text-xl"></i>
+                    </div>
+                    <div>
+                      <div class="font-bold text-sm md:text-lg">24/7</div>
+                      <div class="text-xs md:text-sm text-gray-500">Customer Support</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 md:gap-4">
+                  <button (click)="scrollToAllProducts()"
+                    class="bg-customBlue hover:bg-customBlueHover text-white px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-1 text-sm md:text-base">
+                    <i class="fa-solid fa-bag-shopping mr-2 md:mr-3"></i>
+                    Shop Now
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fading Image Container -->
+              <div class="flex-shrink-0 w-full lg:w-2/5 relative order-2 lg:order-2 mt-6 lg:mt-0">
+                <div class="relative">
+                  <!-- Image container with fading effect -->
+                  <div class="bg-white rounded-2xl p-3 md:p-4 shadow-2xl border border-gray-100 overflow-hidden">
+                    <div class="fading-image-container relative h-48 md:h-64 lg:h-80 rounded-xl overflow-hidden">
+                      <!-- All images stacked with fade transitions -->
+                      <img
+                        src="https://images.unsplash.com/photo-1607082350899-7e105aa886ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        alt="Happy Shopping Experience"
+                        class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000">
+
+                      <img
+                        src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        alt="Shopping Bags"
+                        class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+
+                      <img
+                        src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        alt="E-commerce Shopping"
+                        class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+
+                      <img
+                        src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        alt="Online Shopping"
+                        class="fading-image absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-0">
+                    </div>
+                  </div>
+
+                  <!-- Floating elements - Hidden on mobile -->
+                  <div
+                    class="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-customGreen text-white rounded-2xl font-bold shadow-xl transform  text-xs md:text-sm flex items-center">
+                    <div class="flex flex-col items-center lg:items-end text-center lg:text-right">
+                      <div
+                        class="flex items-center gap-3 p-4 bg-white/90 rounded-2xl border border-gray-100 backdrop-blur-sm">
+                        <div class="relative">
+                          <div
+                            class="w-14 h-14 bg-gradient-to-br from-customBlue to-customGreen rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-star text-white text-lg"></i>
+                          </div>
+                          <div
+                            class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-check text-white text-xs"></i>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="font-bold text-gray-900 text-sm">Trusted by</p>
+                          <p class="text-customBlue font-semibold">1000+ Customers</p>
+                          <div class="flex items-center gap-1 mt-1">
+                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            <span class="text-xs text-gray-600 ml-1">4.9/5</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Shopping cart icon floating - Hidden on mobile -->
+                  <!-- <div class="absolute -bottom-2 -left-2 md:-bottom-3 md:-left-3 bg-white p-2 md:p-3 rounded-full shadow-lg border block">
+            <i class="fa-solid fa-cart-shopping text-customBlue text-lg md:text-xl"></i>
+          </div> -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-[2rem] pb-4 mt-[1rem] md:px-[4rem] px-[1rem]">
+          @for (category of getCategoryList(); track category) {
+          <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+            <div class="flex flex-row justify-between items-center border-gray-200 bg-customBlue border">
+              <h3 class="text-lg font-semibold text-white p-3 uppercase tracking-wider">{{ category }}</h3>
+              <div class="p-3">
+                <button class="text-white hover:text-blue-600 font-medium transition-colors underline"
+                  (click)="navigateToCategoryPage(category)">
+                  View all
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Products Container with Scroll -->
+            <div class="relative">
+              <!-- Scroll Container -->
+              <div #scrollContainer class="flex gap-4 p-3 overflow-x-auto scrollbar-hide scroll-smooth"
+                [attr.data-category]="category" (scroll)="onCategoryScroll(category, $event)">
+                @for (product of getProductsByCategory(category); track product.id; let i = $index) {
+                @if (i < 7) { <div
+                  class="flex-shrink-0 bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col gap-3 cursor-pointer md:w-[200px] w-[100px]"
+                  [routerLink]="['product-details', product.id]">
+                  <!-- Out of Stock Badge -->
+                  @if (product.quantity === 0) {
+                  <div
+                    class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+                    Out of stock
+                  </div>
+                  }
+
+                  <div class="h-44 w-full rounded-xl bg-gray-100 overflow-hidden">
+                    <img [src]="getProductImage(product) | async" [alt]="product.name"
+                      class="w-full h-full object-cover" (error)="handleImageError($event)" />
+                  </div>
+
+                  <div class="p-2 flex flex-col justify-between items-start">
+                    <div>
+                      <h4 class="font-medium text-gray-800 text-xl line-clamp-1 capitalize">
+                        {{ product.name }}
+                      </h4>
+                      <p class="text-customBlue font-semibold text-xl">
+                        {{ formatPrice(product.sellingPrice) }}
+                      </p>
+                    </div>
+
+                    <!-- Stock Information -->
+                    <div class="w-full mt-2">
+                      @if (product.quantity > 0) {
+                      <p class="text-xs text-gray-500 text-left">
+                        {{ product.quantity }} items left
+                      </p>
+                      }
+                    </div>
+
+                    <!-- Buy Button - Only show if in stock -->
+                    @if (product.quantity > 0) {
+                    <div class="mt-2">
+                      <button
+                        class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
+                        (click)="$event.stopPropagation(); addToCart(product)">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Buy Now</span>
+                      </button>
+                    </div>
+                    }
+                  </div>
+              </div>
+              }
+              }
+            </div>
+
+            <!-- Navigation Arrows -->
+            <div class="absolute bottom-4 right-4 flex gap-2 md:hidden">
+              <button
+                class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                (click)="scrollCategoryLeft(category)" [class.opacity-50]="!canScrollLeft(category)"
+                [class.cursor-not-allowed]="!canScrollLeft(category)">
+                <i class="fa-solid fa-chevron-left text-gray-700 text-sm"></i>
+              </button>
+
+              <button
+                class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                (click)="scrollCategoryRight(category)" [class.opacity-50]="!canScrollRight(category)"
+                [class.cursor-not-allowed]="!canScrollRight(category)">
+                <i class="fa-solid fa-chevron-right text-gray-700 text-sm"></i>
+              </button>
+            </div>
+
+            <!-- Desktop Scroll Indicators -->
+            <div class="hidden md:flex absolute bottom-4 right-4 gap-2">
+              <button
+                class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all"
+                (click)="scrollCategoryLeft(category)" [class.opacity-50]="!canScrollLeft(category)"
+                [class.cursor-not-allowed]="!canScrollLeft(category)">
+                <i class="fa-solid fa-chevron-left text-gray-700"></i>
+              </button>
+
+              <button
+                class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all"
+                (click)="scrollCategoryRight(category)" [class.opacity-50]="!canScrollRight(category)"
+                [class.cursor-not-allowed]="!canScrollRight(category)">
+                <i class="fa-solid fa-chevron-right text-gray-700"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+  </div> <!-- Close Category Sections -->
+
+  <!-- All Products Section with Pagination -->
+  <div #allProductsSection id="all-products-section" class="mt-8 md:px-[4rem] px-[2rem]">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold text-gray-800">All Products</h2>
+      <div class="text-sm text-gray-600">
+        Showing {{ (currentPage() - 1) * itemsPerPage() + 1 }}-{{ getDisplayEndIndex() }} of {{
+        filteredProducts().length }} products
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+      @for (product of paginatedProducts(); track product.id) {
+      <div
+        class="cursor-pointer bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col min-h-[150px]"
+        [routerLink]="['product-details', product.id]">
+        <!-- Out of Stock Badge -->
+        @if (product.quantity === 0) {
+        <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+          Out of stock
+        </div>
+        }
+
+        <!-- Product Image -->
+        <div class="h-44 w-full rounded-t-xl bg-gray-100 overflow-hidden flex-shrink-0">
+          <img [src]="getProductImage(product) | async" [alt]="product.name" class="w-full h-full object-cover"
+            (error)="handleImageError($event)" />
+        </div>
+
+        <!-- Product Info -->
+        <div class="p-3 flex flex-col flex-1 justify-between">
+          <div>
+            <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-1">
+              {{ product.name }}
+            </h3>
+            <p class="text-xs text-gray-500 text-left">
+              {{ product.quantity }} items left
+            </p>
+            <p class="text-customBlue font-semibold text-lg">
+              {{ formatPrice(product.sellingPrice) }}
+            </p>
+          </div>
+
+          <!-- Buy Button - Only show if in stock -->
+          @if (product.quantity > 0) {
+          <div class="mt-2">
+            <button
+              class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
+              (click)="$event.stopPropagation(); addToCart(product)">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>Buy Now</span>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Pagination Controls -->
+    @if (totalPages() > 1) {
+    <div class="flex justify-center items-center space-x-2 mt-8">
+      <!-- Previous Button -->
+      <button (click)="previousPage()" [disabled]="currentPage() === 1"
+        class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <!-- Page Numbers -->
+      @for (page of getPageNumbers(); track page) {
+      @if (page === '...') {
+      <span class="px-3 py-2 text-gray-500">...</span>
+      } @else {
+      <button (click)="goToPage($any(page))" [class.bg-customBlue]="currentPage() === page"
+        [class.text-white]="currentPage() === page" [class.bg-white]="currentPage() !== page"
+        [class.text-gray-700]="currentPage() !== page"
+        class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors min-w-[44px]">
+        {{ page }}
+      </button>
+      }
+      }
+
+      <!-- Next Button -->
+      <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+        class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+    }
+  </div> <!-- Close All Products Section -->
+  } <!-- Close @if (isContentReady()) -->
+  </main> <!-- Close main -->
+
+  <!-- Cart Sidebar -->
+  @if (isCartSidebarVisible && !isCartEmpty()) {
+  <div class="hidden md:block w-[30%] bg-white border-l border-gray-300 overflow-hidden flex flex-col">
+    <div class="flex flex-col h-full">
+      <div class="p-4 bg-gray-50 border-b">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-800">Shopping Cart</h2>
+          <span class="bg-[#2E6276]/10 text-[#2E6276] text-lg px-2 py-1 rounded-full">
+            {{ getTotalCartItems() }} items
+          </span>
+        </div>
+      </div>
+
+      <!-- Cart Items -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div class="space-y-4">
+          @for (data of cartProducts() | keyvalue; track $index) {
+          <div
+            class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+            <!-- Product Image -->
+            <div class="w-16 h-16 flex-shrink-0 rounded-lg">
+              <img [src]="getProductImage(data.value.product) | async" [alt]="data.value.product.name"
+                class="w-full h-full object-cover rounded-xl border" (error)="handleImageError($event)" />
+            </div>
+
+            <!-- Product Details -->
+            <div class="flex-1 min-w-0">
+              <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+                {{ data.value.product.name }}
+              </h4>
+              <p class="text-lg text-gray-600 mt-1">
+                {{ formatPrice(data.value.product.sellingPrice) }} each
+              </p>
+            </div>
+
+            <!-- Quantity Controls -->
+            <div class="flex items-center space-x-2">
+              <button
+                class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                (click)="reduceQuantityInCart(data.value.product)">
+                <i class="fa-solid fa-minus text-xl text-gray-600"></i>
+              </button>
+
+              <span class="w-6 text-center text-xl font-medium">
+                {{ data.value.quantity }}
+              </span>
+
+              <button
+                class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                (click)="addToCart(data.value.product)" [disabled]="data.value.product.quantity <= data.value.quantity">
+                <i class="fa-solid fa-plus text-xl text-gray-600"></i>
+              </button>
+            </div>
+
+            <!-- Remove Item -->
+            <button
+              class="w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              (click)="removeFromCart(data.value.product)">
+              <i class="fa-solid fa-trash text-lg"></i>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Cart Footer -->
+      <div class="border-t border-gray-200 p-4 bg-gray-100">
+        <!-- Subtotal -->
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
+          <span class="text-2xl font-bold text-[#333]">
+            {{ convertedCartProducts().subtotal | currency:'₦' }}
+          </span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex w-full mt-auto flex-row gap-2">
+          <button
+            class="py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 w-full rounded-lg font-medium transition-colors"
+            (click)="clearCart()">
+            Clear Cart
+          </button>
+          <button
+            class="py-2 px-4 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full"
+            (click)="navigateToCheckout()">
+            <i class="fa-solid fa-credit-card"></i>
+            <span>Checkout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div> <!-- Close flex container -->
+
+<!-- Mobile Cart Modal -->
+@if (isCartOpen) {
+<div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-center p-0 md:hidden">
+  <div class="bg-white w-full h-4/5 rounded-t-2xl shadow-xl flex flex-col" (click)="$event.stopPropagation()">
+    <!-- Cart Header -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-cart-shopping text-[#2E6276]"></i>
+        <h2 class="text-xl font-semibold text-gray-800">Shopping Cart</h2>
+        <span class="bg-[#2E6276]/10 text-[#2E6276] text-xs px-2 py-1 rounded-full">
+          {{ getTotalCartItems() }} items
+        </span>
+      </div>
+      <button class="py-4 px-5 hover:bg-gray-200 rounded transition-colors" (click)="isCartOpen = false">
+        <i class="fa-solid fa-times text-gray-600"></i>
+      </button>
+    </div>
+
+    <!-- Cart Items -->
+    <div class="flex-1 overflow-y-auto p-4">
+      @if (isCartEmpty()) {
+      <div class="flex flex-col items-center justify-center py-12 text-gray-500">
+        <i class="fa-solid fa-cart-shopping text-4xl mb-4 text-gray-300"></i>
+        <p class="text-lg font-medium">Your cart is empty</p>
+        <p class="text-sm">Add some products to get started</p>
+      </div>
+      } @else {
+      <div class="space-y-3">
+        @for (data of cartProducts() | keyvalue; track $index) {
+        <div
+          class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+          <!-- Product Image -->
+          <div class="w-16 h-16 flex-shrink-0">
+            <img [src]="getProductImage(data.value.product) | async" [alt]="data.value.product.name"
+              class="w-full h-full object-cover rounded-md border" (error)="handleImageError($event)" />
+          </div>
+
+          <!-- Product Details -->
+          <div class="flex-1 min-w-0">
+            <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+              {{ data.value.product.name }}
+            </h4>
+            <p class="text-lg text-gray-600 mt-1">
+              {{ data.value.product.sellingPrice | currency:'₦' }} each
+            </p>
+          </div>
+
+          <!-- Quantity Controls -->
+          <div class="flex items-center space-x-4">
+            <button
+              class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              (click)="reduceQuantityInCart(data.value.product)">
+              <i class="fa-solid fa-minus text-lg text-gray-600"></i>
+            </button>
+
+            <span class="w-6 text-center text-sm font-medium">
+              {{ data.value.quantity }}
+            </span>
+
+            <button
+              class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              (click)="addToCart(data.value.product)" [disabled]="data.value.product.quantity <= data.value.quantity">
+              <i class="fa-solid fa-plus md:text-lg text-lg text-gray-600"></i>
+            </button>
+          </div>
+
+          <!-- Remove Item -->
+          <button
+            class="w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            (click)="removeFromCart(data.value.product)">
+            <i class="fa-solid fa-trash md:text-lg text-lg"></i>
+          </button>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Cart Footer -->
+    @if (!isCartEmpty()) {
+    <div class="border-t border-gray-200 p-4 bg-gray-50">
+      <!-- Subtotal -->
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
+        <span class="md:text-3xl font-bold text-[#2EB270]">
+          {{ formatPrice(convertedCartProducts().subtotal) }}
+        </span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-4">
+        <button class="py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors"
+          (click)="clearCart(); isCartOpen = false">
+          Clear Cart
+        </button>
+        <button
+          class="py-3 px-4 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+          (click)="isCartOpen = false; isPaymentModalOpen = true">
+          <i class="fa-solid fa-credit-card"></i>
+          <span>Checkout</span>
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+</div>
+}
+
+<!-- Hamburger Menu Overlay -->
+@if (isHamburgerMenuOpen) {
+<div class="fixed inset-0 bg-black bg-opacity-50 z-40" (click)="isHamburgerMenuOpen = false"></div>
+<div class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300">
+  <div class="p-4 border-b">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-800">Menu</h2>
+      <button class="p-1 hover:bg-gray-100 rounded" (click)="isHamburgerMenuOpen = false">
+        <i class="fa-solid fa-times text-gray-600"></i>
+      </button>
+    </div>
+  </div>
+  <nav class="p-4">
+    <ul class="space-y-2">
+      <li>
+        <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+          <i class="fa-solid fa-box mr-3 text-gray-600"></i>
+          <span>My Orders</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+          <i class="fa-solid fa-heart mr-3 text-gray-600"></i>
+          <span>Favorites</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+          <i class="fa-solid fa-user mr-3 text-gray-600"></i>
+          <span>Profile</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+          <i class="fa-solid fa-gear mr-3 text-gray-600"></i>
+          <span>Settings</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>
+}
+
+
+<!-- Auth Modal -->
+@if (isAuthModalOpen()) {
+  <app-auth-modal
+    [initialMode]="authModalMode"
+    (close)="closeAuthModal()"
+    (login)="handleLogin($event)"
+    (signup)="handleSignup($event)"
+    (guest)="handleGuest()"
+    (showToast)="showToast($event.title, $event.message, $event.type)"
+  ></app-auth-modal>
+}
+
+
+</div>

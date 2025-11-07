@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Fuse from 'fuse.js';
 
@@ -9,10 +9,13 @@ interface SearchProduct {
   name: string;
   sku: string;
   quantity: number;
-  price?: string; // NEW: Price for display
+  price?: string;
+  sellingPrice?: string;
   productCategory?: { name: string }; 
-  branchName?: string; // Branch name or ID for display
-  address?: string; // Branch location
+  branchName?: string;
+  branch?: { id: number; name: string };
+  branchId?: number;
+  address?: string;
 }
 
 @Component({
@@ -22,17 +25,24 @@ interface SearchProduct {
   standalone: true,
   imports: [CommonModule, FormsModule], 
 })
-export class SearchbarComponent {
-  //  CHANGED: Stricter typing for the input list
+export class SearchbarComponent implements OnChanges {
+  // Input: List of products to search through
   @Input() listToSearch: SearchProduct[] = [];
-  // The parent component will manage listToUpdate based on results from here
+  
+  // Input: The current list being displayed (will be updated with search results)
   @Input() listToUpdate: SearchProduct[] = []; 
+  
+  // Output: Emits when the list to update changes
   @Output() listToUpdateChange = new EventEmitter<SearchProduct[]>();
 
+  // Current search query
   currentSearchQuery = ''; 
   
-  //  CHANGED: Output for global search signal (to parent)
+  // Output: Emits when global search is triggered
   @Output() globalSearch = new EventEmitter<string>();
+
+  // NEW: Output for when a product is selected from global search
+  @Output() productSelected = new EventEmitter<any>();
   
   /** Dropdown & state management */
   isDropdownOpen = false;
@@ -42,10 +52,10 @@ export class SearchbarComponent {
   @Input() isSearching: boolean = false;   
   @Input() searchError: string | null = null;
   
-  // Passed down from parent to display in the dropdown logic (no changes here, used in HTML)
+  // Passed down from parent to display in the dropdown logic
   @Input() globalSearchQuery: string = '';
 
-  //  NEW: Tracks if the user has clicked the icon to trigger a global search
+  // Tracks if the user has clicked the icon to trigger a global search
   hasGlobalSearchBeenTriggered = false; 
 
   // Local state for suggestion display
@@ -53,7 +63,7 @@ export class SearchbarComponent {
   noLocalResults = false; 
   
   private fuse: Fuse<SearchProduct>;
-  private readonly MIN_GLOBAL_SEARCH_LENGTH = 3; // NEW: Minimum length for global search
+  private readonly MIN_GLOBAL_SEARCH_LENGTH = 3;
 
   constructor() {
     this.fuse = new Fuse([], {
@@ -69,19 +79,16 @@ export class SearchbarComponent {
   ngOnChanges() {
     this.fuse.setCollection(this.listToSearch);
     
-    //  CHANGED: If search is active and results arrive, open the dropdown
-    // Dropdown only opens when a global search is triggered or if there are local results to suggest.
-    // MODIFIED: Only ensure dropdown is open if global search is active or triggered
+    // If search is active and results arrive, open the dropdown
     if (this.currentSearchQuery.trim() && (this.isSearching || this.hasGlobalSearchBeenTriggered)) {
         this.isDropdownOpen = true; 
     }
     
     // Re-filter local suggestions if the list changes while typing
     if (this.currentSearchQuery.trim()) {
-        this.searchProducts(this.currentSearchQuery, true); // Re-run search logic without clearing
+        this.searchProducts(this.currentSearchQuery, true);
     }
   }
-
 
   searchProducts(searchValue: string, isNgOnChangesTriggered = false) {
     this.currentSearchQuery = searchValue;
@@ -99,22 +106,19 @@ export class SearchbarComponent {
     }
 
     // 2. Local Search Logic
-    // MODIFIED: Do not set this.isDropdownOpen = true here. It will be controlled by focus/global trigger.
     let searchResults: SearchProduct[] = [];
 
-    if (trimmedValue.length <= 7) { // Allow broader suggestions for first few characters
+    if (trimmedValue.length <= 7) {
       searchResults = this.listToSearch.filter(p => 
         p.name.toLowerCase().startsWith(trimmedValue.toLowerCase()) || 
         p.sku.startsWith(trimmedValue)
       );
     } else {
-      //  CHANGED: Use fuzzy search for more precise "contains" matching
       const fuseResults = this.fuse.search(trimmedValue);
       searchResults = fuseResults.map((val) => val.item);
     }
     
     // 3. Update the main product list (the grid) and dropdown suggestions
-    // BUG FIX: Set listToUpdate to an empty array if no matches are found, clearing the product grid.
     if (searchResults.length === 0) {
       this.listToUpdate = [];
     } else {
@@ -123,24 +127,21 @@ export class SearchbarComponent {
     this.listToUpdateChange.emit(this.listToUpdate);
     
     // Update local suggestions for the dropdown
-    this.localSearchResults = searchResults.slice(0, 5); // Limit suggestions to 5
+    this.localSearchResults = searchResults.slice(0, 5);
     this.noLocalResults = searchResults.length === 0;
 
     // 4. Clear global results when typing new query (unless triggered by ngOnChanges)
     if (!isNgOnChangesTriggered) {
-        // MODIFIED: Only reset global trigger state if a new *different* query is typed
         this.hasGlobalSearchBeenTriggered = false;
         this.globalSearchResults = []; 
     }
 
-    // MODIFIED: If there are no local results, open the dropdown to show the prompt to check global
+    // 5. Handle dropdown visibility
     if (this.noLocalResults && !this.hasGlobalSearchBeenTriggered) {
         this.isDropdownOpen = true;
     } else if (this.hasGlobalSearchBeenTriggered) {
-        // Keep it open if a global search was triggered
         this.isDropdownOpen = true;
     } else {
-        // Close if local search is happening and no global search is active
         this.isDropdownOpen = false;
     }
   }
@@ -150,24 +151,33 @@ export class SearchbarComponent {
     const trimmedValue = this.currentSearchQuery.trim();
     
     if (!trimmedValue) {
-      // If no query, just toggle dropdown visibility
       this.isDropdownOpen = !this.isDropdownOpen;
       this.hasGlobalSearchBeenTriggered = false; 
       return;
     }
     
-    // NEW LOGIC: Only trigger if query length is sufficient
     if (trimmedValue.length < this.MIN_GLOBAL_SEARCH_LENGTH) {
-        this.hasGlobalSearchBeenTriggered = true; // Still open dropdown to show the warning
+        this.hasGlobalSearchBeenTriggered = true;
         this.isDropdownOpen = true;
-        this.globalSearchResults = []; // Clear any previous results
+        this.globalSearchResults = [];
         return;
     }
 
-    // NEW: Only trigger global search on click
     this.hasGlobalSearchBeenTriggered = true;
-    this.isDropdownOpen = true; // Keep dropdown open while searching
-    this.globalSearch.emit(trimmedValue); // Parent starts the search
+    this.isDropdownOpen = true;
+    this.globalSearch.emit(trimmedValue);
+  }
+
+  /** NEW: Handle product selection from global search */
+  selectGlobalProduct(product: any) {
+    console.log('Product selected from global search:', product);
+    this.productSelected.emit(product);
+    this.isDropdownOpen = false;
+    this.currentSearchQuery = '';
+    this.hasGlobalSearchBeenTriggered = false;
+    this.globalSearchResults = [];
+    this.localSearchResults = [];
+    this.resetList();
   }
 
   /** Clear the text and reset local/global search */
@@ -179,7 +189,7 @@ export class SearchbarComponent {
     this.noLocalResults = false;  
     this.hasGlobalSearchBeenTriggered = false; 
     this.globalSearchResults = []; 
-    this.globalSearch.emit(''); // Signal parent to clear state
+    this.globalSearch.emit('');
     this.resetList();
   }
 
@@ -198,17 +208,14 @@ export class SearchbarComponent {
   
   // Helper to close dropdown
   closeDropdown() {
-    // A small delay allows click events inside the dropdown to register before hiding.
-    // MODIFIED: Ensure dropdown remains open if a global search was triggered and is not yet finished.
-    if (!this.isSearching && !this.noLocalResults) { // Only close if not searching and we have local results (which hide the prompt to check global)
+    if (!this.isSearching && !this.noLocalResults) {
         setTimeout(() => {
             this.isDropdownOpen = false;
         }, 150); 
     }
-    
   }
 
-  // NEW: Filter global search results to only show in-stock items.
+  // Filter global search results to only show in-stock items
   get inStockGlobalResults(): any[] {
     return this.globalSearchResults.filter(result => result.quantity > 0);
   }

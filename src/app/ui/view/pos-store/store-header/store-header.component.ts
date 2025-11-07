@@ -38,7 +38,9 @@ export class StoreHeaderComponent implements OnChanges {
   @Output() userAction = new EventEmitter<void>();
   @Output() branchChange = new EventEmitter<any>();
   @Output() productSelect = new EventEmitter<number>(); 
-  @Output() searchSubmit = new EventEmitter<string>(); 
+  @Output() searchSubmit = new EventEmitter<string>();
+  // NEW: Add toast output
+  @Output() showToast = new EventEmitter<{title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}>();
 
   // Desktop state
   isBranchDropdownOpen = false;
@@ -88,20 +90,21 @@ export class StoreHeaderComponent implements OnChanges {
     }
   }
 
-  // FIXED: Handle category change on mobile - navigate instead of filter
+  // NEW: Handle toast events from auth modal
+  onShowToast(event: {title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}): void {
+    this.showToast.emit(event);
+  }
+
   onMobileCategoryChange(category: string): void {
     console.log('Mobile category change:', category);
     if (category && category !== 'All') {
-      // Always navigate to category page on mobile
       this.navigateToCategoryPage(category);
     } else {
-      // For "All", use normal filtering
       this.onCategoryChange(category);
     }
     this.closeMobileMenu();
   }
 
-  // Mobile menu methods
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
     if (this.isMobileMenuOpen) {
@@ -115,7 +118,6 @@ export class StoreHeaderComponent implements OnChanges {
     this.isMobileMenuOpen = false;
   }
 
-  // Search input handling
   onSearchInput(text: string): void {
     this.searchText = text;
     this.updateSearchSuggestions(text);
@@ -144,7 +146,6 @@ export class StoreHeaderComponent implements OnChanges {
     }, 200);
   }
 
-  // Keyboard navigation
   onArrowDown(event: Event): void {
     event.preventDefault();
     if (this.searchSuggestions.length > 0) {
@@ -163,7 +164,6 @@ export class StoreHeaderComponent implements OnChanges {
     }
   }
 
-  // Update search suggestions based on input
   private updateSearchSuggestions(searchTerm: string): void {
     if (!searchTerm.trim() || !this.allProducts) {
       this.searchSuggestions = [];
@@ -175,7 +175,6 @@ export class StoreHeaderComponent implements OnChanges {
 
     const term = searchTerm.toLowerCase();
     
-    // Find matching categories
     this.categorySuggestions = this.categoryOptions
       .filter(category => 
         category.label.toLowerCase().includes(term) || 
@@ -193,7 +192,6 @@ export class StoreHeaderComponent implements OnChanges {
       })
       .slice(0, 5);
 
-    // Find matching products
     this.productSuggestions = this.allProducts
       .filter(product => 
         product.name?.toLowerCase().includes(term) ||
@@ -218,7 +216,6 @@ export class StoreHeaderComponent implements OnChanges {
     this.selectedSuggestionIndex = -1;
   }
 
-  // Suggestion selection
   selectSuggestion(index: number): void {
     if (index < this.categorySuggestions.length) {
       const category = this.categorySuggestions[index];
@@ -233,13 +230,10 @@ export class StoreHeaderComponent implements OnChanges {
   selectCategorySuggestion(category: CategorySuggestion): void {
     this.searchText = '';
     this.showSuggestions = false;
-    
-    // Always navigate to category page for suggestions
     this.navigateToCategoryPage(category.name);
     this.closeMobileMenu();
   }
 
-  // Navigate to category page
   navigateToCategoryPage(categoryName: string): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid) {
@@ -259,7 +253,6 @@ export class StoreHeaderComponent implements OnChanges {
     this.closeMobileMenu();
   }
 
-  // User dropdown methods
   toggleUserDropdown(): void {
     this.isUserDropdownOpen = !this.isUserDropdownOpen;
     if (this.isUserDropdownOpen) {
@@ -281,15 +274,51 @@ export class StoreHeaderComponent implements OnChanges {
 
 handleLogin(credentials: {username: string, password: string}): void {
   console.log('Login attempt:', credentials);
+  
+  // Emit to parent component to handle the actual login
+  this.userAction.emit();
+  
+  // Store user data in localStorage
+  const userData = { name: credentials.username, isGuest: false };
+  localStorage.setItem('currentUser', JSON.stringify(userData));
+  
+  this.user = userData;
   this.closeAuthModal();
-  this.user = { name: credentials.username, isGuest: false };
+  
+  // Show toast via parent component
+  const greeting = this.getTimeBasedGreeting();
+  this.showToast.emit({
+    title: `Welcome Back! 🎉`,
+    message: `${greeting}, ${credentials.username}! Great to see you again.`,
+    type: 'success'
+  });
 }
 
+// Update handleSignup similarly
 handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
   console.log('Signup attempt:', userData);
+  
+  // Emit to parent component
+  this.userAction.emit();
+  
+  // Store user data in localStorage
+  const userInfo = { name: userData.username, isGuest: false };
+  localStorage.setItem('currentUser', JSON.stringify(userInfo));
+  
+  this.user = userInfo;
   this.closeAuthModal();
-  this.user = { name: userData.username, isGuest: false };
+  
+  // Show toast via parent component
+  const greeting = this.getTimeBasedGreeting();
+  this.showToast.emit({
+    title: 'Account Created! 🎉',
+    message: `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
+    type: 'success'
+  });
 }
+
+
+
   handleGuest(): void {
     this.closeAuthModal();
     this.user = { name: 'Guest', isGuest: true };
@@ -299,9 +328,15 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     this.user = { name: 'Guest', isGuest: true };
     this.isUserDropdownOpen = false;
     this.closeMobileMenu();
+    
+    // NEW: Show logout toast
+    this.showToast.emit({
+      title: 'Signed Out',
+      message: 'You have been successfully signed out. See you again soon!',
+      type: 'info'
+    });
   }
 
-  // Category change handler
   onCategoryChange(category: string): void {
     this.categoryChange.emit(category);
     this.closeMobileMenu();
@@ -311,7 +346,6 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     this.searchChange.emit(text);
   }
 
-  // Cart methods
   onToggleCart(): void {
     this.toggleCart.emit();
     this.closeMobileMenu();
@@ -321,7 +355,6 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     this.userAction.emit();
   }
 
-  // FIXED: Branch selection methods
   selectBranch(branch: any): void {
     console.log('Branch selected:', branch);
     this.selectedBranch = branch;
@@ -340,7 +373,6 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     }
   }
 
-  // Close all dropdowns when clicking outside
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
@@ -355,31 +387,42 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
       this.isMobileMenuOpen = false;
     }
   }
-  navigateToReturnsRefunds(): void {
-  // Get the current store UUID from the route
-  const currentUuid = this.route.snapshot.paramMap.get('uuid');
-  
-  if (currentUuid) {
-    this.router.navigate(['/store', currentUuid, 'return-refund']);
-  } else {
-    // Fallback if no UUID is available
-    this.router.navigate(['/return-refund']);
-  }
-  
-  // Close the dropdown after navigation
-  this.isUserDropdownOpen = false;
-}
 
-getTimeBasedGreeting(): string {
-  const hour = new Date().getHours();
-  const emojis = ['🌅', '☀️', '🌙'];
-  
-  if (hour < 12) {
-    return `Good Morning ${emojis[0]}`;
-  } else if (hour < 17) {
-    return `Good Afternoon ${emojis[1]}`;
-  } else {
-    return `Good Evening ${emojis[2]}`;
+  navigateToReturnsRefunds(): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    
+    if (currentUuid) {
+      this.router.navigate(['/store', currentUuid, 'return-refund']);
+    } else {
+      this.router.navigate(['/return-refund']);
+    }
+    
+    this.isUserDropdownOpen = false;
   }
-}
+
+  
+  orderHistory(): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    
+    if (currentUuid) {
+      this.router.navigate(['/store', currentUuid, 'order-history']);
+    } else {
+      this.router.navigate(['/order-history']);
+    }
+    
+    this.isUserDropdownOpen = false;
+  }
+
+  getTimeBasedGreeting(): string {
+    const hour = new Date().getHours();
+    const emojis = ['🌅', '☀️', '🌙'];
+    
+    if (hour < 12) {
+      return `Good Morning ${emojis[0]}`;
+    } else if (hour < 17) {
+      return `Good Afternoon ${emojis[1]}`;
+    } else {
+      return `Good Evening ${emojis[2]}`;
+    }
+  }
 }

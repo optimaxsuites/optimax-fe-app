@@ -16,6 +16,9 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   @Output() login = new EventEmitter<{username: string, password: string}>();
   @Output() signup = new EventEmitter<{name: string, username: string, email: string, phone: string, password: string}>();
   @Output() guest = new EventEmitter<void>();
+  
+  // NEW: Add toast notification output
+  @Output() showToast = new EventEmitter<{title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}>();
 
   mode: 'login' | 'signup';
   loginForm: FormGroup;
@@ -73,6 +76,19 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     return uuid;
   }
 
+  private getTimeBasedGreeting(): string {
+    const hour = new Date().getHours();
+    const emojis = ['🌅', '☀️', '🌙'];
+    
+    if (hour < 12) {
+      return `Good Morning ${emojis[0]}`;
+    } else if (hour < 17) {
+      return `Good Afternoon ${emojis[1]}`;
+    } else {
+      return `Good Evening ${emojis[2]}`;
+    }
+  }
+
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password');
     const confirmPassword = control.get('confirmPassword');
@@ -108,63 +124,85 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   }
 
   onLogin(): void {
-  if (this.loginForm.valid) {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
+    if (this.loginForm.valid) {
+      this.isLoading = true;
+      this.errorMessage = '';
+      this.successMessage = '';
 
-    const loginData: LoginData = {
-      username: this.loginForm.value.username,
-      password: this.loginForm.value.password
-    };
+      const loginData: LoginData = {
+        username: this.loginForm.value.username,
+        password: this.loginForm.value.password
+      };
 
-    this.authService.login(loginData).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        
-        // Check if response exists
-        if (!response) {
-          this.errorMessage = 'Invalid response from server. Please try again.';
-          return;
-        }
-        
-        // Since the API doesn't return 'verified' field, we'll assume login success means verified
-        // If you need to check verification separately, you'll need to make another API call
-        
-        // Check if user needs verification (optional - only if your API has a separate verification check)
-        if (response.verified === false) {
-          this.errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
+      this.authService.login(loginData).subscribe({
+        next: (response) => {
+          this.isLoading = false;
           
-          this.authService.storePendingVerification({
-            username: loginData.username,
-            email: response.email
-          });
+          if (!response) {
+            this.errorMessage = 'Invalid response from server. Please try again.';
+            this.showToast.emit({
+              title: 'Login Failed',
+              message: 'Invalid response from server. Please try again.',
+              type: 'error'
+            });
+            return;
+          }
+          
+          if (response.verified === false) {
+            this.errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
+            
+            this.showToast.emit({
+              title: 'Verification Required',
+              message: 'Please verify your email before logging in.',
+              type: 'warning'
+            });
+            
+            this.authService.storePendingVerification({
+              username: loginData.username,
+              email: response.email
+            });
+            
+            setTimeout(() => {
+              this.closeModal();
+              const uuid = this.storeUuid || this.getCurrentStoreUuid();
+              this.router.navigate(['/store', uuid, 'verify-required']);
+            }, 2000);
+            return;
+          }
+          
+          // Emit login event FIRST
+          this.login.emit(loginData);
+          
+          // Then show toast AFTER a small delay to ensure parent component has processed the login
+          setTimeout(() => {
+            const greeting = this.getTimeBasedGreeting();
+            this.showToast.emit({
+              title: `Welcome Back! 🎉`,
+              message: `${greeting}, ${loginData.username}! Great to see you again.`,
+              type: 'success'
+            });
+          }, 100);
+          
+          this.closeModal();
           
           setTimeout(() => {
-            this.closeModal();
             const uuid = this.storeUuid || this.getCurrentStoreUuid();
-            this.router.navigate(['/store', uuid, 'verify-required']);
-          }, 2000);
-          return;
+            this.router.navigate(['/store', uuid, 'dashboard']);
+          }, 500);
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.errorMessage = error || 'Login failed. Please check your credentials and try again.';
+          
+          this.showToast.emit({
+            title: 'Login Failed',
+            message: error || 'Please check your credentials and try again.',
+            type: 'error'
+          });
         }
-        
-        // Emit login event with credentials
-        this.login.emit(loginData);
-        this.closeModal();
-        
-        // Navigate to dashboard
-        setTimeout(() => {
-          const uuid = this.storeUuid || this.getCurrentStoreUuid();
-          this.router.navigate(['/store', uuid, 'dashboard']);
-        }, 500);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = error || 'Login failed. Please check your credentials and try again.';
-      }
-    });
+      });
+    }
   }
-}
 
   onSignup(): void {
     if (this.signupForm.valid) {
@@ -187,6 +225,14 @@ export class AuthModalComponent implements OnInit, OnDestroy {
           if (response.success) {
             this.successMessage = response.message;
             
+            // NEW: Show success toast for signup
+            const greeting = this.getTimeBasedGreeting();
+            this.showToast.emit({
+              title: 'Account Created Successfully! 🎉',
+              message: `${greeting}, ${signupData.username}! Welcome to our store. Please check your email to verify your account.`,
+              type: 'success'
+            });
+            
             this.authService.storePendingVerification({
               username: signupData.username,
               email: signupData.email
@@ -199,11 +245,25 @@ export class AuthModalComponent implements OnInit, OnDestroy {
             }, 2000);
           } else {
             this.errorMessage = response.message || 'Signup failed. Please try again.';
+            
+            // NEW: Show error toast
+            this.showToast.emit({
+              title: 'Signup Failed',
+              message: response.message || 'Please try again.',
+              type: 'error'
+            });
           }
         },
         error: (error) => {
           this.isLoading = false;
           this.errorMessage = error || 'An error occurred during signup. Please try again.';
+          
+          // NEW: Show error toast
+          this.showToast.emit({
+            title: 'Signup Failed',
+            message: error || 'An error occurred. Please try again.',
+            type: 'error'
+          });
         }
       });
     } else {
@@ -215,6 +275,13 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   }
 
   onGuest(): void {
+    // NEW: Show info toast for guest
+    this.showToast.emit({
+      title: 'Continuing as Guest',
+      message: 'You can create an account anytime to save your preferences and track orders.',
+      type: 'info'
+    });
+    
     this.guest.emit();
     this.closeModal();
   }
