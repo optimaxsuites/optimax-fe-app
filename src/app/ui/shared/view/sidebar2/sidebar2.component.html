@@ -12,7 +12,7 @@
       <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
     </button>
   </div>
-  <ul>
+  <ul id="dashboard-header" >
     <li *ngFor="let item of menuItems | async as menuItems">
       <div class="menu-item w-full" (click)="toggleSubMenu(item)">
         <a *ngIf="!item.submenu"
@@ -61,7 +61,7 @@
       </ul>
     </li>
 
-    <li *ngIf="isSuperUser()">
+    <li *ngIf="isSuperUser()" id="side-nav-inventory">
       <div class="menu-item">
         <a 
           [routerLink]="marketplace.route"

@@ -6,7 +6,7 @@ import { MenuItem } from 'src/app/ui/shared/domain/menuItem.dto';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { MarketplaceService } from '../../service/marketplace.service'
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
-import { forkJoin } from 'rxjs';
+import { BehaviorSubject, catchError, forkJoin, map } from 'rxjs';
 import { SubscriptionService } from '../../service/subscription.service';
 import { AppRegisterServiceService } from 'projects/settings/src/app/ui/sharedComponents/service/app-register-service.service';
 @Component({
@@ -26,6 +26,11 @@ export class MarketplaceComponent {
   openHistory: boolean = false
   history: any[] = []
   appList  = []
+  showDetails: boolean = false;
+  // selectedModuleDetails: any = null
+  selectedModuleDetails$ = new BehaviorSubject<any>(null);
+  String = String
+  Number = Number
   constructor(private menuService: MenuItemsService, private messageService: MessageService,
    private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService, private router: Router, private subscriptionService: SubscriptionService, private appRegisterService: AppRegisterServiceService) {}
 
@@ -70,10 +75,40 @@ export class MarketplaceComponent {
  
     }
 
-    showDialog(module: any, ) {
+    showDialog(module: any ) {
       this.visible = true;
       this.module = module;
    }
+
+ openModuledetails(module: any) {
+  this.showDetails = true;
+  this.selectedModuleDetails$.next(module);
+  this.enrichModuleWithPlanLimits(module);
+}
+
+enrichModuleWithPlanLimits(module: any) {
+  if (!module?.subscriptionPlans?.length) {
+    this.selectedModuleDetails$.next(module);
+    return;
+  }
+
+  const planRequests = module.subscriptionPlans.map((plan: any) =>
+    this.subscriptionService.getPlanLimits(plan.id).pipe(
+      map(limit => ({ ...plan, limit })),
+      catchError(() => [{ ...plan, limit: null }])
+    )
+  );
+
+  forkJoin(planRequests).subscribe({
+    next: enrichedPlans => {
+      this.selectedModuleDetails$.next({
+        ...module,
+        subscriptionPlans: enrichedPlans
+      });
+    },
+    error: err => console.error(err)
+  });
+}
 
 
   async unlockModule() {

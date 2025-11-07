@@ -235,3 +235,17 @@ input[type="radio"]{
   margin-right: 1rem;
   padding: 0.5rem 1rem;
 }
+
+/* Focus glow */
+.tour-highlight {
+  position: relative;
+  z-index: 96;
+  outline: 3px solid #4f46e5;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+/* Prevent other elements from being interacted with during tour */
+body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
+  pointer-events: none !important;
+}

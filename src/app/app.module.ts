@@ -251,6 +251,7 @@ import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { BadgeModule } from 'primeng/badge';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { TourGuideComponent } from './ui/onboarding/tour-guide';
 
 
 const dbConfig: DBConfig = {
@@ -483,7 +484,8 @@ const dbConfig: DBConfig = {
     MarketplaceComponent,
     NotFoundComponent,
     UnauthourizedComponent,
-    PaymentComponent
+    PaymentComponent,
+    TourGuideComponent
   ],
   imports: [
       BrowserModule,
