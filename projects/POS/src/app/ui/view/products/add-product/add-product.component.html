@@ -1178,7 +1178,7 @@
     >
        <img
         class="w-full h-full object-contain"
-        [src]="getMainImage() | async"
+         [src]=" mainProductImage || (isEditMode ? getLastImage() : '') || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s' "
         (error)="handleImageError($event)"
         alt="product image"
       />

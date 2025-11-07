@@ -409,9 +409,9 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'order-history']);
+      this.router.navigate(['user/checkout/store', currentUuid, 'order-history']);
     } else {
-      this.router.navigate(['/order-history']);
+      this.router.navigate(['user/checkout/store/order-history']);
     }
     
     this.isUserDropdownOpen = false;
@@ -426,6 +426,7 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     } else if (hour < 17) {
       return `Good Afternoon ${emojis[1]}`;
     } else {
+
       return `Good Evening ${emojis[2]}`;
     }
   }
