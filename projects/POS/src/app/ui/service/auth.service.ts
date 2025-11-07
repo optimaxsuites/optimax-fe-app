@@ -171,8 +171,10 @@ login(loginData: LoginData): Observable<AuthResponse> {
     username: loginData.username,
     password: loginData.password,
     project: environment.project || 'ERP',
-    apiKey: environment.apiKey || 'ApiKey 6f4fc8aefc712b4e45b2c78fa472c870'
+    apiKey: environment.apiKey || 'ApiKey b784e00442334be0497f434d2a4cbefd'
   };
+
+   console.log('Login payload:', loginPayload);
 
   return this.http.post<AuthResponse>(
     this.getBaseApiUrl() + '/x/api/v2/auth/signin', 

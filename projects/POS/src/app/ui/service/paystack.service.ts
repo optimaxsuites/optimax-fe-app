@@ -7,7 +7,7 @@ declare var PaystackPop: any;
   providedIn: 'root'
 })
 export class PaystackService {
-  private publicKey = 'pk_test_4bb9516e2618286cf962ee0f14e9b043b4e05f16';
+  private publicKey: string | null = null;
 
   constructor() {
     this.loadPaystack();
@@ -18,6 +18,12 @@ export class PaystackService {
     if (typeof PaystackPop === 'undefined') {
       console.warn('Paystack CDN not loaded yet');
     }
+  }
+
+  // Set public key dynamically
+  setPublicKey(publicKey: string): void {
+    this.publicKey = publicKey;
+    console.log('🔑 Paystack public key set:', publicKey.substring(0, 20) + '...');
   }
 
   // Process Paystack payment using CDN
@@ -32,10 +38,19 @@ export class PaystackService {
         return;
       }
 
+      // Check if public key is set
+      if (!this.publicKey) {
+        reject({
+          success: false,
+          message: 'Payment configuration error. Please try another payment method.'
+        });
+        return;
+      }
+
       const handler = PaystackPop.setup({
         key: this.publicKey,
         email: paymentData.email,
-        amount: paymentData.amount * 100, // Convert to kobo
+        amount: paymentData.amount, // Already in kobo from StoreOrderService
         currency: 'NGN',
         ref: paymentData.reference,
         metadata: paymentData.metadata,

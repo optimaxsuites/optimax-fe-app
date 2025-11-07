@@ -4,6 +4,14 @@ import { Observable, throwError, from } from 'rxjs';
 import { catchError, switchMap, tap, map } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
 import { PaystackService, PaystackPaymentData } from './paystack.service';
+import { of } from 'rxjs';
+
+// Add Payment Key interface
+export interface PaymentKey {
+  id: number;
+  publicKey: string;
+  branchId: number;
+}
 
 // Export interfaces at the top level
 export interface StoreOrderPOST {
@@ -43,6 +51,8 @@ export interface StoreOrderItemPOST {
   providedIn: 'root'
 })
 export class StoreOrderService {
+  private paymentKeysCache: PaymentKey[] | null = null;
+
   constructor(
     private http: HttpClient,
     private paystackService: PaystackService
@@ -58,29 +68,93 @@ export class StoreOrderService {
     });
   }
 
+  // ========== PAYMENT KEYS METHODS ==========
+  getPaymentKeys(): Observable<PaymentKey[]> {
+    // Return cached keys if available
+    if (this.paymentKeysCache) {
+      return of(this.paymentKeysCache);
+    }
+
+    const endpoint = '/x/api/v2/pos/paymentKeyss';
+    console.log('🔑 Fetching payment keys from:', endpoint);
+
+    return this.http.get<PaymentKey[]>(
+      this.getBaseApiUrl() + endpoint,
+      { headers: this.getHeaders() }
+    ).pipe(
+      tap((keys) => {
+        console.log('✅ Payment keys fetched successfully:', keys);
+        this.paymentKeysCache = keys; // Cache the results
+      }),
+      catchError((error) => {
+        console.error('❌ Failed to fetch payment keys:', error);
+        // Return empty array as fallback
+        return of([]);
+      })
+    );
+  }
+
+  getPublicKeyForBranch(branchId: number = 1): Observable<string> {
+    return this.getPaymentKeys().pipe(
+      map((keys: PaymentKey[]) => {
+        // Find key for specific branch or use first available key
+        const key = keys.find(k => k.branchId === branchId) || keys[0];
+        
+        if (!key) {
+          throw new Error('No payment keys available');
+        }
+
+        console.log('🔑 Using public key for branch:', branchId, key.publicKey.substring(0, 20) + '...');
+        return key.publicKey;
+      }),
+      catchError((error) => {
+        console.error('❌ Failed to get public key:', error);
+        return throwError(() => new Error('Unable to retrieve payment key'));
+      })
+    );
+  }
+
   // ========== PAYSTACK METHODS ==========
   processPaystackPayment(
     email: string,
-    amount: number,
+    amount: number, // This should be in kobo already
     orderNumber: string
   ): Observable<any> {
-    const paymentData: PaystackPaymentData = {
-      email: email,
-      amount: amount,
-      reference: this.paystackService.generateReference(),
-      metadata: {
-        custom_fields: [
-          {
-            display_name: 'Order Number',
-            variable_name: 'order_number',
-            value: orderNumber
-          }
-        ]
-      }
-    };
+    // First get the public key, then process payment
+    return this.getPublicKeyForBranch().pipe(
+      switchMap((publicKey: string) => {
+        // Set the public key in Paystack service
+        this.paystackService.setPublicKey(publicKey);
 
-    console.log('💳 Processing Paystack payment:', paymentData);
-    return from(this.paystackService.processPayment(paymentData));
+        const paymentData: PaystackPaymentData = {
+          email: email,
+          amount: amount, // Already in kobo from component
+          reference: this.paystackService.generateReference(),
+          metadata: {
+            custom_fields: [
+              {
+                display_name: 'Order Number',
+                variable_name: 'order_number',
+                value: orderNumber
+              }
+            ]
+          }
+        };
+
+        console.log('💳 Processing Paystack payment with dynamic key:', {
+          email: paymentData.email,
+          amount: paymentData.amount,
+          reference: paymentData.reference,
+          publicKey: publicKey.substring(0, 20) + '...'
+        });
+        
+        return from(this.paystackService.processPayment(paymentData));
+      }),
+      catchError((error) => {
+        console.error('❌ Paystack payment initialization failed:', error);
+        return throwError(() => new Error('Payment service unavailable'));
+      })
+    );
   }
 
   // ========== ORDER CREATION METHODS ==========
@@ -446,6 +520,9 @@ export class StoreOrderService {
             errorMessage = 'Payment processing failed. Please try a different payment method.';
           } else if (error.message?.includes('Invalid payment response format')) {
             errorMessage = 'Payment service returned an unexpected response. Please contact support.';
+          } else if (error.message?.includes('No payment keys available') || 
+                     error.message?.includes('Unable to retrieve payment key')) {
+            errorMessage = 'Payment service is currently unavailable. Please try another payment method.';
           } else {
             errorMessage = this.extractErrorMessage(error.error) || 'An unexpected error occurred. Please try again.';
           }

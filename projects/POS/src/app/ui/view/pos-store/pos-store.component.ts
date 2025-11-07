@@ -183,11 +183,45 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     this.showScrollToTop.set(scrollPosition > 300);
   }
 
+
+  isAuthModalOpen = signal(false);
+authModalMode: 'login' | 'signup' = 'login';
+private hasSeenAuthModal = false;
+
   ngOnInit(): void {
-    this.initializeComponent();
-    this.initializeUserState();
-    this.checkWelcomeBannerVisibility();
+  this.initializeComponent();
+  this.loadUserFromStorage();
+  this.showAuthModalOnFirstVisit();
   }
+
+//   private showAuthModalOnFirstVisit(): void {
+//   // Check if user has already seen the modal in this session
+//   if (this.hasSeenAuthModal) return;
+  
+//   // Check if user is not logged in
+//   if (this.user().isGuest) {
+//     // Small delay to ensure the store is loaded
+//     setTimeout(() => {
+//       this.isAuthModalOpen.set(true);
+//       this.authModalMode = 'login';
+//       this.hasSeenAuthModal = true;
+//     }, 1000);
+//   }
+// }
+
+  // Add this new method
+private loadUserFromStorage(): void {
+  const storedUser = localStorage.getItem('currentUser');
+  if (storedUser) {
+    try {
+      const userData = JSON.parse(storedUser);
+      this.user.set(userData);
+    } catch (error) {
+      console.error('Error parsing stored user data:', error);
+      this.user.set({ name: 'Guest', isGuest: true });
+    }
+  }
+}
 
   private initializeComponent(): void {
     this._fuse = new Fuse<ProductData>([], PosStoreComponent._fuseOptions);
@@ -404,35 +438,86 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     }
   }
 
-  handleLogin(credentials: {username: string, password: string}): void {
-    this.user.set({ name: credentials.username, isGuest: false });
-    
-    const greeting = this.getTimeBasedGreeting();
-    this.showToast(
-      `${greeting}`,
-      `Welcome back, ${credentials.username}! Great to see you again.`,
-      'success'
-    );
-  }
+handleLogin(credentials: {username: string, password: string}): void {
+  const userData = { name: credentials.username, isGuest: false };
+  
+  // Store in localStorage
+  localStorage.setItem('currentUser', JSON.stringify(userData));
+  
+  // Update signal
+  this.user.set(userData);
+  
+  const greeting = this.getTimeBasedGreeting();
+  this.showToast(
+    `${greeting}`,
+    `Welcome back, ${credentials.username}! Great to see you again.`,
+    'success'
+  );
+  
+  this.closeAuthModal();
+}
 
-  handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
-    this.user.set({ name: userData.username, isGuest: false });
-    
-    const greeting = this.getTimeBasedGreeting();
-    this.showToast(
-      'Account Created! 🎉',
-      `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
-      'success'
-    );
-  }
+// Update your handleSignup method
+handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
+  const userInfo = { name: userData.username, isGuest: false };
+  
+  // Store in localStorage
+  localStorage.setItem('currentUser', JSON.stringify(userInfo));
+  
+  // Update signal
+  this.user.set(userInfo);
+  
+  const greeting = this.getTimeBasedGreeting();
+  this.showToast(
+    'Account Created! 🎉',
+    `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
+    'success'
+  );
+  
+  this.closeAuthModal();
+}
 
-  closeAuthModal(): void {
-    const modal = document.querySelector('app-auth-modal');
-    if (modal) {
-      modal.remove();
+closeAuthModal(): void {
+  const modal = document.querySelector('app-auth-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+handleGuest(): void {
+  this.closeAuthModal();
+  // Optional: Show info toast for guest
+  this.showToast(
+    'Continuing as Guest',
+    'You can create an account anytime to save your preferences and track orders.',
+    'info'
+  );
+}
+
+private showAuthModalOnFirstVisit(): void {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    // Check if user has already seen the modal in this session
+    const hasSeenModal = sessionStorage.getItem('hasSeenAuthModal');
+    if (hasSeenModal === 'true') {
+      this.hasSeenAuthModal = true;
+      return;
+    }
+
+    // Only show modal if user is guest AND hasn't seen it before
+    if (this.user().isGuest && !this.hasSeenAuthModal) {
+      // Small delay to ensure the store is fully loaded
+      setTimeout(() => {
+        this.isAuthModalOpen.set(true);
+        this.authModalMode = 'login';
+        this.hasSeenAuthModal = true;
+        sessionStorage.setItem('hasSeenAuthModal', 'true');
+      }, 1500); // 1.5 second delay
     }
   }
-
   onBranchChange(branch: any): void {
     this.selectedBranch.set(branch);
     this.metadataService.setSelectedBranch(branch.id);
@@ -510,6 +595,17 @@ export class PosStoreComponent implements OnInit, OnDestroy {
 
     return this.cartProducts().get(idToUse)?.quantity || 0;
   }
+
+  // Add auth modal handlers
+openAuthModal(mode: 'login' | 'signup' = 'login'): void {
+  this.authModalMode = mode;
+  this.isAuthModalOpen.set(true);
+}
+
+// closeAuthModal(): void {
+//   this.isAuthModalOpen.set(false);
+// }
+
 
   changeCategory(category: string): void {
     this.selectedCategory.set(category);

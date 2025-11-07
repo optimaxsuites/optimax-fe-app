@@ -547,3 +547,27 @@ html {
     opacity: 0;
   }
 }
+
+#scroller {
+  top: 0;
+  z-index: 999;
+  position: absolute;
+}
+
+/* Scroll to top button styling */
+.fixed.bottom-6.right-6 {
+  animation: fadeInUp 0.3s ease-out;
+  
+  &:hover i {
+    animation: bounce 0.6s ease-in-out infinite;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}

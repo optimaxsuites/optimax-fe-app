@@ -423,48 +423,52 @@ export class StoreCheckoutComponent implements OnInit {
     return orderNumber;
   }
 
-  private handleOrderError(error: any): void {
-    console.error('🔍 Detailed error analysis:', {
-      status: error.status,
-      statusText: error.statusText,
-      message: error.message,
-      error: error.error
-    });
+private handleOrderError(error: any): void {
+  console.error('🔍 Detailed error analysis:', {
+    status: error.status,
+    statusText: error.statusText,
+    message: error.message,
+    error: error.error
+  });
 
-    let errorMessage = 'Failed to place order. Please try again.';
+  let errorMessage = 'Failed to place order. Please try again.';
 
-    if (error.status === 400) {
-      if (typeof error === 'string' && error.includes('Validation errors')) {
-        errorMessage = error;
-      } else if (error.error?.fieldErrors) {
-        const fieldErrors = error.error.fieldErrors
-          .map((err: any) => `${err.field}: ${err.message || err.errorCode}`)
-          .join(', ');
-        errorMessage = `Validation failed: ${fieldErrors}`;
-      } else {
-        errorMessage = 'Invalid order data. Please check your information and try again.';
-      }
-    } else if (error.status === 401) {
-      errorMessage = 'Authentication failed. Please refresh the page and try again.';
-    } else if (error.status === 403) {
-      errorMessage = 'You do not have permission to place orders.';
-    } else if (error.status === 500) {
-      errorMessage = 'Server error. Please try again later.';
-    } else if (error.status === 0) {
-      errorMessage = 'Network error. Please check your internet connection.';
-    } else if (error.message?.includes('Payment record must be created')) {
-      errorMessage = 'Payment processing failed. Please try a different payment method.';
-    } else if (error.message?.includes('Cannot place empty order')) {
-      errorMessage = 'Your cart is empty. Please add items before placing an order.';
-    } else if (error.message?.includes('Order number too long')) {
-      errorMessage = 'System error: Order number generation failed. Please contact support.';
-    } else if (error.message?.includes('Invalid payment response format')) {
-      errorMessage = 'Payment service error. Please contact support.';
+  if (error.status === 400) {
+    if (typeof error === 'string' && error.includes('Validation errors')) {
+      errorMessage = error;
+    } else if (error.error?.fieldErrors) {
+      const fieldErrors = error.error.fieldErrors
+        .map((err: any) => `${err.field}: ${err.message || err.errorCode}`)
+        .join(', ');
+      errorMessage = `Validation failed: ${fieldErrors}`;
+    } else {
+      errorMessage = 'Invalid order data. Please check your information and try again.';
     }
-
-    this.formErrors = [errorMessage];
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (error.status === 401) {
+    errorMessage = 'Authentication failed. Please refresh the page and try again.';
+  } else if (error.status === 403) {
+    errorMessage = 'You do not have permission to place orders.';
+  } else if (error.status === 500) {
+    errorMessage = 'Server error. Please try again later.';
+  } else if (error.status === 0) {
+    errorMessage = 'Network error. Please check your internet connection.';
+  } else if (error.message?.includes('Payment record must be created')) {
+    errorMessage = 'Payment processing failed. Please try a different payment method.';
+  } else if (error.message?.includes('Cannot place empty order')) {
+    errorMessage = 'Your cart is empty. Please add items before placing an order.';
+  } else if (error.message?.includes('Order number too long')) {
+    errorMessage = 'System error: Order number generation failed. Please contact support.';
+  } else if (error.message?.includes('Invalid payment response format')) {
+    errorMessage = 'Payment service error. Please contact support.';
+  } else if (error.message?.includes('No payment keys available') || 
+             error.message?.includes('Unable to retrieve payment key') ||
+             error.message?.includes('Payment service unavailable')) {
+    errorMessage = 'Card payments are currently unavailable. Please try cash or bank transfer.';
   }
+
+  this.formErrors = [errorMessage];
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
   updateQuantity(item: any, change: number): void {
     const newQuantity = item.quantity + change;

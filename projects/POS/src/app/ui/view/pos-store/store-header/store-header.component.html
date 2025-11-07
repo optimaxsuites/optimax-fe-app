@@ -185,17 +185,28 @@
     
     <!-- User Icon -->
     <div class="relative mx-4 border py-2 px-5 rounded-xl border-customBlue">
-<button 
+<div class="flex items-center justify-center">
+  <button 
   class="flex items-center text-gray-700 hover:text-gray-900"
   (click)="toggleUserDropdown()"
 >
   <i class="fa-solid fa-user-circle text-xl mr-2"></i>
   <span class="max-w-24 truncate">
-    {{ user.isGuest ? 'Guest' : getTimeBasedGreeting().split(' ')[0] + ' ' + user.name }}
+    {{ user.isGuest ? 'Guest' : user.name }}
   </span>
   &nbsp;
   <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
 </button>
+
+@if (user.isGuest) {
+  <button 
+    (click)="openAuthModal('login')"
+    class="bg-customGreen hover:bg-customBlue text-white px-4 py-2 rounded-lg font-medium transition-colors ml-4"
+  >
+    Sign In
+  </button>
+}
+</div>
       
       <!-- User Dropdown -->
 @if (isUserDropdownOpen) {
@@ -227,6 +238,7 @@
         My Profile
       </button>
       <button 
+      (click)="orderHistory()"
         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
       >
         Order History
