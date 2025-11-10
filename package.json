@@ -13,7 +13,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^17.3.0",
-    "@angular/cdk": "^17.3.9",
+    "@angular/cdk": "^18.2.10",
     "@angular/common": "^17.3.0",
     "@angular/compiler": "^17.3.0",
     "@angular/core": "^17.3.0",
@@ -23,6 +23,8 @@
     "@angular/router": "^17.3.0",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@ng-select/ng-select": "^12.0.7",
+    "apexcharts": "^3.49.0",
+    "ng-apexcharts": "1.7.4",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.11",
     "quill": "^2.0.2",
