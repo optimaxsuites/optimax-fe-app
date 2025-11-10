@@ -1,0 +1,70 @@
+<div class="p-8">
+  <h2 class="text-xl font-bold mb-4 text-customBlue">Tenants</h2>
+
+  <!-- <div class="overflow-x-auto shadow z-10 relative overflow-y-visible  rounded-lg"> -->
+    <table class="w-full p-5 bg-white rounded-xl text-left border-collapse">
+      <thead class="rounded-t-xl">
+        <tr class="bg-gray-100 rounded-t-xl">
+          <th class="p-3 border-b">Tenant ID</th>
+          <th class="p-3 border-b">Name</th>
+          <th class="p-3 border-b">Domain</th>
+          <th class="p-3 border-b">Admin Contact</th>
+          <th class="p-3 border-b">Status</th>
+          <th class="p-3 border-b">Date</th>
+
+          <th class="p-3 border-b text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of tenants" class="hover:bg-gray-50 cursor-pointer" (click)="openDetails(order)">
+          <td class="p-3 border-b">{{ order.id || '-' }}</td>
+          <td class="p-3 border-b">{{ order.name || '-' }}</td>
+          <td class="p-3 border-b">{{ order.domain }}</td>
+          <td class="p-3 border-b">{{ order.contactPerson }}</td>
+          <td class="p-3 border-b">
+            <span 
+              class="px-2 py-1 rounded text-xs text-white font-medium"
+              [ngClass]="{
+                'bg-yellow-500': order.status === 'Inactive',
+                'bg-green-600': order.status === 'Active',
+                'bg-red-500': order.status === 'Suspended',
+                'bg-gray-400': order.status === 'CANCELED'
+              }"
+            >
+              {{ order.status }}
+            </span>
+          </td>
+          <td class="p-3 border-b">{{ formatDate(order.dateCreated) | date:'medium' }}</td>
+
+          <td class=" p-3 border-b text-center relative z-20">
+            <div class="inline-block text-left relative">
+              <button (click)="order.showMenu = !order.showMenu" class="p-2 rounded relative hover:bg-gray-200">
+                ⋮
+
+
+              <div 
+              *ngIf="order.showMenu"
+              class="absolute right-0 mt-1 w-32 z-[9999] bg-white border rounded shadow-lg"
+            >
+              <button 
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
+                View
+              </button>
+              <button 
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
+                Suspend
+              </button>
+            </div>
+              </button>
+
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  <!-- </div> -->
+</div>
+
+<app-side-modal (close)="openDetailsModal = false" *ngIf="openDetailsModal"></app-side-modal>

@@ -252,6 +252,7 @@ import { BadgeModule } from 'primeng/badge';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TourGuideComponent } from './ui/onboarding/tour-guide';
+import { TenantsComponent } from './ui/tenants/tenants.component';
 
 
 const dbConfig: DBConfig = {
@@ -485,7 +486,8 @@ const dbConfig: DBConfig = {
     NotFoundComponent,
     UnauthourizedComponent,
     PaymentComponent,
-    TourGuideComponent
+    TourGuideComponent,
+    TenantsComponent
   ],
   imports: [
       BrowserModule,

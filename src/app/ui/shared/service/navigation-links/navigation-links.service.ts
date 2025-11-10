@@ -92,6 +92,8 @@ export class NavigationLinksService {
 
 
     this.links['marketplaceLink'] = 'marketplace/' +uuidV4();
+    this.links['tenantLink'] = 'tenant/' +uuidV4();
+
 
 
     

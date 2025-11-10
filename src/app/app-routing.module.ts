@@ -33,6 +33,7 @@ import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketpl
 import { NotFoundComponent } from './ui/not-found.component';
 import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
+import { TenantsComponent } from './ui/tenants/tenants.component';
 
 const routes: Routes = [
   {
@@ -170,6 +171,10 @@ const routes: Routes = [
       {
         path: 'marketplace/:uuid',
         component: MarketplaceComponent,
+      },
+      {
+        path: 'tenant/:uuid',
+        component: TenantsComponent,
       },
      
     ],

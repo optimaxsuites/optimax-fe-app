@@ -13,7 +13,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 export class Sidebar2Component {
    @Input() sidebarHidden!: boolean;
      @Output() toggleSidebar = new EventEmitter<void>();
-   
+    showAdminUI = false;
   menuItems!: Observable<MenuItem[]>;
   role: string | null = null;
 marketplace : any =   {
@@ -21,6 +21,13 @@ marketplace : any =   {
   route: this.navigationLink.getLink('marketplaceLink'),
   roles: ['ROLE_USER', 'ROLE_ADMIN'],
   icon: 'fas fa-store'
+}
+
+tenant: any = {
+  label: 'Tenants',
+  route: this.navigationLink.getLink('tenantLink'),
+  roles: ['ROLE_USER', 'ROLE_ADMIN'],
+  icon: 'fa-solid fa-people-arrows'
 }
   constructor(private menuService: MenuItemsService,  private router: Router, private navigationLink: NavigationLinksService) {}
 
@@ -33,6 +40,10 @@ marketplace : any =   {
     //   });
     // }
     // const items = this.menuService.getMenuItems();
+    const hostname = window.location.hostname; 
+    const subdomain = hostname.split('.')[0]; 
+
+    this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
 
     this.menuItems = this.menuService.getMenuItems$();
 

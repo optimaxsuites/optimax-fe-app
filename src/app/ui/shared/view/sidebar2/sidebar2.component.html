@@ -76,5 +76,22 @@
         </a>
       </div>
     </li>
+
+
+    <li *ngIf="showAdminUI" id="side-nav-inventory">
+      <div class="menu-item">
+        <a 
+          [routerLink]="tenant.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [pTooltip]="tenant.label"
+          tooltipPosition="right"
+          [tooltipDisabled]="!sidebarHidden"
+          class="flex gap-4 items-center">
+          <i *ngIf="tenant.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="tenant.icon"></i>
+          <span *ngIf="!sidebarHidden">{{ tenant.label }}</span>
+        </a>
+      </div>
+    </li>
   </ul>
 </nav>
