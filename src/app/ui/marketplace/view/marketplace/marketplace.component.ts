@@ -108,6 +108,8 @@ enrichModuleWithPlanLimits(module: any) {
     },
     error: err => console.error(err)
   });
+
+  console.log(this.selectedModuleDetails$)
 }
 
 

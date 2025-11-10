@@ -197,23 +197,26 @@
     </ul>
           <h3 class="text-lg font-semibold mb-2">Plan Limits:</h3>
           <ul class="space-y-1">
+             <ng-container
+    *ngFor="let entry of plan?.limit?.subscriptionLimit?.[0] | keyvalue"
+  >
      <li 
-        *ngFor="let entry of plan?.limit?.subscriptionLimit | keyvalue" 
+        *ngIf="entry.key !== 'id' && entry.key !== 'planId'"
         class="flex justify-between border-b border-gray-100 py-1"
       >
-      <p>{{entry}}</p>
         <span class="font-medium text-gray-700">
           {{ String(entry.key) | titlecase }}
         </span>
         
         <span class="text-gray-600">
           @switch (entry.value) {
-            @case (true) { ✅ Yes }
-            @case (false) { ❌ No }
+            @case (true) { Yes }
+            @case (false) { No }
             @default { {{ Number(entry.value) | number }} } 
           }
         </span>
       </li>
+      </ng-container>
     </ul>
 
     </div>
