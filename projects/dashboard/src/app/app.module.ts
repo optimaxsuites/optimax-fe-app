@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -29,7 +30,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
-
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -40,6 +41,8 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
 
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
+import { DashboardsideModalComponent } from './shared/dashboardside-modal/dashboardside-modal.component';
 
 
 @NgModule({
@@ -47,7 +50,10 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     AppComponent,
     PayslipViewComponent,
     EmployeePayslipsListComponent,
-    DashboardPageComponent
+    DashboardPageComponent,
+    DashboardOverviewComponent,
+    DashboardsideModalComponent,
+    
   ],
   imports: [
     // BrowserModule,
@@ -58,29 +64,27 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     DialogModule,
     ToastModule,
     DragDropModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
     ToolbarModule,
-      ConfirmDialogModule,
-      SplitButtonModule,
-      PanelModule,
-      DividerModule,
-      OverlayPanelModule,
-      StepperModule,
-      InputTextModule,
-      FloatLabelModule,
-      EditorModule,
-      MessagesModule,
-      MessageModule,
-      RippleModule,
-      TableModule,
-      PasswordModule,
-      ButtonModule,
-      NgSelectModule,
-
-    LargeSideModalComponent
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
+    NgApexchartsModule,
+    // BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

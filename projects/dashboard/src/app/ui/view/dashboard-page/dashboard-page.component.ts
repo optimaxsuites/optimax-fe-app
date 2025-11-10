@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-
+import { LargeSideModalComponent } from '../../sharedComponent/view/large-side-modal/large-side-modal.component';
 
 @Component({
   selector: 'app-dashboard-page',
