@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuItemsService } from '../../../sharedComponents/service/menue-items/menu-items.service';
 import { ModulesService } from '../../../service/modules.service';
@@ -73,7 +73,7 @@ export class RolesNpermissionComponent {
   permissionKeys = Object.keys(this.newRole.permissions);
   Object = Object
 
-  constructor(private messageService: MessageService, private menuService: MenuItemsService, private moduleService: ModulesService, private confirmationService: ConfirmationService){
+  constructor(private messageService: MessageService, private menuService: MenuItemsService, private cdr: ChangeDetectorRef, private moduleService: ModulesService, private confirmationService: ConfirmationService){
   }
 
   ngOnInit(){
@@ -118,6 +118,9 @@ export class RolesNpermissionComponent {
           isEditing: false
         };
       });
+
+      this.cdr.detectChanges();
+
     });
     
      this.roleLimit = getLimitsForModule('optimaXPOS').roles || 0;
