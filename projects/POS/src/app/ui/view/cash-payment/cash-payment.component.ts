@@ -63,6 +63,12 @@ export class CashPaymentComponent implements OnInit {
     loyaltyPoints: 0,
   };
   businessInfo: string | any;
+  public shopName: string = '';
+  public cashierName: string = '';
+  public shopAddress: string = '';
+  public industry: string = '';
+  public userPrimaryInfoRegData: any; 
+
 
   isLoading: boolean = false;
     private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
@@ -111,6 +117,31 @@ export class CashPaymentComponent implements OnInit {
     // }
     // if(navigator.onLine) this.syncOfflinePayments();
   }
+
+  fetchUserInfo() {
+    const userDataString = sessionStorage.getItem('userPrimaryInfoRegData'); 
+    
+    if (userDataString) {
+      this.userPrimaryInfoRegData = JSON.parse(userDataString);
+      
+      // Shop Name (ClientType as requested)
+      this.shopName = this.userPrimaryInfoRegData.companyName || 'POS System';
+      
+      // Shop Address (Combining address, city, state)
+      this.shopAddress = (this.userPrimaryInfoRegData.address || '') + 
+                         (this.userPrimaryInfoRegData.city ? ', ' + this.userPrimaryInfoRegData.city : '') +
+                         (this.userPrimaryInfoRegData.state ? ', ' + this.userPrimaryInfoRegData.state : '');
+      
+      // Cashier Name (from nested 'user' object)
+      this.cashierName = this.userPrimaryInfoRegData.user?.username || 'Cashier';
+    }
+  }
+
+    formatDate(parts: any): Date {
+    // const parts = raw.split(',').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  }
+  
 
 
   get totalPaid() {
