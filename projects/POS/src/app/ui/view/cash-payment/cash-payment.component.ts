@@ -111,6 +111,8 @@ export class CashPaymentComponent implements OnInit {
     this.updatePriceOptions();
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken();
+    this.fetchUserInfo();
+
     // const userInfoString = sessionStorage.getItem("userInfo");
     // if (userInfoString) {
     //   this.businessInfo = JSON.parse(userInfoString);
