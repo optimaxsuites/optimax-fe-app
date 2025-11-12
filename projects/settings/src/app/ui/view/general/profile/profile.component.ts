@@ -156,9 +156,9 @@ export class ProfileComponent {
 }
 
   onCountrySelect(country: any): void {
-    const selectedCountry = this.countries.find(c => c.name === country);
-    if (selectedCountry && selectedCountry.states) {
-      this.states = selectedCountry.states;
+  
+    if (country && country.states) {
+      this.states = country.states;
       this.form.patchValue({ state: null, city: null });
     } else {
       this.states = [];
@@ -167,9 +167,9 @@ export class ProfileComponent {
   }
 
   onStateSelect(state: any): void {
-    const selectedState = this.states.find(s => s.name === state);
-    if (selectedState && selectedState.cities) {
-      this.cities = selectedState.cities;
+    // const selectedState = this.states.find(s => s.name === state);
+    if (state && state.cities) {
+      this.cities = state.cities;
       this.form.patchValue({ city: null });
     } else {
       this.cities = [];
