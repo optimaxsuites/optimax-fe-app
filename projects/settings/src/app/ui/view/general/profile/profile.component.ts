@@ -69,6 +69,7 @@ export class ProfileComponent {
     // });
 
     const storedUserId = sessionStorage.getItem('userid');
+    console.log(storedUserId)
     if (storedUserId) {
       this.fetchUserData(+storedUserId);
     } else {
@@ -81,8 +82,8 @@ export class ProfileComponent {
     this.generalSettingsService.getUserPrimaryInfo(userId).subscribe({
       next: (data) => {
         if (data.id) {
-          this.actualUserId = data.id;
-          sessionStorage.setItem('userid', data.id.toString());
+          this.actualUserId = userId;
+          // sessionStorage.setItem('userid', data.id.toString());
         }
 
         this.form.patchValue({

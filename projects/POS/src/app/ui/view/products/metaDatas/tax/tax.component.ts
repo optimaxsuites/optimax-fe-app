@@ -44,6 +44,8 @@ ngOnInit(){
           key: 'tl',
           life: 3000,
         });
+
+        this.metadataService.removeTaxFromState(id);
       }
     });
   }

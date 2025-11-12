@@ -216,6 +216,53 @@ export class MetadataService {
     return true;
   }
 
+  addCategoryToState(newCategory: any) {
+  const currentCategories = this.categorySubject.value;
+  const updated = [...currentCategories, newCategory];
+  this.categorySubject.next(updated);
+}
+
+removeCategoryFromState(categoryId: number) {
+  const currentCategories = this.categorySubject.value;
+  const updatedCategories = currentCategories.filter(c => c.id !== categoryId);
+  this.categorySubject.next(updatedCategories);
+}
+
+ addDiscountToState(newDiscount: any) {
+  const currentDiscounts = this.discountSubject.value;
+  const updated = [...currentDiscounts, newDiscount];
+  this.discountSubject.next(updated);
+}
+removeDiscountFromState(discountId: number) {
+  const currentDiscounts = this.discountSubject.value;
+  const updatedDiscounts = currentDiscounts.filter(c => c.id !== discountId);
+  this.discountSubject.next(updatedDiscounts);
+}
+
+ addSupplierToState(newSupplier: any) {
+  const currentSuppliers = this.supplierSubject.value;
+  const updated = [...currentSuppliers, newSupplier];
+  this.supplierSubject.next(updated);
+}
+
+removeSupplierFromState(supplierId: number | undefined) {
+  const currentSupplier = this.supplierSubject.value;
+  const updatedSupplier = currentSupplier.filter(c => c.id !== supplierId);
+  this.supplierSubject.next(updatedSupplier);
+}
+
+ addTaxToState(newTax: any) {
+  const currentTaxes = this.taxSubject.value;
+  const updated = [...currentTaxes, newTax];
+  this.taxSubject.next(updated);
+}
+
+removeTaxFromState(taxId: number | undefined) {
+  const currentTaxes = this.taxSubject.value;
+  const updatedTax = currentTaxes.filter(c => c.id !== taxId);
+  this.taxSubject.next(updatedTax);
+}
+
 
   private loadEnrichedProductsByBranch(): Observable<void> {
     const branchId = this.selectedBranchIdSubject.value;

@@ -2241,7 +2241,16 @@ handleImageError(event: any) {
               key: 'tl',
               life: 3000,
             });
-            this.categories.push(data);
+             categoryData = {
+              id: 0,
+              name: '',
+              code: '',
+              description: '',
+              endDate: '',
+            };
+            // this.categories.push(data);
+            this.metadataService.addCategoryToState(data) 
+
             categoryData = {
               id: 0,
               name: '',
@@ -2318,6 +2327,8 @@ handleImageError(event: any) {
           key: 'tl',
           life: 3000,
         });
+
+        this.metadataService.removeCategoryFromState(id);
       }
     });
   }
@@ -2359,6 +2370,18 @@ handleImageError(event: any) {
           });
           // this.getDiscounts();
           // TODO: Check whether this piece of code is worth it...
+          discountObj = {
+            id: 0,
+            name: '',
+            value: 0,
+            startDate: new Date(),
+            endDate: new Date(),
+            minQuantity: 0,
+            discountType:[],
+          };
+
+          this.metadataService.addDiscountToState(data)
+
           discountObj = {
             id: 0,
             name: '',
