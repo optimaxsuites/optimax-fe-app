@@ -3,6 +3,7 @@ import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms'
 import { GeneralSettingsService } from '../../../service/general-settings-service.service';
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
 import { countriesData } from '../../../sharedComponents/service/country-data';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-profile',
@@ -36,18 +37,22 @@ export class ProfileComponent {
     { value: 'Africa/Accra', label: 'Africa/Accra (GMT+0)' }, { value: 'America/New_York', label: 'New York (GMT-5)' },
   ];
 
-  private actualUserId: number | null = null;
+  private actualId: number | null = null;
 
     constructor(
       private fb: FormBuilder,
       private generalSettingsService: GeneralSettingsService,
-      private authService: AuthenticationService
+      private authService: AuthenticationService,
+      private messageService: MessageService
     ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
       email: new FormControl({ value: '', disabled: true }, [Validators.required, Validators.email]),
       phoneNumber: new FormControl({ value: '', disabled: true }),
+      fullname: new FormControl({ value: '', disabled: true }),
+      username: new FormControl({ value: '', disabled: true }),
+      domain: new FormControl({ value: '', disabled: true }),
       address: new FormControl({ value: '', disabled: true }),
       country: new FormControl({ value: '', disabled: true }),
       state: new FormControl({ value: '', disabled: true }),
@@ -82,13 +87,17 @@ export class ProfileComponent {
     this.generalSettingsService.getUserPrimaryInfo(userId).subscribe({
       next: (data) => {
         if (data.id) {
-          this.actualUserId = userId;
+          this.actualId = data.id;
           // sessionStorage.setItem('userid', data.id.toString());
         }
 
         this.form.patchValue({
+          fullname: data.fullname,
+          username: data.username,
           email: data.email,
           phoneNumber: data.phoneNumber,
+          companyName: data.companyName,
+          domain: data.domain,
           address: data.address,
           country: data.country,
           industry: data.industry,
@@ -97,6 +106,8 @@ export class ProfileComponent {
           currency: data.currency,
           language: data.language,
           timeZone: data.timeZone,
+          postalCode: data.postalCode,
+
         });
 
         if (data.country) {
@@ -179,24 +190,47 @@ export class ProfileComponent {
 
   submit(): void {
     console.log(this.form)
-    console.log(this.actualUserId)
+    console.log(this.actualId)
 
-    if (this.form.valid && this.actualUserId) {
+    if (this.form.valid && this.actualId) {
       const updatedData = this.form.getRawValue();
-      this.generalSettingsService.updateUserPrimaryInfo(this.actualUserId, updatedData).subscribe({
+      this.generalSettingsService.updateUserPrimaryInfo(this.actualId, updatedData).subscribe({
         next: (response) => {
           console.log('Update successful!', response);
+          this.messageService.add({
+          severity: 'success',
+          summary: 'Profile updated',
+          detail: 'Profile updated successfully.',
+          key: 'tl',
+          life: 3000,
+        });
           this.toggleEditMode();
         },
         error: (err) => {
+          this.messageService.add({
+          severity: 'error',
+          summary: 'Profile update failed',
+          detail: 'Profile update failed.',
+          key: 'tl',
+          life: 3000,
+        });
           console.error('Update failed:', err);
         }
       });
     } else {
-      console.log('Form is invalid. Please correct the errors.');
+       error: (err: any) => {
+          this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid form',
+          detail: 'Form is invalid. Please correct the errors.',
+          key: 'tl',
+          life: 3000,
+        });
+      console.log('Form is invalid. Please correct the errors.', err);
       this.form.markAllAsTouched();
     }
   }
+}
 
   // 🔹 Side modal control
   openChangePassword(): void {
