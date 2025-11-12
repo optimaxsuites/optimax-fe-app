@@ -177,6 +177,9 @@ export class ProfileComponent {
   }
 
   submit(): void {
+    console.log(this.form)
+    console.log(this.actualUserId)
+
     if (this.form.valid && this.actualUserId) {
       const updatedData = this.form.getRawValue();
       this.generalSettingsService.updateUserPrimaryInfo(this.actualUserId, updatedData).subscribe({
