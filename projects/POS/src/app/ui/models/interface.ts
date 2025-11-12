@@ -101,7 +101,7 @@ export interface DiscountDTO {
   code?: string;
   description?: string;
   active?: boolean;
-  discountType: DiscountTypeDTO | "PERCENTAGE" | "FIXED_AMOUNT";
+  discountType: any
   discountValue?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"

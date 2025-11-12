@@ -1856,7 +1856,7 @@
       </ng-select>
     </div>
 
-    <!-- <div  *ngIf="productData.discount.discountType.includes(2)"> -->
+    <div  *ngIf="discount?.discountType?.includes(1)">
     <div>
       <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
         Discount validity period
@@ -1883,8 +1883,9 @@
         </div>
       </div>
     </div>
+    </div>
 
-    <!-- <div *ngIf="productData.discount.discountType.includes(3)"> -->
+    <div *ngIf="discount?.discountType?.includes(2)">
     <div>
       <div class="detailDiv w-full">
         <label for="minQuantity">Minimum quantity</label>
@@ -1895,6 +1896,7 @@
           class="name editInput"
         />
       </div>
+    </div>
     </div>
   </div>
 </app-side-modal>

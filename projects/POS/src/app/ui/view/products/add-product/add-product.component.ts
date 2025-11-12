@@ -103,20 +103,15 @@ export class AddProductComponent {
     startDate: Date;
     endDate: Date;
     minQuantity: number;
-    discountType: {
-      id: number;
-      code: string;
-      description: string;
-      name: string;
-    };
+    discountType: any[]
   } = {
     id: 0,
     name: '',
     value: 0,
     startDate: new Date(),
-    endDate: new Date(),
+    endDate: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000),
     minQuantity: 0,
-    discountType: { id: 0, code: '', description: '', name: '' },
+    discountType: [],
   };
   measurementUnits = Object.keys(MeasurementUnit);
 
@@ -263,7 +258,14 @@ export class AddProductComponent {
 
 	branches: BranchDTO[] = [];
 
-	discountTypes: any[] = [];
+	discountTypes: any[] = [
+    {
+      id:1, name: 'Periodic'
+    },
+     {
+      id:2, name: 'Quantity Based'
+    }
+  ];
 	discountType: string[] = [];
 	discounts: any[] = [];
 	suppliers: supplierData[] = [];
@@ -1095,9 +1097,9 @@ handleImageError(event: any) {
       (data) => (this.categories = data)
     );
     this.metadataService.supplier$.subscribe((data) => (this.suppliers = data));
-    this.metadataService.discountTypes$.subscribe(
-      (data) => (this.discountTypes = data)
-    );
+    // this.metadataService.discountTypes$.subscribe(
+    //   (data) => (this.discountTypes = data)
+    // );
     this.metadataService.taxes$.subscribe((data) => (this.taxes = data));
     this.metadataService.branches$.subscribe((data) => {
       this.branches = data;
@@ -2334,11 +2336,11 @@ handleImageError(event: any) {
   addDiscount() {
     let discountObj = this.discount;
 
-    const discountDetails: DiscountDTO = {
+    const discountDetails = {
       id: discountObj.id,
       name: discountObj.name,
       value: discountObj.value,
-      discountType: discountObj.discountType,
+      // discountType: discountObj.discountType,
       endDate: discountObj.endDate,
       startDate: discountObj.startDate,
       minQuantity: discountObj.minQuantity,
@@ -2364,7 +2366,7 @@ handleImageError(event: any) {
             startDate: new Date(),
             endDate: new Date(),
             minQuantity: 0,
-            discountType: { id: 0, code: '', name: '', description: '' },
+            discountType:[],
           };
         } else {
           this.messageService.add({

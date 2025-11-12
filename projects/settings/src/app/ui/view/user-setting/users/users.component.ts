@@ -81,6 +81,7 @@ users: any[] = [
 ];
 
 newUser: user ={
+  // fullname: '',
   name: '',
   email: '',
   status: 'Active',
@@ -204,9 +205,9 @@ submitUser() {
   console.log(business)
 
   const businessInfo = {
-    fullName: business?.fullName,
-    username: this.newUser.name,
-    profileImage: business?.profileImage,
+    fullname: business?.fullname || '',
+    username: this.newUser.name || '',
+    profileImage: business?.profileImage || "",
     email: this.newUser.email,
     phoneNumber: business?.phoneNumber,
     address: business?.address,
