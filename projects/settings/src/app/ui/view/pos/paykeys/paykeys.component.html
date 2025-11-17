@@ -4,7 +4,7 @@
   <div class="flex gap-4 mt-2">
     <input
       type="text"
-      [(ngModel)]="newBranch.key"
+      [(ngModel)]="allBranch.key"
       class="w-full border border-gray-300 rounded-md p-2"
       placeholder="pk_live_xxxxxxxxxxxxx"
     />
@@ -12,7 +12,7 @@
     <button
       class="px-4 py-2 bg-customBlue text-white rounded-md disabled:bg-customBlueHover disabled:cursor-not-allowed"
       (click)="applyKeyToAll()"
-      [disabled]="loading || newBranch.key.trim() === ''"
+      [disabled]="loading || allBranch.key.trim() === ''"
     >
       Apply to All
     </button>

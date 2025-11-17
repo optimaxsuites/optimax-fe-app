@@ -49,6 +49,23 @@ export class DelveryComponent {
     isActive: true,
   };
 
+  allBranch:  BranchDTO = {
+    id: 0,
+    name: '',
+    description: '',
+    address: '',
+    phoneNo: '',
+    baseFee: 0,
+    perKmRate: 0,
+    maxFee: 0,
+    minFee: 0,
+    expressFee: 0,
+    estimatedDays: 0,
+    sameDayDeliveryCutoffTime: 0 as unknown as Time,
+    logisticsPartner: '',
+    isActive: true,
+  };
+
     showAddForm: boolean = false;
     branchLimit = 0
     loading:boolean = false
@@ -138,6 +155,7 @@ export class DelveryComponent {
       
       
         editBranch(branch: BranchDTO, event: Event) {
+          event.stopPropagation();
             
           branch.isEditing = !branch.isEditing;
       
@@ -158,7 +176,6 @@ export class DelveryComponent {
           }
       // this.newBranch= branch
           if (!branch.isEditing) {
-          event.stopPropagation();
       
           //   this.saveBranchesToLocalStorage();
       
@@ -229,15 +246,15 @@ export class DelveryComponent {
           const data = {
             id: branch.deliveryNoteId,
             branchId: branch.id,
-             baseFee: this.newBranch.baseFee,
-            perKmRate: this.newBranch.perKmRate,
-            maxFee: this.newBranch.maxFee,
-            minFee: this.newBranch.minFee,
-            expressFee: this.newBranch.expressFee,
-            estimatedDays: this.newBranch.estimatedDays,
-            sameDayDeliveryCutoffTime: this.newBranch.sameDayDeliveryCutoffTime,
-            logisticsPartner: this.newBranch.logisticsPartner,
-            isActive: this.newBranch.isActive,
+             baseFee: this.allBranch.baseFee,
+            perKmRate: this.allBranch.perKmRate,
+            maxFee: this.allBranch.maxFee,
+            minFee: this.allBranch.minFee,
+            expressFee: this.allBranch.expressFee,
+            estimatedDays: this.allBranch.estimatedDays,
+            sameDayDeliveryCutoffTime: this.allBranch.sameDayDeliveryCutoffTime,
+            logisticsPartner: this.allBranch.logisticsPartner,
+            isActive: this.allBranch.isActive,
           };
       
           return this.dataService.addDeliveryNote(data);

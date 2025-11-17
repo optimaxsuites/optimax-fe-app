@@ -30,6 +30,14 @@ branches: BranchDTO[] = [];
     phoneNo: '',
     key: ''
   };
+  allBranch: BranchDTO = {
+    id: 0,
+    name: '',
+    description: '',
+    address: '',
+    phoneNo: '',
+    key: ''
+  };
   showAddForm: boolean = false;
   branchLimit = 0
   loading:boolean = false
@@ -109,6 +117,7 @@ branches: BranchDTO[] = [];
 
 
   editBranch(branch: BranchDTO, event: Event) {
+    event.stopPropagation();
       
     branch.isEditing = !branch.isEditing;
 
@@ -119,7 +128,6 @@ branches: BranchDTO[] = [];
     }
 // this.newBranch= branch
     if (!branch.isEditing) {
-    event.stopPropagation();
 
     //   this.saveBranchesToLocalStorage();
 
@@ -174,7 +182,7 @@ applyKeyToAll() {
     const data = {
       id: branch.keyId,
       branchId: branch.id,
-      publicKey: this.newBranch.key
+      publicKey: this.allBranch.key
     };
 
     return this.dataService.addPaymentKeys(data);
@@ -186,7 +194,7 @@ applyKeyToAll() {
         this.branches[i].key = res.publicKey;
       });
 
-      this.newBranch.key = '';
+      this.allBranch.key = '';
   this.loading = false
 
       this.messageService.add({
