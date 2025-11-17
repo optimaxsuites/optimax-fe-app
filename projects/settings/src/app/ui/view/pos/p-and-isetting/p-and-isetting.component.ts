@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 interface DeliveryOption {
   id: number;
@@ -10,6 +11,62 @@ interface DeliveryOption {
   rateType?: 'fixed' | 'range' | 'per-km'; 
   pricePerKm?: number | null; 
 }
+
+// The revised model for storing global Paystack credentials
+export interface PaystackConfig {
+  liveMode: boolean; // True for Live Keys, False for Test Keys
+  publicKey: string; // The only key required for client-side payment initiation
+}
+
+// Mock data (Secret Key field is removed)
+export const MOCK_PAYSTACK_CONFIG: PaystackConfig = {
+  liveMode: true,
+  publicKey: 'pk_live_xxxxxxxxxxxxxxxxxxxxxxxx',
+};
+
+// 1. Model for a single branch's distance-based fee tier
+export interface FeeTier {
+  id: string; // Unique ID for Angular trackBy (e.g., UUID or simple index)
+  minDistance: number; // in kilometers (km)
+  maxDistance: number; // in kilometers (km)
+  feeAmount: number;    // in your local currency (e.g., NGN)
+}
+
+// 2. Model for the delivery settings of a single branch
+export interface BranchShippingSettings {
+  branchId: number;
+  branchName: string;
+  isGlobalDefault: boolean; // If checked, these tiers apply to all branches
+  isEnabled: boolean;
+  
+  // The list of distance tiers for this specific branch
+  feeTiers: FeeTier[]; 
+}
+
+// 3. Mock data for demonstration
+export const MOCK_BRANCH_SETTINGS: BranchShippingSettings[] = [
+  {
+    branchId: 1,
+    branchName: 'Lagos Island Branch',
+    isGlobalDefault: false,
+    isEnabled: true,
+    feeTiers: [
+      { id: 't1', minDistance: 0, maxDistance: 5, feeAmount: 1200 },
+      { id: 't2', minDistance: 5.1, maxDistance: 10, feeAmount: 2500 },
+      { id: 't3', minDistance: 10.1, maxDistance: 20, feeAmount: 4500 },
+    ],
+  },
+  {
+    branchId: 2,
+    branchName: 'Abuja Central Branch (Global Default)',
+    isGlobalDefault: true,
+    isEnabled: true,
+    feeTiers: [
+      { id: 't4', minDistance: 0, maxDistance: 7, feeAmount: 1500 },
+      { id: 't5', minDistance: 7.1, maxDistance: 15, feeAmount: 3000 },
+    ],
+  },
+];
 
 @Component({
   selector: 'app-p-and-isetting',
@@ -78,6 +135,96 @@ export class PAndISettingComponent {
       rateType: 'fixed',
     },
   ];
+
+  paystackForm!: FormGroup;
+
+  allBranches: BranchShippingSettings[] = MOCK_BRANCH_SETTINGS;
+  
+  // The ID of the currently selected branch for configuration
+  selectedBranchId: number = this.allBranches[0].branchId; 
+  
+  // The main Reactive Form Group
+  shippingForm!: FormGroup;
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit() {
+    this.loadBranchSettings(this.selectedBranchId);
+
+    this.paystackForm = this.fb.group({
+      liveMode: [MOCK_PAYSTACK_CONFIG.liveMode],
+      // Only the Public Key is stored
+      publicKey: [MOCK_PAYSTACK_CONFIG.publicKey, Validators.required]
+    });
+  }
+
+  get feeTiers(): FormArray {
+    return this.shippingForm.get('feeTiers') as FormArray;
+  }
+
+  // Initializes the form based on the selected branch's data
+  loadBranchSettings(branchId: number) {
+    this.selectedBranchId = branchId;
+    const settings = this.allBranches.find(b => b.branchId === branchId) || this.allBranches[0];
+
+    // Build the form structure
+    this.shippingForm = this.fb.group({
+      branchId: [settings.branchId],
+      branchName: [settings.branchName],
+      isGlobalDefault: [settings.isGlobalDefault],
+      isEnabled: [settings.isEnabled],
+      feeTiers: this.fb.array(
+        settings.feeTiers.map(tier => this.createFeeTierGroup(tier))
+      ),
+    });
+  }
+
+  createFeeTierGroup(tier?: FeeTier): FormGroup {
+    return this.fb.group({
+      id: [tier?.id || crypto.randomUUID()], // Use a unique ID generator
+      minDistance: [tier?.minDistance, [Validators.required, Validators.min(0)]],
+      maxDistance: [tier?.maxDistance, [Validators.required, Validators.min(0)]],
+      feeAmount: [tier?.feeAmount, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  // Adds a new row (FeeTier) to the FormArray
+  addFeeTier() {
+    this.feeTiers.push(this.createFeeTierGroup());
+  }
+
+  // Removes a row (FeeTier) from the FormArray by index
+  removeFeeTier(index: number) {
+    this.feeTiers.removeAt(index);
+  }
+
+  // Handles form submission
+  onSubmit() {
+    if (this.shippingForm.valid) {
+      console.log('Saving Delivery Fee Settings:', this.shippingForm.value);
+      // **TODO: Integrate with ERP backend API here**
+      alert('Settings saved successfully! Check console for data.');
+    } else {
+      alert('Please check the form for errors.');
+      this.shippingForm.markAllAsTouched();
+    }
+  }
+
+  onSubmitKey() {
+    if (this.paystackForm.valid) {
+
+      const config: PaystackConfig = this.paystackForm.value;
+      
+      // The ERP only needs the Public Key for the client-side widget integration.
+      console.log('Saving Paystack Public Key Configuration:', config); 
+      
+      alert(`Paystack Public Key for ${config.liveMode ? 'Live Mode' : 'Test Mode'} saved successfully!`);
+      // **TODO: Integrate with your secure backend API to save the Public Key**
+    } else {
+      alert('Please fill in the Paystack Public key.');
+      this.paystackForm.markAllAsTouched();
+    }
+  }
 
   setActiveTab(tab: 'payment' | 'delivery'): void {
     this.activeTab = tab;

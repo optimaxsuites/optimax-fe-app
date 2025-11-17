@@ -200,11 +200,13 @@ style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div style="text-align: left; margin-bottom: 10px;">
-    <div>Sold to: {{ navigationState.order.customer?.name || 'Walk-in Customer' }}</div>
-    <div>Date & Time: {{ formatDate(navigationState.order?.updatedAt) | date: 'medium' }}</div>
+    <div >Sold to: Walk-in Customer</div>
+    <!-- <div >Date & Time: {{ formatDate(navigationState.cart.timestamp) | date: 'medium'  }}</div> -->
+    <div >Date & Time: {{ now }}</div>
     <div >Cashier: {{ cashierName }}</div>
-    <div>Receipt ID: {{navigationState.order.orderNumber}}</div>
-    <div>Order #: {{navigationState.order.orderNumber}}</div>
+    <div >Receipt ID: {{receiptID}}</div>
+    <div>Order #: {{receiptID}}</div>
+
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
@@ -286,6 +288,8 @@ style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left
     <svg id="barcode"></svg>
   </div>
 </div>
+
+
 
 
 <div *ngIf="showCreateCustomerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

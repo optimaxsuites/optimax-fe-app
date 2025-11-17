@@ -68,6 +68,7 @@ export class CashPaymentComponent implements OnInit {
   public shopAddress: string = '';
   public industry: string = '';
   public userPrimaryInfoRegData: any; 
+  now: Date = new Date()
 
 
   isLoading: boolean = false;
@@ -108,6 +109,8 @@ export class CashPaymentComponent implements OnInit {
 
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
+    console.log(this.cart)
+    console.log(this.navigationState.order)
     this.updatePriceOptions();
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken();

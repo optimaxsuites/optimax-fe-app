@@ -1,0 +1,271 @@
+<div class="p-4 mb-6 border rounded-xl bg-blue-50">
+  <label class="font-semibold text-customBlue pb-2">Apply same delivery details to all branches</label>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+         <!-- Name and Phone Number -->
+        <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Base Fee </label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.baseFee"
+            />
+          
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Per KM fee</label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.perKmRate"
+            />
+          </div>
+ 
+        </div>
+
+          <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Maximum Fee</label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.maxFee"
+            />
+          
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Minimum Fee</label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.minFee"
+            />
+
+          </div>
+ 
+        </div>
+
+          <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Express Fee</label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.expressFee"
+            />
+          
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Estimated delivery days</label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.estimatedDays"
+            />
+          
+          </div>
+ 
+        </div>
+
+         <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Same day delivery cut off time</label>
+            <input
+              type="time"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.sameDayDeliveryCutoffTime"
+            />
+           
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Logistic Partner </label>
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.logisticsPartner"
+            />
+           
+          </div>
+ 
+        </div>
+       
+
+    
+      </div>
+
+  <div class="flex gap-4 justify-center mt-2">
+    <!-- <input
+      type="text"
+      [(ngModel)]="newBranch.baseFee"
+      class="w-full border border-gray-300 rounded-md p-2"
+      placeholder="pk_live_xxxxxxxxxxxxx"
+    /> -->
+    <div></div>
+
+    <button
+      class="px-4 py-2 bg-customBlue text-white rounded-md disabled:bg-customBlueHover disabled:cursor-not-allowed"
+      (click)="applyKeyToAll()"
+      [disabled]="loading || newBranch.baseFee === 0"
+    >
+      Apply to All
+    </button>
+  </div>
+</div>
+
+
+<mat-accordion>
+  @for(branch of branches; track branch.id){
+  <mat-expansion-panel #panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title class="capitalize">
+        {{ branch.name }}
+      </mat-panel-title>
+      <mat-panel-description class="action-buttons">
+        <button
+          (click)="editBranch(branch, $event)"
+          class="text-customGreen hover:bg-green-50 p-3 rounded-xl"
+        >
+          <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+          <span *ngIf="panel.expanded">{{
+            branch.isEditing ? "Save Changes" : "Edit"
+          }}</span>
+        </button>
+
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Name and Phone Number -->
+        <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Base Fee </label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.baseFee"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.baseFee }}</p>
+            }
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Per KM fee</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.perKmRate"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.perKmRate }}</p>
+            }
+          </div>
+ 
+        </div>
+
+          <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Maximum Fee</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.maxFee"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.maxFee }}</p>
+            }
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Minimum Fee</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.minFee"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.minFee }}</p>
+            }
+          </div>
+ 
+        </div>
+
+          <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Express Fee</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.expressFee"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.expressFee }}</p>
+            }
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Estimated delivery days</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.estimatedDays"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.estimatedDays }}</p>
+            }
+          </div>
+ 
+        </div>
+
+         <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Same day delivery cut off time</label>
+            @if(branch.isEditing){
+            <input
+              type="time"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.sameDayDeliveryCutoffTime"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.sameDayDeliveryCutoffTime }}</p>
+            }
+          </div>
+  
+           <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Logistic Partner </label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.logisticsPartner"
+            />
+            } @else {
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.logisticsPartner }}</p>
+            }
+          </div>
+ 
+        </div>
+       
+
+    
+      </div>
+    </div>
+  </mat-expansion-panel>
+  } @empty {
+  <div class="p-6 text-center text-gray-500">
+    No branches found.
+  </div>
+  }
+</mat-accordion>

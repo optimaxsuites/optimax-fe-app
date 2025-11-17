@@ -34,6 +34,27 @@ export class DataService {
        .pipe(catchError(this.handleError));
    }
 
+   addPaymentKeys(data: any){
+    return this.http.post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/paymentKeyss', data)
+    .pipe(catchError(this.handleError));
+   }
+
+   getPaymentKeys(){
+    return this.http.get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/paymentKeyss')
+    .pipe(catchError(this.handleError));
+   }
+
+
+   addDeliveryNote(data: any){
+    return this.http.post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/deliveryTypes', data)
+    .pipe(catchError(this.handleError));
+   }
+
+   getDeliveryNote(){
+    return this.http.get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/deliveryTypes')
+    .pipe(catchError(this.handleError));
+   }
+
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';

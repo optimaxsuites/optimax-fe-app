@@ -80,6 +80,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { BranchesComponent } from './ui/view/pos/branches/branches.component';
 import { ChangePasswordComponent } from './ui/view/general/change-password/change-password.component';
 import { ProfileComponent } from './ui/view/general/profile/profile.component';
+import { PaykeysComponent } from './ui/view/pos/paykeys/paykeys.component';
+import { DelveryComponent } from './ui/view/pos/delvery/delvery.component';
 
 //
 
@@ -107,6 +109,8 @@ import { ProfileComponent } from './ui/view/general/profile/profile.component';
     BranchesComponent,
     ChangePasswordComponent,
     ProfileComponent,
+    PaykeysComponent,
+    DelveryComponent,
   ],
   imports: [
     // BrowserModule,
