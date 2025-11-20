@@ -43,6 +43,9 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
 import { DashboardsideModalComponent } from './shared/dashboardside-modal/dashboardside-modal.component';
+import { GeneraldashboardComponent } from './generaldashboard/generaldashboard.component';
+import { DashboardDropdownComponent } from './shared/dashboard-dropdown/dashboard-dropdown.component';
+import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
 
 
 @NgModule({
@@ -53,6 +56,9 @@ import { DashboardsideModalComponent } from './shared/dashboardside-modal/dashbo
     DashboardPageComponent,
     DashboardOverviewComponent,
     DashboardsideModalComponent,
+  DashboardDropdownComponent,
+    GeneraldashboardComponent,
+    HrDashboardComponent,
     
   ],
   imports: [

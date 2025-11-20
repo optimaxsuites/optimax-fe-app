@@ -1,10 +1,15 @@
 
 <div class="p-6 w-full space-y-6">
 
+  <!-- Shared dashboard dropdown -->
+  <app-dashboard-dropdown></app-dashboard-dropdown>
+
+
+  
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-semibold text-gray-800">Dashboard Overview</h1>
+      <h1 class="text-2xl font-semibold text-gray-800">POS Dashboard</h1>
       <p class="text-sm text-gray-500 mt-1">Analytics and recent activity</p>
     </div>
 
@@ -42,26 +47,36 @@
   </div>
 
 <!-- User Info Section -->
-<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-  <h3 class="text-lg font-semibold text-gray-800 mb-4">About User</h3>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+  <!-- Profile Picture -->
+  <div class="flex-shrink-0">
+    <img
+      src="https://cdn-icons-png.flaticon.com/128/1814/1814249.png"
+      alt="User profile"
+      class="w-24 h-24 rounded-full border-2 border-customBlue object-cover shadow-sm"
+    />
+  </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-700">
-    <div>
-      <p><span class="font-medium text-gray-600">Name:</span> {{ userInfo.name }}</p>
-      <p><span class="font-medium text-gray-600">Role:</span> {{ userInfo.role }}</p>
-      <p><span class="font-medium text-gray-600">Department:</span> {{ userInfo.department }}</p>
-    </div>
-    <div>
-      <p><span class="font-medium text-gray-600">Employee ID:</span> {{ userInfo.employeeId }}</p>
-      <p><span class="font-medium text-gray-600">Bank:</span> {{ userInfo.bankName }}</p>
-    </div>
-    <div>
-      <p><span class="font-medium text-gray-600">Days Worked:</span> {{ userInfo.daysWorked }}</p>
-      <p><span class="font-medium text-gray-600">Pay Type:</span> Salaried</p>
+  <!-- User Details -->
+  <div class="flex-1 w-full">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2 text-2xl">About User</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-700">
+      <div>
+        <p><span class="font-medium text-gray-800">Name:</span> {{ userInfo.name }}</p>
+        <p><span class="font-medium text-gray-800">Role:</span> {{ userInfo.role }}</p>
+        <p><span class="font-medium text-gray-800">Department:</span> {{ userInfo.department }}</p>
+      </div>
+      <div>
+        <p><span class="font-medium text-gray-800">Employee ID:</span> {{ userInfo.employeeId }}</p>
+        <p><span class="font-medium text-gray-800">Bank:</span> {{ userInfo.bankName }}</p>
+      </div>
+      <div>
+        <p><span class="font-medium text-gray-800">Days Worked:</span> {{ userInfo.daysWorked }}</p>
+        <p><span class="font-medium text-gray-800">Pay Type:</span> Salaried</p>
+      </div>
     </div>
   </div>
 </div>
-
 
   <!-- Charts area -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -75,7 +90,7 @@
       <div>
         <apx-chart
           [series]="barChartOptions.series ?? []"
-         [chart]="barChartOptions.chart!"
+          [chart]="barChartOptions.chart!"
           [xaxis]="barChartOptions.xaxis!"
           [dataLabels]="barChartOptions.dataLabels!"
           [stroke]="barChartOptions.stroke!"
@@ -110,7 +125,7 @@
   <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-md font-medium text-gray-700">Recent Transactions</h3>
-      <a class="text-sm text-customGreen hover:underline cursor-pointer">View all</a>
+      <a class="text-sm text-customBlue hover:underline cursor-pointer">View all</a>
     </div>
 
     <div class="overflow-x-auto">

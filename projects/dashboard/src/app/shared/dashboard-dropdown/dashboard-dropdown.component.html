@@ -1,0 +1,16 @@
+<div class="relative">
+  <button 
+    class="flex items-center gap-2 px-4 py-2 border rounded-md bg-white shadow-sm hover:bg-gray-50"
+    (click)="toggleDropdown()">
+    Dashboards ▼
+  </button>
+
+  <ul *ngIf="dropdownOpen" 
+      class="absolute mt-2 w-44 bg-white border rounded shadow-lg z-20">
+    <li *ngFor="let m of modules"
+        (click)="selectModule(m)"
+        class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700">
+      {{ m.name }}
+    </li>
+  </ul>
+</div>

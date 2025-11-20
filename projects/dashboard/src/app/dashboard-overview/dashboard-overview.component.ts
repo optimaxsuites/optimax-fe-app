@@ -60,7 +60,8 @@ export class DashboardOverviewComponent implements OnInit {
   department: 'Sales',
   employeeId: 'tok123abc',
   bankName: 'GTBank',
-  daysWorked: 22
+  daysWorked: 22,
+  phoneNumber: '+234 801 234 5678'
 };
 
   public recentTransactions = [
@@ -78,6 +79,14 @@ export class DashboardOverviewComponent implements OnInit {
     this.initPieChart();
   }
 
+   modules = [
+ 
+    { name: 'POS', route: 'dashboard-overview' },
+    { name: 'Kitchen' },
+    { name: 'Accounting' },
+    { name: 'HR' },
+    { name: 'General' , route: '/' },
+  ];
   private initBarChart() {
     // Example monthly sales data
     this.barChartOptions = {
@@ -143,8 +152,6 @@ export class DashboardOverviewComponent implements OnInit {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(value);
   }
 
- 
-
 
 
 // inside DashboardOverviewComponent class
@@ -162,5 +169,6 @@ closeDetailsModal() {
   this.selectedTransaction = null;
   this.showDetailsModal = false;
 }
+
 
 }
