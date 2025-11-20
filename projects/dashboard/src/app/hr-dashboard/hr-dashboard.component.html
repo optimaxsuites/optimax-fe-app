@@ -27,7 +27,7 @@
 
   <!-- Notification Side Modal -->
   <div *ngIf="showNotifications"
-       class="fixed top-0 right-0 w-80 h-full bg-white shadow-xl z-50 p-4 border-l">
+       class="fixed top-0 right-0 w-80 h-full bg-white shadow-xl z-50 p-6 border-l">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-semibold text-gray-700">Notifications</h2>
       <button (click)="toggleNotifications()" class="text-gray-500 text-xl">✕</button>
@@ -41,7 +41,7 @@
   
 
   <!-- Profile ABOVE charts -->
-    <div class="flex-1 w-full">
+    <div class="flex-1  w-full">
     <h3 class="text-lg font-semibold text-gray-800 mb-2 text-2xl">About User</h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-700">
       <div>
@@ -63,7 +63,7 @@
 
 
   <!-- Summary Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 p-6 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-white p-4 rounded shadow border">
       <p class="text-gray-500 text-sm">Total Employees</p>
       <p class="text-2xl font-bold text-gray-800 mt-2">{{ hrStats.totalEmployees }}</p>
@@ -86,7 +86,7 @@
   </div>
 
   <!-- Charts Section -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+  <div class="grid grid-cols-1 p-6 lg:grid-cols-3 gap-6 mt-8">
 
     <!-- Employee Distribution Bar Chart -->
     <div class="bg-white p-4 rounded shadow border lg:col-span-2">
@@ -118,7 +118,7 @@
   </div>
 
   <!-- Leave Request Widget -->
-  <div class="bg-white p-6 rounded-lg shadow border mt-6">
+  <div class="bg-white p-6 m-6 rounded-lg shadow border mt-6">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-semibold text-gray-700">Leave Requests</h3>
       <span class="text-sm text-customBlue cursor-pointer" (click)="openLeaveModal()">View All</span>
@@ -152,7 +152,7 @@
   </div>
 
   <!-- Employee Table with Actions -->
-  <div class="bg-white p-6 rounded-lg shadow border mt-6">
+  <div class="bg-white p-6 m-6 rounded-lg shadow border mt-6">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-semibold text-gray-700">Employees</h3>
       <span class="text-sm text-customBlue cursor-pointer" (click)="showAddEmployeeModal = true">Add Employee</span>

@@ -11,11 +11,11 @@ export class DashboardDropdownComponent {
   selectedModule = 'Overview';
 
   modules = [
-    { name: 'POS', route: 'dashboard-overview' },
-    { name: 'Kitchen' },
-    { name: 'Accounting' },
-    { name: 'HR', route: '/' },
-    { name: 'General', route: 'general-dashboard' },
+    { name: 'POS', route: '/admin/dashboard/POS/86b1650f-670f-4692-bf4f-332f45c033b9' },
+    // { name: 'Kitchen' },
+    // { name: 'Accounting' },
+    { name: 'HR', route: 'admin/dashboard/HR/86b1650f-670f-4692-bf4f-332f45c033b9' },
+    { name: 'General', route: '/admin/dashboard/86b1650f-670f-4692-bf4f-332f45c033b9' },
   ];
 
   constructor(private router: Router) {}
