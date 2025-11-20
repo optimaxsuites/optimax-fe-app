@@ -21,6 +21,9 @@
 @import "../node_modules/quill/dist/quill.core.css";
 @import "../node_modules/quill/dist/quill.snow.css";
 
+@import "leaflet/dist/leaflet.css";
+
+
 // Be sure that you only ever include this mixin once!
 @include mat.core();
 
@@ -249,3 +252,4 @@ input[type="radio"]{
 body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
   pointer-events: none !important;
 }
+

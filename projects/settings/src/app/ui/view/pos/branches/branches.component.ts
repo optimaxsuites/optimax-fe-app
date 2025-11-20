@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DataService } from '../../../service/data.service';
+import * as L from 'leaflet';
+import 'leaflet-control-geocoder';
+
+
+
 
 interface BranchDTO {
   id?: number;
@@ -9,6 +14,9 @@ interface BranchDTO {
   address: string;
   phoneNo: string;
   isEditing?: boolean;
+  latitude: number | null,
+  longitude: number | null
+
 }
 
 @Component({
@@ -25,7 +33,12 @@ export class BranchesComponent implements OnInit {
     description: '',
     address: '',
     phoneNo: '',
+    latitude: null,
+    longitude: null
+  
   };
+  mapVisible = false;
+  map!: L.Map;
   showAddForm: boolean = false;
   branchLimit = 0
 
@@ -60,6 +73,47 @@ export class BranchesComponent implements OnInit {
     })
   }
 
+openMapModal() {
+  this.mapVisible = true;
+
+  setTimeout(() => {
+    this.loadMap();
+  }, 200);
+}
+
+loadMap() {
+  if (this.map) this.map.remove();
+
+  this.map = L.map('branchMap').setView([9.082, 8.6753], 6);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(this.map);
+
+  // Add draggable marker
+  const marker = L.marker([9.082, 8.6753], { draggable: true }).addTo(this.map);
+
+  marker.on('dragend', (event) => {
+    const position = (event.target as L.Marker).getLatLng();
+    this.newBranch.latitude = position.lat;
+    this.newBranch.longitude = position.lng;
+  });
+
+  // Add geocoder/search control
+  const geocoder = (L.Control as any).geocoder({
+    defaultMarkGeocode: false
+  })
+    .on('markgeocode', (e: any) => {
+      const latlng = e.geocode.center;
+      marker.setLatLng(latlng);       // Move marker to search result
+      this.map.setView(latlng, 15);   // Zoom in
+      this.newBranch.latitude = latlng.lat;
+      this.newBranch.longitude = latlng.lng;
+    })
+    .addTo(this.map);
+}
+
+
   // Save branches to localStorage
   saveBranchesToLocalStorage() {
     localStorage.setItem('branches', JSON.stringify(this.branches));
@@ -79,6 +133,9 @@ export class BranchesComponent implements OnInit {
       description: '',
       address: '',
       phoneNo: '',
+      latitude: null,
+      longitude: null
+
     };
   }
 
