@@ -2,30 +2,30 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ImageCacheService } from '../../../service/image-cache.service';
 import {
-	type AbstractControl,
-	FormArray,
-	FormBuilder,
-	FormControl,
-	FormGroup,
-	Validators,
-	ValidationErrors,
+  type AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+  ValidationErrors,
 } from "@angular/forms";
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
 import { MessageService } from "primeng/api";
 import { debounceTime, skipUntil } from "rxjs";
 import {
-	BranchDTO,
-	DiscountDTO,
-	HistoryData,
-	IngredientDTO,
-	MeasurementUnit,
-	ProductData,
-	ProductJSONFormat,
-	ProductJSONFormatPOST,
-	supplierData,
-	TaxDTO,
-	VariantDTO,
+  BranchDTO,
+  DiscountDTO,
+  HistoryData,
+  IngredientDTO,
+  MeasurementUnit,
+  ProductData,
+  ProductJSONFormat,
+  ProductJSONFormatPOST,
+  supplierData,
+  TaxDTO,
+  VariantDTO,
 } from "../../../models/interface";
 import { IndustryDataService } from "../../../service/industry-data.service";
 import { MetadataService } from "../../../service/metadata.service";
@@ -34,8 +34,8 @@ import { firstValueFrom } from 'rxjs';
 import { of, Observable } from 'rxjs'; 
 
 interface SelectedIngredientDTO {
-	ingredient: IngredientDTO;
-	quantity: number;
+  ingredient: IngredientDTO;
+  quantity: number;
 }
 
 interface BundleItem {
@@ -96,28 +96,38 @@ export class AddProductComponent {
     barcodeQuantity: 1,
   };
 
-  discount: {
-    id: number;
-    name: string;
-    value: number;
-    startDate: Date;
-    endDate: Date;
-    minQuantity: number;
-    discountType: {
-      id: number;
-      code: string;
-      description: string;
-      name: string;
-    };
-  } = {
-    id: 0,
+discount: {
+  id: number;
+  name: string;
+  value: number;
+  startDate: Date;
+  endDate: Date;
+  minQuantity: number;
+  discountType: number[];  // ✅ Changed to array of IDs
+} = {
+  id: 0,
+  name: '',
+  value: 0,
+  startDate: new Date(),
+  endDate: new Date(),
+  minQuantity: 0,
+  discountType: [],  // ✅ Initialize as empty array
+};
+  // Add tax form data
+  taxData: any = {
     name: '',
-    value: 0,
-    startDate: new Date(),
-    endDate: new Date(),
-    minQuantity: 0,
-    discountType: { id: 0, code: '', description: '', name: '' },
+    rate: 0,
+    description: ''
   };
+
+  // Add supplier form data
+  supplierData: any = {
+    name: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: ''
+  };
+
   measurementUnits = Object.keys(MeasurementUnit);
 
   addProduct: boolean = false;
@@ -129,6 +139,7 @@ export class AddProductComponent {
   savingCategory = false;
   savingDiscount = false;
   savingSupplier = false;
+  savingTax = false;
 
   /**
    * We use this for now, pending when user registration industry field is updated
@@ -161,7 +172,6 @@ export class AddProductComponent {
       code: 'EGG001',
       sku: 'SKU-EGG-001',
       measurementUnit: MeasurementUnit.UNIT, // Pieces
-
       purchasePrice: 50,
       currentStock: 200,
       reorderThreshold: 30,
@@ -172,7 +182,6 @@ export class AddProductComponent {
       code: 'MLK001',
       sku: 'SKU-MLK-001',
       measurementUnit: MeasurementUnit.UNIT, // Liters
-
       purchasePrice: 400,
       currentStock: 50,
       reorderThreshold: 10,
@@ -261,15 +270,17 @@ export class AddProductComponent {
    */
   newVariant = this.resetVariantData();
 
-  branches: BranchDTO[] = [];
-
-  discountTypes: any[] = [];
-  discountType: string[] = [];
-  discounts: any[] = [];
-  suppliers: supplierData[] = [];
-  taxes: TaxDTO[] = [];
-  selectedBundleItems: BundleItem[] = [];
-  availableProducts: ProductData[] = [];
+	branches: BranchDTO[] = [];
+discountTypes: any[] = [
+  { id: 1, name: 'Periodic' },
+  { id: 2, name: 'Quantity Based' }
+];
+	discountType: string[] = [];
+	discounts: any[] = [];
+	suppliers: supplierData[] = [];
+	taxes: TaxDTO[] = [];
+	selectedBundleItems: BundleItem[] = [];
+    availableProducts: ProductData[] = [];
 
   periodicDiscount: { startDate: string; endDate: string } = {
     startDate: '',
@@ -291,30 +302,16 @@ export class AddProductComponent {
   configureBarcode: boolean = false;
   barcodes = [
     { label: 'CODE128 ', value: 'CODE128' },
-    // { label: 'CODE128 A/B/C', value: 'CODE128' },
     { label: 'EAN-13', value: 'EAN13' },
     { label: 'EAN-8', value: 'EAN8' },
-    // { label: 'EAN-5', value: 'EAN5' },
-    // { label: 'EAN-2', value: 'EAN2' },
     { label: 'UPC (A)', value: 'UPC' },
     { label: 'UPC (E)', value: 'UPC' },
     { label: 'ITF', value: 'ITF' },
-    // { label: 'ITF-14', value: 'ITF14' },
-    // { label: 'MSI10', value: 'MSI10' },
-    // { label: 'MSI11', value: 'MSI11' },
-    // { label: 'MSI1010', value: 'MSI1010' },
-    // { label: 'MSI1110', value: 'MSI1110' },
-
     { label: 'Codabar', value: 'Codabar' },
     { label: 'CODE39', value: 'CODE39' },
   ] as const;
-  /**
-   * This is the branch name that is used to determine what branch data to be edited
-   *
-   * TODO: Make this type better. It should represent the value of each branch
-   */
-  //@ts-ignore
-  selectedBranchFromForm: (typeof this.branches)[0]['value'];
+
+  selectedBranchFromForm: any;
   dataOfChosenBranches: any[] = [];
   selectedProductIds: number[] = [];
 
@@ -339,7 +336,7 @@ export class AddProductComponent {
     private fb: FormBuilder,
     private industryData: IndustryDataService,
     private metadataService: MetadataService,
-    private imageCacheService: ImageCacheService // ADD THIS LINE
+    private imageCacheService: ImageCacheService
   ) {}
 
   ngOnInit(): void {
@@ -362,7 +359,7 @@ export class AddProductComponent {
       weight: [null, [Validators.min(0), Validators.max(9999)]],
       costPrice: [null, [Validators.required, Validators.min(0.01)]],
       sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
-      tax: [null],
+      selectedTaxes: [[], Validators.required],
       discount: [null],
       quantity: [null, [Validators.required, Validators.min(0)]],
       supplier: [null],
@@ -393,10 +390,14 @@ export class AddProductComponent {
       }, 100);
     }
 
-    this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
-      this.updateBranches();
-    });
+   // Add price change listeners
+  this.productForm.get('costPrice')?.valueChanges.subscribe(() => {
+    this.checkPriceValidation();
+  });
 
+  this.productForm.get('sellingPrice')?.valueChanges.subscribe(() => {
+    this.checkPriceValidation();
+  });
     // Fixed subscription for selectedProductIds
     this.productForm
       .get('selectedProductIds')
@@ -406,13 +407,542 @@ export class AddProductComponent {
         }
       });
 
-	  
-  if (this.isEditMode && this.activeItem) {
-    setTimeout(() => {
-      this.initializeEditMode();
-      this.debugImageFlow(); // ADD THIS
-    }, 100);
+    if (this.isEditMode && this.activeItem) {
+      setTimeout(() => {
+        this.initializeEditMode();
+        this.debugImageFlow();
+      }, 100);
+    }
   }
+
+  // Helper method to get tax control for a branch
+  getBranchTaxControl(branch: AbstractControl): FormControl {
+    return branch.get('tax') as FormControl;
+  }
+
+  // Get selected tax objects
+  getSelectedTaxes(): any[] {
+    const selectedTaxIds = this.productForm.get('selectedTaxes')?.value || [];
+    return this.taxes.filter(tax => selectedTaxIds.includes(tax.id));
+  }
+
+  // Get selected taxes for a specific branch
+  getBranchSelectedTaxes(branch: AbstractControl): any[] {
+    const selectedTaxIds = branch.get('tax')?.value || [];
+    return this.taxes.filter(tax => selectedTaxIds.includes(tax.id));
+  }
+
+  // Calculate total tax rate
+  calculateTotalTaxRate(): number {
+    const selectedTaxes = this.getSelectedTaxes();
+    return selectedTaxes.reduce((total, tax) => total + (tax.rate || 0), 0);
+  }
+
+  // Remove a tax from selection
+  removeTax(taxId: number) {
+    const currentTaxes = this.productForm.get('selectedTaxes')?.value || [];
+    const updatedTaxes = currentTaxes.filter((id: number) => id !== taxId);
+    this.productForm.get('selectedTaxes')?.setValue(updatedTaxes);
+  }
+
+  calculatePriceDifference(): number {
+  const costPrice = this.productForm.get('costPrice')?.value || 0;
+  const sellingPrice = this.productForm.get('sellingPrice')?.value || 0;
+  return sellingPrice - costPrice;
+}
+
+getPriceDifferencePercentage(): number {
+  const costPrice = this.productForm.get('costPrice')?.value || 0;
+  const sellingPrice = this.productForm.get('sellingPrice')?.value || 0;
+  
+  if (costPrice === 0) return 0;
+  return ((sellingPrice - costPrice) / costPrice) * 100;
+}
+
+  // Remove tax from a specific branch
+  removeBranchTax(branch: AbstractControl, taxId: number) {
+    const currentTaxes = branch.get('tax')?.value || [];
+    const updatedTaxes = currentTaxes.filter((id: number) => id !== taxId);
+    branch.get('tax')?.setValue(updatedTaxes);
+  }
+
+
+  // Add these properties to your component class
+editingTax: any = null;
+// taxData: any = {
+//   name: '',
+//   rate: 0,
+//   description: ''
+// };
+
+// Add these methods for tax management
+closeTaxModal() {
+  this.openAddTax = false;
+  this.cancelEditTax();
+}
+
+cancelEditTax() {
+  this.editingTax = null;
+  this.taxData = { name: '', rate: 0, description: '' };
+}
+
+editTax(tax: any) {
+  this.editingTax = tax;
+  this.taxData = {
+    name: tax.name,
+    rate: tax.rate,
+    description: tax.description || ''
+  };
+}
+ 
+  // FIXED: Add tax method with immediate refresh
+ addTax() {
+  if (!this.taxData.name || this.taxData.rate === null || this.taxData.rate === undefined) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Tax name and rate are required.',
+      key: 'tl',
+      life: 3000,
+    });
+    return;
+  }
+
+  this.savingTax = true;
+  const taxPayload = {
+    name: this.taxData.name,
+    rate: this.taxData.rate,
+    description: this.taxData.description || ''
+  };
+
+  this.posService.addTax(taxPayload).subscribe(
+    (data) => {
+      if (data) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tax Added',
+          detail: 'Tax added successfully.',
+          key: 'tl',
+          life: 3000,
+        });
+        
+        this.refreshTaxes();
+        this.taxData = { name: '', rate: 0, description: '' };
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'Failed to add tax. Please try again.',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+      this.savingTax = false;
+    },
+    (error: HttpErrorResponse) => {
+      this.savingTax = false;
+      this.handleError(error, 'tax');
+    }
+  );
+}
+
+// Add update tax method
+updateTax() {
+  if (!this.taxData.name || this.taxData.rate === null || this.taxData.rate === undefined) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Tax name and rate are required.',
+      key: 'tl',
+      life: 3000,
+    });
+    return;
+  }
+
+  this.savingTax = true;
+  const taxPayload = {
+    id: this.editingTax.id,
+    name: this.taxData.name,
+    rate: this.taxData.rate,
+    description: this.taxData.description || ''
+  };
+
+  this.posService.updateTax(taxPayload).subscribe(
+    (data) => {
+      if (data) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tax Updated',
+          detail: 'Tax updated successfully.',
+          key: 'tl',
+          life: 3000,
+        });
+        
+        this.refreshTaxes();
+        this.cancelEditTax();
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'Failed to update tax. Please try again.',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+      this.savingTax = false;
+    },
+    (error: HttpErrorResponse) => {
+      this.savingTax = false;
+      this.handleError(error, 'tax');
+    }
+  );
+}
+
+// Add delete tax method
+deleteTax(taxId: number) {
+  if (confirm('Are you sure you want to delete this tax? This action cannot be undone.')) {
+    this.posService.deleteTax(taxId).subscribe(
+      (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Tax Deleted',
+            detail: 'Tax deleted successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          this.refreshTaxes();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed to delete tax. It may be in use by products.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      },
+      (error: HttpErrorResponse) => {
+        if (error.status === 409) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Cannot Delete',
+            detail: 'This tax is currently in use by products and cannot be deleted.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else {
+          this.handleError(error, 'tax');
+        }
+      }
+    );
+  }
+}
+
+  // FIXED: Add supplier method with immediate refresh
+  addSupplier() {
+    if (!this.supplierData.name) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Supplier name is required.',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+
+    this.savingSupplier = true;
+    const supplierPayload = {
+      name: this.supplierData.name,
+      contactEmail: this.supplierData.contactEmail || '',
+      contactPhone: this.supplierData.contactPhone || '',
+      address: this.supplierData.address || ''
+    };
+
+    this.posService.addSupplier(supplierPayload).subscribe(
+      (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Supplier Added',
+            detail: 'Supplier added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          
+          // Refresh suppliers immediately
+          this.refreshSuppliers();
+          
+          // Reset form and close modal
+          this.supplierData = { 
+            name: '', 
+            contactEmail: '', 
+            contactPhone: '', 
+            address: '' 
+          };
+          this.openAddSupplier = false;
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed to add supplier. Please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+        this.savingSupplier = false;
+      },
+      (error: HttpErrorResponse) => {
+        this.savingSupplier = false;
+        this.handleError(error, 'supplier');
+      }
+    );
+  }
+
+// Add this property to track if price validation toast is already shown
+private priceValidationToastShown = false;
+
+// Update the checkPriceValidation method
+checkPriceValidation(): void {
+  const costPrice = this.productForm.get('costPrice')?.value;
+  const sellingPrice = this.productForm.get('sellingPrice')?.value;
+  
+  if (costPrice && sellingPrice && costPrice > sellingPrice) {
+    // Set error on the form control
+    this.productForm.get('costPrice')?.setErrors({ costPriceHigher: true });
+    this.productForm.get('sellingPrice')?.setErrors({ costPriceHigher: true });
+    
+    // Show notification only if not already shown
+    if (!this.priceValidationToastShown) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Price Validation',
+        detail: 'Cost price is higher than selling price. Consider adding a discount to avoid losses.',
+        key: 'tl',
+        life: 5000,
+      });
+      this.priceValidationToastShown = true;
+      
+      // Reset the flag after 5 seconds (toast lifetime)
+      setTimeout(() => {
+        this.priceValidationToastShown = false;
+      }, 5000);
+    }
+  } else {
+    // Clear the error if prices are valid
+    const costControl = this.productForm.get('costPrice');
+    const sellingControl = this.productForm.get('sellingPrice');
+    
+    if (costControl?.errors?.['costPriceHigher']) {
+      delete costControl.errors['costPriceHigher'];
+      costControl.updateValueAndValidity();
+    }
+    
+    if (sellingControl?.errors?.['costPriceHigher']) {
+      delete sellingControl.errors['costPriceHigher'];
+      sellingControl.updateValueAndValidity();
+    }
+    
+    // Reset the flag when prices become valid
+    this.priceValidationToastShown = false;
+  }
+}
+
+  // FIXED: Add category method with immediate refresh
+  addCategory() {
+    let categoryData = { ...this.productData.productCategory };
+    categoryData.endDate = new Date(categoryData.endDate).toISOString();
+
+    if (this.checkForEmptyFields(categoryData, ['endDate', 'description'])) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Category name and code are required.',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+
+    this.savingCategory = true;
+    this.posService.addCategory(categoryData).subscribe(
+      (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Category Added',
+            detail: 'Category added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          
+          // Refresh categories immediately
+          this.refreshCategories();
+          
+          // Reset form and close modal
+          this.productData.productCategory = {
+            id: 0,
+            name: '',
+            code: '',
+            description: '',
+            endDate: this._defaultExpiryDate.toISOString(),
+          };
+          this.openAddCategory = false;
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed to add category. Please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+        this.savingCategory = false;
+      },
+      (error: HttpErrorResponse) => {
+        this.savingCategory = false;
+        this.handleError(error, 'category');
+      }
+    );
+  }
+
+  // FIXED: Add discount method with immediate refresh
+  addDiscount() {
+    let discountObj = this.discount;
+
+    const discountDetails: DiscountDTO = {
+      id: discountObj.id,
+      name: discountObj.name,
+      value: discountObj.value,
+      discountType: discountObj.discountType,
+      endDate: discountObj.endDate,
+      startDate: discountObj.startDate,
+      minQuantity: discountObj.minQuantity,
+    };
+
+    if (!discountDetails.name || discountDetails.value === null) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Discount name and value are required.',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+
+    this.savingDiscount = true;
+    this.posService.addDiscount(discountDetails).subscribe(
+      (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Discount Added',
+            detail: 'Discount added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          
+          // Refresh discounts immediately
+          this.refreshDiscounts();
+          
+          // Reset form and close modal
+          this.discount = {
+            id: 0,
+            name: '',
+            value: 0,
+            startDate: new Date(),
+            endDate: new Date(),
+            minQuantity: 0,
+            discountType: [],
+          };
+          this.openAddDiscount = false;
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed to add discount. Please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+        this.savingDiscount = false;
+      },
+      (error: HttpErrorResponse) => {
+        this.savingDiscount = false;
+        this.handleError(error, 'discount');
+      }
+    );
+  }
+
+    // Refresh methods that force data reload
+  private refreshCategories() {
+    this.posService.getCategories().subscribe((categories: any) => {
+      this.categories = categories;
+      // Force refresh by refetching metadata completely
+      this.fetchMetaData();
+    });
+  }
+
+  private refreshDiscounts() {
+    this.posService.getDiscount().subscribe((discounts: any) => {
+      this.discounts = discounts;
+      // Force refresh by refetching metadata completely
+      this.fetchMetaData();
+    });
+  }
+
+  private refreshSuppliers() {
+    this.posService.getSupplier().subscribe((suppliers: any) => {
+      this.suppliers = suppliers;
+      // Force refresh by refetching metadata completely
+      this.fetchMetaData();
+    });
+  }
+
+  private refreshTaxes() {
+    this.posService.getTax().subscribe((taxes: any) => {
+      this.taxes = taxes;
+      // Force refresh by refetching metadata completely
+      this.fetchMetaData();
+    });
+  }
+  // Generic error handler
+  private handleError(error: HttpErrorResponse, type: string) {
+    if (error.status === 500) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Server Error',
+        detail: `Failed to add ${type}. Please check the details and try again.`,
+        key: 'tl',
+        life: 3000,
+      });
+    } else if (error.status === 404) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Not Found',
+        detail: `Failed to add ${type}. The service is unavailable.`,
+        key: 'tl',
+        life: 3000,
+      });
+    } else if (error.status === 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Connection Error',
+        detail: 'Unable to connect to the server. Please check your internet connection.',
+        key: 'tl',
+        life: 3000,
+      });
+    } else {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: `An unexpected error occurred while adding ${type}.`,
+        key: 'tl',
+        life: 3000,
+      });
+    }
   }
 
   bundleItemsValidator(control: AbstractControl): ValidationErrors | null {
@@ -429,7 +959,6 @@ export class AddProductComponent {
   loadAvailableProducts() {
     this.metadataService.products$.subscribe((products) => {
       this.availableProducts = products.filter((product) => {
-        // Exclude the current product if in edit mode
         if (this.isEditMode && this.activeItem) {
           return product.id !== this.activeItem.id;
         }
@@ -461,7 +990,6 @@ export class AddProductComponent {
   }
 
   syncBundleItems(selectedProductIds: number[]) {
-    // Avoid processing if the selection hasn't actually changed
     const currentIds = this.selectedBundleItems.map((item) => item.product.id);
     const newIds = selectedProductIds || [];
 
@@ -470,11 +998,8 @@ export class AddProductComponent {
     }
 
     console.log('Syncing bundle items with selected IDs:', selectedProductIds);
-
-    // Clear existing items
     this.selectedBundleItems = [];
 
-    // Add items for each selected product ID
     if (newIds.length > 0) {
       newIds.forEach((productId) => {
         const product = this.availableProducts.find((p) => p.id === productId);
@@ -488,7 +1013,6 @@ export class AddProductComponent {
       });
     }
 
-    // Update the bundle items form array
     this.updateBundleItemsInForm();
   }
 
@@ -498,15 +1022,12 @@ export class AddProductComponent {
 
   private constructImageUrlFromImageItem(imageItem: any): string {
     if (!imageItem) return this.getPlaceholderImage();
-
-    // Use the same service as product details page
     return this.imageCacheService.getImageUrlFromDTO(imageItem);
   }
 
   private getImageUrlFromItem(imageItem: any): string {
     if (!imageItem) return this.getPlaceholderImage();
 
-    // If it's already a complete URL
     if (
       typeof imageItem === 'string' &&
       (imageItem.startsWith('http') || imageItem.startsWith('data:'))
@@ -514,7 +1035,6 @@ export class AddProductComponent {
       return imageItem;
     }
 
-    // Use the image cache service for proper URL construction
     return this.imageCacheService.getImageUrlFromDTO(imageItem);
   }
 
@@ -533,14 +1053,11 @@ export class AddProductComponent {
     }));
 
     console.log('Updating bundle items in form:', bundleItemsData);
-
-    // Update the form control value
     this.productForm
       .get('bundleItems')
       ?.setValue(bundleItemsData, { emitEvent: false });
     this.productForm.get('bundleItems')?.markAsDirty();
 
-    // Update validation
     setTimeout(() => {
       this.productForm
         .get('bundleItems')
@@ -690,10 +1207,7 @@ export class AddProductComponent {
     // Set branch information
     this.setBranchInformation();
 
-    // DEBUG: Check what's happening with images
-    this.debugImageData();
-
-    // Initialize product images - FIXED VERSION
+    // Initialize product images
     this.initializeProductImages();
 
     console.log('Form after initialization:', this.productForm.value);
@@ -710,12 +1224,13 @@ export class AddProductComponent {
       }
     }
 
-    // Set tax
-    if (this.activeItem.tax) {
-      const tax = this.taxes.find((t) => t.id === this.activeItem.tax.id);
-      if (tax) {
-        this.productForm.patchValue({ tax: tax });
-      }
+    // Set taxes (multiple)
+    if (this.activeItem.taxes && Array.isArray(this.activeItem.taxes)) {
+      const taxIds = this.activeItem.taxes.map((tax: any) => tax.id);
+      this.productForm.patchValue({ selectedTaxes: taxIds });
+    } else if (this.activeItem.tax) {
+      // Fallback for single tax (backward compatibility)
+      this.productForm.patchValue({ selectedTaxes: [this.activeItem.tax.id] });
     }
 
     // Set discount
@@ -753,168 +1268,66 @@ export class AddProductComponent {
       }
     }
   }
-private initializeProductImages() {
-  console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
-  
-  // Reset
-  this.productImages = [];
-  this.mainProductImage = '';
 
-  // Check if we have product images in the expected format
-  if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
-    console.log('✅ Found product images array:', this.activeItem.productImages);
+  private initializeProductImages() {
+    console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
     
-    // Process each image
-    this.activeItem.productImages.forEach((imageItem: any, index: number) => {
-      try {
-        const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
-        console.log(`🖼️ Image ${index} URL:`, imageUrl);
-        
-        if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
-          const imageData = {
-            file: null,
-            url: imageUrl
-          };
+    // Reset
+    this.productImages = [];
+    this.mainProductImage = '';
+
+    // Check if we have product images in the expected format
+    if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
+      console.log('✅ Found product images array:', this.activeItem.productImages);
+      
+      // Process each image
+      this.activeItem.productImages.forEach((imageItem: any, index: number) => {
+        try {
+          const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
+          console.log(`🖼️ Image ${index} URL:`, imageUrl);
           
-          this.productImages.push(imageData);
-          
-          // Set the first image as main
-          if (!this.mainProductImage) {
-            this.mainProductImage = imageUrl;
-            console.log('✅ Set as main image:', imageUrl);
+          if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
+            const imageData = {
+              file: null,
+              url: imageUrl
+            };
+            
+            this.productImages.push(imageData);
+            
+            // Set the first image as main
+            if (!this.mainProductImage) {
+              this.mainProductImage = imageUrl;
+              console.log('✅ Set as main image:', imageUrl);
+            }
+          } else {
+            console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
           }
-        } else {
-          console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
+        } catch (error) {
+          console.error(`❌ Error processing image ${index}:`, error);
         }
-      } catch (error) {
-        console.error(`❌ Error processing image ${index}:`, error);
-      }
-    });
-  } else {
-    console.log('❌ No valid product images found in activeItem');
-  }
-
-  // If no images were processed successfully, use placeholder
-  if (this.productImages.length === 0) {
-    console.log('⚠️ No valid images processed, using placeholder');
-    this.mainProductImage = this.getPlaceholderImage();
-    this.productImages.push({
-      file: null,
-      url: this.mainProductImage
-    });
-  }
-
-  console.log('📊 FINAL STATE:', {
-    mainProductImage: this.mainProductImage,
-    productImagesCount: this.productImages.length,
-    productImages: this.productImages.map(img => img.url)
-  });
-  
-  this.updateImageFormValidation();
-}
-  // private constructImageUrlFromImageItem(imageItem: any): string {
-  //   if (!imageItem) return '';
-
-  //   console.log('Processing image item:', imageItem);
-
-  //   // If it's already a complete URL, use it directly
-  //   if (typeof imageItem === 'string' && (imageItem.startsWith('http') || imageItem.startsWith('data:'))) {
-  //     console.log('Using direct URL:', imageItem);
-  //     return imageItem;
-  //   }
-
-  //   // If it's an object with imgNo property, construct the URL
-  //   if (imageItem?.imgNo) {
-  //     const imageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageItem.imgNo}`;
-  //     console.log('Constructed URL from imgNo:', imageUrl);
-  //     return imageUrl;
-  //   }
-
-  //   // If it's an object with imageUrl property
-  //   if (imageItem?.imageUrl) {
-  //     console.log('Using imageUrl property:', imageItem.imageUrl);
-  //     return imageItem.imageUrl;
-  //   }
-
-  //   // If it's an object with url property
-  //   if (imageItem?.url) {
-  //     console.log('Using url property:', imageItem.url);
-  //     return imageItem.url;
-  //   }
-
-  //   // If it has id property, try to construct URL
-  //   if (imageItem?.id) {
-  //     const imageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageItem.id}`;
-  //     console.log('Constructed URL from id:', imageUrl);
-  //     return imageUrl;
-  //   }
-
-  //   console.log('No valid image data found in item:', imageItem);
-  //   return '';
-  // }
-
-  private debugImageData() {
-    console.log('🔍 === DEBUG IMAGE DATA START ===');
-    console.log('activeItem:', this.activeItem);
-
-    if (this.activeItem?.productImages) {
-      console.log('productImages array:', this.activeItem.productImages);
-      console.log(
-        'productImages is array:',
-        Array.isArray(this.activeItem.productImages)
-      );
-
-      if (Array.isArray(this.activeItem.productImages)) {
-        this.activeItem.productImages.forEach((img: any, index: number) => {
-          console.log(`Image ${index}:`, img);
-          console.log(`Image ${index} type:`, typeof img);
-          if (typeof img === 'object') {
-            console.log(`Image ${index} properties:`, Object.keys(img));
-            console.log(`Image ${index} imgNo:`, img?.imgNo);
-            console.log(`Image ${index} name:`, img?.name);
-          }
-        });
-      }
+      });
+    } else {
+      console.log('❌ No valid product images found in activeItem');
     }
 
-    console.log('Final productImages array:', this.productImages);
-    console.log('Main product image:', this.mainProductImage);
-    console.log('🔍 === DEBUG IMAGE DATA END ===');
+    // If no images were processed successfully, use placeholder
+    if (this.productImages.length === 0) {
+      console.log('⚠️ No valid images processed, using placeholder');
+      this.mainProductImage = this.getPlaceholderImage();
+      this.productImages.push({
+        file: null,
+        url: this.mainProductImage
+      });
+    }
+
+    console.log('📊 FINAL STATE:', {
+      mainProductImage: this.mainProductImage,
+      productImagesCount: this.productImages.length,
+      productImages: this.productImages.map(img => img.url)
+    });
+    
+    this.updateImageFormValidation();
   }
-
-  // private getImageUrlFromItem(imageItem: any): string {
-  // 	if (!imageItem) return '';
-
-  // 	// If it's already a complete URL
-  // 	if (typeof imageItem === 'string' && (imageItem.startsWith('http') || imageItem.startsWith('data:'))) {
-  // 		return imageItem;
-  // 	}
-
-  // 	// If it's an object with imageUrl property
-  // 	if (imageItem?.imageUrl) {
-  // 		return imageItem.imageUrl;
-  // 	}
-
-  // 	// If it's an object with url property
-  // 	if (imageItem?.url) {
-  // 		return imageItem.url;
-  // 	}
-
-  // 	// If it has imgNo property, construct URL (but skip service call due to auth issues)
-  // 	if (imageItem?.imgNo) {
-  // 		// For now, return placeholder instead of making service call
-  // 		console.log('Skipping service call for imgNo:', imageItem.imgNo);
-  // 		return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-  // 	}
-
-  // 	// Try to construct from common properties
-  // 	if (imageItem?.id) {
-  // 		// Return placeholder instead of service call
-  // 		return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-  // 	}
-
-  // 	return '';
-  // }
 
   removeImage(index: number) {
     const removedImage = this.productImages[index];
@@ -950,48 +1363,47 @@ private initializeProductImages() {
     }
   }
 
-  // Update the getLastImage method to handle multiple images
-getLastImage(): string {
-  console.log('getLastImage called - productImages:', this.productImages);
-  
-  // First priority: mainProductImage
-  if (this.mainProductImage) {
-    return this.mainProductImage;
-  }
-  
-  // Second priority: last image in productImages array
-  if (this.productImages.length > 0) {
-    const lastImage = this.productImages[this.productImages.length - 1].url;
-    console.log('Using last image from productImages:', lastImage);
-    return lastImage;
-  }
-  
-  // Third priority: try to get from activeItem
-  if (this.isEditMode && this.activeItem) {
-    // Try productImages array first
-    if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-      const lastImageItem = this.activeItem.productImages[this.activeItem.productImages.length - 1];
-      const imageUrl = this.imageCacheService.getImageUrlFromDTO(lastImageItem);
-      console.log('Using last image from activeItem.productImages:', imageUrl);
-      return imageUrl;
+  getLastImage(): string {
+    console.log('getLastImage called - productImages:', this.productImages);
+    
+    // First priority: mainProductImage
+    if (this.mainProductImage) {
+      return this.mainProductImage;
     }
-    // Try direct image property
-    else if (this.activeItem.imageUrl) {
-      console.log('Using activeItem.imageUrl:', this.activeItem.imageUrl);
-      return this.activeItem.imageUrl;
+    
+    // Second priority: last image in productImages array
+    if (this.productImages.length > 0) {
+      const lastImage = this.productImages[this.productImages.length - 1].url;
+      console.log('Using last image from productImages:', lastImage);
+      return lastImage;
     }
+    
+    // Third priority: try to get from activeItem
+    if (this.isEditMode && this.activeItem) {
+      // Try productImages array first
+      if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+        const lastImageItem = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+        const imageUrl = this.imageCacheService.getImageUrlFromDTO(lastImageItem);
+        console.log('Using last image from activeItem.productImages:', imageUrl);
+        return imageUrl;
+      }
+      // Try direct image property
+      else if (this.activeItem.imageUrl) {
+        console.log('Using activeItem.imageUrl:', this.activeItem.imageUrl);
+        return this.activeItem.imageUrl;
+      }
+    }
+    
+    // Final fallback
+    console.log('Using placeholder image');
+    return this.getPlaceholderImage();
   }
-  
-  // Final fallback
-  console.log('Using placeholder image');
-  return this.getPlaceholderImage();
-}
 
   setAsMainImage(imageUrl: string) {
+    console.log('Setting main image to:', imageUrl);
     this.mainProductImage = imageUrl;
   }
 
-  // In resetFormAfterSuccess() method, add:
   resetFormAfterSuccess() {
     this.productForm.reset();
     this.productForm.markAsUntouched();
@@ -1013,6 +1425,7 @@ getLastImage(): string {
           : this.branches[0];
       this.productForm.patchValue({
         selectedBranch: defaultBranch,
+        selectedTaxes: [], // Reset taxes too
         expiryDate: this._defaultExpiryDate.toISOString(),
         isBundle: false,
         bundleItems: [],
@@ -1024,7 +1437,6 @@ getLastImage(): string {
     this.mainProductImage = '';
   }
 
-  // In resetForm() method, add:
   resetForm() {
     this.productForm.reset();
     this.productImage = '';
@@ -1035,62 +1447,62 @@ getLastImage(): string {
     this.mainProductImage = '';
   }
 
-getMainImage(): string {
-  console.log('🖼️ getMainImage() called - Current state:', {
-    mainProductImage: this.mainProductImage,
-    productImagesLength: this.productImages.length,
-    hasActiveItem: !!this.activeItem
-  });
+  getMainImage(): string {
+    console.log('🖼️ getMainImage() called - Current state:', {
+      mainProductImage: this.mainProductImage,
+      productImagesLength: this.productImages.length,
+      hasActiveItem: !!this.activeItem
+    });
 
-  // Priority 1: Use mainProductImage if it's set and not placeholder
-  if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
-    console.log('✅ Using mainProductImage:', this.mainProductImage);
-    return this.mainProductImage;
-  }
-  
-  // Priority 2: Use first image from productImages array
-  if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
-    const firstImage = this.productImages[0].url;
-    console.log('✅ Using first image from productImages:', firstImage);
-    return firstImage;
-  }
-  
-  // Priority 3: In edit mode, try to construct from activeItem directly
-  if (this.isEditMode && this.activeItem) {
-    console.log('🔄 Trying to construct image from activeItem...');
+    // Priority 1: Use mainProductImage if it's set and not placeholder
+    if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
+      console.log('✅ Using mainProductImage:', this.mainProductImage);
+      return this.mainProductImage;
+    }
     
-    // Try productImages array first
-    if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-      const firstImageItem = this.activeItem.productImages[0];
-      const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
-      console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
+    // Priority 2: Use first image from productImages array
+    if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
+      const firstImage = this.productImages[0].url;
+      console.log('✅ Using first image from productImages:', firstImage);
+      return firstImage;
+    }
+    
+    // Priority 3: In edit mode, try to construct from activeItem directly
+    if (this.isEditMode && this.activeItem) {
+      console.log('🔄 Trying to construct image from activeItem...');
       
-      if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
-        // Update our local state with this constructed URL
-        this.mainProductImage = constructedUrl;
-        if (this.productImages.length === 0) {
-          this.productImages.push({ file: null, url: constructedUrl });
+      // Try productImages array first
+      if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+        const firstImageItem = this.activeItem.productImages[0];
+        const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
+        console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
+        
+        if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
+          // Update our local state with this constructed URL
+          this.mainProductImage = constructedUrl;
+          if (this.productImages.length === 0) {
+            this.productImages.push({ file: null, url: constructedUrl });
+          }
+          return constructedUrl;
         }
-        return constructedUrl;
+      }
+      
+      // Try direct imageUrl property
+      if (this.activeItem.imageUrl) {
+        console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
+        return this.activeItem.imageUrl;
       }
     }
     
-    // Try direct imageUrl property
-    if (this.activeItem.imageUrl) {
-      console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
-      return this.activeItem.imageUrl;
-    }
+    // Final fallback: placeholder
+    console.log('⚠️ Using placeholder image as fallback');
+    return this.getPlaceholderImage();
   }
-  
-  // Final fallback: placeholder
-  console.log('⚠️ Using placeholder image as fallback');
-  return this.getPlaceholderImage();
-}
 
-handleImageError(event: any) {
-  console.log('Image failed to load, using placeholder');
-  event.target.src = this.getPlaceholderImage();
-}
+  handleImageError(event: any) {
+    console.log('Image failed to load, using placeholder');
+    event.target.src = this.getPlaceholderImage();
+  }
 
   fetchMetaData() {
     this.metadataService.discount$.subscribe((data) => (this.discounts = data));
@@ -1098,9 +1510,9 @@ handleImageError(event: any) {
       (data) => (this.categories = data)
     );
     this.metadataService.supplier$.subscribe((data) => (this.suppliers = data));
-    this.metadataService.discountTypes$.subscribe(
-      (data) => (this.discountTypes = data)
-    );
+    // this.metadataService.discountTypes$.subscribe(
+    //   (data) => (this.discountTypes = data)
+    // );
     this.metadataService.taxes$.subscribe((data) => (this.taxes = data));
     this.metadataService.branches$.subscribe((data) => {
       this.branches = data;
@@ -1274,7 +1686,7 @@ handleImageError(event: any) {
             sku: [this.autoGenerateBranchSku(), Validators.required],
             code: [null, Validators.required],
             partNumber: [null, Validators.required],
-            tax: [null, Validators.required],
+            tax: [[], Validators.required], // Changed to array for multiple taxes
             supplier: [null, Validators.required],
             discount: [null],
             variants: this.fb.array([]),
@@ -1308,6 +1720,15 @@ handleImageError(event: any) {
         });
       }
 
+      // Handle taxes for branches in edit mode
+      let branchTaxes: number[] = [];
+      if (detail?.branchData?.taxIds && Array.isArray(detail.branchData.taxIds)) {
+        branchTaxes = detail.branchData.taxIds;
+      } else if (detail?.branchData?.taxId) {
+        // Fallback for single tax
+        branchTaxes = [detail.branchData.taxId];
+      }
+
       this.branchess.push(
         this.fb.group({
           branchName: [branch],
@@ -1317,7 +1738,7 @@ handleImageError(event: any) {
             Validators.required,
           ],
           quantity: [detail.branchData?.quantity ?? 0, Validators.required],
-          tax: [detail.branchData?.taxId || null, Validators.required],
+          tax: [branchTaxes, Validators.required], // Use array of tax IDs
           supplier: [
             detail.branchData?.supplierId || null,
             Validators.required,
@@ -1535,184 +1956,210 @@ handleImageError(event: any) {
     });
   }
 
-  addToProduct() {
-    const userName = sessionStorage.getItem('username');
-    this.loading = true;
+async addToProduct() {
+  const userName = sessionStorage.getItem('username');
+  this.loading = true;
 
-    // Validate bundle items if it's a bundle product
-    if (
-      this.productForm.get('isBundle')?.value &&
-      this.selectedBundleItems.length === 0
-    ) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please select at least one product for the combo.',
-        key: 'tl',
-        life: 3000,
-      });
-      this.loading = false;
-      return;
-    }
-
-    if (this.productForm.invalid) {
-      this.markFormGroupTouched(this.productForm);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please fill in all required fields correctly.',
-        key: 'tl',
-        life: 3000,
-      });
-      this.loading = false;
-      return;
-    }
-
-    const formValues = this.productForm.value;
-
-    if (this.selecteddBranch?.length > 1) {
-      this.createProductPerBranch(this.branchess.value);
-    } else {
-      let bundleItems: any[] = [];
-      if (formValues.isBundle && this.selectedBundleItems.length > 0) {
-        bundleItems = this.selectedBundleItems
-          .map((item) => {
-            const productId = Number(item.product.id);
-
-            if (isNaN(productId) || productId <= 0) {
-              console.error('Invalid productId in bundle item:', item);
-              return null;
-            }
-
-            return {
-              productId: productId,
-              quantity: Number(item.quantity) || 1,
-              priceAdjustment: Number(item.priceAdjustment) || 0,
-            };
-          })
-          .filter((item): item is NonNullable<typeof item> => item !== null);
-
-        console.log(
-          'Final bundle items for backend:',
-          JSON.stringify(bundleItems, null, 2)
-        );
-
-        if (bundleItems.length === 0) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Validation Error',
-            detail:
-              'Failed to create valid bundle items. Please check product selection.',
-            key: 'tl',
-            life: 3000,
-          });
-          this.loading = false;
-          return;
-        }
-      }
-
-      const product = {
-        id: 0,
-        name: formValues.name,
-        isAvailableInStore: formValues.isAvailableInStore ?? true,
-        code: formValues.code,
-        partNumber: formValues.partNumber,
-        description: formValues.description,
-        measurementUnit: formValues.measurementUnit,
-        isBundle: formValues.isBundle || false,
-        bundleItems: bundleItems,
-        productCategoryId: formValues.category?.id,
-        variants: this.variants || [],
-        sku: formValues.sku,
-        purchasePrice: formValues.costPrice,
-        sellingPrice: formValues.sellingPrice,
-        quantity: formValues.quantity,
-        weight: formValues.weight,
-        reorderThreshold: formValues.reorderThreshold,
-        taxId: formValues.tax?.id,
-        discountId: formValues.discount?.id,
-        supplierId: formValues.supplier?.id,
-        branchId:
-          formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id,
-        createdBy: userName,
-        createdDate: new Date().toISOString(),
-        expiryDate: formValues.expiryDate,
-      };
-
-      console.log('Final product payload:', JSON.stringify(product, null, 2));
-
-      const formData = new FormData();
-      formData.append('product', JSON.stringify(product));
-
-      // Append all product images
-      this.productImages.forEach((image, index) => {
-        if (image.file) {
-          formData.append('files', image.file);
-        }
-      });
-
-      // Mark the first image as main if specified
-      if (this.mainProductImage && this.productImages.length > 0) {
-        const mainImageIndex = this.productImages.findIndex(
-          (img) => img.url === this.mainProductImage
-        );
-        if (mainImageIndex !== -1) {
-          formData.append('mainImageIndex', mainImageIndex.toString());
-        }
-      }
-
-      if (formValues.image instanceof File) {
-        formData.append('files', formValues.image);
-      }
-
-      this.posService.addProduct(formData).subscribe(
-        async (data) => {
-          if (data) {
-            console.log('Product created successfully:', data);
-            const branchId = product.branchId;
-            await this.createInventoryForNewProduct(
-              data.id,
-              Number(branchId),
-              Number(product.quantity),
-              Number(product.purchasePrice),
-              Number(product.sellingPrice),
-              product.supplierId ?? null
-            );
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Product Added',
-              detail: 'Product added successfully.',
-              key: 'tl',
-              life: 3000,
-            });
-            this.loading = false;
-            this.addSuccessfull = true;
-            this.resetFormAfterSuccess();
-          } else {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Failed',
-              detail: 'An error occured. Please try adding the product again.',
-              key: 'tl',
-              life: 3000,
-            });
-            this.loading = false;
-          }
-        },
-        (error) => {
-          this.loading = false;
-          console.error('Error creating product:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Unexpected error occured, please try again later.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      );
-    }
+  // Validate bundle items if it's a bundle product
+  if (
+    this.productForm.get('isBundle')?.value &&
+    this.selectedBundleItems.length === 0
+  ) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please select at least one product for the combo.',
+      key: 'tl',
+      life: 3000,
+    });
+    this.loading = false;
+    return;
   }
+
+  // Check price validation before proceeding
+  this.checkPriceValidation();
+  
+  const costPrice = this.productForm.get('costPrice')?.value;
+  const sellingPrice = this.productForm.get('sellingPrice')?.value;
+  
+  // Validate that cost price is not greater than selling price
+  if (costPrice && sellingPrice && costPrice > sellingPrice) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Price Validation Failed',
+      detail: 'Cannot proceed: Cost price is higher than selling price. Please adjust prices or add a discount.',
+      key: 'tl',
+      life: 5000,
+    });
+    this.loading = false;
+    return;
+  }
+
+  if (this.productForm.invalid) {
+    this.markFormGroupTouched(this.productForm);
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please fill in all required fields correctly.',
+      key: 'tl',
+      life: 3000,
+    });
+    this.loading = false;
+    return;
+  }
+
+  const formValues = this.productForm.value;
+
+  if (this.selecteddBranch?.length > 1) {
+    this.createProductPerBranch(this.branchess.value);
+  } else {
+    let bundleItems: any[] = [];
+    if (formValues.isBundle && this.selectedBundleItems.length > 0) {
+      bundleItems = this.selectedBundleItems
+        .map((item) => {
+          const productId = Number(item.product.id);
+
+          if (isNaN(productId) || productId <= 0) {
+            console.error('Invalid productId in bundle item:', item);
+            return null;
+          }
+
+          return {
+            productId: productId,
+            quantity: Number(item.quantity) || 1,
+            priceAdjustment: Number(item.priceAdjustment) || 0,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      console.log(
+        'Final bundle items for backend:',
+        JSON.stringify(bundleItems, null, 2)
+      );
+
+      if (bundleItems.length === 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Validation Error',
+          detail:
+            'Failed to create valid bundle items. Please check product selection.',
+          key: 'tl',
+          life: 3000,
+        });
+        this.loading = false;
+        return;
+      }
+    }
+
+    const product = {
+      id: 0,
+      name: formValues.name,
+      isAvailableInStore: formValues.isAvailableInStore ?? true,
+      code: formValues.code,
+      partNumber: formValues.partNumber,
+      description: formValues.description,
+      measurementUnit: formValues.measurementUnit,
+      isBundle: formValues.isBundle || false,
+      bundleItems: bundleItems,
+      productCategoryId: formValues.category?.id,
+      variants: this.variants || [],
+      sku: formValues.sku,
+      purchasePrice: formValues.costPrice,
+      sellingPrice: formValues.sellingPrice,
+      quantity: formValues.quantity,
+      weight: formValues.weight,
+      reorderThreshold: formValues.reorderThreshold,
+      taxIds: formValues.selectedTaxes || [],
+      discountId: formValues.discount?.id,
+      supplierId: formValues.supplier?.id,
+      branchId:
+        formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id,
+      createdBy: userName,
+      createdDate: new Date().toISOString(),
+      expiryDate: formValues.expiryDate,
+    };
+
+    console.log('Final product payload:', JSON.stringify(product, null, 2));
+
+    const formData = new FormData();
+    formData.append('product', JSON.stringify(product));
+
+    // Append all product images
+    this.productImages.forEach((image, index) => {
+      if (image.file) {
+        formData.append('files', image.file);
+      }
+    });
+
+    // Mark the first image as main if specified
+    if (this.mainProductImage && this.productImages.length > 0) {
+      const mainImageIndex = this.productImages.findIndex(
+        (img) => img.url === this.mainProductImage
+      );
+      if (mainImageIndex !== -1) {
+        formData.append('mainImageIndex', mainImageIndex.toString());
+      }
+    }
+
+    if (formValues.image instanceof File) {
+      formData.append('files', formValues.image);
+    }
+
+    this.posService.addProduct(formData).subscribe(
+      async (data) => {
+        if (data) {
+          console.log('Product created successfully:', data);
+          const branchId = product.branchId;
+          await this.createInventoryForNewProduct(
+            data.id,
+            Number(branchId),
+            Number(product.quantity),
+            Number(product.purchasePrice),
+            Number(product.sellingPrice),
+            product.supplierId ?? null
+          );
+          
+          // Show success message with price info if applicable
+          let successMessage = 'Product added successfully.';
+          if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+            successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+          }
+          
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Product Added',
+            detail: successMessage,
+            key: 'tl',
+            life: 5000,
+          });
+          this.loading = false;
+          this.addSuccessfull = true;
+          this.resetFormAfterSuccess();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'An error occured. Please try adding the product again.',
+            key: 'tl',
+            life: 3000,
+          });
+          this.loading = false;
+        }
+      },
+      (error) => {
+        this.loading = false;
+        console.error('Error creating product:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Unexpected error occured, please try again later.',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    );
+  }
+}
 
   private markFormGroupTouched(formGroup: FormGroup) {
     Object.keys(formGroup.controls).forEach((key) => {
@@ -1750,7 +2197,7 @@ handleImageError(event: any) {
           quantity: branch.quantity,
           weight: formValues.weight,
           reorderThreshold: formValues.reorderThreshold,
-          taxId: branch.tax?.id,
+          taxIds: branch.tax || [], // Use the array of tax IDs from branch form
           discountId: branch.discount?.id,
           supplierId: branch.supplier?.id,
           branchId: branch.branchName.id, // if needed on the backend
@@ -1815,6 +2262,7 @@ handleImageError(event: any) {
           this.userBranch === 'headquarters'
             ? [this.branches[0]]
             : this.branches[0],
+        selectedTaxes: [], // Reset taxes too
       });
     }
   }
@@ -1903,132 +2351,159 @@ handleImageError(event: any) {
     return `${parentSku}${suffix}`;
   }
 
-  async updateProduct() {
-    this.loading = true;
-    const userName = sessionStorage.getItem('username');
+async updateProduct() {
+  this.loading = true;
+  const userName = sessionStorage.getItem('username');
 
-    // Only validate if required fields are missing
-    if (this.productForm.invalid) {
-      console.log('Form validation errors:');
-      Object.keys(this.productForm.controls).forEach((key) => {
-        const control = this.productForm.get(key);
-        if (control && control.invalid) {
-          console.log(`${key} is invalid:`, control.errors);
-        }
-      });
+  // Check price validation before proceeding
+  this.checkPriceValidation();
+  
+  const costPrice = this.productForm.get('costPrice')?.value;
+  const sellingPrice = this.productForm.get('sellingPrice')?.value;
+  
+  // Validate that cost price is not greater than selling price
+  if (costPrice && sellingPrice && costPrice > sellingPrice) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Price Validation Failed',
+      detail: 'Cannot update: Cost price is higher than selling price. Please adjust prices or add a discount.',
+      key: 'tl',
+      life: 5000,
+    });
+    this.loading = false;
+    return;
+  }
 
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please fill in all required fields correctly.',
-        key: 'tl',
-        life: 3000,
-      });
-      this.loading = false;
-      return;
-    }
-
-    const formValues = this.productForm.value;
-    const hasNewImage = formValues.image instanceof File;
-
-    console.log('Form values:', formValues);
-    console.log('Has new image:', hasNewImage);
-
-    // Build the product object with proper fallbacks
-    const product = {
-      id: this.activeItem.id,
-      name: formValues.name,
-      code: formValues.code,
-      isAvailableInStore:
-        formValues.isAvailableInStore ??
-        this.activeItem.isAvailableInStore ??
-        true,
-      partNumber: formValues.partNumber,
-      description: formValues.description,
-      measurementUnit: formValues.measurementUnit,
-      isBundle: formValues.isBundle,
-      bundleItems: formValues.bundleItems || [],
-      productCategoryId:
-        formValues.category?.id || this.activeItem.productCategory?.id,
-      variants: this.variants || [],
-      sku: formValues.sku,
-      purchasePrice: formValues.costPrice,
-      sellingPrice: formValues.sellingPrice,
-      quantity: formValues.quantity,
-      weight: formValues.weight,
-      reorderThreshold: formValues.reorderThreshold,
-      taxId: formValues.tax?.id,
-      discountId: formValues.discount?.id,
-      supplierId: formValues.supplier?.id,
-      branchId: this.activeItem.branch?.id || this.activeItem.branchId,
-      createdBy: this.activeItem.createdBy,
-      createdDate: this.activeItem.createdDate,
-      expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
-      // Clear existing images if new image is provided
-      clearExistingImages: hasNewImage,
-    };
-
-    console.log('Product data to update:', product);
-
-    const formData = new FormData();
-    formData.append('product', JSON.stringify(product));
-
-    // If there's a new image, add it and set replacement flags
-    if (hasNewImage) {
-      formData.append('files', formValues.image);
-      formData.append('replaceImages', 'true');
-      formData.append('clearExistingImages', 'true');
-    } else if (
-      this.activeItem.productImages &&
-      this.activeItem.productImages.length > 0
-    ) {
-      // Keep the existing images if no new image is provided
-      const existingImages = this.activeItem.productImages.map(
-        (img: any) => img.id
-      );
-      formData.append('existingImageIds', JSON.stringify(existingImages));
-    }
-
-    try {
-      const response = await this.posService
-        .updateProduct(formData)
-        .toPromise();
-
-      this.loading = false;
-
-      if (response) {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Product updated successfully.',
-          key: 'tl',
-          life: 3000,
-        });
-
-        // Close the modal and refresh data
-        this.triggerClose();
-      } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Failed',
-          detail: 'Failed to update product. Please try again.',
-          key: 'tl',
-          life: 3000,
-        });
+  // Only validate if required fields are missing
+  if (this.productForm.invalid) {
+    console.log('Form validation errors:');
+    Object.keys(this.productForm.controls).forEach((key) => {
+      const control = this.productForm.get(key);
+      if (control && control.invalid) {
+        console.log(`${key} is invalid:`, control.errors);
       }
-    } catch (error) {
-      this.loading = false;
-      console.error('Update error:', error);
+    });
 
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please fill in all required fields correctly.',
+      key: 'tl',
+      life: 3000,
+    });
+    this.loading = false;
+    return;
+  }
+
+  const formValues = this.productForm.value;
+  const hasNewImage = formValues.image instanceof File;
+
+  console.log('Form values:', formValues);
+  console.log('Has new image:', hasNewImage);
+
+  // Build the product object with proper fallbacks
+  const product = {
+    id: this.activeItem.id,
+    name: formValues.name,
+    code: formValues.code,
+    isAvailableInStore:
+      formValues.isAvailableInStore ??
+      this.activeItem.isAvailableInStore ??
+      true,
+    partNumber: formValues.partNumber,
+    description: formValues.description,
+    measurementUnit: formValues.measurementUnit,
+    isBundle: formValues.isBundle,
+    bundleItems: formValues.bundleItems || [],
+    productCategoryId:
+      formValues.category?.id || this.activeItem.productCategory?.id,
+    variants: this.variants || [],
+    sku: formValues.sku,
+    purchasePrice: formValues.costPrice,
+    sellingPrice: formValues.sellingPrice,
+    quantity: formValues.quantity,
+    weight: formValues.weight,
+    reorderThreshold: formValues.reorderThreshold,
+    taxIds: formValues.selectedTaxes || [],
+    discountId: formValues.discount?.id,
+    supplierId: formValues.supplier?.id,
+    branchId: this.activeItem.branch?.id || this.activeItem.branchId,
+    createdBy: this.activeItem.createdBy,
+    createdDate: this.activeItem.createdDate,
+    expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
+    // Clear existing images if new image is provided
+    clearExistingImages: hasNewImage,
+  };
+
+  console.log('Product data to update:', product);
+
+  const formData = new FormData();
+  formData.append('product', JSON.stringify(product));
+
+  // If there's a new image, add it and set replacement flags
+  if (hasNewImage) {
+    formData.append('files', formValues.image);
+    formData.append('replaceImages', 'true');
+    formData.append('clearExistingImages', 'true');
+  } else if (
+    this.activeItem.productImages &&
+    this.activeItem.productImages.length > 0
+  ) {
+    // Keep the existing images if no new image is provided
+    const existingImages = this.activeItem.productImages.map(
+      (img: any) => img.id
+    );
+    formData.append('existingImageIds', JSON.stringify(existingImages));
+  }
+
+  try {
+    const response = await this.posService
+      .updateProduct(formData)
+      .toPromise();
+
+    this.loading = false;
+
+    if (response) {
+      // Show success message with price info if applicable
+      let successMessage = 'Product updated successfully.';
+      if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+        successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+      } else if (costPrice && sellingPrice && costPrice === sellingPrice) {
+        successMessage += ' Note: You are selling at cost price. Consider adding a margin.';
+      }
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: successMessage,
+        key: 'tl',
+        life: 5000,
+      });
+
+      // Close the modal and refresh data
+      this.triggerClose();
+    } else {
       this.messageService.add({
         severity: 'error',
-        summary: 'Error',
+        summary: 'Failed',
         detail: 'Failed to update product. Please try again.',
         key: 'tl',
         life: 3000,
       });
     }
+  } catch (error) {
+    this.loading = false;
+    console.error('Update error:', error);
+
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update product. Please try again.',
+      key: 'tl',
+      life: 3000,
+    });
   }
+}
 
   triggerClose() {
     this.close.emit();
@@ -2199,90 +2674,6 @@ handleImageError(event: any) {
     this.openAddVariant = true;
   }
 
-  addCategory() {
-    let categoryData = { ...this.productData.productCategory };
-    // The inputted date would be something like `2025-06-07` so we need to force it to an iso string
-    categoryData.endDate = new Date(categoryData.endDate).toISOString();
-
-    if (this.checkForEmptyFields(categoryData, ['endDate', 'description'])) {
-      console.log('all fields are required');
-      this.messageService.add({
-        severity: 'error',
-        summary: 'warn',
-        detail: 'All fields are required',
-        key: 'tl',
-        life: 3000,
-      });
-    } else {
-      this.posService.addCategory(categoryData).subscribe(
-        async (data) => {
-          console.log(data);
-          if (data) {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Category Added',
-              detail: 'Category added successfully.',
-              key: 'tl',
-              life: 3000,
-            });
-            this.categories.push(data);
-            categoryData = {
-              id: 0,
-              name: '',
-              code: '',
-              description: '',
-              endDate: '',
-            };
-          } else {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Failed',
-              detail: 'Failed, please try again.',
-              key: 'tl',
-              life: 3000,
-            });
-          }
-        },
-        (error: HttpErrorResponse) => {
-          if (error.status === 500) {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Authentication Failed',
-              detail: 'Check form details and try again.',
-              key: 'tl',
-              life: 3000,
-            });
-          } else if (error.status === 404) {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Authentication Failed',
-              detail: 'Error, try again.',
-              key: 'tl',
-              life: 3000,
-            });
-          } else if (error.status === 0) {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Server Unreachable',
-              detail:
-                'Unable to connect to the server. Please check your internet connection.',
-              key: 'tl',
-              life: 3000,
-            });
-          } else {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'An unexpected error occurred.',
-              key: 'tl',
-              life: 3000,
-            });
-          }
-        }
-      );
-    }
-  }
-
   removeCategory(id: number) {
     this.posService.deleteCategory(id).subscribe(async (data) => {
       if (data) {
@@ -2315,90 +2706,6 @@ handleImageError(event: any) {
 
   toggleCategoryDropdown() {
     this.openCategories = !this.openCategories;
-  }
-
-  addDiscount() {
-    let discountObj = this.discount;
-
-    const discountDetails: DiscountDTO = {
-      id: discountObj.id,
-      name: discountObj.name,
-      value: discountObj.value,
-      discountType: discountObj.discountType,
-      endDate: discountObj.endDate,
-      startDate: discountObj.startDate,
-      minQuantity: discountObj.minQuantity,
-    };
-
-    this.posService.addDiscount(discountDetails).subscribe(
-      async (data) => {
-        console.log(data);
-        if (data) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Discount Added',
-            detail: 'Discount added successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          // this.getDiscounts();
-          // TODO: Check whether this piece of code is worth it...
-          discountObj = {
-            id: 0,
-            name: '',
-            value: 0,
-            startDate: new Date(),
-            endDate: new Date(),
-            minQuantity: 0,
-            discountType: { id: 0, code: '', name: '', description: '' },
-          };
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'Failed, please try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      },
-      (error: HttpErrorResponse) => {
-        if (error.status === 500) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Authentication Failed',
-            detail: 'Check form details and try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        } else if (error.status === 404) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Authentication Failed',
-            detail: 'Error, try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        } else if (error.status === 0) {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Server Unreachable',
-            detail:
-              'Unable to connect to the server. Please check your internet connection.',
-            key: 'tl',
-            life: 3000,
-          });
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'An unexpected error occurred.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      }
-    );
   }
 
   selectDiscount(discount: any) {
@@ -2540,40 +2847,40 @@ handleImageError(event: any) {
     return this.posService.getProductImage(string);
   }
 
-  getErrorMessage(controlName: string, displayName?: string): string {
-    const control = this.productForm.get(controlName);
-    const name = displayName || controlName;
+getErrorMessage(controlName: string, displayName?: string): string {
+  const control = this.productForm.get(controlName);
+  const name = displayName || controlName;
 
-    if (control && control.errors) {
-      const errors = control.errors;
-      const errorKeys = Object.keys(errors);
+  if (control && control.errors) {
+    const errors = control.errors;
+    const errorKeys = Object.keys(errors);
 
-      if (errorKeys.length > 0) {
-        switch (errorKeys[0]) {
-          case 'required':
-            return `${name} is required.`;
-          case 'pattern':
-            if (controlName === 'code')
-              return 'Code must contain only uppercase letters, numbers, and hyphens (3-20 characters)';
-            if (controlName === 'quantity')
-              return 'Quantity must be a valid number';
-            return `${name} has an invalid format.`;
-          case 'min':
-            if (controlName === 'costPrice' || controlName === 'sellingPrice')
-              return `${name} must be greater than 0`;
-            return `${name} must be at least ${errors['min'].min}.`;
-          case 'minlength':
-            return `${name} must be at least ${errors['minlength'].requiredLength} characters long.`;
-          case 'maxlength':
-            return `${name} should not exceed ${errors['maxlength'].requiredLength} characters.`;
-          default:
-            return `${name} has an error.`;
-        }
+    if (errorKeys.length > 0) {
+      switch (errorKeys[0]) {
+        case 'required':
+          if (controlName === 'selectedTaxes') {
+            return 'At least one tax is required.';
+          }
+          return `${name} is required.`;
+        case 'costPriceHigher':
+          return 'Cost price cannot be higher than selling price. Consider adding a discount.';
+        // REMOVED THE PATTERN CASE ENTIRELY
+        case 'min':
+          if (controlName === 'costPrice' || controlName === 'sellingPrice')
+            return `${name} must be greater than 0`;
+          return `${name} must be at least ${errors['min'].min}.`;
+        case 'minlength':
+          return `${name} must be at least ${errors['minlength'].requiredLength} characters long.`;
+        case 'maxlength':
+          return `${name} should not exceed ${errors['maxlength'].requiredLength} characters.`;
+        default:
+          return `${name} has an error.`;
       }
     }
-
-    return '';
   }
+
+  return '';
+}
 
   isFieldInvalidAndTouched(fieldName: string): boolean {
     const field = this.productForm.get(fieldName);
@@ -2694,15 +3001,18 @@ handleImageError(event: any) {
   console.log('🔍 === END DEBUG ===');
 }
 
-  // Add image error handler
-//   handleImageError(event: any) {
-//     console.log('Image failed to load, using placeholder');
-//     event.target.src =
-//       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-//   }
-
-// Add this method to get images using the same pattern as product details
-getProductImage(imageUrl: string): Observable<string> {
-  return this.imageCacheService.getImage(imageUrl);
-}
+  getProductImage(product: any): string {
+    if (!product) return this.getPlaceholderImage();
+    
+    // Try to get image from various possible properties
+    if (product.imageUrl) {
+      return product.imageUrl;
+    }
+    
+    if (product.productImages && Array.isArray(product.productImages) && product.productImages.length > 0) {
+      return this.imageCacheService.getImageUrlFromDTO(product.productImages[0]);
+    }
+    
+    return this.getPlaceholderImage();
+  }
 }

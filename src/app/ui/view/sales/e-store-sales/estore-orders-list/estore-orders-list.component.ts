@@ -4,7 +4,9 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { StoreOrderService } from '../../../../service/store-order.service';
 import { Order } from '../../../../models/interface';
-import { HttpErrorResponse } from '@angular/common/http'; 
+import { HttpErrorResponse } from '@angular/common/http';
+import { CancellationEvent } from '../../sales-details/sales-details.component';
+
 @Component({
   selector: 'app-estore-orders-list',
   templateUrl: './estore-orders-list.component.html',
@@ -18,13 +20,16 @@ export class EStoreOrdersListComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   isLoading = false;
   total = 0;
+  selectedOrder: Order | undefined; 
+  showDetails = false; 
 
   filterForm: FormGroup;
   private destroy$ = new Subject<void>();
 
   dateRanges = [
     { label: 'Today', value: 'today' },
-    { label: 'Yesterday', value: 'yesterday' },
+    { label: '3 days', value: '3 days ' },
+    { label: 'All Time', value: 'all' }, 
   ];
 
   statuses = [
@@ -32,6 +37,7 @@ export class EStoreOrdersListComponent implements OnInit, OnDestroy {
     { label: 'Paid', value: 'paid' },
     { label: 'Unpaid', value: 'unpaid' },
     { label: 'Pending', value: 'pending' },
+    { label: 'Cancelled', value: 'cancelled' }, 
   ];
 
   // Delivery status filters
@@ -48,7 +54,7 @@ export class EStoreOrdersListComponent implements OnInit, OnDestroy {
     private storeOrderService: StoreOrderService
   ) {
     this.filterForm = this.fb.group({
-      dateRange: ['today'],
+      dateRange: ['all'], 
       customDays: [null],
       cashier: ['all'],
       status: ['all'],
@@ -108,8 +114,9 @@ export class EStoreOrdersListComponent implements OnInit, OnDestroy {
       size: f.size ?? 25,
       q: f.search || undefined,
       status: f.status && f.status !== 'all' ? f.status : undefined,
-      dateRange: f.dateRange,
-      deliveryStatus: f.deliveryStatus 
+      // Only include dateRange if it's not 'all'
+      dateRange: f.dateRange && f.dateRange !== 'all' ? f.dateRange : undefined,
+      deliveryStatus: f.deliveryStatus && f.deliveryStatus !== 'all' ? f.deliveryStatus : undefined,
     };
 
     // Clean up undefined fields (status, q, etc.)
@@ -129,9 +136,40 @@ export class EStoreOrdersListComponent implements OnInit, OnDestroy {
   }
 
   viewOrderDetails(order: Order): void {
+    this.selectedOrder = order;
+    this.showDetails = true;
     console.log('Navigating to details for order:', order.id);
-    // Logic to navigate to sales details page
   }
+
+  goBackToOrders(): void {
+    this.showDetails = false;
+    this.selectedOrder = undefined;
+    this.loadOrders(); 
+  }
+  
+  handleCancellation(event: CancellationEvent): void {
+    if (!event.orderId) {
+      console.error('Cancellation failed: Order ID is missing.');
+      return;
+    }
+
+    this.storeOrderService.cancelOrder(
+      event.orderId as number, 
+      event.reason,
+      event.chargeback
+    ).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        console.log('Order cancelled successfully:', res);
+        alert(`Order ${event.orderId} successfully cancelled.`);
+        this.goBackToOrders();
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('❌ Failed to cancel order:', err);
+        alert(`Cancellation Failed: ${err.message || 'Server Error'}`); 
+      }
+    });
+  }
+
 
   onPageChange(pageIndex: number, pageSize: number) {
     this.filterForm.patchValue({ page: pageIndex, size: pageSize });

@@ -16,6 +16,7 @@ interface SearchProduct {
   branch?: { id: number; name: string };
   branchId?: number;
   address?: string;
+  imageUrl?: string; // Added for global search results
 }
 
 @Component({
@@ -41,8 +42,11 @@ export class SearchbarComponent implements OnChanges {
   // Output: Emits when global search is triggered
   @Output() globalSearch = new EventEmitter<string>();
 
-  // NEW: Output for when a product is selected from global search
+  // Output for when a product is selected from global search
   @Output() productSelected = new EventEmitter<any>();
+  
+  // Output for when a category is selected
+  @Output() categorySelected = new EventEmitter<string>();
   
   /** Dropdown & state management */
   isDropdownOpen = false;
@@ -62,6 +66,10 @@ export class SearchbarComponent implements OnChanges {
   localSearchResults: SearchProduct[] = []; 
   noLocalResults = false; 
   
+  // Category suggestions
+  categorySuggestions: string[] = [];
+  showCategorySuggestions = false;
+  
   private fuse: Fuse<SearchProduct>;
   private readonly MIN_GLOBAL_SEARCH_LENGTH = 3;
 
@@ -70,6 +78,7 @@ export class SearchbarComponent implements OnChanges {
       keys: [
         { name: 'sku', weight: 2 },
         { name: 'name', weight: 1.5 },
+        { name: 'productCategory.name', weight: 1 },
       ],
       includeScore: true,
       threshold: 0.3, 
@@ -102,10 +111,15 @@ export class SearchbarComponent implements OnChanges {
       this.isDropdownOpen = false;
       this.hasGlobalSearchBeenTriggered = false; 
       this.globalSearchResults = []; 
+      this.categorySuggestions = [];
+      this.showCategorySuggestions = false;
       return;
     }
 
-    // 2. Local Search Logic
+    // 2. Generate category suggestions based on search
+    this.generateCategorySuggestions(trimmedValue);
+    
+    // 3. Local Search Logic
     let searchResults: SearchProduct[] = [];
 
     if (trimmedValue.length <= 7) {
@@ -118,7 +132,7 @@ export class SearchbarComponent implements OnChanges {
       searchResults = fuseResults.map((val) => val.item);
     }
     
-    // 3. Update the main product list (the grid) and dropdown suggestions
+    // 4. Update the main product list (the grid) and dropdown suggestions
     if (searchResults.length === 0) {
       this.listToUpdate = [];
     } else {
@@ -130,20 +144,59 @@ export class SearchbarComponent implements OnChanges {
     this.localSearchResults = searchResults.slice(0, 5);
     this.noLocalResults = searchResults.length === 0;
 
-    // 4. Clear global results when typing new query (unless triggered by ngOnChanges)
+    // 5. Clear global results when typing new query (unless triggered by ngOnChanges)
     if (!isNgOnChangesTriggered) {
         this.hasGlobalSearchBeenTriggered = false;
         this.globalSearchResults = []; 
     }
 
-    // 5. Handle dropdown visibility
+    // 6. Handle dropdown visibility
     if (this.noLocalResults && !this.hasGlobalSearchBeenTriggered) {
         this.isDropdownOpen = true;
     } else if (this.hasGlobalSearchBeenTriggered) {
         this.isDropdownOpen = true;
+    } else if (this.showCategorySuggestions) {
+        this.isDropdownOpen = true;
     } else {
         this.isDropdownOpen = false;
     }
+  }
+  
+  /** Generate category suggestions based on search query */
+  private generateCategorySuggestions(searchQuery: string) {
+    const query = searchQuery.toLowerCase();
+    const allCategories = new Set<string>();
+    
+    // Extract all unique categories from products
+    this.listToSearch.forEach(product => {
+      if (product.productCategory?.name) {
+        allCategories.add(product.productCategory.name);
+      }
+    });
+    
+    // Filter categories that match the search query
+    const matchedCategories = Array.from(allCategories).filter(category => 
+      category.toLowerCase().includes(query)
+    );
+    
+    this.categorySuggestions = matchedCategories.slice(0, 5);
+    this.showCategorySuggestions = this.categorySuggestions.length > 0;
+  }
+  
+  /** Handle category selection */
+  selectCategory(category: string) {
+    this.categorySelected.emit(category);
+    this.isDropdownOpen = false;
+    this.currentSearchQuery = category;
+    this.showCategorySuggestions = false;
+    
+    // Filter products by selected category
+    const categoryProducts = this.listToSearch.filter(product => 
+      product.productCategory?.name === category
+    );
+    
+    this.listToUpdate = categoryProducts;
+    this.listToUpdateChange.emit(this.listToUpdate);
   }
   
   /** Handle search icon click to trigger global search */
@@ -168,7 +221,7 @@ export class SearchbarComponent implements OnChanges {
     this.globalSearch.emit(trimmedValue);
   }
 
-  /** NEW: Handle product selection from global search */
+  /** Handle product selection from global search */
   selectGlobalProduct(product: any) {
     console.log('Product selected from global search:', product);
     this.productSelected.emit(product);
@@ -180,6 +233,16 @@ export class SearchbarComponent implements OnChanges {
     this.resetList();
   }
 
+  /** Handle image loading errors */
+  onImageError(event: Event) {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.style.display = 'none';
+    const fallbackElement = imgElement.nextElementSibling as HTMLElement;
+    if (fallbackElement) {
+      fallbackElement.classList.remove('hidden');
+    }
+  }
+
   /** Clear the text and reset local/global search */
   clearSearchText(searchInput: HTMLInputElement) {
     searchInput.value = '';
@@ -189,6 +252,8 @@ export class SearchbarComponent implements OnChanges {
     this.noLocalResults = false;  
     this.hasGlobalSearchBeenTriggered = false; 
     this.globalSearchResults = []; 
+    this.categorySuggestions = [];
+    this.showCategorySuggestions = false;
     this.globalSearch.emit('');
     this.resetList();
   }
@@ -208,7 +273,7 @@ export class SearchbarComponent implements OnChanges {
   
   // Helper to close dropdown
   closeDropdown() {
-    if (!this.isSearching && !this.noLocalResults) {
+    if (!this.isSearching && !this.noLocalResults && !this.showCategorySuggestions) {
         setTimeout(() => {
             this.isDropdownOpen = false;
         }, 150); 

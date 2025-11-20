@@ -168,9 +168,15 @@ export class StoreOrderService {
     console.log('Payment method:', paymentMethod);
     console.log('Payment reference:', paymentReference);
     
+    //  Ensure the base order object always has a deliveryStatus
+    const baseOrder: StoreOrderPOST = {
+        ...orderData,
+        deliveryStatus: orderData.deliveryStatus || 'PENDING'
+    };
+    
     return this.createPaymentRecord(
-      orderData.totalAmount,
-      orderData.orderNumber,
+      baseOrder.totalAmount,
+      baseOrder.orderNumber,
       paymentMethod === 'card' ? 'PAID' : 'PENDING',
       this.mapPaymentMethod(paymentMethod),
       paymentReference
@@ -189,7 +195,7 @@ export class StoreOrderService {
         }
 
         const orderWithPayment = {
-          ...orderData,
+          ...baseOrder,
           paymentId: paymentId,
           orderStatus: paymentMethod === 'card' ? 'PAID' : 'PENDING'
         };
@@ -197,10 +203,11 @@ export class StoreOrderService {
         console.log('📦 Order with payment ID attached:', {
           orderId: orderWithPayment.id,
           paymentId: orderWithPayment.paymentId,
-          orderStatus: orderWithPayment.orderStatus
+          orderStatus: orderWithPayment.orderStatus,
+          deliveryStatus: orderWithPayment.deliveryStatus 
         });
 
-        if (deliveryInfo && orderData.deliveryFee > 0) {
+        if (deliveryInfo && baseOrder.deliveryFee > 0) {
           console.log('🚚 Creating delivery info...');
           return this.createDeliveryInfo(deliveryInfo).pipe(
             tap((deliveryResponse: any) => {
@@ -211,8 +218,7 @@ export class StoreOrderService {
               const orderWithDelivery = {
                 ...orderWithPayment,
                 deliveryInfoId: deliveryId,
-                customerEmail: deliveryInfo.email || orderData.customerEmail,
-                deliveryStatus: 'PENDING'
+                customerEmail: deliveryInfo.email || baseOrder.customerEmail,
               };
               console.log('📦 Final order data with delivery:', orderWithDelivery);
               return this.finalizeOrderCreation(orderWithDelivery);
@@ -223,9 +229,9 @@ export class StoreOrderService {
             })
           );
         } else {
+          // This path handles pickup orders
           const pickupOrder = {
             ...orderWithPayment,
-            deliveryStatus: 'PENDING'
           };
           console.log('📦 Final pickup order data:', pickupOrder);
           return this.finalizeOrderCreation(pickupOrder);
@@ -280,7 +286,25 @@ export class StoreOrderService {
     );
   }
 
-  // ========== PRIVATE HELPER METHODS ==========
+  cancelOrder(orderId: number, reason: string, requireChargeback: boolean): Observable<any> {
+    const endpoint = `/x/api/v2/pos/orders/${orderId}/cancel`;
+    const payload = {
+      reason: reason,
+      processChargeback: requireChargeback
+    };
+    
+    console.log(`Cancelling order ${orderId} with payload:`, payload);
+
+    return this.http.post<any>(
+      this.getBaseApiUrl() + endpoint,
+      payload
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  //  PRIVATE HELPER METHODS 
+
   private createPaymentRecord(
     totalAmount: string,
     orderNumber: string,
@@ -376,6 +400,7 @@ export class StoreOrderService {
       return throwError(() => 'Payment record must be created before order');
     }
 
+    // perform the final check for dilivery.
     const sanitizedOrderData = this.sanitizeOrderData(orderData);
 
     console.log('🚀 Sending final order data to API:', JSON.stringify(sanitizedOrderData, null, 2));
@@ -425,10 +450,11 @@ export class StoreOrderService {
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
       deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
+      //  Ensure deliveryStatus is NEVER null/undefined when sending to the API
       deliveryStatus: orderData.deliveryStatus || 'PENDING'
     };
 
-    console.log('🔍 Sanitized order data:', JSON.stringify(sanitized, null, 2));
+    console.log('🔍 Sanitized order data with fixed deliveryStatus:', JSON.stringify(sanitized, null, 2));
     
     // Final validation
     if (!sanitized.paymentId) {

@@ -101,7 +101,7 @@ export interface DiscountDTO {
   code?: string;
   description?: string;
   active?: boolean;
-  discountType: DiscountTypeDTO | "PERCENTAGE" | "FIXED_AMOUNT";
+  discountType: any
   discountValue?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
@@ -202,6 +202,7 @@ export interface SalesReportBreakdownDTO {
 }
 
 export interface Order {
+  deliveryStatus: string;
   salesperson: any;
   branch: any; 
   payment: any;
@@ -350,6 +351,7 @@ export type TaxDTO = {
   name: string;
   rate: number;
   order?: number;
+  description?: string;
 };
 
 /**
