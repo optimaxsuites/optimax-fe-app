@@ -3,6 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Order, DateType } from '../../../models/interface'; 
 import { HttpErrorResponse } from '@angular/common/http'; 
 
+export interface CancellationEvent {
+  orderId: number | string;
+  reason: string;
+  chargeback: boolean;
+}
+
 @Component({
   selector: 'app-sales-details',
   templateUrl: './sales-details.component.html',
@@ -12,7 +18,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   @Input() order?: Order;
   @Output() back = new EventEmitter<void>();
-  @Output() statusChange = new EventEmitter<{ orderId: number | string, newStatus: string, reason: string, chargeback: boolean }>(); 
+  @Output() cancelOrderConfirmed = new EventEmitter<CancellationEvent>(); 
   
   loading = true;
   error = false;
@@ -55,9 +61,9 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.statusChange.emit({
+    // Emit the event with cancellation data. The parent component will call the service.
+    this.cancelOrderConfirmed.emit({
       orderId: this.order.id, 
-      newStatus: 'CANCELLED',
       reason: this.cancellationReason,
       chargeback: this.requireChargeback
     });
@@ -67,6 +73,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     }
 
     this.showCancelModal = false;
+    this.cancellationReason = ''; 
   }
 
   closeCancelModal(): void {
@@ -135,6 +142,6 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   }
 
   printOrderDetails(): void {
-    // ... existing print logic
+    window.print();
   }
 }

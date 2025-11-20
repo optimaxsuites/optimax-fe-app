@@ -202,6 +202,7 @@ export interface SalesReportBreakdownDTO {
 }
 
 export interface Order {
+  deliveryStatus: string;
   salesperson: any;
   branch: any; 
   payment: any;
@@ -350,6 +351,7 @@ export type TaxDTO = {
   name: string;
   rate: number;
   order?: number;
+  description?: string;
 };
 
 /**

@@ -104,12 +104,22 @@ export class PosServiceService {
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/suppliers/${id}`)
       .pipe(catchError(this.handleError));
   }
-
-  deleteTax(id: any) {
-    return this.http
-      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${id}`)
-      .pipe(catchError(this.handleError));
-  }
+deleteTax(id: any): Observable<any> {
+  return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${id}`, {
+      observe: 'response' // Get full HTTP response
+    })
+    .pipe(
+      map(response => {
+        // Successfully deleted - return success
+        return { success: true, status: response.status };
+      }),
+      catchError((error: HttpErrorResponse) => {
+        // Return error details for proper handling
+        return throwError(() => error);
+      })
+    );
+}
   deleteIngredient(id: number) {
     return this.http
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/ingredients/${id}`)
@@ -712,5 +722,12 @@ getStockMovementsByInventory(inventoryId: number) {
         this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/nameorsku/${query}`
       )
       .pipe(catchError(this.handleError));
+  }
+
+  updateTax(taxData: any): Observable<any> {
+    return this.http.put(
+      this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${taxData.id}`, 
+      taxData
+    ).pipe(catchError(this.handleError));
   }
 }
