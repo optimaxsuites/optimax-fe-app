@@ -9,6 +9,7 @@ import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/
 import { BehaviorSubject, catchError, forkJoin, map } from 'rxjs';
 import { SubscriptionService } from '../../service/subscription.service';
 import { AppRegisterServiceService } from 'projects/settings/src/app/ui/sharedComponents/service/app-register-service.service';
+import { ChangeDetectorRef } from '@angular/core';
 @Component({
   selector: 'app-marketplace',
   templateUrl: './marketplace.component.html',
@@ -31,36 +32,48 @@ export class MarketplaceComponent {
   selectedModuleDetails$ = new BehaviorSubject<any>(null);
   String = String
   Number = Number
-  constructor(private menuService: MenuItemsService, private messageService: MessageService,
-   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService, private router: Router, private subscriptionService: SubscriptionService, private appRegisterService: AppRegisterServiceService) {}
+
+  constructor(
+    private menuService: MenuItemsService,
+    private messageService: MessageService,
+    private navigationLink: NavigationLinksService,
+    private marketplaceService: MarketplaceService,
+    private router: Router,
+    private subscriptionService: SubscriptionService,
+    private appRegisterService: AppRegisterServiceService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
    ngOnInit(): void {
-      this.role = sessionStorage.getItem('role'); 
-      console.log("role = ", this.role)
-      if (this.role) {
-        this.marketplaceService.getApps().subscribe({
-          next: (data) => {
-            this.modules = data.map((module: any) => ({
-              ...module,
-              locked: true 
-            })
-            );
+      this.role = sessionStorage.getItem('role');
+      if (!this.role) return;
 
-            this.appRegisterService.getRegisteredApp().subscribe({
-              next: (app: any) => {
-                this.appList = app;
-                this.markModulesWithLockStatus()
-              },
-              error: (error: any) => {
-                console.error('Error fetching app data:', error);
-              }
-            });
-          },
-          error(err) {
-            console.error(err)
-          },
-        })
-      }
+      // show global loading until both endpoints return
+      this.loading = true;
+
+      forkJoin({
+        apps: this.marketplaceService.getApps(),
+        registered: this.appRegisterService.getRegisteredApp()
+      }).subscribe({
+        next: ({ apps, registered }) => {
+          // initial locked state then mark unlocked based on registered apps
+          this.modules = (apps || []).map((module: any) => ({
+            ...module,
+            locked: true
+          }));
+
+          this.appList = registered || [];
+          this.markModulesWithLockStatus();
+
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error loading marketplace data', err);
+          this.loading = false;
+          this.cdr.markForCheck();
+        }
+      });
 
       this.subscriptionService.getOrderRecord().subscribe({
         next: (data) => {
@@ -70,9 +83,6 @@ export class MarketplaceComponent {
           console.error(err)
         },
       })
-
-    
- 
     }
 
     showDialog(module: any ) {
@@ -256,21 +266,15 @@ enrichModuleWithPlanLimits(module: any) {
   }
 
   markModulesWithLockStatus() {
-  const unlockedRoutes = this.appList.map((app: { name: string }) => app.name);
+    const unlockedRoutes = (this.appList || []).map((app: { name: string }) => app.name);
 
-  console.log(unlockedRoutes)
-  console.log(this.modules)
+    this.modules = (this.modules || []).map(module => ({
+      ...module,
+      locked: !unlockedRoutes.includes(module.name)
+    }));
+  }
 
-  this.modules = this.modules.map(module => ({
-    ...module,
-    locked: !unlockedRoutes.includes(module.name) 
-  }));
-
-  console.log(this.modules)
-
-}
-
-formatDate(parts: any): Date | null {
+  formatDate(parts: any): Date | null {
   if (!parts) return null;
   if (Array.isArray(parts)) return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
   if (typeof parts === 'string' || parts instanceof Date) {

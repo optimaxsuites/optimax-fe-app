@@ -1,0 +1,144 @@
+<div class="p-6 space-y-8">
+
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <app-dashboard-dropdown></app-dashboard-dropdown>
+
+    <!-- CURRENTLY SELECTED DASHBOARD TITLE -->
+    <h2 class="text-2xl font-semibold text-gray-800">
+      {{ selectedModule }} Dashboard
+    </h2>
+
+    <!-- Notifications Bell -->
+    <div class="relative cursor-pointer" (click)="toggleNotifications()">
+      <svg class="w-7 h-7 text-gray-700 hover:text-blue-600 transition"
+           fill="none" stroke="currentColor" stroke-width="2"
+           viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C8.67 6.165 8 7.48 8 9v5.159c0 .538-.214 1.055-.595 1.436L6 17h5"/>
+        <path d="M13 21a2 2 0 01-4 0"/>
+      </svg>
+      <span *ngIf="unreadNotifications > 0"
+            class="absolute top-0 right-0 block h-3 w-3 bg-red-600 rounded-full border border-white"></span>
+    </div>
+  </div>
+
+  <!-- User Details -->
+  <div class="flex-1 w-full">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2 text-2xl">About User</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-700">
+      <div>
+        <p><span class="font-medium text-gray-800">Name:</span> {{ userInfo.name }}</p>
+        <p><span class="font-medium text-gray-800">Role:</span> {{ userInfo.role }}</p>
+        <p><span class="font-medium text-gray-800">Department:</span> {{ userInfo.department }}</p>
+      </div>
+      <div>
+        <p><span class="font-medium text-gray-800">Employee ID:</span> {{ userInfo.employeeId }}</p>
+        <p><span class="font-medium text-gray-800">Bank:</span> {{ userInfo.bankName }}</p>
+      </div>
+      <div>
+        <p><span class="font-medium text-gray-800">Days Worked:</span> {{ userInfo.daysWorked }}</p>
+        <p><span class="font-medium text-gray-800">Pay Type:</span> Salaried</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Charts Section -->
+  <section class="grid p-6 grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+
+    <!-- Pie Chart -->
+    <div class="bg-white p-6 rounded-2xl shadow-md">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Module Activity Distribution</h3>
+      <apx-chart
+        [series]="pieChart.series"
+        [chart]="pieChart.chart"
+        [labels]="pieChart.labels || []"
+        [colors]="pieChart.colors || []"
+        [legend]="pieChart.legend"
+        [responsive]="pieChart.responsive || []">
+      </apx-chart>
+      <p class="text-sm text-gray-500 italic text-center mt-3">{{ pieChartSummary }}</p>
+    </div>
+
+    <!-- Line Chart -->
+    <div class="bg-white p-6 rounded-2xl shadow-md">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Module Performance Trends</h3>
+      <apx-chart
+        [series]="lineChart.series"
+        [chart]="lineChart.chart"
+        [xaxis]="lineChart.xaxis!"
+        [stroke]="lineChart.stroke!"
+        [colors]="lineChart.colors!"
+        [dataLabels]="lineChart.dataLabels!"
+        [legend]="lineChart.legend"
+        [grid]="lineChart.grid!">
+      </apx-chart>
+      <p class="text-sm text-gray-500 italic text-center mt-3">{{ lineChartSummary }}</p>
+    </div>
+
+  </section>
+
+  <!-- To-Do List -->
+  <section class="p-6 m-6 bg-white rounded-lg border shadow-sm">
+    <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2"
+          viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M3 17h3l3 3 4-4"/>
+      </svg>
+      To-Do List
+    </h3>
+
+    <div class="flex gap-2 mb-3">
+      <input
+        type="text"
+        [(ngModel)]="newTask"
+        placeholder="Enter new task"
+        class="flex-1 p-2 border rounded focus:ring focus:ring-blue-300">
+      <button
+        class="px-4 py-2 bg-customBlue text-white rounded hover:bg-blue-700"
+        (click)="addTask()">
+        Add
+      </button>
+    </div>
+
+    <ul class="space-y-2">
+      <li *ngFor="let task of tasks; index as i"
+          class="flex justify-between items-center p-2 bg-gray-50 border rounded">
+        <span>{{ task }}</span>
+        <button
+          class="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+          (click)="removeTask(i)">
+          Remove
+        </button>
+      </li>
+    </ul>
+  </section>
+
+<!-- Slide-Over Notification Panel -->
+<div *ngIf="showNotifications"
+    class="fixed inset-0 flex justify-end bg-black bg-opacity-40 z-50"
+    (click)="toggleNotifications()">
+  <div class="w-80 h-full bg-white shadow-xl p-5 border-l transform transition-all duration-300"
+      (click)="$event.stopPropagation()">
+
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+        Notifications
+      </h3>
+      <button class="text-gray-600 hover:text-black" (click)="toggleNotifications()">✕</button>
+    </div>
+
+    <ul class="space-y-3 text-gray-700">
+      <li class="p-3 border rounded hover:bg-gray-50 cursor-pointer">
+        System maintenance scheduled for Friday 8 PM.
+      </li>
+      <li class="p-3 border rounded hover:bg-gray-50 cursor-pointer">
+        Staff meeting on Tuesday morning.
+      </li>
+      <li class="p-3 border rounded hover:bg-gray-50 cursor-pointer">
+        Your password expires in 3 days.
+      </li>
+    </ul>
+  </div>
+</div>
