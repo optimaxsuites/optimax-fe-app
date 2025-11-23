@@ -394,6 +394,8 @@ processNewPurchase() {
       amount: amount
     };
 
+    console.log(this.module)
+
     this.subscriptionService.createPaymentRecord(payment).subscribe({
         next: (paymentResponse) => {
           console.log('Payment record created:', paymentResponse);
@@ -428,7 +430,7 @@ processNewPurchase() {
                   this.messageService.add({
                     severity: 'success',
                     summary: 'Payment successful',
-                    detail: `${this.module.label} has been installed successfully`,
+                    detail: `${this.module.name} has been installed successfully`,
                     key: 'tf',
                     life: 3000
                   });
@@ -565,7 +567,7 @@ private calculateNewEndDate(baseDate: string | Date, isYearly: boolean): string 
     this.messageService.add({
       severity: 'success',
       summary: 'Payment successful',
-      detail: `${this.module.label} has been installed successfully`,
+      detail: `${this.module.name} has been installed successfully`,
       key: 'tf',
       life: 3000
     });
