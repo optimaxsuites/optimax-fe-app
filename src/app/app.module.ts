@@ -253,6 +253,7 @@ import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TourGuideComponent } from './ui/onboarding/tour-guide';
 import { TenantsComponent } from './ui/tenants/tenants.component';
+import { EstimatedDeliveryPipe } from 'projects/settings/src/app/ui/view/pos/delvery/estimated-delivery.pipe';
 
 
 const dbConfig: DBConfig = {
@@ -487,7 +488,9 @@ const dbConfig: DBConfig = {
     UnauthourizedComponent,
     PaymentComponent,
     TourGuideComponent,
-    TenantsComponent
+    TenantsComponent,
+     EstimatedDeliveryPipe
+
   ],
   imports: [
       BrowserModule,

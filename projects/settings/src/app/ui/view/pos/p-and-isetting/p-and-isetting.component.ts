@@ -118,7 +118,7 @@ export class PAndISettingComponent {
   allBranches: BranchShippingSettings[] = []
   
   // The ID of the currently selected branch for configuration
-  selectedBranchId: number = this.allBranches[0].branchId; 
+  selectedBranchId: number = this.allBranches[0]?.branchId; 
   
   // The main Reactive Form Group
   shippingForm!: FormGroup;
@@ -146,7 +146,7 @@ export class PAndISettingComponent {
 
     // Build the form structure
     this.shippingForm = this.fb.group({
-      branchId: [settings.branchId],
+      branchId: [settings?.branchId],
       branchName: [settings.branchName],
       isGlobalDefault: [settings.isGlobalDefault],
       isEnabled: [settings.isEnabled],

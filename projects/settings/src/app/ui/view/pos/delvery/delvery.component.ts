@@ -1,8 +1,9 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DataService } from '../../../service/data.service';
 import { forkJoin } from 'rxjs';
 import { Time } from '@angular/common';
+import { LogisticsService } from '../../../service/logistics.service';
 
 
 interface BranchDTO {
@@ -22,6 +23,8 @@ interface BranchDTO {
   isActive: true,
   isEditing?: boolean;
   deliveryNoteId?: number
+  estimatedValue: string
+  estimatedUnit: "days" | "hours" | "minutes" | undefined
 }
 
 @Component({
@@ -29,7 +32,7 @@ interface BranchDTO {
   templateUrl: './delvery.component.html',
   styleUrl: './delvery.component.scss'
 })
-export class DelveryComponent {
+export class DelveryComponent implements OnInit {
 
   branches: BranchDTO[] = [];
   newBranch: BranchDTO = {
@@ -47,6 +50,8 @@ export class DelveryComponent {
     sameDayDeliveryCutoffTime: 0 as unknown as Time,
     logisticsPartner: '',
     isActive: true,
+    estimatedValue: '',
+    estimatedUnit: 'days'
   };
 
   allBranch:  BranchDTO = {
@@ -64,22 +69,29 @@ export class DelveryComponent {
     sameDayDeliveryCutoffTime: 0 as unknown as Time,
     logisticsPartner: '',
     isActive: true,
+    estimatedValue: '',
+    estimatedUnit: 'days'
   };
 
     showAddForm: boolean = false;
     branchLimit = 0
     loading:boolean = false
-  
+    logistics: any[] = [];
+    selectedLogistics: number[] = []; // store selected logistic ids
+    showLogisticModal = false;
+
     constructor(
       private confirmationService: ConfirmationService,
       private messageService: MessageService,
       private dataService: DataService,
-      private cdr: ChangeDetectorRef
+      private cdr: ChangeDetectorRef,
+      private logisticsService: LogisticsService
       // private subscriptionService: SubscriptionService
     ) {}
 
       ngOnInit() {
         this.loadBranches();
+        this.loadLogistics();
     
       }
     
@@ -125,6 +137,16 @@ export class DelveryComponent {
         })
       }
 
+      loadLogistics() {
+        this.logisticsService.getLogistics().subscribe({
+          next: (res) => (this.logistics = Array.isArray(res) ? res : []),
+          error: (err) => {
+            console.error('Failed to load logistics', err);
+            this.logistics = [];
+          }
+        });
+      }
+
 
        toggleForm() {
           this.showAddForm = !this.showAddForm;
@@ -149,6 +171,8 @@ export class DelveryComponent {
             sameDayDeliveryCutoffTime: 0 as unknown as Time,
             logisticsPartner: '',
             isActive: true,
+            estimatedValue: '',
+            estimatedUnit: 'days'
           };
         }
       
@@ -239,6 +263,21 @@ export class DelveryComponent {
       
       
       
+      
+      openCreateLogistic() {
+        this.showLogisticModal = true;
+      }
+    
+      closeCreateLogistic() {
+        this.showLogisticModal = false;
+      }
+    
+      onLogisticCreated(newItem: any) {
+        // add to list and select it
+        this.logistics = [newItem, ...this.logistics];
+        this.selectedLogistics = [ ...(this.selectedLogistics || []), newItem.id ];
+        this.showLogisticModal = false;
+      }
       
       applyKeyToAll() {
         this.loading = true

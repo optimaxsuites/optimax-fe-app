@@ -83,7 +83,9 @@ import { ProfileComponent } from './ui/view/general/profile/profile.component';
 import { PaykeysComponent } from './ui/view/pos/paykeys/paykeys.component';
 import { DelveryComponent } from './ui/view/pos/delvery/delvery.component';
 import { LocationPickerComponent } from './ui/view/pos/branches/location-picker/location-picker.component';
-
+import { EstimatedDeliveryPipe } from './ui/view/pos/delvery/estimated-delivery.pipe';
+import { LogisticFormComponent } from './ui/view/pos/delvery/LogisticFormComponent';
+// import { DrawerModule } from 'primeng/drawer';
 //
 
 @NgModule({
@@ -113,6 +115,8 @@ import { LocationPickerComponent } from './ui/view/pos/branches/location-picker/
     PaykeysComponent,
     DelveryComponent,
     LocationPickerComponent,
+     EstimatedDeliveryPipe,
+      LogisticFormComponent
   ],
   imports: [
     // BrowserModule,
