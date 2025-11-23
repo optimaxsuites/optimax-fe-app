@@ -111,6 +111,7 @@ export interface OrderPOST extends OrderShared<string> {
   paymentId: number | null;
   cashierId: number | null;
   orderItem: OrderItemPOST[];
+  deliveryStatus: string;
 }
 
 export interface OrderGET extends OrderShared<number> {

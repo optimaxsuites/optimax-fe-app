@@ -133,8 +133,8 @@
 
     <!-- Products Table View -->
     <p-table
-      *ngIf="tableSections && products.length > 0"
-      [value]="products"
+      *ngIf="tableSections && paginatedProducts.length > 0"
+      [value]="paginatedProducts"
       [paginator]="true"
       dataKey="id"
       responsiveLayout="stack"

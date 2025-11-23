@@ -28,7 +28,7 @@ import {
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
-import { catchError, Observable, of } from 'rxjs';
+import { catchError, Observable, of, Subject, takeUntil } from 'rxjs';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
@@ -49,7 +49,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   mode: 'create' | 'edit' = 'create';
   editInventoryComponent!: EditInventoryComponent;
-  isLoading: boolean = false;
+  isLoading = this.metadataService.loading$;
   isBranchSwitching: boolean = false; 
   selectedProduct: any = null;
   currentPage = 0;
@@ -116,6 +116,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   canDelete: false,
   canCreate: false,
   };  
+ private destroy$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
@@ -166,16 +167,31 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
-    this.isLoading = true;
+    // this.isLoading = true;
 
     // Load supporting data
-    this.loadCategory();
+    // this.loadCategory();
     this.getDiscountTypes();
+    this.fetchUserBranchId()
     
     // Subscribe to branches
-    this.metadataService.branches$.subscribe((data) => {
+    this.metadataService.branches$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
       this.branches = data;
       console.log('Branches loaded:', this.branches); 
+    });
+
+    this.metadataService.category$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
+      this.categories = data;
+      console.log('categories loaded:', this.categories); 
+    });
+
+    this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
+      this.products = data;
+      this.originalProducts = data
+      console.log('inventories loaded:', this.products); 
+      // this.isLoading = false;
+      // this.isBranchSwitching = false; // Reset branch switching state
+      // this.applyFilters();
     });
     
     if (this.selectedBranch) {
@@ -193,9 +209,17 @@ export class InventoryComponent implements OnInit, OnDestroy {
     
     }
 
-    this.getInventories();
+    // this.getInventories();
 
 
+  }
+
+
+
+
+  fetchUserBranchId(){
+    const userBranch= sessionStorage.getItem('userBranchInfoRegData');
+    this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : 1;
   }
 
   // FIXED: Handle branch filter change with proper loading states
@@ -204,7 +228,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.selectedBranch = branchId;
     this.isBranchSwitching = true; // Set branch switching state
     this.metadataService.setSelectedBranch(branchId);
-    this.getInventories(); // Reload data immediately
+    // this.getInventories(); // Reload data immediately
   }
 
   onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
@@ -237,72 +261,79 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.originalBodyOverflow
     );
     this.renderer.removeClass(this.document.body, 'modal-open');
+
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get paginatedProducts() {
     const startIndex = this.currentPage * this.rowsPerPage;
+    console.log(this.products.slice(startIndex, startIndex + this.rowsPerPage))
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
 
   // FIXED: Inventory fetching with proper loading states
-  getInventories(): void {
-    // Don't set isLoading if we're just switching branches
-    if (!this.isBranchSwitching) {
-      this.isLoading = true;
-    }
+  // getInventories(): void {
+  //   // Don't set isLoading if we're just switching branches
+  //   if (!this.isBranchSwitching) {
+  //     this.isLoading = true;
+  //   }
     
-    console.log('Loading inventories for branch:', this.selectedBranch);
+  //   console.log('Loading inventories for branch:', this.selectedBranch);
     
-    this.posService.getInventories().subscribe({
-      next: (response) => {
-        console.log('Raw inventory response:', response);
+  //   this.posService.getInventories().subscribe({
+  //     next: (response) => {
+  //       console.log('Raw inventory response:', response);
         
-        if (!response || !Array.isArray(response)) {
-          console.error('Invalid inventory response:', response);
-          this.products = [];
-          this.originalProducts = [];
-          this.isLoading = false;
-          this.isBranchSwitching = false;
-          return;
-        }
+  //       if (!response || !Array.isArray(response)) {
+  //         console.error('Invalid inventory response:', response);
+  //         this.products = [];
+  //         this.originalProducts = [];
+  //         this.isLoading = false;
+  //         this.isBranchSwitching = false;
+  //         return;
+  //       }
 
-        // Store raw inventories
-        this.inventories = response;
+  //       // Store raw inventories
+  //       this.inventories = response;
         
-        // Filter by selected branch if needed
-        const filteredInventories = this.selectedBranch
-          ? response.filter(inv => inv.branch?.id === this.selectedBranch)
-          : response;
+  //       // Filter by selected branch if needed
+  //       const filteredInventories = this.selectedBranch
+  //         ? response.filter(inv => inv.branch?.id === this.selectedBranch)
+  //         : response;
 
-        // Map to product format for display
-        const mapped = filteredInventories.map((inv: any) => this.mapInventoryToProductRow(inv));
-        console.log('Filtered and mapped inventory data:', mapped);
 
-        // Sort by creation date (newest first)
-        mapped.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
+  //         console.log('filtered inventory', filteredInventories)
 
-        this.originalProducts = mapped;
-        this.products = [...mapped];
+  //       // Map to product format for display
+  //       const mapped = filteredInventories.map((inv: any) => this.mapInventoryToProductRow(inv));
+  //       console.log('Filtered and mapped inventory data:', mapped);
+
+  //       // Sort by creation date (newest first)
+  //       mapped.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
+
+  //       this.originalProducts = mapped;
+  //       this.products = [...mapped];
         
-        console.log('Final products array:', this.products);
-        this.isLoading = false;
-        this.isBranchSwitching = false; // Reset branch switching state
-        this.applyFilters();
-      },
-      error: (err) => {
-        console.error('Failed to load inventories:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load inventory data'
-        });
-        this.originalProducts = [];
-        this.products = [];
-        this.isLoading = false;
-        this.isBranchSwitching = false; // Reset branch switching state
-      }
-    });
-  }
+  //       console.log('Final products array:', this.products);
+  //       this.isLoading = false;
+  //       this.isBranchSwitching = false; // Reset branch switching state
+  //       this.applyFilters();
+  //     },
+  //     error: (err) => {
+  //       console.error('Failed to load inventories:', err);
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: 'Failed to load inventory data'
+  //       });
+  //       this.originalProducts = [];
+  //       this.products = [];
+  //       this.isLoading = false;
+  //       this.isBranchSwitching = false; // Reset branch switching state
+  //     }
+  //   });
+  // }
 
   
  private mapInventoryToProductRow(inv: any): any {
@@ -444,16 +475,16 @@ export class InventoryComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadCategory() {
-    this.posService.getCategories().subscribe(async (data) => {
-      console.log(data);
-      if (data) {
-        this.categories = data;
-      } else {
-        console.log('error loading data');
-      }
-    });
-  }
+  // loadCategory() {
+  //   this.posService.getCategories().subscribe(async (data) => {
+  //     console.log(data);
+  //     if (data) {
+  //       this.categories = data;
+  //     } else {
+  //       console.log('error loading data');
+  //     }
+  //   });
+  // }
 
   getQuantityClass(quantity: number): string {
     return quantity >= 10 ? 'quantity-available' : 'quantity-low';
@@ -536,7 +567,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.editProduct = false;
     this.addProduct = false;
     this.editInventory = false;
-    this.getInventories();
+    // this.getInventories();
   }
 
   openAddProdut() {
@@ -554,7 +585,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewInventory = false;
     this.editProduct = false;
     this.addProduct = false;
-    this.getInventories();
+    // this.getInventories();
     this.editInventory = false;
   }
 
@@ -570,7 +601,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.addProduct = false;
     this.editInventory = false;
     this.addInventory = false;
-    this.getInventories();
+    // this.getInventories();
     this.tableSections = false;
   }
 
@@ -809,7 +840,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewProduct = false;
     this.addProduct = false;
     this.editInventory = true;
-    this.getInventories();
+    // this.getInventories();
     this.tableSections = false;
   }
   

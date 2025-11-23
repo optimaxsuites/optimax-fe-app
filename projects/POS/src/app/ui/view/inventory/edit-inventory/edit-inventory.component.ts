@@ -195,6 +195,9 @@ ngOnInit(): void {
   }, 100);
 
   this.setupStockMovementWatchers();
+
+  console.log("item",this.activeItem)
+
 }
 
  private populateStockMovementDefaults(): void {
@@ -229,6 +232,8 @@ this.stockMovementForm.patchValue({
   };
 
   this.calculateEffectivePrice();
+
+
 }
 
 
@@ -273,7 +278,7 @@ getMeasurementUnit(): string {
     this.metadataService.taxes$.subscribe((taxes: TaxDTO[]) => {
       this.taxes = taxes;
       if (this.mode === 'edit' && this.activeItem?.tax) {
-        const selectedTax = this.taxes.find(t => t.id === this.activeItem?.tax?.id);
+        const selectedTax = this.taxes.find(t => t.id === this.activeItem?.__originalProduct.tax?.id);
         if (selectedTax) {
           this.productForm.get('tax')?.setValue(selectedTax);
         }
@@ -282,8 +287,8 @@ getMeasurementUnit(): string {
 
     this.metadataService.discount$.subscribe((discounts: any[]) => {
       this.discounts = discounts;
-      if (this.mode === 'edit' && this.activeItem?.discount) {
-        const selectedDiscount = this.discounts.find(d => d.id === this.activeItem?.discount?.id);
+      if (this.mode === 'edit' && this.activeItem?.__originalProduct) {
+        const selectedDiscount = this.discounts.find(d => d.id === this.activeItem?.__originalProduct.discount?.id);
         if (selectedDiscount) {
           this.productForm.get('discount')?.setValue(selectedDiscount);
         }
@@ -300,6 +305,20 @@ getMeasurementUnit(): string {
 
     this.metadataService.supplier$.subscribe((suppliers: supplierData[]) => {
       this.suppliers = suppliers;
+      if (this.mode === 'edit' && this.activeItem?.__originalProduct) {
+        const selectedSupplier = this.suppliers.find(d => d.id === this.activeItem?.__originalProduct.supplier?.id);
+        if (selectedSupplier) {
+          this.productForm.get('supplier')?.setValue(selectedSupplier);
+          this.supplierForm.get('name')?.setValue(selectedSupplier.name);
+          this.supplierForm.get('contactPerson')?.setValue(selectedSupplier.contactPerson);
+          this.supplierForm.get('email')?.setValue(selectedSupplier.email);
+          this.supplierForm.get('phoneNumber')?.setValue(selectedSupplier.phoneNumber);
+          this.supplierForm.get('address')?.setValue(selectedSupplier.address);
+          this.selectedSupplierId = selectedSupplier?.id?.toString() || null;
+        }
+
+
+      }
     });
   }
 
@@ -782,164 +801,162 @@ if (discountData) {
   }
 
   async saveStockMovement(): Promise<void> {
-  if (this.stockMovementForm.invalid) {
-    this.stockMovementForm.markAllAsTouched();
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Validation',
-      detail: 'Please fill all required fields',
-      life: 2500,
-      key: "tl"
-    });
-    return;
-  }
-  
-  if (!this.activeItem?.id || !this.selectedBranch) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Product or branch not selected',
-      life: 2500,
-      key: "tl"
-    });
-    return;
-  }
-
-  const rawDate = this.stockMovementForm.value.createdDate;
-  const reference = this.stockMovementForm.value.reference || '';
-  const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
-  
-  // FIXED: Use the actual form value for purchasePrice and sellingPrice
-  const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
-  const sellingPrice = Number(
-  this.priceDetails?.basePrice ?? this.activeItem?.sellingPrice ?? 0
-);
-
-  
-  const supplierId = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
-
-  // If you have an action control (IN/OUT). If not, default to IN.
-  const actionCtrl = this.stockMovementForm.get('action');
-  const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
-  const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
-
-  this.isLoading = true;
-  try {
-    // 1) Resolve inventory id
-    let inventoryId = this.getInventoryIdFromActiveItem();
-    if (!inventoryId) {
-      inventoryId = await this.findInventoryIdForProductBranch(this.activeItem.id, this.selectedBranch);
+    if (this.stockMovementForm.invalid) {
+      this.stockMovementForm.markAllAsTouched();
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill all required fields',
+        life: 2500,
+        key: "tl"
+      });
+      return;
+    }
+    
+    if (!this.activeItem?.id || !this.selectedBranch) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Product or branch not selected',
+        life: 2500,
+        key: "tl"
+      });
+      return;
     }
 
-    // 2) If still missing, create inventory (only allow if movement is IN)
-    if (!inventoryId) {
-      if (signedQty <= 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'No inventory yet',
-          detail: 'You can\'t reduce stock before creating inventory. Please add stock (IN) first.',
-          life: 3500,
-          key: "tl"
-        });
-        return;
-      }
+    // console.log(this.activeItem)
+    const rawDate = this.stockMovementForm.value.createdDate;
+    const reference = this.stockMovementForm.value.reference || '';
+    const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+    
+    // FIXED: Use the actual form value for purchasePrice and sellingPrice
+    const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+    const sellingPrice = Number(
+    this.priceDetails?.basePrice ?? this.activeItem?.sellingPrice ?? 0
+  );
 
-      const createPayload = {
-        availableQuantity: 0,
-        status: 'IN_STOCK' as InventoryStatus,
-        productId: this.activeItem.id,
-        branchId: this.selectedBranch,
-        stockMovement: []
-      };
-      const created = await firstValueFrom(this.posService.createInventory(createPayload));
-      if (!created?.id) throw new Error('Failed to create inventory');
-      inventoryId = created.id;
-      (this.activeItem as any).inventoryId = inventoryId;
-    }
+    
+    const supplierId = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? this.activeItem?.product.supplier?.id ?? null
 
-    // 3) Prevent going negative
+    // If you have an action control (IN/OUT). If not, default to IN.
+    const actionCtrl = this.stockMovementForm.get('action');
+    const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
+    const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
+
+    this.isLoading = true;
     try {
-      const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
-      const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
-      if (projected < 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Insufficient stock',
-          detail: 'This movement would make stock negative.',
-          life: 3000,
-          key: "tl"
-        });
-        return;
+      // 1) Resolve inventory id
+      let inventoryId = this.activeItem.inventoryId ?? this.getInventoryIdFromActiveItem();
+
+      // 2) If still missing, create inventory (only allow if movement is IN)
+      if (!inventoryId) {
+        if (signedQty <= 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No inventory yet',
+            detail: 'You can\'t reduce stock before creating inventory. Please add stock (IN) first.',
+            life: 3500,
+            key: "tl"
+          });
+          return;
+        }
+
+        const createPayload = {
+          availableQuantity: 0,
+          status: 'IN_STOCK' as InventoryStatus,
+          productId: this.activeItem.id,
+          branchId: this.selectedBranch,
+          stockMovement: []
+        };
+        const created = await firstValueFrom(this.posService.createInventory(createPayload));
+        if (!created?.id) throw new Error('Failed to create inventory');
+        inventoryId = created.id;
+        (this.activeItem as any).inventoryId = inventoryId;
       }
-    } catch {
+
+      // 3) Prevent going negative
+      try {
+        const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+        const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
+        if (projected < 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Insufficient stock',
+            detail: 'This movement would make stock negative.',
+            life: 3000,
+            key: "tl"
+          });
+          return;
+        }
+      } catch {
+        
+      }
+
       
+      const createdDate = rawDate 
+    ? new Date(rawDate).toISOString() 
+    : new Date().toISOString();
+      
+    
+      const createdById = this.getCurrentUserId();
+
+      
+    const body: StockMovementPostBody = {
+    quantity: signedQty,
+    reference,
+    purchasePrice,
+    sellingPrice,
+    createdDate,
+    createdById: createdById || 0,
+    supplierId: supplierId ? Number(supplierId) : null,
+    // ingredientId: this.activeItem.id,
+    inventoryId: Number(inventoryId)
+  };
+      console.log('Sending stock movement payload:', body); // Debug log
+
+      await firstValueFrom(this.posService.createStockMovement(body));
+
+      // SUCCESS - show message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Stock movement recorded successfully!',
+        life: 2500,
+        key: "tl"
+      });
+
+      // 7) Refresh UI
+      const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+      this.updated.emit({
+        inventoryId,
+        quantity: Number(after?.availableQuantity ?? 0),
+        status: (after?.status ?? 'IN_STOCK') as InventoryStatus
+      });
+      
+      if (this.activeItem) {
+        (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
+      }
+
+      // 8) Wait and close
+      setTimeout(() => {
+        this.close.emit();
+      }, 1500);
+
+      // 9) Reset form
+      this.resetStockMovementForm();
+
+    } catch (err: any) {
+      console.error('Stock movement error:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: err?.error?.message || err?.message || 'Failed to record movement',
+        life: 4000,
+        key: "tl"
+      });
+    } finally {
+      this.isLoading = false;
     }
-
-    
-    const createdDate = rawDate 
-  ? new Date(rawDate).toISOString() 
-  : new Date().toISOString();
-    
-  
-    const createdById = this.getCurrentUserId();
-
-    
-  const body: StockMovementPostBody = {
-  quantity: signedQty,
-  reference,
-  purchasePrice,
-  sellingPrice,
-  createdDate,
-  createdById: createdById || 0,
-  supplierId: supplierId ? Number(supplierId) : null,
-  // ingredientId: this.activeItem.id,
-  inventoryId: Number(inventoryId)
-};
-    console.log('Sending stock movement payload:', body); // Debug log
-
-    await firstValueFrom(this.posService.createStockMovement(body));
-
-    // SUCCESS - show message
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Stock movement recorded successfully!',
-      life: 2500,
-      key: "tl"
-    });
-
-    // 7) Refresh UI
-    const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
-    this.updated.emit({
-      inventoryId,
-      quantity: Number(after?.availableQuantity ?? 0),
-      status: (after?.status ?? 'IN_STOCK') as InventoryStatus
-    });
-    
-    if (this.activeItem) {
-      (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
-    }
-
-    // 8) Wait and close
-    setTimeout(() => {
-      this.close.emit();
-    }, 1500);
-
-    // 9) Reset form
-    this.resetStockMovementForm();
-
-  } catch (err: any) {
-    console.error('Stock movement error:', err);
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: err?.error?.message || err?.message || 'Failed to record movement',
-      life: 4000,
-      key: "tl"
-    });
-  } finally {
-    this.isLoading = false;
-  }
 }
   private formatDateForBackend(dateString: string): string {
     if (!dateString) return new Date().toISOString();

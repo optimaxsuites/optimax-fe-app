@@ -9,6 +9,7 @@ import {
   min,
   Observable,
   of,
+  shareReplay,
   switchMap,
   take,
   tap,
@@ -90,7 +91,11 @@ export class MetadataService {
   supplierSubject = new BehaviorSubject<any[]>([]);
   branchSubject = new BehaviorSubject<any[]>([]);
   productSubject = new BehaviorSubject<any[]>([]);
+  inventorySubject = new BehaviorSubject<any[]>([]);
+
   enrichedProductSubject = new BehaviorSubject<any[]>([]);
+  enrichedInventorySubject = new BehaviorSubject<any[]>([]);
+
   orderSubject = new BehaviorSubject<any[]>([]);
   returnSubject = new BehaviorSubject<any[]>([]);
 
@@ -103,7 +108,13 @@ export class MetadataService {
   orders$ = this.orderSubject.asObservable();
   returns$ = this.returnSubject.asObservable();
   products$ = this.productSubject.asObservable();
+  inventories$ = this.inventorySubject.asObservable();
+
   enrichedProduct$ = this.enrichedProductSubject.asObservable();
+  enrichedInventory$ = this.enrichedInventorySubject.asObservable().pipe(
+   shareReplay(1)
+);;
+
 
   constructor(
     private posService: PosServiceService,
@@ -113,8 +124,12 @@ export class MetadataService {
     private offlineService: OfflineService
   ) {}
   async setSelectedBranch(id: number) {
-    this.selectedBranchIdSubject.next(id);
+    const current = this.selectedBranchIdSubject.getValue();
+    if (current !== id) {
+        this.selectedBranchIdSubject.next(id);
     await this.fetchMetaData();
+
+    }
   }
 
   
@@ -159,6 +174,8 @@ export class MetadataService {
       taxes: this.posService.getTax().pipe(catchError(() => of([]))),
       branches: this.posService.getBranches().pipe(catchError(() => of([]))),
       products: this.posService.getProducts().pipe(catchError(() => of([]))),
+      inventories: this.posService.getInventories().pipe(catchError(() => of([]))),
+
       orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
       returnRequests: this.orderService
         .getReturnRequest()
@@ -173,6 +190,7 @@ export class MetadataService {
     this.taxSubject.next(data.taxes);
     this.branchSubject.next(data.branches);
     this.productSubject.next(data.products);
+    this.inventorySubject.next(data.inventories);
     this.orderSubject.next(data.orders);
     this.returnSubject.next(data.returnRequests);
 
@@ -186,6 +204,8 @@ export class MetadataService {
           .pipe(
             catchError((error) => {
               console.error("❌ Failed to load enriched products", error);
+            this.loadingSubject.next(false);
+
               return of([]);
             })
           )
@@ -200,6 +220,22 @@ export class MetadataService {
               await this.offlineService.addProduct(filteredProducts);
               console.log("📦 Enriched products cached locally in IndexedDB");
             }
+          });
+
+        this.posService
+          .getFilteredInventoryWithDetails(branchId)
+          .pipe(
+            catchError((error) => {
+              console.error("❌ Failed to load enriched Inventory", error);
+            this.loadingSubject.next(false);
+
+              return of([]);
+            })
+          )
+          .subscribe(async (filteredInventory) => {
+            this.enrichedInventorySubject.next(filteredInventory);
+            this.loadingSubject.next(false);
+            console.log("✅ [MetadataService] Enriched Inventory loaded", filteredInventory);
           });
       } else {
         console.warn(

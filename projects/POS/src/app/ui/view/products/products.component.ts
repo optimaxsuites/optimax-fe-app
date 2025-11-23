@@ -254,6 +254,7 @@ export class ProductsComponent implements OnInit {
         });
         this.products = [...this.originalProducts];
         console.log(this.products);
+        console.log(this.isLoading)
       } else {
         console.log("error loading data");
       }
@@ -437,12 +438,10 @@ export class ProductsComponent implements OnInit {
       this.products = [...this.originalProducts];
     } else {
       this.categoryLoading = true;
-      setTimeout(() => {
         this.products = this.originalProducts.filter((product) =>
           this.selectedCategories.includes(product.productCategory?.id),
         );
         this.categoryLoading = false;
-      }, 300);
     }
   }
 

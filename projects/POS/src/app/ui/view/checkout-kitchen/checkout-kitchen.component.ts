@@ -411,6 +411,7 @@ export class CheckoutKitchenComponent implements OnInit {
 					quantity: 1,
 					updatedAt: creationDate,
 					totalAmount: `${1}`,
+					deliveryStatus: 'CONFIRMED',
 					orderItem: orderItems,
 				}),
 			);
