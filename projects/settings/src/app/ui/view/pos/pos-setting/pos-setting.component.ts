@@ -15,17 +15,17 @@ export class PosSettingComponent {
   hoveredIndex: number = -1;
 
   settings = [
-    {
-      name: 'Business Information',
-      subSetting: [
-        ' Custom business info',
-        'tax settings',
-        'language',
-        'currency preferences',
-      ],
-      icon: 'pi pi-receipt',
-      component: BusInfoSettingComponent,
-    },
+    // {
+    //   name: 'Business Information',
+    //   subSetting: [
+    //     ' Custom business info',
+    //     'tax settings',
+    //     'language',
+    //     'currency preferences',
+    //   ],
+    //   icon: 'pi pi-receipt',
+    //   component: BusInfoSettingComponent,
+    // },
     {
       name: 'E-store Settings',
       subSetting: ['Payment information', 'stock alerts'],

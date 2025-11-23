@@ -82,6 +82,7 @@ import { ChangePasswordComponent } from './ui/view/general/change-password/chang
 import { ProfileComponent } from './ui/view/general/profile/profile.component';
 import { PaykeysComponent } from './ui/view/pos/paykeys/paykeys.component';
 import { DelveryComponent } from './ui/view/pos/delvery/delvery.component';
+import { LocationPickerComponent } from './ui/view/pos/branches/location-picker/location-picker.component';
 
 //
 
@@ -111,6 +112,7 @@ import { DelveryComponent } from './ui/view/pos/delvery/delvery.component';
     ProfileComponent,
     PaykeysComponent,
     DelveryComponent,
+    LocationPickerComponent,
   ],
   imports: [
     // BrowserModule,

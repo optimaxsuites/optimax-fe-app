@@ -206,21 +206,24 @@
 
 <div class="mb-4">
   <label class="block font-semibold text-customBlue">Longitude</label>
+  <div class="flex gap-2">
   <input
     type="number"
     class="w-full border border-gray-300 rounded-md p-2"
     [(ngModel)]="newBranch.longitude"
     placeholder="e.g. 7.49508"
   />
-</div>
-
-<button 
+  <button 
   type="button"
   class="bg-customBlue text-white px-4 py-2 rounded-lg"
   (click)="openMapModal()"
 >
-  Pick from Map
+  <i class="fa-solid fa-location-dot text-xl"></i>
 </button>
+  </div>
+</div>
+
+
 
   </div>
 
@@ -238,6 +241,8 @@
 }
 
 
-<p-dialog [(visible)]="mapVisible" modal="true" [style]="{width:'90vw', height:'80vh'}">
+<!-- <p-dialog [(visible)]="mapVisible" modal="true" [style]="{width:'90vw', height:'80vh'}">
   <div id="branchMap" class="w-full h-[70vh]"></div>
-</p-dialog>
+</p-dialog> -->
+
+<app-location-picker *ngIf="mapVisible " (locationSelected)="onLocationSelected($event)" (close)="mapVisible = false" [initialLocation]="selectedLocation"></app-location-picker>

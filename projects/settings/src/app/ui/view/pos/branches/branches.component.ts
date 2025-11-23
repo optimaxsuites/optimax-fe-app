@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DataService } from '../../../service/data.service';
 import * as L from 'leaflet';
@@ -41,11 +41,13 @@ export class BranchesComponent implements OnInit {
   map!: L.Map;
   showAddForm: boolean = false;
   branchLimit = 0
+    selectedLocation: { lat: number; lng: number; address?: string } | null = null; 
 
   constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private dataService: DataService,
+     private cdr: ChangeDetectorRef
     // private subscriptionService: SubscriptionService
   ) {}
 
@@ -54,6 +56,16 @@ export class BranchesComponent implements OnInit {
      this.branchLimit = getLimitsForModule('optimaXPOS').branches || 0;
     console.log(this.branchLimit)
   }
+
+
+    onLocationSelected(location: { lat: number; lng: number; address?: string }) {
+      this.selectedLocation = location;
+      this.mapVisible = false;
+      this.newBranch.latitude = location.lat;
+      this.newBranch.longitude = location.lng;
+      this.newBranch.address = location.address || '';
+    }
+
 
   // Load branches from localStorage
   loadBranches() {
@@ -66,6 +78,8 @@ export class BranchesComponent implements OnInit {
         }));
   
         this.branches = formattedData;
+    this.cdr.detectChanges();
+
       },
       error: (error: any) => {
         console.log(error)
@@ -247,7 +261,7 @@ this.newBranch= branch
         this.messageService.add({
           severity: 'info',
           summary: 'Cancelled',
-          detail: 'Branch deletion cancelled.',
+          detail: 'Branch deletion cancelled.'
         });
       },
     });

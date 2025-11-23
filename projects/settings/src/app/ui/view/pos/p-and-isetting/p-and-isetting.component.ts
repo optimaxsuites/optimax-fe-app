@@ -43,30 +43,7 @@ export interface BranchShippingSettings {
   feeTiers: FeeTier[]; 
 }
 
-// 3. Mock data for demonstration
-export const MOCK_BRANCH_SETTINGS: BranchShippingSettings[] = [
-  {
-    branchId: 1,
-    branchName: 'Lagos Island Branch',
-    isGlobalDefault: false,
-    isEnabled: true,
-    feeTiers: [
-      { id: 't1', minDistance: 0, maxDistance: 5, feeAmount: 1200 },
-      { id: 't2', minDistance: 5.1, maxDistance: 10, feeAmount: 2500 },
-      { id: 't3', minDistance: 10.1, maxDistance: 20, feeAmount: 4500 },
-    ],
-  },
-  {
-    branchId: 2,
-    branchName: 'Abuja Central Branch (Global Default)',
-    isGlobalDefault: true,
-    isEnabled: true,
-    feeTiers: [
-      { id: 't4', minDistance: 0, maxDistance: 7, feeAmount: 1500 },
-      { id: 't5', minDistance: 7.1, maxDistance: 15, feeAmount: 3000 },
-    ],
-  },
-];
+
 
 @Component({
   selector: 'app-p-and-isetting',
@@ -138,7 +115,7 @@ export class PAndISettingComponent {
 
   paystackForm!: FormGroup;
 
-  allBranches: BranchShippingSettings[] = MOCK_BRANCH_SETTINGS;
+  allBranches: BranchShippingSettings[] = []
   
   // The ID of the currently selected branch for configuration
   selectedBranchId: number = this.allBranches[0].branchId; 
