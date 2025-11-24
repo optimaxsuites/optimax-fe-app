@@ -22,6 +22,7 @@ export class PaymentServiceService {
 		discount: number;
 		tax: number;
 		subTotal: number;
+        deliveryStatus: string; 
 		/* In cases like the kitchen where, I want to check if a payemnt was successful */
 		paymentTracking?: { id: number; paymentSuccess: boolean };
 	}) {
@@ -33,6 +34,7 @@ export class PaymentServiceService {
 			subTotal: subtotal,
 			tax,
 			total,
+            deliveryStatus, 
 		} = args;
 
 		// Use a clone to ensure our mutations don't affect anything important
@@ -105,6 +107,7 @@ export class PaymentServiceService {
 			paymentModes,
 			id: "",
 			orderId: 0,
+            deliveryStatus: deliveryStatus, 
 		};
 
 		const cashPaymentComponentLink =

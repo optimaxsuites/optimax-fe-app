@@ -755,39 +755,39 @@ export class CheckoutKitchenComponent implements OnInit {
 		>[0]["paymentModes"],
 	) {
 		const products = this.productsInTableOrder();
-		const { discount, subTotal, tax, total } = products.reduce<{
-			discount: number;
-			subTotal: number;
-			tax: number;
-			total: number;
-		}>(
-			(acc, val) => {
-				const {
-					discount: prevDiscount,
-					subTotal: prevSubTotal,
-					tax: prevTax,
-					total: prevTotal,
-				} = acc;
+const { discount, subTotal, tax, total } = products.reduce<{
+  discount: number;
+  subTotal: number;
+  tax: number;
+  total: number;
+}>(
+  (acc, val) => {
+    const {
+      discount: prevDiscount,
+      subTotal: prevSubTotal,
+      tax: prevTax,
+      total: prevTotal,
+    } = acc;
 
-				const variantData = this._productHelperService.isVariant(val);
-				const variants = variantData.isVariant
-					? variantData.variants[0]
-					: undefined;
+    const variantData = this._productHelperService.isVariant(val);
+    const variants = variantData.isVariant
+      ? variantData.variants[0]
+      : undefined;
 
-				const discount = this._productHelperService.getDiscount(val, variants);
-				const tax = this._productHelperService.getTax(val, variants);
-				const subtotal = this._productHelperService.getPrice(val, variants);
-				const total = this._productHelperService.getRate(val, variants);
+    const discount = this._productHelperService.getDiscount(val, variants);
+    const tax = this._productHelperService.getTax(val, variants);
+    const subtotal = this._productHelperService.getPrice(val, variants);
+    const total = this._productHelperService.getRate(val, variants);
 
-				return {
-					discount: prevDiscount + discount,
-					subTotal: prevSubTotal + subtotal,
-					tax: prevTax + tax,
-					total: prevTotal + total,
-				};
-			},
-			{ discount: 0, subTotal: 0, tax: 0, total: 0 },
-		);
+    return {
+      discount: prevDiscount + discount,
+      subTotal: prevSubTotal + subtotal,
+      tax: prevTax + tax,
+      total: prevTotal + total,
+    };
+  },
+  { discount: 0, subTotal: 0, tax: 0, total: 0 },
+);
 
 		const selectedOrder = this.selectedOrder();
 
@@ -798,6 +798,8 @@ export class CheckoutKitchenComponent implements OnInit {
 			subTotal,
 			tax,
 			total,
+            //  Add the missing deliveryStatus field
+            deliveryStatus: 'CONFIRMED', 
 			paymentTracking: selectedOrder
 				? { id: selectedOrder.id, paymentSuccess: false }
 				: undefined,
