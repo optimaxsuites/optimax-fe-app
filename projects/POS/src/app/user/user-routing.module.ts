@@ -40,7 +40,7 @@ const routes: Routes = [
     path: 'cash-payment/:uuid',
     component: CashPaymentComponent,
     canActivate: [PermissionGuard],
-      data: { appCode: ['POS_INV'] }
+      data: { appCode: ['POS_INV', 'POS_CHKOUT'] }
 
   },
   {
