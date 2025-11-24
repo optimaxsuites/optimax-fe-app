@@ -101,6 +101,7 @@ export class CashPaymentComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // The cart object should now contain deliveryStatus
     this.cart = this.navigationState?.cart;
     this.updatePriceOptions();
     this.initializePriceOptions();
@@ -438,6 +439,8 @@ export class CashPaymentComponent implements OnInit {
         }
         return orderItems;
       }),
+      //  Add deliveryStatus here from the cart object
+      deliveryStatus: this.cart.deliveryStatus || 'CONFIRMED'
     };
     if(this.customerFound) {
       orderPayload.customerId = this.customerFound?.id

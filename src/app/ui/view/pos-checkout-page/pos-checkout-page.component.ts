@@ -548,6 +548,7 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
       customerId: 1,
       branchId: 1,
       cashier: 67,
+      deliveryStatus: 'PENDING', 
       orderItem: this.cartItems
         .map((item) => {
           let orderItems = [
@@ -618,14 +619,20 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
   onPaymentsConfirmed(modes: PaymentModes[]) {
     this.selectedPaymentModes = modes;
     this.isAllPaymentsModalOpen = false;
-    this._paymentService.processPayment({
+    
+    //  Inject deliveryStatus here for the order payload
+    const orderPayload = {
       paymentModes: modes,
       cartItems: [...this.cartItems],
       total: this.total,
       discount: this.displayedDiscount,
       tax: this.tax,
       subTotal: this.subtotal,
-    });
+      // Default to 'CONFIRMED' for immediate POS fulfillment (since it's paid/processed)
+      deliveryStatus: 'CONFIRMED' 
+    };
+
+    this._paymentService.processPayment(orderPayload as any);
   }
 
   // Filters the displayed items based on the selected value in the select element
@@ -644,7 +651,7 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
     }
 
     // Sort products: in-stock first, then out-of-stock
-    filteredProducts.sort((a, b) => {
+    filteredProducts.sort((a: any, b: any) => {
       const aInStock = a.quantity > 0 ? 1 : 0;
       const bInStock = b.quantity > 0 ? 1 : 0;
       return bInStock - aInStock;
@@ -658,7 +665,7 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
     this.registerService.triggerCloseRegister();
   }
   
-  // MODIFIED: Added logic for opening, closing, and saving the note
+  // Added logic for opening, closing, and saving the note
   toggleNotesModal(open: boolean = !this.isNotesModalOpen, shouldSave: boolean = false) {
     if (open) {
       // OPEN: Load existing note (already done in ngOnInit and checkAndResetNotes)

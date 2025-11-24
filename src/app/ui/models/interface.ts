@@ -252,6 +252,7 @@ export type Cart = {
   timestamp: any;
   /** Doubt we use this */
   cart: ProductData[];
+  deliveryStatus: string; 
 }>;
 
 export interface NavigationState {
@@ -420,7 +421,6 @@ interface BranchDataDTO {
   supplierId: number;
   variants: VariantDTO[];
 }
-
 interface IndustryDTO {
   id: number;
   name: number;
