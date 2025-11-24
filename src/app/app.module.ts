@@ -489,7 +489,7 @@ const dbConfig: DBConfig = {
     PaymentComponent,
     TourGuideComponent,
     TenantsComponent,
-     EstimatedDeliveryPipe
+    //  EstimatedDeliveryPipe
 
   ],
   imports: [
