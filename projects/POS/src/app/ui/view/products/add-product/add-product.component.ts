@@ -377,7 +377,7 @@ discountTypes: any[] = [
       partNumber: [''],
       selectedBranch: [[], Validators.required],
       branches: this.fb.array([]),
-      category: [''],
+      category: ['', Validators.required],
       image: [null],
       startDate: [''],
       endDate: [''],
