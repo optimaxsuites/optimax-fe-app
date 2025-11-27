@@ -361,9 +361,9 @@
         type="submit" 
         class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed disabled:bg-gray-400"
         (click)="submitUser()" 
-        [disabled]="!isFormValid()"
+        [disabled]="!isFormValid() || isLoading"
       >
-        {{ newUser.authType === 'code' ? 'Create Code User' : 'Create User' }}
+        {{ isLoading? 'Creating User..' :'Create User' }}
       </button>
     </div>
   </div>

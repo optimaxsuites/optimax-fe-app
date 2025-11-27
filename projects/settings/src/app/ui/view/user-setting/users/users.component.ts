@@ -80,6 +80,8 @@ users: any[] = [
  
 ];
 
+isLoading: boolean = false;
+
 newUser: user ={
   // fullname: '',
   name: '',
@@ -199,7 +201,7 @@ fetchUsers(){
 
 
 submitUser() {
-
+  this.isLoading = true;
   const business = sessionStorage.getItem('userPrimaryInfoRegData') ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}') : null;
 
   console.log(business)
@@ -257,10 +259,14 @@ submitUser() {
               if (this.codeAuthType) {
               this.authenticationService.codeActivation(data.ecode, true).subscribe({
                 next: () => {
+                  this.isLoading = false;
+
                   this.messageService.add({
                     severity: 'success',
                     summary: 'Success',
-                    detail: 'User registered and eCode activated successfully!'
+                    detail: 'User registered and eCode activated successfully!',
+                    key: 'tl',
+                    life: 3000,
                   });
                 },
                 error: (err) => {
@@ -268,24 +274,32 @@ submitUser() {
                   this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Failed to activate user eCode, try again later!'
+                    detail: 'Failed to activate user eCode, try again later!',
+                      key: 'tl',
+                    life: 3000,
                   });
                 }
               });
             } else {
+              this.isLoading = false;
               this.messageService.add({
                 severity: 'success',
                 summary: 'Success',
-                detail: 'User registered and roles assigned successfully!'
+                detail: 'User registered and roles assigned successfully!',
+                  key: 'tl',
+                    life: 3000,
               });
             }
          },
            error: (err) => {
+
             console.error(err);
             this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to assign branch to user, try again later!'
+            detail: 'Failed to assign branch to user, try again later!',
+              key: 'tl',
+                    life: 3000,
           });
            }
           })
@@ -296,7 +310,9 @@ submitUser() {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to assign roles to user, try again later!'
+            detail: 'Failed to assign roles to user, try again later!',
+              key: 'tl',
+                    life: 3000,
           });
         }
       });
@@ -306,25 +322,33 @@ submitUser() {
         this.messageService.add({
           severity: 'error',
           summary: 'Registration Failed',
-          detail: 'Your account has not been verified. Check your mail to verify!'
+          detail: 'Your account has not been verified. Check your mail to verify!',
+            key: 'tl',
+                    life: 3000,
         });
       } else if (error.toString() == '409') {
         this.messageService.add({
           severity: 'error',
           summary: 'Registration Failed',
-          detail: 'Email address is already registered. Please use a different email or login.'
+          detail: 'Email address is already registered. Please use a different email or login.',
+            key: 'tl',
+                    life: 3000,
         });
       } else if (error.toString() == '0') {
         this.messageService.add({
           severity: 'error',
           summary: 'Registration Failed',
-          detail: 'Unable to connect to the server. Please check your internet connection.'
+          detail: 'Unable to connect to the server. Please check your internet connection.',
+            key: 'tl',
+                    life: 3000,
         });
       } else {
         this.messageService.add({
           severity: 'error',
           summary: 'Registration Failed',
-          detail: 'An unexpected error occurred. Please try again later.'
+          detail: 'An unexpected error occurred. Please try again later.',
+            key: 'tl',
+                    life: 3000,
         });
       }
     }
