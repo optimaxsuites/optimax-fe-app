@@ -99,6 +99,14 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  deleteDiscount(id: number) {
+    return this.http
+      .delete<any>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/discounts/${id}`
+      )
+      .pipe(catchError(this.handleError));
+  }
+
   deleteSupplier(id: any) {
     return this.http
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/suppliers/${id}`)

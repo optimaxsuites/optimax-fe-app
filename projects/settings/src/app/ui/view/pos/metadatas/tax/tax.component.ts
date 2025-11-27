@@ -101,6 +101,7 @@ export class TaxComponent {
           // this.getDiscounts();
           // TODO: Check whether this piece of code is worth it...
           this.taxes.push(data)
+          this.metadataService.addTaxToState(data)
           this.taxData = {
             name: '',
             rate: 0,
@@ -189,7 +190,7 @@ export class TaxComponent {
           key: 'tl',
           life: 3000,
         });
-        this.refreshTaxes();
+        // this.refreshTaxes();
         this.cancelEdit();
         this.savingTax = false;
       },
@@ -227,7 +228,7 @@ export class TaxComponent {
           key: 'tl',
           life: 3000,
         });
-        this.refreshTaxes();
+        // this.refreshTaxes();
         this.showDeleteModal = false;
         this.taxToDelete = null;
         this.deletingTax = false;
