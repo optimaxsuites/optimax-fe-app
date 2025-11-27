@@ -73,6 +73,13 @@ export class AuthenticationService {
         .pipe(catchError(this.handleError));
   }
 
+  getUserBranchInfoById(id: string): Observable<any>{
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
+        .pipe(catchError(this.handleError));
+  }
+
   getRegDataByUsername(username: string): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/us/ur/findByUsernameOrEmail?username="+"---"+JSON.stringify(username)))
 
@@ -100,6 +107,14 @@ export class AuthenticationService {
     return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
       .pipe(catchError(this.handleError))
+  }
+
+  getUserApplicationRole(id: number): Observable<any> {
+
+return this.http
+  .get<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
+  .pipe(catchError(this.handleError));
+  
   }
 
   private getBaseApiUrl(): string {
