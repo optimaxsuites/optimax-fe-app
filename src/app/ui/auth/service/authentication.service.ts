@@ -1,6 +1,6 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment.prod';
 import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 import { Router } from '@angular/router';
@@ -125,6 +125,22 @@ export class AuthenticationService {
     return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
       .pipe(catchError(this.handleError))
+  }
+
+
+  checkIfDomainExists(domain: string): Observable<any> {
+     const url = this.getBaseApiUrl() + `/x/api/v2/us/ur/get/tenant/domain/${domain}`;
+
+     if (domain && domain.trim() === 'optimax') {
+       return of(true);
+     }
+
+    return this.http.get<any>(url).pipe(
+      map(res => {
+        return res && res.id === null ? false : true;
+      }),
+      catchError(() => of(true))
+    );
   }
 
   private getBaseApiUrl(): string {

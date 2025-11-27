@@ -5,6 +5,7 @@ import { firstValueFrom, lastValueFrom, Observable, BehaviorSubject } from 'rxjs
 import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.service';
 import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
 import { TOUR_STEPS, TourStep } from './ui/onboarding/tour-guide';
+import { AuthenticationService } from './ui/auth/service/authentication.service';
 
 declare global {
   interface Window {
@@ -34,7 +35,7 @@ export class AppComponent implements OnInit {
 
   private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
   isOffline$: Observable<boolean> = this._isOffline.asObservable();
-
+  
   // Ensure this property exists and is initialized
   clockedInTime: string | null = null;
 
@@ -60,7 +61,8 @@ export class AppComponent implements OnInit {
     private menuItemService: MenuItemsService,
     private router: Router,
     private checkoutService: CheckoutService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private authenticationService: AuthenticationService
   ) {
     // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
     window.addEventListener('online', () => this._isOffline.next(false));
@@ -79,10 +81,31 @@ export class AppComponent implements OnInit {
 
     // When we go online, trigger offline sync once
     window.addEventListener('online', () => this.syncOfflinePayments());
+
+    
   }
 
   // Angular lifecycle hook must be lowercase
   ngOnInit(): void {
+    const host = window.location.hostname;
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    let tenantId = 'optimax'; 
+    if (!isLocalhost) {
+      const parts = host.split('.');
+      tenantId = parts[0] || 'doesntexist';
+    }
+    console.log(tenantId)
+    this.authenticationService.checkIfDomainExists(tenantId).subscribe({
+      next: (data) => {
+        console.log('Tenant exists:', data);
+        if(!data) {
+         window.location.replace('https://www.optimaxsuites.com/get-started');
+        }
+      },
+      error: (err) => {
+        console.error('Tenant does not exist or error occurred:', err);
+      }
+    });
     this.checkOnboardingStatus();
   }
 
