@@ -2010,6 +2010,8 @@ async addToProduct() {
           if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
             successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
           }
+
+          this.metadataService.fetchMetaData()
           
           this.messageService.add({
             severity: 'success',
@@ -2114,6 +2116,9 @@ async addToProduct() {
           );
         }
       }
+
+          this.metadataService.fetchMetaData()
+
 
       this.messageService.add({
         severity: 'success',

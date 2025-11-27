@@ -311,32 +311,17 @@ removeBranchFromState(branchId: number | undefined) {
   this.branchSubject.next(updatedBranches);
 }
 
+// addProductToState(newProduct: any) {
+//   const currentProducts = this.productSubject.value;
+//   const updated = [...currentProducts, newProduct];
+//   this.productSubject.next(updated);
+// }
 
-  private loadEnrichedProductsByBranch(): Observable<void> {
-    const branchId = this.selectedBranchIdSubject.value;
-    if (!branchId) return of(undefined);
-
-    this.loadingSubject.next(true);
-
-    return this.posService.getFilteredProductsWithDetails(branchId).pipe(
-      tap((data) => this.enrichedProductSubject.next(data)),
-      finalize(() => this.loadingSubject.next(false)),
-      catchError((error) => {
-        console.error("❌ Failed to load products for branch:", error);
-        return of(undefined);
-      }),
-      switchMap(() => of(undefined))
-    );
-  }
-
-
-  private getRandomInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min)) + min;
-  }
-
-  private getRandomFloat(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
-  }
+// removeProductFromState(productId: number) {
+//   const currentProducts = this.productSubject.value;
+//   const updatedProducts = currentProducts.filter(c => c.id !== productId);
+//   this.productSubject.next(updatedProducts);
+// }
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
