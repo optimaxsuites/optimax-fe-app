@@ -299,6 +299,18 @@ removeTaxFromState(taxId: number | undefined) {
   this.taxSubject.next(updatedTax);
 }
 
+ addBranchToState(newBranch: any) {
+  const currentBranches = this.branchSubject.value;
+  const updated = [...currentBranches, newBranch];
+  this.branchSubject.next(updated);
+}
+
+removeBranchFromState(branchId: number | undefined) {
+  const currentBranches = this.branchSubject.value;
+  const updatedBranches = currentBranches.filter(c => c.id !== branchId);
+  this.branchSubject.next(updatedBranches);
+}
+
 
   private loadEnrichedProductsByBranch(): Observable<void> {
     const branchId = this.selectedBranchIdSubject.value;

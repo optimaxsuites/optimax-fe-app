@@ -1,6 +1,8 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DataService } from '../../../service/data.service';
+import { MetadataService } from '../../../../../../../POS/src/app/ui/service/metadata.service';
+
 import * as L from 'leaflet';
 import 'leaflet-control-geocoder';
 
@@ -47,7 +49,9 @@ export class BranchesComponent implements OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private dataService: DataService,
-     private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private metadataService: MetadataService, 
+
     // private subscriptionService: SubscriptionService
   ) {}
 
@@ -69,7 +73,7 @@ export class BranchesComponent implements OnInit {
 
   // Load branches from localStorage
   loadBranches() {
-    this.dataService.getBranches().subscribe({
+    this.metadataService.branches$.subscribe({
       next: (data: any) => {
         console.log(data)
         const formattedData = data.map((branch: any) => ({
@@ -160,8 +164,10 @@ loadMap() {
 
     this.dataService.addBranch(this.newBranch).subscribe({
       next: (data: any) => {
+        console.log(data)
         this.branches.push(data);
-
+        this.metadataService.addBranchToState(data);
+        
         this.messageService.add({
           severity:'success',
           summary: 'Success',
