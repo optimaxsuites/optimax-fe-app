@@ -77,11 +77,11 @@
   
   
   
-  <app-large-side-modal *ngIf="sidebar" (close)="sidebar = false">
+  <app-side-modal *ngIf="sidebar" (close)="sidebar = false">
       <ng-container *ngIf="selectedComp; else noComponent">
           <ng-container *ngComponentOutlet="selectedComp"></ng-container>
         </ng-container>
         <ng-template #noComponent>
           <p>Coming soon!!</p>
         </ng-template>
-  </app-large-side-modal>
+  </app-side-modal>

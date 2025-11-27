@@ -5,6 +5,7 @@ import { AuthenticationService } from '../../../sharedComponents/service/auth-se
 import { countriesData } from '../../../sharedComponents/service/country-data';
 import { ChangePasswordComponent } from '../change-password/change-password.component';
 import { ProfileComponent } from '../profile/profile.component';
+import { BranchesComponent } from '../../pos/branches/branches.component';
 
 @Component({
   selector: 'app-general-settings',
@@ -34,13 +35,25 @@ export class GeneralSettingsComponent implements OnInit {
         icon: 'pi pi-receipt',
         component: ProfileComponent,
       },
+        { name: 'Branches & Location',
+      subSetting: [
+        'Salary Structure',
+        'Deductions and Overtime',
+        'Bonuses and Benefits',
+        'Payslip',
+      ],
+      icon: 'pi pi-receipt',
+      component: BranchesComponent,
+    },
+     
       {
         name: 'Security/privacy',
         subSetting: ['Payment information', 'stock alerts'],
         icon: 'pi pi-receipt',
         component: ChangePasswordComponent,
       },
-     
+
+      
     
     ];
   

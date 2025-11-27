@@ -49,17 +49,17 @@ export class PosSettingComponent {
     //   icon: 'pi pi-receipt',
     //   component: null,
     // },
-    {
-      name: 'Branches & Location',
-      subSetting: [
-        'Salary Structure',
-        'Deductions and Overtime',
-        'Bonuses and Benefits',
-        'Payslip',
-      ],
-      icon: 'pi pi-receipt',
-      component: BranchesComponent,
-    },
+    // {
+    //   name: 'Branches & Location',
+    //   subSetting: [
+    //     'Salary Structure',
+    //     'Deductions and Overtime',
+    //     'Bonuses and Benefits',
+    //     'Payslip',
+    //   ],
+    //   icon: 'pi pi-receipt',
+    //   component: BranchesComponent,
+    // },
     // {
     //   name: 'Customization Settings',
     //   subSetting: [
