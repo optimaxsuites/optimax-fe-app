@@ -61,7 +61,7 @@
     </mat-expansion-panel-header>
 
     <div class="p-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
         <!-- Name and Phone Number -->
         <div>
           <div class="mb-4">
@@ -122,6 +122,49 @@
             ></textarea>
             } @else {
             <p>{{ branch.description }}</p>
+            }
+          </div>
+        </div>
+
+        <!-- longitude and latitude -->
+        <div class=" ">
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1"
+              >Longitude</label
+            >
+            @if(branch.isEditing){
+            <input
+              type="number"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="newBranch.longitude"
+            />
+            } @else {
+            <p>{{ branch.longitude }}</p>
+            }
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1"
+              >Latitude</label
+            >
+            @if(branch.isEditing){
+              <div class="flex gap-2">
+            <input
+              class="w-full border border-gray-300 rounded-md p-2"
+              type="number"
+              [(ngModel)]="newBranch.latitude"
+            />
+
+            <button 
+              type="button"
+              class="bg-customBlue text-white px-4 py-2 rounded-lg"
+              (click)="openMapModal()"
+            >
+              <i class="fa-solid fa-location-dot text-xl"></i>
+            </button>
+            </div>
+            } @else {
+            <p>{{ branch.latitude }}</p>
             }
           </div>
         </div>
