@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MarketplaceService } from '../../service/marketplace.service';
 import { SubscriptionService } from '../../service/subscription.service';
@@ -24,7 +24,8 @@ export class PaymentComponent {
   renewalAction: 'renew' | 'change-plan' | 'new' = 'new';
   renewOrder: any = null;
 
-  constructor(private route: ActivatedRoute, private marketplaceService: MarketplaceService, private subscriptionService: SubscriptionService, private messageService: MessageService, private router: Router, private menuService: MenuItemsService) {}
+  constructor(private route: ActivatedRoute, private marketplaceService: MarketplaceService, private subscriptionService: SubscriptionService, private messageService: MessageService, private router: Router, private menuService: MenuItemsService,     private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     const moduleId = this.route.snapshot.paramMap.get('id');
@@ -43,6 +44,7 @@ export class PaymentComponent {
       next: (data) => {
        this.module = data
        this.selectedPlan = this.module.subscriptionPlans.find((p: any) => p.id == planId);
+          this.cdr.markForCheck();
 
       },
       error(err) {
