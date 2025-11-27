@@ -4,6 +4,7 @@ import { UserSettingComponent } from '../../user-setting/user-setting.component'
 import { PAndISettingComponent } from '../p-and-isetting/p-and-isetting.component';
 import { BusInfoSettingComponent } from '../bus-info-setting/bus-info-setting.component';
 import { BranchesComponent } from '../branches/branches.component';
+import { MetadatasComponent } from '../metadatas/metadatas.component';
 
 @Component({
   selector: 'app-pos-setting',
@@ -32,17 +33,17 @@ export class PosSettingComponent {
       icon: 'pi pi-receipt',
       component: PAndISettingComponent,
     },
-    // {
-    //   name: 'Payment Settings',
-    //   subSetting: [
-    //     'Salary Structure',
-    //     'Deductions and Overtime',
-    //     'Bonuses and Benefits',
-    //     'Payslip',
-    //   ],
-    //   icon: 'pi pi-receipt',
-    //   component: null,
-    // },
+    {
+      name: 'Product Metadata',
+      subSetting: [
+        'Categories',
+        'Tax rates',
+        'Discounts',
+        'Suppliers',
+      ],
+      icon: 'pi pi-receipt',
+      component: MetadatasComponent,
+    },
     // {
     //   name: 'Report Settings',
     //   subSetting: ['Customize', 'export sales', 'stock reports'],

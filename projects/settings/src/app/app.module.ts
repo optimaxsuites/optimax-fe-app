@@ -85,6 +85,11 @@ import { DelveryComponent } from './ui/view/pos/delvery/delvery.component';
 import { LocationPickerComponent } from './ui/view/pos/branches/location-picker/location-picker.component';
 import { EstimatedDeliveryPipe } from './ui/view/pos/delvery/estimated-delivery.pipe';
 import { LogisticFormComponent } from './ui/view/pos/delvery/LogisticFormComponent';
+import { MetadatasComponent } from './ui/view/pos/metadatas/metadatas.component';
+import { CategoryComponent } from './ui/view/pos/metadatas/category/category.component';
+import { TaxComponent } from './ui/view/pos/metadatas/tax/tax.component';
+import { SupplierComponent } from './ui/view/pos/metadatas/supplier/supplier.component';
+import { DiscountComponent } from './ui/view/pos/metadatas/discount/discount.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -116,7 +121,12 @@ import { LogisticFormComponent } from './ui/view/pos/delvery/LogisticFormCompone
     DelveryComponent,
     LocationPickerComponent,
      EstimatedDeliveryPipe,
-      LogisticFormComponent
+      LogisticFormComponent,
+      MetadatasComponent,
+      CategoryComponent,
+      TaxComponent,
+      SupplierComponent,
+      DiscountComponent
   ],
   imports: [
     // BrowserModule,
