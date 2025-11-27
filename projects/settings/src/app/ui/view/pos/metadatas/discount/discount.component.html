@@ -1,1 +1,74 @@
-<p>discount works!</p>
+ <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Discount</h2>
+
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false">
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addDiscount()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2 flex flex-col gap-4">
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input class="name editInput" type="text" id="e-price" [(ngModel)]="discount.name" placeholder="Discount name" />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discount">Discount percentage (%)</label>
+      <input id="discount" [(ngModel)]="discount.value" class="name editInput" placeholder="Discount value" />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discountType">Discount Type</label>
+      <ng-select [items]="discountTypes" bindLabel="name" bindValue="id" [(ngModel)]="discount.discountType"
+        [multiple]="true" placeholder="Select discount types">
+      </ng-select>
+    </div>
+
+    <div  *ngIf="discount?.discountType?.includes(1)">
+    <div>
+      <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
+        Discount validity period
+      </p>
+
+        <div class="flex gap-4 items-center w-full">
+          <div class="detailDiv w-full">
+            <label for="start">Start date</label>
+            <input type="date" formControlName="startDate" id="start" class="name editInput" />
+          </div>
+          <div class="detailDiv w-full">
+            <label for="end">End date</label>
+            <input type="date" formControlName="endDate" id="end" class="name editInput" />
+          </div>
+        </div>
+      </div>
+    </div> 
+
+    <div *ngIf="discount?.discountType?.includes(2)">
+      <div>
+        <div class="detailDiv w-full">
+          <label for="minQuantity">Minimum quantity</label>
+          <input type="text" id="minQuantity" formControlName="discountMinQuantity" class="name editInput" />
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div *ngIf="discount?.discountType?.includes(2)">
+    <div>
+      <div class="detailDiv w-full">
+        <label for="minQuantity">Minimum quantity</label>
+        <input
+          type="text"
+          id="minQuantity"
+          formControlName="discountMinQuantity"
+          class="name editInput"
+        />
+      </div>
+    </div>
+    </div>

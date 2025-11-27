@@ -163,7 +163,7 @@
       </button>
       <button
         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-        (click)="deleteTax()"
+        (click)="removeTax(taxToDelete?.id)"
         [disabled]="deletingTax"
       >
         <i class="fa-solid fa-trash"></i>
