@@ -203,7 +203,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     console.log('Navigating to product ID:', productId);
     // Just navigate - the route subscription will handle the loading
     this.router.navigate(
-      ['/store', this.storeUuid, 'product-details', productId]
+      ['user/checkout/store', this.storeUuid, 'product-details', productId]
     ).then(success => {
       if (!success) {
         console.error('Navigation failed for product ID:', productId);
