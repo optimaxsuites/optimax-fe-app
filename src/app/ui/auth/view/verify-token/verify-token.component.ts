@@ -21,6 +21,7 @@ export class VerifyTokenComponent implements OnInit {
     ) { }
 
   ngOnInit(): void {
+    console.log("VERIFY ROUTE LOADED");
     this.token = this.route.snapshot.queryParamMap.get('token');
 
     if (this.token) {

@@ -87,25 +87,7 @@ export class AppComponent implements OnInit {
 
   // Angular lifecycle hook must be lowercase
   ngOnInit(): void {
-    const host = window.location.hostname;
-    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    let tenantId = 'optimax'; 
-    if (!isLocalhost) {
-      const parts = host.split('.');
-      tenantId = parts[0] || 'doesntexist';
-    }
-    console.log(tenantId)
-    this.authenticationService.checkIfDomainExists(tenantId).subscribe({
-      next: (data) => {
-        console.log('Tenant exists:', data);
-        if(!data) {
-         window.location.replace('https://www.optimaxsuites.com/get-started');
-        }
-      },
-      error: (err) => {
-        console.error('Tenant does not exist or error occurred:', err);
-      }
-    });
+    this.checkEligibility();
     this.checkOnboardingStatus();
   }
 
@@ -113,6 +95,42 @@ export class AppComponent implements OnInit {
   onResize(_event: Event) {
     this.screenWidth = window.innerWidth;
     // You can react to changes here
+  }
+
+  checkEligibility(){
+      // Check if URL contains a token at all
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasToken = urlParams.has('token');
+
+      // If token exists → skip redirect and skip tenant validation
+      if (hasToken) {
+        console.log('Token found in URL — skipping domain check.');
+        return;
+      }
+
+      const host = window.location.hostname;
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+
+      let tenantId = 'optimax'; 
+      if (!isLocalhost) {
+        const parts = host.split('.');
+        tenantId = parts[0] || 'doesntexist';
+      }
+
+      console.log(tenantId);
+
+      this.authenticationService.checkIfDomainExists(tenantId).subscribe({
+        next: (data) => {
+          console.log('Tenant exists:', data);
+          if (!data) {
+            window.location.replace('https://www.optimaxsuites.com/get-started');
+          }
+        },
+        error: (err) => {
+          console.error('Tenant does not exist or error occurred:', err);
+        }
+  });
+
   }
 
   sendMessage() {

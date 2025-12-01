@@ -37,10 +37,14 @@ import { TenantsComponent } from './ui/tenants/tenants.component';
 
 const routes: Routes = [
   {
-    path: '',
-    redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
-    pathMatch: 'full',
+    path: 'users/auth/verify',
+    component: VerifyTokenComponent,
   },
+  // {
+  //   path: '',
+  //   redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
+  //   pathMatch: 'full',
+  // },
   {
     path: 'user/auth',
     component: DefaultComponent,
@@ -69,10 +73,7 @@ const routes: Routes = [
     
     ],
   },
-  {
-    path: 'users/auth/verify',
-    component: VerifyTokenComponent,
-  },
+  
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,

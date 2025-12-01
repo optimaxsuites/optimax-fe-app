@@ -18,13 +18,16 @@ export class AuthGuard implements CanActivate {
 
   canActivate(
     next: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-      if (this.authService.isAuthenticated()) {
+    state: RouterStateSnapshot
+  ): boolean | UrlTree {
+
+    // -------- TOKEN BYPASS CHECK --------
+
+    if (this.authService.isAuthenticated()) {
       return true;
     } else {
-      const loginLink = this.navigationLink.getLink('signinLink')
-      this.router.navigate([loginLink]);
-      return false;
+      const loginLink = this.navigationLink.getLink('signinLink');
+      return this.router.parseUrl(loginLink);
     }
   }
 }
