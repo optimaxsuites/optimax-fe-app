@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { PosServiceService } from '../../service/pos-service.service';
 import { CheckoutService } from '../../service/checkout.service';
 import { Subscription } from 'rxjs';
@@ -70,7 +70,8 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
 
   constructor(
     private posService: PosServiceService,
-    private checkoutService: CheckoutService
+    private checkoutService: CheckoutService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -117,6 +118,8 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
         
         // Save to localStorage as backup
         this.saveOrdersToLocalStorage();
+
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('❌ Error loading orders from backend:', error);
