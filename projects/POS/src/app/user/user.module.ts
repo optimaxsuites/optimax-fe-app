@@ -66,6 +66,7 @@ import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/stor
 import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
 import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
+import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
 // import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 // import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
@@ -99,7 +100,8 @@ import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/wh
     StoreCheckoutComponent,
     ProductDetailsComponent,
     CategoryProductsComponent,
-    WhatsappWidgetComponent
+    WhatsappWidgetComponent,
+    CheckoutKitchenHistoryComponent
     // ProductVariantModalComponent,
   ],
   imports: [

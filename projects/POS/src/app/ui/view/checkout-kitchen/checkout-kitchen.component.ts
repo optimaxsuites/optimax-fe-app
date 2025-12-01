@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from "@angular/core";
+import { Component, Input, Output, EventEmitter, OnInit, computed, signal } from "@angular/core";
 import { DecimalPipe } from '@angular/common';
 import { Observable, of, lastValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -7,6 +7,7 @@ import { map } from 'rxjs/operators';
 import {
   BranchDTO,
   ProductData,
+  Satisfy,
 } from "../../models/interface";
 import {
   OrderGET,
@@ -57,8 +58,48 @@ interface Order {
   paymentId?: number;
 }
 
+type TableOrderStatusTimeStamps = Partial<{
+	orderedOn: Date;
+	processedOn: Date;
+	completedOn: Date;
+	readyOn: Date;
+}>;
+
+type OrderStatus = {
+	pending: boolean;
+	processing: boolean;
+	completed: boolean;
+	ready: boolean;
+};
+type OrderStatusPending = Satisfy<
+	OrderStatus,
+	{ pending: true; completed: false; processing: false; ready: false }
+>;
+type OrderStatusProcessing = Satisfy<
+	OrderStatus,
+	{ pending: false; completed: false; processing: true; ready: false }
+>;
+type OrderStatusCompleted = Satisfy<
+	OrderStatus,
+	{ pending: false; completed: true; processing: false; ready: false }
+>;
+type OrderStatusReady = Satisfy<
+	OrderStatus,
+	{ pending: false; completed: false; processing: false; ready: true }
+>;
+type OrderStatusNone = Satisfy<
+	OrderStatus,
+	{ pending: false; completed: false; processing: false; ready: false }
+>;
+
 // Company types from v17
 type TableOrder = Map<ProductData, number>;
+type OrderStatusUnion =
+	| OrderStatusCompleted
+	| OrderStatusPending
+	| OrderStatusProcessing
+	| OrderStatusReady
+	| OrderStatusNone;
 
 @Component({
   selector: 'app-checkout-kitchen',
@@ -118,6 +159,8 @@ export class CheckoutKitchenComponent implements OnInit {
 			ready: false,
 		};
 	});
+
+	activePage: "waiter" | "chef" | "cashier" = "cashier";
 
 	  orderPermissions = {
 		canView: false,
