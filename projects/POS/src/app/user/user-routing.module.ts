@@ -21,6 +21,7 @@ import { VerificationRequiredComponent } from '../ui/view/verification-required/
 import { EmailVerificationComponent } from '../ui/view/pos-store/email-verification/email-verification.component';
 import { ReturnsRefundsComponent } from '../ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { OrderHistoryComponent } from '../ui/view/pos-store/order-history/order-history.component';
+import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
@@ -86,6 +87,13 @@ const routes: Routes = [
   {
     path: 'kitchen/:uuid',
     component: CheckoutKitchenComponent,
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
+ 
+  },
+   {
+    path: 'kitchen/history/:uuid',
+    component: CheckoutKitchenHistoryComponent,
     canActivate: [PermissionGuard],
       data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
  

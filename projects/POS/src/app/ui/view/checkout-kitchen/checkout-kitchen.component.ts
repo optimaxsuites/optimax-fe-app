@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, computed, signal } from "@angular/core";
+import { Component, Input, Output, EventEmitter, OnInit } from "@angular/core";
 import { DecimalPipe } from '@angular/common';
 import { Observable, of, lastValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -7,7 +7,6 @@ import { map } from 'rxjs/operators';
 import {
   BranchDTO,
   ProductData,
-  Satisfy,
 } from "../../models/interface";
 import {
   OrderGET,
@@ -58,48 +57,8 @@ interface Order {
   paymentId?: number;
 }
 
-type TableOrderStatusTimeStamps = Partial<{
-	orderedOn: Date;
-	processedOn: Date;
-	completedOn: Date;
-	readyOn: Date;
-}>;
-
-type OrderStatus = {
-	pending: boolean;
-	processing: boolean;
-	completed: boolean;
-	ready: boolean;
-};
-type OrderStatusPending = Satisfy<
-	OrderStatus,
-	{ pending: true; completed: false; processing: false; ready: false }
->;
-type OrderStatusProcessing = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: true; ready: false }
->;
-type OrderStatusCompleted = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: true; processing: false; ready: false }
->;
-type OrderStatusReady = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: false; ready: true }
->;
-type OrderStatusNone = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: false; ready: false }
->;
-
 // Company types from v17
 type TableOrder = Map<ProductData, number>;
-type OrderStatusUnion =
-	| OrderStatusCompleted
-	| OrderStatusPending
-	| OrderStatusProcessing
-	| OrderStatusReady
-	| OrderStatusNone;
 
 @Component({
   selector: 'app-checkout-kitchen',
@@ -107,740 +66,782 @@ type OrderStatusUnion =
   styleUrls: ['./checkout-kitchen.component.scss']
 })
 export class CheckoutKitchenComponent implements OnInit {
-	/** The table number that is set by the waiter when creating a new order */
-	orderTableNumber = 1;
-	isOrderDetailsOpen = false;
-	/*
-	 *the order/card clicked
-	 */
-	selectedOrder = signal<TableOrderStatusGET | null>(null);
-	selectedOrderStatus = computed<OrderStatusUnion>(() => {
-		const order = this.selectedOrder();
-
-		if (!order)
-			return {
-				completed: false,
-				pending: false,
-				processing: false,
-				ready: false,
-			};
-
-		if (order.readyOn) {
-			return {
-				completed: false,
-				pending: false,
-				processing: false,
-				ready: true,
-			};
-		}
-
-		if (order.completedOn) {
-			return {
-				completed: true,
-				pending: false,
-				processing: false,
-				ready: false,
-			};
-		}
-
-		if (order.processedOn) {
-			return {
-				completed: false,
-				pending: false,
-				processing: true,
-				ready: false,
-			};
-		}
-
-		return {
-			completed: false,
-			pending: true,
-			processing: false,
-			ready: false,
-		};
-	});
-
-	activePage: "waiter" | "chef" | "cashier" = "cashier";
-
-	  orderPermissions = {
-		canView: false,
-		canEdit: false,
-		canDelete: false,
-		canCreate: false,
-		};
-
-		paymentPermissions = {
-		canView: false,
-		canEdit: false,
-		canDelete: false,
-		canCreate: false,
-		};
-
-	/**
-	 * The status (and orders) of all the tables in the restaurant. It is indexed with the `id`
-	 */
-	tableStatuses = signal<Map<number, TableOrderStatusGET>>(new Map());
-
-	testMode = signal<typeof this.mode>(this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef");
-
-	changeTestMode(mode: "waiter" | "chef" | "cashier") {
-		this.testMode.update(() => (mode));
-	}
-
-	/**
-	 * This is a collection of all the items in an order for the currently viewed table
-	 */
-	tableData = signal<TableOrder>(new Map());
-
-	/** Each key is a category name, e.g "Drink", "Main Meal", while each value is an array of products **and their variants** that has the aforementioned category */
-	productCategories = new Map<string, ProductData[]>();
-
-	currCategoryProducts: ProductData[] = [];
-
-	get mode(): "waiter" | "chef" | "cashier" {
-		//TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
-		return this.testMode() ?? "chef";
-	}
-
-	isReceiptModalOpen = false;
-	isCreateOrderModalOpen = signal(false);
-	/**
-	 * This is only true if a waiter accidentally tries to overwrite an order.
-	 *
-	 * If `true`, it will display a dialog showing the waiter the details of the order and a button to explicitly overwrite it.
-	 */
-	isCreateOrderModalOrderExistsDialogOpen = false;
-	/**
-	 * If true, then the modal for creating orders will overwrite an order if it exists
-	 */
-	isEditingOrder = false;
-	/**
-	 * Toggles the note modal / dialog for adding additional information to an order.
-	 */
-	isCreateOrderModalNoteDialogOpen = false;
-	/**
-	 * Temporarily stores the note of an order
-	 */
-	orderNote = signal("");
-
-	/**
-	 * Used to keep track of product id and their data
-	 */
-	private _productIdAndDataMap = new Map<number, ProductData>();
-	/** TODO */
-	private _fetchedBranches!: BranchDTO[];
-	private readonly _dummyTableOrderStatus = 9999999;
-
-	isPaymentModalOpen = false;
-
-	
-
-	constructor(
-		private _posService: PosServiceService,
-		private _checkoutService: CheckoutService,
-		private _imageCacheService: ImageCacheService,
-		private _paymentService: PaymentServiceService,
-		private _productHelperService: ProductHelperService,
-		private _userService: UserService,
-	) {}
-
-	ngOnInit() {
-		(async () => {
-			// Fetch the table statuses.
-			// TODO: Implement a skeleton loader while these are getting fetched
-			const fetchedTableOrderStatuses = await lastValueFrom(
-				this._posService.getTableOrderStatuses(),
-			);
-			this.tableStatuses.set(
-				new Map(
-					fetchedTableOrderStatuses.map((tableOrderStatus) => [
-						tableOrderStatus.id,
-						tableOrderStatus,
-					]),
-				),
-			);
-			console.log("Fetch table statuses are: ");
-			console.log(this.tableStatuses());
-			if (history.state.paymentTracking?.paymentSuccess) {
-				const tableOrderStatusToEdit = this.tableStatuses().get(
-					history.state.paymentTracking.id,
-				);
-				if (tableOrderStatusToEdit) {
-					tableOrderStatusToEdit.status = "PAID";
-				}
-			}
-
-			// Fetch and store the branches
-			this._fetchedBranches = await lastValueFrom(
-				this._posService.getBranches(),
-			);
-
-			const fetchedProducts: ProductData[] = await lastValueFrom(
-				this._posService.getProducts(),
-			);
-
-			fetchedProducts.forEach((fetchedProduct) => {
-				const {
-					productCategory: { name: category },
-					variants: possibleVariants,
-				} = fetchedProduct;
-				// Create separate "products" for each possible variant.
-				const variantProducts = possibleVariants.reduce<ProductData[]>(
-					(acc, val) => [
-						...acc,
-						{ ...fetchedProduct, selectedVariants: [val] },
-					],
-					[],
-				);
-
-				if (this.productCategories.has(category)) {
-					this.productCategories
-						.get(category)!
-						.push(fetchedProduct, ...variantProducts);
-				} else {
-					this.productCategories.set(category, [
-						fetchedProduct,
-						...variantProducts,
-					]);
-				}
-				this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
-			});
-
-			this.currCategoryProducts =
-				this.productCategories.values().next().value ?? [];
-		})();
-
-			if (isSuperUser()) {
-				  this.orderPermissions = {
-					canView: true,
-					canEdit: true,
-					canDelete: true,
-					canCreate: true,
-				  };
-				   this.paymentPermissions = {
-					canView: true,
-					canEdit: true,
-					canDelete: true,
-					canCreate: true,
-				  };
-				}else {
-				this.orderPermissions = getUserPermissionsFor('kitchen_order');
-				this.paymentPermissions = getUserPermissionsFor('kitchen_payment');
-			
-			}
-	}
-
-	openOrderDetails(table: TableOrderStatusGET) {
-		// When a table-card is clicked, set the order details
-		this.selectedOrder.set(table);
-		this.isOrderDetailsOpen = true;
-	}
-
-	/**
-	 * @param tableNo
-	 * @param orders
-	 * @param waiterIdd - Dummy. I'll get rid of it later
-	 * @param overwrite - If true, then the order will be overwritten if it already exists
-	 * @returns `true` if an order is added successfully, otherwise `false` if an order already exists
-	 */
-	async createOrder(
-		tableNo: number,
-		orders: TableOrder,
-		waiterIdd?: string,
-		note?: string,
-		overwrite = false,
-		timeStamps?: TableOrderStatusTimeStamps,
-	) {
-		if (!orders.size) return;
-
-		// const ids = [0, 1];
-		// TODO: Get the waiter's id based on their login info
-		const waiterId = 0;
-
-		let isTableNumberUsed = false;
-		/** THis will only have a value if `isTableNumberUsed` is true */
-		let tableStatusToOverwrite: null | TableOrderStatusGET = null;
-		for (const [, tableStatus] of this.tableStatuses()) {
-			if (tableStatus.tableNumber == `${tableNo}`) {
-				isTableNumberUsed = true;
-				tableStatusToOverwrite = tableStatus;
-				break;
-			}
-		}
-
-		if (timeStamps?.readyOn) {
-			// If it's ready, we're done with it
-			this.deleteTable(tableStatusToOverwrite!);
-			return;
-		}
-
-		if (isTableNumberUsed && !overwrite) {
-			this.isCreateOrderModalOrderExistsDialogOpen = true;
-			return false;
-		} else {
-			const creationDate = new Date().toISOString();
-
-			const orderItems: OrderItemPOST[] = [];
-			let amountTendered = 0;
-
-			orders.forEach((qty, order) => {
-				const possibleVariantData = this.getProductData(order);
-				const totalPrice =
-					qty * this.convertStrToNum(possibleVariantData.sellingPrice ?? "1");
-
-				amountTendered += totalPrice;
-				orderItems.push({
-					id: 0,
-					orderId: null,
-					productId: order.id,
-					productVariantId: order.selectedVariants?.[0].id ?? null,
-					quantity: qty,
-					totalPrice,
-				});
-			});
-
-			if (overwrite) {
-				// Get the previous order's timestamps
-				const { completedOn, orderedOn, processedOn, readyOn } =
-					tableStatusToOverwrite!;
-
-				timeStamps = {
-					completedOn: completedOn ? arrayToDate(completedOn) : undefined,
-					orderedOn: orderedOn ? arrayToDate(orderedOn) : undefined,
-					processedOn: processedOn ? arrayToDate(processedOn) : undefined,
-					readyOn: readyOn ? arrayToDate(readyOn) : undefined,
-				};
-
-				// Just remove the old one :p
-				// TODO: Refresh the view.
-				this.deleteTable(tableStatusToOverwrite!);
-			}
-
-			// Create a dummy order since these requests could take a while
-			this._createDummyOrder(
-				this._dummyTableOrderStatus,
-				tableNo,
-				amountTendered,
-				orderItems,
-				timeStamps,
-			);
-			// update the details panel, if need be
-			this.openOrderDetails(
-				this.tableStatuses().get(this._dummyTableOrderStatus)!,
-			);
-
-			// Build up a new `TableOrderStatusPOST`, then send it to the backend and retrieve the created object by getting it by id
-			const uploadedOrder = await lastValueFrom(
-				this._checkoutService.saveOrder({
-					id: 0,
-					amountTendered: amountTendered,
-					branchId: this._fetchedBranches[0].id,
-					cashierId: null,
-					createdDate: creationDate,
-					customerId: null,
-					discountId: null,
-					orderNumber: `${0}`,
-					orderStatus: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
-					paymentId: null,
-					quantity: 1,
-					updatedAt: creationDate,
-					totalAmount: `${1}`,
-					deliveryStatus: 'CONFIRMED',
-					orderItem: orderItems,
-				}),
-			);
-
-			const uploadedTableOrderStatus = await lastValueFrom(
-				this._posService.addTableOrderStatus({
-					id: 0,
-					chefId: 0,
-					completedOn: timeStamps?.completedOn?.toISOString() ?? "",
-					note: note ?? "",
-					orderId: uploadedOrder.id,
-					orderedOn: timeStamps?.orderedOn?.toISOString() ?? creationDate,
-					processedOn: timeStamps?.processedOn?.toISOString() ?? "",
-					readyOn: timeStamps?.readyOn?.toISOString() ?? "",
-					status: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
-					tableNumber: `${tableNo}`,
-					waterId: waiterId,
-				}),
-			);
-
-			const actualTableOrderStatus = await lastValueFrom(
-				this._posService.getTableOrderStatusById(uploadedTableOrderStatus.id),
-			);
-
-			// delete the dummy product and replace it
-			this._removeDummyOrder(this._dummyTableOrderStatus);
-
-			if (
-				actualTableOrderStatus.status === "PAID" &&
-				actualTableOrderStatus.readyOn?.length
-			) {
-				// Get rid of the table. This is done here since I can be sure that the separate order is already created
-				this.deleteTable(actualTableOrderStatus);
-			} else {
-				// update the details panel, if need be
-				this.openOrderDetails(actualTableOrderStatus);
-
-				// update the signal by creating a new map
-				this.tableStatuses.update(
-					(statuses) =>
-						new Map(
-							statuses.set(actualTableOrderStatus.id, actualTableOrderStatus),
-						),
-				);
-
-				console.log("After adding an order, the table statuses are:");
-				console.log(this.tableStatuses());
-			}
-
-			this.isCreateOrderModalOrderExistsDialogOpen = false;
-			return true;
-		}
-	}
-
-	createMultipleOrders(
-		tableOrderList: { tableNo: number; orders: TableOrder }[],
-	) {
-		tableOrderList.forEach((orderObject) => {
-			this.createOrder(orderObject.tableNo, orderObject.orders);
-		});
-	}
-
-	toggleOrderStatus(tableOrderStatus: TableOrderStatusGET) {
-		const dateArray = dateToArray(new Date());
-		const tableOrders = this._getTableOrdersFromGETPayload(
-			tableOrderStatus.order.orderItem,
-		);
-
-		let orderedOn = arrayToDate(tableOrderStatus.orderedOn!),
-			processedOn = tableOrderStatus.processedOn?.length
-				? arrayToDate(tableOrderStatus.processedOn)
-				: undefined,
-			completedOn = tableOrderStatus.completedOn?.length
-				? arrayToDate(tableOrderStatus.completedOn)
-				: undefined,
-			readyOn = tableOrderStatus.readyOn?.length
-				? arrayToDate(tableOrderStatus.readyOn)
-				: undefined;
-
-		console.log("Ordered on string: ", orderedOn);
-		console.log("Ordered on array: ", tableOrderStatus.orderedOn);
-
-		if (!tableOrderStatus.processedOn) {
-			tableOrderStatus.processedOn = dateArray;
-			processedOn = new Date();
-		} else if (!tableOrderStatus.completedOn) {
-			tableOrderStatus.completedOn = dateArray;
-			completedOn = new Date();
-		} else if (!tableOrderStatus.readyOn) {
-			tableOrderStatus.readyOn = dateArray;
-			tableOrderStatus.status = "PAID";
-			readyOn = new Date();
-			//TODO: Get rid of the table order
-		}
-
-		this.createOrder(
-			this.convertStrToNum(tableOrderStatus.tableNumber),
-			tableOrders,
-			`${tableOrderStatus.waterId}`,
-			tableOrderStatus.note,
-			true,
-			{ orderedOn, processedOn, completedOn, readyOn },
-		);
-	}
-
-	displayedTableStatuses = computed(() => {
-		switch (this.testMode()) {
-			case "waiter":
-				// TODO: Use the waiter's id as a comparison here
-				return [...this.tableStatuses().values()]
-					.filter((tableStatus) => tableStatus.waterId == 0)
-					.sort((a, b) => {
-						if (a.orderedOn && b.orderedOn) {
-							//@ts-expect-error
-							return new Date(...a.orderedOn) > new Date(...b.orderedOn)
-								? 1
-								: -1;
-						}
-						return 0;
-					});
-			case "cashier":
-			case "chef":
-				return [...this.tableStatuses().values()].sort((a, b) => {
-					if (a.orderedOn && b.orderedOn) {
-						//@ts-expect-error
-						return new Date(...a.orderedOn) > new Date(...b.orderedOn) ? 1 : -1;
-					}
-					return 0;
-				});
-		}
-	});
-
-	addFoodItemToOrder(foodItem: ProductData) {
-		this.tableData.update((currentData) => {
-			// Create a new map to trigger change detection
-			const newData = new Map(currentData);
-
-			if (newData.has(foodItem)) {
-				newData.set(foodItem, newData.get(foodItem)! + 1);
-			} else {
-				// Use the rate from the passed foodItem object
-				newData.set(foodItem, 1);
-			}
-			return newData;
-		});
-	}
-
-	/** The subtotal, tax, discount, and total amounts of `this.tableData()` */
-	orderPriceData = computed(() => {
-		const priceData = { discount: 0, subTotal: 0, tax: 0, total: 0 };
-
-		if (this.isCreateOrderModalOpen()) {
-			this.tableData().forEach((qty, product) => {
-				priceData.discount +=
-					qty * this._productHelperService.getDiscount(product);
-				priceData.subTotal +=
-					qty * this._productHelperService.getPrice(product);
-				priceData.tax += qty * this._productHelperService.getTax(product);
-				priceData.total += qty * this._productHelperService.getRate(product);
-			});
-		} else {
-			// The Cashier is viewing the order or something so default back to checking the `selectedOrder`
-			this.productsInTableOrder().forEach((product) => {
-				priceData.discount += this._productHelperService.getDiscount(product);
-				priceData.subTotal += this._productHelperService.getPrice(product);
-				priceData.tax += this._productHelperService.getTax(product);
-				priceData.total += this._productHelperService.getRate(product);
-			});
-		}
-
-		return priceData;
-	});
-
-	/**
-	 * Whenever a table's order should be edited, call this with the table status to enforce
-	 */
-	overwriteTableOrderData(tableStatus: TableOrderStatusGET) {
-		const clone = structuredClone(tableStatus);
-		this._updateTableDataFromOrderGET(clone.order);
-		this.setOrderNote(clone.note ?? "");
-		this.orderTableNumber = this.convertStrToNum(clone.tableNumber);
-	}
-
-	setOrderNote(note: string) {
-		this.orderNote.update((_) => note);
-	}
-
-	reduceFoodItemQtyInOrder(foodItem: ProductData) {
-		this.tableData.update((val) => {
-			if (val.has(foodItem)) {
-				const orderItem = val.get(foodItem)!;
-
-				if (orderItem - 1 <= 0) {
-					val.delete(foodItem);
-				} else {
-					val.set(foodItem, orderItem - 1);
-				}
-			}
-
-			return new Map(val);
-		});
-	}
-
-	deleteTable(tableStatus: TableOrderStatusGET) {
-		this._posService
-			.deleteTableOrderStatusById(tableStatus.id)
-			.subscribe((data) => {
-				console.log("This should be null: ", data);
-			});
-
-		this.tableStatuses.update((val) => {
-			val.delete(tableStatus.id);
-			return new Map(val);
-		});
-
-		this.isOrderDetailsOpen = false;
-	}
-
-	proceedToOverwriteTableConflict(tableNumber: number) {
-		this.isCreateOrderModalOrderExistsDialogOpen = false;
-		this.isCreateOrderModalOpen.set(true);
-		this.isEditingOrder = true;
-		const order = this.tableStatuses().get(tableNumber)?.order;
-		if (order) this._updateTableDataFromOrderGET(order);
-	}
-
-	convertStrToNum(str: string) {
-		return parseFloat(str);
-	}
-
-	private _updateTableDataFromOrderGET(orderToConvert: OrderGET) {
-		this.tableData.update((_) => {
-			const orderItems = orderToConvert.orderItem;
-
-			return new Map(
-				orderItems.map((item) => {
-					console.log("Updating table date from 'OrderGET'", item);
-					return [item.product, item.quantity];
-				}),
-			);
-		});
-	}
-
-	/** For optimistically updating the UI while the request is getting fetched. It will be deleted when the data is eventually fetched */
-	private _createDummyOrder(
-		id: number,
-		tableNo: number,
-		amountTendered: number,
-		orderItems: OrderItemPOST[],
-		timeStamps?: TableOrderStatusTimeStamps,
-	) {
-		this.tableStatuses.update((val) => {
-			val.set(id, {
-				id: id,
-				chefId: 0,
-				completedOn: timeStamps?.completedOn
-					? dateToArray(timeStamps!.completedOn!)
-					: [],
-				note: "",
-				orderedOn: timeStamps?.orderedOn
-					? dateToArray(timeStamps!.orderedOn!)
-					: [],
-				processedOn: timeStamps?.processedOn
-					? dateToArray(timeStamps!.processedOn!)
-					: [],
-				readyOn: timeStamps?.readyOn ? dateToArray(timeStamps!.readyOn!) : [],
-				status: timeStamps?.readyOn ? "PAID" : "UNPAID",
-				tableNumber: `${tableNo}`,
-				waterId: 0,
-				order: {
-					amountTendered: amountTendered,
-					branch: {},
-					cashierId: 0,
-					createdDate: 1,
-					customer: {},
-					discount: {},
-					id: 0,
-					orderNumber: "0",
-					orderStatus: timeStamps?.readyOn ? "PAID" : "UNPAID",
-					payment: {},
-					tax: {},
-					updatedAt: 1,
-					totalAmount: amountTendered,
-					orderItem: orderItems.map((orderItem) => {
-						return {
-							id: orderItem.id,
-							product: this._productIdAndDataMap.get(orderItem.productId),
-							productVariant: null,
-						} as OrderItemGET;
-					}),
-				},
-			});
-
-			return new Map(val);
-		});
-	}
-
-	/** Cleanup for `this.createDummyOrder()` */
-	private _removeDummyOrder(id: number) {
-		this.tableStatuses.update((val) => {
-			val.delete(id);
-			return new Map(val);
-		});
-	}
-
-	private _getTableOrdersFromGETPayload(
-		fetchedOrderItems: OrderItemGET[],
-	): TableOrder {
-		return new Map(
-			fetchedOrderItems.map((item) => [item.product, item.quantity]),
-		);
-	}
-
-	productsInTableOrder(
-		tableOrderStatus = this.selectedOrder() ?? ("" as const),
-	): ProductData[] {
-		if (typeof tableOrderStatus == "string") return [];
-
-		return tableOrderStatus.order.orderItem
-			.map((orderItem) =>
-				new Array<ProductData>(orderItem.quantity).fill(orderItem.product),
-			)
-			.flat();
-	}
-
-	getProductImage(product: ProductData) {
-		return this._imageCacheService.getProductImage(product);
-	}
-
-	/** Use this if you the product data has a `selectedVariant`, and you want to access the variant's data easily for display.
-	 *
-	 * NOTE: **DO NOT SEND THE RESULT OF THIS TO THE SERVER FOR ANY REASON**
-	 */
-	getProductData(product: ProductData) {
-		return this._productHelperService.getData(product);
-	}
-
-	processPayment(
-		paymentModes: Parameters<
-			PaymentServiceService["processPayment"]
-		>[0]["paymentModes"],
-	) {
-		const products = this.productsInTableOrder();
-const { discount, subTotal, tax, total } = products.reduce<{
-  discount: number;
-  subTotal: number;
-  tax: number;
-  total: number;
-}>(
-  (acc, val) => {
-    const {
-      discount: prevDiscount,
-      subTotal: prevSubTotal,
-      tax: prevTax,
-      total: prevTotal,
-    } = acc;
-
-    const variantData = this._productHelperService.isVariant(val);
-    const variants = variantData.isVariant
-      ? variantData.variants[0]
-      : undefined;
-
-    const discount = this._productHelperService.getDiscount(val, variants);
-    const tax = this._productHelperService.getTax(val, variants);
-    const subtotal = this._productHelperService.getPrice(val, variants);
-    const total = this._productHelperService.getRate(val, variants);
+  // ===== ORIGINAL PAGES ONLY =====
+  @Input() activePage: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  @Output() orderCompleted = new EventEmitter<Order>();
+
+  // ===== STATE =====
+  waiterView: 'overview' | 'take-order' = 'overview';
+  search = '';
+  activeCategory = 'All';
+  currentTable = 1;
+  orderNote = '';
+  orderNo = '#A' + Math.floor(1000 + Math.random() * 9000);
+  isProcessingPayment = false;
+  expandedOrder: Order | null = null;
+
+  // ===== DATA =====
+  menu: MenuItem[] = [];
+  orders: Order[] = [];
+  historyOrders: Order[] = [];
+  orderItems: OrderItem[] = [];
+  selectedOrder?: Order;
+
+  // ===== STOCK MANAGEMENT =====
+  lowStockThreshold = 5; // Items with less than 5 in stock are considered low
+
+  // Image cache to store resolved image URLs
+  private imageCache = new Map<number, string>();
+
+  // ===== COMPANY V17 PROPERTIES =====
+  orderPermissions = {
+    canView: false,
+    canEdit: false,
+    canDelete: false,
+    canCreate: false,
+  };
+
+  paymentPermissions = {
+    canView: false,
+    canEdit: false,
+    canDelete: false,
+    canCreate: false,
+  };
+
+  testMode: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  tableData: TableOrder = new Map();
+  selectedOrderSignal: TableOrderStatusGET | null = null;
+  
+  productCategories = new Map<string, ProductData[]>();
+  currCategoryProducts: ProductData[] = [];
+
+  // Company modal states
+  isReceiptModalOpen = false;
+  isCreateOrderModalOpen = false;
+  isEditingOrder = false;
+  isCreateOrderModalNoteDialogOpen = false;
+  orderNoteSignal = "";
+  isPaymentModalOpen = false;
+  orderTableNumber = 1;
+
+  private _productIdAndDataMap = new Map<number, ProductData>();
+  private _fetchedBranches: BranchDTO[] = [];
+  private _tableStatuses = new Map<number, TableOrderStatusGET>();
+  private readonly _dummyTableOrderStatus = 9999999; // For optimistic updates
+
+  constructor(
+    private _posService: PosServiceService,
+    private _checkoutService: CheckoutService,
+    private _imageCacheService: ImageCacheService,
+    private _paymentService: PaymentServiceService,
+    private _productHelperService: ProductHelperService,
+    private _userService: UserService,
+  ) {}
+
+  ngOnInit() {
+    this.initializeCompanyData();
+    
+    // Set permissions
+    if (isSuperUser()) {
+      this.orderPermissions = {
+        canView: true,
+        canEdit: true,
+        canDelete: true,
+        canCreate: true,
+      };
+      this.paymentPermissions = {
+        canView: true,
+        canEdit: true,
+        canDelete: true,
+        canCreate: true,
+      };
+    } else {
+      this.orderPermissions = getUserPermissionsFor('kitchen_order');
+      this.paymentPermissions = getUserPermissionsFor('kitchen_payment');
+    }
+
+    this.testMode = this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef";
+    
+    // Initialize with next available table
+    this.findNextAvailableTable();
+  }
+
+  // ===== CHANGE TEST MODE =====
+  changeTestMode(mode: "waiter" | "chef" | "cashier") {
+    this.testMode = mode;
+    this.activePage = mode;
+    console.log('Mode changed to:', mode);
+  }
+
+  // ===== TABLE NUMBER INPUT HANDLER =====
+  onTableNumberChange(): void {
+    // Validate table number
+    if (this.currentTable < 1) {
+      this.currentTable = 1;
+    } else if (this.currentTable > 100) {
+      this.currentTable = 100;
+    }
+    
+    // Update the order table number to match
+    this.orderTableNumber = this.currentTable;
+    
+    console.log(`🔄 Table number changed to: ${this.currentTable}`);
+  }
+
+  // ===== FIXED TABLE NUMBER INCREMENTATION =====
+  private findNextAvailableTable(): void {
+    console.log('🔍 Finding next available table...');
+    
+    // Get all currently used table numbers from active orders
+    const usedTables = new Set<number>();
+    
+    // Check local orders
+    this.orders.forEach(order => {
+      if (order.table) {
+        usedTables.add(order.table);
+      }
+    });
+    
+    // Also check table statuses from backend
+    this._tableStatuses.forEach(tableStatus => {
+      const tableNum = this.convertStrToNum(tableStatus.tableNumber);
+      if (tableNum > 0) {
+        usedTables.add(tableNum);
+      }
+    });
+    
+    console.log('📊 Used tables:', Array.from(usedTables).sort((a, b) => a - b));
+    
+    // Find the first available table number starting from 1
+    let nextTable = 1;
+    while (usedTables.has(nextTable)) {
+      nextTable++;
+      
+      // Safety check to prevent infinite loop
+      if (nextTable > 100) {
+        console.warn('⚠️ Reached max table search limit');
+        break;
+      }
+    }
+    
+    // Update current table
+    const oldTable = this.currentTable;
+    this.currentTable = nextTable;
+    this.orderTableNumber = nextTable;
+    
+    console.log(`🔄 Table updated: ${oldTable} → ${this.currentTable}`);
+  }
+
+  // ===== STOCK MANAGEMENT METHODS =====
+  getStockStatus(item: MenuItem): 'in-stock' | 'low-stock' | 'out-of-stock' {
+    if (!item.stockQuantity && item.stockQuantity !== 0) {
+      return 'in-stock'; // If no stock data, assume it's available
+    }
+    
+    if (item.stockQuantity === 0) {
+      return 'out-of-stock';
+    }
+    
+    if (item.stockQuantity <= this.lowStockThreshold) {
+      return 'low-stock';
+    }
+    
+    return 'in-stock';
+  }
+
+  getStockBadgeText(item: MenuItem): string {
+    const status = this.getStockStatus(item);
+    
+    switch (status) {
+      case 'out-of-stock':
+        return 'Out of Stock';
+      case 'low-stock':
+        return `Low Stock (${item.stockQuantity})`;
+      default:
+        return '';
+    }
+  }
+
+  canAddToOrder(item: MenuItem): boolean {
+    return this.getStockStatus(item) !== 'out-of-stock';
+  }
+
+  // ===== WAITER ACCORDION METHODS =====
+  toggleOrderExpansion(order: Order): void {
+    if (this.expandedOrder === order) {
+      this.expandedOrder = null;
+    } else {
+      this.expandedOrder = order;
+    }
+  }
+
+  updateOrderStatus(order: Order, newStatus: Order['status']): void {
+    order.status = newStatus;
+    console.log(`Order ${order.orderNo} status updated to: ${newStatus}`);
+  }
+
+  private async initializeCompanyData() {
+    try {
+      // Fetch table statuses and store them
+      const fetchedTableOrderStatuses = await lastValueFrom(
+        this._posService.getTableOrderStatuses()
+      );
+      
+      if (fetchedTableOrderStatuses) {
+        this._tableStatuses = new Map(
+          fetchedTableOrderStatuses.map((tableOrderStatus) => [
+            tableOrderStatus.id,
+            tableOrderStatus,
+          ])
+        );
+        
+        // Sync local orders with company data
+        this.syncOrdersWithCompanyData();
+      }
+
+      // Skip branches loading to avoid 500 error
+      console.log('Skipping branch loading to avoid backend 500 error');
+      this._fetchedBranches = [];
+
+      // Fetch products
+      const fetchedProducts = await lastValueFrom(
+        this._posService.getProducts()
+      );
+      
+      if (fetchedProducts && fetchedProducts.length > 0) {
+        // Clear existing data
+        this.productCategories.clear();
+        this.menu = [];
+        
+        fetchedProducts.forEach((fetchedProduct) => {
+          const {
+            productCategory: { name: category },
+            variants: possibleVariants,
+          } = fetchedProduct;
+          
+          const variantProducts = possibleVariants.reduce<ProductData[]>(
+            (acc, val) => [
+              ...acc,
+              { ...fetchedProduct, selectedVariants: [val] },
+            ],
+            [],
+          );
+
+          if (this.productCategories.has(category)) {
+            this.productCategories
+              .get(category)!
+              .push(fetchedProduct, ...variantProducts);
+          } else {
+            this.productCategories.set(category, [
+              fetchedProduct,
+              ...variantProducts,
+            ]);
+          }
+          this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
+        });
+
+        this.currCategoryProducts = this.productCategories.values().next().value ?? [];
+        
+        // Map company products to menu items with resolved images and stock data
+        await this.mapProductsToMenu(fetchedProducts);
+        
+      } else {
+        console.warn('No products fetched or products array is empty');
+        this.currCategoryProducts = [];
+        this.menu = [];
+      }
+
+      // Update table number after data is loaded
+      this.findNextAvailableTable();
+      
+    } catch (error: any) {
+      console.error('Error initializing company data:', error);
+      this.currCategoryProducts = [];
+      this.menu = [];
+    }
+  }
+
+  // ===== SYNC ORDERS WITH COMPANY DATA =====
+  private syncOrdersWithCompanyData() {
+    // Clear existing orders
+    this.orders = [];
+    this.historyOrders = [];
+
+    // Convert company table statuses to local orders
+    for (const tableStatus of this._tableStatuses.values()) {
+      const localOrder = this.convertTableStatusToOrder(tableStatus);
+      
+      if (localOrder) {
+        // Only add to history if status is CONFIRMED or CANCELLED
+        if (localOrder.status === 'CONFIRMED' || localOrder.status === 'CANCELLED') {
+          this.historyOrders.push(localOrder);
+        } else {
+          this.orders.push(localOrder);
+        }
+      }
+    }
+
+    // Update table number whenever orders change
+    this.findNextAvailableTable();
+  }
+
+  // ===== SIMPLIFIED CREATE ORDER - FIXED FOR KITCHEN FLOW =====
+  async sendToKitchenNew() {
+    if (this.orderItems.length === 0) {
+      alert('Add items before sending to kitchen');
+      return;
+    }
+
+    try {
+      console.log('🍳 Sending order to kitchen...');
+      
+      // Create a simple local order first for immediate display
+      const newOrder: Order = {
+        table: this.currentTable,
+        orderNo: this.orderNo,
+        items: [...this.orderItems],
+        status: 'UNPAID', // Start as UNPAID - chef will see this immediately
+        note: this.orderNote,
+        createdAt: new Date().toISOString()
+      };
+
+      // Add to orders array (will appear in chef page as UNPAID)
+      this.orders.push(newOrder);
+      
+      console.log('✅ Order created locally with status UNPAID:', newOrder);
+
+      // Clear the current order form
+      this.orderItems = [];
+      this.orderNo = '#A' + Math.floor(1000 + Math.random() * 9000);
+      this.orderNote = '';
+      this.waiterView = 'overview';
+      
+      // Find next available table
+      this.findNextAvailableTable();
+      
+      alert(`✅ Order for Table ${newOrder.table} sent to kitchen successfully! Chef can now see it.`);
+      
+    } catch (error: any) {
+      console.error('Error sending order to kitchen:', error);
+      alert('Error creating order. Please try again.');
+    }
+  }
+
+  // ===== CHEF ORDER PROCESSING =====
+  async updateOrderByChef(order: Order, newStatus: 'PREPARING' | 'READY' | 'CONFIRMED') {
+    try {
+      console.log(`👨‍🍳 Chef updating order ${order.orderNo} from ${order.status} to: ${newStatus}`);
+      
+      // Update local status - chef can process UNPAID orders
+      order.status = newStatus;
+
+      console.log(`✅ Order ${order.orderNo} status updated to: ${newStatus}`);
+      
+      // If order is confirmed, move to history
+      if (newStatus === 'CONFIRMED') {
+        this.moveToHistory(order);
+        this.selectedOrder = undefined;
+        alert('Order completed and moved to history!');
+      } else if (newStatus === 'READY') {
+        alert('Order marked as ready! Cashier can now process payment.');
+      } else if (newStatus === 'PREPARING') {
+        alert('Order is now being prepared!');
+      }
+      
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('Error updating order status. Please try again.');
+    }
+  }
+
+  // ===== CASHIER PAYMENT PROCESSING =====
+  async updateCashierStatus(newStatus: 'PAID' | 'CANCELLED') {
+    if (!this.selectedOrder) return;
+    
+    if (newStatus === 'PAID') {
+      try {
+        this.isProcessingPayment = true;
+        console.log('💰 Processing payment for order:', this.selectedOrder.orderNo);
+        
+        // Update order status to PAID (only cashier can do this)
+        this.selectedOrder.status = 'PAID';
+        this.selectedOrder.paymentMethod = 'Cash'; // Default payment method
+        
+        console.log('✅ Payment processed for order:', this.selectedOrder.orderNo);
+        
+        // Wait a moment to show processing
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        this.selectedOrder = undefined;
+        this.isProcessingPayment = false;
+        
+        alert('✅ Payment completed! Order is now paid.');
+        
+      } catch (error: any) {
+        console.error('❌ Payment error:', error);
+        this.isProcessingPayment = false;
+        alert('Error processing payment. Please try again.');
+      }
+    } else if (newStatus === 'CANCELLED') {
+      this.selectedOrder.status = 'CANCELLED';
+      this.moveToHistory(this.selectedOrder);
+      this.selectedOrder = undefined;
+      alert('Order cancelled.');
+    }
+  }
+
+  // ===== ORDER FLOW METHODS =====
+  moveToHistory(order: Order) {
+    this.orders = this.orders.filter(o => o !== order);
+    
+    if (!this.historyOrders.find(h => h.orderNo === order.orderNo && h.table === order.table)) {
+      this.historyOrders.push(order);
+    }
+    
+    this.orderCompleted.emit(order);
+  }
+
+  // ===== CORRECTED ORDER FILTERING BY PAGE =====
+  get activeWaiterOrders(): Order[] {
+    // Waiter sees all UNPAID orders (new orders)
+    return this.orders.filter(o => o.status === 'UNPAID');
+  }
+
+  get activeChefOrders(): Order[] {
+    // Chef sees UNPAID orders (incoming) and PREPARING/READY orders (in progress)
+    return this.orders.filter(o => 
+      o.status === 'UNPAID' || 
+      o.status === 'PREPARING' || 
+      o.status === 'READY'
+    );
+  }
+
+  get activeCashierOrders(): Order[] {
+    // Cashier sees READY orders (ready for payment) and PAID orders (completed payments)
+    return this.orders.filter(o => o.status === 'READY' || o.status === 'PAID');
+  }
+
+ // ===== HELPER METHODS =====
+  private determineEffectiveStatus(tableStatus: TableOrderStatusGET): string {
+    if (tableStatus.status === 'PAID') {
+      return 'PAID';
+    }
+    
+    if (tableStatus.order?.orderStatus === 'PAID') {
+      return 'PAID';
+    }
+    
+    return tableStatus.status || 'UNPAID';
+  }
+
+  private convertTableStatusToOrder(tableStatus: TableOrderStatusGET): any {
+    const orderItems: OrderItem[] = [];
+
+    if (tableStatus.order?.orderItem ) {
+      for (const item of tableStatus.order.orderItem) {
+        if (item.product) {
+          const productData = this.getProductData(item.product);
+          const imageUrl = this.getProductImageUrl(item.product);
+          
+          orderItems.push({
+            name: this.getProductData(item.product).name,
+            price: this.convertStrToNum(productData.sellingPrice || "0"),
+            image: imageUrl,
+            category: item.product.productCategory?.name || 'Uncategorized',
+            qty: item.quantity,
+            total: item.totalPrice,
+            ...item,
+            id: item.product.id,
+          });
+        }
+      }
+    }
+
+    const paymentMethod = (tableStatus.order as any)?.['paymentMethod'] || 
+                         (tableStatus.order?.payment as any)?.['paymentMethod'] || 
+                         'Cash';
+
+    const effectiveStatus = this.determineEffectiveStatus(tableStatus);
 
     return {
-      discount: prevDiscount + discount,
-      subTotal: prevSubTotal + subtotal,
-      tax: prevTax + tax,
-      total: prevTotal + total,
+      table: this.convertStrToNum(tableStatus.tableNumber),
+      orderNo: tableStatus.order?.orderNumber || 'N/A',
+      items: orderItems,
+      status: this.mapCompanyStatusToLocal(effectiveStatus),
+      note: tableStatus.note,
+      date: tableStatus.orderedOn?.join('-'),
+      createdAt: tableStatus.orderedOn?.join('-'),
+      paymentMethod: paymentMethod,
+      backendId: tableStatus.id, // TableOrderStatus ID
+      orderId: tableStatus.order?.id, // Order ID
     };
-  },
-  { discount: 0, subTotal: 0, tax: 0, total: 0 },
-);
+  }
 
-		const selectedOrder = this.selectedOrder();
+  // ===== STATUS MAPPING =====
+  private mapCompanyStatusToLocal(backendStatus: string): Order['status'] {
+    switch (backendStatus?.toUpperCase()) {
+      case 'PAID': return 'PAID';
+      case 'UNPAID': return 'UNPAID';
+      case 'PREPARING': return 'PREPARING';
+      case 'READY': return 'READY';
+      case 'CONFIRMED': return 'CONFIRMED';
+      case 'CANCELLED': return 'CANCELLED';
+      default: return 'UNPAID';
+    }
+  }
 
-		this._paymentService.processPayment({
-			paymentModes,
-			cartItems: products,
-			discount,
-			subTotal,
-			tax,
-			total,
-            //  Add the missing deliveryStatus field
-            deliveryStatus: 'CONFIRMED', 
-			paymentTracking: selectedOrder
-				? { id: selectedOrder.id, paymentSuccess: false }
-				: undefined,
-		});
-	}
+  // ===== PRODUCT AND STOCK METHODS =====
+  private async mapProductsToMenu(fetchedProducts: ProductData[]) {
+    const menuItems: MenuItem[] = [];
+    
+    for (const product of fetchedProducts) {
+      const productData = this.getProductData(product);
+      const imageUrl = await this.resolveProductImage(product);
+      
+      // Get stock data from backend
+      const stockQuantity = await this.getProductStockQuantity(product.id);
+      
+      menuItems.push({
+        category: product.productCategory?.name || 'Uncategorized',
+        ...product,
+        price: this.convertStrToNum(productData.sellingPrice || "0"),
+        image: imageUrl,
+        stockQuantity: stockQuantity,
+        lowStockThreshold: this.lowStockThreshold
+      });
+    }
 
-	clearTableData() {
-		this.tableData.set(new Map());
-	}
+    this.menu = menuItems;
+    console.log('Mapped company products to menu with stock data:', this.menu);
+  }
+
+  // Method to get product stock quantity from backend
+  private async getProductStockQuantity(productId: number): Promise<number> {
+    try {
+      // TODO: Replace this with your actual stock API call
+      // Example: return await lastValueFrom(this._inventoryService.getStockQuantity(productId));
+      
+      // Mock data for demonstration - replace with real API call
+      // This creates realistic stock data: 30% chance of low stock, 10% chance of out of stock
+      const random = Math.random();
+      let mockStock: number;
+      
+      if (random < 0.1) {
+        mockStock = 0; // 10% out of stock
+      } else if (random < 0.4) {
+        mockStock = Math.floor(Math.random() * this.lowStockThreshold) + 1; // 30% low stock (1-5)
+      } else {
+        mockStock = Math.floor(Math.random() * 20) + 6; // 60% normal stock (6-25)
+      }
+      
+      console.log(`📦 Product ${productId} stock: ${mockStock}`);
+      return mockStock;
+      
+    } catch (error) {
+      console.warn('Could not fetch stock quantity for product:', productId, error);
+      return 10; // Default stock if API fails
+    }
+  }
+
+  // ===== UPDATED ADD TO ORDER WITH STOCK VALIDATION =====
+  addToOrder(item: MenuItem) {
+    if (!this.canAddToOrder(item)) {
+      alert(`Sorry, ${item.name} is out of stock!`);
+      return;
+    }
+
+    const existing = this.orderItems.find(i => i.id === item.id);
+    if (existing) {
+      // Check if adding more would exceed available stock
+      if (item.stockQuantity && (existing.qty + 1) > item.stockQuantity) {
+        alert(`Sorry, only ${item.stockQuantity} ${item.name} available in stock!`);
+        return;
+      }
+      existing.qty++;
+      existing.total = existing.qty * existing.price;
+    } else {
+      this.orderItems.push({ ...item, qty: 1, total: item.price });
+    }
+  }
+
+  private async resolveProductImage(product: ProductData): Promise<string> {
+    if (this.imageCache.has(product.id)) {
+      return this.imageCache.get(product.id)!;
+    }
+
+    try {
+      const imageUrl = await lastValueFrom(
+        this._imageCacheService.getProductImage(product)
+      );
+      const finalUrl = imageUrl || this.getDefaultImageUrl();
+      
+      this.imageCache.set(product.id, finalUrl);
+      return finalUrl;
+    } catch (error: any) {
+      console.warn('Error getting product image for:', product.name, error);
+      const defaultUrl = this.getDefaultImageUrl();
+      this.imageCache.set(product.id, defaultUrl);
+      return defaultUrl;
+    }
+  }
+
+  getDefaultImageUrl(): string {
+    return '/assets/images/default-product.png';
+  }
+
+  getProductImageUrl(product: ProductData): string {
+    return this.imageCache.get(product.id) || this.getDefaultImageUrl();
+  }
+
+  getRandomIntInclusive(min: number, max:number) {
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled); 
+  }
+
+  // ===== EXISTING UI INTERACTION METHODS =====
+  changeQty(tableNo: number, itemId: number, delta: number) {
+    const order = this.orders.find(o => o.table === tableNo);
+    if (!order) return;
+    const item = order.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    item.qty += delta;
+    item.total = item.qty * item.price;
+
+    if (item.qty <= 0) order.items = order.items.filter(i => i.id !== itemId);
+  }
+
+  changeQtySingle(itemId: number, delta: number) {
+    const item = this.orderItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    item.qty += delta;
+    item.total = item.qty * item.price;
+
+    if (item.qty <= 0) this.orderItems = this.orderItems.filter(i => i.id !== itemId);
+  }
+
+  getOrderTotal(order: Order): number {
+    return order.items.reduce((sum, i) => sum + i.total, 0);
+  }
+
+  getSubtotal(order?: Order): number {
+    if (!order) return 0;
+    return order.items.reduce((sum, i) => sum + i.total, 0);
+  }
+
+  getTax(order?: Order): number {
+    return this.getSubtotal(order) * 0.05;
+  }
+
+  getGrandTotal(order?: Order): number {
+    return this.getSubtotal(order) + this.getTax(order);
+  }
+
+  printInvoice() {
+    window.print();
+  }
+
+  get filteredMenu(): MenuItem[] {
+    let filtered = this.menu.filter(m => 
+      m.name.toLowerCase().includes(this.search.toLowerCase())
+    );
+    if (this.activeCategory !== 'All') {
+      filtered = filtered.filter(m => m.category === this.activeCategory);
+    }
+    return filtered;
+  }
+
+  get categories(): string[] {
+    const uniqueCategories = new Set(this.menu.map(item => item.category));
+    return ['All', ...Array.from(uniqueCategories)];
+  }
+
+  get total(): number {
+    return this.orderItems.reduce((sum, item) => sum + item.total, 0);
+  }
+
+  takeOrder() {
+    this.waiterView = 'take-order';
+    // Ensure we have the latest table number when taking a new order
+    this.findNextAvailableTable();
+  }
+
+  goToOverview() {
+    this.waiterView = 'overview';
+  }
+
+  deleteOrder(index: number) {
+    if (confirm('Are you sure you want to delete this order?')) this.orders.splice(index, 1);
+  }
+
+  selectOrder(order: Order) {
+    this.selectedOrder = this.selectedOrder === order ? undefined : order;
+  }
+
+  formatOrderItems(order: Order): string {
+    return order.items.map(i => `${i.name} x${i.qty}`).join(', ');
+  }
+
+  // ===== COMPANY SERVICE METHODS =====
+  getProductData(product: ProductData) {
+    return this._productHelperService.getData(product);
+  }
+
+  convertStrToNum(str: string) {
+    return parseFloat(str);
+  }
+
+  getProductById(id: number): ProductData | undefined {
+    return this._productIdAndDataMap.get(id);
+  }
+
+  // ===== ADDITIONAL COMPANY METHODS FOR COMPATIBILITY =====
+  openOrderDetails(table: TableOrderStatusGET) {
+    this.selectedOrderSignal = table;
+    
+    // Convert to local order format
+    const localOrder = this.convertTableStatusToOrder(table);
+    this.selectedOrder = localOrder;
+  }
+
+  addFoodItemToOrder(foodItem: ProductData) {
+    if (this.tableData.has(foodItem)) {
+      this.tableData.set(foodItem, this.tableData.get(foodItem)! + 1);
+    } else {
+      this.tableData.set(foodItem, 1);
+    }
+    this.tableData = new Map(this.tableData);
+  }
+
+  reduceFoodItemQtyInOrder(foodItem: ProductData) {
+    if (this.tableData.has(foodItem)) {
+      const orderItem = this.tableData.get(foodItem)!;
+      if (orderItem - 1 <= 0) {
+        this.tableData.delete(foodItem);
+      } else {
+        this.tableData.set(foodItem, orderItem - 1);
+      }
+    }
+    this.tableData = new Map(this.tableData);
+  }
+
+  clearTableData() {
+    this.tableData.clear();
+    this.tableData = new Map(this.tableData);
+  }
+
+  setOrderNote(note: string) {
+    this.orderNoteSignal = note;
+    this.orderNote = note;
+  }
+
+  // ===== REMOVE ITEM FROM ORDER =====
+removeItemFromOrder(index: number): void {
+  if (confirm('Are you sure you want to remove this item from the order?')) {
+    this.orderItems.splice(index, 1);
+    console.log('🗑️ Item removed from order');
+  }
+}
 }
