@@ -240,35 +240,35 @@ discount: {
     }
   }
 
-  /**
-   * NOTE: The order of this object is important! See `get variantObjectKeys()`
-   */
-  private readonly defaultVariant: VariantDTO = {
-    id: 0,
-    name: '',
-    price: 0,
-    quantity: 0,
-    color: '',
-    size: 'Regular',
-    sku: '',
-    branches: [],
-  };
-  protected readonly variantValues = {
-    size: [
-      'XXS',
-      'XS',
-      'Small',
-      'Medium',
-      'Regular',
-      'Large',
-      'XL',
-      'XXL',
-    ] as VariantDTO['size'][],
-  };
-  /**
-   * The `color` field would actually be a string like "Red, Blue, Yellow" when the user is adding a new variant, however, before getting stored, it will split into an array
-   */
-  newVariant = this.resetVariantData();
+	/**
+	 * NOTE: The order of this object is important! See `get variantObjectKeys()`
+	 */
+	private readonly defaultVariant: VariantDTO = {
+		id: 0,
+		name: "",
+		price: 0,
+		quantity: 0,
+		color: "",
+		size: "Regular",
+		sku: "",
+		branches: [],
+	};
+	protected readonly variantValues = {
+		size: [
+			"XXS",
+			"XS",
+			"Small",
+			"Medium",
+			"Regular",
+			"Large",
+			"XL",
+			"XXL",
+		] as VariantDTO["size"][],
+	};
+	/**
+	 * The `color` field would actually be a string like "Red, Blue, Yellow" when the user is adding a new variant, however, before getting stored, it will split into an array
+	 */
+	newVariant = this.resetVariantData();
 
 	branches: BranchDTO[] = [];
 discountTypes: any[] = [
@@ -282,48 +282,59 @@ discountTypes: any[] = [
 	selectedBundleItems: BundleItem[] = [];
     availableProducts: ProductData[] = [];
 
-  periodicDiscount: { startDate: string; endDate: string } = {
-    startDate: '',
-    endDate: '',
-  };
-  quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
-  addSuccessfull: boolean = false;
+	periodicDiscount: { startDate: string; endDate: string } = {
+		startDate: "",
+		endDate: "",
+	};
+	quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
+	addSuccessfull: boolean = false;
 
-  selectedBranch: any[] = [];
-  selectedCategory: string = '';
-  openCategories: boolean = false;
-  openAddCategory: boolean = false;
-  openAddDiscount: boolean = false;
-  openAddSupplier: boolean = false;
-  openAddTax: boolean = false;
+	selectedBranch: any[] = [];
+	selectedCategory: string = "";
+	openCategories: boolean = false;
+	openAddCategory: boolean = false;
+	openAddDiscount: boolean = false;
+	openAddSupplier: boolean = false;
+	openAddTax: boolean = false;
 
-  openBranchData = false;
-  categories: any[] = [];
-  configureBarcode: boolean = false;
-  barcodes = [
-    { label: 'CODE128 ', value: 'CODE128' },
-    { label: 'EAN-13', value: 'EAN13' },
-    { label: 'EAN-8', value: 'EAN8' },
-    { label: 'UPC (A)', value: 'UPC' },
-    { label: 'UPC (E)', value: 'UPC' },
-    { label: 'ITF', value: 'ITF' },
-    { label: 'Codabar', value: 'Codabar' },
-    { label: 'CODE39', value: 'CODE39' },
-  ] as const;
+	openBranchData = false;
+	categories: any[] = [];
+	configureBarcode: boolean = false;
+	barcodes = [
+		{ label: "CODE128 ", value: "CODE128" },
 
-  selectedBranchFromForm: any;
-  dataOfChosenBranches: any[] = [];
-  selectedProductIds: number[] = [];
+		{ label: "EAN-13", value: "EAN13" },
+		{ label: "EAN-8", value: "EAN8" },
 
-  /**
-   * This should be `true` as long as the backend endpoints for the new models aren't ready
-   */
-  fallBackToOldForm = true;
-  loading: boolean = false;
-  originalProducts: ProductData[] = [];
-  userBranch = 'headquarters';
-  Array = Array;
-  console = console;
+		{ label: "UPC (A)", value: "UPC" },
+		{ label: "UPC (E)", value: "UPC" },
+		{ label: "ITF", value: "ITF" },
+
+
+		{ label: "Codabar", value: "Codabar" },
+		{ label: "CODE39", value: "CODE39" },
+	] as const;
+	/**
+	 * This is the branch name that is used to determine what branch data to be edited
+	 *
+	 * TODO: Make this type better. It should represent the value of each branch
+	 */
+	//@ts-ignore
+	selectedBranchFromForm: (typeof this.branches)[0]["value"];
+	dataOfChosenBranches: any[] = [];
+	selectedProductIds: number[] = [];
+
+	/**
+	 * This should be `true` as long as the backend endpoints for the new models aren't ready
+	 */
+	fallBackToOldForm = true;
+	loading: boolean = false;
+	originalProducts: ProductData[] = [];
+	userBranch = "headquarters";
+	Array = Array;
+	console = console;
+
+	
 
   // Image properties
   mainProductImage: string = '';
@@ -389,15 +400,6 @@ discountTypes: any[] = [
         this.initializeEditMode();
       }, 100);
     }
-
-   // Add price change listeners
-  this.productForm.get('costPrice')?.valueChanges.subscribe(() => {
-    this.checkPriceValidation();
-  });
-
-  this.productForm.get('sellingPrice')?.valueChanges.subscribe(() => {
-    this.checkPriceValidation();
-  });
     // Fixed subscription for selectedProductIds
     this.productForm
       .get('selectedProductIds')
@@ -703,7 +705,14 @@ deleteTax(taxId: number) {
 // Add this property to track if price validation toast is already shown
 private priceValidationToastShown = false;
 
-// Update the checkPriceValidation method
+onPriceFieldBlur(): void {
+  // Small timeout to ensure the form values are updated
+  setTimeout(() => {
+    this.checkPriceValidation();
+    // No need for updateProfitLossDisplay() - template updates automatically
+  }, 100);
+}
+
 checkPriceValidation(): void {
   const costPrice = this.productForm.get('costPrice')?.value;
   const sellingPrice = this.productForm.get('sellingPrice')?.value;
@@ -735,13 +744,15 @@ checkPriceValidation(): void {
     const sellingControl = this.productForm.get('sellingPrice');
     
     if (costControl?.errors?.['costPriceHigher']) {
-      delete costControl.errors['costPriceHigher'];
-      costControl.updateValueAndValidity();
+      const errors = { ...costControl.errors };
+      delete errors['costPriceHigher'];
+      costControl.setErrors(Object.keys(errors).length ? errors : null);
     }
     
     if (sellingControl?.errors?.['costPriceHigher']) {
-      delete sellingControl.errors['costPriceHigher'];
-      sellingControl.updateValueAndValidity();
+      const errors = { ...sellingControl.errors };
+      delete errors['costPriceHigher'];
+      sellingControl.setErrors(Object.keys(errors).length ? errors : null);
     }
     
     // Reset the flag when prices become valid
@@ -749,132 +760,7 @@ checkPriceValidation(): void {
   }
 }
 
-  // FIXED: Add category method with immediate refresh
-  addCategory() {
-    let categoryData = { ...this.productData.productCategory };
-    categoryData.endDate = new Date(categoryData.endDate).toISOString();
-
-    if (this.checkForEmptyFields(categoryData, ['endDate', 'description'])) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Category name and code are required.',
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    this.savingCategory = true;
-    this.posService.addCategory(categoryData).subscribe(
-      (data) => {
-        if (data) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Category Added',
-            detail: 'Category added successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          
-          // Refresh categories immediately
-          this.refreshCategories();
-          
-          // Reset form and close modal
-          this.productData.productCategory = {
-            id: 0,
-            name: '',
-            code: '',
-            description: '',
-            endDate: this._defaultExpiryDate.toISOString(),
-          };
-          this.openAddCategory = false;
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'Failed to add category. Please try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-        this.savingCategory = false;
-      },
-      (error: HttpErrorResponse) => {
-        this.savingCategory = false;
-        this.handleError(error, 'category');
-      }
-    );
-  }
-
-  // FIXED: Add discount method with immediate refresh
-  addDiscount() {
-    let discountObj = this.discount;
-
-    const discountDetails: DiscountDTO = {
-      id: discountObj.id,
-      name: discountObj.name,
-      value: discountObj.value,
-      discountType: discountObj.discountType,
-      endDate: discountObj.endDate,
-      startDate: discountObj.startDate,
-      minQuantity: discountObj.minQuantity,
-    };
-
-    if (!discountDetails.name || discountDetails.value === null) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Discount name and value are required.',
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    this.savingDiscount = true;
-    this.posService.addDiscount(discountDetails).subscribe(
-      (data) => {
-        if (data) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Discount Added',
-            detail: 'Discount added successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          
-          // Refresh discounts immediately
-          this.refreshDiscounts();
-          
-          // Reset form and close modal
-          this.discount = {
-            id: 0,
-            name: '',
-            value: 0,
-            startDate: new Date(),
-            endDate: new Date(),
-            minQuantity: 0,
-            discountType: [],
-          };
-          this.openAddDiscount = false;
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'Failed to add discount. Please try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-        this.savingDiscount = false;
-      },
-      (error: HttpErrorResponse) => {
-        this.savingDiscount = false;
-        this.handleError(error, 'discount');
-      }
-    );
-  }
+  
 
     // Refresh methods that force data reload
   private refreshCategories() {
@@ -1269,66 +1155,77 @@ checkPriceValidation(): void {
     }
   }
 
-  private initializeProductImages() {
-    console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
-    
-    // Reset
-    this.productImages = [];
-    this.mainProductImage = '';
+private initializeProductImages() {
+  console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
+  
+  // Reset
+  this.productImages = [];
+  this.mainProductImage = '';
 
-    // Check if we have product images in the expected format
-    if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
-      console.log('✅ Found product images array:', this.activeItem.productImages);
-      
-      // Process each image
-      this.activeItem.productImages.forEach((imageItem: any, index: number) => {
-        try {
-          const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
-          console.log(`🖼️ Image ${index} URL:`, imageUrl);
+  // Check if we have product images in the expected format
+  if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
+    console.log('✅ Found product images array:', this.activeItem.productImages);
+    
+    // Process each image
+    this.activeItem.productImages.forEach((imageItem: any, index: number) => {
+      try {
+        const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
+        console.log(`🖼️ Image ${index} URL:`, imageUrl);
+        
+        if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
+          const imageData = {
+            file: null,
+            url: imageUrl
+          };
           
-          if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
-            const imageData = {
-              file: null,
-              url: imageUrl
-            };
-            
-            this.productImages.push(imageData);
-            
-            // Set the first image as main
-            if (!this.mainProductImage) {
-              this.mainProductImage = imageUrl;
-              console.log('✅ Set as main image:', imageUrl);
-            }
-          } else {
-            console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
+          this.productImages.push(imageData);
+          
+          // Set the first image as main if no main image is set
+          if (index === 0 && !this.mainProductImage) {
+            this.mainProductImage = imageUrl;
+            console.log('✅ Set first image as main image:', imageUrl);
           }
-        } catch (error) {
-          console.error(`❌ Error processing image ${index}:`, error);
+        } else {
+          console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
         }
-      });
-    } else {
-      console.log('❌ No valid product images found in activeItem');
-    }
-
-    // If no images were processed successfully, use placeholder
-    if (this.productImages.length === 0) {
-      console.log('⚠️ No valid images processed, using placeholder');
-      this.mainProductImage = this.getPlaceholderImage();
-      this.productImages.push({
-        file: null,
-        url: this.mainProductImage
-      });
-    }
-
-    console.log('📊 FINAL STATE:', {
-      mainProductImage: this.mainProductImage,
-      productImagesCount: this.productImages.length,
-      productImages: this.productImages.map(img => img.url)
+      } catch (error) {
+        console.error(`❌ Error processing image ${index}:`, error);
+      }
     });
+  } else {
+    console.log('❌ No valid product images found in activeItem');
     
-    this.updateImageFormValidation();
+    // Try alternative image sources
+    if (this.activeItem?.imageUrl) {
+      console.log('🔄 Trying imageUrl property:', this.activeItem.imageUrl);
+      const imageData = {
+        file: null,
+        url: this.activeItem.imageUrl
+      };
+      this.productImages.push(imageData);
+      this.mainProductImage = this.activeItem.imageUrl;
+    }
   }
 
+  // If no images were processed successfully, use placeholder
+  if (this.productImages.length === 0) {
+    console.log('⚠️ No valid images processed, using placeholder');
+    const placeholderUrl = this.getPlaceholderImage();
+    this.mainProductImage = placeholderUrl;
+    this.productImages.push({
+      file: null,
+      url: placeholderUrl
+    });
+  }
+
+  console.log('📊 FINAL STATE:', {
+    mainProductImage: this.mainProductImage,
+    productImagesCount: this.productImages.length,
+    productImages: this.productImages.map(img => img.url)
+  });
+  
+  this.updateImageFormValidation();
+}
   removeImage(index: number) {
     const removedImage = this.productImages[index];
 
@@ -1447,57 +1344,70 @@ checkPriceValidation(): void {
     this.mainProductImage = '';
   }
 
-  getMainImage(): string {
-    console.log('🖼️ getMainImage() called - Current state:', {
-      mainProductImage: this.mainProductImage,
-      productImagesLength: this.productImages.length,
-      hasActiveItem: !!this.activeItem
-    });
+getMainImage(): string {
+  console.log('🖼️ getMainImage() called - Current state:', {
+    mainProductImage: this.mainProductImage,
+    productImagesLength: this.productImages.length,
+    hasActiveItem: !!this.activeItem,
+    isEditMode: this.isEditMode
+  });
 
-    // Priority 1: Use mainProductImage if it's set and not placeholder
-    if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
-      console.log('✅ Using mainProductImage:', this.mainProductImage);
-      return this.mainProductImage;
-    }
-    
-    // Priority 2: Use first image from productImages array
-    if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
-      const firstImage = this.productImages[0].url;
-      console.log('✅ Using first image from productImages:', firstImage);
+  // Priority 1: Use explicitly set mainProductImage
+  if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
+    console.log('✅ Using explicitly set mainProductImage:', this.mainProductImage);
+    return this.mainProductImage;
+  }
+  
+  // Priority 2: In edit mode, try to get from productImages array
+  if (this.isEditMode && this.productImages.length > 0) {
+    const firstImage = this.productImages[0].url;
+    if (firstImage && firstImage !== this.getPlaceholderImage()) {
+      console.log('✅ Using first image from productImages in edit mode:', firstImage);
+      // Also update the mainProductImage for consistency
+      this.mainProductImage = firstImage;
       return firstImage;
     }
+  }
+  
+  // Priority 3: Try to construct from activeItem in edit mode
+  if (this.isEditMode && this.activeItem) {
+    console.log('🔄 Trying to construct image from activeItem in edit mode...');
     
-    // Priority 3: In edit mode, try to construct from activeItem directly
-    if (this.isEditMode && this.activeItem) {
-      console.log('🔄 Trying to construct image from activeItem...');
+    // Try productImages array first
+    if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+      const firstImageItem = this.activeItem.productImages[0];
+      const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
+      console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
       
-      // Try productImages array first
-      if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-        const firstImageItem = this.activeItem.productImages[0];
-        const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
-        console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
-        
-        if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
-          // Update our local state with this constructed URL
-          this.mainProductImage = constructedUrl;
-          if (this.productImages.length === 0) {
-            this.productImages.push({ file: null, url: constructedUrl });
-          }
-          return constructedUrl;
+      if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
+        // Update our local state with this constructed URL
+        this.mainProductImage = constructedUrl;
+        if (this.productImages.length === 0) {
+          this.productImages.push({ file: null, url: constructedUrl });
         }
-      }
-      
-      // Try direct imageUrl property
-      if (this.activeItem.imageUrl) {
-        console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
-        return this.activeItem.imageUrl;
+        return constructedUrl;
       }
     }
     
-    // Final fallback: placeholder
-    console.log('⚠️ Using placeholder image as fallback');
-    return this.getPlaceholderImage();
+    // Try direct imageUrl property
+    if (this.activeItem.imageUrl) {
+      console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
+      this.mainProductImage = this.activeItem.imageUrl;
+      return this.activeItem.imageUrl;
+    }
   }
+  
+  // Priority 4: Use first image from productImages array (for non-edit mode)
+  if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
+    const firstImage = this.productImages[0].url;
+    console.log('✅ Using first image from productImages:', firstImage);
+    return firstImage;
+  }
+  
+  // Final fallback: placeholder
+  console.log('⚠️ Using placeholder image as fallback');
+  return this.getPlaceholderImage();
+}
 
   handleImageError(event: any) {
     console.log('Image failed to load, using placeholder');
@@ -2674,6 +2584,99 @@ async updateProduct() {
     this.openAddVariant = true;
   }
 
+  addCategory() {
+    let categoryData = { ...this.productData.productCategory };
+    // The inputted date would be something like `2025-06-07` so we need to force it to an iso string
+    categoryData.endDate = new Date(categoryData.endDate).toISOString();
+
+    if (this.checkForEmptyFields(categoryData, ['endDate', 'description'])) {
+      console.log('all fields are required');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'warn',
+        detail: 'All fields are required',
+        key: 'tl',
+        life: 3000,
+      });
+    } else {
+      this.posService.addCategory(categoryData).subscribe(
+        async (data) => {
+          console.log(data);
+          if (data) {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Category Added',
+              detail: 'Category added successfully.',
+              key: 'tl',
+              life: 3000,
+            });
+             categoryData = {
+              id: 0,
+              name: '',
+              code: '',
+              description: '',
+              endDate: '',
+            };
+            // this.categories.push(data);
+            this.metadataService.addCategoryToState(data) 
+
+            categoryData = {
+              id: 0,
+              name: '',
+              code: '',
+              description: '',
+              endDate: '',
+            };
+          } else {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Failed',
+              detail: 'Failed, please try again.',
+              key: 'tl',
+              life: 3000,
+            });
+          }
+        },
+        (error: HttpErrorResponse) => {
+          if (error.status === 500) {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Authentication Failed',
+              detail: 'Check form details and try again.',
+              key: 'tl',
+              life: 3000,
+            });
+          } else if (error.status === 404) {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Authentication Failed',
+              detail: 'Error, try again.',
+              key: 'tl',
+              life: 3000,
+            });
+          } else if (error.status === 0) {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Server Unreachable',
+              detail:
+                'Unable to connect to the server. Please check your internet connection.',
+              key: 'tl',
+              life: 3000,
+            });
+          } else {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'An unexpected error occurred.',
+              key: 'tl',
+              life: 3000,
+            });
+          }
+        }
+      );
+    }
+  }
+
   removeCategory(id: number) {
     this.posService.deleteCategory(id).subscribe(async (data) => {
       if (data) {
@@ -2693,6 +2696,8 @@ async updateProduct() {
           key: 'tl',
           life: 3000,
         });
+
+        this.metadataService.removeCategoryFromState(id);
       }
     });
   }
@@ -2706,6 +2711,102 @@ async updateProduct() {
 
   toggleCategoryDropdown() {
     this.openCategories = !this.openCategories;
+  }
+
+  addDiscount() {
+    let discountObj = this.discount;
+
+    const discountDetails = {
+      id: discountObj.id,
+      name: discountObj.name,
+      value: discountObj.value,
+      // discountType: discountObj.discountType,
+      endDate: discountObj.endDate,
+      startDate: discountObj.startDate,
+      minQuantity: discountObj.minQuantity,
+    };
+
+    this.posService.addDiscount(discountDetails).subscribe(
+      async (data) => {
+        console.log(data);
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Discount Added',
+            detail: 'Discount added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          // this.getDiscounts();
+          // TODO: Check whether this piece of code is worth it...
+          discountObj = {
+            id: 0,
+            name: '',
+            value: 0,
+            startDate: new Date(),
+            endDate: new Date(),
+            minQuantity: 0,
+            discountType:[],
+          };
+
+          this.metadataService.addDiscountToState(data)
+
+          discountObj = {
+            id: 0,
+            name: '',
+            value: 0,
+            startDate: new Date(),
+            endDate: new Date(),
+            minQuantity: 0,
+            discountType:[],
+          };
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed, please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      },
+      (error: HttpErrorResponse) => {
+        if (error.status === 500) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Check form details and try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 404) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Error, try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 0) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Server Unreachable',
+            detail:
+              'Unable to connect to the server. Please check your internet connection.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'An unexpected error occurred.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      }
+    );
   }
 
   selectDiscount(discount: any) {

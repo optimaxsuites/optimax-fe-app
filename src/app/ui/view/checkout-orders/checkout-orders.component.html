@@ -1,5 +1,3 @@
-<app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
-
 <!-- Top bar -->
 <div class="w-full px-4 md:px-10 mt-6 md:mt-10 flex flex-col gap-4 md:gap-6">
   <!-- Title -->
@@ -244,7 +242,7 @@
   <ng-template pTemplate="body" let-order let-columns="columns">
   
   <tr (click)="orderDetails(order)" style="cursor:pointer">
-    <td>{{ formatDate(order?.transactionDate) | date:'medium' }}</td>
+    <td>{{ formatDate(order?.transactionDate || order.createdDate) | date:'medium' }}</td>
     <td>
       <span [ngClass]="{
             'text-orange-500': order?.status === 'UNPAID',
@@ -252,22 +250,22 @@
             'text-blue-500': order?.status === 'PENDING'
           }"
           class="font-bold">
-        {{ order?.status }}
+        {{ order?.status || order.orderStatus }}
       </span>
     </td>
-    <td class="capitalize">{{ order?.order?.orderNumber }}</td>
+    <td class="capitalize">{{ order?.order?.orderNumber || order.orderNumber }}</td>
     <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
     <td>₦{{ calculateOrderTax(order?.order) | number:'1.2-2' }}</td>
     <td class="font-semibold">₦{{ calculateOrderTotalWithTax(order?.order) | number:'1.2-2' }}</td>
     <td>
       <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
-        <i *ngIf="order?.status === 'UNPAID'"
+        <i *ngIf="order?.orderStatus === 'UNPAID'"
            class="fa-solid fa-cart-shopping hover:bg-green-100 p-2 rounded-md transition-colors"
            (click)="reOpenCart(order)"></i>
         <i class="fa-solid fa-arrow-right hover:bg-blue-100 rounded-md p-2 transition-colors"
            (click)="toggleShowOfflineRecords(order)"></i>
 
-        <i class="fa-solid fa-arrows-rotate hover:bg-blue-100 rounded-md p-2 transition-colors"
+        <i class="fa-solid fa-arrows-rotate hover:bg-blue-100 rounded-md p-2 transition-colors" *ngIf="order?.orderStatus !== 'UNPAID'"
            (click)="syncOrder(order)"></i>
       </div>
     </td>
@@ -299,7 +297,7 @@
     <div class="grid grid-cols-2 gap-4 mb-4 border-b pb-3">
       <div>
         <p class="text-sm text-gray-500">Transaction Date</p>
-        <p class="font-semibold">{{ selectedOrder.transactionDate | date:'fullDate' }}</p>
+        <p class="font-semibold">{{ selectedOrder.transactionDate || selectedOrder.createdDate | date:'fullDate' }}</p>
       </div>
       <div>
         <p class="text-sm text-gray-500">Status</p>
@@ -308,7 +306,7 @@
           'text-green-600': selectedOrder.status === 'PAID',
           'text-blue-500': selectedOrder.status === 'PENDING'
         }" class="font-bold text-lg">
-          {{ selectedOrder.status }}
+          {{ selectedOrder.status || selectedOrder.orderStatus }}
         </span>
       </div>
       <div *ngIf="selectedOrder.syncFailed">
@@ -329,7 +327,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of selectedOrder.order.orderItem" class="border-t hover:bg-gray-50">
+          <tr *ngFor="let item of selectedOrder?.order?.orderItem" class="border-t hover:bg-gray-50">
+            <td class="p-3">
+            {{ item.productId }}
+              <span *ngIf="item.productVariantId" class="text-xs text-gray-500 block">
+                /{{ item.productVariantId }}
+              </span>
+            </td>
+            <!-- <td class="p-3 text-sm">{{ item.name }}</td> -->
+            <td class="p-3 ">{{ item.quantity }}</td>
+            <td class="p-3 ">₦{{ item.totalPrice | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngFor="let item of selectedOrder?.orderItem" class="border-t hover:bg-gray-50">
             <td class="p-3">
             {{ item.productId }}
               <span *ngIf="item.productVariantId" class="text-xs text-gray-500 block">
@@ -358,4 +367,4 @@
   <div *ngIf="!selectedOrder" class="p-4 text-center text-gray-500">
     <p>Loading order details...</p>
   </div>
-</app-modal>
+</app-modal>               

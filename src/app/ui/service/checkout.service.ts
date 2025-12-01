@@ -45,36 +45,9 @@ saveOrder(data: OrderPOST): Observable<any> {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
 
+  // **UPDATED** to throw the full HttpErrorResponse object
   private handleError(error: HttpErrorResponse) {
     console.log(error)
-    let errorMessage = "An unknown error occurred!";
-    if (error.error instanceof ErrorEvent) {
-      // Client-side error
-      errorMessage = `Error: ${error.error.message}`;
-    } else {
-      // Server-side error
-      if (error.status === 500) {
-        errorMessage =
-          "Server error: " + error.error.message ||
-          "Check form details and try again.";
-      } else if (error.error){
-          if (typeof error.error === 'string') {
-                errorMessage = error.error;
-            } else if (error.error.message) {
-                errorMessage = error.error.message;
-            } else {
-                errorMessage = JSON.stringify(error.error);
-            }
-      }
-      else if (error.status === 404) {
-        errorMessage = "Resource not found. Please try again.";
-      } else if (error.status === 0) {
-        errorMessage =
-          "Unable to connect to the server. Please check your internet connection.";
-      } else {
-        errorMessage = error.error.message || "An unexpected error occurred.";
-      }
-    }
-    return throwError(() => errorMessage);
+    return throwError(() => error); // <-- Throw the full error object
   }
 }

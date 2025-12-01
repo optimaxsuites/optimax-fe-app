@@ -57,48 +57,103 @@ export class TaxComponent {
     };
   }
 
-  addTax() {
-    if (!this.taxData.name || this.taxData.rate === null || this.taxData.rate === undefined) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Tax name and rate are required.',
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
 
-    this.savingTax = true;
-    
-    const taxPayload: any = {
-      name: this.taxData.name,
-      rate: this.taxData.rate
-    };
-    
-    if (this.taxData.description && this.taxData.description.trim() !== '') {
-      taxPayload.description = this.taxData.description;
-    }
-
-    this.posService.addTax(taxPayload).subscribe({
-      next: (data) => {
+ removeTax(id: number|undefined) {
+    this.posService.deleteTax(id).subscribe(async (data) => {
+      if (data) {
         this.messageService.add({
-          severity: 'success',
-          summary: 'Tax Added',
-          detail: 'Tax added successfully.',
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'Failed to delete supplier.',
           key: 'tl',
           life: 3000,
         });
-        this.refreshTaxes();
-        this.taxData = { name: '', rate: 0, description: '' };
-        this.savingTax = false;
-      },
-      error: (error: HttpErrorResponse) => {
-        this.savingTax = false;
-        this.handleError(error, 'tax');
+      } else {
+        this.taxes = this.taxes.filter(tax => tax.id !== id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tax deleted',
+          detail: 'Tax deleted successfully.',
+          key: 'tl',
+          life: 3000,
+        });
+
+        this.metadataService.removeTaxFromState(id);
       }
     });
   }
+
+ addTax() {
+
+
+    this.posService.addTax(this.taxData).subscribe(
+      async (data) => {
+        console.log(data);
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Tax Added',
+            detail: 'Tax added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          // this.getDiscounts();
+          // TODO: Check whether this piece of code is worth it...
+          this.taxes.push(data)
+          this.taxData = {
+            name: '',
+            rate: 0,
+            
+          };
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed, please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      },
+      (error: HttpErrorResponse) => {
+        if (error.status === 500) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Check form details and try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 404) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Error, try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 0) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Server Unreachable',
+            detail:
+              'Unable to connect to the server. Please check your internet connection.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'An unexpected error occurred.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      }
+    );
+  }
+
 
   updateTax() {
     if (!this.taxData.name || this.taxData.rate === null || this.taxData.rate === undefined) {

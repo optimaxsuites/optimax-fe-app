@@ -6,6 +6,8 @@ import {
 	VariantDTO,
 } from "../models/interface";
 import { arrayToDate } from "../shared";
+import { ImageCacheService } from "./image-cache.service";
+import { forkJoin } from "rxjs";
 
 // A bunch of helper utilities to reduce repetition
 
@@ -35,7 +37,7 @@ type ProductAndVariantData = {
 	providedIn: "root",
 })
 export class ProductHelperService {
-	constructor() {}
+	constructor(private imageCacheService: ImageCacheService) {}
 	//TODO: Add caching
 
 	/** Gets the regular data of a product but uses the selected variant's own data to override it if need be.
@@ -171,5 +173,15 @@ export class ProductHelperService {
 
 		if (variants?.length) return { isVariant: true, variants };
 		else return { isVariant: false };
+	}
+
+
+	getImageUrls(productImages: any) {
+		const observables = productImages.map((image: { imgNo: any; }) => {
+			const imageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${image.imgNo}`;
+			return this.imageCacheService.getImage(imageUrl);
+		  });
+		
+		  return forkJoin(observables);
 	}
 }

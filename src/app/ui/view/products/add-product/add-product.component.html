@@ -125,40 +125,37 @@
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Cost Price -->
-          <div>
-            <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
-              Cost Price <span class="text-red-500">*</span>
-            </label>
-            <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"
-              [class.border-red-300]="isFieldInvalidAndTouched('costPrice')"
-              [class.border-green-300]="productForm.get('costPrice')?.valid && productForm.get('costPrice')?.touched"></p-inputNumber>
+<!-- Cost Price -->
+<div>
+  <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
+    Cost Price <span class="text-red-500">*</span>
+  </label>
+  <p-inputNumber 
+    formControlName="costPrice" 
+    mode="decimal" 
+    [min]="0" 
+    styleClass="w-full"
+    [class.border-red-300]="isFieldInvalidAndTouched('costPrice')"
+    [class.border-green-300]="productForm.get('costPrice')?.valid && productForm.get('costPrice')?.touched"
+    (onBlur)="onPriceFieldBlur()"> <!-- Add blur event -->
+  </p-inputNumber>
+</div>
 
-            <div *ngIf="
-      productForm.get('costPrice')?.invalid &&
-      productForm.get('costPrice')?.touched
-    " class="mt-1 text-sm text-red-500">
-              {{ getErrorMessage("costPrice") }}
-            </div>
-          </div>
-
-          <!-- Selling Price -->
-          <div class="col-span-1">
-            <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
-              Selling Price <span class="text-red-500">*</span>
-            </label>
-            <div class="flex gap-2">
-              <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0" styleClass="w-full"
-                [class.border-red-300]="isFieldInvalidAndTouched('sellingPrice')"
-                [class.border-green-300]="productForm.get('sellingPrice')?.valid && productForm.get('sellingPrice')?.touched"></p-inputNumber>
-            </div>
-            <div *ngIf="
-      productForm.get('sellingPrice')?.invalid &&
-      productForm.get('sellingPrice')?.touched
-    " class="mt-1 text-sm text-red-500">
-              {{ getErrorMessage("sellingPrice") }}
-            </div>
-          </div>
+<!-- Selling Price -->
+<div class="col-span-1">
+  <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
+    Selling Price <span class="text-red-500">*</span>
+  </label>
+  <p-inputNumber 
+    formControlName="sellingPrice" 
+    mode="decimal" 
+    [min]="0" 
+    styleClass="w-full"
+    [class.border-red-300]="isFieldInvalidAndTouched('sellingPrice')"
+    [class.border-green-300]="productForm.get('sellingPrice')?.valid && productForm.get('sellingPrice')?.touched"
+    (onBlur)="onPriceFieldBlur()"> <!-- Add blur event -->
+  </p-inputNumber>
+</div>
           <!-- sellingPrice -->
           <!-- <div class="col-span-1">
             <label
@@ -187,25 +184,25 @@
           </div> -->
 
           <!-- Add this after the selling price field -->
-          <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
-            class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
-       'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
-       'bg-red-50 border-red-200': calculatePriceDifference() < 0
-     }">
-            <div class="flex justify-between items-center">
-              <span class="text-sm font-medium">Profit/Loss:</span>
-              <span [ngClass]="{
+  <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
+  class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
+   'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
+   'bg-red-50 border-red-200': calculatePriceDifference() < 0
+ }">
+  <div class="flex justify-between items-center">
+    <span class="text-sm font-medium">Profit/Loss:</span>
+    <span [ngClass]="{
       'text-green-600 font-semibold': calculatePriceDifference() >= 0,
       'text-red-600 font-semibold': calculatePriceDifference() < 0
     }">
-                {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
-                ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
-              </span>
-            </div>
-            <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
-              ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
-            </div>
-          </div>
+      {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
+      ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
+    </span>
+  </div>
+  <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
+    ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
+  </div>
+</div>
 
           <!-- quantity -->
           <div>
@@ -239,26 +236,39 @@
           </div>
 
           <!-- Discount -->
-          
-<div>
-  <label for="discount" class="block text-sm font-medium text-gray-700 mb-1">
-    Discount <span class="text-red-500">*</span>
-  </label>
-  <div class="flex gap-1">
-    <ng-select [items]="discounts" bindLabel="name" formControlName="discount" placeholder="Select discount"
-      class="flex-1"></ng-select>
-    <button class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition" type="button"
-      (click)="openAddDiscount = true">
-      <i class="fa-solid fa-plus"></i>
-    </button>
-  </div>
-  <div *ngIf="
-      productForm.get('discount')?.invalid &&
-      productForm.get('discount')?.touched
-    " class="mt-1 text-sm text-red-500">
-    {{ getErrorMessage("selectedBranch") }}
-  </div>
-</div>
+          <div>
+            <label
+              for="discount"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Discount 
+            </label>
+            <div class="flex gap-1">
+              <ng-select
+                [items]="discounts"
+                bindLabel="name"
+                formControlName="discount"
+                placeholder="Select discount"
+                class="flex-1"
+              ></ng-select>
+              <button
+                class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                type="button"
+                (click)="openAddDiscount = true"
+              >
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div
+              *ngIf="
+                productForm.get('discount')?.invalid &&
+                productForm.get('discount')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("discount") }}
+            </div>
+          </div>
 
           <!-- tax -->
           <div class="col-span-2">
@@ -893,78 +903,86 @@
     </div>
 
     <!-- Left Column - Product Image -->
-    <div class="md:col-span-1">
-      <!-- Product Images Section -->
-      <!-- Product Images Section -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex flex-col items-center gap-4">
-          <!-- Main Image Preview -->
-          <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-            <img class="w-full h-full object-contain" [src]="getMainImage()" (error)="handleImageError($event)"
-              alt="Product main image" />
-          </div>
-
-          <!-- Upload Button -->
-          <label for="image"
-            class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer">
-            <i class="fa-solid fa-upload mr-2"></i> Upload Product Image
-            <span class="text-red-500">*</span>
-          </label>
-          <input type="file" (change)="onImageUpload($event)" id="image" class="hidden" multiple accept="image/*" />
-
-          <!-- Image Grid -->
-          <div *ngIf="productImages.length > 0" class="w-full">
-            <h3 class="text-sm font-medium text-gray-700 mb-3">Product Images</h3>
-            <div class="grid grid-cols-3 gap-4">
-              <div *ngFor="let image of productImages; let i = index" class="flex flex-col items-center">
-                <!-- Image Container -->
-                <div
-                  class="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 mb-2 cursor-pointer"
-                  [class.border-customBlue]="mainProductImage === image.url"
-                  [class.border-gray-200]="mainProductImage !== image.url" (click)="setAsMainImage(image.url)">
-                  <img [src]="image.url" [alt]="'Product image ' + (i + 1)" class="w-full h-full object-cover"
-                    (error)="handleImageError($event)" />
-
-                  <!-- Main Image Badge -->
-                  <div *ngIf="mainProductImage === image.url"
-                    class="absolute top-1 left-1 bg-customBlue text-white text-xs px-2 py-1 rounded-full">
-                    Main
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex gap-2 w-full justify-center">
-                  <!-- Remove Button -->
-                  <button type="button"
-                    class="flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition"
-                    (click)="removeImage(i)">
-                    <i class="fa-solid fa-trash text-xs"></i>
-                    Delete
-                  </button>
-                </div>
+  <div class="md:col-span-1">
+  <!-- Product Images Section -->
+  <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+    <div class="flex flex-col items-center gap-4">
+      <!-- Main Image Preview -->
+      <div
+        class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden"
+      >
+        <img
+          class="w-full h-full object-contain"
+          [src]=" mainProductImage || (isEditMode ? getLastImage() : '') || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s' "
+          (error)="handleImageError($event)"
+          alt="product image"
+        />
+      </div>
+      
+      <!-- Upload Button -->
+      <label
+        for="image"
+        class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer"
+      >
+        <i class="fa-solid fa-upload mr-2"></i> Upload Product Image
+        <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="file"
+        (change)="onImageUpload($event)"
+        id="image"
+        class="hidden"
+        multiple
+        accept="image/*"
+      />
+      
+      <!-- Image Grid with External Buttons -->
+      <div *ngIf="productImages.length > 0" class="w-full">
+        <h3 class="text-sm font-medium text-gray-700 mb-3">Product Images</h3>
+        <div class="grid grid-cols-3 gap-4">
+          <div
+            *ngFor="let image of productImages; let i = index"
+            class="flex flex-col items-center"
+          >
+            <!-- Image Container -->
+            <div 
+              class="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 mb-2"
+              [class.border-customBlue]="mainProductImage === image.url"
+              [class.border-gray-200]="mainProductImage !== image.url"
+            >
+              <img
+                [src]="getEditImage(image) | async" 
+                [alt]="'Product image ' + (i + 1)"
+                class="w-full h-full object-cover"
+              />
+              
+              <!-- Main Image Badge (Inside) -->
+              <div
+                *ngIf="mainProductImage === image.url"
+                class="absolute top-1 left-1 bg-customBlue text-white text-xs px-2 py-1 rounded-full"
+              >
+                Main
               </div>
             </div>
 
-            <!-- Clear All Images Button -->
-            <div class="mt-4 flex justify-end">
-              <button type="button" class="text-sm text-red-600 hover:text-red-800 flex items-center gap-1 transition"
-                (click)="clearAllImages()">
-                <i class="fa-solid fa-trash"></i>
-                Clear All Images
-              </button>
+            <div *ngIf="
+          productForm.get('image')?.invalid &&
+          productForm.get('image')?.touched
+        " class="text-sm text-red-500">
+              At least one image is required.
             </div>
-          </div>
-
-          <div *ngIf="
-        productForm.get('image')?.invalid &&
-        productForm.get('image')?.touched
-      " class="text-sm text-red-500">
-            At least one image is required.
           </div>
         </div>
       </div>
     </div>
   </div>
+  </div>
+
+  </div>
+
+  
+
+
 
   <!-- Branch Pricing Table -->
   <div *ngIf="selecteddBranch?.length > 1 && !isEditMode"
@@ -1362,11 +1380,11 @@
       </ng-select>
     </div>
 
-    <div *ngIf="discount?.discountType?.includes(1)">
-      <div>
-        <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
-          Discount validity period
-        </p>
+    <div  *ngIf="discount?.discountType?.includes(1)">
+    <div>
+      <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
+        Discount validity period
+      </p>
 
         <div class="flex gap-4 items-center w-full">
           <div class="detailDiv w-full">
@@ -1379,7 +1397,7 @@
           </div>
         </div>
       </div>
-    </div> 
+    </div>
 
     <div *ngIf="discount?.discountType?.includes(2)">
       <div>
@@ -1389,7 +1407,21 @@
         </div>
       </div>
     </div>
-  </div> 
+    </div>
+
+    <div *ngIf="discount?.discountType?.includes(2)">
+    <div>
+      <div class="detailDiv w-full">
+        <label for="minQuantity">Minimum quantity</label>
+        <input
+          type="text"
+          id="minQuantity"
+          formControlName="discountMinQuantity"
+          class="name editInput"
+        />
+      </div>
+    </div>
+    </div>
 </app-side-modal>
 
 <app-side-modal *ngIf="openAddSupplier" (close)="openAddSupplier = false">

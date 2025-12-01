@@ -1,9 +1,19 @@
 <header class="bg-white shadow-sm border-b border-gray-200 py-2">
   <!-- Desktop Layout (unchanged) -->
   <div class="hidden md:flex w-full items-center justify-between px-[4rem]">
-    <!-- Logo -->
+ <!-- Logo Area - Shows business name if available, otherwise Optimax logo -->
     <div class="flex items-center">
-      <img src="assets/Logo-green.png" alt="Store Logo" class="w-40">
+      @if (hasBusinessName()) {
+        <!-- Show Business Name -->
+        <h1 class="text-2xl font-bold text-customGreen cursor-pointer" 
+           >
+          {{ businessName }}
+        </h1>
+      } @else {
+        <!-- Show Optimax Logo -->
+        <img src="assets/Logo-green.png" alt="Optimax Store" class="w-40 cursor-pointer"
+            >
+      }
     </div>
 
     <!-- Centered Filters + Search -->
@@ -78,7 +88,7 @@
     [value]="selectedCategory" 
     (change)="onMobileCategoryChange($any($event.target).value)"
   >
-    <option value="All">All Categories</option>
+    <option value="All">All</option>
     @for (category of categoryOptions; track $index) {
       <option [value]="category.value">{{ category.label }}</option>
     }
@@ -87,23 +97,53 @@
   </div>
 }
 
-        <!-- Search Input with Suggestions -->
-        <div class="relative w-[100%]">
-          <input
-            type="text"
-            placeholder="Search products and categories..."
-            class="w-full pl-10 pr-4 py-2 bg-white border border-customBlue focus:border-none rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-customGreen"
-            [value]="searchText"
-            (input)="onSearchInput($any($event.target).value)"
-            (focus)="showSuggestions = true"
-            (blur)="onSearchBlur()"
-            (keydown.arrowdown)="onArrowDown($event)"
-            (keydown.arrowup)="onArrowUp($event)"
-            (keydown.enter)="onSearchEnter()"
-          >
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fa-solid fa-search text-gray-400"></i>
+<!-- Combined Search and Category Filter Container -->
+        <div class="flex items-center w-full max-w-2xl bg-white rounded-lg border border-customBlue overflow-hidden shadow-sm">
+          
+          <!-- Category Filter -->
+          <div class="relative border-r border-gray-300">
+            <select
+              class="appearance-none bg-transparent border-none pl-4 pr-8 py-2 text-gray-700 focus:outline-none focus:ring-0 cursor-pointer min-w-[50px]"
+              [value]="selectedCategory"
+              (change)="onCategoryFilterChange($any($event.target).value)"
+            >
+              <option value="All">All</option>
+              @for (category of categoryOptions; track $index) {
+                <option [value]="category.value">{{ category.label }}</option>
+              }
+            </select>
+            <div class="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+              <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+            </div>
           </div>
+
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search products, categories..."
+              class="w-full pl-14 pr-4 py-2 bg-transparent border-none text-gray-900 focus:outline-none focus:ring-0"
+              [value]="searchText"
+              (input)="onSearchInput($any($event.target).value)"
+              (focus)="showSuggestions = true"
+              (blur)="onSearchBlur()"
+              (keydown.arrowdown)="onArrowDown($event)"
+              (keydown.arrowup)="onArrowUp($event)"
+              (keydown.enter)="onSearchEnter()"
+            >
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fa-solid fa-search text-gray-400"></i>
+            </div>
+          </div>
+
+          <!-- Search Button -->
+          <button 
+            class="bg-customGreen hover:bg-customBlue px-6 py-2 text-white font-medium transition-colors duration-200 flex items-center justify-center min-w-[100px]"
+            (click)="onSearchSubmit()"
+          >
+            <i class="fa-solid fa-search mr-2"></i>
+            Search
+          </button>
 
           <!-- Search Suggestions Dropdown -->
           @if (showSuggestions && searchSuggestions.length > 0) {
@@ -174,7 +214,7 @@
 
         <div>
           <button 
-            class="bg-customGreen hover:bg-customBlue px-6 py-2 rounded-lg text-xl cursor-pointer text-white capitalize shadow-lg"
+            class="bg-customGreen hover:bg-customBlue px-6 py-2 rounded-lg text-xl cursor-pointer text-white capitalize shadow-lg block md:hidden"
             (click)="onSearchSubmit()"
           >
             search
@@ -304,9 +344,19 @@
         <i class="fa-solid fa-bars text-xl text-gray-700"></i>
       </button>
 
-      <!-- Logo -->
+ <!-- Logo Area for Mobile - Shows business name if available, otherwise Optimax logo -->
       <div class="flex items-center">
-        <img src="assets/Logo-green.png" alt="Store Logo" class="w-32">
+        @if (hasBusinessName()) {
+          <!-- Show Business Name -->
+          <h1 class="text-xl font-bold text-customGreen" 
+             >
+            {{ businessName }}
+          </h1>
+        } @else {
+          <!-- Show Optimax Logo -->
+          <img src="assets/Logo-green.png" alt="Optimax Store" class="w-32 cursor-pointer"
+             >
+        }
       </div>
 
       <!-- User & Cart Icons -->

@@ -230,7 +230,8 @@ deleteTax(id: any): Observable<any> {
       switchMap((products: any[]) => {
         console.log(products);
         const enrichedProducts$ = products.map((product) => {
-          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product?.productImages[0]?.imgNo}`;
+          const imageNo = product.productImages[0]?.name === "default_product.jpg" && product.productImages.length > 1 ? product.productImages[1]?.imgNo : product.productImages[0]?.imgNo
+          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageNo}`;
 
           return forkJoin([
             this.imageCacheService.getImage(remoteImageUrl),
@@ -255,6 +256,79 @@ deleteTax(id: any): Observable<any> {
       }),
       catchError((err) => {
         console.error('❌ Error fetching product details:', err);
+        return of([]);
+      })
+    );
+  }
+
+  getFilteredInventoryWithDetails(currentBranchId: number) {
+    return this.getInventories().pipe(
+      map((response: any) => (Array.isArray(response) ? response : [])),
+      map((response: any[]) =>
+        currentBranchId ? response.filter(inv => inv.branch?.id === currentBranchId) : response
+      ),
+      switchMap((products: any[]) => {
+        console.log(products);
+        if (!products || products.length === 0) {
+          return of([]);
+        }
+
+        const enrichedProducts$ = products.map((inventory) => {
+          const product = inventory.product || {};
+          const images = product.productImages || [];
+          // pick imageNo, handle default_product.jpg rule and missing images
+          let imageNo = images.length ? images[0]?.imgNo : undefined;
+          if (images.length > 1 && images[0]?.name === 'default_product.jpg') {
+            imageNo = images[1]?.imgNo ?? imageNo;
+          }
+
+          const id = product?.id || inventory.productId || inventory.id;
+          const code = product?.code || '';
+          const sku = product?.sku || '';
+          const name = product?.name || `Product #${inventory.productId || inventory.id}`;
+          const sellingPrice = Number(product?.sellingPrice || 0);
+          const quantity = inventory.availableQuantity !== undefined && inventory.availableQuantity !== null
+            ? Number(inventory.availableQuantity)
+            : Number(inventory.quantity || 0);
+          const productCategory = product?.productCategory || null;
+          const variants = product?.variants || [];
+          const inventoryId = inventory.id;
+          const branch = inventory.branch || { id: inventory.branchId };
+          const createdDateMs = new Date(inventory.createdDate || Date.now()).getTime();
+          const __inventory = inventory;
+          const __originalProduct = product;
+
+          if (!imageNo) {
+            return of({
+              imageUrl$: 'assets/images/placeholder-product.jpg',
+              id, code, sku, name, sellingPrice, quantity,
+              productCategory, variants, inventoryId, branch, createdDateMs, __inventory, __originalProduct
+            });
+          }
+
+          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageNo}`;
+
+          return this.imageCacheService.getImage(remoteImageUrl).pipe(
+            map(imageUrl$ => ({
+              imageUrl$,
+              id, code, sku, name, sellingPrice, quantity,
+              productCategory, variants, inventoryId, branch, createdDateMs, __inventory, __originalProduct
+            })),
+            catchError((error) => {
+              console.error(`❌ Error enriching product ${name}:`, error);
+              return of({
+                imageUrl$: 'assets/images/placeholder-product.jpg',
+                id, code, sku, name, sellingPrice, quantity,
+                productCategory, variants, inventoryId, branch, createdDateMs, __inventory, __originalProduct
+              });
+            })
+          );
+        });
+
+        return forkJoin(enrichedProducts$);
+      }),
+      catchError((err) => {
+        console.error('❌ Error fetching/enriching products:', err);
         return of([]);
       })
     );
@@ -611,7 +685,7 @@ createStockMovement(data: StockMovementPostBody) {
     purchasePrice: Number(data.purchasePrice ?? 0),
     sellingPrice: Number(data.sellingPrice ?? 0),
     createdDate: data.createdDate,
-    stockMovementsId: 0, 
+    // stockMovementsId: 0, 
     createdById: data.createdById ?? 0, 
     supplierId: data.supplierId ?? null,
     // ingredientId: Number(data.ingredientId ?? 0), 

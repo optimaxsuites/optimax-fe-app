@@ -81,6 +81,16 @@ export class CheckoutOrdersComponent implements OnInit {
         this.isLoading = false;
       }
 
+    if(navigator.onLine){
+    this.metadataService.fetchMetaData();
+    this.metadataService.orders$.subscribe((data: Order[]) => {
+      this.allOrders = Array.isArray(data) ? [...data] : [];
+      this.applyFilters();
+    });
+  }else{
+    this.showOfflineRecord = true
+  }
+
       this.offlineService.getPendingPayments().subscribe((records) => {
         this.offlineRecords$ = records;
       });
@@ -251,6 +261,7 @@ export class CheckoutOrdersComponent implements OnInit {
   }
 
   reOpenCart(order: Order) {
+    console.log(order)
     const checkoutLink = this.navigationLink.getLink('checkoutLink');
     this.router.navigate([checkoutLink], { state: { order } });
   }

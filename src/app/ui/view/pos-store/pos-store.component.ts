@@ -14,6 +14,8 @@ import { isPlatformBrowser } from '@angular/common';
 
 type ProductDataMap = Map<string, ProductData[]>;
 
+
+
 type ConvertedCartProducts = {
   products: ProductData[];
   subtotal: number;
@@ -36,6 +38,11 @@ interface Toast {
   styleUrl: './pos-store.component.scss',
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
+   // WhatsApp configuration
+  whatsappPhone = '1234567890';
+  whatsappMessage = 'Hello! I visited your Angular app and would like to know more information.';
+  whatsappHoverMessage = "Hi, let's chat! We're here to help you with any questions.";
+  
   private _allProducts: ProductData[] = [];
   @ViewChild('allProductsSection') allProductsSection!: ElementRef;
 
@@ -523,9 +530,25 @@ private showAuthModalOnFirstVisit(): void {
     this.metadataService.setSelectedBranch(branch.id);
   }
 
-  onMobileCategoryNavigate(categoryName: string): void {
-    this.navigateToCategoryPage(categoryName);
+onMobileCategoryNavigate(categoryName: string): void {
+  this.navigateToCategoryPage(categoryName);
+}
+
+// And make sure this method exists:
+navigateToCategoryPage(category: string): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  if (currentUuid) {
+    this.router.navigate(
+      ['/store', currentUuid, 'category', category.toLowerCase()],
+      {
+        queryParams: {
+          branch: this.selectedBranch()?.id || '',
+          branchName: this.selectedBranch()?.name || '',
+        },
+      }
+    );
   }
+}
 
   getCategoryList(): string[] {
     const categories: string[] = [];
@@ -554,9 +577,45 @@ private showAuthModalOnFirstVisit(): void {
     return this.totalCartItems();
   }
 
-  addToCart(product: ProductData, variant?: VariantDTO): void {
-    this.cartService.addToCart(product, variant);
+addToCart(product: ProductData, variant?: VariantDTO): void {
+  // Check if product is in stock
+  if (product.quantity === 0) {
+    this.showToast(
+      'Out of Stock',
+      `${product.name} is currently out of stock.`,
+      'warning'
+    );
+    return;
   }
+
+  // Get current quantity in cart
+  const idToUse = variant
+    ? `${product.id}-${variant.id}`
+    : product.id.toString();
+  const currentQuantity = this.cartProducts().get(idToUse)?.quantity || 0;
+
+  // Check if adding would exceed available stock
+  if (currentQuantity >= product.quantity) {
+    this.showToast(
+      'Maximum Quantity Reached',
+      `Only ${product.quantity} items available for ${product.name}.`,
+      'warning'
+    );
+    return;
+  }
+
+  // Add to cart
+  this.cartService.addToCart(product, variant);
+
+  // Show success toast ONLY on mobile (screen width < 768px)
+  if (window.innerWidth < 768) {
+    this.showToast(
+      'Added to Cart! 🛒',
+      `${product.name} has been added to your cart.`,
+      'success'
+    );
+  }
+}
 
   reduceQuantityInCart(product: ProductData): void {
     const idToUse = product.selectedVariants?.[0]
@@ -618,12 +677,20 @@ openAuthModal(mode: 'login' | 'signup' = 'login'): void {
     this.currentPage.set(1);
     this.updatePagination();
   }
-
-  navigateToCheckout(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+navigateToCheckout(): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  if (currentUuid) {
+    // Use the correct route path based on your routing configuration
     this.router.navigate(['/store', currentUuid, 'checkout']);
+  } else {
+    console.error('Store UUID not found');
+    this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');
   }
-
+  
+  // Close cart modals
+  this.isCartOpen = false;
+  this.isCartSidebarVisible = false;
+}
   navigateToProductDetails(productId: number): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
 
@@ -634,20 +701,20 @@ openAuthModal(mode: 'login' | 'signup' = 'login'): void {
     }
   }
 
-  navigateToCategoryPage(category: string): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    if (currentUuid) {
-      this.router.navigate(
-        ['/store', currentUuid, 'category', category.toLowerCase()],
-        {
-          queryParams: {
-            branch: this.selectedBranch()?.id || '',
-            branchName: this.selectedBranch()?.name || '',
-          },
-        }
-      );
-    }
-  }
+  // navigateToCategoryPage(category: string): void {
+  //   const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  //   if (currentUuid) {
+  //     this.router.navigate(
+  //       ['user/checkout/store', currentUuid, 'category', category.toLowerCase()],
+  //       {
+  //         queryParams: {
+  //           branch: this.selectedBranch()?.id || '',
+  //           branchName: this.selectedBranch()?.name || '',
+  //         },
+  //       }
+  //     );
+  //   }
+  // }
 
   nextPage(): void {
     if (this.currentPage() < this.totalPages()) {
@@ -713,7 +780,7 @@ openAuthModal(mode: 'login' | 'signup' = 'login'): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid && searchTerm.trim()) {
       this.router.navigate(
-        ['/store', currentUuid, 'category', 'search-results'],
+        ['user/checkout/store', currentUuid, 'category', 'search-results'],
         {
           queryParams: { search: searchTerm.trim() },
         }

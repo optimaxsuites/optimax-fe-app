@@ -46,13 +46,13 @@ export class OrderDetailComponent {
   // order-detail.component.ts
 
   fetchUserInfo() {
-    const userDataString = sessionStorage.getItem('userBranchInfoRegData'); 
+    const userDataString = sessionStorage.getItem('userPrimaryInfoRegData'); 
     
     if (userDataString) {
       this.userPrimaryInfoRegData = JSON.parse(userDataString);
       
       // Shop Name (ClientType as requested)
-      this.shopName = this.userPrimaryInfoRegData.clientType || 'POS System';
+      this.shopName = this.userPrimaryInfoRegData.companyName || 'POS System';
       
       // Shop Address (Combining address, city, state)
       this.shopAddress = (this.userPrimaryInfoRegData.address || '') + 

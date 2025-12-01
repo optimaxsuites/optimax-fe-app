@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 
@@ -20,7 +20,7 @@ interface CategorySuggestion {
   templateUrl: './store-header.component.html',
   styleUrls: ['./store-header.component.scss']
 })
-export class StoreHeaderComponent implements OnChanges {
+export class StoreHeaderComponent implements OnChanges, OnInit {
   @Input() branches: any[] = [];
   @Input() categoryOptions: any[] = [];
   @Input() selectedCategory: string = 'All';
@@ -39,7 +39,6 @@ export class StoreHeaderComponent implements OnChanges {
   @Output() branchChange = new EventEmitter<any>();
   @Output() productSelect = new EventEmitter<number>(); 
   @Output() searchSubmit = new EventEmitter<string>();
-  // NEW: Add toast output
   @Output() showToast = new EventEmitter<{title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}>();
 
   // Desktop state
@@ -59,13 +58,58 @@ export class StoreHeaderComponent implements OnChanges {
   isMobileMenuOpen = false;
   isMobile = false;
 
+  // Business info from sessionStorage
+  businessInfo: any = null;
+  businessName: string | null = null;
+
+  // Make route public or create a getter for the UUID
+  currentStoreUuid: string | null = null;
+
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute // Keep this private, we'll use a getter
   ) {}
 
   ngOnInit(): void {
     this.checkScreenSize();
+    this.loadBusinessInfo();
+    this.loadCurrentStoreUuid();
+  }
+
+  // NEW: Public getter for the store UUID
+  get storeUuid(): string | null {
+    return this.route.snapshot.paramMap.get('uuid');
+  }
+
+  // Alternative: Load UUID on init
+  private loadCurrentStoreUuid(): void {
+    this.currentStoreUuid = this.route.snapshot.paramMap.get('uuid');
+  }
+
+  private loadBusinessInfo(): void {
+    const userInfoString = sessionStorage.getItem("userBranchInfoRegData");
+    if (userInfoString) {
+      try {
+        this.businessInfo = JSON.parse(userInfoString);
+        this.businessName = this.businessInfo?.fullname || 
+                           this.businessInfo?.businessName || 
+                           this.businessInfo?.name || 
+                           this.businessInfo?.storeName || 
+                           null;
+        
+        console.log('Business name loaded:', this.businessName);
+      } catch (error) {
+        console.error('Error parsing business info:', error);
+        this.businessName = null;
+      }
+    } else {
+      console.log('No business info found in sessionStorage');
+      this.businessName = null;
+    }
+  }
+
+  hasBusinessName(): boolean {
+    return !!this.businessName && this.businessName.trim().length > 0;
   }
 
   @HostListener('window:resize')
@@ -90,17 +134,20 @@ export class StoreHeaderComponent implements OnChanges {
     }
   }
 
-  // NEW: Handle toast events from auth modal
   onShowToast(event: {title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}): void {
     this.showToast.emit(event);
   }
 
   onMobileCategoryChange(category: string): void {
     console.log('Mobile category change:', category);
+    
     if (category && category !== 'All') {
       this.navigateToCategoryPage(category);
     } else {
-      this.onCategoryChange(category);
+      const currentUuid = this.storeUuid;
+      if (currentUuid) {
+        this.router.navigate(['/store', currentUuid]);
+      }
     }
     this.closeMobileMenu();
   }
@@ -235,7 +282,7 @@ export class StoreHeaderComponent implements OnChanges {
   }
 
   navigateToCategoryPage(categoryName: string): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    const currentUuid = this.storeUuid;
     if (currentUuid) {
       this.router.navigate(['/store', currentUuid, 'category', categoryName.toLowerCase()], {
         queryParams: { 
@@ -245,7 +292,7 @@ export class StoreHeaderComponent implements OnChanges {
       });
     }
   }
-
+  
   selectProductSuggestion(product: ProductSuggestion): void {
     this.searchText = '';
     this.showSuggestions = false;
@@ -272,52 +319,43 @@ export class StoreHeaderComponent implements OnChanges {
     this.isAuthModalOpen = false;
   }
 
-handleLogin(credentials: {username: string, password: string}): void {
-  console.log('Login attempt:', credentials);
-  
-  // Emit to parent component to handle the actual login
-  this.userAction.emit();
-  
-  // Store user data in localStorage
-  const userData = { name: credentials.username, isGuest: false };
-  localStorage.setItem('currentUser', JSON.stringify(userData));
-  
-  this.user = userData;
-  this.closeAuthModal();
-  
-  // Show toast via parent component
-  const greeting = this.getTimeBasedGreeting();
-  this.showToast.emit({
-    title: `Welcome Back! 🎉`,
-    message: `${greeting}, ${credentials.username}! Great to see you again.`,
-    type: 'success'
-  });
-}
+  handleLogin(credentials: {username: string, password: string}): void {
+    console.log('Login attempt:', credentials);
+    
+    this.userAction.emit();
+    
+    const userData = { name: credentials.username, isGuest: false };
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    
+    this.user = userData;
+    this.closeAuthModal();
+    
+    const greeting = this.getTimeBasedGreeting();
+    this.showToast.emit({
+      title: `Welcome Back! 🎉`,
+      message: `${greeting}, ${credentials.username}! Great to see you again.`,
+      type: 'success'
+    });
+  }
 
-// Update handleSignup similarly
-handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
-  console.log('Signup attempt:', userData);
-  
-  // Emit to parent component
-  this.userAction.emit();
-  
-  // Store user data in localStorage
-  const userInfo = { name: userData.username, isGuest: false };
-  localStorage.setItem('currentUser', JSON.stringify(userInfo));
-  
-  this.user = userInfo;
-  this.closeAuthModal();
-  
-  // Show toast via parent component
-  const greeting = this.getTimeBasedGreeting();
-  this.showToast.emit({
-    title: 'Account Created! 🎉',
-    message: `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
-    type: 'success'
-  });
-}
-
-
+  handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
+    console.log('Signup attempt:', userData);
+    
+    this.userAction.emit();
+    
+    const userInfo = { name: userData.username, isGuest: false };
+    localStorage.setItem('currentUser', JSON.stringify(userInfo));
+    
+    this.user = userInfo;
+    this.closeAuthModal();
+    
+    const greeting = this.getTimeBasedGreeting();
+    this.showToast.emit({
+      title: 'Account Created! 🎉',
+      message: `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
+      type: 'success'
+    });
+  }
 
   handleGuest(): void {
     this.closeAuthModal();
@@ -329,7 +367,6 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     this.isUserDropdownOpen = false;
     this.closeMobileMenu();
     
-    // NEW: Show logout toast
     this.showToast.emit({
       title: 'Signed Out',
       message: 'You have been successfully signed out. See you again soon!',
@@ -337,8 +374,32 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
     });
   }
 
+  onCategoryFilterChange(category: string): void {
+    console.log('Category filter changed:', category);
+    
+    if (category === 'All') {
+      const currentUuid = this.storeUuid;
+      if (currentUuid) {
+        this.router.navigate(['/store', currentUuid]);
+      }
+    } else {
+      this.navigateToCategoryPage(category);
+    }
+    
+    this.isBranchDropdownOpen = false;
+    this.isUserDropdownOpen = false;
+    this.showSuggestions = false;
+  }
+
   onCategoryChange(category: string): void {
-    this.categoryChange.emit(category);
+    if (category === 'All') {
+      const currentUuid = this.storeUuid;
+      if (currentUuid) {
+        this.router.navigate(['/store', currentUuid]);
+      }
+    } else {
+      this.categoryChange.emit(category);
+    }
     this.closeMobileMenu();
   }
 
@@ -389,25 +450,24 @@ handleSignup(userData: {name: string, username: string, email: string, phone: st
   }
 
   navigateToReturnsRefunds(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    const currentUuid = this.storeUuid;
     
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'return-refund']);
+      this.router.navigate(['user/checkout/store', currentUuid, 'return-refund']);
     } else {
-      this.router.navigate(['/return-refund']);
+      this.router.navigate(['user/checkout/store/return-refund']);
     }
     
     this.isUserDropdownOpen = false;
   }
-
   
   orderHistory(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    const currentUuid = this.storeUuid;
     
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'order-history']);
+      this.router.navigate(['user/checkout/store', currentUuid, 'order-history']);
     } else {
-      this.router.navigate(['/order-history']);
+      this.router.navigate(['user/checkout/store/order-history']);
     }
     
     this.isUserDropdownOpen = false;

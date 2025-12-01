@@ -63,7 +63,7 @@ export function hasOnlyKitchenPermissions(): boolean {
   console.log("activePermissions", activePermissions);
 
   const kitchenPermissions = activePermissions.filter(
-    (p: any) => p.appRegister?.appCode?.startsWith("kitchen")
+    (p: any) => p.appRegister?.appCode?.startsWith("POS_KITCHEN")
   );
 
   console.log("kitchenPermissions", kitchenPermissions);
@@ -71,4 +71,11 @@ export function hasOnlyKitchenPermissions(): boolean {
   if (kitchenPermissions.length === 0) return false;
 
   return activePermissions.length === kitchenPermissions.length;
+}
+
+
+export function getLimitsForModule(moduleName: string) {
+  const cached = localStorage.getItem('plan_limits_map');
+  const mapObj = cached ? JSON.parse(cached) : null
+  return mapObj?.[moduleName] || null;
 }

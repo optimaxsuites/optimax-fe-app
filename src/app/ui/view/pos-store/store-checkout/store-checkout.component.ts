@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
@@ -58,6 +59,7 @@ export class StoreCheckoutComponent implements OnInit {
     private route: ActivatedRoute,
     private imageCacheService: ImageCacheService,
     private cartService: StoreCartService,
+    private location: Location,
     private storeOrderService: StoreOrderService
   ) {}
 
@@ -72,7 +74,7 @@ export class StoreCheckoutComponent implements OnInit {
     this.totalItems = cartData.totalItems;
 
     if (this.cartItems.size === 0) {
-      this.router.navigate(['/store']);
+      this.router.navigate(['user/checkout/store/wqjoq-292h39-saj90-nsau8']);
     }
   }
 
@@ -188,7 +190,7 @@ export class StoreCheckoutComponent implements OnInit {
             const orderId = orderResponse.id || orderResponse.orderId;
 
             this.router.navigate(
-              ['/store', currentUuid, 'order-confirmation', orderId],
+              ['user/checkout/store', currentUuid, 'order-confirmation', orderId],
               {
                 state: {
                   orderData: orderResponse,
@@ -237,7 +239,7 @@ export class StoreCheckoutComponent implements OnInit {
         const orderId = response.id || response.orderId;
 
         this.router.navigate(
-          ['/store', currentUuid, 'order-confirmation', orderId],
+          ['user/checkout/store', currentUuid, 'order-confirmation', orderId],
           {
             state: {
               orderData: response,
@@ -510,13 +512,8 @@ private handleOrderError(error: any): void {
   }
 
   goBack(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    
-    if (currentUuid) {
-      this.router.navigate(['/store', currentUuid]);
-    } else {
-      this.router.navigate(['/store']);
-    }
+    this.location.back()
+ 
   }
 
   // Debug helper method

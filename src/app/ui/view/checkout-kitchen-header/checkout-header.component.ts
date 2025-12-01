@@ -3,10 +3,6 @@ import { Router } from '@angular/router';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper';
-// import { NavigationLinksService } from '../../../../sharedComponent/service/navigation-links/navigation-links.service';
-// import { PosCheckoutPageComponent } from '../../pos-checkout-page.component';
-// import { ImageCacheService } from '../../../../service/image-cache.service';
-
 
 @Component({
   selector: 'app-checkout-kitchen-header',
@@ -19,8 +15,8 @@ export class CheckoutKitchenHeaderComponent {
   @Output() closeRegisterEvent = new EventEmitter<void>();
   @Input() closingAmount: number = 0; // Add this property
   @Input() total: number = 0; // Already exists
- @Output() changeMode = new EventEmitter<"waiter" | "chef" | "cashier">();
- @Input() mode: "waiter" | "chef" | "cashier" = "chef";
+  @Output() changeMode = new EventEmitter<"waiter" | "chef" | "cashier">();
+  @Input() mode: "waiter" | "chef" | "cashier" = "chef";
 
   userInfoRegData: any[] = [];
   userRegData: any = {};
@@ -59,16 +55,6 @@ export class CheckoutKitchenHeaderComponent {
       .getImageAsync('/assets/profile.jpg')
       .then((val) => (this.profileImgUrl = val));
 
-    // if (sessionStorage.getItem("username") == null) {
-    //     console.log(
-    //         "Session Expired.",
-    //         "Your current session has expired. Re-login."
-    //     );
-    //     this.router.navigate([""]);
-    // }
-
-     
-
     this.userInfoRegData = JSON.parse(sessionStorage['userRegData']);
     this.userRegData = this.userInfoRegData;
 
@@ -104,7 +90,6 @@ export class CheckoutKitchenHeaderComponent {
   }
 
   setMode(mode: "waiter" | "chef" | "cashier") {
-    // this.activeMode = mode;
     this.changeMode.emit(mode);
   }
 
@@ -117,7 +102,6 @@ export class CheckoutKitchenHeaderComponent {
     this.showCloseRegisterModal = false;
   }
   
-
 
   logout(): void {
     sessionStorage.removeItem('username');

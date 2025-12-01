@@ -8,14 +8,21 @@ import { v4 as uuidv4 } from 'uuid';
   providedIn: 'root'
 })
 export class OfflineService {
+  private products$ = new BehaviorSubject<any[]>([]);
+  private categories$ = new BehaviorSubject<any[]>([]);
+  private pendingPayments$ = new BehaviorSubject<any[]>([]);
+  private pendingTransactions$ = new BehaviorSubject<any[]>([]);
 
+   constructor(private dbService: NgxIndexedDBService) {
+    this.loadInitialData();
+   }
 
-   constructor(private dbService: NgxIndexedDBService) {}
-
-//  isOffline(){
-//     return navigator.onLine
-//  }
-
+ private async loadInitialData() {
+    this.dbService.getAll('products').subscribe(data => this.products$.next(data));
+    this.dbService.getAll('categories').subscribe(data => this.categories$.next(data));
+    this.dbService.getAll('pendingPayments').subscribe(data => this.pendingPayments$.next(data));
+    this.dbService.getAll('savedTransactions').subscribe(data => this.pendingTransactions$.next(data));
+  }
  async addProduct(product: any) {
 console.log("caching offline")
 
@@ -51,18 +58,69 @@ console.log("caching offline")
     return this.dbService.getAll('categories')
 
   }
+  // async addPendingPayment(payment: any) {
+  //       try {
+  //         return this.dbService.add('pendingPayments', payment).subscribe((result) => {
+  //                 this.pendingPayments$.next([...this.pendingPayments$.value, payment]);
+  //                 return  console.log('result: ', result);
+  //           });
+  //       } catch (error) {
+  //           return console.error("❌ Error saving pending payment:", error);
+  //       }
+  // }
+
   async addPendingPayment(payment: any) {
         try {
-          return this.dbService.add('pendingPayments', payment).subscribe((result) => {
+    const cleanPayment = JSON.parse(JSON.stringify(payment));
+    delete cleanPayment.__dbKey;
+
+    const generatedKey = await firstValueFrom(
+      this.dbService.add('pendingPayments', cleanPayment)
+    );
+
+    const savedPayment = { ...cleanPayment, __dbKey: generatedKey };
+
+    this.pendingPayments$.next([...this.pendingPayments$.value, savedPayment]);
+
+    console.log('✅ Pending payment saved with key:', generatedKey);
+    return generatedKey;
+  } catch (error) {
+    console.error("❌ Error saving pending payment:", error);
+    throw error;
+  }
+}
+
+
+
+
+   async addPendingTransactions(transaction: any) {
+        try {
+          return this.dbService.add('savedTransactions', transaction).subscribe((result) => {
+              this.pendingTransactions$.next([...this.pendingTransactions$.value, transaction]);
             return  console.log('result: ', result);
             });
         } catch (error) {
-            return console.error("❌ Error saving pending payment:", error);
+            return console.error("❌ Error saving transaction:", error);
         }
+    }
+
+
+
+  removePendingTransaction(id: number){
+    return this.dbService.delete('savedTransactions', id).subscribe((successDeleted) => {
+        this.pendingTransactions$.next([...successDeleted]);
+        console.log('success? ', successDeleted);
+    });;    
+  }  
+
+   updatePendingTransaction(payment: any): Observable<any> {
+        return this.dbService.update('savedTransactions', payment);
+      
     }
 
   removePendingPayment(id: number){
     return this.dbService.delete('pendingPayments', id).subscribe((successDeleted) => {
+        this.pendingPayments$.next([...successDeleted]);
         console.log('success? ', successDeleted);
         });;    
   }  
@@ -72,8 +130,15 @@ console.log("caching offline")
     }
 
   getPendingPayments(): Observable<any[]> {
-        return this.dbService.getAll('pendingPayments');
-    }
+        // return this.dbService.getAll('pendingPayments');
+          return this.pendingPayments$.asObservable();
+  }
+
+  getPendingTransactions(): Observable<any[]> {
+        // return this.dbService.getAll('savedTransactions');
+        return this.pendingTransactions$.asObservable();
+  }
+
 
   getPendingPayment(id:any): Observable<any[]> {
         return this.dbService.getByKey('pendingPayments', id);
@@ -81,49 +146,19 @@ console.log("caching offline")
 
   async clearPendingPayments(): Promise<void> {
         await this.dbService.clear('pendingPayments').subscribe((successDeleted) => {
+        this.pendingPayments$.next([]);
         console.log('success? ', successDeleted);
         });
     } 
 
-  addTransaction(transaction: any) {
-    const tx = {
-      ...transaction,
-      id: uuidv4(),
-      createdAt: new Date(),
-      isSynced: false
-    };
-    return this.dbService.add('transactions', tx);
-  }
-
-  getPendingTransactions() {
-  return this.dbService.getAll('transactions').pipe(
-    map((txs: any[]) => txs.filter(t => !t.isSynced))
-  );
+  
+  async clearPendingTransactions(): Promise<void> {
+        await this.dbService.clear('savedTransactions').subscribe((successDeleted) => {
+        this.pendingTransactions$.next([]);
+        console.log('success? ', successDeleted);
+        });
 }
 
-
-  markTransactionSynced(id: string) {
-    return this.dbService.update('transactions', { id, isSynced: true });
-  }
-
-upsertTransaction(transaction: any) {
-  return this.dbService.getByKey('transactions', transaction.id).pipe(
-    switchMap((existing: any) => {
-      if (existing) {
-        const updated = { ...existing, ...transaction, isSynced: false };
-        return this.dbService.update('transactions', updated);
-      } else {
-        const newTx = {
-          ...transaction,
-          id: transaction.id || uuidv4(),
-          createdAt: new Date(),
-          isSynced: false,
-        };
-        return this.dbService.add('transactions', newTx);
-      }
-    })
-  );
-}
 
 async clearProducts() {
   return this.dbService.clear('products').subscribe((successDeleted) => {

@@ -1,7 +1,7 @@
-// product-details.component.ts - CORRECTED VERSION
 import { Component, OnInit, signal, computed, OnDestroy, ElementRef, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { filter, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subscription } from 'rxjs';
 
 import { ProductData, VariantDTO, ProductImageDTO } from '../../../models/interface';
 import { ImageCacheService } from '../../../service/image-cache.service';
@@ -20,7 +20,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   quantity = signal(1);
   storeUuid = '';
 
-  // Cart visibilityng  signals
+  // Cart visibility signals
   isCartOpen = false;
   isCartSidebarVisible = false;
 
@@ -52,10 +52,14 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   selectedCategory = signal('All');
   searchText = signal('');
 
+  // Subscriptions
+  private routeSubscription!: Subscription;
+  private navigationSubscription!: Subscription;
+
   // Computed values
   categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
 
-  // Computed for current selected image - FIXED: No longer affects related products
+  // Computed for current selected image
   currentImage = computed((): ProductImageDTO | undefined => {
     const product = this.product();
     const index = this.selectedImageIndex();
@@ -102,26 +106,65 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.storeUuid = this.route.snapshot.paramMap.get('uuid') || '';
-    const productId = this.route.snapshot.paramMap.get('id');
-
+    
     // Add scroll listener for scroll-to-top button
     this.addScrollListener();
 
-    if (productId) {
-      this.loadProductDetails(parseInt(productId));
-    } else {
-      this.isLoading.set(false);
-    }
+    // Initial load
+    this.loadProductFromRoute();
+
+    // Listen for route changes (when clicking related products)
+    this.routeSubscription = this.route.paramMap
+      .pipe(
+        filter(params => params.has('id')),
+        distinctUntilChanged()
+      )
+      .subscribe(params => {
+        const productId = params.get('id');
+        if (productId) {
+          console.log('Route changed to product ID:', productId);
+          this.loadProductDetails(parseInt(productId));
+        }
+      });
+
+    // Listen for navigation events to handle browser back/forward
+    this.navigationSubscription = this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd)
+      )
+      .subscribe(() => {
+        console.log('Navigation ended, reloading product from route');
+        this.loadProductFromRoute();
+      });
   }
 
   ngOnDestroy(): void {
+    // Clean up subscriptions
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+    if (this.navigationSubscription) {
+      this.navigationSubscription.unsubscribe();
+    }
+    
     // Clean up scroll listener
     window.removeEventListener('scroll', this.onScroll.bind(this));
     // Clean up keyboard listener
     document.removeEventListener('keydown', this.handleKeyDown);
   }
 
-  // FIXED: Image selection no longer affects related products
+  private loadProductFromRoute(): void {
+    const productId = this.route.snapshot.paramMap.get('id');
+    if (productId) {
+      console.log('Initial load for product ID:', productId);
+      this.loadProductDetails(parseInt(productId));
+    } else {
+      this.isLoading.set(false);
+      console.error('No product ID found in route');
+    }
+  }
+
+  // Image gallery methods
   selectImage(index: number): void {
     const images = this.allImages();
     if (index >= 0 && index < images.length) {
@@ -143,18 +186,30 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     this.selectedImageIndex.set(prevIndex);
   }
 
-  // Update your openImageModal method:
   openImageModal(): void {
     this.isImageModalOpen.set(true);
     // Add keyboard event listener
     document.addEventListener('keydown', this.handleKeyDown);
   }
 
-  // Update your closeImageModal method:
   closeImageModal(): void {
     this.isImageModalOpen.set(false);
     // Remove keyboard event listener
     document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  // Navigation methods
+  navigateToProductDetails(productId: number): void {
+    console.log('Navigating to product ID:', productId);
+    // Just navigate - the route subscription will handle the loading
+    this.router.navigate(
+      ['/store', this.storeUuid, 'product-details', productId]
+    ).then(success => {
+      if (!success) {
+        console.error('Navigation failed for product ID:', productId);
+        this.showToastMessage('Failed to navigate to product');
+      }
+    });
   }
 
   // Scroll to top functionality
@@ -168,49 +223,6 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
 
   private onScroll(): void {
     this.showScrollToTop.set(window.scrollY > 300);
-  }
-
-  // FIXED: Related products navigation
-  navigateToRelatedProduct(productId: number): void {
-    this.router
-      .navigate([
-        '/user/checkout/store',
-        this.storeUuid,
-        'product-details',
-        productId,
-      ])
-      .then(() => {
-        // Reload the page to show new product details
-        window.location.reload();
-      });
-  }
-
-  // Alternative method that preserves scroll position
-  navigateToProductDetails(productId: number): void {
-    this.router
-      .navigate([
-        '/user/checkout/store',
-        this.storeUuid,
-        'product-details',
-        productId,
-      ])
-      .then((success) => {
-        if (success) {
-          // Reset component state for new product
-          this.product.set(null);
-          this.isLoading.set(true);
-          this.selectedImageIndex.set(0);
-          this.quantity.set(1);
-
-          // Load new product details
-          this.loadProductDetails(productId);
-
-          // Scroll to top after a brief delay
-          setTimeout(() => {
-            window.scrollTo(0, 0);
-          }, 100);
-        }
-      });
   }
 
   // Related products pagination
@@ -263,29 +275,48 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   }
 
   private loadProductDetails(productId: number): void {
+    console.log('Loading product details for ID:', productId);
     this.isLoading.set(true);
+    
+    // Reset component state for new product
+    this.product.set(null);
     this.selectedImageIndex.set(0);
-    this.currentRelatedPage.set(1);
-
+    this.quantity.set(1);
+    this.relatedProducts.set([]);
+    
     this.posService.getProducts().subscribe({
       next: (products: ProductData[]) => {
-        const foundProduct = products.find(
-          (p: ProductData) => p.id === productId
-        );
-        this.product.set(foundProduct || null);
-
+        console.log('Products loaded from service:', products.length);
+        const foundProduct = products.find((p: ProductData) => p.id === productId);
+        console.log('Found product:', foundProduct);
+        
         if (foundProduct) {
+          this.product.set(foundProduct);
           // Preload images for better performance
           this.imageCacheService.preloadProductImages(foundProduct);
           this.loadRelatedProducts(foundProduct, products);
+          
+          // Update browser title
+          document.title = `${foundProduct.name} - Store`;
+          
+          // Scroll to top after a small delay to ensure DOM is updated
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        } else {
+          this.product.set(null);
+          console.error('Product not found:', productId);
+          this.showToastMessage('Product not found');
         }
-
+        
         this.isLoading.set(false);
       },
       error: (error: any) => {
         console.error('Error loading product details:', error);
+        this.product.set(null);
         this.isLoading.set(false);
-      },
+        this.showToastMessage('Failed to load product details. Please try again.');
+      }
     });
   }
 
@@ -296,9 +327,10 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     const related = allProducts.filter(
       (p: ProductData) =>
         p.id !== currentProduct.id &&
-        p.productCategory.id === currentProduct.productCategory.id
+        p.productCategory?.id === currentProduct.productCategory?.id
     );
 
+    console.log('Loaded related products:', related.length);
     this.relatedProducts.set(related);
     this.totalRelatedPages.set(
       Math.ceil(related.length / this.relatedItemsPerPage())
@@ -308,6 +340,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     this.imageCacheService.preloadRelatedProductsImages(related);
   }
 
+  // Image methods
   getProductImage(
     product: ProductData,
     specificImage?: ProductImageDTO | null
@@ -335,7 +368,6 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     return this.imageCacheService.getProductImage(product);
   }
 
-  // Update the template method calls for thumbnails
   getThumbnailImage(
     product: ProductData,
     image: ProductImageDTO
@@ -344,7 +376,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     return this.imageCacheService.getImage(imageUrl);
   }
 
-  // ... rest of your existing methods remain the same
+  // Cart methods
   getTotalCartItems(): number {
     return this.totalCartItems();
   }
@@ -370,12 +402,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     }
 
     this.quantity.set(1);
-
-    if (window.innerWidth >= 768) {
-      this.isCartSidebarVisible = true;
-    } else {
-      this.showToastMessage(`Added to cart successfully!`);
-    }
+    this.autoOpenCart();
   }
 
   addVariantToCart(variant: VariantDTO): void {
@@ -387,25 +414,24 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     }
 
     this.quantity.set(1);
-
-    if (window.innerWidth >= 768) {
-      this.isCartSidebarVisible = true;
-    } else {
-      this.showToastMessage(
-        `${product.name} (${variant.name}) added to cart successfully!`
-      );
-    }
+    this.autoOpenCart();
   }
 
   addRelatedToCart(relatedProduct: ProductData): void {
     this.cartService.addToCart(relatedProduct);
+    this.autoOpenCart();
+  }
 
+  private autoOpenCart(): void {
     if (window.innerWidth >= 768) {
       this.isCartSidebarVisible = true;
     } else {
-      this.showToastMessage(
-        `${relatedProduct.name} added to cart successfully!`
-      );
+      this.isCartOpen = true;
+    }
+    
+    // Show toast message for mobile
+    if (window.innerWidth < 768) {
+      this.showToastMessage('Product added to cart!');
     }
   }
 

@@ -9,6 +9,7 @@ import {
   min,
   Observable,
   of,
+  shareReplay,
   switchMap,
   take,
   tap,
@@ -78,7 +79,7 @@ export class MetadataService {
     "Gift Card",
   ];
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(5);
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -90,7 +91,11 @@ export class MetadataService {
   supplierSubject = new BehaviorSubject<any[]>([]);
   branchSubject = new BehaviorSubject<any[]>([]);
   productSubject = new BehaviorSubject<any[]>([]);
+  inventorySubject = new BehaviorSubject<any[]>([]);
+
   enrichedProductSubject = new BehaviorSubject<any[]>([]);
+  enrichedInventorySubject = new BehaviorSubject<any[]>([]);
+
   orderSubject = new BehaviorSubject<any[]>([]);
   returnSubject = new BehaviorSubject<any[]>([]);
 
@@ -103,7 +108,13 @@ export class MetadataService {
   orders$ = this.orderSubject.asObservable();
   returns$ = this.returnSubject.asObservable();
   products$ = this.productSubject.asObservable();
+  inventories$ = this.inventorySubject.asObservable();
+
   enrichedProduct$ = this.enrichedProductSubject.asObservable();
+  enrichedInventory$ = this.enrichedInventorySubject.asObservable().pipe(
+   shareReplay(1)
+);;
+
 
   constructor(
     private posService: PosServiceService,
@@ -113,8 +124,12 @@ export class MetadataService {
     private offlineService: OfflineService
   ) {}
   async setSelectedBranch(id: number) {
-    this.selectedBranchIdSubject.next(id);
+    const current = this.selectedBranchIdSubject.getValue();
+    if (current !== id) {
+        this.selectedBranchIdSubject.next(id);
     await this.fetchMetaData();
+
+    }
   }
 
   
@@ -159,6 +174,8 @@ export class MetadataService {
       taxes: this.posService.getTax().pipe(catchError(() => of([]))),
       branches: this.posService.getBranches().pipe(catchError(() => of([]))),
       products: this.posService.getProducts().pipe(catchError(() => of([]))),
+      inventories: this.posService.getInventories().pipe(catchError(() => of([]))),
+
       orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
       returnRequests: this.orderService
         .getReturnRequest()
@@ -173,6 +190,7 @@ export class MetadataService {
     this.taxSubject.next(data.taxes);
     this.branchSubject.next(data.branches);
     this.productSubject.next(data.products);
+    this.inventorySubject.next(data.inventories);
     this.orderSubject.next(data.orders);
     this.returnSubject.next(data.returnRequests);
 
@@ -186,6 +204,8 @@ export class MetadataService {
           .pipe(
             catchError((error) => {
               console.error("❌ Failed to load enriched products", error);
+            this.loadingSubject.next(false);
+
               return of([]);
             })
           )
@@ -201,6 +221,22 @@ export class MetadataService {
               console.log("📦 Enriched products cached locally in IndexedDB");
             }
           });
+
+        this.posService
+          .getFilteredInventoryWithDetails(branchId)
+          .pipe(
+            catchError((error) => {
+              console.error("❌ Failed to load enriched Inventory", error);
+            this.loadingSubject.next(false);
+
+              return of([]);
+            })
+          )
+          .subscribe(async (filteredInventory) => {
+            this.enrichedInventorySubject.next(filteredInventory);
+            this.loadingSubject.next(false);
+            console.log("✅ [MetadataService] Enriched Inventory loaded", filteredInventory);
+          });
       } else {
         console.warn(
           "⚠️ No branch ID selected. Skipping filtered products fetch."
@@ -215,6 +251,53 @@ export class MetadataService {
 
     return true;
   }
+
+  addCategoryToState(newCategory: any) {
+  const currentCategories = this.categorySubject.value;
+  const updated = [...currentCategories, newCategory];
+  this.categorySubject.next(updated);
+}
+
+removeCategoryFromState(categoryId: number) {
+  const currentCategories = this.categorySubject.value;
+  const updatedCategories = currentCategories.filter(c => c.id !== categoryId);
+  this.categorySubject.next(updatedCategories);
+}
+
+ addDiscountToState(newDiscount: any) {
+  const currentDiscounts = this.discountSubject.value;
+  const updated = [...currentDiscounts, newDiscount];
+  this.discountSubject.next(updated);
+}
+removeDiscountFromState(discountId: number) {
+  const currentDiscounts = this.discountSubject.value;
+  const updatedDiscounts = currentDiscounts.filter(c => c.id !== discountId);
+  this.discountSubject.next(updatedDiscounts);
+}
+
+ addSupplierToState(newSupplier: any) {
+  const currentSuppliers = this.supplierSubject.value;
+  const updated = [...currentSuppliers, newSupplier];
+  this.supplierSubject.next(updated);
+}
+
+removeSupplierFromState(supplierId: number | undefined) {
+  const currentSupplier = this.supplierSubject.value;
+  const updatedSupplier = currentSupplier.filter(c => c.id !== supplierId);
+  this.supplierSubject.next(updatedSupplier);
+}
+
+ addTaxToState(newTax: any) {
+  const currentTaxes = this.taxSubject.value;
+  const updated = [...currentTaxes, newTax];
+  this.taxSubject.next(updated);
+}
+
+removeTaxFromState(taxId: number | undefined) {
+  const currentTaxes = this.taxSubject.value;
+  const updatedTax = currentTaxes.filter(c => c.id !== taxId);
+  this.taxSubject.next(updatedTax);
+}
 
 
   private loadEnrichedProductsByBranch(): Observable<void> {

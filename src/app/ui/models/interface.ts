@@ -41,6 +41,8 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   sellingPrice?: string;
   quantity?: number;
   isAvailableInStore?: boolean;
+  inventoryId?: number;
+  __originalProduct?: ProductDTO | any
 
   /** Date String Format: "2025-02-02T22:56:31.935Z" */
   createdDate: TDateType extends "string" ? DateString : DateArray;
@@ -395,6 +397,7 @@ sellingPrice: number;
   productCategory: ProductCategoryPOST;
   productImage: ProductImageDTO;
   variants: VariantDTO[];
+  supplier?: supplierData; 
 }
 
 interface ProductBranchDTO {
@@ -713,7 +716,7 @@ export enum RefundStatus {
   APPROVED = "Approved",
   REJECTED = "Rejected",
   PROCESSING = "Processing",
-  CANCELED = "Canceled",
+  CANCELED = "CANCELED",
   EXPIRED = "Expired",
   UNDER_REVIEW = "UnderReview",
   CHARGEBACK = "Chargeback",
@@ -836,7 +839,7 @@ export interface StockMovementCreateDTO {
   supplierId?: number | null;
   ingredientId: number; // backend "product" id
   inventoryId: number;
-  createdById?: number; // omit unless server requires it
+  createdById?: number; 
   // stockMovementsId?: number; // only include if server mandates it; otherwise omit
 }
 
@@ -957,8 +960,6 @@ export interface StockMovementByInventory {
   } | null;
 }
 
-// These are the report-related DTOs and other types from the  code that were causing conflicts,
-// but which I've included here to ensure the file is complete. I've corrected them where necessary.
 export interface ProductPerformanceReportRequestDTO {
   startDate: string;
   endDate: string;
@@ -986,6 +987,12 @@ export interface InventoryReportRequestDTO {
   categoryIds?: number[];
   includeLowStock?: boolean;
 }
+
+// Stock Movement Report Request DTO
+export interface StockMovementReportRequestDTO extends InventoryReportRequestDTO {
+  groupBy?: 'none' | 'day' | 'week' | 'month'; 
+}
+
 
 export interface CashierReportRequestDTO {
   startDate: string;
@@ -1171,4 +1178,32 @@ export enum PaymentMethod {
   TRANSFER = 'TRANSFER',
   CARD = 'CARD',
   MOBILE = 'MOBILE'
+}
+
+// new stock report DTOs
+
+export interface StockMovementReportItemDTO {
+  id: number;
+  createdDate: string; 
+  quantity: number; 
+  reference: string | null;
+  purchasePrice: number | null;
+  sellingPrice: number | null; 
+  
+  //fields for easy display
+  productName: string;
+  productSku: string;
+  productCategory: string;
+  branchName: string;
+  supplierName: string | null;
+  
+  // Foreign keys for enrichment in the component
+  productId: number;
+  branchId: number;
+}
+export interface StockMovementReportDTO {
+  movements: StockMovementReportItemDTO[];
+  totalInflow: number;
+  totalOutflow: number;
+  netChange: number;
 }

@@ -152,7 +152,7 @@ export class StoreOrderService {
       }),
       catchError((error) => {
         console.error('❌ Paystack payment initialization failed:', error);
-        return throwError(() => new Error('Payment service unavailable'));
+        return throwError(() => 'Payment service unavailable');
       })
     );
   }
@@ -257,7 +257,7 @@ export class StoreOrderService {
     );
   }
 
-  // E-STORE ORDER METHODS
+  // E-STORE ORDER METHODS (Online Orders)
   getEStoreOrders(filters: any): Observable<any> {
     const baseParams: any = { ...filters };
     const params: any = {};
@@ -274,6 +274,35 @@ export class StoreOrderService {
 
     const endpoint = '/x/api/v2/pos/orders/get/order/from/eStore';
     console.log(`Fetching E-Store orders from: ${endpoint}`, params);
+
+    return this.http.get<any>(
+      this.getBaseApiUrl() + endpoint,
+      { 
+        params: params,
+        headers: this.getHeaders()
+      }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // NEW METHOD: POS/Walk-in Orders (Using the general orders API)
+  getPosOrders(filters: any): Observable<any> {
+    const baseParams: any = { ...filters };
+    const params: any = {};
+    
+    for (const key in baseParams) {
+      const value = baseParams[key];
+      if (value !== undefined && value !== null) {
+        if (typeof value === 'string' && value.trim() === '') {
+          continue;
+        }
+        params[key] = value;
+      }
+    }
+
+    const endpoint = '/x/api/v2/pos/orders'; // General endpoint assumed for POS/Walk-in orders
+    console.log(`Fetching POS/Walk-in orders from: ${endpoint}`, params);
 
     return this.http.get<any>(
       this.getBaseApiUrl() + endpoint,

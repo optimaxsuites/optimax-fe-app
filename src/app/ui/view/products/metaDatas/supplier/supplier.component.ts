@@ -29,7 +29,7 @@ constructor(private posService: PosServiceService, private messageService: Messa
 ngOnInit(): void {
   this.loadSuppliers();
 }
-  removeSupplier(id: number|undefined) {
+  removeSupplier(id: number | undefined) {
     this.posService.deleteSupplier(id).subscribe(async (data) => {
       if (data) {
         this.messageService.add({
@@ -40,7 +40,8 @@ ngOnInit(): void {
           life: 3000,
         });
       } else {
-        this.suppliers = this.suppliers.filter(supplier => supplier.id !== id);
+        // this.suppliers = this.suppliers.filter(supplier => supplier.id !== id);
+        this.metadataService.removeSupplierFromState(id);
         this.messageService.add({
           severity: 'success',
           summary: 'Supplier deleted',
@@ -48,6 +49,7 @@ ngOnInit(): void {
           key: 'tl',
           life: 3000,
         });
+
       }
     });
   }
@@ -66,7 +68,7 @@ ngOnInit(): void {
               key: 'tl',
               life: 3000,
             });
-           
+           this.metadataService.addSupplierToState(data)
             this.supplierData = {
               name: '',
               contactPerson: '',

@@ -7,7 +7,7 @@
   [class.overflow-hidden]="showInformation"
 >
   <!-- Main Content - Only show when not in initial loading state -->
-  <div *ngIf="tableSection" class="max-w-9xl mx-12 mt-8 space-y-8">
+  <div *ngIf="tableSection" class=" mt-8 space-y-8">
     <!-- Search and Filter Section -->
     <div class="gap-3 w-full flex justify-between items-center">
       <div class="flex gap-3">
@@ -71,12 +71,12 @@
     <!-- Header Section -->
     <div class="bg-white rounded-xl shadow-sm p-8 mt-4">
       <div class="flex justify-between items-center">
-        <h2 class="text-3xl font-extrabold text-gray-800">Product Inventory</h2>
+        <h2 class="text-2xl  text-gray-800">Product Inventory</h2>
         <app-button
           text="Add Inventory"
           icon="pi pi-plus"
           class="btn-navigate text-2xl font-extrabold"
-          *ngIf="!isLoading && !isBranchSwitching"
+          *ngIf="!(isLoading | async)&& !isBranchSwitching"
           (click)="openEditInventory(null, 'parent')"
         ></app-button>
       </div>
@@ -85,7 +85,7 @@
     <div class="max-w-8xl space-y-8 px-6">
       <!-- Table View -->
       <div
-        *ngIf="tableSections && (!isLoading && !isBranchSwitching); else tableLoadingState"
+        *ngIf="tableSections && (!(isLoading | async) && !isBranchSwitching); else tableLoadingState"
         class="bg-white rounded-xl shadow-sm overflow-hidden"
       >
         <p-table
@@ -220,7 +220,7 @@
   class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7 gap-4"
 >
   <!-- Card-shaped skeletal loading for grid view -->
-  <ng-container *ngIf="isLoading || isBranchSwitching; else productList">
+  <ng-container *ngIf="(isLoading | async)|| isBranchSwitching; else productList">
     <div
       *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]"
       class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
@@ -340,7 +340,7 @@
 </div>
       <!-- Pagination for Grid View -->
       <div
-        *ngIf="!tableSections && products.length > 0 && !isLoading && !isBranchSwitching"
+        *ngIf="!tableSections && products.length > 0 && !(isLoading | async) && !isBranchSwitching"
         class="flex justify-center mt-6"
       >
         <p-paginator

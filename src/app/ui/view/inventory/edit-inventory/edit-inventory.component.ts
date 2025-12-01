@@ -1,5 +1,3 @@
-// edit-inventory.component.ts - Fixed version
-
 import {
   Component,
   EventEmitter,
@@ -181,99 +179,96 @@ export class EditInventoryComponent implements OnInit {
     });
   }
 
-ngOnInit(): void {
-  this.fetchMetaData();
-  this.loadInitialData();
-  
-  
-  setTimeout(() => {
-    if (this.mode === 'edit' && this.activeItem) {
-      this.patchFormValues();
-      this.prefillForm();
-      this.populateStockMovementDefaults();
-    }
-  }, 100);
+  ngOnInit(): void {
+    this.fetchMetaData();
+    this.loadInitialData();
+    
+    setTimeout(() => {
+      if (this.mode === 'edit' && this.activeItem) {
+        this.patchFormValues();
+        this.prefillForm();
+        this.populateStockMovementDefaults();
+      }
+    }, 100);
 
-  this.setupStockMovementWatchers();
-}
+    this.setupStockMovementWatchers();
+  }
 
- private populateStockMovementDefaults(): void {
-  if (!this.activeItem) return;
+  private populateStockMovementDefaults(): void {
+    if (!this.activeItem) return;
 
-  const productData = this.getProductData();
-  
+    const productData = this.getProductData();
+    
+    const selectedTax = productData.tax?.id ? this.taxes.find(t => t.id === productData.tax.id) : null;
+    const selectedDiscount = productData.discount?.id ? this.discounts.find(d => d.id === productData.discount.id) : null;
+    const selectedSupplier = productData.supplier?.id ? this.suppliers.find(s => s.id === productData.supplier.id) : null;
 
-const selectedTax = productData.tax?.id ? this.taxes.find(t => t.id === productData.tax.id) : null;
-const selectedDiscount = productData.discount?.id ? this.discounts.find(d => d.id === productData.discount.id) : null;
-const selectedSupplier = productData.supplier?.id ? this.suppliers.find(s => s.id === productData.supplier.id) : null;
+    this.stockMovementForm.patchValue({
+      purchasePrice: Number(productData.purchasePrice) || 0,
+      sellingPrice: Number(productData.sellingPrice) || 0,
+      supplier: selectedSupplier,  
+      tax: selectedTax,           
+      discount: selectedDiscount,   
+      createdDate: new Date().toISOString().slice(0, 10),
+      quantity: '', 
+      reference: ''
+    });
 
-this.stockMovementForm.patchValue({
-  purchasePrice: Number(productData.purchasePrice) || 0,
-  sellingPrice: Number(productData.sellingPrice) || 0,
-  supplier: selectedSupplier,  
-  tax: selectedTax,           
-  discount: selectedDiscount,   
-  createdDate: new Date().toISOString().slice(0, 10),
-  quantity: '', 
-  reference: ''
-});
+    // Update price details
+    this.priceDetails = {
+      basePrice: Number(productData.sellingPrice) || 0,
+      tax: Number(productData.tax?.rate) || 0,
+      discount: productData.discount?.value || null,
+      effectivePrice: Number(productData.sellingPrice) || 0,
+      taxAmount: 0,
+      priceAfterDiscount: Number(productData.sellingPrice) || 0
+    };
 
-  // Update price details
-  this.priceDetails = {
-    basePrice: Number(productData.sellingPrice) || 0,
-    tax: Number(productData.tax?.rate) || 0,
-    discount: productData.discount?.value || null,
-    effectivePrice: Number(productData.sellingPrice) || 0,
-    taxAmount: 0,
-    priceAfterDiscount: Number(productData.sellingPrice) || 0
-  };
-
-  this.calculateEffectivePrice();
-}
-
+    this.calculateEffectivePrice();
+  }
 
   private getProductData(): any {
     if (!this.activeItem) return {};
 
-    
-    if ((this.activeItem as any).__originalProduct) {
-      return (this.activeItem as any).__originalProduct;
+    const item: any = this.activeItem;
+    if (item.__originalProduct) {
+      return item.__originalProduct;
     }
-
-    
-    if (this.activeItem.product) {
-      return this.activeItem.product;
+    if (item.product) {
+      return item.product;
     }
 
     return this.activeItem;
   }
 
+  getPurchasePrice(): string {
+    const productData = this.getProductData();
+    return productData.purchasePrice?.toString() || '0';
+  }
 
-getPurchasePrice(): string {
-  const productData = this.getProductData();
-  return productData.purchasePrice?.toString() || '0';
-}
+  getSupplierName(): string {
+    const productData = this.getProductData();
+    return productData.supplier?.name || 'N/A';
+  }
 
-getSupplierName(): string {
-  const productData = this.getProductData();
-  return productData.supplier?.name || 'N/A';
-}
+  getPartNumber(): string {
+    const productData = this.getProductData();
+    return productData.partNumber || 'N/A';
+  }
 
-getPartNumber(): string {
-  const productData = this.getProductData();
-  return productData.partNumber || 'N/A';
-}
-
-getMeasurementUnit(): string {
-  const productData = this.getProductData();
-  return productData.measurementUnit || 'N/A';
-}
+  getMeasurementUnit(): string {
+    const productData = this.getProductData();
+    return productData.measurementUnit || 'N/A';
+  }
 
   private fetchMetaData(): void {
     this.metadataService.taxes$.subscribe((taxes: TaxDTO[]) => {
       this.taxes = taxes;
-      if (this.mode === 'edit' && this.activeItem?.tax) {
-        const selectedTax = this.taxes.find(t => t.id === this.activeItem?.tax?.id);
+      
+      const productData = this.getProductData(); 
+      const taxData = productData.tax || this.activeItem?.tax; 
+      if (this.mode === 'edit' && taxData) {
+        const selectedTax = this.taxes.find(t => t.id === taxData.id);
         if (selectedTax) {
           this.productForm.get('tax')?.setValue(selectedTax);
         }
@@ -282,8 +277,11 @@ getMeasurementUnit(): string {
 
     this.metadataService.discount$.subscribe((discounts: any[]) => {
       this.discounts = discounts;
-      if (this.mode === 'edit' && this.activeItem?.discount) {
-        const selectedDiscount = this.discounts.find(d => d.id === this.activeItem?.discount?.id);
+      
+      const productData = this.getProductData(); 
+      const discountData = productData.discount || this.activeItem?.discount;
+      if (this.mode === 'edit' && discountData) {
+        const selectedDiscount = this.discounts.find(d => d.id === discountData.id);
         if (selectedDiscount) {
           this.productForm.get('discount')?.setValue(selectedDiscount);
         }
@@ -325,31 +323,29 @@ getMeasurementUnit(): string {
       bundleItems: productData.bundleItems || this.activeItem.bundleItems || [],
     });
 
+    const taxData = productData.tax || this.activeItem.tax;
+    if (taxData) {
+      const selectedTax = this.taxes.find(t => t.id === taxData.id);
+      if (selectedTax) {
+        this.productForm.get('tax')?.setValue(selectedTax);
 
-const taxData = productData.tax || this.activeItem.tax;
-if (taxData) {
-  const selectedTax = this.taxes.find(t => t.id === taxData.id);
-  if (selectedTax) {
-    this.productForm.get('tax')?.setValue(selectedTax);
-
-    if (this.stockMovementForm.get('tax')) {
-      this.stockMovementForm.get('tax')?.setValue(selectedTax);
+        if (this.stockMovementForm.get('tax')) {
+          this.stockMovementForm.get('tax')?.setValue(selectedTax);
+        }
+      }
     }
-  }
-}
 
+    const discountData = productData.discount || this.activeItem.discount;
+    if (discountData) {
+      const selectedDiscount = this.discounts.find(d => d.id === discountData.id);
+      if (selectedDiscount) {
+        this.productForm.get('discount')?.setValue(selectedDiscount);
 
-const discountData = productData.discount || this.activeItem.discount;
-if (discountData) {
-  const selectedDiscount = this.discounts.find(d => d.id === discountData.id);
-  if (selectedDiscount) {
-    this.productForm.get('discount')?.setValue(selectedDiscount);
-
-    if (this.stockMovementForm.get('discount')) {
-      this.stockMovementForm.get('discount')?.setValue(selectedDiscount);
+        if (this.stockMovementForm.get('discount')) {
+          this.stockMovementForm.get('discount')?.setValue(selectedDiscount);
+        }
+      }
     }
-  }
-}
   }
 
   get isEditMode(): boolean {
@@ -451,7 +447,7 @@ if (discountData) {
             startDate: new Date(),
             endDate: new Date(),
             minQuantity: 0,
-            discountType: { id: 0, code: "", name: "", description: "" },
+            discountType: { id: 0, code: "", description: "", name: "" },
           };
         } else {
           this.messageService.add({
@@ -553,19 +549,19 @@ if (discountData) {
     };
   }
 
- onProductChange(event: any): void {
-  if (event && event.id) {
-    this.posService.getProductById(event.id).subscribe((product) => {
-      this.activeItem = product;
-      this.prefillForm();
-      
-      setTimeout(() => {
-        this.populateStockMovementDefaults();
-      }, 50);
-      this.updateProductInList(product);
-    });
+  onProductChange(event: any): void {
+    if (event && event.id) {
+      this.posService.getProductById(event.id).subscribe((product) => {
+        this.activeItem = product;
+        this.prefillForm();
+        
+        setTimeout(() => {
+          this.populateStockMovementDefaults();
+        }, 50);
+        this.updateProductInList(product);
+      });
+    }
   }
-}
 
   updateProductInList(updatedProduct: ProductData): void {
     const index = this.product.findIndex((p) => p.id === updatedProduct.id);
@@ -707,7 +703,7 @@ if (discountData) {
         this.resetForm();
       } else if (this.mode === 'edit' && this.activeItem) {
         this.prefillForm();
-        this.populateStockMovementDefaults(); // NEW: Populate defaults on changes
+        this.populateStockMovementDefaults(); 
       }
     }
   }
@@ -782,165 +778,168 @@ if (discountData) {
   }
 
   async saveStockMovement(): Promise<void> {
-  if (this.stockMovementForm.invalid) {
-    this.stockMovementForm.markAllAsTouched();
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Validation',
-      detail: 'Please fill all required fields',
-      life: 2500,
-      key: "tl"
-    });
-    return;
-  }
-  
-  if (!this.activeItem?.id || !this.selectedBranch) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Product or branch not selected',
-      life: 2500,
-      key: "tl"
-    });
-    return;
-  }
-
-  const rawDate = this.stockMovementForm.value.createdDate;
-  const reference = this.stockMovementForm.value.reference || '';
-  const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
-  
-  // FIXED: Use the actual form value for purchasePrice and sellingPrice
-  const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
-  const sellingPrice = Number(
-  this.priceDetails?.basePrice ?? this.activeItem?.sellingPrice ?? 0
-);
-
-  
-  const supplierId = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
-
-  // If you have an action control (IN/OUT). If not, default to IN.
-  const actionCtrl = this.stockMovementForm.get('action');
-  const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
-  const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
-
-  this.isLoading = true;
-  try {
-    // 1) Resolve inventory id
-    let inventoryId = this.getInventoryIdFromActiveItem();
-    if (!inventoryId) {
-      inventoryId = await this.findInventoryIdForProductBranch(this.activeItem.id, this.selectedBranch);
+    if (this.stockMovementForm.invalid) {
+      this.stockMovementForm.markAllAsTouched();
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill all required fields',
+        life: 2500,
+        key: "tl"
+      });
+      return;
+    }
+    
+    if (!this.activeItem?.id || !this.selectedBranch) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Product or branch not selected',
+        life: 2500,
+        key: "tl"
+      });
+      return;
     }
 
-    // 2) If still missing, create inventory (only allow if movement is IN)
-    if (!inventoryId) {
-      if (signedQty <= 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'No inventory yet',
-          detail: 'You can\'t reduce stock before creating inventory. Please add stock (IN) first.',
-          life: 3500,
-          key: "tl"
-        });
-        return;
-      }
+    const rawDate = this.stockMovementForm.value.createdDate;
+    const reference = this.stockMovementForm.value.reference || '';
+    const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+    
+    const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+    const sellingPrice = Number(
+      this.priceDetails?.effectivePrice ?? this.activeItem?.sellingPrice ?? 0
+    );
 
-      const createPayload = {
-        availableQuantity: 0,
-        status: 'IN_STOCK' as InventoryStatus,
-        productId: this.activeItem.id,
-        branchId: this.selectedBranch,
-        stockMovement: []
-      };
-      const created = await firstValueFrom(this.posService.createInventory(createPayload));
-      if (!created?.id) throw new Error('Failed to create inventory');
-      inventoryId = created.id;
-      (this.activeItem as any).inventoryId = inventoryId;
-    }
+    const supplier = this.stockMovementForm.value.supplier;
+    const supplierId = typeof supplier === 'object' ? supplier?.id : (supplier ?? null);
 
-    // 3) Prevent going negative
+    const actionCtrl = this.stockMovementForm.get('action');
+    const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
+    const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
+
+    this.isLoading = true;
     try {
-      const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
-      const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
-      if (projected < 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Insufficient stock',
-          detail: 'This movement would make stock negative.',
-          life: 3000,
-          key: "tl"
-        });
-        return;
+      let inventoryId = this.getInventoryIdFromActiveItem();
+      if (!inventoryId) {
+        inventoryId = await this.findInventoryIdForProductBranch(this.activeItem.id, this.selectedBranch);
       }
-    } catch {
+
+      if (!inventoryId) {
+        if (signedQty <= 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No inventory yet',
+            detail: 'You can\'t reduce stock before creating inventory. Please add stock (IN) first.',
+            life: 3500,
+            key: "tl"
+          });
+          return;
+        }
+
+        const createPayload = {
+          availableQuantity: 0,
+          status: 'IN_STOCK' as InventoryStatus,
+          productId: this.activeItem.id,
+          branchId: this.selectedBranch,
+          stockMovement: []
+        };
+        const created = await firstValueFrom(this.posService.createInventory(createPayload));
+        if (!created?.id) throw new Error('Failed to create inventory');
+        inventoryId = created.id;
+        (this.activeItem as any).inventoryId = inventoryId; 
+      }
+
+      try {
+        const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+        const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
+        if (projected < 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Insufficient stock',
+            detail: 'This movement would make stock negative.',
+            life: 3000,
+            key: "tl"
+          });
+          return;
+        }
+      } catch {
+        // Continue if we can't fetch fresh data
+      }
+
+      const createdDate = rawDate 
+        ? new Date(rawDate).toISOString() 
+        : new Date().toISOString();
       
+      const createdById = this.getCurrentUserId();
+      const ingredientId = this.activeItem.id; 
+      
+      const tempBody: StockMovementPostBody = {
+        quantity: signedQty,
+        reference,
+        purchasePrice,
+        sellingPrice,
+        createdDate,
+        createdById: createdById || 0,
+        supplierId: supplierId ? Number(supplierId) : null,
+        ingredientId: Number(ingredientId), 
+        inventoryId: Number(inventoryId)
+      };
+      
+      const finalPayload: StockMovementPostBody = {
+          quantity: tempBody.quantity,
+          reference: tempBody.reference,
+          purchasePrice: tempBody.purchasePrice,
+          sellingPrice: tempBody.sellingPrice,
+          createdDate: tempBody.createdDate,
+          createdById: tempBody.createdById,
+          supplierId: tempBody.supplierId,
+          ingredientId: tempBody.ingredientId,
+          inventoryId: tempBody.inventoryId
+      };
+
+      console.log('Sending stock movement payload (Final):', finalPayload);
+
+      await firstValueFrom(this.posService.createStockMovement(finalPayload));
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Stock movement recorded successfully!',
+        life: 2500,
+        key: "tl"
+      });
+
+      const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+      this.updated.emit({
+        inventoryId,
+        quantity: Number(after?.availableQuantity ?? 0),
+        status: (after?.status ?? 'IN_STOCK') as InventoryStatus
+      });
+      
+      if (this.activeItem) {
+        (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
+      }
+
+      setTimeout(() => {
+        this.close.emit();
+      }, 1500);
+
+      this.resetStockMovementForm();
+
+    } catch (err: any) {
+      console.error('Stock movement error:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: err?.error?.message || err?.message || 'Failed to record movement',
+        life: 4000,
+        key: "tl"
+      });
+    } finally {
+      this.isLoading = false;
     }
-
-    
-    const createdDate = rawDate 
-  ? new Date(rawDate).toISOString() 
-  : new Date().toISOString();
-    
-  
-    const createdById = this.getCurrentUserId();
-
-    
-  const body: StockMovementPostBody = {
-  quantity: signedQty,
-  reference,
-  purchasePrice,
-  sellingPrice,
-  createdDate,
-  createdById: createdById || 0,
-  supplierId: supplierId ? Number(supplierId) : null,
-  // ingredientId: this.activeItem.id,
-  inventoryId: Number(inventoryId)
-};
-    console.log('Sending stock movement payload:', body); // Debug log
-
-    await firstValueFrom(this.posService.createStockMovement(body));
-
-    // SUCCESS - show message
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Stock movement recorded successfully!',
-      life: 2500,
-      key: "tl"
-    });
-
-    // 7) Refresh UI
-    const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
-    this.updated.emit({
-      inventoryId,
-      quantity: Number(after?.availableQuantity ?? 0),
-      status: (after?.status ?? 'IN_STOCK') as InventoryStatus
-    });
-    
-    if (this.activeItem) {
-      (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
-    }
-
-    // 8) Wait and close
-    setTimeout(() => {
-      this.close.emit();
-    }, 1500);
-
-    // 9) Reset form
-    this.resetStockMovementForm();
-
-  } catch (err: any) {
-    console.error('Stock movement error:', err);
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: err?.error?.message || err?.message || 'Failed to record movement',
-      life: 4000,
-      key: "tl"
-    });
-  } finally {
-    this.isLoading = false;
   }
-}
+
   private formatDateForBackend(dateString: string): string {
     if (!dateString) return new Date().toISOString();
     
@@ -1027,7 +1026,6 @@ if (discountData) {
     const createdDate = date.toISOString();
 
     const quantity = Number(this.stockMovementForm.value.quantity) || 0;
-
     const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
     const sellingPrice = Number(this.priceDetails.effectivePrice) || 0;
 

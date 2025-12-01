@@ -1,3 +1,5 @@
+// cash-payment.component.ts
+
 import { Location } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
@@ -18,6 +20,7 @@ import { RandomTokenService } from "../../sharedComponent/service/random-token/r
 import { OfflineService } from "../../service/offline.service";
 import { BehaviorSubject, firstValueFrom, Observable } from "rxjs";
 import { MetadataService } from "../../service/metadata.service";
+import { HttpErrorResponse } from "@angular/common/http"; // <-- Import HttpErrorResponse
 
 @Component({
   selector: "app-cash-payment",
@@ -63,6 +66,13 @@ export class CashPaymentComponent implements OnInit {
     loyaltyPoints: 0,
   };
   businessInfo: string | any;
+  public shopName: string = '';
+  public cashierName: string = '';
+  public shopAddress: string = '';
+  public industry: string = '';
+  public userPrimaryInfoRegData: any; 
+  now: Date = new Date()
+
 
   isLoading: boolean = false;
     private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
@@ -103,15 +113,44 @@ export class CashPaymentComponent implements OnInit {
   ngOnInit(): void {
     // The cart object should now contain deliveryStatus
     this.cart = this.navigationState?.cart;
+    console.log(this.cart)
+    console.log(this.navigationState.order)
     this.updatePriceOptions();
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken();
+    this.fetchUserInfo();
+
     // const userInfoString = sessionStorage.getItem("userInfo");
     // if (userInfoString) {
     //   this.businessInfo = JSON.parse(userInfoString);
     // }
-    // if(navigator.onLine) this.syncOfflinePayments()
+    // if(navigator.onLine) this.syncOfflinePayments();
   }
+
+  fetchUserInfo() {
+    const userDataString = sessionStorage.getItem('userPrimaryInfoRegData'); 
+    
+    if (userDataString) {
+      this.userPrimaryInfoRegData = JSON.parse(userDataString);
+      
+      // Shop Name (ClientType as requested)
+      this.shopName = this.userPrimaryInfoRegData.companyName || 'POS System';
+      
+      // Shop Address (Combining address, city, state)
+      this.shopAddress = (this.userPrimaryInfoRegData.address || '') + 
+                         (this.userPrimaryInfoRegData.city ? ', ' + this.userPrimaryInfoRegData.city : '') +
+                         (this.userPrimaryInfoRegData.state ? ', ' + this.userPrimaryInfoRegData.state : '');
+      
+      // Cashier Name (from nested 'user' object)
+      this.cashierName = this.userPrimaryInfoRegData.user?.username || 'Cashier';
+    }
+  }
+
+    formatDate(parts: any): Date {
+    // const parts = raw.split(',').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  }
+  
 
 
   get totalPaid() {
@@ -329,6 +368,11 @@ export class CashPaymentComponent implements OnInit {
         }
         return orderItems;
       }),
+      deliveryFee: 0,
+      estimatedReadyTime: "string",
+      estimatedDeliveryTime: "string",
+      customerEmail: "string",
+      deliveryStatus: "CONFIRMED"
     }
   };
 
@@ -345,17 +389,19 @@ export class CashPaymentComponent implements OnInit {
       key: "tl",
       life: 5000,
     });
-     const historyState = history.state;
-                    const paymentTrackingHistory = historyState.paymentTracking;
-                    this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-                      state: {
-                        ...historyState,
-                        paymentTracking: paymentTrackingHistory
-                          ? { ...paymentTrackingHistory, paymentSuccess: true }
-                          : undefined,
-                        paymentSuccess: true,
-                      },
-                    });
+    //  const historyState = history.state;
+    //                 const paymentTrackingHistory = historyState.paymentTracking;
+    //                 this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+    //                   state: {
+    //                     ...historyState,
+    //                     paymentTracking: paymentTrackingHistory
+    //                       ? { ...paymentTrackingHistory, paymentSuccess: true }
+    //                       : undefined,
+    //                     paymentSuccess: true,
+    //                   },
+    //                 });
+    const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      this.router.navigate([checkoutLink]);
       this.printReceipt();
     this.isLoading = false;
     return;
@@ -460,22 +506,76 @@ export class CashPaymentComponent implements OnInit {
             life: 3000,
           });
 
-          const historyState = history.state;
-          const paymentTrackingHistory = historyState.paymentTracking;
-          this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-            state: {
-              ...historyState,
-              paymentTracking: paymentTrackingHistory
-                ? { ...paymentTrackingHistory, paymentSuccess: true }
-                : undefined,
-              paymentSuccess: true, 
-            },
-          });
+          // const historyState = history.state;
+          // const paymentTrackingHistory = historyState.paymentTracking;
+          // this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+          //   state: {
+          //     ...historyState,
+          //     paymentTracking: paymentTrackingHistory
+          //       ? { ...paymentTrackingHistory, paymentSuccess: true }
+          //       : undefined,
+          //     paymentSuccess: true, 
+          //   },
+          // });
+          const checkoutLink = this.navigationLink.getLink('checkoutLink');
+          this.router.navigate([checkoutLink]);
           this.printReceipt();
           this.isLoading = false;
         },
-        error: () => this.showError("Failed to save order"),
+        error: (error) => this.handleOrderSaveError(error), // <-- **CHANGED** to use new error handler
       });
+  }
+
+  // **NEW METHOD** for handling Order Save Errors (including Out of Stock)
+  private handleOrderSaveError(error: HttpErrorResponse): void {
+    this.isLoading = false;
+    let errorMessage = "Failed to save order. Please check the console for details.";
+
+    // Attempt to extract the error message from the response body
+    // Assuming the backend sends an "Out of Stock" message either as a string or inside an object.
+    const errorBody = error.error;
+    const errorStatus = error.status;
+
+    let serverMessage = '';
+
+    if (typeof errorBody === 'string') {
+        serverMessage = errorBody;
+    } else if (errorBody?.message) {
+        serverMessage = errorBody.message;
+    } else if (errorBody) {
+        serverMessage = JSON.stringify(errorBody);
+    }
+    
+    console.error("❌ Order save error details:", { status: errorStatus, serverMessage: serverMessage, fullError: error });
+
+    // **Primary check for Out of Stock**
+    if (errorStatus === 400 || errorStatus === 409) {
+      if (serverMessage.toLowerCase().includes("out of stock") || 
+          serverMessage.toLowerCase().includes("inventory depleted") ||
+          serverMessage.toLowerCase().includes("insufficient stock")) {
+        
+        errorMessage = "⚠️ Product Out of Stock! One or more items in the cart are now unavailable. Please adjust the quantities and try again.";
+        this.messageService.add({
+          severity: "warn",
+          summary: "Inventory Issue",
+          detail: errorMessage,
+          key: "tl",
+          life: 7000,
+        });
+        return; // Exit after showing the specific toast
+      }
+    }
+    
+    // Default error handling
+    if (serverMessage) {
+        errorMessage = `Error saving order: ${serverMessage}`;
+    } else if (errorStatus === 0) {
+        errorMessage = "Network error. Unable to connect to the server.";
+    } else {
+        errorMessage = `Server Error (${errorStatus}). Failed to save order.`;
+    }
+    
+    this.showError(errorMessage);
   }
 
   private showError(msg: string) {
@@ -512,7 +612,10 @@ export class CashPaymentComponent implements OnInit {
   }
 
   navigateBack() {
-    this._location.back();
+    // this._location.back();
+    const cart = this.cart;
+    const checkoutLink = this.navigationLink.getLink('checkoutLink');
+    this.router.navigate([checkoutLink], { state: { cart } });
   }
 
   get approximateCartTotal() {

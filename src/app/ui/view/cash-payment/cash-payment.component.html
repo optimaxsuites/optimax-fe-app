@@ -194,16 +194,19 @@
 <div id="receipt-container" 
 style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left; padding: 10px; color: black; font-weight: bold;" class='hidden'>
   <div style="text-align: center;">
-    <strong style="font-size: 23px;">{{businessInfo?.fullname}}</strong><br>
-    Address: {{businessInfo?.address}}, {{businessInfo?.city}},{{businessInfo?.state}}<br>
-    Telephone: {{businessInfo?.phoneNumber}}<br>
+    <strong style="font-size: 22px;">{{ shopName }}</strong><br>
+    Address: {{ userPrimaryInfoRegData?.address }}, {{ userPrimaryInfoRegData?.city }}, {{ userPrimaryInfoRegData?.state }}  <br>
+    Telephone: {{ userPrimaryInfoRegData?.phoneNumber }}
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div style="text-align: left; margin-bottom: 10px;">
     <div >Sold to: Walk-in Customer</div>
-    <div >Date & Time: {{ navigationState.cart.timestamp }}</div>
-    <div >Cashier: {{ businessInfo?.user?.username }}</div>
+    <!-- <div >Date & Time: {{ formatDate(navigationState.cart.timestamp) | date: 'medium'  }}</div> -->
+    <div >Date & Time: {{ now }}</div>
+    <div >Cashier: {{ cashierName }}</div>
     <div >Receipt ID: {{receiptID}}</div>
+    <div>Order #: {{receiptID}}</div>
+
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
@@ -285,6 +288,8 @@ style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left
     <svg id="barcode"></svg>
   </div>
 </div>
+
+
 
 
 <div *ngIf="showCreateCustomerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

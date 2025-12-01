@@ -130,7 +130,7 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
 
   private redirectToLogin(): void {
     if (this.storeUuid) {
-      this.router.navigate(['/store', this.storeUuid]);
+      this.router.navigate(['user/checkout/store', this.storeUuid]);
     } else {
       this.router.navigate(['/']);
     }
@@ -138,7 +138,7 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
 
   private redirectToHome(): void {
     if (this.storeUuid) {
-      this.router.navigate(['/store', this.storeUuid]);
+      this.router.navigate(['user/checkout/store', this.storeUuid]);
     } else {
       this.router.navigate(['/']);
     }

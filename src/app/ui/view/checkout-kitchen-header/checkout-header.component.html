@@ -3,9 +3,12 @@
 
   <nav>
     <ul class="flex gap-12 list-none">
+      <!-- ========== UPDATED HISTORY LINK ========== -->
       <li>
-        <a [routerLink]="navigationLink.getLink('kitchenOrder')">History</a>
+        <a [routerLink]="['/checkout-kitchen-history', userRegData?.uuid]">History</a>
       </li>
+      <!-- ========== END OF UPDATED HISTORY LINK ========== -->
+      
       <!-- <li (click)="closeRegister()">
         <a class="cursor-pointer"> Close Register </a>
       </li> -->
@@ -17,15 +20,15 @@
           >Return/Refund</a
         >
       </li> -->
-     <li *ngIf="orderPermissions.canCreate" [class.active]="mode === 'waiter'">
+     <li  [class.active]="mode === 'waiter'">
       <a class="cursor-pointer" (click)="setMode('waiter')">Waiter</a>
       </li>
 
-      <li *ngIf="orderPermissions.canEdit" [class.active]="mode === 'chef'">
+      <li [class.active]="mode === 'chef'">
         <a class="cursor-pointer" (click)="setMode('chef')">Chef</a>
       </li>
 
-      <li *ngIf="paymentPermissions.canView" [class.active]="mode === 'cashier'">
+      <li [class.active]="mode === 'cashier'">
         <a class="cursor-pointer" (click)="setMode('cashier')">Cashier</a>
       </li>
     </ul>
@@ -67,5 +70,4 @@
   [closeAmount]="closingAmount"
   (finalizeRegisterEvent)="finalizeRegister($event)"
   (closeModalEvent)="showCloseRegisterModal = false"
-></app-close-register-modal> -->
-
+></app-close-register-modal> -->      

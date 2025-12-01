@@ -7,7 +7,7 @@ import { OrderRefundComponent } from './ui/view/order-refund/order-refund.compon
 import { OrderDetailComponent } from './ui/view/order-detail/order-detail.component';
 import { CashPaymentComponent } from './ui/view/cash-payment/cash-payment.component';
 import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orders.component';
-import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checkout-page.component';
+import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checkout-page.component'; // This is imported but missing in routes!
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
 import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
@@ -24,14 +24,22 @@ import { SalesComponent } from './ui/view/sales/sales.component';
 import { PermissionGuard } from './ui/permission/permission.guard';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
-
+import { CheckoutKitchenHistoryComponent } from './ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'product/34567whr4567yhsdzr56',
+    redirectTo: 'checkout/34567whr4567yhsdzr56', // Changed to point to checkout
     pathMatch: 'full',
   },
+  // ========== ADD THIS MAIN CHECKOUT ROUTE ==========
+  {
+    path: 'checkout/:uuid',
+    component: PosCheckoutPageComponent, // This should contain waiter/chef/cashier
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_CHKOUT'] }
+  },
+  // ========== END OF MAIN CHECKOUT ROUTE ==========
   {
     path: 'user/checkout/cash-payment/:id',
     component: CashPaymentComponent
@@ -39,119 +47,112 @@ const routes: Routes = [
   {
     path: 'e-store-sales/:uuid',
     component: EStoreSalesComponent,
-    // canActivate: [PermissionGuard],
+    canActivate: [PermissionGuard],
   },
-
   {
     path: 'Update-stock/:uuid',
     component: UpdateStockComponent,
   },
-  
   {
     path: 'product/:uuid',
     component: ProductsComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_PDT'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_PDT'] }
 
   },
   {
     path: "refund-request/:uuid",
     component: RequestDetailsComponent,
-      // canActivate: [PermissionGuard],
-      //   data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
+      canActivate: [PermissionGuard],
+        data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
   },
-
   {
     path: 'inventory/:uuid',
     component: InventoryComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_INV'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_INV'] }
   },
   {
     path: 'sale/:uuid',
     component: SalesComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_SALES'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_SALES'] }
   },
   {
     path: 'orderDetails/:uuid',
     component: OrderDetailComponent,
-    // canActivate: [PermissionGuard],
+    canActivate: [PermissionGuard],
   },
   {
   path: 'user/checkout/orders/:uuid',
   component: CheckoutOrdersComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_CHKOUT'] }
 },
 
   {
     path: 'report/:uuid',
     component: ReportDashboardComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_REPRT'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_REPRT'] }
   },
   {
     path: 'refunds/:uuid',
     component: RefundComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_RFND'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_RFND'] }
   },
   {
     path : 'orderRefund/:uuid',
     component : OrderRefundComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_RFND'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_RFND'] }
   },
   {
     path: 'ingredients/:uuid',
     component: IngredientComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_ING'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_ING'] }
   },
-  // {
-  //   path: 'inventory',
-  //   component: InventoryComponent,
-  // },
   {
     path: 'view',
     component: ViewInventoryComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_INV'] }
+
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_INV'] }
+
   },
   {
     path: 'supplier-details',
     component: InformationComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_INV'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_INV'] }
   },
   {
     path: 'add-ingredient/:uuid',
     component: AddIngredientComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_ING'] }
+      canActivate: [PermissionGuard],
+      data: { appCode: ['POS_ING'] }
+
   },
   {
     path: 'view-ingredient/:uuid',
     component: ViewIngredientsComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_ING'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_ING'] }
   },
   {
     path: 'edit-ingredient/:uuid',
     component: EditIngredientsComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_ING'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_ING'] }
   },
-  // {
-  //   path: 'add-inventory',
-  //   component: AddInventoryComponent,
-  // },
-
-  // {
-  //   path: '',
-  //   loadChildren: () => import('./user/user.module').then((m) => m.UserModule),
-  // },
+  {
+    path: 'checkout-kitchen-history/:uuid',
+    component: CheckoutKitchenHistoryComponent,
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_CHKOUT'] }
+  },
 ];
 
 @NgModule({

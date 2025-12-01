@@ -4,6 +4,7 @@ import { CheckoutService } from '../../service/checkout.service';
 import { MetadataService } from '../../service/metadata.service';
 import { Router } from '@angular/router';
 import { Order } from '../../models/interface';
+import { StoreOrderService } from '../../service/store-order.service'; // NEW IMPORT
 
 @Component({
   selector: 'app-sales',
@@ -51,6 +52,7 @@ export class SalesComponent implements OnInit {
 
   constructor(
     private metadataService: MetadataService,
+    private storeOrderService: StoreOrderService, // NEW INJECTION
     private router: Router
   ) { }
   
@@ -60,11 +62,23 @@ export class SalesComponent implements OnInit {
   
   loadOrders(): void {
     this.isLoading = true;
-    this.metadataService.orders$.subscribe(orders => {
-      this.orders = orders;
-      console.log('Loaded orders:', orders);
-      this.isLoading = false;
-      this.applyFiltersAndSort();
+    
+    // CHANGED: Use the dedicated POS/Walk-in Orders API (general endpoint)
+    this.storeOrderService.getPosOrders({}).subscribe({
+      next: (orders) => {
+         // Filter: Assuming POS/Walk-in orders do NOT have deliveryInfo set
+         const posOrders = orders.filter((order: any) => !order.deliveryInfo);
+
+         this.orders = posOrders;
+         console.log('Sales: Loaded POS/Walk-in orders from dedicated API.');
+         this.isLoading = false;
+         this.applyFiltersAndSort();
+      },
+      error: (err: any) => {
+         console.error('❌ Failed to load POS orders:', err);
+         this.isLoading = false;
+         // Handle error
+      }
     });
   }
   

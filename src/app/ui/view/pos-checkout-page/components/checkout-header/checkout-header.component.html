@@ -1,5 +1,14 @@
-<div class="flex justify-between items-center px-5">
-  <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
+<div class="flex justify-between items-center pr-4 pl-0 max-w-screen">
+  
+    <div class="flex gap-2 h-auto">
+      <button class="bg-gray-100 px-2 py-3  cursor-pointer" routerLink="/admin/dashboard/ba7c9b1c-dfc6-4142-bcd2-39a1314204ed">
+        <i class="pi pi-arrow-left"></i> 
+        <p>Back to admin</p>
+      </button>
+        <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
+      
+    </div>
+
 
   <nav>
     <ul class="flex gap-12 list-none">
@@ -23,7 +32,7 @@
     </ul>
   </nav>
 
-  <div>
+  <div class="mr-4">
     <div (click)="op.toggle($event)" class="profile">
       <img [src]="profileImgUrl" alt="Test Profile" class="profile-img" />
       <p class="capitalize mb-0">{{ userRegData.username }}</p>

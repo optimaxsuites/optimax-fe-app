@@ -356,7 +356,7 @@
           >
             <img
               class="w-full h-full object-contain"
-              [src]="activeItem?.imageUrl$"
+              [src]="mainProductImage"
               alt="product image"
             />
           </div>
@@ -364,10 +364,42 @@
             for="image"
             class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer"
           >
-            <i class="fa-solid fa-upload mr-2"></i> Product Image
+            Product Image Gallery
           </label>
         </div>
+
+         <!-- Image Grid -->
+         <div *ngIf="activeItemImages.length > 0" class="w-full">
+          <!-- <h3 class="text-sm font-medium text-gray-700 mb-3">Product Images</h3> -->
+          <div class="grid grid-cols-3 gap-2">
+            <div
+              *ngFor="let url of activeItemImages; let i = index"
+              class="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border-2"
+              [class.border-customBlue]="mainProductImage === url"
+            >
+              <!-- Image -->
+              <img
+                [src]="url"
+                [alt]="'Product image ' + (i + 1)"
+                class="w-full h-full object-cover cursor-pointer"
+                (click)="setAsMainImage(url)"
+              />
+              
+              
+              <!-- Main Image Badge -->
+              <div
+                *ngIf="mainProductImage === url"
+                class="absolute top-1 left-1 bg-customBlue text-white text-xs px-2 py-1 rounded-full"
+              >
+                Main
+              </div>
+            </div>
+          </div>
+          
+        </div>
       </div>
+
+       
     </div>
   </div>
 </div>

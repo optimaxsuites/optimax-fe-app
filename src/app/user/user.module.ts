@@ -65,6 +65,7 @@ import { DecimalPipe, TitleCasePipe, DatePipe } from '@angular/common';
 import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
 import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
+import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
 // import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 // import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
@@ -97,7 +98,8 @@ import { CategoryProductsComponent } from '../ui/view/pos-store/category-product
     AuthModalComponent,
     StoreCheckoutComponent,
     ProductDetailsComponent,
-    CategoryProductsComponent
+    CategoryProductsComponent,
+    WhatsappWidgetComponent
     // ProductVariantModalComponent,
   ],
   imports: [
