@@ -90,7 +90,9 @@ interface OrderShared<TDateType> {
    * @maxLength 12
    */
   orderNumber: string;
-  orderStatus: "PAID" | "UNPAID";
+  orderStatus: "PAID" | "UNPAID" | "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED";
+  status?: "PAID" | "UNPAID";
+
   /**
    * @format date-time
    */
@@ -108,7 +110,7 @@ export interface OrderPOST extends OrderShared<string> {
   customerId: number | null;
   branchId: number | null;
   discountId: number | null;
-  paymentId: number | null;
+  paymentId?: number | null;
   cashierId: number | null;
   orderItem: OrderItemPOST[];
   deliveryStatus: string;
@@ -147,4 +149,6 @@ export interface OrderItemGET extends OrderItemShared {
   product: ProductData;
   // TODO: Create the full product variant interface
   productVariant: VariantDTO | null;
+
+  status?: string;
 }

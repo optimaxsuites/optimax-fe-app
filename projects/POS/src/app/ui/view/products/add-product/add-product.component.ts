@@ -400,15 +400,6 @@ discountTypes: any[] = [
         this.initializeEditMode();
       }, 100);
     }
-
-   // Add price change listeners
-  this.productForm.get('costPrice')?.valueChanges.subscribe(() => {
-    this.checkPriceValidation();
-  });
-
-  this.productForm.get('sellingPrice')?.valueChanges.subscribe(() => {
-    this.checkPriceValidation();
-  });
     // Fixed subscription for selectedProductIds
     this.productForm
       .get('selectedProductIds')
@@ -714,7 +705,14 @@ deleteTax(taxId: number) {
 // Add this property to track if price validation toast is already shown
 private priceValidationToastShown = false;
 
-// Update the checkPriceValidation method
+onPriceFieldBlur(): void {
+  // Small timeout to ensure the form values are updated
+  setTimeout(() => {
+    this.checkPriceValidation();
+    // No need for updateProfitLossDisplay() - template updates automatically
+  }, 100);
+}
+
 checkPriceValidation(): void {
   const costPrice = this.productForm.get('costPrice')?.value;
   const sellingPrice = this.productForm.get('sellingPrice')?.value;
@@ -746,13 +744,15 @@ checkPriceValidation(): void {
     const sellingControl = this.productForm.get('sellingPrice');
     
     if (costControl?.errors?.['costPriceHigher']) {
-      delete costControl.errors['costPriceHigher'];
-      costControl.updateValueAndValidity();
+      const errors = { ...costControl.errors };
+      delete errors['costPriceHigher'];
+      costControl.setErrors(Object.keys(errors).length ? errors : null);
     }
     
     if (sellingControl?.errors?.['costPriceHigher']) {
-      delete sellingControl.errors['costPriceHigher'];
-      sellingControl.updateValueAndValidity();
+      const errors = { ...sellingControl.errors };
+      delete errors['costPriceHigher'];
+      sellingControl.setErrors(Object.keys(errors).length ? errors : null);
     }
     
     // Reset the flag when prices become valid
@@ -1155,66 +1155,77 @@ checkPriceValidation(): void {
     }
   }
 
-  private initializeProductImages() {
-    console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
-    
-    // Reset
-    this.productImages = [];
-    this.mainProductImage = '';
+private initializeProductImages() {
+  console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
+  
+  // Reset
+  this.productImages = [];
+  this.mainProductImage = '';
 
-    // Check if we have product images in the expected format
-    if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
-      console.log('✅ Found product images array:', this.activeItem.productImages);
-      
-      // Process each image
-      this.activeItem.productImages.forEach((imageItem: any, index: number) => {
-        try {
-          const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
-          console.log(`🖼️ Image ${index} URL:`, imageUrl);
+  // Check if we have product images in the expected format
+  if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
+    console.log('✅ Found product images array:', this.activeItem.productImages);
+    
+    // Process each image
+    this.activeItem.productImages.forEach((imageItem: any, index: number) => {
+      try {
+        const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
+        console.log(`🖼️ Image ${index} URL:`, imageUrl);
+        
+        if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
+          const imageData = {
+            file: null,
+            url: imageUrl
+          };
           
-          if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
-            const imageData = {
-              file: null,
-              url: imageUrl
-            };
-            
-            this.productImages.push(imageData);
-            
-            // Set the first image as main
-            if (!this.mainProductImage) {
-              this.mainProductImage = imageUrl;
-              console.log('✅ Set as main image:', imageUrl);
-            }
-          } else {
-            console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
+          this.productImages.push(imageData);
+          
+          // Set the first image as main if no main image is set
+          if (index === 0 && !this.mainProductImage) {
+            this.mainProductImage = imageUrl;
+            console.log('✅ Set first image as main image:', imageUrl);
           }
-        } catch (error) {
-          console.error(`❌ Error processing image ${index}:`, error);
+        } else {
+          console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
         }
-      });
-    } else {
-      console.log('❌ No valid product images found in activeItem');
-    }
-
-    // If no images were processed successfully, use placeholder
-    if (this.productImages.length === 0) {
-      console.log('⚠️ No valid images processed, using placeholder');
-      this.mainProductImage = this.getPlaceholderImage();
-      this.productImages.push({
-        file: null,
-        url: this.mainProductImage
-      });
-    }
-
-    console.log('📊 FINAL STATE:', {
-      mainProductImage: this.mainProductImage,
-      productImagesCount: this.productImages.length,
-      productImages: this.productImages.map(img => img.url)
+      } catch (error) {
+        console.error(`❌ Error processing image ${index}:`, error);
+      }
     });
+  } else {
+    console.log('❌ No valid product images found in activeItem');
     
-    this.updateImageFormValidation();
+    // Try alternative image sources
+    if (this.activeItem?.imageUrl) {
+      console.log('🔄 Trying imageUrl property:', this.activeItem.imageUrl);
+      const imageData = {
+        file: null,
+        url: this.activeItem.imageUrl
+      };
+      this.productImages.push(imageData);
+      this.mainProductImage = this.activeItem.imageUrl;
+    }
   }
 
+  // If no images were processed successfully, use placeholder
+  if (this.productImages.length === 0) {
+    console.log('⚠️ No valid images processed, using placeholder');
+    const placeholderUrl = this.getPlaceholderImage();
+    this.mainProductImage = placeholderUrl;
+    this.productImages.push({
+      file: null,
+      url: placeholderUrl
+    });
+  }
+
+  console.log('📊 FINAL STATE:', {
+    mainProductImage: this.mainProductImage,
+    productImagesCount: this.productImages.length,
+    productImages: this.productImages.map(img => img.url)
+  });
+  
+  this.updateImageFormValidation();
+}
   removeImage(index: number) {
     const removedImage = this.productImages[index];
 
@@ -1333,57 +1344,70 @@ checkPriceValidation(): void {
     this.mainProductImage = '';
   }
 
-  getMainImage(): string {
-    console.log('🖼️ getMainImage() called - Current state:', {
-      mainProductImage: this.mainProductImage,
-      productImagesLength: this.productImages.length,
-      hasActiveItem: !!this.activeItem
-    });
+getMainImage(): string {
+  console.log('🖼️ getMainImage() called - Current state:', {
+    mainProductImage: this.mainProductImage,
+    productImagesLength: this.productImages.length,
+    hasActiveItem: !!this.activeItem,
+    isEditMode: this.isEditMode
+  });
 
-    // Priority 1: Use mainProductImage if it's set and not placeholder
-    if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
-      console.log('✅ Using mainProductImage:', this.mainProductImage);
-      return this.mainProductImage;
-    }
-    
-    // Priority 2: Use first image from productImages array
-    if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
-      const firstImage = this.productImages[0].url;
-      console.log('✅ Using first image from productImages:', firstImage);
+  // Priority 1: Use explicitly set mainProductImage
+  if (this.mainProductImage && this.mainProductImage !== this.getPlaceholderImage()) {
+    console.log('✅ Using explicitly set mainProductImage:', this.mainProductImage);
+    return this.mainProductImage;
+  }
+  
+  // Priority 2: In edit mode, try to get from productImages array
+  if (this.isEditMode && this.productImages.length > 0) {
+    const firstImage = this.productImages[0].url;
+    if (firstImage && firstImage !== this.getPlaceholderImage()) {
+      console.log('✅ Using first image from productImages in edit mode:', firstImage);
+      // Also update the mainProductImage for consistency
+      this.mainProductImage = firstImage;
       return firstImage;
     }
+  }
+  
+  // Priority 3: Try to construct from activeItem in edit mode
+  if (this.isEditMode && this.activeItem) {
+    console.log('🔄 Trying to construct image from activeItem in edit mode...');
     
-    // Priority 3: In edit mode, try to construct from activeItem directly
-    if (this.isEditMode && this.activeItem) {
-      console.log('🔄 Trying to construct image from activeItem...');
+    // Try productImages array first
+    if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+      const firstImageItem = this.activeItem.productImages[0];
+      const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
+      console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
       
-      // Try productImages array first
-      if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-        const firstImageItem = this.activeItem.productImages[0];
-        const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
-        console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
-        
-        if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
-          // Update our local state with this constructed URL
-          this.mainProductImage = constructedUrl;
-          if (this.productImages.length === 0) {
-            this.productImages.push({ file: null, url: constructedUrl });
-          }
-          return constructedUrl;
+      if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
+        // Update our local state with this constructed URL
+        this.mainProductImage = constructedUrl;
+        if (this.productImages.length === 0) {
+          this.productImages.push({ file: null, url: constructedUrl });
         }
-      }
-      
-      // Try direct imageUrl property
-      if (this.activeItem.imageUrl) {
-        console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
-        return this.activeItem.imageUrl;
+        return constructedUrl;
       }
     }
     
-    // Final fallback: placeholder
-    console.log('⚠️ Using placeholder image as fallback');
-    return this.getPlaceholderImage();
+    // Try direct imageUrl property
+    if (this.activeItem.imageUrl) {
+      console.log('✅ Using activeItem.imageUrl:', this.activeItem.imageUrl);
+      this.mainProductImage = this.activeItem.imageUrl;
+      return this.activeItem.imageUrl;
+    }
   }
+  
+  // Priority 4: Use first image from productImages array (for non-edit mode)
+  if (this.productImages.length > 0 && this.productImages[0].url !== this.getPlaceholderImage()) {
+    const firstImage = this.productImages[0].url;
+    console.log('✅ Using first image from productImages:', firstImage);
+    return firstImage;
+  }
+  
+  // Final fallback: placeholder
+  console.log('⚠️ Using placeholder image as fallback');
+  return this.getPlaceholderImage();
+}
 
   handleImageError(event: any) {
     console.log('Image failed to load, using placeholder');

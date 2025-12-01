@@ -1,17 +1,20 @@
-import { Component, computed, Input, OnInit, signal } from "@angular/core";
-import { lastValueFrom } from "rxjs";
+import { Component, Input, Output, EventEmitter, OnInit } from "@angular/core";
+import { DecimalPipe } from '@angular/common';
+import { Observable, of, lastValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+// Import all your company interfaces and services
 import {
-	BranchDTO,
-	ProductCategoryPOST,
-	ProductData,
-	Satisfy,
+  BranchDTO,
+  ProductData,
 } from "../../models/interface";
 import {
-	OrderGET,
-	OrderItemGET,
-	OrderItemPOST,
-	OrderPOST,
-	TableOrderStatusGET,
+  OrderGET,
+  OrderItemGET,
+  OrderItemPOST,
+  OrderPOST,
+  TableOrderStatusGET,
+  TableOrderStatusPOST
 } from "../../models/interfaces/kitchen";
 import { CheckoutService } from "../../service/checkout.service";
 import { ImageCacheService } from "../../service/image-cache.service";
@@ -22,58 +25,46 @@ import { UserService } from "../../service/user.service";
 import { arrayToDate, dateToArray } from "../../shared";
 import { isSuperUser, getUserPermissionsFor } from "../../../shared/pipes/helper";
 
-/* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
+// Updated interfaces with proper status structure
+interface MenuItem {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  stockQuantity?: number; // Add stock quantity
+  lowStockThreshold?: number; // Add low stock threshold
+}
 
-/** All the food ordered by a table. Each key is a food item / product and its value is simply the amount of aforementioned product */
+interface OrderItem extends MenuItem {
+  qty: number;
+  total: number;
+  status?: string;
+}
+
+// CORRECTED STATUS STRUCTURE FOR ORDER FLOW
+interface Order {
+  table: number;
+  orderNo: string;
+  items: OrderItem[];
+  status: 'UNPAID' | 'PREPARING' | 'READY' | 'PAID' | 'CONFIRMED' | 'CANCELLED';
+  note?: string;
+  date?: string;
+  createdAt?: string;
+  paymentMethod?: string;
+  backendId?: number;
+  orderId?: number;
+  paymentId?: number;
+}
+
+// Company types from v17
 type TableOrder = Map<ProductData, number>;
 
-type TableOrderStatusTimeStamps = Partial<{
-	orderedOn: Date;
-	processedOn: Date;
-	completedOn: Date;
-	readyOn: Date;
-}>;
-
-type OrderStatus = {
-	pending: boolean;
-	processing: boolean;
-	completed: boolean;
-	ready: boolean;
-};
-type OrderStatusPending = Satisfy<
-	OrderStatus,
-	{ pending: true; completed: false; processing: false; ready: false }
->;
-type OrderStatusProcessing = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: true; ready: false }
->;
-type OrderStatusCompleted = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: true; processing: false; ready: false }
->;
-type OrderStatusReady = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: false; ready: true }
->;
-type OrderStatusNone = Satisfy<
-	OrderStatus,
-	{ pending: false; completed: false; processing: false; ready: false }
->;
-/** Used to know where an order is pending, processing, completed, or ready */
-type OrderStatusUnion =
-	| OrderStatusCompleted
-	| OrderStatusPending
-	| OrderStatusProcessing
-	| OrderStatusReady
-	| OrderStatusNone;
-
 @Component({
-	selector: "app-checkout-kitchen",
-	templateUrl: "./checkout-kitchen.component.html",
-	styleUrls: ["./checkout-kitchen.component.scss"],
+  selector: 'app-checkout-kitchen',
+  templateUrl: './checkout-kitchen.component.html',
+  styleUrls: ['./checkout-kitchen.component.scss']
 })
-// Used for both the cashier and kitchen
 export class CheckoutKitchenComponent implements OnInit {
 	/** The table number that is set by the waiter when creating a new order */
 	orderTableNumber = 1;

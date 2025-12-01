@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Order } from '../../../models/interface'; 
 import { MetadataService } from '../../../service/metadata.service';
-import { StoreOrderService } from '../../../service/store-order.service'; // Needed for cancelOrder
+import { StoreOrderService } from '../../../service/store-order.service'; // Needed for cancelOrder and loadOrders
 import { CancellationEvent } from '../sales-details/sales-details.component'; // Interface for the cancel event
 
 @Component({
@@ -63,7 +63,7 @@ export class EStoreSalesComponent implements OnInit {
 
   constructor(
     private metadataService: MetadataService,
-    private storeOrderService: StoreOrderService, // Injected for cancellation logic
+    private storeOrderService: StoreOrderService, // Injected for cancellation logic and fetching
     private router: Router
   ) { }
   
@@ -73,11 +73,20 @@ export class EStoreSalesComponent implements OnInit {
   
   loadOrders(): void {
     this.isLoading = true;
-    this.metadataService.orders$.subscribe(orders => {
-      this.orders = orders;
-      console.log('EStoreSales: Loaded all orders from MetadataService.');
-      this.isLoading = false;
-      this.applyFiltersAndSort();
+    
+    // CHANGED: Use the dedicated E-Store Orders API
+    this.storeOrderService.getEStoreOrders({}).subscribe({
+      next: (orders) => {
+        this.orders = orders;
+        console.log('EStoreSales: Loaded E-Store orders from dedicated API.');
+        this.isLoading = false;
+        this.applyFiltersAndSort();
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('❌ Failed to load E-Store orders:', err);
+        this.isLoading = false;
+        // Handle error (e.g., set an error flag)
+      }
     });
   }
   

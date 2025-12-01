@@ -93,8 +93,8 @@ const routes: Routes = [
   {
     path: 'hotel/:uuid',
     component: HotelCheckoutComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['HOP_ROOM'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['HOP_ROOM'] }
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['HOP_ROOM'] }
   },
@@ -136,6 +136,7 @@ const routes: Routes = [
     {
       path: 'product-details/:id',
       component: ProductDetailsComponent,
+      runGuardsAndResolvers: 'paramsChange' 
     },
     {
       path: 'order-history',

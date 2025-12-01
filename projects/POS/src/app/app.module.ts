@@ -1,5 +1,5 @@
 import { ChartModule } from 'primeng/chart';
-import { NgModule, viewChild, APP_INITIALIZER } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -76,7 +76,6 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
 import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
-// import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
 import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
@@ -91,7 +90,6 @@ import { MenuModule } from 'primeng/menu';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
-// import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 
 import { InputNumberModule } from 'primeng/inputnumber';
 
@@ -100,7 +98,6 @@ import { PaginatorModule } from 'primeng/paginator';
 
 import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
-import { share } from 'rxjs';
 import { OrderFilterPipe } from './ui/pipes/order-filter.pipe';
 import { OrderStatusPipe } from './ui/pipes/order-status.pipe';
 import { AppInitService } from './ui/service/app-init.service';
@@ -131,12 +128,8 @@ import { TagModule } from 'primeng/tag';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { UniquePipe } from './shared/pipes/unique.pipe';
 import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
-// import { StoreProductsDetailsComponent } from './ui/view/store-products-details/store-products-details.component';
-// import { ProductDetailsComponent } from './ui/view/pos-store/product-details/product-details.component';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
-// import { OrderConfirmationComponent } from './ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-history.component';
-// import { CategoryProductsComponent } from './ui/view/pos-store/category-products/category-products.component';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 import { AllProductsComponent } from './ui/view/pos-store/all-products/all-products.component';
 import { VerificationRequiredComponent } from './ui/view/pos-store/verification-required/verification-required.component';
@@ -144,6 +137,7 @@ import { EmailVerificationComponent } from './ui/view/pos-store/email-verificati
 import { ReturnsRefundsComponent } from './ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 import { EStoreOrdersListComponent } from './ui/view/sales/e-store-sales/estore-orders-list/estore-orders-list.component';
+import { WhatsappWidgetComponent } from './ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
@@ -259,17 +253,9 @@ const dbConfig: DBConfig = {
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
-    // KitchenOrderComponent,
-    // CheckoutKitchenComponent,
-    
-    IngredientComponent,
-    AddIngredientComponent,
     IngredientComponent,
     AddIngredientComponent,
     HotelCheckoutComponent,
-    HotelCheckoutComponent,
-    IngredientComponent,
-    AddIngredientComponent,
     HotelFormComponent,
     HotelMessageComponent,
     HotelRoomlistComponent,
@@ -290,9 +276,6 @@ const dbConfig: DBConfig = {
     OrderFilterPipe,
     SalesDetailsComponent,
     UniquePipe,
-    // StoreHeaderComponent,
-    // StoreProductsDetailsComponent,
-    // ProductDetailsComponent,
     UpdateStockComponent,
     AllProductsComponent,
     VerificationRequiredComponent,
@@ -300,6 +283,7 @@ const dbConfig: DBConfig = {
     ReturnsRefundsComponent,
     EStoreSalesComponent,
     EStoreOrdersListComponent,
+    // WhatsappWidgetComponent,
     // CategoryProductsComponent,
     // OrderConfirmationComponent,
     // OrderHistoryComponent,
@@ -313,7 +297,6 @@ const dbConfig: DBConfig = {
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
-    AppRoutingModule,
     TableModule,
     RippleModule,
     DialogModule,
@@ -392,7 +375,6 @@ const dbConfig: DBConfig = {
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
     MessageService,
-
   ],
   bootstrap: [AppComponent],
 })

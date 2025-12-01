@@ -83,14 +83,28 @@
             <div class="flex items-center h-5">
               <input formControlName="includeLowStock" id="lowStock"
                 type="checkbox"
-                class="focus:ring-custom bg-customBlue h-4 w-4 text-custombg-customBlue border-gray-300 rounded">
+                class="focus:ring-customBlue h-4 w-4 text-customBlue border-gray-300 rounded">
             </div>
             <div class="ml-3">
               <label for="lowStock" class="font-medium text-gray-700">Show only low stock items</label>
             </div>
           </div>
         </div>
-
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
+            <div>
+              <label for="groupByMovement"
+                class="block font-medium text-gray-700 mb-1">Group Movements By</label>
+              <select id="groupByMovement" formControlName="groupByMovement"
+                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-customBlue focus:border-customBlue sm:text-sm rounded-md">
+                <option value="none">Detail (Movement-by-Movement)</option>
+                <option value="day">Day</option>
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+              </select>
+            </div>
+        </div>
+        
         <div *ngIf="showCustomDateRange"
           class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
           <div>
@@ -113,7 +127,7 @@
             Reset
           </button>
           <button type="submit"
-            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm font-medium rounded-md text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-custombg-customBlue">
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm font-medium rounded-md text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
             Apply
           </button>
         </div>
@@ -297,6 +311,226 @@
       </div>
     </div>
 
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+        <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Detailed Stock Movement History (Inflow/Outflow)
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                View of all inventory movements within the selected date range.
+            </p>
+            <div *ngIf="movementReportData" class="mt-3 flex space-x-4 text-sm font-medium">
+                <span class="text-green-600">Total Inflow: {{ movementReportData.totalInflow | number }} units</span>
+                <span class="text-red-600">Total Outflow: {{ movementReportData.totalOutflow | number }} units</span>
+                <span [ngClass]="{'text-blue-600': movementReportData.netChange >= 0, 'text-red-600': movementReportData.netChange < 0}">Net Change: {{ movementReportData.netChange | number }} units</span>
+            </div>
+        </div>
+
+        <div *ngIf="isLoading" class="flex justify-center items-center p-12">
+            <div
+                class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-customBlue"></div>
+        </div>
+
+        <div *ngIf="!isLoading && ((movementReportData?.movements?.length || 0) === 0)" class="px-6 py-12 text-center">
+            <div class="text-gray-500">
+                <i class="fas fa-box-open mx-auto h-12 w-12 text-gray-400"></i>
+                <h3 class="mt-2 font-medium text-gray-900">No stock movements found</h3>
+                <p class="mt-1 text-gray-500">Try adjusting your filters or checking a wider date range.</p>
+            </div>
+        </div>
+
+        <div *ngIf="!isLoading && ((movementReportData?.movements?.length || 0) > 0)" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" (click)="sortMovementData('createdDate')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Date/Time
+                            <span *ngIf="movementSortColumn === 'createdDate'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('productName')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Product
+                            <span *ngIf="movementSortColumn === 'productName'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('branchName')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Branch
+                            <span *ngIf="movementSortColumn === 'branchName'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('quantity')"
+                            class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Type / Qty Change
+                            <span *ngIf="movementSortColumn === 'quantity'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('purchasePrice')"
+                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Purchase Price
+                            <span *ngIf="movementSortColumn === 'purchasePrice'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                         <th scope="col" (click)="sortMovementData('sellingPrice')"
+                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Selling Price
+                            <span *ngIf="movementSortColumn === 'sellingPrice'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                         <th scope="col" (click)="sortMovementData('totalCost')"
+                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Total Cost
+                            <span *ngIf="movementSortColumn === 'totalCost'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('reference')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Reference
+                            <span *ngIf="movementSortColumn === 'reference'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                        <th scope="col" (click)="sortMovementData('supplierName')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                            Supplier
+                            <span *ngIf="movementSortColumn === 'supplierName'" class="ml-1">
+                                <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                                <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
+                            </span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr *ngFor="let movement of (movementReportData?.movements || []) | slice:(movementPage-1)*movementPageSize:(movementPage)*movementPageSize; trackBy: trackByMovementId"
+                        [ngClass]="{'bg-green-50': movement.quantity > 0, 'bg-red-50': movement.quantity < 0}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ formatMovementDate(movement.createdDate) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ movement.productName }}</div>
+                            <div class="text-xs text-gray-500">{{ movement.productSku }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">{{ movement.branchName }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                [ngClass]="{'bg-green-100 text-green-800': movement.quantity > 0, 'bg-red-100 text-red-800': movement.quantity < 0}">
+                                {{ movement.quantity > 0 ? 'IN' : 'OUT' }} ({{ movement.quantity > 0 ? '+' : '' }}{{ movement.quantity }})
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                            {{ movement.purchasePrice | currency:'₦':'symbol':'1.2-2' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                            {{ movement.sellingPrice | currency:'₦':'symbol':'1.2-2' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                             [ngClass]="{'text-green-800': movement.quantity > 0, 'text-red-800': movement.quantity < 0}">
+                            {{ (Math.abs(movement.quantity) * (movement.purchasePrice || 0)) | currency:'₦':'symbol':'1.2-2' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ movement.reference || 'N/A' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ movement.supplierName || 'N/A' }}</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div *ngIf="!isLoading && ((movementReportData?.movements?.length || 0) > movementPageSize)" 
+          class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+              <button [disabled]="movementPage === 1" (click)="movementPage = movementPage - 1"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium text-gray-700 bg-white hover:bg-gray-50"
+                [ngClass]="{'opacity-50 cursor-not-allowed': movementPage === 1}">
+                Previous
+              </button>
+              <button
+                [disabled]="movementPage >= Math.ceil((movementReportData?.movements?.length || 0) / movementPageSize)"
+                (click)="movementPage = movementPage + 1"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium text-gray-700 bg-white hover:bg-gray-50"
+                [ngClass]="{'opacity-50 cursor-not-allowed': movementPage >= Math.ceil((movementReportData?.movements?.length || 0) / movementPageSize)}">
+                Next
+              </button>
+            </div>
+            <div
+              class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing
+                  <span class="font-medium">{{ (movementPage - 1) * movementPageSize + 1 }}</span>
+                  to
+                  <span class="font-medium">{{ Math.min(movementPage * movementPageSize,
+                    movementReportData?.movements?.length || 0) }}</span>
+                  of
+                  <span class="font-medium">{{ movementReportData?.movements?.length || 0
+                    }}</span>
+                  movements
+                </p>
+              </div>
+              <div>
+                <nav
+                  class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                  aria-label="Pagination">
+                  <button [disabled]="movementPage === 1" (click)="movementPage = movementPage - 1"
+                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50"
+                    [ngClass]="{'opacity-50 cursor-not-allowed': movementPage === 1}">
+                    <span class="sr-only">Previous</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd"
+                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                        clip-rule="evenodd" />
+                    </svg>
+                  </button>
+    
+                  <ng-container
+                    *ngFor="let p of [].constructor(Math.ceil((movementReportData?.movements?.length || 0) / movementPageSize)); let i = index">
+                    <button (click)="movementPage = i + 1"
+                      [ngClass]="{'bg-customBlue border-customBlue text-customBlue': movementPage === i + 1, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': movementPage !== i + 1}"
+                      class="relative inline-flex items-center px-4 py-2 border font-medium">
+                      {{ i + 1 }}
+                    </button>
+                  </ng-container>
+    
+                  <button
+                    [disabled]="movementPage >= Math.ceil((movementReportData?.movements?.length || 0) / movementPageSize)"
+                    (click)="movementPage = movementPage + 1"
+                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50"
+                    [ngClass]="{'opacity-50 cursor-not-allowed': movementPage >= Math.ceil((movementReportData?.movements?.length || 0) / movementPageSize)}">
+                    <span class="sr-only">Next</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+    </div>
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
       <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -309,7 +543,7 @@
 
       <div *ngIf="isLoading" class="flex justify-center items-center p-12">
         <div
-          class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custombg-customBlue"></div>
+          class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-customBlue"></div>
       </div>
 
       <div *ngIf="!isLoading" class="overflow-x-auto">
@@ -392,7 +626,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              *ngFor="let item of reportData?.inventory | slice:(page-1)*pageSize:(page)*pageSize"
+              *ngFor="let item of reportData?.inventory | slice:(page-1)*pageSize:(page)*pageSize; trackBy: trackByItemId"
               [ngClass]="{'bg-red-50': item.lowStockAlert}">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">{{
@@ -451,7 +685,7 @@
                   <p class="mt-1 text-gray-500">Try adjusting your filters or reset to view all inventory.</p>
                   <div class="mt-6">
                     <button (click)="resetFilters()"
-                      class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm font-medium rounded-md text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-custombg-customBlue">
+                      class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm font-medium rounded-md text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
                       Reset Filters
                     </button>
                   </div>
@@ -466,15 +700,15 @@
         class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
         <div class="flex-1 flex justify-between sm:hidden">
           <button [disabled]="page === 1" (click)="page = page - 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium text-gray-700 bg-white hover:bg-gray-50"
             [ngClass]="{'opacity-50 cursor-not-allowed': page === 1}">
             Previous
           </button>
           <button
             [disabled]="page >= (reportData?.inventory?.length || 0) / pageSize"
             (click)="page = page + 1"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            [ngClass]="{'opacity-50 cursor-not-allowed': page >= (reportData?.inventory?.length || 0) / pageSize}">
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium text-gray-700 bg-white hover:bg-gray-50"
+            [ngClass]="{'opacity-50 cursor-not-allowed': page >= Math.ceil((reportData?.inventory?.length || 0) / pageSize)}">
             Next
           </button>
         </div>
@@ -512,7 +746,7 @@
               <ng-container
                 *ngFor="let p of [].constructor(Math.ceil((reportData?.inventory?.length || 0) / pageSize)); let i = index">
                 <button (click)="page = i + 1"
-                  [ngClass]="{'bg-customBlueborder-custombg-customBlue text-custombg-customBlue': page === i + 1, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== i + 1}"
+                  [ngClass]="{'bg-customBlue border-customBlue text-customBlue': page === i + 1, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== i + 1}"
                   class="relative inline-flex items-center px-4 py-2 border font-medium">
                   {{ i + 1 }}
                 </button>

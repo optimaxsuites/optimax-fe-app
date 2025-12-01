@@ -125,40 +125,37 @@
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Cost Price -->
-          <div>
-            <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
-              Cost Price <span class="text-red-500">*</span>
-            </label>
-            <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"
-              [class.border-red-300]="isFieldInvalidAndTouched('costPrice')"
-              [class.border-green-300]="productForm.get('costPrice')?.valid && productForm.get('costPrice')?.touched"></p-inputNumber>
+<!-- Cost Price -->
+<div>
+  <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
+    Cost Price <span class="text-red-500">*</span>
+  </label>
+  <p-inputNumber 
+    formControlName="costPrice" 
+    mode="decimal" 
+    [min]="0" 
+    styleClass="w-full"
+    [class.border-red-300]="isFieldInvalidAndTouched('costPrice')"
+    [class.border-green-300]="productForm.get('costPrice')?.valid && productForm.get('costPrice')?.touched"
+    (onBlur)="onPriceFieldBlur()"> <!-- Add blur event -->
+  </p-inputNumber>
+</div>
 
-            <div *ngIf="
-      productForm.get('costPrice')?.invalid &&
-      productForm.get('costPrice')?.touched
-    " class="mt-1 text-sm text-red-500">
-              {{ getErrorMessage("costPrice") }}
-            </div>
-          </div>
-
-          <!-- Selling Price -->
-          <div class="col-span-1">
-            <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
-              Selling Price <span class="text-red-500">*</span>
-            </label>
-            <div class="flex gap-2">
-              <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0" styleClass="w-full"
-                [class.border-red-300]="isFieldInvalidAndTouched('sellingPrice')"
-                [class.border-green-300]="productForm.get('sellingPrice')?.valid && productForm.get('sellingPrice')?.touched"></p-inputNumber>
-            </div>
-            <div *ngIf="
-      productForm.get('sellingPrice')?.invalid &&
-      productForm.get('sellingPrice')?.touched
-    " class="mt-1 text-sm text-red-500">
-              {{ getErrorMessage("sellingPrice") }}
-            </div>
-          </div>
+<!-- Selling Price -->
+<div class="col-span-1">
+  <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
+    Selling Price <span class="text-red-500">*</span>
+  </label>
+  <p-inputNumber 
+    formControlName="sellingPrice" 
+    mode="decimal" 
+    [min]="0" 
+    styleClass="w-full"
+    [class.border-red-300]="isFieldInvalidAndTouched('sellingPrice')"
+    [class.border-green-300]="productForm.get('sellingPrice')?.valid && productForm.get('sellingPrice')?.touched"
+    (onBlur)="onPriceFieldBlur()"> <!-- Add blur event -->
+  </p-inputNumber>
+</div>
           <!-- sellingPrice -->
           <!-- <div class="col-span-1">
             <label
@@ -187,25 +184,25 @@
           </div> -->
 
           <!-- Add this after the selling price field -->
-          <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
-            class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
-       'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
-       'bg-red-50 border-red-200': calculatePriceDifference() < 0
-     }">
-            <div class="flex justify-between items-center">
-              <span class="text-sm font-medium">Profit/Loss:</span>
-              <span [ngClass]="{
+  <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
+  class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
+   'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
+   'bg-red-50 border-red-200': calculatePriceDifference() < 0
+ }">
+  <div class="flex justify-between items-center">
+    <span class="text-sm font-medium">Profit/Loss:</span>
+    <span [ngClass]="{
       'text-green-600 font-semibold': calculatePriceDifference() >= 0,
       'text-red-600 font-semibold': calculatePriceDifference() < 0
     }">
-                {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
-                ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
-              </span>
-            </div>
-            <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
-              ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
-            </div>
-          </div>
+      {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
+      ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
+    </span>
+  </div>
+  <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
+    ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
+  </div>
+</div>
 
           <!-- quantity -->
           <div>
@@ -1400,7 +1397,7 @@
           </div>
         </div>
       </div>
-    </div> 
+    </div>
 
     <div *ngIf="discount?.discountType?.includes(2)">
       <div>

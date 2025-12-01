@@ -1,3 +1,5 @@
+// cash-payment.component.ts
+
 import { Location } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
@@ -18,6 +20,7 @@ import { RandomTokenService } from "../../sharedComponent/service/random-token/r
 import { OfflineService } from "../../service/offline.service";
 import { BehaviorSubject, firstValueFrom, Observable } from "rxjs";
 import { MetadataService } from "../../service/metadata.service";
+import { HttpErrorResponse } from "@angular/common/http"; // <-- Import HttpErrorResponse
 
 @Component({
   selector: "app-cash-payment",
@@ -519,8 +522,60 @@ export class CashPaymentComponent implements OnInit {
           this.printReceipt();
           this.isLoading = false;
         },
-        error: () => this.showError("Failed to save order"),
+        error: (error) => this.handleOrderSaveError(error), // <-- **CHANGED** to use new error handler
       });
+  }
+
+  // **NEW METHOD** for handling Order Save Errors (including Out of Stock)
+  private handleOrderSaveError(error: HttpErrorResponse): void {
+    this.isLoading = false;
+    let errorMessage = "Failed to save order. Please check the console for details.";
+
+    // Attempt to extract the error message from the response body
+    // Assuming the backend sends an "Out of Stock" message either as a string or inside an object.
+    const errorBody = error.error;
+    const errorStatus = error.status;
+
+    let serverMessage = '';
+
+    if (typeof errorBody === 'string') {
+        serverMessage = errorBody;
+    } else if (errorBody?.message) {
+        serverMessage = errorBody.message;
+    } else if (errorBody) {
+        serverMessage = JSON.stringify(errorBody);
+    }
+    
+    console.error("❌ Order save error details:", { status: errorStatus, serverMessage: serverMessage, fullError: error });
+
+    // **Primary check for Out of Stock**
+    if (errorStatus === 400 || errorStatus === 409) {
+      if (serverMessage.toLowerCase().includes("out of stock") || 
+          serverMessage.toLowerCase().includes("inventory depleted") ||
+          serverMessage.toLowerCase().includes("insufficient stock")) {
+        
+        errorMessage = "⚠️ Product Out of Stock! One or more items in the cart are now unavailable. Please adjust the quantities and try again.";
+        this.messageService.add({
+          severity: "warn",
+          summary: "Inventory Issue",
+          detail: errorMessage,
+          key: "tl",
+          life: 7000,
+        });
+        return; // Exit after showing the specific toast
+      }
+    }
+    
+    // Default error handling
+    if (serverMessage) {
+        errorMessage = `Error saving order: ${serverMessage}`;
+    } else if (errorStatus === 0) {
+        errorMessage = "Network error. Unable to connect to the server.";
+    } else {
+        errorMessage = `Server Error (${errorStatus}). Failed to save order.`;
+    }
+    
+    this.showError(errorMessage);
   }
 
   private showError(msg: string) {

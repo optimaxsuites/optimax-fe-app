@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import {
@@ -24,6 +24,10 @@ import {
   BranchPerformanceDTO,
   InventoryProductDTO,
   InventoryItemDTO,
+  StockMovementReportDTO,
+  StockMovementReportRequestDTO,
+  StockMovementByInventory,
+  StockMovementResponsePayload
 } from '../models/interface';
 
 @Injectable({
@@ -212,9 +216,11 @@ export class ReportService {
     payload: InventoryReportRequestDTO
   ): Observable<InventoryReportDTO> {
     const formattedPayload = {
-      branchIds: payload.branchIds || [0],
-      categoryIds: payload.categoryIds || [0],
+      branchIds: payload.branchIds || [], 
+      categoryIds: payload.categoryIds || [],
       includeLowStock: payload.includeLowStock || false,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
     };
     console.log('Service: Sending inventory report request:', formattedPayload);
     return this.http
@@ -272,6 +278,86 @@ export class ReportService {
       );
   }
 
+  getStockMovementReport(
+    payload: StockMovementReportRequestDTO
+  ): Observable<StockMovementReportDTO> {
+    
+    let params = new HttpParams();
+
+    if (payload.startDate) {
+        params = params.set('startDate', payload.startDate);
+    }
+    if (payload.endDate) {
+        params = params.set('endDate', payload.endDate);
+    }
+    if (payload.branchIds && payload.branchIds.length > 0) {
+      params = params.set('branchIds', payload.branchIds.join(','));
+    }
+    console.log('Service: Sending GET stock movements request with params:', params.toString());
+    
+    // Using the general GET /stockMovements endpoint for fetching filtered data
+    return this.http
+      .get<StockMovementResponsePayload[]>(
+        `${this.baseUrl}/stockMovements`, 
+        { params }
+      )
+      .pipe(
+        map((response: any) => {
+          console.log('Service: Raw stock movement response:', response);
+
+          // Assuming the raw response is an array of StockMovementResponsePayload objects
+          const movements: StockMovementReportDTO['movements'] = Array.isArray(response)
+            ? response.map((item: any) => ({
+                id: item.id || Math.random(), 
+                createdDate: item.createdDate || new Date().toISOString(), 
+                quantity: item.quantity || 0, 
+                reference: item.reference || null,
+                purchasePrice: item.purchasePrice || null,
+                sellingPrice: item.sellingPrice || null, 
+                
+                productName: 'N/A (Enriching...)', // Placeholder
+                productSku: 'N/A',
+                productCategory: 'N/A',
+                branchName: 'N/A (Enriching...)', // Placeholder
+                supplierName: 'N/A',
+                
+                // Use IDs for later enrichment (assuming API returns these keys)
+                productId: item.productId || item.ingredientId, 
+                branchId: item.inventory?.branchId || item.branchId || payload.branchIds?.[0], 
+              }))
+            : [];
+            
+          const totalInflow = movements.filter(m => m.quantity > 0).reduce((sum, m) => sum + m.quantity, 0);
+          const totalOutflow = movements.filter(m => m.quantity < 0).reduce((sum, m) => sum + Math.abs(m.quantity), 0);
+          const netChange = totalInflow - totalOutflow;
+
+          const normalizedResponse: StockMovementReportDTO = {
+            movements: movements,
+            totalInflow: totalInflow,
+            totalOutflow: totalOutflow,
+            netChange: netChange,
+          };
+          console.log('Service: Normalized stock movement response:', normalizedResponse);
+          return normalizedResponse;
+        }),
+        catchError((err) => {
+          console.error('Service: ERROR fetching stock movement report:', {
+            status: err.status,
+            statusText: err.statusText,
+            url: err.url,
+            error: err.error,
+            params: params.toString(),
+          });
+          return of({
+            movements: [],
+            totalInflow: 0,
+            totalOutflow: 0,
+            netChange: 0,
+          });
+        })
+      );
+  }
+
   getBranchMonthlyTrend(branchId: number): Observable<any> {
     return this.http
       .post<any>(`${this.baseUrl}/salesreport/monthlytrend`, { branchId })
@@ -283,7 +369,7 @@ export class ReportService {
       );
   }
 
-  // New methods to get full details by ID
+  // Methods to get full details by ID (kept for enrichment)
   getProductById(id: number): Observable<ProductDTO> {
     return this.http.get<ProductDTO>(`${this.baseUrl}/products/${id}`).pipe(
       catchError((err) => {
@@ -309,5 +395,19 @@ export class ReportService {
         return throwError(() => err);
       })
     );
+  }
+
+  // Get current user's branch
+  getCurrentUserBranchId(): number | null {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        return user.branchId && typeof user.branchId === 'number' ? user.branchId : 1; 
+      } catch (e) {
+        return 1; 
+      }
+    }
+    return 1; 
   }
 }
