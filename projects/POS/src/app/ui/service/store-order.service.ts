@@ -403,7 +403,7 @@ export class StoreOrderService {
     console.log('🚚 Creating delivery info:', deliveryData);
 
     return this.http.post<any>(
-      this.getBaseApiUrl() + '/x/api/v2/pos/deliveryInfos',
+      this.getBaseApiUrl() + '/x/api/v2/pos/deliveryinfo',
       deliveryData,
       { headers: this.getHeaders() }
     ).pipe(

@@ -470,7 +470,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   navigateToCheckout(): void {
     this.isCartOpen = false;
     this.isCartSidebarVisible = false;
-    this.router.navigate(['/store', this.storeUuid, 'checkout']);
+    this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
   }
 
   // Helper methods
