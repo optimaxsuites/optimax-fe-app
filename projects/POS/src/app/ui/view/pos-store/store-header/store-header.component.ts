@@ -146,7 +146,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     } else {
       const currentUuid = this.storeUuid;
       if (currentUuid) {
-        this.router.navigate(['/store', currentUuid]);
+        this.router.navigate(['user/checkout/store', currentUuid]);
       }
     }
     this.closeMobileMenu();
@@ -284,7 +284,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   navigateToCategoryPage(categoryName: string): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'category', categoryName.toLowerCase()], {
+      this.router.navigate(['user/checkout/store', currentUuid, 'category', categoryName.toLowerCase()], {
         queryParams: { 
           branch: this.selectedBranch?.id || '',
           branchName: this.selectedBranch?.name || ''
@@ -380,7 +380,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     if (category === 'All') {
       const currentUuid = this.storeUuid;
       if (currentUuid) {
-        this.router.navigate(['/store', currentUuid]);
+        this.router.navigate(['user/checkout/store', currentUuid]);
       }
     } else {
       this.navigateToCategoryPage(category);
