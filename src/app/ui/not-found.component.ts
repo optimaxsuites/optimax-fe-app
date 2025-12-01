@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Location } from '@angular/common';
+
 
 @Component({
   selector: 'app-not-found',
@@ -14,6 +16,8 @@ export class NotFoundComponent {
       { title: 'Contact', url: '/contact' },
       { title: 'Blog', url: '/blog' }
   ];
+
+  constructor(private location: Location) {}
 
   ngOnInit() {
       // Auto-focus search input after component loads
@@ -58,12 +62,8 @@ export class NotFoundComponent {
   }
 
   goBack() {
-      if (window.history.length > 1) {
-          window.history.back();
-      } else {
-          this.navigateHome();
-      }
-  }
+  this.location.back();
+  } 
 
   navigateTo(url: string) {
       // In a real Angular app: this.router.navigate([url]);
