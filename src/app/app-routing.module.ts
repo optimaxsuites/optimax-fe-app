@@ -34,6 +34,7 @@ import { NotFoundComponent } from './ui/not-found.component';
 import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 import { TenantsComponent } from './ui/tenants/tenants.component';
+import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 
 const routes: Routes = [
   {
@@ -47,6 +48,7 @@ const routes: Routes = [
   },
   {
     path: 'user/auth',
+    canActivate: [UuidGuard],
     component: DefaultComponent,
     children: [
       {
@@ -77,7 +79,7 @@ const routes: Routes = [
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, UuidGuard],
   },
   {
     path: 'business-registration',
@@ -96,10 +98,14 @@ const routes: Routes = [
       {
         path: 'checkout',
         loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'hospitality',
         loadChildren: () => import('../../projects/hospitality/src/app/user/user.module').then(m => m.UserModule),
+        canActivate: [UuidGuard]
+
       },
     ],
   },
@@ -112,50 +118,73 @@ const routes: Routes = [
       {
         path: 'dashboard',
         loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
+        canActivate: [UuidGuard]
       },
       {
         path: 'hr',
         loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'settings',
         loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
+        canActivateChild: [ChildUuidGuard]
+
       },
       {
         path: 'pos',
         loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'expenses',
         loadChildren: () => import('../../projects/expense/src/app/app.module').then(m => m.AppExpensesModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'accounting',
         loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'procurement',
         loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'crm',
         loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'vendor',
         loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'tender',
         loadChildren: () => import('../../projects/tender/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'productivity',
         loadChildren: () => import('../../projects/productivity/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'hospitality',
         loadChildren: () => import('../../projects/hospitality/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
       },
       {
         path: 'admin/sales/:uuid',

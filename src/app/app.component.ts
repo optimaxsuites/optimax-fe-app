@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, HostListener, signal, ViewEncapsulation, OnInit } from '@angular/core';
+import { Component, computed, HostListener, signal, ViewEncapsulation, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
 import { firstValueFrom, lastValueFrom, Observable, BehaviorSubject } from 'rxjs';
@@ -20,7 +20,6 @@ type AppView = 'dashboard' | 'marketplace' | 'sales' | string;
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./app.component.scss']
 })
@@ -62,12 +61,14 @@ export class AppComponent implements OnInit {
     private router: Router,
     private checkoutService: CheckoutService,
     private offlineService: OfflineService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private cdr: ChangeDetectorRef
   ) {
     // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
     window.addEventListener('online', () => this._isOffline.next(false));
     window.addEventListener('offline', () => this._isOffline.next(true));
-
+    
+    // this.cdr.detectChanges()
     // Listen router events to show a loading indicator
     this.screenWidth = window.innerWidth;
     this.router.events.subscribe((event) => {
