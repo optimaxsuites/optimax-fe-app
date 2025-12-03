@@ -356,7 +356,8 @@ export type TaxDTO = {
   order?: number;
   description?: string;
   length?: any;
-  map?: any
+  map?: any;
+  reduce?: any
 };
 
 /**

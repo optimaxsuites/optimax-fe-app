@@ -447,9 +447,17 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
 
       let subtotal = itemTotal + variantsTotal;
 
-      let taxRate = item.tax?.rate || item.product?.tax?.rate || 0;
+      // let taxRate = item.tax?.rate || item.product?.tax?.rate || 0;
+      const taxes = item.tax || item.product?.tax || []; 
 
-      return sum + (taxRate / 100) * subtotal;
+      const itemTax = taxes.reduce((taxSum: number, tax: any) => {
+        const rate = Number(tax.rate) || 0;
+        return taxSum + (rate / 100) * subtotal;
+      }, 0);
+
+      return sum + itemTax;
+
+      // return sum + (taxRate / 100) * subtotal;
     }, 0);
 
     this.total = this.subtotal + this.tax - this.displayedDiscount;

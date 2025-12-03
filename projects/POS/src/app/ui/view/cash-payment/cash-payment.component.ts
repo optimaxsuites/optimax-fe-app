@@ -447,6 +447,8 @@ export class CashPaymentComponent implements OnInit {
       updatedAt: now,
       createdDate: now,
       totalAmount: this.totalPaid,
+      tax: this.cart.tax,
+      isOnline: false,
       amountTendered: this.totalPaid,
       quantity: 0,
       // customerId: 1,

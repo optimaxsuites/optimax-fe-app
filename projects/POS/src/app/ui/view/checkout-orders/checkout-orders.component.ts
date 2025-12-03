@@ -127,6 +127,7 @@ export class CheckoutOrdersComponent implements OnInit {
   }
 
   calculateOrderTotalWithTax(order: Order): number {
+    console.log(order)
     return (order.totalAmount || 0) + this.calculateOrderTax(order);
   }
 
