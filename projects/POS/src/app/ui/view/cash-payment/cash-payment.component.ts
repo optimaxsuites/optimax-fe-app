@@ -222,6 +222,7 @@ export class CashPaymentComponent implements OnInit {
       cash: "Cash Tendered",
       card: "Amount Charged to Card",
       loyalty: "Loyalty Charge",
+      mobile: "Mobile"
     };
     return labels[mode] || "Payment Amount";
   }
