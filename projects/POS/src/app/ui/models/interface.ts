@@ -355,6 +355,8 @@ export type TaxDTO = {
   rate: number;
   order?: number;
   description?: string;
+  length?: any;
+  map?: any
 };
 
 /**

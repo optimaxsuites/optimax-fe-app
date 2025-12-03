@@ -152,15 +152,15 @@
           </div>
 
           <!-- tax -->
-          <div>
-            <label
-              for="tax"
-              class="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Tax
-            </label>
-            <p class="name editInput" id="name">{{ activeItem.tax?.name || "N/A"}}</p>
-          </div>
+            <div>
+              <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
+                Tax(es)
+              </label>
+              <p class="name editInput" id="name">
+                 {{ taxDisplay }}
+              </p>
+            </div>
+
 
           <!-- Supplier -->
           <div>

@@ -163,4 +163,10 @@ export class ViewProductComponent {
 			this._productHelper.getData(this.activeItem).expiryDate,
 		).toDateString();
 	}
+
+	get taxDisplay(): string {
+		if (!this.activeItem?.tax?.length) return 'N/A';
+		return this.activeItem.tax.map((t: { name: string; rate: string; }) => t.name + ' (' + t.rate + '%)').join(', ');
+	}
+
 }

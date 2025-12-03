@@ -969,3 +969,12 @@ body {
 .fc-col-header-cell .fc-day-sun {
   background-color: var(--celadon-green);
 }
+
+.editInput {
+  /* @apply border border-gray-300 rounded-lg p-3 w-full placeholder:text-gray-500 */
+  // border: 1px solid lightgrey;
+  // border-radius: 5px;
+  // padding: 0.7rem;
+  // width: 100%;
+  text-transform: capitalize;
+}

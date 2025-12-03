@@ -1979,7 +1979,7 @@ async addToProduct() {
       quantity: formValues.quantity,
       weight: formValues.weight,
       reorderThreshold: formValues.reorderThreshold,
-      taxIds: formValues.selectedTaxes || [],
+      tax: formValues.selectedTaxes || [],
       discountId: formValues.discount?.id,
       supplierId: formValues.supplier?.id,
       branchId:
@@ -2109,7 +2109,7 @@ async addToProduct() {
           quantity: branch.quantity,
           weight: formValues.weight,
           reorderThreshold: formValues.reorderThreshold,
-          taxIds: branch.tax || [], // Use the array of tax IDs from branch form
+          tax: branch.tax || [], // Use the array of tax IDs from branch form
           discountId: branch.discount?.id,
           supplierId: branch.supplier?.id,
           branchId: branch.branchName.id, // if needed on the backend
@@ -2339,7 +2339,7 @@ async updateProduct() {
     quantity: formValues.quantity,
     weight: formValues.weight,
     reorderThreshold: formValues.reorderThreshold,
-    taxIds: formValues.selectedTaxes || [],
+    tax: formValues.selectedTaxes || [],
     discountId: formValues.discount?.id,
     supplierId: formValues.supplier?.id,
     branchId: this.activeItem.branch?.id || this.activeItem.branchId,
