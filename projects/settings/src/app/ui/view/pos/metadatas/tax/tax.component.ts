@@ -99,8 +99,6 @@ export class TaxComponent {
             life: 3000,
           });
           // this.getDiscounts();
-          // TODO: Check whether this piece of code is worth it...
-          this.taxes.push(data)
           this.metadataService.addTaxToState(data)
           this.taxData = {
             name: '',

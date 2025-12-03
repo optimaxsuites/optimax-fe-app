@@ -39,8 +39,8 @@ interface Toast {
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
    // WhatsApp configuration
-  whatsappPhone = '1234567890';
-  whatsappMessage = 'Hello! I visited your Angular app and would like to know more information.';
+  whatsappPhone = '+2348118348261';
+  whatsappMessage = 'Hello! I visited your store and would like to know more information.';
   whatsappHoverMessage = "Hi, let's chat! We're here to help you with any questions.";
   
   private _allProducts: ProductData[] = [];

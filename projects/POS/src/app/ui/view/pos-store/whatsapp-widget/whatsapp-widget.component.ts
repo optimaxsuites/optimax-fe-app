@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./whatsapp-widget.component.scss']
 })
 export class WhatsappWidgetComponent {
-  @Input() phoneNumber: string = '1234567890';
+  @Input() phoneNumber: string = '08118348261';
   @Input() message: string = 'Hello! I would like to get more information';
   @Input() position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' = 'bottom-right';
   @Input() hoverMessage: string = "Hi, let's chat! We're here to help you.";

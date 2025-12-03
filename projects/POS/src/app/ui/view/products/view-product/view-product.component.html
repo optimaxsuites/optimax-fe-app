@@ -147,7 +147,7 @@
             </label>
 
             <p class="name editInput" id="name">
-              {{ activeItem.discount?.name }}
+              {{ activeItem.discount?.name || "N/A" }}
             </p>
           </div>
 
@@ -159,7 +159,7 @@
             >
               Tax
             </label>
-            <p class="name editInput" id="name">{{ activeItem.tax?.name }}</p>
+            <p class="name editInput" id="name">{{ activeItem.tax?.name || "N/A"}}</p>
           </div>
 
           <!-- Supplier -->
@@ -171,7 +171,7 @@
               Supplier
             </label>
             <p class="name editInput" id="name">
-              {{ activeItem.supplier?.name }}
+              {{ activeItem.supplier?.name || "N/A"}}
             </p>
           </div>
         </div>
