@@ -76,7 +76,7 @@
         <hr />
         <div class="flex justify-between items-center">
           <span>Tax</span>
-          <span>{{ getTotalTax() | currency: '₦'}}</span>
+          <span>{{ getOrderTotalTax() | currency: '₦'}}</span>
         </div>
         <hr />
 
@@ -211,7 +211,7 @@
     </div>
     <div style="display: flex; justify-content: space-between;">
       <span>Tax</span>
-      <span>{{ getTotalTax() | currency: '₦' }}</span>
+      <span>{{ getOrderTotalTax() | currency: '₦' }}</span>
     </div>
     <div *ngIf="navigationState.order.discount > 0" style="display: flex; justify-content: space-between;">
       <span>Discount</span>

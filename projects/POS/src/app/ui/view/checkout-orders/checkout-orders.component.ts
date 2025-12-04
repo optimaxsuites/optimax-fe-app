@@ -68,6 +68,7 @@ export class CheckoutOrdersComponent implements OnInit {
         this.metadataService.orders$.subscribe({
           next: (data: Order[]) => {
             this.allOrders = Array.isArray(data) ? [...data] : [];
+            console.log(this.allOrders)
             this.applyFilters();
             this.isLoading = false;
           },
@@ -360,4 +361,23 @@ export class CheckoutOrdersComponent implements OnInit {
       });
     }
   }
+
+  getOrderTotalTax(order: any): number {
+
+    // console.log(order)
+      let totalTax = 0;
+
+      for (const item of order.orderItem) {
+        const price = item.totalPrice;
+        const taxes = item.product.tax || [];
+
+        for (const t of taxes) {
+          const rate = t.rate ?? 0;
+          totalTax += (rate / 100) * price;
+        }
+      }
+
+      return totalTax;
+  }
+
 }

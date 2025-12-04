@@ -93,7 +93,7 @@ export class OrderDetailComponent {
   }
   
   getTotalPrice(): number {
-    return this.getSubtotal() + this.getTotalTax();
+    return this.getSubtotal() + this.getOrderTotalTax();
   }
   
   buildCartFromOrders(orders: any): any {
@@ -229,5 +229,24 @@ ngAfterViewInit() {
     height: 40
   });
 }
+
+
+  getOrderTotalTax(): number {
+
+    // console.log(order)
+      let totalTax = 0;
+
+      for (const item of this.navigationState.order.orderItem) {
+        const price = item.totalPrice;
+        const taxes = item.product.tax || [];
+
+        for (const t of taxes) {
+          const rate = t.rate ?? 0;
+          totalTax += (rate / 100) * price;
+        }
+      }
+
+      return totalTax;
+  }
 
 }
