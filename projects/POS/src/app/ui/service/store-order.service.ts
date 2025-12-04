@@ -22,6 +22,7 @@ export interface StoreOrderPOST {
   createdDate: string;
   amountTendered: number;
   totalAmount: string;
+  isOnline: boolean;
   quantity: number;
   customerId: number;
   branchId: number;
@@ -449,51 +450,53 @@ export class StoreOrderService {
       })
     );
   }
-
-  private sanitizeOrderData(orderData: StoreOrderPOST): any {
-    const sanitized = {
+private sanitizeOrderData(orderData: StoreOrderPOST): any {
+  const sanitized = {
+    id: 0,
+    orderNumber: orderData.orderNumber,
+    orderStatus: orderData.orderStatus, // Should be 'PAID' for paid orders, 'PENDING' for cash
+    updatedAt: orderData.updatedAt,
+    createdDate: orderData.createdDate,
+    amountTendered: orderData.amountTendered || 0,
+    isOnline: true, // 🔥 CRITICAL: Always true for e-store orders
+    totalAmount: orderData.totalAmount,
+    quantity: orderData.quantity,
+    customerId: orderData.customerId || 1,
+    branchId: orderData.branchId || 1,
+    discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
+    paymentId: orderData.paymentId, // Must be set!
+    cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,
+    orderItem: orderData.orderItem.map((item: StoreOrderItemPOST) => ({
       id: 0,
-      orderNumber: orderData.orderNumber,
-      orderStatus: orderData.orderStatus,
-      updatedAt: orderData.updatedAt,
-      createdDate: orderData.createdDate,
-      amountTendered: orderData.amountTendered || 0,
-      totalAmount: orderData.totalAmount,
-      quantity: orderData.quantity,
-      customerId: orderData.customerId || 1,
-      branchId: orderData.branchId || 1,
-      discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
-      paymentId: orderData.paymentId, // This must be set!
-      cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,
-      orderItem: orderData.orderItem.map((item: StoreOrderItemPOST) => ({
-        id: 0,
-        totalPrice: item.totalPrice,
-        quantity: item.quantity,
-        productId: item.productId,
-        productVariantId: item.productVariantId && item.productVariantId > 0 ? item.productVariantId : null,
-        orderId: null
-      })),
-      deliveryFee: orderData.deliveryFee || 0,
-      estimatedReadyTime: orderData.estimatedReadyTime,
-      estimatedDeliveryTime: orderData.estimatedDeliveryTime,
-      customerEmail: orderData.customerEmail,
-      deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
-      deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
-      //  Ensure deliveryStatus is NEVER null/undefined when sending to the API
-      deliveryStatus: orderData.deliveryStatus || 'PENDING'
-    };
+      totalPrice: item.totalPrice,
+      quantity: item.quantity,
+      productId: item.productId,
+      productVariantId: item.productVariantId && item.productVariantId > 0 ? item.productVariantId : null,
+      orderId: null
+    })),
+    deliveryFee: orderData.deliveryFee || 0,
+    estimatedReadyTime: orderData.estimatedReadyTime,
+    estimatedDeliveryTime: orderData.estimatedDeliveryTime,
+    customerEmail: orderData.customerEmail,
+    deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
+    deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
+    deliveryStatus: orderData.deliveryStatus || 'PENDING'
+  };
 
-    console.log('🔍 Sanitized order data with fixed deliveryStatus:', JSON.stringify(sanitized, null, 2));
-    
-    // Final validation
-    if (!sanitized.paymentId) {
-      console.error('❌ CRITICAL: paymentId is null in sanitized data!');
-      console.error('Original paymentId was:', orderData.paymentId);
-    }
-
-    return sanitized;
+  console.log('🔍 Sanitized order data:', JSON.stringify(sanitized, null, 2));
+  
+  // Final validation
+  if (!sanitized.paymentId) {
+    console.error('❌ CRITICAL: paymentId is null in sanitized data!');
+    console.error('Original paymentId was:', orderData.paymentId);
   }
 
+  if (!sanitized.isOnline) {
+    console.warn('⚠️ WARNING: isOnline flag is not set!');
+  }
+
+  return sanitized;
+}
   private extractIdFromResponse(response: any): number {
     if (typeof response === 'number') {
       return response; // Direct ID response

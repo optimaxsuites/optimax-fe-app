@@ -101,8 +101,8 @@ const routes: Routes = [
   {
     path: 'hotel/:uuid',
     component: HotelCheckoutComponent,
-    canActivate: [PermissionGuard],
-      data: { appCode: ['HOP_ROOM'] }
+    // canActivate: [PermissionGuard],
+    //   data: { appCode: ['HOP_ROOM'] }
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['HOP_ROOM'] }
   },

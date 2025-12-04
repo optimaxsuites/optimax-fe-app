@@ -36,8 +36,8 @@ const routes: Routes = [
   {
     path: 'checkout/:uuid',
     component: PosCheckoutPageComponent, // This should contain waiter/chef/cashier
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_CHKOUT'] }
   },
   // ========== END OF MAIN CHECKOUT ROUTE ==========
   {

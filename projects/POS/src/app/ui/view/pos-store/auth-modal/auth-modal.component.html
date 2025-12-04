@@ -66,6 +66,28 @@
             </div>
           </div>
 
+          <!-- Remember Me & Forgot Password -->
+          <div class="flex items-center justify-between">
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                formControlName="rememberMe"
+                class="h-4 w-4 text-customGreen border-gray-300 rounded focus:ring-customGreen"
+              >
+              <span class="ml-2 text-sm text-gray-700">Remember me</span>
+            </label>
+            
+            <!-- Clear remembered credentials button -->
+<button 
+  type="button"
+  *ngIf="hasRememberedUsername()"
+  (click)="clearRememberedCredentials()"
+  class="text-xs text-gray-500 hover:text-gray-700 underline"
+>
+  Clear saved
+</button>
+          </div>
+
           <!-- Submit Button -->
           <button
             type="submit"
@@ -171,6 +193,16 @@
               <span *ngIf="signupForm.get('confirmPassword')?.errors?.['required']">Please confirm your password</span>
               <span *ngIf="signupForm.get('confirmPassword')?.errors?.['passwordMismatch']">Passwords do not match</span>
             </div>
+          </div>
+
+          <!-- Remember Me -->
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              formControlName="rememberMe"
+              class="h-4 w-4 text-customGreen border-gray-300 rounded focus:ring-customGreen"
+            >
+            <span class="ml-2 text-sm text-gray-700">Remember me on this device</span>
           </div>
 
           <!-- Submit Button -->
