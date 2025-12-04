@@ -55,12 +55,24 @@
       </div>
 
       <!-- Submit Button -->
-      <div class="flex justify-end mt-4">
-        <button
-          class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-          (click)="addCategory()">
-          <i class="fa-solid fa-plus"></i> Add Category
-        </button>
+      <div class="flex justify-end mt-4 gap-3">
+
+         <button
+        *ngIf="editingCategory.id !== undefined || editingCategory.id ===  0"
+        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition flex items-center gap-2"
+        (click)="cancelEdit()"
+      >
+        <i class="fa-solid fa-times"></i> Cancel
+      </button>
+         <button
+        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+        (click)="editingCategory.id !== undefined ? updateCategory() : addCategory()"
+        [disabled]="savingCategory"
+      >
+        <i class="fa-solid" [ngClass]="editingCategory.id !== undefined  ? 'fa-save' : 'fa-plus'"></i>
+        {{ editingCategory.id !== undefined ? 'Update Category' : 'Add Category' }}
+        <span *ngIf="savingCategory" class="spinner-border spinner-border-sm ml-2"></span>
+      </button>
       </div>
     </div>
 
@@ -82,9 +94,20 @@
             </div>
             <span class="font-medium text-gray-700">{{ category.name }}</span>
           </div>
+
+          <div>
+         <button 
+            class="p-2 mr-4 text-customBlue hover:text-customBlue hover:bg-customBlueHover rounded transition"
+            (click)="editCategory(category)"
+            title="Edit Discount"
+          >
+            <i class="fa-solid fa-edit"></i>
+          </button>
           <button class="text-red-500 hover:text-red-700 transition" (click)="removeCategory(category.id)">
             <i class="fa-solid fa-trash"></i>
           </button>
+          </div>
+         
         </li>
       </ul>
     </div>

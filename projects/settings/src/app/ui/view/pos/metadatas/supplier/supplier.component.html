@@ -72,12 +72,23 @@
       ></textarea>
     </div>
 
-      <div class="flex justify-end mt-4">
-        <button
-          class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-          (click)="addSupplier()">
-          <i class="fa-solid fa-plus"></i> Add Supplier
-        </button>
+      <div class="flex justify-end mt-4 gap-2">
+         <button
+        *ngIf="editingSupplier.id !== undefined"
+        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition flex items-center gap-2"
+        (click)="cancelEdit()"
+      >
+        <i class="fa-solid fa-times"></i> Cancel
+      </button>
+         <button
+        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+        (click)="editingSupplier.id !== undefined ? updateSupplier() : addSupplier()"
+        [disabled]="savingSupplier"
+      >
+        <i class="fa-solid" [ngClass]="editingSupplier.id !== undefined ? 'fa-save' : 'fa-plus'"></i>
+        {{ editingSupplier.id !== undefined ? 'Update Supplier' : 'Add Supplier' }}
+        <span *ngIf="savingSupplier" class="spinner-border spinner-border-sm ml-2"></span>
+      </button>
       </div>
 
     </div>
@@ -100,9 +111,22 @@
             </div>
             <span class="font-medium text-gray-700">{{ supplier.name }}</span>
           </div>
+
+          <div>
+
+
+          <button 
+            class="p-2 mr-4 text-customBlue hover:text-customBlue hover:bg-customBlueHover rounded transition"
+            (click)="editSupplier(supplier)"
+            title="Edit Supplier"
+          >
+            <i class="fa-solid fa-edit"></i>
+          </button>
           <button class="text-red-500 hover:text-red-700 transition" (click)="removeSupplier(supplier.id)">
             <i class="fa-solid fa-trash"></i>
           </button>
+          </div>
+          
         </li>
       </ul>
     </div>

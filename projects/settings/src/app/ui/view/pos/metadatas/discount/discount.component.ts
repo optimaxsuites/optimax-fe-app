@@ -37,6 +37,9 @@ discountTypes: any[] = [
   discountType: [],  // ✅ Initialize as empty array
 };
 discounts: any[] = [];
+savingDiscount: boolean = false
+editingDiscount: any = {}
+
 constructor(private posService: PosServiceService, private messageService: MessageService, private metadataService: MetadataService){
 }
 
@@ -52,8 +55,8 @@ ngOnInit() {
       name: discountObj.name,
       value: discountObj.value,
       // discountType: discountObj.discountType,
-      endDate: discountObj.endDate,
-      startDate: discountObj.startDate,
+      startDate: new Date(discountObj.startDate).toISOString(),
+      endDate: new Date(discountObj.endDate).toISOString(),
       minQuantity: discountObj.minQuantity,
     };
 
@@ -174,6 +177,123 @@ ngOnInit() {
     );
   }
 
+  updateDiscount() {
+    if (!this.discount.name || this.discount.value === null) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Discount name and value are required.',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+  
+    this.savingDiscount = true;
+    const supplierPayload = {
+      id: this.editingDiscount.id,
+      name: this.discount.name,
+      value: this.discount.value,
+      startDate: new Date(this.discount.startDate).toISOString(),
+      endDate: new Date(this.discount.endDate).toISOString(),
+      minQuantity: this.discount.minQuantity,
+
+    };
+  
+    this.posService.addDiscount(supplierPayload).subscribe(
+      (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Supplier Updated',
+            detail: 'Supplier updated successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          
+          // this.refreshTaxes();
+          // this.cancelEditTax();
+          this.editingDiscount.name = supplierPayload.name
+          this.editingDiscount.value = supplierPayload.value
+          this.editingDiscount.startDate = supplierPayload.startDate
+          this.editingDiscount.endDate = supplierPayload.endDate
+          this.editingDiscount.minQuantity = supplierPayload.minQuantity
+  
+          this.editingDiscount = {}
+          this.savingDiscount = false
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed to update supplier. Please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+        this.savingDiscount = false;
+      },
+      (error: HttpErrorResponse) => {
+        this.savingDiscount = false;
+        this.handleError(error, 'supplier');
+      }
+    );
+  }
+  
+   editDiscount(discount: any) {
+        this.editingDiscount = discount;
+        this.discount = discount
+      }
+  
+  
+   private handleError(error: HttpErrorResponse, type: string) {
+      if (error.status === 500) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Server Error',
+          detail: `Failed to process ${type}. Please check the details and try again.`,
+          key: 'tl',
+          life: 3000,
+        });
+      } else if (error.status === 404) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Not Found',
+          detail: `Failed to process ${type}. The service is unavailable.`,
+          key: 'tl',
+          life: 3000,
+        });
+      } else if (error.status === 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Connection Error',
+          detail: 'Unable to connect to the server. Please check your internet connection.',
+          key: 'tl',
+          life: 3000,
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.message || `An unexpected error occurred while processing ${type}.`,
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    }
+
+
+  cancelEdit() {
+    this.editingDiscount = {};
+    this.discount =  {
+  id: 0,
+  name: '',
+  value: 0,
+  startDate: new Date(),
+  endDate: new Date(),
+  minQuantity: 0,
+  discountType: [],  
+};
+  }
 }
 
 

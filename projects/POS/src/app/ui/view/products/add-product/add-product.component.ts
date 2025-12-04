@@ -569,7 +569,7 @@ updateTax() {
     description: this.taxData.description || ''
   };
 
-  this.posService.updateTax(taxPayload).subscribe(
+  this.posService.addTax(taxPayload).subscribe(
     (data) => {
       if (data) {
         this.messageService.add({

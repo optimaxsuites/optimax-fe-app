@@ -175,11 +175,12 @@ export class TaxComponent {
       rate: this.taxData.rate
     };
     
+    console.log(taxPayload)
     if (this.taxData.description && this.taxData.description.trim() !== '') {
       taxPayload.description = this.taxData.description;
     }
 
-    this.posService.updateTax(taxPayload).subscribe({
+    this.posService.addTax(taxPayload).subscribe({
       next: (data) => {
         this.messageService.add({
           severity: 'success',
@@ -189,6 +190,10 @@ export class TaxComponent {
           life: 3000,
         });
         // this.refreshTaxes();
+        this.editingTax!.description = taxPayload.description
+        this.editingTax!.name = taxPayload.name
+        this.editingTax!.rate = taxPayload.rate
+
         this.cancelEdit();
         this.savingTax = false;
       },

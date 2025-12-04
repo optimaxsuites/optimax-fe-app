@@ -805,10 +805,4 @@ getStockMovementsByInventory(inventoryId: number) {
       .pipe(catchError(this.handleError));
   }
 
-  updateTax(taxData: any): Observable<any> {
-    return this.http.put(
-      this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${taxData.id}`, 
-      taxData
-    ).pipe(catchError(this.handleError));
-  }
 }

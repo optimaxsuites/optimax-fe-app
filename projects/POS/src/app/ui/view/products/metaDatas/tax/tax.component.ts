@@ -173,14 +173,15 @@ export class TaxComponent {
     const taxPayload: any = {
       id: this.editingTax!.id,
       name: this.taxData.name,
-      rate: this.taxData.rate
+      rate: this.taxData.rate,
+      description: this.taxData.description
     };
     
     if (this.taxData.description && this.taxData.description.trim() !== '') {
       taxPayload.description = this.taxData.description;
     }
 
-    this.posService.updateTax(taxPayload).subscribe({
+    this.posService.addTax(taxPayload).subscribe({
       next: (data) => {
         this.messageService.add({
           severity: 'success',

@@ -42,11 +42,11 @@
         <div class="flex gap-4 items-center w-full">
           <div class="detailDiv w-full">
             <label for="start">Start date</label>
-            <input type="date" formControlName="startDate" id="start" class="name editInput" />
+            <input type="date" [(ngModel)]="discount.startDate" id="start" class="name editInput" />
           </div>
           <div class="detailDiv w-full">
             <label for="end">End date</label>
-            <input type="date" formControlName="endDate" id="end" class="name editInput" />
+            <input type="date" [(ngModel)]="discount.endDate" id="end" class="name editInput" />
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@
       <div>
         <div class="detailDiv w-full">
           <label for="minQuantity">Minimum quantity</label>
-          <input type="text" id="minQuantity" formControlName="discountMinQuantity" class="name editInput" />
+          <input type="text" id="minQuantity" [(ngModel)]="discount.discountType" class="name editInput" />
         </div>
       </div>
     </div>
@@ -75,12 +75,23 @@
     </div>
     </div>
 
-    <div class="flex justify-end mt-4">
-        <button
-          class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
-          (click)="addDiscount()">
-          <i class="fa-solid fa-plus"></i> Add Discount
-        </button>
+    <div class="flex justify-end mt-4 gap-3">
+       <button
+        *ngIf="editingDiscount.id !== undefined"
+        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition flex items-center gap-2"
+        (click)="cancelEdit()"
+      >
+        <i class="fa-solid fa-times"></i> Cancel
+      </button>
+         <button
+        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+        (click)="editingDiscount.id !== undefined ? updateDiscount() : addDiscount()"
+        [disabled]="savingDiscount"
+      >
+        <i class="fa-solid" [ngClass]="editingDiscount.id !== undefined ? 'fa-save' : 'fa-plus'"></i>
+        {{ editingDiscount.id !== undefined ? 'Update Discount' : 'Add Discount' }}
+        <span *ngIf="savingDiscount" class="spinner-border spinner-border-sm ml-2"></span>
+      </button>
       </div>
   </div>
 
@@ -102,9 +113,20 @@
             </div>
             <span class="font-medium text-gray-700">{{ discount.name }}</span>
           </div>
+
+          <div>
+          <button 
+            class="p-2 mr-4 text-customBlue hover:text-customBlue hover:bg-customBlueHover rounded transition"
+            (click)="editDiscount(discount)"
+            title="Edit Discount"
+          >
+            <i class="fa-solid fa-edit"></i>
+          </button>
           <button class="text-red-500 hover:text-red-700 transition" (click)="removeDiscount(discount.id)">
             <i class="fa-solid fa-trash"></i>
           </button>
+          </div>
+         
         </li>
       </ul>
     </div>
