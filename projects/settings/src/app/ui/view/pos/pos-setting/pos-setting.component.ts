@@ -29,7 +29,7 @@ export class PosSettingComponent {
     // },
     {
       name: 'E-store Settings',
-      subSetting: ['Payment information', 'stock alerts'],
+      subSetting: ['Payment information', 'Delivery', 'Paystack'],
       icon: 'pi pi-receipt',
       component: PAndISettingComponent,
     },

@@ -25,7 +25,18 @@ export class UserSettingComponent {
       {
         name: 'User Management',
         subSetting: [
-         'User creation', 'Assign roles', ' manage employees'
+         'User creation', 'Assign roles', ' manage employees', 'add employee',
+      'new staff',
+      'manage users',
+      'manage employees',
+      'employee management',
+      'staff list',
+      'staff accounts',
+      'user accounts',
+      'assign roles',
+      'roles assignment',
+      'set user role',
+      'user access',
         ],
         icon: 'pi pi-receipt',
         component: UsersComponent,
@@ -33,7 +44,15 @@ export class UserSettingComponent {
       {
         name: 'Roles Management',
         subSetting: [
-         ' Assign roles', 'permissions', 
+         ' Assign roles', 'permissions', 'role assignment',
+            'permissions',
+            'user permissions',
+            'access control',
+            'privileges',
+            'authorization',
+            'permission settings',
+            'role setup',
+            'access levels',
         ],
         icon: 'pi pi-receipt',
         component: RolesNpermissionComponent,
