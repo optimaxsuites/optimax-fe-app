@@ -92,9 +92,9 @@
       No taxes found. Create your first tax above.
     </div>
 
-    <div *ngIf="taxes.length > 0" class="space-y-3">
+    <div *ngIf="taxes.length > 0" class="space-y-3 divide-y">
       <div *ngFor="let tax of taxes" 
-           class="flex justify-between items-center px-3 py-1 divide-y divide-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+           class="flex justify-between items-center px-3 py-1 divide-gray-200 rounded-lg hover:bg-gray-50 transition-colors ">
         <div class="flex-1 mb-2">
           <div class="flex items-center gap-3">
             <div class="h-10 w-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
@@ -110,7 +110,7 @@
         
         <div class="flex items-center gap-2">
           <button 
-            class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition"
+            class="p-2 text-customBlue hover:text-customBlue hover:bg-customBlueHover rounded transition"
             (click)="editTax(tax)"
             title="Edit Tax"
           >
