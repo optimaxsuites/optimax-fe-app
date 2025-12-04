@@ -2,7 +2,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Router } from '@angular/router';
-import { JwtHelperService } from '@auth0/angular-jwt';
+import { JwtHelperService } from './auth0-shim';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { environment } from '../environments/environment.prod';
 
