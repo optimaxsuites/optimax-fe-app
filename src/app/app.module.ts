@@ -46,6 +46,10 @@ import { DashboardsideModalComponent } from './shared/dashboardside-modal/dashbo
 import { GeneraldashboardComponent } from './generaldashboard/generaldashboard.component';
 import { DashboardDropdownComponent } from './shared/dashboard-dropdown/dashboard-dropdown.component';
 import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
+import { HTTP_INTERCEPTORS, HttpClient, HttpClientModule } from '@angular/common/http';
+// import { AuthInterceptor } from './ui/services/auth.interceptor.service';
+import { JWT_OPTIONS, JwtHelperService } from './ui/sharedComponent/service/auth-service/auth0-shim';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
 
 @NgModule({
@@ -76,6 +80,7 @@ import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
     TabViewModule,
     ToolbarModule,
     ConfirmDialogModule,
+    HttpClientModule,
     SplitButtonModule,
     PanelModule,
     DividerModule,
@@ -92,7 +97,18 @@ import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
     NgApexchartsModule,
     BrowserAnimationsModule
   ],
-  providers: [],
+  providers: [
+     {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: {}
+    },
+    JwtHelperService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppDashboardModule { }

@@ -8,21 +8,26 @@ import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
 const routes: Routes = [
   {
     path:'',
+    redirectTo: ':uuid',
+    pathMatch: 'full'
+  },
+  {
+    path:'HR/:uuid',
     // component: DashboardPageComponent,
     // component: DashboardOverviewComponent,
     // component: GeneraldashboardComponent
     component: HrDashboardComponent
   },
   {
-    path: 'dashboard-overview',
+    path: 'POS/:uuid',
     component: DashboardOverviewComponent,
   },
   {
-      path: 'employee-payslip',
+      path: 'employee-payslip/:uuid',
       component: EmployeePayslipsListComponent,
   },
   {
-    path: 'general-dashboard',
+    path: ':uuid',
     component: GeneraldashboardComponent,
   }
 ];
