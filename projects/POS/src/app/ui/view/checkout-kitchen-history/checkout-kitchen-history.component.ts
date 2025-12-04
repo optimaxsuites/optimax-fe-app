@@ -51,8 +51,6 @@ interface TimelineEvent {
   selector: 'app-checkout-kitchen-history',
   templateUrl: './checkout-kitchen-history.component.html',
   styleUrls: ['./checkout-kitchen-history.component.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule]
 })
 export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   searchText: string = '';

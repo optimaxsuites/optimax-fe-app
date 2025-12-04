@@ -14,10 +14,10 @@ export class DashboardDropdownComponent implements OnInit {
   selectedModule = 'Overview';
 
   modules = [
-    { name: 'Overview', route: '/dashboard/overview/' +uuidV4() },
-    { name: 'POS', route: '/POS/' +uuidV4() },
-    { name: 'HR', route: '/HR/' +uuidV4() },
-    { name: 'General', route: '/'+uuidV4() },
+    { name: 'Overview', route: '/admin/dashboard/overview/' +uuidV4() },
+    { name: 'POS', route: '/admin/dashboard/POS/' +uuidV4() },
+    { name: 'HR', route: '/admin/dashboard/HR/' +uuidV4() },
+    { name: 'General', route: '/admin/dashboard/'+uuidV4() },
     // { name: 'Kitchen' },
     // { name: 'Accounting' },
   ];

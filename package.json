@@ -85,6 +85,7 @@
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.8",
     "currency-codes": "^2.1.0",
+    "date-fns": "^4.1.0",
     "dwt": "^19.0.0",
     "exceljs": "^4.4.0",
     "fullcalendar": "^6.1.15",

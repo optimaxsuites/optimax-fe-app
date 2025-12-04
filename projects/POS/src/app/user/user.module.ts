@@ -42,9 +42,6 @@ import { CartItemCardComponent } from '../ui/view/cart-item-card/cart-item-card.
 import { CashPaymentComponent } from '../ui/view/cash-payment/cash-payment.component';
 import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-kitchen.component';
 import { CheckoutOrdersComponent } from '../ui/view/checkout-orders/checkout-orders.component';
-// import { CloseRegisterModalComponent } from '../ui/view/close-register-modal/close-register-modal.component';
-// import { CloseRegisterComponent } from '../ui/view/close-register/close-register.component';
-// import { DeliveryModalComponent } from '../ui/view/delivery-modal/delivery-modal.component';
 import { NotesModalComponent } from '../ui/view/notes-modal/notes-modal.component';
 import { OpenRegisterComponent } from '../ui/view/open-register/open-register.component';
 import { OrderDetailComponent } from '../ui/view/order-detail/order-detail.component';
