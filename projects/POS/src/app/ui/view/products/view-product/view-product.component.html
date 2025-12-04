@@ -337,8 +337,8 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   {{ variant.quantity }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color || 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size || 'N/A'}}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
               </tr>
             </tbody>
