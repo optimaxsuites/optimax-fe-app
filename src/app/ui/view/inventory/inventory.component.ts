@@ -1,5 +1,3 @@
-// inventory.component.ts - Fixed version
-
 import {
   Component,
   OnInit,
@@ -48,6 +46,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   @ViewChild('editInventoryComponent')
   @HostListener('document:click', ['$event'])
   mode: 'create' | 'edit' = 'create';
+  isStockMovement: boolean = false; // New flag for stock movement mode
   editInventoryComponent!: EditInventoryComponent;
   isLoading = this.metadataService.loading$;
   isBranchSwitching: boolean = false; 
@@ -167,10 +166,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
-    // this.isLoading = true;
 
     // Load supporting data
-    // this.loadCategory();
     this.getDiscountTypes();
     this.fetchUserBranchId()
     
@@ -189,14 +186,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.products = data;
       this.originalProducts = data
       console.log('inventories loaded:', this.products); 
-      // this.isLoading = false;
-      // this.isBranchSwitching = false; // Reset branch switching state
-      // this.applyFilters();
     });
     
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
     }
+    
     if (isSuperUser()) {
           this.productPermissions = {
             canView: true,
@@ -204,18 +199,11 @@ export class InventoryComponent implements OnInit, OnDestroy {
             canDelete: true,
             canCreate: true,
           };
-        }else {
+        } else {
         this.productPermissions = getUserPermissionsFor('POS_PDT');
-    
     }
 
-    // this.getInventories();
-
-
   }
-
-
-
 
   fetchUserBranchId(){
     const userBranch= sessionStorage.getItem('userBranchInfoRegData');
@@ -228,7 +216,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.selectedBranch = branchId;
     this.isBranchSwitching = true; // Set branch switching state
     this.metadataService.setSelectedBranch(branchId);
-    // this.getInventories(); // Reload data immediately
   }
 
   onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
@@ -271,70 +258,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     console.log(this.products.slice(startIndex, startIndex + this.rowsPerPage))
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
-
-  // FIXED: Inventory fetching with proper loading states
-  // getInventories(): void {
-  //   // Don't set isLoading if we're just switching branches
-  //   if (!this.isBranchSwitching) {
-  //     this.isLoading = true;
-  //   }
-    
-  //   console.log('Loading inventories for branch:', this.selectedBranch);
-    
-  //   this.posService.getInventories().subscribe({
-  //     next: (response) => {
-  //       console.log('Raw inventory response:', response);
-        
-  //       if (!response || !Array.isArray(response)) {
-  //         console.error('Invalid inventory response:', response);
-  //         this.products = [];
-  //         this.originalProducts = [];
-  //         this.isLoading = false;
-  //         this.isBranchSwitching = false;
-  //         return;
-  //       }
-
-  //       // Store raw inventories
-  //       this.inventories = response;
-        
-  //       // Filter by selected branch if needed
-  //       const filteredInventories = this.selectedBranch
-  //         ? response.filter(inv => inv.branch?.id === this.selectedBranch)
-  //         : response;
-
-
-  //         console.log('filtered inventory', filteredInventories)
-
-  //       // Map to product format for display
-  //       const mapped = filteredInventories.map((inv: any) => this.mapInventoryToProductRow(inv));
-  //       console.log('Filtered and mapped inventory data:', mapped);
-
-  //       // Sort by creation date (newest first)
-  //       mapped.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
-
-  //       this.originalProducts = mapped;
-  //       this.products = [...mapped];
-        
-  //       console.log('Final products array:', this.products);
-  //       this.isLoading = false;
-  //       this.isBranchSwitching = false; // Reset branch switching state
-  //       this.applyFilters();
-  //     },
-  //     error: (err) => {
-  //       console.error('Failed to load inventories:', err);
-  //       this.messageService.add({
-  //         severity: 'error',
-  //         summary: 'Error',
-  //         detail: 'Failed to load inventory data'
-  //       });
-  //       this.originalProducts = [];
-  //       this.products = [];
-  //       this.isLoading = false;
-  //       this.isBranchSwitching = false; // Reset branch switching state
-  //     }
-  //   });
-  // }
-
   
  private mapInventoryToProductRow(inv: any): any {
   console.log('Mapping inventory item:', inv);
@@ -475,17 +398,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     });
   }
 
-  // loadCategory() {
-  //   this.posService.getCategories().subscribe(async (data) => {
-  //     console.log(data);
-  //     if (data) {
-  //       this.categories = data;
-  //     } else {
-  //       console.log('error loading data');
-  //     }
-  //   });
-  // }
-
   getQuantityClass(quantity: number): string {
     return quantity >= 10 ? 'quantity-available' : 'quantity-low';
   }
@@ -567,7 +479,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.editProduct = false;
     this.addProduct = false;
     this.editInventory = false;
-    // this.getInventories();
+    this.isStockMovement = false; // Reset stock movement flag
   }
 
   openAddProdut() {
@@ -577,6 +489,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.editProduct = false;
     this.addProduct = true;
     this.editInventory = false;
+    this.isStockMovement = false; // Reset stock movement flag
   }
 
   closeAddProduct() {
@@ -585,8 +498,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewInventory = false;
     this.editProduct = false;
     this.addProduct = false;
-    // this.getInventories();
     this.editInventory = false;
+    this.isStockMovement = false; // Reset stock movement flag
   }
 
   toggleImportDialog() {
@@ -601,7 +514,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.addProduct = false;
     this.editInventory = false;
     this.addInventory = false;
-    // this.getInventories();
+    this.isStockMovement = false; // Reset stock movement flag
     this.tableSections = false;
   }
 
@@ -826,7 +739,10 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.mode = 'create';
   }
 
+  // Open Edit Inventory (for normal edit/add)
   openEditInventory(item: any = {}, mode: string) {
+    this.isStockMovement = false; // Set to false for normal edit
+    
     if (mode === 'parent') {
       this.resetFormFields();
       this.mode = 'create';
@@ -840,10 +756,45 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewProduct = false;
     this.addProduct = false;
     this.editInventory = true;
-    // this.getInventories();
     this.tableSections = false;
   }
-  
+
+  // NEW METHOD: Open Stock Movement - reuses the same edit inventory component
+  openStockMovement(item: any = {}, mode: string) {
+    this.isStockMovement = true; // Set to true for stock movement mode
+    
+    if (mode === 'parent') {
+      // For parent mode (button click), show modal without pre-selected product
+      this.resetFormFields();
+      this.mode = 'create';
+      this.activeItem = null;
+    } else {
+      // For child mode (dropdown click), pass the selected product
+      this.mode = 'edit';
+      this.activeItem = item;
+    }
+
+    this.tableSection = false;
+    this.viewProduct = false;
+    this.addProduct = false;
+    this.editInventory = true;
+    this.tableSections = false;
+
+    // Show success message for stock movement
+    if (mode === 'child') {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Stock Movement',
+        detail: `Opening stock movement for ${item.name || 'selected product'}`
+      });
+    } else {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Stock Movement',
+        detail: 'Opening stock movement dialog'
+      });
+    }
+  }
 
   onImageError(event: Event): void {
   const target = event.target as HTMLImageElement;

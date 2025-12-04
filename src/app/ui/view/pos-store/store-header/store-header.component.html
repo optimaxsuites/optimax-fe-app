@@ -88,8 +88,8 @@
     [value]="selectedCategory" 
     (change)="onMobileCategoryChange($any($event.target).value)"
   >
-    <option value="All">All</option>
-    @for (category of categoryOptions; track $index) {
+    <!-- <option value="All">All</option> -->
+   @for (category of getCategoryOptions(); track $index) {
       <option [value]="category.value">{{ category.label }}</option>
     }
   </select>
@@ -108,7 +108,7 @@
               (change)="onCategoryFilterChange($any($event.target).value)"
             >
               <option value="All">All</option>
-              @for (category of categoryOptions; track $index) {
+              @for (category of getCategoryOptions(); track $index) {
                 <option [value]="category.value">{{ category.label }}</option>
               }
             </select>
@@ -479,7 +479,7 @@
             (change)="onCategoryChange($any($event.target).value)"
           >
             <option value="All">All Categories</option>
-            @for (category of categoryOptions; track $index) {
+            @for (category of getCategoryOptions(); track $index) {
               <option [value]="category.value">{{ category.label }}</option>
             }
           </select>

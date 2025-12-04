@@ -43,7 +43,11 @@ interface DropdownData {
 export class StockReportComponent implements OnInit {
   @ViewChild('reportContent') reportContent!: ElementRef;
 
-  filterForm!: FormGroup;
+  // Two separate filter forms
+  filterForm!: FormGroup; // Main Inventory Report Filters
+  movementFilterForm!: FormGroup; // Dedicated Stock Movement Filters
+
+  // Data storage
   reportData!: InventoryReportDTO;
   movementReportData: StockMovementReportDTO = {
     movements: [],
@@ -52,9 +56,15 @@ export class StockReportComponent implements OnInit {
     netChange: 0
   };
 
+  // Shared Enrichment Maps
+  private productMap = new Map<number, ProductDTO>();
+  private branchMap = new Map<number, BranchDTO>();
+  private categoryMap = new Map<number, CategoryDTO>();
+
   branches: BranchDTO[] = [];
   categories: CategoryDTO[] = [];
-  currentUserBranchId: number | null = null; 
+  currentUserBranchId: number | null = null;
+  availableMovementProducts: ProductDTO[] = []; // New property for movement filter dropdown
 
   totalItems = 0;
   lowStockItems = 0;
@@ -66,12 +76,15 @@ export class StockReportComponent implements OnInit {
   salesVsStockChartOptions: any;
 
   isFilterFormOpen = false;
-  isLoading = false;
+  isMovementFilterOpen = false;
+  isLoading = false; // Main spinner for initial load of everything
+  isMovementLoading = false; // Dedicated spinner for movement table refresh
+
   page = 1;
   pageSize = 10;
   sortColumn = 'product.name';
   sortDirection = 'asc';
-  
+
   movementPage = 1;
   movementPageSize = 10;
   movementSortColumn: keyof StockMovementReportItemDTO | 'totalCost' = 'createdDate';
@@ -79,7 +92,8 @@ export class StockReportComponent implements OnInit {
 
   Math = Math;
   showCustomDateRange = false;
-  groupByMovement: 'none' | 'day' | 'week' | 'month' = 'day';
+  showMovementCustomDateRange = false;
+  groupByMovement: 'none' | 'day' | 'week' | 'month' = 'none';
 
   isDropdownOpen: { [key: string]: boolean } = {
     totalItems: false,
@@ -98,30 +112,42 @@ export class StockReportComponent implements OnInit {
     private reportService: ReportService
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.currentUserBranchId = this.reportService.getCurrentUserBranchId();
     this.initFilters();
     this.initEmptyCharts();
-    this.loadInitialData();
+
+    // Use synchronous flow (await) in ngOnInit
+    await this.loadInitialData();
   }
 
   initFilters(): void {
     const initialBranchIds = this.currentUserBranchId !== null ? [this.currentUserBranchId] : [];
-    
+
+    // Main inventory filter form (defaults to user branch)
     this.filterForm = this.fb.group({
-      branchIds: [initialBranchIds], 
+      branchIds: [initialBranchIds],
       categoryIds: [[]],
       includeLowStock: [false],
       dateRange: ['last7Days'],
       startDate: [null],
-      endDate: [null],
-      groupByMovement: [this.groupByMovement]
+      endDate: [null]
     });
-    this.onDateRangeChange(null);
+
+    // Separate movement filter form (defaults to 'Last 3 Days', filtered by Product ID)
+    this.movementFilterForm = this.fb.group({
+      dateRange: ['3daysAgo'], // Default to 'Last 3 Days'
+      startDate: [null],
+      endDate: [null],
+      productId: [null] // Filter by specific product
+    });
+
+    this.onDateRangeChange(null, this.filterForm);
+    this.onMovementDateRangeChange(null);
   }
 
-  onDateRangeChange(event: any): void {
-    const value = this.filterForm.get('dateRange')?.value;
+  onDateRangeChange(event: any, form: FormGroup): void {
+    const value = form.get('dateRange')?.value;
     this.showCustomDateRange = value === 'custom';
 
     const today = new Date();
@@ -129,74 +155,108 @@ export class StockReportComponent implements OnInit {
 
     switch (value) {
       case 'today':
-        startDate = new Date(today);
-        startDate.setHours(0, 0, 0, 0);
-        break;
       case '3daysAgo':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 3);
-        startDate.setHours(0, 0, 0, 0);
-        break;
       case 'last7Days':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 7);
-        startDate.setHours(0, 0, 0, 0);
-        break;
       case '1month':
-        startDate = new Date(today);
-        startDate.setMonth(today.getMonth() - 1);
+        // Calculate dynamic dates
+        if (value === '3daysAgo') startDate.setDate(today.getDate() - 3);
+        else if (value === 'last7Days') startDate.setDate(today.getDate() - 7);
+        else if (value === '1month') startDate.setMonth(today.getMonth() - 1);
         startDate.setHours(0, 0, 0, 0);
+
+        form.patchValue({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: today.toISOString().split('T')[0]
+        });
         break;
       default:
-        return;
-    }
-
-    if (value !== 'custom') {
-      this.filterForm.patchValue({
-        startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD
-        endDate: today.toISOString().split('T')[0] // YYYY-MM-DD
-      });
+        // 'custom' - leave form values alone
+        break;
     }
   }
 
-  loadInitialData(): void {
+  onMovementDateRangeChange(event: any): void {
+    const form = this.movementFilterForm;
+    const value = form.get('dateRange')?.value;
+    this.showMovementCustomDateRange = value === 'custom';
+
+    if (value === 'all') {
+      // The requirement asks for 'Today', 'Last 3 Days', and 'Custom Range'. 'All Time' is removed.
+      form.patchValue({ startDate: null, endDate: null });
+      return;
+    }
+
+    const today = new Date();
+    let startDate: Date = new Date();
+
+    switch (value) {
+      case 'today':
+      case '3daysAgo':
+        if (value === '3daysAgo') startDate.setDate(today.getDate() - 3);
+        startDate.setHours(0, 0, 0, 0);
+
+        form.patchValue({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: today.toISOString().split('T')[0]
+        });
+        break;
+      default:
+        // 'custom' - leave form values alone
+        break;
+    }
+  }
+
+  async loadInitialData(): Promise<void> {
     this.isLoading = true;
-    console.log("INITIAL LOAD: Starting data fetching...");
-    
-    // Load branches and categories first
-    Promise.all([this.loadBranches(), this.loadCategories()])
-      .then(() => {
-        console.log(`INITIAL LOAD: Branches loaded: ${this.branches.length}, Categories loaded: ${this.categories.length}`);
-        
-        // Ensure initial branch filter is set after branches are loaded
+    this.isMovementLoading = true;
+    console.log("INITIAL LOAD: Starting initial data chain...");
+
+    try {
+        // 1. Load basic data (Branches/Categories)
+        await Promise.all([this.loadBranches(), this.loadCategories()]);
+
+        // Ensure default branch filter is set
         if (this.currentUserBranchId !== null && this.branches.some(b => b.id === this.currentUserBranchId)) {
-            const currentFilter = this.filterForm.get('branchIds')?.value;
-            if (!currentFilter || currentFilter.length === 0) {
-                this.filterForm.get('branchIds')?.setValue([this.currentUserBranchId]);
-                console.log(`INITIAL LOAD: Setting default branch filter to ID: ${this.currentUserBranchId}`);
-            }
+            const branchIdArray = [this.currentUserBranchId];
+            this.filterForm.get('branchIds')?.setValue(branchIdArray);
+            // movementFilterForm no longer has branchIds, it pulls from main filterForm
         }
-        
-        this.loadInventoryReport();
-      })
-      .catch(error => {
-        console.error('INITIAL LOAD: Error loading initial data:', error);
+
+        // 2. Load and Enrich Inventory Report (Populates Maps)
+        await this.loadAndEnrichInventoryReport();
+
+        // 3. Populate product list for Movement Filter
+        this.getProductsForMovementFilter();
+
+        // 4. Load and Enrich Stock Movements (Uses Maps)
+        await this.loadAndEnrichStockMovements();
+
+        // Final UI updates
+        this.calculateSummaryMetrics();
+        this.initCharts();
+        this.prepareDropdownData();
+
+    } catch (error) {
+        console.error('CRITICAL ERROR during initial load:', error);
+    } finally {
         this.isLoading = false;
-      });
+        this.isMovementLoading = false;
+        console.log("INITIAL LOAD: Complete.");
+    }
   }
 
   private formatDateToISO(dateString: string | undefined | null, isEndDate: boolean): string | undefined {
     if (!dateString) return undefined;
-    
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return undefined;
-    
+
     if (isEndDate) {
-        date.setHours(23, 59, 59, 999); 
+        date.setHours(23, 59, 59, 999);
     } else {
-        date.setHours(0, 0, 0, 0); 
+        date.setHours(0, 0, 0, 0);
     }
-    
+
     return date.toISOString();
   }
 
@@ -232,161 +292,249 @@ export class StockReportComponent implements OnInit {
     });
   }
 
-  loadInventoryReport(filters?: InventoryReportRequestDTO): void {
-    this.isLoading = true;
-
+  // Primary load function that fetches the report and populates the enrichment maps
+  private loadAndEnrichInventoryReport(): Promise<void> {
     const formFilters = this.filterForm.value;
-    
+
     const cleanedFilters: InventoryReportRequestDTO = {
-      branchIds: filters?.branchIds || (formFilters.branchIds?.length ? formFilters.branchIds : undefined),
-      categoryIds: filters?.categoryIds || (formFilters.categoryIds?.length ? formFilters.categoryIds : undefined),
-      includeLowStock: filters?.includeLowStock || formFilters.includeLowStock || false,
-      startDate: this.formatDateToISO(filters?.startDate || formFilters.startDate, false),
-      endDate: this.formatDateToISO(filters?.endDate || formFilters.endDate, true)
+      branchIds: formFilters.branchIds?.length ? formFilters.branchIds : undefined,
+      categoryIds: formFilters.categoryIds?.length ? formFilters.categoryIds : undefined,
+      includeLowStock: formFilters.includeLowStock || false,
+      startDate: this.formatDateToISO(formFilters.startDate, false),
+      endDate: this.formatDateToISO(formFilters.endDate, true)
     };
-    
-    //  Determine final IDs for API calls (send all IDs if none selected/available)
+
     const allBranchIds = this.branches.map(b => b.id);
     const allCategoryIds = this.categories.map(c => c.id);
-    
+
     const finalBranchIds = cleanedFilters.branchIds && cleanedFilters.branchIds.length > 0
         ? cleanedFilters.branchIds
-        : (this.branches.length > 0 ? allBranchIds : undefined); 
-        
+        : (this.branches.length > 0 ? allBranchIds : undefined);
+
     const finalCategoryIds = cleanedFilters.categoryIds && cleanedFilters.categoryIds.length > 0
         ? cleanedFilters.categoryIds
         : (this.categories.length > 0 ? allCategoryIds : undefined);
 
     const invReportFilters: InventoryReportRequestDTO = {
         ...cleanedFilters,
-        branchIds: finalBranchIds || [], 
+        branchIds: finalBranchIds || [],
         categoryIds: finalCategoryIds || []
     };
-    
-    const movementFilters: StockMovementReportRequestDTO = {
-        ...cleanedFilters,
-        branchIds: finalBranchIds || [],
-        categoryIds: finalCategoryIds || [],
-        groupBy: formFilters.groupByMovement || 'none'
-    };
-    
-    console.log('API CALL: Inventory Report Request Filters:', invReportFilters);
-    console.log('API CALL: Stock Movement Request Filters:', movementFilters);
 
-    const getStockMovementReport$: Observable<StockMovementReportDTO> = this.reportService.getStockMovementReport(movementFilters);
+    return new Promise((resolve, reject) => {
+        this.reportService.getInventoryReport(invReportFilters).pipe(
+            switchMap((inventory: InventoryReportDTO) => {
+                this.reportData = inventory;
+                console.log(`DATA RECEIVED: Inventory items count: ${inventory.inventory?.length}`);
 
-    forkJoin({
-        inventory: this.reportService.getInventoryReport(invReportFilters).pipe(
-          catchError(error => {
-            console.error('ERROR: Failed loading inventory report:', error);
-            return of({ inventory: [] } as InventoryReportDTO);
-          })
-        ),
-        movements: getStockMovementReport$.pipe(
-          catchError((error: any) => {
-            console.error('ERROR: Failed loading stock movement report:', error);
-            return of({ 
-              movements: [], 
-              totalInflow: 0, 
-              totalOutflow: 0, 
-              netChange: 0 
-            } as StockMovementReportDTO);
-          })
-        )
-    }).pipe(
-      //  Receive base data and determine required enrichment IDs
-      switchMap(({ inventory, movements }) => {
-        this.reportData = inventory;
-        this.movementReportData = movements;
-        console.log(`DATA RECEIVED: Inventory items count: ${inventory.inventory?.length}, Movements count: ${movements.movements?.length}`);
+                // Collect unique IDs for ENRICHMENT
+                const inventoryProductIds = this.reportData.inventory.map(item => item.product?.id).filter((id): id is number | string => id !== undefined && id !== null);
+                const inventoryCategoryIds = this.reportData.inventory.map(item => item.category?.id).filter((id): id is number => id !== undefined && id !== null);
+                const inventoryBranchIds = this.reportData.inventory.map(item => item.branch?.id).filter((id): id is number => id !== undefined && id !== null);
 
-        //  Collect unique ID
-        const inventoryProductIds = this.reportData.inventory.map(item => item.product?.id).filter((id): id is number | string => id !== undefined && id !== null);
-        const movementProductIds = this.movementReportData.movements.map(item => item.productId).filter((id): id is number => id !== undefined && id !== null && typeof id === 'number');
+                const uniqueProductIds = [...new Set(inventoryProductIds)].map(id => Number(id));
+                const uniqueCategoryIds = [...new Set(inventoryCategoryIds)];
+                const uniqueBranchIds = [...new Set(inventoryBranchIds)];
 
-        const uniqueProductIds = [...new Set([...inventoryProductIds, ...movementProductIds])].map(id => Number(id));
-        
-        const inventoryCategoryIds = this.reportData.inventory.map(item => item.category?.id).filter((id): id is number => id !== undefined && id !== null);
-        const uniqueCategoryIds = [...new Set(inventoryCategoryIds)];
-        
-        const inventoryBranchIds = this.reportData.inventory.map(item => item.branch?.id).filter((id): id is number => id !== undefined && id !== null);
-        const movementBranchIds = this.movementReportData.movements.map(item => item.branchId).filter((id): id is number => id !== undefined && id !== null);
-        const uniqueBranchIds = [...new Set([...inventoryBranchIds, ...movementBranchIds])];
+                const validProductIds = uniqueProductIds.filter(id => id > 0);
+                const validBranchIds = uniqueBranchIds.filter(id => id > 0);
 
-        console.log(`ENRICHMENT: Fetching details for ${uniqueProductIds.length} products, ${uniqueCategoryIds.length} categories, ${uniqueBranchIds.length} branches.`);
+                const productRequests = validProductIds.map(id => this.reportService.getProductById(id).pipe(catchError(() => of(null))));
+                const categoryRequests = uniqueCategoryIds.map(id => this.reportService.getCategoryById(id).pipe(catchError(() => of(null))));
+                const branchRequests = validBranchIds.map(id => this.reportService.getBranchById(id).pipe(catchError(() => of(null))));
 
-        // Create parallel enrichment requests ---
-        const productRequests = uniqueProductIds.map(id => this.reportService.getProductById(id).pipe(catchError(() => of(null))));
-        const categoryRequests = uniqueCategoryIds.map(id => this.reportService.getCategoryById(id).pipe(catchError(() => of(null))));
-        const branchRequests = uniqueBranchIds.map(id => this.reportService.getBranchById(id).pipe(catchError(() => of(null))));
+                return forkJoin({
+                    products: productRequests.length ? forkJoin(productRequests) : of([]),
+                    categories: categoryRequests.length ? forkJoin(categoryRequests) : of([]),
+                    branches: branchRequests.length ? forkJoin(branchRequests) : of([])
+                });
+            }),
+            catchError((error: any) => {
+                console.error('ERROR: Inventory processing error:', error);
+                this.reportData = { inventory: [] };
+                return of({ products: [], categories: [], branches: [] });
+            })
+        ).subscribe({
+            next: (fullData: any) => {
+                // Populate Shared Maps
+                this.productMap = new Map(fullData.products.filter((p: any) => p !== null && p!.id > 0).map((p: any) => [p!.id, p!]));
+                this.categoryMap = new Map(fullData.categories.filter((c: any) => c !== null).map((c: any) => [c!.id, c!]));
+                this.branchMap = new Map(fullData.branches.filter((b: any) => b !== null).map((b: any) => [b!.id, b!]));
 
-        return forkJoin({
-          products: productRequests.length ? forkJoin(productRequests) : of([]),
-          categories: categoryRequests.length ? forkJoin(categoryRequests) : of([]),
-          branches: branchRequests.length ? forkJoin(branchRequests) : of([])
+                // Enrich Inventory Data (uses the newly created maps)
+                this.reportData.inventory.forEach(item => {
+                    if (item.product?.id) {
+                        const productDetails = this.productMap.get(Number(item.product.id));
+                        if (productDetails) {
+                            Object.assign(item.product, productDetails);
+                        }
+                    }
+                    if (item.category?.id) {
+                        item.category = this.categoryMap.get(item.category.id) || item.category;
+                    }
+                    if (item.branch?.id) {
+                        item.branch = this.branchMap.get(item.branch.id) || item.branch;
+                    }
+                });
+                console.log('ENRICHMENT (INV): Data mapping complete.');
+
+                // After main report load, update products for the movement filter
+                this.getProductsForMovementFilter();
+
+                resolve();
+            },
+            error: reject
         });
-      }),
-      // Phase 3: Map fetched details back to the report data
-      finalize(() => this.isLoading = false), // Ensure loading spinner stops regardless of success or final error
-      catchError((error: any) => {
-        console.error('ERROR: Error processing data enrichment chain:', error);
-        this.reportData = { inventory: [] };
-        this.movementReportData = { movements: [], totalInflow: 0, totalOutflow: 0, netChange: 0 };
-        return EMPTY; // Stop the subscription 
-      })
-    ).subscribe({
-      next: (fullData: { products: (ProductDTO | null)[], categories: (CategoryDTO | null)[], branches: (BranchDTO | null)[] }) => {
-        console.log('ENRICHMENT: Starting final data mapping.');
-        const productMap = new Map(fullData.products.filter(p => p !== null).map(p => [p!.id, p!]));
-        const categoryMap = new Map(fullData.categories.filter(c => c !== null).map(c => [c!.id, c!]));
-        const branchMap = new Map(fullData.branches.filter(b => b !== null).map(b => [b!.id, b!]));
-
-        // Enrich Inventory Details
-        this.reportData.inventory.forEach(item => {
-          if (item.product?.id) {
-            const productDetails = productMap.get(Number(item.product.id));
-            if (productDetails) {
-              Object.assign(item.product, productDetails);
-            }
-          }
-          if (item.category?.id) {
-            item.category = categoryMap.get(item.category.id) || item.category;
-          }
-          if (item.branch?.id) {
-            item.branch = branchMap.get(item.branch.id) || item.branch;
-          }
-        });
-        
-        // Enrich Stock Movements Details
-        if (this.movementReportData.movements.length > 0) {
-            this.movementReportData.movements.forEach(item => {
-                const product = productMap.get(item.productId);
-                const branch = branchMap.get(item.branchId);
-                const category = product?.productCategory ? categoryMap.get(product.productCategory.id) : undefined;
-                
-                item.productName = product?.name || item.productName;
-                item.productSku = product?.sku || item.productSku;
-                item.productCategory = category?.name || item.productCategory;
-                item.branchName = branch?.name || item.branchName;
-                item.sellingPrice = item.sellingPrice || (product?.sellingPrice as number | null | undefined) || null;
-                item.supplierName = product?.supplier?.name || item.supplierName;
-            });
-            this.sortMovementData('createdDate');
-        }
-        console.log('ENRICHMENT: Data mapping complete. Displaying results.');
-
-        this.calculateSummaryMetrics();
-        this.initCharts();
-        this.prepareDropdownData();
-      },
-      error: (error: any) => {
-        console.error('ERROR: Final subscription error during data processing:', error);
-      }
     });
   }
 
+  // Helper to prepare the product list for the movement filter dropdown
+  getProductsForMovementFilter(): void {
+    const selectedCategoryIds: number[] = this.filterForm.get('categoryIds')?.value || [];
+    const selectedBranchIds: number[] = this.filterForm.get('branchIds')?.value || [];
+
+    // Filter the product map to only include products present in the current inventory
+    const productsInInventory = Array.from(this.productMap.values());
+
+    this.availableMovementProducts = productsInInventory.filter(product => {
+      // Find all inventory items for this product
+      const inventoryItems = this.reportData.inventory.filter(item => item.product?.id === product.id);
+
+      // Check if any inventory item for this product matches the main filter criteria
+      const matchesBranch = selectedBranchIds.length === 0 || inventoryItems.some(item => selectedBranchIds.includes(item.branch?.id || -1));
+      const matchesCategory = selectedCategoryIds.length === 0 || inventoryItems.some(item => selectedCategoryIds.includes(item.category?.id || -1));
+
+      return matchesBranch && matchesCategory;
+    });
+
+    // Sort by product name
+    this.availableMovementProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }
+
+
+  // Dedicated load function for Stock Movement Report that uses existing maps
+  loadAndEnrichStockMovements(filters?: StockMovementReportRequestDTO): Promise<void> {
+    this.isMovementLoading = true;
+
+    // Use branchIds and categoryIds from the main filterForm
+    const mainFormFilters = this.filterForm.value;
+    const movementFormFilters = this.movementFilterForm.value;
+
+    const allBranchIds = this.branches.map(b => b.id);
+    const finalBranchIds = mainFormFilters.branchIds && mainFormFilters.branchIds.length > 0
+        ? mainFormFilters.branchIds
+        : (this.branches.length > 0 ? allBranchIds : undefined);
+
+    const movementFilters: StockMovementReportRequestDTO = {
+      branchIds: finalBranchIds || [], // Use main branch filter
+      categoryIds: mainFormFilters.categoryIds?.length ? mainFormFilters.categoryIds : undefined, // Use main category filter (optional)
+      productId: movementFormFilters.productId, // Use the new dedicated product filter
+      startDate: this.formatDateToISO(movementFormFilters.startDate, false),
+      endDate: this.formatDateToISO(movementFormFilters.endDate, true)
+    };
+
+    return new Promise((resolve, reject) => {
+        this.reportService.getStockMovementReport(movementFilters).pipe(
+            catchError((error: any) => {
+                console.error('ERROR: Failed loading stock movement report:', error);
+                this.movementReportData = { movements: [], totalInflow: 0, totalOutflow: 0, netChange: 0 };
+                return of(this.movementReportData);
+            }),
+            finalize(() => this.isMovementLoading = false)
+        ).subscribe({
+            next: (movementsReport: StockMovementReportDTO) => {
+                this.movementReportData.movements = movementsReport.movements;
+
+                // Recalculate summary metrics in the component
+                this.movementReportData.totalInflow = movementsReport.movements.filter(m => m.quantity > 0).reduce((sum, m) => sum + m.quantity, 0);
+                this.movementReportData.totalOutflow = movementsReport.movements.filter(m => m.quantity < 0).reduce((sum, m) => sum + Math.abs(m.quantity), 0);
+                this.movementReportData.netChange = this.movementReportData.totalInflow - this.movementReportData.totalOutflow;
+
+                // Enrich Stock Movements using the shared maps
+                this.movementReportData.movements.forEach(item => {
+                    const product = this.productMap.get(item.productId);
+                    const branch = this.branchMap.get(item.branchId);
+
+                    // Use enriched data or fallback placeholders
+                    item.productName = product?.name || `Unknown Product`;
+                    item.productSku = product?.sku || 'N/A';
+                    item.branchName = branch?.name || `Unknown Branch`;
+
+                    if (product) {
+                        item.sellingPrice = item.sellingPrice || product.sellingPrice || null;
+                        item.supplierName = product.supplier?.name || item.supplierName;
+                    }
+                });
+
+                // The grouping logic has been removed from the component side as it should be handled by the API based on the original `groupByMovement` property, but since the property is now replaced with `productId`, we default the component-side grouping to 'none' for detailed viewing.
+                this.groupByMovement = 'none';
+                this.sortMovementData('createdDate');
+                resolve();
+            },
+            error: reject
+        });
+    });
+  }
+
+  // Main filter apply method (calls loadInventoryReport)
+  applyFilters(): void {
+    this.page = 1;
+
+    // Trigger main inventory load which runs its own enrichment, chart updates, and updates the movement product list
+    this.loadAndEnrichInventoryReport().then(() => {
+        // Reset movement filter to re-run it with the new main filters applied
+        this.movementFilterForm.get('productId')?.setValue(null);
+        this.movementFilterForm.get('dateRange')?.setValue('3daysAgo');
+        this.onMovementDateRangeChange(null);
+        this.loadAndEnrichStockMovements();
+    });
+
+    this.isFilterFormOpen = false;
+  }
+
+  // Dedicated filter apply method for movements
+  applyMovementFilters(): void {
+    this.movementPage = 1;
+
+    // Trigger movement load which runs its own enrichment
+    this.loadAndEnrichStockMovements();
+    this.isMovementFilterOpen = false;
+  }
+
+  // Toggle for movement filter form
+  toggleMovementFilter(): void {
+    this.isMovementFilterOpen = !this.isMovementFilterOpen;
+    this.isFilterFormOpen = false; // Close main filter when opening movement filter
+  }
+
+  // Toggle for main filter form
   openFilterForm(): void {
     this.isFilterFormOpen = !this.isFilterFormOpen;
+    this.isMovementFilterOpen = false; // Close movement filter when opening main filter
+  }
+
+  resetFilters(): void {
+    this.filterForm.reset({
+      branchIds: this.currentUserBranchId !== null ? [this.currentUserBranchId] : [],
+      categoryIds: [],
+      includeLowStock: false,
+      dateRange: 'last7Days',
+    });
+    this.showCustomDateRange = false;
+    this.onDateRangeChange(null, this.filterForm);
+    this.loadAndEnrichInventoryReport();
+    this.isFilterFormOpen = false;
+  }
+
+  resetMovementFilters(): void {
+    this.movementFilterForm.reset({
+      dateRange: '3daysAgo',
+      productId: null
+    });
+    this.showMovementCustomDateRange = false;
+    this.onMovementDateRangeChange(null);
+    this.loadAndEnrichStockMovements();
+    this.isMovementFilterOpen = false;
   }
 
   calculateSummaryMetrics(): void {
@@ -400,7 +548,7 @@ export class StockReportComponent implements OnInit {
     this.totalItems = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
     this.lowStockItems = this.reportData.inventory.filter((item: InventoryItemDTO) => item.lowStockAlert).length;
     this.totalValue = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => {
-      const price = parseFloat(item.product?.sellingPrice || '0') || parseFloat(item.product?.costPrice || '0'); 
+      const price = parseFloat(String(item.product?.sellingPrice || '0')) || parseFloat(String(item.product?.costPrice || '0'));
       return sum + (item.currentStock * price);
     }, 0);
   }
@@ -462,10 +610,10 @@ export class StockReportComponent implements OnInit {
       this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
       return;
     }
-    
+
     const totalCurrentStock = this.reportData.inventory.reduce((sum, item) => sum + item.currentStock, 0);
     const totalSold = this.reportData.inventory.reduce((sum, item) => sum + item.soldQuantity, 0);
-    
+
     const dateRange = this.filterForm.get('dateRange')?.value;
     let monthsToDisplay = 6;
     if (dateRange === 'today' || dateRange === '3daysAgo' || dateRange === 'last7Days' || dateRange === '1month') {
@@ -475,21 +623,21 @@ export class StockReportComponent implements OnInit {
     const months = [];
     const trendValues = [];
     const now = new Date();
-    
+
     for (let i = monthsToDisplay - 1; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthName = d.toLocaleString('en-US', { month: 'short' });
         months.push(monthName);
-        
+
         if (i === 0) {
             trendValues.push(totalCurrentStock);
         } else {
-            const soldPerMonth = totalSold / monthsToDisplay; 
+            const soldPerMonth = totalSold / monthsToDisplay;
             const estimatedStock = totalCurrentStock + (i * soldPerMonth);
             trendValues.push(Math.round(estimatedStock));
         }
     }
-    
+
     this.stockTrendChartOptions = {
       series: [{
         name: 'Total Inventory',
@@ -686,41 +834,6 @@ export class StockReportComponent implements OnInit {
     };
   }
 
-  applyFilters(): void {
-    const filters = this.filterForm.value;
-    this.page = 1; 
-    this.movementPage = 1;
-
-    const cleanedFilters: InventoryReportRequestDTO = {
-      branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
-      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
-      includeLowStock: filters.includeLowStock || false,
-      startDate: filters.startDate, 
-      endDate: filters.endDate
-    };
-
-    this.groupByMovement = filters.groupByMovement;
-    
-    console.log('APPLYING FILTERS:', cleanedFilters);
-    this.loadInventoryReport(cleanedFilters);
-
-    this.isFilterFormOpen = false; 
-  }
-
-  resetFilters(): void {
-    this.filterForm.reset({
-      branchIds: this.currentUserBranchId !== null ? [this.currentUserBranchId] : [], 
-      categoryIds: [],
-      includeLowStock: false,
-      dateRange: 'last7Days',
-      groupByMovement: 'day'
-    });
-    this.showCustomDateRange = false;
-    this.onDateRangeChange(null);
-    this.loadInventoryReport();
-    this.isFilterFormOpen = false;
-  }
-
   sortData(column: string): void {
     if (!this.reportData?.inventory) return;
 
@@ -761,8 +874,8 @@ export class StockReportComponent implements OnInit {
           bValue = b.soldQuantity;
           break;
         case 'product.sellingPrice':
-          aValue = parseFloat(a.product?.sellingPrice || '0');
-          bValue = parseFloat(b.product?.sellingPrice || '0');
+          aValue = parseFloat(String(a.product?.sellingPrice || '0'));
+          bValue = parseFloat(String(b.product?.sellingPrice || '0'));
           break;
         default:
           return 0;
@@ -791,7 +904,7 @@ export class StockReportComponent implements OnInit {
     this.movementReportData.movements.sort((a, b) => {
       let aValue: any;
       let bValue: any;
-      
+
       if (column === 'totalCost') {
           aValue = (a.purchasePrice || 0) * Math.abs(a.quantity);
           bValue = (b.purchasePrice || 0) * Math.abs(b.quantity);
@@ -799,35 +912,41 @@ export class StockReportComponent implements OnInit {
           aValue = a[column as keyof StockMovementReportItemDTO];
           bValue = b[column as keyof StockMovementReportItemDTO];
       }
-      
+
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }
-      
+
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return this.movementSortDirection === 'asc' ? 1 : -1;
       if (bValue == null) return this.movementSortDirection === 'asc' ? -1 : 1;
-      
+
       if (aValue < bValue) return this.movementSortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return this.movementSortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   }
 
-  formatMovementDate(dateString: string): string {
-    const date = new Date(dateString);
-    if (this.groupByMovement === 'day') {
-        return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatMovementDate(dateString: string | number[]): string {
+    let date: Date;
+
+    // Handle array format [year, month, day, hour, minute, second, millisecond]
+    if (Array.isArray(dateString)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0, ms = 0] = dateString;
+      date = new Date(year, month - 1, day, hour, minute, second, ms);
+    } else {
+      // Handle ISO string format
+      date = new Date(dateString);
     }
-    if (this.groupByMovement === 'week') {
-        const day = date.getDate();
-        const startOfWeek = new Date(date.setDate(day - date.getDay()));
-        return startOfWeek.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) + ' - ' + new Date(date.setDate(startOfWeek.getDate() + 6)).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return 'Invalid Date';
     }
-    if (this.groupByMovement === 'month') {
-        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    }
+
+    // Since groupByMovement is fixed to 'none' in the movement filter, always show detailed date/time.
     return date.toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
@@ -869,7 +988,7 @@ export class StockReportComponent implements OnInit {
 
     const element = this.reportContent.nativeElement;
     const originalStyle = element.style.cssText;
-    element.style.padding = '20px'; 
+    element.style.padding = '20px';
 
     html2canvas(element, { scale: 2 }).then(canvas => {
       const imgData = canvas.toDataURL('image/jpeg', 1.0);

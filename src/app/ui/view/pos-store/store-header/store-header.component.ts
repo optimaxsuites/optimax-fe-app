@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
+import { AuthStateService } from '../../../service/auth-state.service';
 
 interface ProductSuggestion {
   id: number;
@@ -22,12 +23,10 @@ interface CategorySuggestion {
 })
 export class StoreHeaderComponent implements OnChanges, OnInit {
   @Input() branches: any[] = [];
-  @Input() categoryOptions: any[] = [];
   @Input() selectedCategory: string = 'All';
   @Input() searchText: string = '';
   @Input() isCartEmpty: boolean = true;
   @Input() totalCartItems: number = 0;
-  @Input() user: { name: string; isGuest: boolean } = { name: 'Guest', isGuest: true };
   @Input() allProducts: any[] = [];
   @Input() selectedBranch: any = null;
   
@@ -62,19 +61,17 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   businessInfo: any = null;
   businessName: string | null = null;
 
+  // User state (managed by AuthStateService)
+  user: { name: string; isGuest: boolean } = { name: 'Guest', isGuest: true };
+
   // Make route public or create a getter for the UUID
   currentStoreUuid: string | null = null;
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute // Keep this private, we'll use a getter
+    private route: ActivatedRoute,
+    private authStateService: AuthStateService
   ) {}
-
-  ngOnInit(): void {
-    this.checkScreenSize();
-    this.loadBusinessInfo();
-    this.loadCurrentStoreUuid();
-  }
 
   // NEW: Public getter for the store UUID
   get storeUuid(): string | null {
@@ -112,6 +109,18 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     return !!this.businessName && this.businessName.trim().length > 0;
   }
 
+  ngOnInit(): void {
+    this.checkScreenSize();
+    this.loadBusinessInfo();
+    this.loadCurrentStoreUuid();
+    
+    // Subscribe to auth state changes
+    this.authStateService.user$.subscribe(user => {
+      this.user = user;
+      console.log('User updated in header:', user);
+    });
+  }
+
   @HostListener('window:resize')
   onResize(): void {
     this.checkScreenSize();
@@ -134,6 +143,40 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     }
   }
 
+  // Get category options dynamically
+  getCategoryOptions(): any[] {
+    if (!this.allProducts || this.allProducts.length === 0) {
+      return [{ label: 'Category', value: 'All' }];
+    }
+    
+    // Get unique categories from products
+    const categories = new Set<string>();
+    this.allProducts.forEach(product => {
+      const categoryName = product.productCategory?.name;
+      if (categoryName && categoryName.trim() !== '') {
+        categories.add(categoryName);
+      }
+    });
+    
+    // Convert to array and sort alphabetically
+    const categoryArray = Array.from(categories).sort();
+    
+    // Create options array
+    const options = [
+      { label: 'Category', value: 'All' }
+    ];
+    
+    // Add each category
+    categoryArray.forEach(category => {
+      options.push({
+        label: category,
+        value: category.toLowerCase()
+      });
+    });
+    
+    return options;
+  }
+
   onShowToast(event: {title: string, message: string, type: 'success' | 'error' | 'warning' | 'info'}): void {
     this.showToast.emit(event);
   }
@@ -141,13 +184,10 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   onMobileCategoryChange(category: string): void {
     console.log('Mobile category change:', category);
     
-    if (category && category !== 'All') {
-      this.navigateToCategoryPage(category);
+    if (category === 'All') {
+      this.navigateToAllProducts();
     } else {
-      const currentUuid = this.storeUuid;
-      if (currentUuid) {
-        this.router.navigate(['/store', currentUuid]);
-      }
+      this.navigateToCategoryPage(category);
     }
     this.closeMobileMenu();
   }
@@ -222,10 +262,13 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
 
     const term = searchTerm.toLowerCase();
     
-    this.categorySuggestions = this.categoryOptions
+    // Get category options for suggestions
+    const categoryOpts = this.getCategoryOptions();
+    
+    this.categorySuggestions = categoryOpts
       .filter(category => 
-        category.label.toLowerCase().includes(term) || 
-        category.value.toLowerCase().includes(term)
+        category.label.toLowerCase().includes(term) && 
+        category.value !== 'All'
       )
       .map(category => {
         const productCount = this.allProducts.filter(p => 
@@ -284,7 +327,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   navigateToCategoryPage(categoryName: string): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'category', categoryName.toLowerCase()], {
+      this.router.navigate(['/user/checkout/store', currentUuid, 'category', categoryName.toLowerCase()], {
         queryParams: { 
           branch: this.selectedBranch?.id || '',
           branchName: this.selectedBranch?.name || ''
@@ -319,15 +362,29 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     this.isAuthModalOpen = false;
   }
 
-  handleLogin(credentials: {username: string, password: string}): void {
+  // Handle login from auth modal
+  handleLogin(credentials: {username: string, password: string, rememberMe?: boolean}): void {
     console.log('Login attempt:', credentials);
     
     this.userAction.emit();
     
-    const userData = { name: credentials.username, isGuest: false };
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    const userData = { 
+      name: credentials.username, 
+      isGuest: false,
+      username: credentials.username
+    };
     
-    this.user = userData;
+    // Store rememberMe preference in localStorage
+    if (credentials.rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.setItem('rememberedUsername', credentials.username);
+    } else {
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('rememberedUsername');
+    }
+    
+    this.authStateService.setUser(userData);
+    
     this.closeAuthModal();
     
     const greeting = this.getTimeBasedGreeting();
@@ -338,15 +395,28 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     });
   }
 
-  handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
+  // Handle signup from auth modal
+  handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string, rememberMe?: boolean}): void {
     console.log('Signup attempt:', userData);
     
     this.userAction.emit();
     
-    const userInfo = { name: userData.username, isGuest: false };
-    localStorage.setItem('currentUser', JSON.stringify(userInfo));
+    const userInfo = { 
+      name: userData.username, 
+      isGuest: false,
+      username: userData.username,
+      email: userData.email
+    };
     
-    this.user = userInfo;
+    // Store rememberMe preference
+    if (userData.rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.setItem('rememberedUsername', userData.username);
+      localStorage.setItem('rememberedEmail', userData.email);
+    }
+    
+    this.authStateService.setUser(userInfo);
+    
     this.closeAuthModal();
     
     const greeting = this.getTimeBasedGreeting();
@@ -363,7 +433,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   }
 
   logout(): void {
-    this.user = { name: 'Guest', isGuest: true };
+    this.authStateService.logout();
     this.isUserDropdownOpen = false;
     this.closeMobileMenu();
     
@@ -374,14 +444,19 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     });
   }
 
+  // Navigate to all products
+  navigateToAllProducts(): void {
+    const currentUuid = this.storeUuid;
+    if (currentUuid) {
+      this.router.navigate(['/user/checkout/store', currentUuid]);
+    }
+  }
+
   onCategoryFilterChange(category: string): void {
     console.log('Category filter changed:', category);
     
     if (category === 'All') {
-      const currentUuid = this.storeUuid;
-      if (currentUuid) {
-        this.router.navigate(['/store', currentUuid]);
-      }
+      this.navigateToAllProducts();
     } else {
       this.navigateToCategoryPage(category);
     }
@@ -393,10 +468,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
 
   onCategoryChange(category: string): void {
     if (category === 'All') {
-      const currentUuid = this.storeUuid;
-      if (currentUuid) {
-        this.router.navigate(['/store', currentUuid]);
-      }
+      this.navigateToAllProducts();
     } else {
       this.categoryChange.emit(category);
     }

@@ -162,33 +162,47 @@ export class StoreCheckoutComponent implements OnInit {
     }
   }
 
-  private async handlePaystackPayment(orderData: StoreOrderPOST): Promise<void> {
-    const customerEmail = this.deliveryInfo.email || 'customer@example.com';
-    const amount = this.total * 100; // Paystack expects amount in kobo
+private async handlePaystackPayment(orderData: StoreOrderPOST): Promise<void> {
+  const customerEmail = this.deliveryInfo.email || 'customer@example.com';
+  const amount = this.total * 100;
 
-    this.storeOrderService.processPaystackPayment(
-      customerEmail,
-      amount,
-      orderData.orderNumber
-    ).subscribe({
-      next: (paystackResponse: any) => {
-        console.log('✅ Paystack payment successful:', paystackResponse);
-        
-        this.storeOrderService.createOrderWithPayment(
-          orderData,
-          'card',
-          paystackResponse.reference,
-          this.isDelivery ? this.deliveryInfo : undefined
-        ).subscribe({
-          next: (orderResponse: any) => {
-            this.isLoading = false;
-            console.log('✅ Order created after payment:', orderResponse);
-            
-            this.cartService.clearCart();
-            
-            const currentUuid = this.route.snapshot.paramMap.get('uuid');
-            const orderId = orderResponse.id || orderResponse.orderId;
+  console.log('💳 Initiating Paystack payment...', { email: customerEmail, amount });
 
+  this.storeOrderService.processPaystackPayment(
+    customerEmail,
+    amount,
+    orderData.orderNumber
+  ).subscribe({
+    next: (paystackResponse: any) => {
+      console.log('✅ Paystack payment successful:', paystackResponse);
+      
+      // Update order status to PAID before creating
+      const paidOrderData = {
+        ...orderData,
+        orderStatus: 'PAID' // 🔥 Set to PAID after successful payment
+      };
+      
+      this.storeOrderService.createOrderWithPayment(
+        paidOrderData,
+        'card',
+        paystackResponse.reference,
+        this.isDelivery ? this.deliveryInfo : undefined
+      ).subscribe({
+        next: (orderResponse: any) => {
+          console.log('✅ Order created after payment:', orderResponse);
+          this.isLoading = false;
+          
+          // Clear cart
+          this.cartService.clearCart();
+          
+          // 🔥 FIX: Ensure navigation happens
+          const currentUuid = this.route.snapshot.paramMap.get('uuid');
+          const orderId = orderResponse.id || orderResponse.orderId;
+
+          console.log('🚀 Navigating to confirmation page...', { currentUuid, orderId });
+
+          // Use setTimeout to ensure navigation happens after current cycle
+          setTimeout(() => {
             this.router.navigate(
               ['user/checkout/store', currentUuid, 'order-confirmation', orderId],
               {
@@ -198,46 +212,64 @@ export class StoreCheckoutComponent implements OnInit {
                   paymentMethod: this.paymentMethod,
                   paymentStatus: 'paid'
                 },
+                replaceUrl: true // Prevent going back to checkout
               }
-            );
-          },
-          error: (error: any) => {
-            this.isLoading = false;
-            console.error('❌ Order creation after payment failed:', error);
-            this.handleOrderError(error);
-          }
-        });
-      },
-      error: (error: any) => {
-        this.isLoading = false;
-        console.error('❌ Paystack payment failed:', error);
-        
-        if (error.message?.includes('cancelled by user')) {
-          this.formErrors = ['Payment was cancelled. Please try again.'];
-        } else {
-          this.formErrors = ['Payment failed. Please try again or use a different payment method.'];
+            ).then(success => {
+              if (success) {
+                console.log('✅ Navigation successful');
+              } else {
+                console.error('❌ Navigation failed');
+                // Fallback: show success message
+                alert('Payment successful! Your order has been placed.');
+              }
+            }).catch(err => {
+              console.error('❌ Navigation error:', err);
+              alert('Payment successful! Your order has been placed.');
+            });
+          }, 100);
+        },
+        error: (error: any) => {
+          this.isLoading = false;
+          console.error('❌ Order creation after payment failed:', error);
+          this.handleOrderError(error);
         }
+      });
+    },
+    error: (error: any) => {
+      this.isLoading = false;
+      console.error('❌ Paystack payment failed:', error);
+      
+      if (error.message?.includes('cancelled by user')) {
+        this.formErrors = ['Payment was cancelled. Please try again.'];
+      } else {
+        this.formErrors = ['Payment failed. Please try again or use a different payment method.'];
       }
-    });
-  }
+    }
+  });
+}
 
-  private async handleCashPayment(orderData: StoreOrderPOST): Promise<void> {
-    console.log('💵 Processing cash/transfer payment...');
-    console.log('Order data:', JSON.stringify(orderData, null, 2));
-    
-    this.storeOrderService.createCashOrder(
-      orderData,
-      this.isDelivery ? this.deliveryInfo : undefined
-    ).subscribe({
-      next: (response: any) => {
-        this.isLoading = false;
-        console.log('✅ Order placed successfully:', response);
-        
-        this.cartService.clearCart();
-        
-        const currentUuid = this.route.snapshot.paramMap.get('uuid');
-        const orderId = response.id || response.orderId;
+private async handleCashPayment(orderData: StoreOrderPOST): Promise<void> {
+  console.log('💵 Processing cash/transfer payment...');
+  console.log('Order data:', JSON.stringify(orderData, null, 2));
+  
+  this.storeOrderService.createCashOrder(
+    orderData,
+    this.isDelivery ? this.deliveryInfo : undefined
+  ).subscribe({
+    next: (response: any) => {
+      console.log('✅ Order placed successfully:', response);
+      this.isLoading = false;
+      
+      // Clear cart
+      this.cartService.clearCart();
+      
+      const currentUuid = this.route.snapshot.paramMap.get('uuid');
+      const orderId = response.id || response.orderId;
 
+      console.log('🚀 Navigating to confirmation page...', { currentUuid, orderId });
+
+      // 🔥 FIX: Use setTimeout and replaceUrl
+      setTimeout(() => {
         this.router.navigate(
           ['user/checkout/store', currentUuid, 'order-confirmation', orderId],
           {
@@ -247,95 +279,95 @@ export class StoreCheckoutComponent implements OnInit {
               paymentMethod: this.paymentMethod,
               paymentStatus: 'pending'
             },
+            replaceUrl: true
           }
-        );
-      },
-      error: (error: any) => {
-        this.isLoading = false;
-        console.error('❌ Order placement failed:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
-        this.handleOrderError(error);
-      },
-    });
+        ).then(success => {
+          if (success) {
+            console.log('✅ Navigation successful');
+          } else {
+            console.error('❌ Navigation failed');
+            alert('Order placed successfully!');
+          }
+        }).catch(err => {
+          console.error('❌ Navigation error:', err);
+          alert('Order placed successfully!');
+        });
+      }, 100);
+    },
+    error: (error: any) => {
+      this.isLoading = false;
+      console.error('❌ Order placement failed:', error);
+      this.handleOrderError(error);
+    }
+  });
+}
+
+private prepareOrderData(): StoreOrderPOST {
+  const orderItems: StoreOrderItemPOST[] = Array.from(this.cartItems.entries()).map(
+    ([key, value]) => {
+      const hasValidVariant = value.selectedVariants?.[0]?.id && value.selectedVariants[0].id > 0;
+      
+      return {
+        id: 0,
+        totalPrice: Number((value.product.sellingPrice * value.quantity).toFixed(2)),
+        quantity: Number(value.quantity),
+        productId: Number(value.product.id),
+        productVariantId: hasValidVariant ? Number(value.selectedVariants[0].id) : null,
+        orderId: null
+      };
+    }
+  );
+
+  const totalQuantity = orderItems.reduce((total, item) => total + item.quantity, 0);
+  const customerEmail = this.deliveryInfo.email || 'customer@example.com';
+  
+  const now = new Date();
+  const readyTime = new Date(now);
+  readyTime.setMinutes(readyTime.getMinutes() + 30);
+  
+  const deliveryTime = new Date(now);
+  if (this.isDelivery) {
+    deliveryTime.setMinutes(deliveryTime.getMinutes() + 60);
+  } else {
+    deliveryTime.setMinutes(deliveryTime.getMinutes() + 30);
   }
 
-  private prepareOrderData(): StoreOrderPOST {
-    // Map cart items to order items with proper schema compliance
-    const orderItems: StoreOrderItemPOST[] = Array.from(this.cartItems.entries()).map(
-      ([key, value]) => {
-        const hasValidVariant = value.selectedVariants?.[0]?.id && value.selectedVariants[0].id > 0;
-        
-        return {
-          id: 0, // Must be 0 for new items per schema
-          totalPrice: Number((value.product.sellingPrice * value.quantity).toFixed(2)), // Ensure proper number format
-          quantity: Number(value.quantity), // Ensure it's a number (double)
-          productId: Number(value.product.id), // Ensure integer
-          productVariantId: hasValidVariant ? Number(value.selectedVariants[0].id) : null, // Can be null per schema
-          orderId: null // Must be null for new orders
-        };
-      }
-    );
-
-    // Calculate total quantity (sum of all item quantities)
-    const totalQuantity = orderItems.reduce((total, item) => total + item.quantity, 0);
-    
-    // Get customer email, fallback to default
-    const customerEmail = this.deliveryInfo.email || 'customer@example.com';
-    
-    // Calculate estimated times
-    const now = new Date();
-    
-    // Ready time: 30 minutes from now
-    const readyTime = new Date(now);
-    readyTime.setMinutes(readyTime.getMinutes() + 30);
-    
-    // Delivery time: 60 minutes from now for delivery, same as ready time for pickup
-    const deliveryTime = new Date(now);
-    if (this.isDelivery) {
-      deliveryTime.setMinutes(deliveryTime.getMinutes() + 60);
-    } else {
-      deliveryTime.setMinutes(deliveryTime.getMinutes() + 30);
-    }
-
-    // Generate order number with length validation (max 12 chars per schema)
-    const orderNumber = this.generateOrderNumber();
-    
-    // Validate order number length
-    if (orderNumber.length > 12) {
-      console.error('❌ Order number exceeds maximum length of 12 characters:', orderNumber);
-      throw new Error('Order number too long');
-    }
-
-    // Build the order data according to schema
-    const orderData: StoreOrderPOST = {
-      id: 0, // Must be 0 for new orders
-      orderNumber: orderNumber, // Max 12 chars
-      orderStatus: 'PENDING', // Valid enum value - changed from UNPAID to PENDING
-      updatedAt: now.toISOString(), // ISO date-time string
-      createdDate: now.toISOString(), // ISO date-time string
-      amountTendered: 0, // For cash orders, will be updated after payment
-      totalAmount: this.total.toFixed(2), // String format as per schema example "52.08"
-      quantity: totalQuantity, // Total quantity as number (double)
-      customerId: 1, // Default customer ID (should be actual customer ID in production)
-      branchId: 1, // Default branch ID (should be actual branch ID in production)
-      discountId: null, // Nullable, set to null if no discount
-      paymentId: null, // Will be set after payment record is created
-      cashierId: null, // Nullable, no cashier for online orders
-      orderItem: orderItems, // Array of order items
-      deliveryFee: this.isDelivery ? Number(this.deliveryFee) : 0, // Number type
-      estimatedReadyTime: readyTime.toISOString(), // String (ISO format)
-      estimatedDeliveryTime: deliveryTime.toISOString(), // String (ISO format)
-      customerEmail: customerEmail, // String
-      deliveryInfoId: null, // Will be set after delivery info is created (if delivery)
-      deliverTypeId: this.isDelivery ? 1 : null, // Integer or null - 1 for delivery, null for pickup
-      deliveryStatus: 'PENDING' // Valid enum: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, REFUNDED, CANCELLED
-    };
-
-    // Validate the order data before returning
-    this.validateOrderData(orderData);
-
-    return orderData;
+  const orderNumber = this.generateOrderNumber();
+  
+  if (orderNumber.length > 12) {
+    console.error('❌ Order number exceeds maximum length of 12 characters:', orderNumber);
+    throw new Error('Order number too long');
   }
+
+  // 🔥 KEY FIX: Add isOnline flag and set correct orderStatus
+  const orderData: StoreOrderPOST = {
+    id: 0,
+    orderNumber: orderNumber,
+    orderStatus: 'PENDING', // Will be updated to PAID after payment
+    updatedAt: now.toISOString(),
+    createdDate: now.toISOString(),
+    amountTendered: 0,
+    isOnline: true, // 🔥 CRITICAL: This marks it as an e-store order
+    totalAmount: this.total.toFixed(2),
+    quantity: totalQuantity,
+    customerId: 1,
+    branchId: 1,
+    discountId: null,
+    paymentId: null,
+    cashierId: null,
+    orderItem: orderItems,
+    deliveryFee: this.isDelivery ? Number(this.deliveryFee) : 0,
+    estimatedReadyTime: readyTime.toISOString(),
+    estimatedDeliveryTime: deliveryTime.toISOString(),
+    customerEmail: customerEmail,
+    deliveryInfoId: null,
+    deliverTypeId: this.isDelivery ? 1 : null,
+    deliveryStatus: 'PENDING'
+  };
+
+  this.validateOrderData(orderData);
+  return orderData;
+}
 
   private validateOrderData(orderData: StoreOrderPOST): void {
     const errors: string[] = [];

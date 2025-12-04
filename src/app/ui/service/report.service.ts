@@ -293,6 +293,15 @@ export class ReportService {
     if (payload.branchIds && payload.branchIds.length > 0) {
       params = params.set('branchIds', payload.branchIds.join(','));
     }
+    // Add productId filtering
+    if (payload.productId) {
+      params = params.set('productId', payload.productId.toString());
+    }
+    // Add categoryIds filtering
+    if (payload.categoryIds && payload.categoryIds.length > 0) {
+      params = params.set('categoryIds', payload.categoryIds.join(','));
+    }
+
     console.log('Service: Sending GET stock movements request with params:', params.toString());
     
     // Using the general GET /stockMovements endpoint for fetching filtered data
@@ -321,8 +330,8 @@ export class ReportService {
                 branchName: 'N/A (Enriching...)', // Placeholder
                 supplierName: 'N/A',
                 
-                // Use IDs for later enrichment (assuming API returns these keys)
-                productId: item.productId || item.ingredientId, 
+                // Use inventoryId and ingredientId 
+                productId: item.ingredientId || item.inventory?.productId || item.productId, 
                 branchId: item.inventory?.branchId || item.branchId || payload.branchIds?.[0], 
               }))
             : [];

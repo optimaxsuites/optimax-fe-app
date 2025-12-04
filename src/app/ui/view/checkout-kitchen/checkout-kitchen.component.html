@@ -63,16 +63,17 @@
                 </div>
               </div>
 
-              <!-- <div class="order-actions" *ngIf="o.status === 'UNPAID'">
-                <button class="btn-process" (click)="updateOrderStatus(o, 'PREPARING'); $event.stopPropagation()">
-                  Start Processing
+              <!-- EDIT BUTTON ADDED HERE -->
+              <div class="order-actions" *ngIf="canEditOrder(o)">
+                <button class="btn-edit" (click)="editOrder(o); $event.stopPropagation()">
+                  ✏️ Add More Items
                 </button>
-              </div> -->
+              </div>
             </div>
           </div>
 
           <div *ngIf="activeWaiterOrders.length === 0" class="no-orders">
-            <p>No active orders</p>
+            <p>No pending orders</p>
             <p>Take a new order to get started</p>
           </div>
         </div>
@@ -96,6 +97,23 @@
               Back to Orders
             </button>
             <h3 class="menu-title">Menu Items</h3>
+          </div>
+
+          <!-- Edit Mode Indicator -->
+          <div *ngIf="editingOrder" class="edit-mode-indicator">
+            <div class="edit-alert">
+              <span class="alert-icon">✏️</span>
+              <div class="edit-alert-content">
+                <strong>Editing Order {{ editingOrder.orderNo }}</strong>
+                <p *ngIf="editingOrder.status !== 'PENDING'">
+                  <span class="warning-icon">⚠️</span> 
+                  Adding new items will reset status to PENDING so chef can prepare them
+                </p>
+                <p *ngIf="editingOrder.status === 'PENDING'">
+                  Adding items to existing order
+                </p>
+              </div>
+            </div>
           </div>
 
           <input type="text" placeholder="Search food or drink..." [(ngModel)]="search" class="search-bar">
@@ -131,21 +149,35 @@
 
        <!-- Summary Section -->
 <div class="summary-section">
+  <!-- Edit Mode Header -->
   <div class="summary-header">
-    <!-- Table number input field -->
-    <div class="table-input-container">
-      <label for="tableNumber">Table No:</label>
-      <input 
-        type="number" 
-        id="tableNumber"
-        [(ngModel)]="currentTable" 
-        min="1" 
-        max="100"
-        class="table-input"
-        (change)="onTableNumberChange()"
-        placeholder="Enter table number">
+    <div *ngIf="editingOrder" class="edit-mode-header">
+      <span class="edit-badge">✏️ EDIT MODE</span>
+      <h3>Order {{ editingOrder.orderNo }} - Table {{ editingOrder.table }}</h3>
+      <p class="edit-status">
+        Order Status: <span class="status-badge" [ngClass]="editingOrder.status.toLowerCase()">{{ editingOrder.status }}</span>
+        <span *ngIf="editingOrder.status !== 'PENDING'" class="status-warning">
+          ⚠️ Will reset to PENDING when saved
+        </span>
+      </p>
     </div>
-    <h3>Order No: {{ orderNo }}</h3>
+    
+    <div *ngIf="!editingOrder" class="new-order-header">
+      <!-- Table number input field -->
+      <div class="table-input-container">
+        <label for="tableNumber">Table No:</label>
+        <input 
+          type="number" 
+          id="tableNumber"
+          [(ngModel)]="currentTable" 
+          min="1" 
+          max="100"
+          class="table-input"
+          (change)="onTableNumberChange()"
+          placeholder="Enter table number">
+      </div>
+      <h3>Order No: {{ orderNo }}</h3>
+    </div>
   </div>
 
   <div *ngIf="orderItems.length === 0" class="empty-order">
@@ -179,8 +211,12 @@
   </div>
 
   <div class="actions" *ngIf="orderItems.length > 0">
-    <button class="send-btn" (click)="sendToKitchenNew()">Send to Kitchen</button>
-    <button class="cancel-btn" (click)="goToOverview()">Cancel Order</button>
+    <button class="send-btn" (click)="sendToKitchenNew()">
+      {{ editingOrder ? '💾 Update Order' : '📤 Send to Kitchen' }}
+    </button>
+    <button class="cancel-btn" (click)="goToOverview()">
+      {{ editingOrder ? '❌ Cancel Edit' : '❌ Cancel Order' }}
+    </button>
   </div>
 
   <div class="actions" *ngIf="orderItems.length === 0">
@@ -198,7 +234,7 @@
 
     <div class="chef-container">
       <div class="order-list">
-        <!-- FIXED: Show activeChefOrders instead of all orders -->
+        <!-- FIXED: Show activeChefOrders (PENDING, PREPARING, READY) -->
         <div *ngFor="let o of activeChefOrders" 
              class="order-card" 
              [class.selected]="selectedOrder === o"
@@ -211,10 +247,6 @@
           <p class="order-items">{{ formatOrderItems(o) }}</p>
           <p class="order-time" *ngIf="o.createdAt">Created: {{ o.createdAt | date:'short' }}</p>
           <p class="order-note" *ngIf="o.note">Note: {{ o.note }}</p>
-          <!-- FIXED: Updated payment status message -->
-          <p class="payment-status" [class.paid]="o.status === 'PAID'" [class.unpaid]="o.status === 'UNPAID'">
-            {{ o.status === 'PAID' ? '✅ Paid' : '⏳ Waiting for Payment' }}
-          </p>
         </div>
 
         <div *ngIf="activeChefOrders.length === 0" class="no-orders">
@@ -228,19 +260,16 @@
           <span class="badge" [ngClass]="selectedOrder.status.toLowerCase()">{{ selectedOrder.status }}</span>
         </div>
 
-        <!-- FIXED: Updated payment alert for correct flow -->
-        <div class="payment-alert" [class.unpaid]="selectedOrder.status === 'UNPAID'" [class.preparing]="selectedOrder.status === 'PREPARING'" [class.ready]="selectedOrder.status === 'READY'">
-          <p *ngIf="selectedOrder.status === 'UNPAID'">
-            ⚠️ This order is waiting to be processed. You can start cooking.
+        <!-- UPDATED: Kitchen-focused alerts (no payment info) -->
+        <div class="kitchen-alert" [class.pending]="selectedOrder.status === 'PENDING'" [class.preparing]="selectedOrder.status === 'PREPARING'" [class.ready]="selectedOrder.status === 'READY'">
+          <p *ngIf="selectedOrder.status === 'PENDING'">
+            ⏳ Order is waiting to be processed. Start cooking when ready.
           </p>
           <p *ngIf="selectedOrder.status === 'PREPARING'">
             🍳 Order is being prepared. Mark as ready when done.
           </p>
           <p *ngIf="selectedOrder.status === 'READY'">
-            ✅ Order is ready! Waiting for cashier to process payment.
-          </p>
-          <p *ngIf="selectedOrder.status === 'PAID'">
-            💰 Order has been paid. Ready for final confirmation.
+            ✅ Order is ready! Waiting for cashier.
           </p>
         </div>
 
@@ -256,16 +285,16 @@
         </div>
 
         <div class="order-info">
-          <p><strong>Status:</strong> {{ selectedOrder.status }}</p>
+          <p><strong>Order Status:</strong> {{ selectedOrder.status }}</p>
           <p *ngIf="selectedOrder.note"><strong>Note:</strong> {{ selectedOrder.note }}</p>
           <p *ngIf="selectedOrder.createdAt"><strong>Created:</strong> {{ selectedOrder.createdAt | date:'medium' }}</p>
         </div>
 
-        <!-- FIXED: Chef can process UNPAID orders -->
+        <!-- UPDATED: Chef can process PENDING → PREPARING → READY -->
         <div class="chef-actions">
           <button class="btn-processing" 
                   (click)="updateOrderByChef(selectedOrder, 'PREPARING')"
-                  [disabled]="selectedOrder.status === 'READY' || selectedOrder.status === 'CONFIRMED'">
+                  [disabled]="selectedOrder.status !== 'PENDING'">
             🍳 Start Cooking
           </button>
           <button class="btn-ready" 
@@ -273,84 +302,115 @@
                   [disabled]="selectedOrder.status !== 'PREPARING'">
             ✅ Mark Ready
           </button>
-          <button class="btn-completed" 
-                  (click)="updateOrderByChef(selectedOrder, 'CONFIRMED')"
-                  [disabled]="selectedOrder.status !== 'PAID'">
-            🎉 Mark Confirmed
-          </button>
           <button class="btn-clear" (click)="selectedOrder = undefined">Close</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===================== CASHIER PAGE ===================== -->
-  <div *ngIf="activePage === 'cashier'" class="cashier-page">
-    <h2>Cashier Dashboard</h2>
+<!-- ===================== CASHIER PAGE ===================== -->
+<div *ngIf="activePage === 'cashier'" class="cashier-page">
+  <h2>Cashier Dashboard</h2>
 
-    <div class="cashier-container">
-      <div class="orders-list-section">
-        <h3>Orders Ready for Payment</h3>
-        
-        <table class="cashier-orders-table">
-          <thead>
-            <tr>
-              <th>Table No</th>
-              <th>Order No</th>
-              <th>Status</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- FIXED: Show activeCashierOrders (READY orders) -->
-            <tr *ngFor="let o of activeCashierOrders" 
-                (click)="selectOrder(o)" 
-                [class.selected]="selectedOrder === o"
-                class="order-row">
-              <td class="table-number">{{ o.table }}</td>
-              <td class="order-number">{{ o.orderNo }}</td>
-              <td class="order-status">
-                <span class="badge" [ngClass]="o.status.toLowerCase()">{{ o.status }}</span>
-              </td>
-              <td class="order-items-count">{{ o.items.length }} items</td>
-              <td class="order-total">₦{{ getGrandTotal(o) | number:'1.0-0' }}</td>
-              <td class="order-action">
-                <button class="btn-view" (click)="selectOrder(o); $event.stopPropagation()">Process Payment</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <div class="cashier-container">
+    <div class="orders-list-section">
+      <h3>Orders Ready for Payment</h3>
+      
+      <table class="cashier-orders-table">
+        <thead>
+          <tr>
+            <th>Table No</th>
+            <th>Order No</th>
+            <th>Status</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Cashier sees READY orders only -->
+          <tr *ngFor="let o of activeCashierOrders" 
+              (click)="selectOrder(o)" 
+              [class.selected]="selectedOrder === o"
+              class="order-row">
+            <td class="table-number">{{ o.table }}</td>
+            <td class="order-number">{{ o.orderNo }}</td>
+            <td class="order-status">
+              <span class="badge" [ngClass]="o.status.toLowerCase()">{{ o.status }}</span>
+            </td>
+            <td class="order-items-count">{{ o.items.length }} items</td>
+            <td class="order-total">₦{{ getGrandTotal(o) | number:'1.0-0' }}</td>
+            <td class="order-action">
+              <button class="btn-view" (click)="selectOrder(o); $event.stopPropagation()">Process Payment</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-        <div *ngIf="activeCashierOrders.length === 0" class="no-orders">
-          <p>No orders ready for payment</p>
-          <p>Orders will appear here when chef marks them as READY</p>
-        </div>
+      <div *ngIf="activeCashierOrders.length === 0" class="no-orders">
+        <p>No orders ready for payment</p>
+        <p>Orders will appear here when chef marks them as READY</p>
       </div>
+    </div>
 
-      <div *ngIf="selectedOrder" class="invoice-container">
-        <div class="invoice-header">
-          <h3>Invoice - Table {{ selectedOrder.table }}</h3>
-          <p class="invoice-number">Order: {{ selectedOrder.orderNo }}</p>
+    <!-- FIXED: Add this wrapper div for proper layout -->
+    <div class="invoice-wrapper" *ngIf="selectedOrder">
+      <div class="invoice-container">
+        <!-- Company Header -->
+        <div class="company-header">
+          <div class="company-info">
+            <h2 class="company-name">{{ companyInfo.name }}</h2>
+            <p class="company-address">{{ companyInfo.address }}</p>
+            <p class="company-contact">Phone: {{ companyInfo.phone }} | Email: {{ companyInfo.email }}</p>
+          </div>
+          <div class="invoice-logo">
+            <!-- Add your company logo here or use text -->
+            <div class="logo-placeholder">🍽️</div>
+          </div>
         </div>
 
-        <div class="invoice-status">
-          <p><strong>Status:</strong> <span class="status-badge" [ngClass]="selectedOrder.status.toLowerCase()">{{ selectedOrder.status }}</span></p>
-          <p *ngIf="selectedOrder.paymentMethod"><strong>Payment Method:</strong> {{ selectedOrder.paymentMethod }}</p>
+        <div class="invoice-header">
+          <h3>TAX INVOICE</h3>
+          <div class="invoice-meta">
+            <p class="invoice-number"><strong>Invoice #:</strong> {{ selectedOrder.orderNo }}</p>
+            <p class="invoice-date"><strong>Date:</strong> {{ selectedOrder.createdAt | date:'medium' }}</p>
+            <p class="cashier-name"><strong>Cashier:</strong> {{ getCashierName() }}</p>
+          </div>
+        </div>
+
+        <!-- Order Details -->
+        <div class="order-details-section">
+          <div class="customer-info">
+            <h4>Customer Details</h4>
+            <p><strong>Table Number:</strong> {{ selectedOrder.table }}</p>
+            <p><strong>Order Type:</strong> Dine-in</p>
+          </div>
+          <div class="payment-info">
+            <h4>Payment Details</h4>
+            <p><strong>Order Status:</strong> <span class="status-badge" [ngClass]="selectedOrder.status.toLowerCase()">{{ selectedOrder.status }}</span></p>
+            <p><strong>Payment Status:</strong> 
+              <span class="payment-badge" [ngClass]="selectedOrder.paymentStatus?.toLowerCase() || 'unpaid'">
+                {{ selectedOrder.paymentStatus || 'UNPAID' }}
+              </span>
+            </p>
+            <p *ngIf="selectedOrder.paymentMethod"><strong>Payment Method:</strong> {{ selectedOrder.paymentMethod }}</p>
+            <p><strong>Cashier:</strong> {{ getCashierName() }}</p>
+          </div>
         </div>
 
         <table class="invoice-table">
           <thead>
             <tr>
-              <th>Item</th>
+              <th>#</th>
+              <th>Item Description</th>
               <th>Quantity</th>
-              <th>Unit Price</th>
-              <th>Total</th>
+              <th>Unit Price (₦)</th>
+              <th>Amount (₦)</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of selectedOrder.items" class="invoice-item">
+            <tr *ngFor="let item of selectedOrder.items; let i = index" class="invoice-item">
+              <td class="item-sno">{{ i + 1 }}</td>
               <td class="item-name">{{ item.name }}</td>
               <td class="item-quantity">{{ item.qty }}</td>
               <td class="item-price">₦{{ item.price | number:'1.0-0' }}</td>
@@ -369,8 +429,12 @@
             <span>₦{{ getTax(selectedOrder) | number:'1.0-0' }}</span>
           </div>
           <div class="summary-row grand-total">
-            <span><strong>Grand Total:</strong></span>
+            <span><strong>TOTAL AMOUNT:</strong></span>
             <span><strong>₦{{ getGrandTotal(selectedOrder) | number:'1.0-0' }}</strong></span>
+          </div>
+          <div class="summary-row" *ngIf="selectedOrder.paymentMethod">
+            <span><strong>Payment Method:</strong></span>
+            <span><strong>{{ selectedOrder.paymentMethod }}</strong></span>
           </div>
         </div>
 
@@ -378,12 +442,19 @@
           <p><strong>Customer Note:</strong> {{ selectedOrder.note }}</p>
         </div>
 
+        <!-- Thank You Message -->
+        <div class="thank-you-section">
+          <p class="thank-you">Thank you for dining with us!</p>
+          <p class="footer-note">This is a computer generated receipt. No signature required.</p>
+          <p class="footer-contact">For inquiries: {{ companyInfo.phone }} | {{ companyInfo.email }}</p>
+        </div>
+
         <div class="invoice-actions">
-          <!-- FIXED: Cashier processes READY orders to PAID -->
+          <!-- Cashier processes READY orders to CONFIRMED (and sets payment to PAID) -->
           <button class="btn-success" 
                   (click)="updateCashierStatus('PAID')"
                   [disabled]="selectedOrder.status !== 'READY'">
-            💳 Mark as Paid
+            💳 Process Payment
           </button>
           <button class="btn-danger" (click)="updateCashierStatus('CANCELLED')">
             ❌ Cancel Order
@@ -396,12 +467,13 @@
           </button>
         </div>
       </div>
+    </div>
 
-      <div *ngIf="!selectedOrder && activeCashierOrders.length > 0" class="select-order-prompt">
-        <p>Select an order from the list to view details and process payment</p>
-      </div>
+    <div *ngIf="!selectedOrder && activeCashierOrders.length > 0" class="select-order-prompt">
+      <p>Select an order from the list to view details and process payment</p>
     </div>
   </div>
+</div>
 
   <!-- Payment Processing Indicator -->
   <div *ngIf="isProcessingPayment" class="payment-processing-overlay">

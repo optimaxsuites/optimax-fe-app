@@ -8,6 +8,7 @@ import { PosServiceService } from '../../../service/pos-service.service';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { ProductHelperService } from '../../../service/product-helper.service';
+import { AuthStateService } from '../../../service/auth-state.service'; // Add this
 
 interface FilterState {
   priceRange: string;
@@ -43,10 +44,11 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   // UI state
   isCartOpen = false;
   isMobileFiltersOpen = false;
+  isCartSidebarVisible = false; // Add this for desktop cart
 
   // Header data
   branches: any[] = [];
-  user = { name: 'Guest', isGuest: true };
+  user = signal({ name: 'Guest', isGuest: true }); // Change to signal
 
   // Computed values
   categoryOptions = computed(() => {
@@ -59,8 +61,11 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
 
   selectedCategory = computed(() => this.categoryName);
   
+  // Cart signals
+  cartProducts = computed(() => this.cartService.cart().items);
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
+  cartSubtotal = computed(() => this.cartService.cart().subtotal);
 
   constructor(
     private route: ActivatedRoute,
@@ -68,12 +73,18 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     private posService: PosServiceService,
     private imageCacheService: ImageCacheService,
     private cartService: StoreCartService,
-    private productHelper: ProductHelperService
+    private productHelper: ProductHelperService,
+    private authStateService: AuthStateService // Add this
   ) {}
 
   ngOnInit(): void {
     this.loadBranches();
     this.setupRouteListener();
+    
+    // Subscribe to auth state
+    this.authStateService.user$.subscribe(user => {
+      this.user.set(user);
+    });
   }
 
   ngOnDestroy(): void {
@@ -177,31 +188,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     this.filteredProducts.set(filtered);
   }
 
-
-  // private setupRouteListener(): void {
-  //   this.route.paramMap
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe(params => {
-  //       this.storeUuid = params.get('uuid') || '';
-  //       const categoryName = params.get('categoryName');
-        
-  //       if (categoryName) {
-  //         this.categoryName = this.formatCategoryName(categoryName);
-  //         this.loadCategoryProducts();
-  //       }
-  //     });
-
-  //   this.route.queryParamMap
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe(params => {
-  //       const search = params.get('search');
-  //       if (search) {
-  //         this.searchText.set(search);
-  //         this.applyFiltersAndSearch();
-  //       }
-  //     });
-  // }
-
   private loadCategoryProducts(): void {
     this.isLoading.set(true);
     
@@ -226,45 +212,8 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
       .join(' ');
   }
 
-  // private applyFiltersAndSearch(): void {
-  //   if (!this.allProducts.length) return;
-
-  //   let filtered = this.allProducts.filter(product => 
-  //     product.productCategory?.name?.toLowerCase() === this.categoryName.toLowerCase()
-  //   );
-
-  //   // Apply search filter
-  //   if (this.searchText()) {
-  //     const searchTerm = this.searchText().toLowerCase();
-  //     filtered = filtered.filter(product =>
-  //       product.name?.toLowerCase().includes(searchTerm) ||
-  //       product.description?.toLowerCase().includes(searchTerm) ||
-  //       product.sku?.toLowerCase().includes(searchTerm)
-  //     );
-  //   }
-
-  //   // Apply stock filters
-  //   const currentFilters = this.filters();
-  //   if (currentFilters.inStock && !currentFilters.outOfStock) {
-  //     filtered = filtered.filter(product => (product.quantity || 0) > 0);
-  //   } else if (currentFilters.outOfStock && !currentFilters.inStock) {
-  //     filtered = filtered.filter(product => (product.quantity || 0) === 0);
-  //   }
-
-  //   // Apply price range filter
-  //   if (currentFilters.priceRange) {
-  //     filtered = this.applyPriceFilter(filtered, currentFilters.priceRange);
-  //   }
-
-  //   // Apply sorting
-  //   filtered = this.applySorting(filtered, currentFilters.sortBy);
-
-  //   this.filteredProducts.set(filtered);
-  // }
-
   private applyPriceFilter(products: ProductData[], priceRange: string): ProductData[] {
     return products.filter(product => {
-      // Convert to number and handle potential string values
       const price = this.getProductPrice(product);
       
       switch (priceRange) {
@@ -283,7 +232,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   }
 
   private getProductPrice(product: ProductData): number {
-    // Safely convert sellingPrice to number
     const price = product.sellingPrice;
     if (typeof price === 'number') {
       return price;
@@ -296,7 +244,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
 
   private applySorting(products: ProductData[], sortBy: string): ProductData[] {
     return [...products].sort((a, b) => {
-      // Get prices as numbers
       const priceA = this.getProductPrice(a);
       const priceB = this.getProductPrice(b);
       const nameA = a.name || '';
@@ -350,7 +297,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     if (category === 'All') {
       this.navigateToAllProducts();
     } else {
-      this.router.navigate(['/store', this.storeUuid, 'category', category.toLowerCase()]);
+      this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
     }
   }
 
@@ -367,17 +314,22 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   }
 
   onToggleCart(): void {
-    this.isCartOpen = !this.isCartOpen;
+    if (window.innerWidth < 768) {
+      this.isCartOpen = !this.isCartOpen;
+    } else {
+      this.isCartSidebarVisible = !this.isCartSidebarVisible;
+    }
   }
 
   // ============ NAVIGATION METHODS ============
 
   navigateToAllProducts(): void {
-    this.router.navigate(['/store', this.storeUuid]);
+    this.router.navigate(['/user/checkout/store', this.storeUuid]);
   }
 
+  // FIXED: This method was not being called
   navigateToProductDetails(productId: number): void {
-    this.router.navigate(['/store', this.storeUuid, 'product-details', productId]);
+    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
   }
 
   // ============ PRODUCT METHODS ============
@@ -394,11 +346,55 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   // ============ CART METHODS ============
 
   addToCart(product: ProductData): void {
+    // Check if product is in stock
+    if (product.quantity === 0) {
+      return;
+    }
+
+    // Get current quantity in cart
+    const currentQuantity = this.cartProducts().get(product.id.toString())?.quantity || 0;
+    
+    // Check if adding would exceed available stock
+    if (currentQuantity >= product.quantity) {
+      return;
+    }
+
+    // Add to cart
     this.cartService.addToCart(product);
+    
+    // Auto-open cart
+    this.autoOpenCart();
+  }
+
+  reduceQuantityInCart(product: ProductData): void {
+    const currentQuantity = this.cartProducts().get(product.id.toString())?.quantity || 0;
+    this.cartService.updateQuantity(product, currentQuantity - 1);
+  }
+
+  removeFromCart(product: ProductData): void {
+    this.cartService.removeFromCart(product);
+  }
+
+  clearCart(): void {
+    this.cartService.clearCart();
+    this.isCartOpen = false;
+    this.isCartSidebarVisible = false;
+  }
+
+  private autoOpenCart(): void {
+    if (window.innerWidth >= 768) {
+      this.isCartSidebarVisible = true;
+    } else {
+      this.isCartOpen = true;
+    }
   }
 
   getTotalCartItems(): number {
     return this.totalCartItems();
+  }
+
+  getCartSubtotal(): number {
+    return this.cartSubtotal();
   }
 
   // ============ UI METHODS ============
@@ -423,4 +419,48 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     
     return count;
   }
+
+  navigateToCheckout(): void {
+  this.isCartOpen = false;
+  this.isCartSidebarVisible = false;
+  this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
+}
+
+  // Price formatting helper
+  formatPrice(price: any): string {
+    try {
+      let priceValue: number;
+
+      if (price === undefined || price === null) {
+        priceValue = 0;
+      } else if (typeof price === 'string') {
+        priceValue = parseFloat(price);
+        if (isNaN(priceValue)) priceValue = 0;
+      } else if (typeof price === 'number') {
+        priceValue = price;
+      } else {
+        priceValue = 0;
+      }
+
+      return `₦${priceValue.toLocaleString('en-NG')}`;
+    } catch (error) {
+      return '₦0';
+    }
+  }
+
+  // Add to your component
+selectedBranch: any = null;
+
+// Add these methods
+onBranchChange(branch: any): void {
+  this.selectedBranch = branch;
+}
+
+onMobileCategoryNavigate(category: string): void {
+  this.navigateToCategoryPage(category);
+}
+
+private navigateToCategoryPage(category: string): void {
+  this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
+}
 }

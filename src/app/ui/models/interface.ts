@@ -991,6 +991,7 @@ export interface InventoryReportRequestDTO {
 // Stock Movement Report Request DTO
 export interface StockMovementReportRequestDTO extends InventoryReportRequestDTO {
   groupBy?: 'none' | 'day' | 'week' | 'month'; 
+  productId?: number | null;
 }
 
 

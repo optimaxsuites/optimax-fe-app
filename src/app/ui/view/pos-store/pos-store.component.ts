@@ -39,8 +39,8 @@ interface Toast {
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
    // WhatsApp configuration
-  whatsappPhone = '1234567890';
-  whatsappMessage = 'Hello! I visited your Angular app and would like to know more information.';
+  whatsappPhone = '+2348155026555';
+  whatsappMessage = 'Hello! I visited your store and would love to get more information.';
   whatsappHoverMessage = "Hi, let's chat! We're here to help you with any questions.";
   
   private _allProducts: ProductData[] = [];
@@ -661,6 +661,11 @@ openAuthModal(mode: 'login' | 'signup' = 'login'): void {
   this.isAuthModalOpen.set(true);
 }
 
+isCartVisible = computed(() => {
+  // Check both desktop cart sidebar and mobile cart modal
+  return this.isCartOpen || (this.isCartSidebarVisible && !this.isCartEmpty());
+});
+
 // closeAuthModal(): void {
 //   this.isAuthModalOpen.set(false);
 // }
@@ -681,7 +686,7 @@ navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     // Use the correct route path based on your routing configuration
-    this.router.navigate(['/store', currentUuid, 'checkout']);
+    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
   } else {
     console.error('Store UUID not found');
     this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');

@@ -66,9 +66,9 @@
     aria-label="Scroll to top">
     <i class="fa-solid fa-chevron-up text-lg"></i>
   </button>
-  <app-store-header [branches]="branches" [selectedBranch]="selectedBranch()" [categoryOptions]="categoryOptions()"
+  <app-store-header [branches]="branches" [selectedBranch]="selectedBranch()" [allProducts]="allProducts"
     [selectedCategory]="selectedCategory()" [searchText]="searchText()" [isCartEmpty]="isCartEmpty()"
-    [totalCartItems]="getTotalCartItems()" [user]="user()" [allProducts]="allProducts"
+    [totalCartItems]="getTotalCartItems()"  [allProducts]="allProducts"
     (categoryChange)="changeCategory($event)" (searchChange)="changeSearchInput($event)" (toggleCart)="toggleCart()"
     (productSelect)="onProductSelect($event)" (searchSubmit)="onSearchSubmit($event)"
     (branchChange)="onBranchChange($event)" (mobileCategoryNavigate)="onMobileCategoryNavigate($event)">
@@ -522,12 +522,27 @@
   </div> <!-- Close All Products Section -->
   } <!-- Close @if (isContentReady()) -->
 
+  <!-- WhatsApp Widget with conditional visibility -->
   <app-whatsapp-widget
-  [phoneNumber]="whatsappPhone"
-  [message]="whatsappMessage"
-  [hoverMessage]="whatsappHoverMessage"
-  position="bottom-right">
-</app-whatsapp-widget>
+   *ngIf="!isCartVisible()"
+    [phoneNumber]="whatsappPhone"
+    [message]="whatsappMessage"
+    [hoverMessage]="whatsappHoverMessage"
+    position="bottom-right">
+  </app-whatsapp-widget>
+
+
+<!-- Simple Footer Version -->
+<div class="bg-white border-t relative border-gray-200 my-10 py-4 mt-auto">
+  <div class=" mx-auto px-4">
+    <div class="text-center">
+      <!-- <p class="text-xs text-gray-400 mt-1">Advanced E-commerce Solutions</p> -->
+      <p class="text-xl text-gray-500 mt-2 uppercase font-semibold">
+        Powered By Centrifuge Info Tech LTD &#64; 2025
+      </p>
+    </div>
+  </div>
+</div>
   </main> <!-- Close main -->
 
   <!-- Cart Sidebar -->
@@ -789,21 +804,4 @@
   ></app-auth-modal>
 }
 
-<!-- Simple Footer Version -->
-<div class="bg-white border-t relative border-gray-200 py-4 mt-auto">
-  <div class=" mx-auto px-4">
-    <div class="text-center">
-      <span class="text-2xl font-bold flex items-center justify-center text-gray-500 uppercase tracking-wide">
-        <span>Powered by</span> <div class="flex items-center">
-      <img src="assets/Logo-green.png" alt="Store Logo" class="w-40">
-    </div>
-
-      </span>
-      <!-- <p class="text-xs text-gray-400 mt-1">Advanced E-commerce Solutions</p> -->
-      <p class="text-xl text-gray-500 mt-2">
-        &copy; 2025. All rights reserved.
-      </p>
-    </div>
-  </div>
-</div>
 </div>

@@ -56,8 +56,8 @@ const routes: Routes = [
   {
     path: 'product/:uuid',
     component: ProductsComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_PDT'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_PDT'] }
 
   },
   {
@@ -69,14 +69,14 @@ const routes: Routes = [
   {
     path: 'inventory/:uuid',
     component: InventoryComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_INV'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_INV'] }
   },
   {
     path: 'sale/:uuid',
     component: SalesComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_SALES'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_SALES'] }
   },
   {
     path: 'orderDetails/:uuid',
@@ -86,66 +86,66 @@ const routes: Routes = [
   {
   path: 'user/checkout/orders/:uuid',
   component: CheckoutOrdersComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_CHKOUT'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_CHKOUT'] }
 },
 
   {
     path: 'report/:uuid',
     component: ReportDashboardComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_REPRT'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_REPRT'] }
   },
   {
     path: 'refunds/:uuid',
     component: RefundComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_RFND'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_RFND'] }
   },
   {
     path : 'orderRefund/:uuid',
     component : OrderRefundComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_RFND'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_RFND'] }
   },
   {
     path: 'ingredients/:uuid',
     component: IngredientComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_ING'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_ING'] }
   },
   {
     path: 'view',
     component: ViewInventoryComponent,
 
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_INV'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_INV'] }
 
   },
   {
     path: 'supplier-details',
     component: InformationComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_INV'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_INV'] }
   },
   {
     path: 'add-ingredient/:uuid',
     component: AddIngredientComponent,
-      canActivate: [PermissionGuard],
-      data: { appCode: ['POS_ING'] }
+      // canActivate: [PermissionGuard],
+      // data: { appCode: ['POS_ING'] }
 
   },
   {
     path: 'view-ingredient/:uuid',
     component: ViewIngredientsComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_ING'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_ING'] }
   },
   {
     path: 'edit-ingredient/:uuid',
     component: EditIngredientsComponent,
-    canActivate: [PermissionGuard],
-    data: { appCode: ['POS_ING'] }
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_ING'] }
   },
   {
     path: 'checkout-kitchen-history/:uuid',

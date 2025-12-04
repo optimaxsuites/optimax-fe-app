@@ -2,16 +2,19 @@ import { Component, OnInit, signal, computed, OnDestroy, ElementRef, ViewChild }
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { Observable, Subscription } from 'rxjs';
+import { CurrencyPipe } from '@angular/common';
 
 import { ProductData, VariantDTO, ProductImageDTO } from '../../../models/interface';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { StoreCartService } from '../../../service/store-cart.service';
+import { AuthStateService } from '../../../service/auth-state.service';
 
 @Component({
   selector: 'app-product-details',
   templateUrl: './product-details.component.html',
   styleUrls: ['./product-details.component.scss'],
+  providers: [CurrencyPipe]
 })
 export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Signals
@@ -19,6 +22,9 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   quantity = signal(1);
   storeUuid = '';
+  
+  // Add allProducts property for header
+  allProducts: ProductData[] = [];
 
   // Cart visibility signals
   isCartOpen = false;
@@ -55,20 +61,26 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Subscriptions
   private routeSubscription!: Subscription;
   private navigationSubscription!: Subscription;
+  private authSubscription!: Subscription;
 
   // Computed values
-  categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
+  categoryOptions = computed(() => {
+    const categories = new Set(this.allProducts.map(p => p.productCategory?.name).filter(Boolean));
+    return [
+      { label: 'Category', value: 'All' },
+      ...Array.from(categories).map(cat => ({
+        label: cat as string,
+        value: (cat as string).toLowerCase()
+      }))
+    ];
+  });
 
   // Computed for current selected image
   currentImage = computed((): ProductImageDTO | undefined => {
     const product = this.product();
     const index = this.selectedImageIndex();
 
-    if (
-      !product ||
-      !product.productImages ||
-      product.productImages.length === 0
-    ) {
+    if (!product || !product.productImages || product.productImages.length === 0) {
       return undefined;
     }
 
@@ -88,10 +100,14 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Computed for paginated related products
   paginatedRelatedProducts = computed(() => {
     const related = this.relatedProducts();
-    const startIndex =
-      (this.currentRelatedPage() - 1) * this.relatedItemsPerPage();
+    const startIndex = (this.currentRelatedPage() - 1) * this.relatedItemsPerPage();
     const endIndex = startIndex + this.relatedItemsPerPage();
     return related.slice(startIndex, endIndex);
+  });
+
+  // Computed for cart subtotal
+  cartSubtotal = computed(() => {
+    return this.cartService.cart().subtotal;
   });
 
   @ViewChild('mainContent') mainContent!: ElementRef;
@@ -101,7 +117,9 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     private router: Router,
     private posService: PosServiceService,
     private imageCacheService: ImageCacheService,
-    private cartService: StoreCartService
+    private cartService: StoreCartService,
+    private authStateService: AuthStateService,
+    private currencyPipe: CurrencyPipe
   ) {}
 
   ngOnInit(): void {
@@ -109,6 +127,14 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     
     // Add scroll listener for scroll-to-top button
     this.addScrollListener();
+
+    // Load branches
+    this.loadBranches();
+
+    // Subscribe to auth state
+    this.authSubscription = this.authStateService.user$.subscribe(user => {
+      this.user.set(user);
+    });
 
     // Initial load
     this.loadProductFromRoute();
@@ -146,11 +172,25 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     if (this.navigationSubscription) {
       this.navigationSubscription.unsubscribe();
     }
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
     
     // Clean up scroll listener
     window.removeEventListener('scroll', this.onScroll.bind(this));
     // Clean up keyboard listener
     document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  private loadBranches(): void {
+    this.posService.getBranches().subscribe({
+      next: (branches) => {
+        this.branches = branches;
+      },
+      error: (error) => {
+        console.error('Error loading branches:', error);
+      }
+    });
   }
 
   private loadProductFromRoute(): void {
@@ -162,6 +202,76 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
       this.isLoading.set(false);
       console.error('No product ID found in route');
     }
+  }
+
+  private loadProductDetails(productId: number): void {
+    console.log('Loading product details for ID:', productId);
+    this.isLoading.set(true);
+    
+    // Reset component state for new product
+    this.product.set(null);
+    this.selectedImageIndex.set(0);
+    this.quantity.set(1);
+    this.relatedProducts.set([]);
+    
+    this.posService.getProducts().subscribe({
+      next: (products: ProductData[]) => {
+        console.log('Products loaded from service:', products.length);
+        
+        // Store all products for header
+        this.allProducts = products;
+        
+        const foundProduct = products.find((p: ProductData) => p.id === productId);
+        console.log('Found product:', foundProduct);
+        
+        if (foundProduct) {
+          this.product.set(foundProduct);
+          // Preload images for better performance
+          this.imageCacheService.preloadProductImages(foundProduct);
+          this.loadRelatedProducts(foundProduct, products);
+          
+          // Update browser title
+          document.title = `${foundProduct.name} - Store`;
+          
+          // Scroll to top after a small delay to ensure DOM is updated
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        } else {
+          this.product.set(null);
+          console.error('Product not found:', productId);
+          this.showToastMessage('Product not found');
+        }
+        
+        this.isLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error loading product details:', error);
+        this.product.set(null);
+        this.isLoading.set(false);
+        this.showToastMessage('Failed to load product details. Please try again.');
+      }
+    });
+  }
+
+  private loadRelatedProducts(
+    currentProduct: ProductData,
+    allProducts: ProductData[]
+  ): void {
+    const related = allProducts.filter(
+      (p: ProductData) =>
+        p.id !== currentProduct.id &&
+        p.productCategory?.id === currentProduct.productCategory?.id
+    );
+
+    console.log('Loaded related products:', related.length);
+    this.relatedProducts.set(related);
+    this.totalRelatedPages.set(
+      Math.ceil(related.length / this.relatedItemsPerPage())
+    );
+
+    // Preload related product images
+    this.imageCacheService.preloadRelatedProductsImages(related);
   }
 
   // Image gallery methods
@@ -201,9 +311,8 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Navigation methods
   navigateToProductDetails(productId: number): void {
     console.log('Navigating to product ID:', productId);
-    // Just navigate - the route subscription will handle the loading
     this.router.navigate(
-      ['/store', this.storeUuid, 'product-details', productId]
+      ['/user/checkout/store', this.storeUuid, 'product-details', productId]
     ).then(success => {
       if (!success) {
         console.error('Navigation failed for product ID:', productId);
@@ -274,72 +383,6 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     return pages;
   }
 
-  private loadProductDetails(productId: number): void {
-    console.log('Loading product details for ID:', productId);
-    this.isLoading.set(true);
-    
-    // Reset component state for new product
-    this.product.set(null);
-    this.selectedImageIndex.set(0);
-    this.quantity.set(1);
-    this.relatedProducts.set([]);
-    
-    this.posService.getProducts().subscribe({
-      next: (products: ProductData[]) => {
-        console.log('Products loaded from service:', products.length);
-        const foundProduct = products.find((p: ProductData) => p.id === productId);
-        console.log('Found product:', foundProduct);
-        
-        if (foundProduct) {
-          this.product.set(foundProduct);
-          // Preload images for better performance
-          this.imageCacheService.preloadProductImages(foundProduct);
-          this.loadRelatedProducts(foundProduct, products);
-          
-          // Update browser title
-          document.title = `${foundProduct.name} - Store`;
-          
-          // Scroll to top after a small delay to ensure DOM is updated
-          setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }, 100);
-        } else {
-          this.product.set(null);
-          console.error('Product not found:', productId);
-          this.showToastMessage('Product not found');
-        }
-        
-        this.isLoading.set(false);
-      },
-      error: (error: any) => {
-        console.error('Error loading product details:', error);
-        this.product.set(null);
-        this.isLoading.set(false);
-        this.showToastMessage('Failed to load product details. Please try again.');
-      }
-    });
-  }
-
-  private loadRelatedProducts(
-    currentProduct: ProductData,
-    allProducts: ProductData[]
-  ): void {
-    const related = allProducts.filter(
-      (p: ProductData) =>
-        p.id !== currentProduct.id &&
-        p.productCategory?.id === currentProduct.productCategory?.id
-    );
-
-    console.log('Loaded related products:', related.length);
-    this.relatedProducts.set(related);
-    this.totalRelatedPages.set(
-      Math.ceil(related.length / this.relatedItemsPerPage())
-    );
-
-    // Preload related product images
-    this.imageCacheService.preloadRelatedProductsImages(related);
-  }
-
   // Image methods
   getProductImage(
     product: ProductData,
@@ -382,7 +425,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   }
 
   getCartSubtotal(): number {
-    return this.cartService.cart().subtotal;
+    return this.cartSubtotal();
   }
 
   toggleCart(): void {
@@ -470,7 +513,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   navigateToCheckout(): void {
     this.isCartOpen = false;
     this.isCartSidebarVisible = false;
-    this.router.navigate(['/store', this.storeUuid, 'checkout']);
+    this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
   }
 
   // Helper methods
@@ -532,6 +575,27 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     return this.getSellingPrice() * this.quantity();
   }
 
+  formatPrice(price: any): string {
+    try {
+      let priceValue: number;
+
+      if (price === undefined || price === null) {
+        priceValue = 0;
+      } else if (typeof price === 'string') {
+        priceValue = parseFloat(price);
+        if (isNaN(priceValue)) priceValue = 0;
+      } else if (typeof price === 'number') {
+        priceValue = price;
+      } else {
+        priceValue = 0;
+      }
+
+      return `₦${priceValue.toLocaleString('en-NG')}`;
+    } catch (error) {
+      return '₦0';
+    }
+  }
+
   handleImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     imgElement.src = 'assets/placeholder-product.jpg';
@@ -553,6 +617,12 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   // Header event handlers
   changeCategory(category: string): void {
     this.selectedCategory.set(category);
+    
+    if (category === 'All') {
+      this.navigateToAllProducts();
+    } else {
+      this.navigateToCategoryPage(category);
+    }
   }
 
   changeSearchInput(text: string): void {
@@ -561,6 +631,21 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
 
   changeBranch(branch: any): void {
     console.log('Branch changed to:', branch);
+  }
+
+  // Navigation methods
+  navigateToAllProducts(): void {
+    const currentUuid = this.storeUuid;
+    if (currentUuid) {
+      this.router.navigate(['/user/checkout/store', currentUuid]);
+    }
+  }
+
+  navigateToCategoryPage(categoryName: string): void {
+    const currentUuid = this.storeUuid;
+    if (currentUuid) {
+      this.router.navigate(['/user/checkout/store', currentUuid, 'category', categoryName.toLowerCase()]);
+    }
   }
 
   // Keyboard navigation for modal
