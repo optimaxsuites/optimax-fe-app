@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { GeneralSettingsService } from '../../../service/general-settings-service.service';
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
@@ -6,6 +6,7 @@ import { countriesData } from '../../../sharedComponents/service/country-data';
 import { ChangePasswordComponent } from '../change-password/change-password.component';
 import { ProfileComponent } from '../profile/profile.component';
 import { BranchesComponent } from '../../pos/branches/branches.component';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-general-settings',
@@ -15,7 +16,7 @@ import { BranchesComponent } from '../../pos/branches/branches.component';
 export class GeneralSettingsComponent implements OnInit {
   selectedSetting: string | null = null;
 
-  selectedComp = null;
+  selectedComp: Type<any> | null = null;
   searchTerm: string = '';
   sidebar: boolean = false;
   hoveredIndex: number = -1;
@@ -84,12 +85,20 @@ export class GeneralSettingsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private generalSettingsService: GeneralSettingsService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
    
     this.filteredSettings = [...this.settings];
+
+      this.route.queryParams.subscribe(params => {
+        // console.log(params['open'])
+    if (params['open'] === 'branches') {
+      this.openSettingByName('Branches & Location');
+    }
+  });
   }
 
   filterSettings(): void {
@@ -110,6 +119,17 @@ export class GeneralSettingsComponent implements OnInit {
     this.sidebar = true;
     this.selectedComp = setting.component;
   };
+
+
+  openSettingByName(name: string) {
+
+    console.log(name)
+  const setting = this.settings.find(s => s.name === name);
+  if (setting) {
+    this.sidebar = true;
+    this.selectedComp = setting.component;
+  }
+}
 
  
 }

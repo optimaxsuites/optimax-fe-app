@@ -21,6 +21,8 @@ import { ProductExcelColumns } from "../../models/enums";
 import { ImageCacheService } from "../../service/image-cache.service";
 import { MetadataService } from "../../service/metadata.service";
 import { getUserPermissionsFor, isSuperUser } from "../../../shared/pipes/helper";
+import { Route, Router } from "@angular/router";
+import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 
 @Component({
   selector: "app-products",
@@ -154,6 +156,8 @@ export class ProductsComponent implements OnInit {
     private http: HttpClient,
     private imageCacheService: ImageCacheService,
     public metadataService: MetadataService,
+    private router: Router,
+    private navigationLink: NavigationLinksService
   ) {}
 
   ngOnInit(): void {
@@ -710,11 +714,18 @@ export class ProductsComponent implements OnInit {
     this.getProducts();
   }
 
-  openAddProdut() {
+  openAddProduct() {
     this.tableSection = false;
     this.viewProduct = false;
     this.editProduct = false;
     this.addProduct = true;
+  }
+
+  openAddBranch(){
+    const settingsLink = this.navigationLink.getLink('settingsLink')
+        this.router.navigate([settingsLink], {
+      queryParams: { open: 'branches' }
+    });
   }
 
   closeAddProduct() {
