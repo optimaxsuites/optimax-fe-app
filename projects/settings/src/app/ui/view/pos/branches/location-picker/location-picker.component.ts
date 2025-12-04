@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, Output, EventEmitter, Input, NgZone } from '@angular/core';
 import * as L from 'leaflet';
-import { HttpClient } from '@angular/common/http';
+import { HttpBackend, HttpClient } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 // import { faLocationCrosshairs } from '@fortawesome/free-solid-svg-icons';
 
@@ -47,7 +47,7 @@ export class LocationPickerComponent implements OnInit, AfterViewInit, OnDestroy
   private searchSubject = new Subject<string>(); 
   private blurTimeout: any
 
-  constructor(private http: HttpClient, private ngZone: NgZone) {
+  constructor(private http: HttpClient, private ngZone: NgZone, private handler: HttpBackend) {
     this.actualStartLocation = this.initialLocation || this.DEFAULT_ABUJA_LOCATION;
 
     this.searchSubject.pipe(
@@ -61,6 +61,7 @@ export class LocationPickerComponent implements OnInit, AfterViewInit, OnDestroy
         this.showSearchResults = false;
       }
     });
+     this.http = new HttpClient(this.handler);
   }
 
   ngOnInit(): void {
@@ -237,6 +238,8 @@ const url = `${corsProxy}${encodeURIComponent(
   }
 
   selectSearchResult(result: NominatimResult): void {
+    console.log("clicked")
+    console.log(result)
     if (this.blurTimeout) {
       clearTimeout(this.blurTimeout);
     }

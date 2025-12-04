@@ -17,6 +17,13 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+     const locationIqUrl = 'https://us1.locationiq.com/';
+
+        // If the request is going to LocationIQ, don't attach auth≈
+        if (request.url.startsWith(locationIqUrl)) {
+          return next.handle(request);
+        }
+
     const accessToken = sessionStorage.getItem('Token');
 
     const host = window.location.hostname;
