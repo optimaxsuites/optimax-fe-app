@@ -698,12 +698,31 @@ createStockMovement(data: StockMovementPostBody) {
 }
  updateStockMovement(id: number, data: StockMovementCreatePayload) {
   
-  const payload = { ...data, id };
+  // The backend endpoint is a POST, but expects the ID in the body for update/creation logic
+  // The StockMovementCreatePayload interface works as a body for this purpose.
+  const payload = { 
+    ...data, 
+    id: id // Ensure ID is included in the payload for update
+  };
   
+  // Clean up unnecessary fields before sending
+  const finalPayload = {
+      id: payload.id,
+      quantity: Number(payload.quantity),
+      reference: payload.reference ?? '',
+      purchasePrice: Number(payload.purchasePrice ?? 0),
+      sellingPrice: Number(payload.sellingPrice ?? 0),
+      createdDate: payload.createdDate,
+      supplierId: payload.supplierId ?? null,
+      inventoryId: Number(payload.inventoryId)
+      // ingredientId is usually handled by the inventory relationship on the backend
+  };
+
+
   return this.http
     .post<StockMovementResponsePayload>(
       this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements',
-      payload 
+      finalPayload 
     )
     .pipe(catchError(this.handleError));
 }

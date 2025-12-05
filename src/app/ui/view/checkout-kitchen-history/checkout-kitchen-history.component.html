@@ -3,7 +3,7 @@
   <div class="history-header">
     <div class="header-title">
       <h1><i class="fas fa-history"></i> Order History</h1>
-      <p class="subtitle">View and manage all paid orders</p>
+      <p class="subtitle">View and manage all paid orders with staff tracking</p>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="refreshOrders()" [disabled]="isLoading">
@@ -117,6 +117,52 @@
     </div>
   </div>
 
+  <!-- NEW: Staff-Specific Filters Section -->
+  <div class="staff-filters-section">
+    <div class="filter-group">
+      <div class="role-filter">
+        <label>Filter by Role:</label>
+        <select [(ngModel)]="selectedRoleFilter" (change)="applyStaffFilter()" class="role-select">
+          <option value="">All Roles</option>
+          <option value="waiter">Waiter</option>
+          <option value="chef">Chef</option>
+          <option value="cashier">Cashier</option>
+        </select>
+      </div>
+      
+      <div class="staff-filter">
+        <label>Filter by Staff:</label>
+        <select [(ngModel)]="selectedStaffFilter" (change)="applyStaffFilter()" class="staff-select">
+          <option value="">All Staff</option>
+          <option *ngFor="let staff of availableStaff" [value]="staff.id">
+            {{ staff.name }} ({{ staff.role }})
+          </option>
+        </select>
+      </div>
+      
+      <div class="my-activities-filter">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="showOnlyMyActivities" (change)="applyStaffFilter()">
+          Show Only My Activities
+          <span class="checkmark"></span>
+        </label>
+      </div>
+      
+      <button class="btn btn-outline" (click)="clearStaffFilters()" 
+              *ngIf="selectedRoleFilter || selectedStaffFilter || showOnlyMyActivities">
+        <i class="fas fa-times"></i>
+        Clear Staff Filters
+      </button>
+    </div>
+    
+    <div class="current-user-info" *ngIf="currentUser">
+      <div class="user-badge">
+        <i class="fas fa-user"></i>
+        <span>{{ currentUser.name }} ({{ currentUser.role }})</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-state">
     <div class="spinner-container">
@@ -134,11 +180,15 @@
       <div class="empty-icon">
         <i class="fas fa-receipt"></i>
       </div>
-      <h3>No paid orders found</h3>
-      <p>Orders marked as paid by cashiers will appear here.</p>
+      <h3>No orders found</h3>
+      <p>Try adjusting your filters or refresh the data.</p>
       <button class="btn btn-primary" (click)="refreshOrders()">
         <i class="fas fa-sync-alt"></i>
         Refresh Data
+      </button>
+      <button class="btn btn-outline" (click)="clearFilters()" style="margin-left: 10px;">
+        <i class="fas fa-times"></i>
+        Clear All Filters
       </button>
     </div>
 
@@ -150,6 +200,7 @@
             <th>Order No</th>
             <th>Date & Time</th>
             <th>Items</th>
+            <th>Staff Involved</th>
             <th>Status</th>
             <th>Payment</th>
             <th>Total</th>
@@ -183,8 +234,30 @@
                 {{ order.items.length }} item{{ order.items.length !== 1 ? 's' : '' }}
               </div>
             </td>
+            
+            <!-- NEW: Staff Involved Column -->
+            <td class="staff-involved">
+              <div class="order-staff-info">
+                <div *ngIf="order.createdBy" class="staff-badge waiter">
+                  <i class="fas fa-user-tie"></i>
+                  {{ order.createdBy }}
+                </div>
+                <div *ngIf="order.preparedBy" class="staff-badge chef">
+                  <i class="fas fa-utensils"></i>
+                  {{ order.preparedBy }}
+                </div>
+                <div *ngIf="order.paidBy" class="staff-badge cashier">
+                  <i class="fas fa-cash-register"></i>
+                  {{ order.paidBy }}
+                </div>
+                <div *ngIf="!order.createdBy && !order.preparedBy && !order.paidBy" class="no-staff-info">
+                  <span class="text-muted">No staff info</span>
+                </div>
+              </div>
+            </td>
+            
             <td class="order-status">
-              <span [class]="'status-badge status-' + order.status.toLowerCase()" class=" capitalize">
+              <span [class]="'status-badge status-' + order.status.toLowerCase()" class="capitalize">
                 <i class="fas" [ngClass]="getStatusIcon(order.status)"></i>
                 {{ order.status }}
               </span>
@@ -222,6 +295,9 @@
         <h4>
           <i class="fas fa-stream"></i>
           Order Timeline - {{ selectedOrderForTimeline.orderNo }}
+          <small style="margin-left: 10px; color: #7f8c8d;">
+            Table {{ selectedOrderForTimeline.table }}
+          </small>
         </h4>
         <button class="btn btn-sm btn-outline" (click)="selectedOrderForTimeline = null">
           <i class="fas fa-times"></i>
@@ -236,7 +312,11 @@
           <div class="timeline-content">
             <div class="timeline-action">{{ event.action }}</div>
             <div class="timeline-time">{{ event.timestamp | date:'medium' }}</div>
-            <div class="timeline-actor">By: {{ event.performedBy || 'System' }}</div>
+            <div *ngIf="event.performedBy" class="timeline-actor">
+              <i class="fas fa-user"></i>
+              By: {{ event.performedBy }}
+              <span *ngIf="event.role" class="timeline-role">{{ event.role }}</span>
+            </div>
           </div>
         </div>
         <div *ngIf="getOrderTimeline(selectedOrderForTimeline.orderNo).length === 0" class="no-timeline">
@@ -279,6 +359,9 @@
       <div class="pagination-info">
         Page {{ currentPage }} of {{ totalPages }} 
         • Showing {{ paginatedOrders.length }} of {{ filteredOrders.length }} orders
+        <span *ngIf="selectedRoleFilter"> • Filtered by: {{ selectedRoleFilter }}</span>
+        <span *ngIf="selectedStaffFilter"> • Staff: {{ getStaffById(selectedStaffFilter)?.name || selectedStaffFilter }}</span>
+        <span *ngIf="showOnlyMyActivities && currentUser"> • My Activities</span>
       </div>
 
       <div class="items-per-page">
@@ -290,6 +373,31 @@
           <option value="50">50</option>
         </select>
       </div>
+    </div>
+  </div>
+  
+  <!-- Debug & Admin Section (Optional - can be removed in production) -->
+  <div class="debug-section" *ngIf="currentUser">
+    <div class="debug-actions">
+      <button class="btn btn-sm btn-outline" (click)="debugDataSources()">
+        <i class="fas fa-bug"></i>
+        Debug Data
+      </button>
+      <button class="btn btn-sm btn-outline" (click)="forceSyncWithCashier()">
+        <i class="fas fa-sync"></i>
+        Sync with Cashier
+      </button>
+      <button class="btn btn-sm btn-outline" (click)="addTestStaff()">
+        <i class="fas fa-user-plus"></i>
+        Add Test Staff
+      </button>
+    </div>
+    <div class="debug-info">
+      <small>
+        Logged in as: <strong>{{ currentUser.name }}</strong> ({{ currentUser.role }}) 
+        • Staff in system: {{ availableStaff.length }}
+        • Orders loaded: {{ orders.length }}
+      </small>
     </div>
   </div>
 </div>

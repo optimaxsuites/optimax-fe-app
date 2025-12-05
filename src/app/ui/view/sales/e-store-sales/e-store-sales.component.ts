@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Order } from '../../../models/interface'; 
+import { Order as ComponentOrder } from '../../../models/interface'; // Alias 'Order' from interface.ts as ComponentOrder
 import { MetadataService } from '../../../service/metadata.service';
 import { StoreOrderService } from '../../../service/store-order.service'; // Needed for cancelOrder and loadOrders
 import { CancellationEvent } from '../sales-details/sales-details.component'; // Interface for the cancel event
@@ -13,16 +13,16 @@ import { CancellationEvent } from '../sales-details/sales-details.component'; //
 })
 export class EStoreSalesComponent implements OnInit {
   // Mirrored Properties
-  orders: Order[] = [];
-  filteredOrders: Order[] = [];
-  paginatedOrders: Order[] = [];
+  orders: ComponentOrder[] = []; // Use ComponentOrder
+  filteredOrders: ComponentOrder[] = []; // Use ComponentOrder
+  paginatedOrders: ComponentOrder[] = []; // Use ComponentOrder
   searchText: string = '';
   statusFilter: string = 'ALL';
   daysFilter: number = 1; 
   sortBy: string = 'id';
   sortDirection: 'asc' | 'desc' = 'desc';
   isViewPageOpen: boolean = false;
-  activeOrder: Order = {} as Order;
+  activeOrder: ComponentOrder = {} as ComponentOrder; // Use ComponentOrder
   selectedCashier: string = 'All';
   isLoading: boolean = true;
   deliveryStatusFilter: string = 'ALL'; 
@@ -74,9 +74,9 @@ export class EStoreSalesComponent implements OnInit {
   loadOrders(): void {
     this.isLoading = true;
     
-    // CHANGED: Use the dedicated E-Store Orders API
+    // storeOrderService.getEStoreOrders now returns ComponentOrder[]
     this.storeOrderService.getEStoreOrders({}).subscribe({
-      next: (orders) => {
+      next: (orders: ComponentOrder[]) => { // Expect ComponentOrder[]
         this.orders = orders;
         console.log('EStoreSales: Loaded E-Store orders from dedicated API.');
         this.isLoading = false;
@@ -121,19 +121,18 @@ export class EStoreSalesComponent implements OnInit {
     this.currentPage = 1;
     let filtered = [...this.orders];
     
-    // 1. Order Status filter
+    // Order Status filter
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
     }
 
-    // 2. NEW: Delivery Status filter
+    //  Delivery Status filter
     if (this.deliveryStatusFilter !== 'ALL') {
       filtered = filtered.filter(order => 
         (order.deliveryStatus || 'PENDING') === this.deliveryStatusFilter
       );
     }
     
-    // 3. Days filter
     if (this.daysFilter > 0) {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
@@ -158,7 +157,6 @@ export class EStoreSalesComponent implements OnInit {
       );
     }
     
-    // 5. Search filter
     if (this.searchText) {
       const searchLower = this.searchText.toLowerCase();
       filtered = filtered.filter(order =>
@@ -173,16 +171,25 @@ export class EStoreSalesComponent implements OnInit {
       let aValue: any, bValue: any;
       
       switch (this.sortBy) {
-        case 'id': aValue = a.id; bValue = b.id; break;
+        case 'id': 
         case 'orderNumber': aValue = a.orderNumber; bValue = b.orderNumber; break;
         case 'customer': aValue = a.customer?.name || ''; bValue = b.customer?.name || ''; break;
         case 'totalAmount': aValue = a.totalAmount; bValue = b.totalAmount; break;
+        // Tax/TotalWithTax are calculated fields, logic is fine as long as orderItem exists
         case 'tax': aValue = this.calculateOrderTax(a); bValue = this.calculateOrderTax(b); break;
         case 'totalWithTax': aValue = this.calculateOrderTotalWithTax(a); bValue = this.calculateOrderTotalWithTax(b); break;
         case 'orderStatus': aValue = a.orderStatus; bValue = b.orderStatus; break;
-        case 'date': aValue = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2]).getTime(); bValue = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2]).getTime(); break;
+        case 'date': 
+          aValue = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2]).getTime(); 
+          bValue = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2]).getTime(); 
+          break;
         case 'salesperson': aValue = a.salesperson?.name || ''; bValue = b.salesperson?.name || ''; break;
-        default: aValue = a.id; bValue = b.id;
+        default: aValue = a.orderNumber; bValue = b.orderNumber; // Fallback to orderNumber (string)
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return this.sortDirection === 'asc' ? comparison : -comparison;
       }
       
       if (aValue < bValue) { return this.sortDirection === 'asc' ? -1 : 1; }
@@ -194,14 +201,13 @@ export class EStoreSalesComponent implements OnInit {
     this.updatePagination();
   }
 
-  // --- Other Mirrored Methods (Unchanged) ---
-  calculateOrderTax(order: Order): number {
+  calculateOrderTax(order: ComponentOrder): number {
     if (!order.orderItem || !order.orderItem.length) return 0;
     
     return order.orderItem.reduce((totalTax: number, item: any) => {
       const quantity = item.quantity || 0;
       const variantPrice = item.productVariant?.price;
-      const productPrice = parseFloat(item.product?.sellingPrice || '0');
+      const productPrice = parseFloat(item.product?.sellingPrice || '0') || item.product?.price || 0; // Fallback to product.price
       const unitPrice = variantPrice || productPrice;
       
       const subtotal = unitPrice * quantity;
@@ -212,7 +218,7 @@ export class EStoreSalesComponent implements OnInit {
     }, 0);
   }
 
-  calculateOrderTotalWithTax(order: Order): number {
+  calculateOrderTotalWithTax(order: ComponentOrder): number {
     const subtotal = order.totalAmount || 0;
     const tax = this.calculateOrderTax(order);
     return subtotal + tax;
@@ -234,7 +240,7 @@ export class EStoreSalesComponent implements OnInit {
     }
   }
 
-  viewOrderDetails(order: Order): void {
+  viewOrderDetails(order: ComponentOrder): void {
     this.isViewPageOpen = true;
     this.activeOrder = { ...order }; 
     console.log('Viewing order details:', this.activeOrder);
@@ -242,7 +248,7 @@ export class EStoreSalesComponent implements OnInit {
   
   closeViewDetail(){
     this.isViewPageOpen = false;
-    this.activeOrder = {} as Order;
+    this.activeOrder = {} as ComponentOrder;
   }
   
   updatePagination(): void {
@@ -285,11 +291,12 @@ export class EStoreSalesComponent implements OnInit {
   formatDate(dateArray: any[]): string {
     if (!dateArray || dateArray.length < 3) return 'N/A';
     const [year, month, day, hour, minute, second] = dateArray;
+    // month is 1-indexed in the array, Date constructor expects 0-indexed
     const date = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
     return date.toLocaleString();
   }
   
-  getSalespersonName(order: Order): string {
+  getSalespersonName(order: ComponentOrder): string {
     return order.salesperson?.name || 'N/A';
   }
 

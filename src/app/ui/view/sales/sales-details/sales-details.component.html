@@ -1,4 +1,4 @@
-<div class="bg-white rounded-lg shadow-md p-6">
+<div class="bg-white rounded-lg shadow-md p-6" id="print-area">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center gap-3">
         <h2 class="text-xl font-semibold text-gray-800">Order Details</h2>
@@ -26,8 +26,7 @@
       </button>
     </div>
   
-    <div *ngIf="order">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div *ngIf="order" class="print-content"> <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-sm text-gray-500 uppercase">Order Number</h3>
           <p class="font-medium text-gray-900">{{ order.orderNumber || 'N/A' }}</p>
@@ -67,7 +66,7 @@
           <p><span class="text-gray-500">Phone:</span> {{ order.branch?.phoneNo || 'N/A' }}</p>
         </div>
         
-        <div *ngIf="order.deliveryInfo; else orderSummary" class="bg-blue-50 p-4 rounded-md border-blue-200 border">
+        <div *ngIf="order.deliveryInfo" class="bg-blue-50 p-4 rounded-md border-blue-200 border">
           <h3 class="text-lg font-medium text-blue-800 mb-3">Delivery Information</h3>
           <p><span class="text-blue-600">Recipient:</span> {{ order.deliveryInfo?.fullName || 'N/A'}}</p>
           <p><span class="text-blue-600">Phone:</span> {{ order.deliveryInfo?.phoneNumber || 'N/A' }}</p>
@@ -80,28 +79,26 @@
           </p>
         </div>
         
-        <ng-template #orderSummary>
-          <div class="bg-gray-50 p-4 rounded-md">
-            <h3 class="text-lg font-medium text-gray-900 mb-3">Order Summary</h3>
-            <div class="flex justify-between py-2 border-b border-gray-200">
-              <span class="text-gray-600">Subtotal ({{ calculateTotalItems() }} items)</span>
-              <span class="font-medium">₦{{ calculateSubtotal().toLocaleString() }}</span>
-            </div>
-            <div class="flex justify-between py-2 border-b border-gray-200">
-              <span class="text-gray-600">Tax (5%)</span>
-              <span class="font-medium">₦{{ calculateTax().toLocaleString() }}</span>
-            </div>
-            <div class="flex justify-between py-2 border-b border-gray-200">
-              <span class="text-gray-600">Discount</span>
-              <span class="font-medium">₦{{ calculateDiscount().toLocaleString() }}</span>
-            </div>
-            <div class="flex justify-between py-3 font-medium text-lg">
-              <span>Total</span>
-              <span>₦{{ calculateTotal().toLocaleString() }}</span>
-            </div>
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Order Summary</h3>
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Subtotal ({{ calculateTotalItems() }} items)</span>
+            <span class="font-medium">₦{{ calculateSubtotal().toLocaleString() }}</span>
           </div>
-        </ng-template>
-
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Tax (5%)</span>
+            <span class="font-medium">₦{{ calculateTax().toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Discount</span>
+            <span class="font-medium">₦{{ calculateDiscount().toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between py-3 font-medium text-lg">
+            <span>Total</span>
+            <span>₦{{ calculateTotal().toLocaleString() }}</span>
+          </div>
+        </div>
+        
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-lg font-medium text-gray-900 mb-3">Payment Details</h3>
           <div *ngIf="order?.payment; else noPaymentTemplate" class="mb-4">

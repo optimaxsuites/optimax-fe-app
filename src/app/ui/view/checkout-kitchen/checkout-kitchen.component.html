@@ -356,16 +356,20 @@
     <!-- FIXED: Add this wrapper div for proper layout -->
     <div class="invoice-wrapper" *ngIf="selectedOrder">
       <div class="invoice-container">
-        <!-- Company Header -->
+        <!-- UPDATED: Company Header with data from session storage -->
         <div class="company-header">
           <div class="company-info">
             <h2 class="company-name">{{ companyInfo.name }}</h2>
             <p class="company-address">{{ companyInfo.address }}</p>
-            <p class="company-contact">Phone: {{ companyInfo.phone }} | Email: {{ companyInfo.email }}</p>
+            <div class="company-contact">
+              <span class="contact-item">📞 {{ companyInfo.phone }}</span>
+              <span class="contact-item">✉️ {{ companyInfo.email }}</span>
+              <span class="contact-item" *ngIf="companyInfo.vatNumber">📋 {{ companyInfo.vatNumber }}</span>
+            </div>
           </div>
           <div class="invoice-logo">
-            <!-- Add your company logo here or use text -->
-            <div class="logo-placeholder">🍽️</div>
+            <!-- Company logo or initials -->
+            <div class="logo-placeholder">{{ companyInfo.name.charAt(0) }}</div>
           </div>
         </div>
 
@@ -442,18 +446,19 @@
           <p><strong>Customer Note:</strong> {{ selectedOrder.note }}</p>
         </div>
 
-        <!-- Thank You Message -->
+        <!-- Thank You Message with company info -->
         <div class="thank-you-section">
           <p class="thank-you">Thank you for dining with us!</p>
           <p class="footer-note">This is a computer generated receipt. No signature required.</p>
           <p class="footer-contact">For inquiries: {{ companyInfo.phone }} | {{ companyInfo.email }}</p>
+          <p class="company-footer">{{ companyInfo.name }} - {{ companyInfo.address }}</p>
         </div>
 
         <div class="invoice-actions">
-          <!-- Cashier processes READY orders to CONFIRMED (and sets payment to PAID) -->
+          <!-- Process Payment button now opens payment mode selection -->
           <button class="btn-success" 
-                  (click)="updateCashierStatus('PAID')"
-                  [disabled]="selectedOrder.status !== 'READY'">
+                  (click)="openPaymentModal()"
+                  [disabled]="selectedOrder.status !== 'READY' || selectedOrder.isPaid">
             💳 Process Payment
           </button>
           <button class="btn-danger" (click)="updateCashierStatus('CANCELLED')">
@@ -475,12 +480,82 @@
   </div>
 </div>
 
-  <!-- Payment Processing Indicator -->
-  <div *ngIf="isProcessingPayment" class="payment-processing-overlay">
-    <div class="payment-processing-dialog">
-      <h3>Processing Payment</h3>
-      <p>Please wait while we process your payment...</p>
+<!-- Payment Mode Selection Modal -->
+<div *ngIf="showPaymentModal" class="payment-modal-overlay">
+  <div class="payment-modal">
+    <div class="payment-modal-header">
+      <h3>Select Payment Method</h3>
+      <button class="close-btn" (click)="closePaymentModal()">×</button>
+    </div>
+    
+    <div class="payment-modal-body">
+      <div class="order-summary">
+        <h4>Order Summary</h4>
+        <p><strong>Order No:</strong> {{ selectedOrder?.orderNo }}</p>
+        <p><strong>Table:</strong> {{ selectedOrder?.table }}</p>
+        <!-- FIXED: Added parentheses around pipe -->
+        <p><strong>Total Amount:</strong> ₦{{ selectedOrder ? (getGrandTotal(selectedOrder) | number:'1.0-0') : '0' }}</p>
+      </div>
+
+      <div class="payment-methods">
+        <div class="payment-method" 
+             *ngFor="let method of paymentMethods" 
+             [class.selected]="selectedPaymentMethod === method.value"
+             (click)="selectPaymentMethod(method.value)">
+          <div class="method-icon">{{ method.icon }}</div>
+          <div class="method-details">
+            <h4>{{ method.name }}</h4>
+            <p>{{ method.description }}</p>
+          </div>
+          <div class="method-selector">
+            <div class="radio-circle" [class.selected]="selectedPaymentMethod === method.value"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transfer Reference Input (shown only for TRANSFER) -->
+      <div *ngIf="selectedPaymentMethod === 'TRANSFER'" class="transfer-reference">
+        <label for="transferRef">Transaction Reference:</label>
+        <input type="text" 
+               id="transferRef" 
+               [(ngModel)]="transferReference"
+               placeholder="Enter bank transfer reference"
+               class="transfer-input">
+        <p class="hint">Please enter the bank transfer reference number</p>
+      </div>
+
+      <!-- Card Details Input (shown only for CARD) -->
+      <div *ngIf="selectedPaymentMethod === 'CARD'" class="card-details">
+        <div class="form-group">
+          <label for="cardRef">Transaction Reference:</label>
+          <input type="text" 
+                 id="cardRef" 
+                 [(ngModel)]="cardReference"
+                 placeholder="Enter card transaction reference"
+                 class="card-input">
+        </div>
+        <p class="hint">Please enter the card transaction reference number</p>
+      </div>
+    </div>
+
+    <div class="payment-modal-footer">
+      <button class="btn-cancel" (click)="closePaymentModal()">Cancel</button>
+      <button class="btn-confirm" 
+              (click)="confirmPayment()"
+              [disabled]="!selectedPaymentMethod || 
+                         (selectedPaymentMethod === 'TRANSFER' && !transferReference) ||
+                         (selectedPaymentMethod === 'CARD' && !cardReference)">
+        Confirm Payment
+      </button>
     </div>
   </div>
+</div>
 
+<!-- Payment Processing Indicator -->
+<div *ngIf="isProcessingPayment" class="payment-processing-overlay">
+  <div class="payment-processing-dialog">
+    <div class="spinner"></div>
+    <h3>Processing Payment</h3>
+    <p>Please wait while we process your {{ selectedPaymentMethod?.toLowerCase() }} payment...</p>
+  </div>
 </div>
