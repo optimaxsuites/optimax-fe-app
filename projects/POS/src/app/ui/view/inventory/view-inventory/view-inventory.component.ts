@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, HostListener } from '@angular/core';
-import { ProductData, supplierData, StockMovementByInventory } from '../../../models/interface';
+import { ProductData, supplierData, StockMovementByInventory, StockMovementResponsePayload } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -82,6 +82,7 @@ export class ViewInventoryComponent implements OnInit {
     this.loading = true;
     const product$ = productId ? this.posService.getProductById(productId) : of(passed);
 
+    // Fetch product and all suppliers list concurrently
     forkJoin({
       product: product$,
       suppliers: this.posService.getSupplier(),
@@ -95,7 +96,7 @@ export class ViewInventoryComponent implements OnInit {
           // Store suppliers list for dropdown
           this.suppliersList = suppliers;
 
-          // handle supplier resolution
+          // handle supplier resolution for the main product detail
           if (product?.supplier) {
             this.supplier = suppliers.find((s: supplierData) => s.id === product.supplier.id) || null;
           } else if (suppliers.length === 1) {
@@ -430,7 +431,7 @@ printPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        alert('Print popup was blocked. The report has been downloaded as an HTML file. Open it in your browser to print.');
+        console.error('Print popup was blocked. The report has been downloaded as an HTML file. Open it in your browser to print.');
       }
     }
   } catch (error) {
@@ -458,7 +459,8 @@ private printInline() {
     document.body.innerHTML = originalContent;
     window.location.reload();
   } else {
-    alert('Unable to print. Please try again or use your browser\'s print function.');
+    // Removed alert as per instructions
+    console.error('Unable to print. Please try again or use your browser\'s print function.');
   }
 }
 
@@ -505,7 +507,9 @@ toggleDropdown(index: number): void {
 
  
   editStockMovement(movement: StockMovementByInventory): void {
-    this.editingMovement = { ...movement };
+    this.editingMovement = { ...movement }; 
+    // Ensure supplierId is null if not set, for the dropdown's 'Select a supplier' option
+    this.editingMovement.supplierId = movement.supplierId ?? null;
     this.showEditModal = true;
     this.activeDropdownIndex = null;
   }
@@ -530,8 +534,13 @@ toggleDropdown(index: number): void {
       },
       error: (err) => {
         console.error('Failed to delete stock movement:', err);
-        // You could replace this alert with another nice modal if you want
-        alert('Failed to delete stock movement. Please try again.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete stock movement. Please try again.',
+          life: 3000,
+          key: 'tg',
+        });
         this.isDeletingMovement = false;
       }
     });
@@ -551,34 +560,60 @@ toggleDropdown(index: number): void {
 
     this.isUpdatingMovement = true;
     
-    
+    // Prepare update data, ensuring supplierId is explicitly handled (null if needed)
     const updateData: any = {
       id: this.editingMovement.id, 
       reference: this.editingMovement.reference,
       quantity: Number(this.editingMovement.quantity),
       purchasePrice: Number(this.editingMovement.purchasePrice),
       sellingPrice: Number(this.editingMovement.sellingPrice),
-      supplierId: this.editingMovement.supplierId,
+      // Use null if supplierId is intentionally cleared
+      supplierId: this.editingMovement.supplierId ? Number(this.editingMovement.supplierId) : null,
       inventoryId: this.inventoryId,
       createdDate: this.editingMovement.createdDate, 
       ingredientId: this.editingMovement.ingredientId || null 
     };
 
     this.posService.updateStockMovement(this.editingMovement.id, updateData).subscribe({
-      next: (updatedMovement) => {
+      next: (updatedMovement: StockMovementResponsePayload) => {
         
         const index = this.stockMovements.findIndex(m => m.id === this.editingMovement.id);
         if (index !== -1) {
-          this.stockMovements[index] = { ...this.stockMovements[index], ...updatedMovement };
+          // FIX: Updated to correctly use updatedMovement.supplierId and the locally resolved supplier object
+          // Since StockMovementResponsePayload only has supplierId, we resolve the supplier object locally.
+          const supplier = this.suppliersList.find(s => s.id === updatedMovement.supplierId);
+          this.stockMovements[index] = { 
+            ...this.stockMovements[index], 
+            ...updatedMovement,
+            supplierId: updatedMovement.supplierId ?? null,
+            supplier: supplier ? supplier : null, // Set the rich supplier object for display
+          } as StockMovementByInventory;
         }
         this.showEditModal = false;
         this.editingMovement = {};
         this.isUpdatingMovement = false;
         console.log('Stock movement updated successfully');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Stock movement updated successfully',
+          life: 3000,
+          key: 'tg',
+        });
+        // Reload movements to get fresh data and re-calculate inventory if needed
+        if (this.inventoryId) {
+          this.loadMovements(this.inventoryId);
+        }
       },
       error: (err) => {
         console.error('Failed to update stock movement:', err);
-        alert('Failed to update stock movement. Please try again.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update stock movement. Please try again.',
+          life: 3000,
+          key: 'tg',
+        });
         this.isUpdatingMovement = false;
       }
     });

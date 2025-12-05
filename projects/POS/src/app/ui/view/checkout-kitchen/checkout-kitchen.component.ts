@@ -25,7 +25,7 @@ import { UserService } from "../../service/user.service";
 import { arrayToDate, dateToArray } from "../../shared";
 import { isSuperUser, getUserPermissionsFor } from "../../../shared/pipes/helper";
 
-// Updated interfaces with isPaid field
+// Updated interfaces with isPaid and staff tracking fields
 interface MenuItem {
   id: number;
   name: string;
@@ -42,7 +42,7 @@ interface OrderItem extends MenuItem {
   status?: string;
 }
 
-// UPDATED: Added isPaid and paymentStatus fields
+// UPDATED: Added isPaid, paymentStatus, and staff tracking fields
 interface Order {
   table: number;
   orderNo: string;
@@ -55,13 +55,52 @@ interface Order {
   backendId?: number;
   orderId?: number;
   paymentId?: number;
-  isPaid: boolean; // NEW: Track payment status
-  paidAt?: string; // NEW: When payment was made
-  paymentStatus: 'UNPAID' | 'PAID'; // Keep for compatibility
+  isPaid: boolean;
+  paidAt?: string;
+  paymentStatus: 'UNPAID' | 'PAID';
+  // NEW: Staff tracking fields for history page
+  createdBy?: string;
+  createdById?: string | number;
+  createdByRole?: 'waiter' | 'chef' | 'cashier';
+  preparedBy?: string;
+  preparedById?: string | number;
+  preparedByRole?: 'chef';
+  servedBy?: string;
+  servedById?: string | number;
+  paidBy?: string;
+  paidById?: string | number;
+  paidByRole?: 'cashier';
+  // For detailed staff involvement tracking
+  staffInvolved?: Array<{
+    staffId: string | number;
+    staffName: string;
+    role: 'waiter' | 'chef' | 'cashier' | 'manager';
+    action: 'created' | 'updated' | 'prepared' | 'served' | 'paid' | 'cancelled';
+    timestamp: string;
+  }>;
+}
+
+// Payment Breakdown Interface based on endpoint
+interface PaymentBreakdown {
+  id?: number;
+  amountPaid: number;
+  transactionReference: string;
+  paymentId?: number;
+  paymentMethod: 'CASH' | 'TRANSFER' | 'CARD';
 }
 
 // Company types from v17
 type TableOrder = Map<ProductData, number>;
+
+// NEW: Staff member interface
+interface StaffMember {
+  id: string | number;
+  name: string;
+  role: 'waiter' | 'chef' | 'cashier' | 'manager';
+  username?: string;
+  email?: string;
+  active?: boolean;
+}
 
 @Component({
   selector: 'app-checkout-kitchen',
@@ -96,16 +135,44 @@ export class CheckoutKitchenComponent implements OnInit {
   orderItems: OrderItem[] = [];
   selectedOrder?: Order;
 
+  // ===== PAYMENT MODAL STATE =====
+  showPaymentModal = false;
+  selectedPaymentMethod?: 'CASH' | 'TRANSFER' | 'CARD';
+  transferReference = '';
+  cardReference = '';
+
+  // Payment methods configuration
+  paymentMethods = [
+    { 
+      value: 'CASH' as const, 
+      name: 'Cash', 
+      icon: '💰', 
+      description: 'Physical cash payment' 
+    },
+    { 
+      value: 'TRANSFER' as const, 
+      name: 'Bank Transfer', 
+      icon: '🏦', 
+      description: 'Bank transfer or mobile money' 
+    },
+    { 
+      value: 'CARD' as const, 
+      name: 'Card Payment', 
+      icon: '💳', 
+      description: 'Debit/Credit card payment' 
+    }
+  ];
+
   // ===== STOCK MANAGEMENT =====
   lowStockThreshold = 5;
 
-  // ===== COMPANY INFORMATION =====
+  // ===== UPDATED: COMPANY INFORMATION FROM SESSION STORAGE =====
   companyInfo = {
-    name: 'Delicious Restaurant',
-    address: '123 Food Street, Lagos Island, Lagos',
-    phone: '0803-123-4567',
-    email: 'info@delicious.com',
-    vatNumber: 'VAT-123456789'
+    name: 'Restaurant Name',
+    address: 'Address will load from session storage',
+    phone: 'Phone number',
+    email: 'Email address',
+    vatNumber: 'VAT-Number'
   };
 
   // Image cache to store resolved image URLs
@@ -149,6 +216,11 @@ export class CheckoutKitchenComponent implements OnInit {
 
   // Local storage key for persisting orders
   private readonly STORAGE_KEY = 'restaurant_orders_data';
+  
+  // NEW: Staff data and storage
+  private readonly STAFF_STORAGE_KEY = 'restaurant_staff_data';
+  availableStaff: StaffMember[] = [];
+  currentUser: StaffMember | null = null;
 
   constructor(
     private _posService: PosServiceService,
@@ -160,8 +232,17 @@ export class CheckoutKitchenComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Initialize current user
+    this.initializeCurrentUser();
+    
+    // UPDATED: Get company info from session storage FIRST
+    this.getCompanyInfoFromSessionStorage();
+    
     // First load from localStorage to maintain persistence
     this.loadFromLocalStorage();
+    
+    // Load staff data
+    this.loadStaffData();
     
     // Then initialize company data
     this.initializeCompanyData();
@@ -187,6 +268,325 @@ export class CheckoutKitchenComponent implements OnInit {
     this.testMode = this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef";
     
     this.findNextAvailableTable();
+  }
+
+  // ===== NEW: GET COMPANY INFO FROM SESSION STORAGE =====
+  private getCompanyInfoFromSessionStorage(): void {
+    try {
+      const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        
+        // Extract company information
+        this.companyInfo = {
+          name: userData.companyName || 'Restaurant Name',
+          address: this.formatAddress(userData),
+          phone: userData.phoneNumber || 'Not specified',
+          email: userData.email || 'Not specified',
+          vatNumber: userData.vatNumber || `VAT-${userData.id || '000000'}`
+        };
+        
+        console.log('🏢 Company info loaded from session storage:', this.companyInfo);
+      } else {
+        console.warn('⚠️ No user data found in session storage, using default company info');
+        this.setDefaultCompanyInfo();
+      }
+    } catch (error) {
+      console.error('❌ Error getting company info from session storage:', error);
+      this.setDefaultCompanyInfo();
+    }
+  }
+
+  // Helper method to format address from session storage data
+  private formatAddress(userData: any): string {
+    const addressParts = [];
+    
+    if (userData.address) addressParts.push(userData.address);
+    if (userData.city) addressParts.push(userData.city);
+    if (userData.state) addressParts.push(userData.state);
+    if (userData.country) addressParts.push(userData.country);
+    if (userData.postalCode) addressParts.push(userData.postalCode);
+    
+    return addressParts.length > 0 ? 
+      addressParts.join(', ') : 
+      'Address not specified';
+  }
+
+  // Set default company info if session storage fails
+  private setDefaultCompanyInfo(): void {
+    this.companyInfo = {
+      name: 'Restaurant Name',
+      address: '123 Main Street, City, Country',
+      phone: '+234 123 456 7890',
+      email: 'info@restaurant.com',
+      vatNumber: 'VAT-123456789'
+    };
+  }
+
+  // ===== NEW: INITIALIZE CURRENT USER =====
+  private initializeCurrentUser() {
+    try {
+      // Use type assertion to avoid import issues
+      const userData = this._userService.getUserData() as any;
+      if (userData) {
+        // Extract name from user data - handle different possible structures
+        let userName = 'Current User';
+        if (userData.name) {
+          userName = userData.name;
+        } else if (userData.username) {
+          userName = userData.username;
+        } else if (userData.firstName && userData.lastName) {
+          userName = `${userData.firstName} ${userData.lastName}`;
+        } else if (userData.fullName) {
+          userName = userData.fullName;
+        }
+        
+        this.currentUser = {
+          id: (userData.id || userData.username || 'current-user').toString(),
+          name: userName,
+          role: this.determineUserRole(userData),
+          username: userData.username,
+          email: userData.email,
+          active: true
+        };
+        console.log('👤 Current user initialized:', this.currentUser);
+      } else {
+        // Fallback for testing
+        this.currentUser = {
+          id: 'waiter-1',
+          name: 'John Doe',
+          role: 'waiter',
+          username: 'john',
+          email: 'john@restaurant.com',
+          active: true
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error getting current user:', error);
+      // Default user for testing
+      this.currentUser = {
+        id: 'waiter-1',
+        name: 'John Doe',
+        role: 'waiter',
+        username: 'john',
+        active: true
+      };
+    }
+  }
+
+  // ===== NEW: DETERMINE USER ROLE =====
+  private determineUserRole(userData: any): 'waiter' | 'chef' | 'cashier' {
+    if (!userData) return 'waiter';
+    
+    // Check role from user data
+    const role = userData.role || userData.userType || '';
+    
+    if (role.toLowerCase().includes('cashier')) return 'cashier';
+    if (role.toLowerCase().includes('chef') || role.toLowerCase().includes('kitchen')) return 'chef';
+    if (role.toLowerCase().includes('waiter') || role.toLowerCase().includes('server')) return 'waiter';
+    
+    // Default based on current page
+    if (this.activePage === 'cashier') return 'cashier';
+    if (this.activePage === 'chef') return 'chef';
+    return 'waiter';
+  }
+
+  // ===== NEW: LOAD STAFF DATA =====
+  private loadStaffData() {
+    try {
+      // First try to get from localStorage
+      const savedStaff = localStorage.getItem(this.STAFF_STORAGE_KEY);
+      if (savedStaff) {
+        this.availableStaff = JSON.parse(savedStaff);
+        console.log('👥 Loaded staff from localStorage:', this.availableStaff.length);
+      }
+      
+      // If no staff in localStorage, create sample data
+      if (this.availableStaff.length === 0) {
+        this.availableStaff = this.createSampleStaff();
+        this.saveStaffToLocalStorage();
+      }
+      
+      // Add current user if not in list
+      if (this.currentUser && !this.availableStaff.find(s => s.id === this.currentUser?.id)) {
+        this.availableStaff.push(this.currentUser);
+        this.saveStaffToLocalStorage();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading staff data:', error);
+      this.availableStaff = this.createSampleStaff();
+    }
+  }
+
+  // ===== NEW: CREATE SAMPLE STAFF DATA =====
+  private createSampleStaff(): StaffMember[] {
+    return [
+      { id: 'waiter-1', name: 'John Doe', role: 'waiter', username: 'john', email: 'john@restaurant.com', active: true },
+      { id: 'waiter-2', name: 'Jane Smith', role: 'waiter', username: 'jane', email: 'jane@restaurant.com', active: true },
+      { id: 'chef-1', name: 'Chef Gordon', role: 'chef', username: 'gordon', email: 'gordon@restaurant.com', active: true },
+      { id: 'chef-2', name: 'Chef Maria', role: 'chef', username: 'maria', email: 'maria@restaurant.com', active: true },
+      { id: 'cashier-1', name: 'Cashier Mike', role: 'cashier', username: 'mike', email: 'mike@restaurant.com', active: true },
+      { id: 'cashier-2', name: 'Cashier Sarah', role: 'cashier', username: 'sarah', email: 'sarah@restaurant.com', active: true }
+    ];
+  }
+
+  // ===== NEW: SAVE STAFF TO LOCALSTORAGE =====
+  private saveStaffToLocalStorage() {
+    try {
+      localStorage.setItem(this.STAFF_STORAGE_KEY, JSON.stringify(this.availableStaff));
+    } catch (error) {
+      console.error('Error saving staff data:', error);
+    }
+  }
+
+  // ===== NEW: TRACK STAFF INVOLVEMENT IN ORDERS =====
+  private trackStaffInOrder(order: Order, action: 'created' | 'updated' | 'prepared' | 'served' | 'paid' | 'cancelled') {
+    if (!this.currentUser) return;
+    
+    const staffInfo = {
+      staffId: this.currentUser.id,
+      staffName: this.currentUser.name,
+      role: this.currentUser.role,
+      action: action,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Initialize staffInvolved array if it doesn't exist
+    if (!order.staffInvolved) {
+      order.staffInvolved = [];
+    }
+    
+    // Add staff involvement record
+    order.staffInvolved.push(staffInfo);
+    
+    // Also set individual fields for easier access
+    switch (action) {
+      case 'created':
+        order.createdBy = this.currentUser.name;
+        order.createdById = this.currentUser.id;
+        order.createdByRole = this.currentUser.role as 'waiter';
+        break;
+      case 'prepared':
+        order.preparedBy = this.currentUser.name;
+        order.preparedById = this.currentUser.id;
+        order.preparedByRole = 'chef';
+        break;
+      case 'served':
+        order.servedBy = this.currentUser.name;
+        order.servedById = this.currentUser.id;
+        break;
+      case 'paid':
+        order.paidBy = this.currentUser.name;
+        order.paidById = this.currentUser.id;
+        order.paidByRole = 'cashier';
+        break;
+    }
+    
+    console.log(`👤 Staff tracking: ${this.currentUser.name} (${this.currentUser.role}) ${action} order ${order.orderNo}`);
+    
+    // Save to local storage so history component can read it
+    this.saveToLocalStorage();
+  }
+
+  // ===== PAYMENT MODAL METHODS =====
+  openPaymentModal() {
+    if (!this.selectedOrder || this.selectedOrder.isPaid) return;
+    
+    this.showPaymentModal = true;
+    this.selectedPaymentMethod = undefined;
+    this.transferReference = '';
+    this.cardReference = '';
+  }
+
+  closePaymentModal() {
+    this.showPaymentModal = false;
+    this.selectedPaymentMethod = undefined;
+    this.transferReference = '';
+    this.cardReference = '';
+  }
+
+  selectPaymentMethod(method: 'CASH' | 'TRANSFER' | 'CARD') {
+    this.selectedPaymentMethod = method;
+  }
+
+  async confirmPayment() {
+    if (!this.selectedOrder || !this.selectedPaymentMethod) return;
+    
+    // Validate reference numbers for non-cash payments
+    if (this.selectedPaymentMethod === 'TRANSFER' && !this.transferReference.trim()) {
+      alert('Please enter transaction reference for bank transfer');
+      return;
+    }
+    
+    if (this.selectedPaymentMethod === 'CARD' && !this.cardReference.trim()) {
+      alert('Please enter transaction reference for card payment');
+      return;
+    }
+
+    try {
+      this.isProcessingPayment = true;
+      
+      // Create payment breakdown based on endpoint
+      const paymentBreakdown: PaymentBreakdown[] = [{
+        amountPaid: this.getGrandTotal(this.selectedOrder),
+        transactionReference: this.getTransactionReference(),
+        paymentMethod: this.selectedPaymentMethod
+      }];
+
+      // Mark order as paid locally
+      this.selectedOrder.isPaid = true;
+      this.selectedOrder.paymentStatus = 'PAID';
+      this.selectedOrder.paidAt = new Date().toISOString();
+      this.selectedOrder.paymentMethod = this.getPaymentMethodDisplayName(this.selectedPaymentMethod);
+      this.selectedOrder.status = 'CONFIRMED';
+      
+      // TRACK STAFF: Mark who processed the payment
+      this.trackStaffInOrder(this.selectedOrder, 'paid');
+
+      // Move to history and remove from active orders
+      this.moveToHistory(this.selectedOrder);
+      
+      // Store order for printing
+      const paidOrder = { ...this.selectedOrder };
+      
+      // Close modals and clear selection
+      this.closePaymentModal();
+      this.selectedOrder = undefined;
+      this.isProcessingPayment = false;
+      
+      // Automatically print invoice
+      setTimeout(() => {
+        this.autoPrintInvoice(paidOrder);
+      }, 300);
+      
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      this.isProcessingPayment = false;
+      alert('Error processing payment. Please try again.');
+    }
+  }
+
+  private getTransactionReference(): string {
+    switch (this.selectedPaymentMethod) {
+      case 'CASH':
+        return `CASH-${Date.now()}`;
+      case 'TRANSFER':
+        return this.transferReference.trim() || `TRF-${Date.now()}`;
+      case 'CARD':
+        return this.cardReference.trim() || `CARD-${Date.now()}`;
+      default:
+        return `PAY-${Date.now()}`;
+    }
+  }
+
+  private getPaymentMethodDisplayName(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
+    const methodNames = {
+      'CASH': 'Cash',
+      'TRANSFER': 'Bank Transfer',
+      'CARD': 'Card Payment'
+    };
+    return methodNames[method];
   }
 
   // ===== LOCAL STORAGE METHODS =====
@@ -226,7 +626,7 @@ export class CheckoutKitchenComponent implements OnInit {
       };
       
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dataToSave));
-      console.log('Saved orders to localStorage');
+      console.log('💾 Saved orders to localStorage');
     } catch (error) {
       console.error('Error saving to localStorage:', error);
     }
@@ -272,6 +672,11 @@ export class CheckoutKitchenComponent implements OnInit {
   changeTestMode(mode: "waiter" | "chef" | "cashier") {
     this.testMode = mode;
     this.activePage = mode;
+    
+    // Update current user role based on test mode
+    if (this.currentUser) {
+      this.currentUser.role = mode;
+    }
   }
 
   // ===== TABLE NUMBER INPUT HANDLER =====
@@ -361,6 +766,12 @@ export class CheckoutKitchenComponent implements OnInit {
 
   updateOrderStatus(order: Order, newStatus: Order['status']): void {
     order.status = newStatus;
+    
+    // TRACK STAFF: If chef is preparing/serving, track it
+    if (newStatus === 'PREPARING' || newStatus === 'READY') {
+      this.trackStaffInOrder(order, 'prepared');
+    }
+    
     this.saveToLocalStorage(); // Save after status update
   }
 
@@ -409,6 +820,9 @@ export class CheckoutKitchenComponent implements OnInit {
       this.editingOrder.status = 'PENDING';
     }
     
+    // TRACK STAFF: Mark who updated the order
+    this.trackStaffInOrder(this.editingOrder, 'updated');
+    
     // Clear editing state
     this.editingOrder = null;
     this.originalOrderItems = [];
@@ -433,7 +847,7 @@ export class CheckoutKitchenComponent implements OnInit {
   // ===== CASHIER/RECEIPT METHODS =====
   getCashierName(): string {
     try {
-      const userData = this._userService.getUserData();
+      const userData = this._userService.getUserData() as any;
       
       if (userData) {
         return userData.username || 'Cashier';
@@ -450,72 +864,8 @@ export class CheckoutKitchenComponent implements OnInit {
   printInvoice() {
     if (!this.selectedOrder) return;
     
-    const printContent = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2EB270; padding-bottom: 10px;">
-          <h1 style="color: #2EB270; margin: 0;">${this.companyInfo.name}</h1>
-          <p style="margin: 5px 0;">${this.companyInfo.address}</p>
-          <p style="margin: 5px 0;">Phone: ${this.companyInfo.phone} | Email: ${this.companyInfo.email}</p>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-          <div>
-            <h3 style="margin: 0; color: #2E6276;">TAX INVOICE</h3>
-            <p><strong>Invoice #:</strong> ${this.selectedOrder.orderNo}</p>
-            <p><strong>Date:</strong> ${this.formatDateForDisplay(this.selectedOrder.date || '')}</p>
-          </div>
-          <div>
-            <p><strong>Cashier:</strong> ${this.getCashierName()}</p>
-            <p><strong>Table:</strong> ${this.selectedOrder.table}</p>
-          </div>
-        </div>
-        
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <thead>
-            <tr style="background-color: #2EB270; color: white;">
-              <th style="padding: 10px; text-align: left;">#</th>
-              <th style="padding: 10px; text-align: left;">Item</th>
-              <th style="padding: 10px; text-align: center;">Qty</th>
-              <th style="padding: 10px; text-align: right;">Unit Price</th>
-              <th style="padding: 10px; text-align: right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.selectedOrder.items.map((item, index) => `
-              <tr style="border-bottom: 1px solid #ddd;">
-                <td style="padding: 8px;">${index + 1}</td>
-                <td style="padding: 8px;">${item.name}</td>
-                <td style="padding: 8px; text-align: center;">${item.qty}</td>
-                <td style="padding: 8px; text-align: right;">₦${item.price.toLocaleString()}</td>
-                <td style="padding: 8px; text-align: right;">₦${item.total.toLocaleString()}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
-        <div style="margin-top: 20px; border-top: 2px solid #ddd; padding-top: 10px;">
-          <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-            <span>Subtotal:</span>
-            <span>₦${this.getSubtotal(this.selectedOrder)?.toLocaleString()}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-            <span>Tax (5%):</span>
-            <span>₦${this.getTax(this.selectedOrder)?.toLocaleString()}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin: 10px 0; font-size: 1.2em; font-weight: bold; border-top: 1px solid #ddd; padding-top: 10px;">
-            <span>TOTAL:</span>
-            <span>₦${this.getGrandTotal(this.selectedOrder)?.toLocaleString()}</span>
-          </div>
-        </div>
-        
-        <div style="margin-top: 30px; text-align: center; font-style: italic; color: #666;">
-          <p>Thank you for dining with us!</p>
-          <p>This is a computer generated receipt</p>
-          <p>For inquiries: ${this.companyInfo.phone}</p>
-        </div>
-      </div>
-    `;
-
+    const printContent = this.generateReceiptHTML(this.selectedOrder);
+    
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(`
@@ -544,6 +894,151 @@ export class CheckoutKitchenComponent implements OnInit {
       `);
       printWindow.document.close();
     }
+  }
+
+  // Auto print method (used after payment)
+  private autoPrintInvoice(order: Order) {
+    const tempOrder = { ...order };
+    
+    const printContent = this.generateReceiptHTML(tempOrder);
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice - ${tempOrder.orderNo}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 20px; }
+                .no-print { display: none; }
+              }
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              .invoice-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2EB270; padding-bottom: 10px; }
+              .company-name { color: #2EB270; margin: 0; }
+              .invoice-details { display: flex; justify-content: space-between; margin: 20px 0; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th { background-color: #2EB270; color: white; padding: 10px; text-align: left; }
+              td { padding: 8px; border-bottom: 1px solid #ddd; }
+              .summary { margin-top: 20px; border-top: 2px solid #ddd; padding-top: 10px; }
+              .grand-total { font-size: 1.2em; font-weight: bold; border-top: 1px solid #ddd; padding-top: 10px; }
+              .thank-you { text-align: center; margin-top: 30px; font-style: italic; color: #666; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+            <div class="no-print" style="margin-top: 20px; text-align: center;">
+              <button onclick="window.print()" style="background: #2EB270; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                🖨 Print Receipt
+              </button>
+              <button onclick="window.close()" style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                Close
+              </button>
+            </div>
+            <script>
+              // Auto-print after page loads
+              window.onload = function() {
+                setTimeout(() => {
+                  window.print();
+                }, 500);
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  }
+
+  // UPDATED: Generate receipt HTML with company info from session storage
+  private generateReceiptHTML(order: Order): string {
+    // NEW: Staff information
+    const staffInfo = [];
+    if (order.createdBy) staffInfo.push({ role: 'Waiter', name: order.createdBy });
+    if (order.preparedBy) staffInfo.push({ role: 'Chef', name: order.preparedBy });
+    if (order.paidBy) staffInfo.push({ role: 'Cashier', name: order.paidBy });
+    
+    return `
+      <div class="invoice-header">
+        <h1 class="company-name">${this.companyInfo.name}</h1>
+        <p>${this.companyInfo.address}</p>
+        <p>📞 ${this.companyInfo.phone} | ✉️ ${this.companyInfo.email}</p>
+        ${this.companyInfo.vatNumber ? `<p>📋 ${this.companyInfo.vatNumber}</p>` : ''}
+      </div>
+      
+      <div class="invoice-details">
+        <div>
+          <h3>TAX INVOICE</h3>
+          <p><strong>Invoice #:</strong> ${order.orderNo}</p>
+          <p><strong>Date:</strong> ${this.formatDateForDisplay(order.paidAt || order.date || '')}</p>
+          <p><strong>Generated By:</strong> ${this.getCashierName()}</p>
+        </div>
+        <div>
+          <p><strong>Table:</strong> ${order.table}</p>
+          <p><strong>Payment Method:</strong> ${order.paymentMethod || 'Cash'}</p>
+          <p><strong>Status:</strong> ${order.isPaid ? 'PAID' : 'UNPAID'}</p>
+        </div>
+      </div>
+      
+      ${staffInfo.length > 0 ? `
+        <div style="background-color: #f0f9f4; padding: 10px; border-radius: 5px; margin: 10px 0;">
+          <h4 style="margin: 0 0 10px 0; color: #2E6276;">Staff Information</h4>
+          ${staffInfo.map(staff => `
+            <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+              <span><strong>${staff.role}:</strong></span>
+              <span>${staff.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items.map((item, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.qty}</td>
+              <td>₦${item.price.toLocaleString()}</td>
+              <td>₦${item.total.toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <div class="summary">
+        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+          <span>Subtotal:</span>
+          <span>₦${this.getSubtotal(order)?.toLocaleString()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+          <span>Tax (5%):</span>
+          <span>₦${this.getTax(order)?.toLocaleString()}</span>
+        </div>
+        <div class="grand-total" style="display: flex; justify-content: space-between; margin: 10px 0;">
+          <span>TOTAL:</span>
+          <span>₦${this.getGrandTotal(order)?.toLocaleString()}</span>
+        </div>
+      </div>
+      
+      ${order.note ? `<div style="margin-top: 20px;"><strong>Customer Note:</strong> ${order.note}</div>` : ''}
+      
+      <div class="thank-you">
+        <p>Thank you for dining with us!</p>
+        <p>This is a computer generated receipt. No signature required.</p>
+        <p>For inquiries: ${this.companyInfo.phone} | ${this.companyInfo.email}</p>
+        <p>${this.companyInfo.name} - ${this.companyInfo.address}</p>
+      </div>
+    `;
   }
 
   // ===== CHECK IF ORDER CAN BE EDITED =====
@@ -689,6 +1184,9 @@ export class CheckoutKitchenComponent implements OnInit {
         isPaid: false
       };
 
+      // TRACK STAFF: Mark who created this order
+      this.trackStaffInOrder(newOrder, 'created');
+      
       this.orders.push(newOrder);
       this.allOrders.push(newOrder);
 
@@ -714,6 +1212,11 @@ export class CheckoutKitchenComponent implements OnInit {
       
       order.status = newStatus;
       
+      // TRACK STAFF: Mark who prepared this order
+      if (newStatus === 'READY') {
+        this.trackStaffInOrder(order, 'prepared');
+      }
+      
       // Save to localStorage
       this.saveToLocalStorage();
       
@@ -726,38 +1229,19 @@ export class CheckoutKitchenComponent implements OnInit {
   async updateCashierStatus(newStatus: 'PAID' | 'CANCELLED') {
     if (!this.selectedOrder) return;
     
-    if (newStatus === 'PAID') {
-      try {
-        this.isProcessingPayment = true;
-        
-        // Mark order as paid
-        this.selectedOrder.isPaid = true;
-        this.selectedOrder.paymentStatus = 'PAID';
-        this.selectedOrder.paidAt = new Date().toISOString();
-        this.selectedOrder.paymentMethod = 'Cash';
-        this.selectedOrder.status = 'CONFIRMED'; // Change status to CONFIRMED when paid
-        
-        // Move to history and remove from active orders
-        this.moveToHistory(this.selectedOrder);
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        this.selectedOrder = undefined;
-        this.isProcessingPayment = false;
-        
-      } catch (error: any) {
-        console.error('Payment error:', error);
-        this.isProcessingPayment = false;
-      }
-    } else if (newStatus === 'CANCELLED') {
+    if (newStatus === 'CANCELLED') {
       this.selectedOrder.status = 'CANCELLED';
       this.selectedOrder.paymentStatus = 'UNPAID';
       this.selectedOrder.isPaid = false;
+      
+      // TRACK STAFF: Mark who cancelled the order
+      this.trackStaffInOrder(this.selectedOrder, 'cancelled');
       
       // Move cancelled orders to history immediately
       this.moveToHistory(this.selectedOrder);
       this.selectedOrder = undefined;
     }
+    // For PAID, we now use the payment modal
   }
 
   // ===== ORDER FLOW METHODS =====
@@ -1086,6 +1570,9 @@ export class CheckoutKitchenComponent implements OnInit {
     if (confirm('Are you sure you want to delete this order?')) {
       const order = this.orders[index];
       
+      // TRACK STAFF: Mark who deleted the order
+      this.trackStaffInOrder(order, 'cancelled');
+      
       // Remove from all arrays
       this.orders.splice(index, 1);
       this.allOrders = this.allOrders.filter(o => o !== order);
@@ -1170,7 +1657,29 @@ export class CheckoutKitchenComponent implements OnInit {
       this.orders = [];
       this.historyOrders = [];
       localStorage.removeItem(this.STORAGE_KEY);
+      localStorage.removeItem(this.STAFF_STORAGE_KEY);
       console.log('All orders cleared');
     }
+  }
+
+  // ===== NEW: GET CURRENT USER DISPLAY INFO =====
+  getCurrentUserDisplay(): string {
+    if (!this.currentUser) return 'Unknown User';
+    return `${this.currentUser.name} (${this.currentUser.role})`;
+  }
+
+  // ===== NEW: UPDATE STAFF INFORMATION =====
+  updateStaffMember(staffId: string | number, updates: Partial<StaffMember>) {
+    const index = this.availableStaff.findIndex(s => s.id === staffId);
+    if (index !== -1) {
+      this.availableStaff[index] = { ...this.availableStaff[index], ...updates };
+      this.saveStaffToLocalStorage();
+    }
+  }
+
+  // ===== NEW: ADD NEW STAFF MEMBER =====
+  addNewStaffMember(staff: StaffMember) {
+    this.availableStaff.push(staff);
+    this.saveStaffToLocalStorage();
   }
 }

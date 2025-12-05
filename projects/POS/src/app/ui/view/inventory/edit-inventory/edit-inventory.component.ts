@@ -93,7 +93,7 @@ export class EditInventoryComponent implements OnInit {
     startDate: Date;
     endDate: Date;
     minQuantity: 0;
-    discountType: { id: 0; code: ""; description: ""; name: "" };
+    discountType: { id: 0; code: "", description: "", name: "" };
   } = {
     id: 0,
     name: "",
@@ -171,7 +171,8 @@ export class EditInventoryComponent implements OnInit {
       createdDate: [new Date().toISOString().slice(0, 10), Validators.required],
       reference: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
-      supplier: [null],
+      // This control holds the supplier ID (number or null) because the template uses bindValue="id"
+      supplier: [null], 
       purchasePrice: [0, [Validators.required, Validators.min(0)]],
       sellingPrice: [0, [Validators.min(0)]],
       tax: [null],
@@ -180,9 +181,11 @@ export class EditInventoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Note: fetchMetaData triggers supplier fetching and then populateStockMovementDefaults
     this.fetchMetaData();
     this.loadInitialData();
     
+    // Safety delay to ensure suppliers are loaded if fetchMetaData hasn't completed quickly
     setTimeout(() => {
       if (this.mode === 'edit' && this.activeItem) {
         this.patchFormValues();
@@ -201,16 +204,21 @@ export class EditInventoryComponent implements OnInit {
     
     const selectedTax = productData.tax?.id ? this.taxes.find(t => t.id === productData.tax.id) : null;
     const selectedDiscount = productData.discount?.id ? this.discounts.find(d => d.id === productData.discount.id) : null;
-    const selectedSupplier = productData.supplier?.id ? this.suppliers.find(s => s.id === productData.supplier.id) : null;
-
+    
+    // FIX: Get the default supplier ID for the form. This is the ID of the supplier linked to the product.
+    // If it's null, the ng-select placeholder "Select supplier" will show.
+    const defaultSupplierId = productData.supplier?.id ?? null;
+    
     this.stockMovementForm.patchValue({
       purchasePrice: Number(productData.purchasePrice) || 0,
       sellingPrice: Number(productData.sellingPrice) || 0,
-      supplier: selectedSupplier,  
+      // FIX: Patch the ID (number or null) into the form control. 
+      // ng-select with bindValue="id" will correctly select this option.
+      supplier: defaultSupplierId, 
       tax: selectedTax,           
       discount: selectedDiscount,   
       createdDate: new Date().toISOString().slice(0, 10),
-      quantity: '', 
+      quantity: 1, // Reset quantity to 1 for new movement
       reference: ''
     });
 
@@ -298,19 +306,10 @@ export class EditInventoryComponent implements OnInit {
 
     this.metadataService.supplier$.subscribe((suppliers: supplierData[]) => {
       this.suppliers = suppliers;
-      if (this.mode === 'edit' && this.activeItem?.__originalProduct) {
-        const selectedSupplier = this.suppliers.find(d => d.id === this.activeItem?.__originalProduct.supplier?.id);
-        if (selectedSupplier) {
-          this.productForm.get('supplier')?.setValue(selectedSupplier);
-          this.supplierForm.get('name')?.setValue(selectedSupplier.name);
-          this.supplierForm.get('contactPerson')?.setValue(selectedSupplier.contactPerson);
-          this.supplierForm.get('email')?.setValue(selectedSupplier.email);
-          this.supplierForm.get('phoneNumber')?.setValue(selectedSupplier.phoneNumber);
-          this.supplierForm.get('address')?.setValue(selectedSupplier.address);
-          this.selectedSupplierId = selectedSupplier?.id?.toString() || null;
-        }
-
-
+      // Re-populate defaults if suppliers load after ngOnInit runs
+      // This ensures the supplier dropdown has values to match against.
+      if (this.mode === 'edit' && this.activeItem) {
+        this.populateStockMovementDefaults();
       }
     });
   }
@@ -401,13 +400,13 @@ export class EditInventoryComponent implements OnInit {
     forkJoin([
       this.posService.getCategories(),
       this.posService.getBranches(),
-      this.posService.getSupplier(),
+      // Removed direct supplier fetch here since it's already in fetchMetaData
       this.posService.getDiscount(),
     ]).subscribe({
-      next: ([categories, branches, suppliers, discounts]) => {
+      next: ([categories, branches, discounts]) => {
         this.categories = categories;
         this.branches = branches;
-        this.suppliers = suppliers;
+        // this.suppliers is populated by metadataService.supplier$ subscription
 
         if (discounts && discounts.length) {
           this.discountOptions = discounts.map(
@@ -569,6 +568,7 @@ export class EditInventoryComponent implements OnInit {
         this.activeItem = product;
         this.prefillForm();
         
+        // Ensure defaults are populated whenever the product changes
         setTimeout(() => {
           this.populateStockMovementDefaults();
         }, 50);
@@ -620,8 +620,9 @@ export class EditInventoryComponent implements OnInit {
     this.posService.addSupplier(supplierData).subscribe({
       next: (newSupplier) => {
         this.suppliers.push(newSupplier);
+        // The form control name is 'supplier', which will hold the ID
         this.stockMovementForm.patchValue({
-          supplierId: newSupplier.id,
+          supplier: newSupplier.id, 
         });
 
         if (!this.selectedSupplier) {
@@ -656,7 +657,7 @@ export class EditInventoryComponent implements OnInit {
       createdDate: new Date().toISOString().split('T')[0],
       reference: '',
       quantity: 1,
-      supplier: null,
+      supplier: null, // Resetting to null
       purchasePrice: this.activeItem?.purchasePrice || 0,
       sellingPrice: this.activeItem?.sellingPrice || 0,
       tax: null,
@@ -817,7 +818,7 @@ export class EditInventoryComponent implements OnInit {
 
     const rawDate = this.stockMovementForm.value.createdDate;
     const reference = this.stockMovementForm.value.reference || '';
-    const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+    const qtyAbs = Number(this.stockMovementForm.value.quantity) || 0;
     
     const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
     const sellingPrice = Number(
@@ -825,11 +826,11 @@ export class EditInventoryComponent implements OnInit {
     );
 
     const supplier = this.stockMovementForm.value.supplier;
-    const supplierId = typeof supplier === 'object' ? supplier?.id : (supplier ?? null);
+    // FIX: The supplier value is already the ID (or null) because of bindValue="id"
+    const supplierId = supplier ? Number(supplier) : null; 
 
-    const actionCtrl = this.stockMovementForm.get('action');
-    const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
-    const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
+    // Assume IN movement based on component context
+    const signedQty = qtyAbs; 
 
     this.isLoading = true;
     try {
@@ -1044,7 +1045,8 @@ export class EditInventoryComponent implements OnInit {
     const sellingPrice = Number(this.priceDetails.effectivePrice) || 0;
 
     const supplier = this.stockMovementForm.value.supplier;
-    const supplierId = typeof supplier === 'object' ? supplier?.id : supplier;
+    // Extract supplierId from ID
+    const supplierId = supplier ? Number(supplier) : null;
 
     return {
       quantity: quantity,
@@ -1178,7 +1180,8 @@ export class EditInventoryComponent implements OnInit {
       purchasePrice: this.activeItem?.purchasePrice || 0,
       sellingPrice: this.priceDetails.effectivePrice || this.activeItem?.sellingPrice || 0,
       createdDate: currentDate,
-      supplier: this.selectedSupplier ?? null,
+      // Pass the supplier ID here, or null
+      supplier: this.selectedSupplier ?? null, 
       quantity: 1,
       reference: '',
     };
@@ -1337,9 +1340,9 @@ Total: ${effectivePrice.toFixed(2)}`;
   private buildStockMovementCreatePayload(inventoryId?: number): StockMovementCreatePayload {
     if (!this.activeItem) throw new Error('No product selected');
 
-    const action = (this.stockMovementForm.get('action')?.value as 'IN' | 'OUT') || 'IN';
-    const qty = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
-    const signedQty = action === 'OUT' ? -qty : qty;
+    // FIX: Removed action logic that caused TS2367 since the form doesn't expose it. Assume 'IN'.
+    const qty = Number(this.stockMovementForm.value.quantity) || 0;
+    const signedQty = qty;
 
     const raw = this.stockMovementForm.value.createdDate;
     const date = raw?.includes('T') ? new Date(raw) : new Date(`${raw}T00:00:00`);
@@ -1354,7 +1357,8 @@ Total: ${effectivePrice.toFixed(2)}`;
     );
 
     const supplier = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
-    const supplierId = typeof supplier === 'object' ? supplier?.id : (supplier ?? null);
+    // Extract supplierId from ID
+    const supplierId = supplier ? Number(supplier) : null;
 
     const payload: StockMovementCreatePayload = {
       quantity: signedQty,
@@ -1427,9 +1431,9 @@ Total: ${effectivePrice.toFixed(2)}`;
   }
 
   private buildMovementForPost(inventoryId: number): any {
-    const action = (this.stockMovementForm.get('action')?.value as 'IN' | 'OUT') || 'IN';
-    const qty = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
-    const signedQty = action === 'OUT' ? -qty : qty;
+    // FIX: Removed action logic that caused TS2367 since the form doesn't expose it. Assume 'IN'.
+    const qty = Number(this.stockMovementForm.value.quantity) || 0;
+    const signedQty = qty;
 
     const raw = this.stockMovementForm.value.createdDate;
     const iso = (raw?.includes('T') ? new Date(raw) : new Date(`${raw}T00:00:00`)).toISOString();

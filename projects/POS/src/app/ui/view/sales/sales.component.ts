@@ -4,7 +4,15 @@ import { CheckoutService } from '../../service/checkout.service';
 import { MetadataService } from '../../service/metadata.service';
 import { Router } from '@angular/router';
 import { Order } from '../../models/interface';
-import { StoreOrderService } from '../../service/store-order.service'; // NEW IMPORT
+import { StoreOrderService, OrderDTO } from '../../service/store-order.service'; 
+import { forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+
+interface OrderWithSalesType extends Order {
+  salesType: 'ONLINE' | 'IN-STORE';
+  isOnline: boolean;
+  cashierId?: number;
+}
 
 @Component({
   selector: 'app-sales',
@@ -12,20 +20,20 @@ import { StoreOrderService } from '../../service/store-order.service'; // NEW IM
   styleUrls: ['./sales.component.scss'],
 })
 export class SalesComponent implements OnInit {
-  orders: Order[] = [];
-  filteredOrders: Order[] = [];
-  paginatedOrders: Order[] = [];
+  orders: OrderWithSalesType[] = [];
+  filteredOrders: OrderWithSalesType[] = [];
+  paginatedOrders: OrderWithSalesType[] = [];
   searchText: string = '';
   statusFilter: string = 'ALL';
-  daysFilter: number = 1; // Default to Today (1 day)
+  daysFilter: number = 1;
   sortBy: string = 'id';
   sortDirection: 'asc' | 'desc' = 'desc';
   isViewPageOpen: boolean = false;
-  activeOrder: Order = {} as Order;
+  activeOrder: OrderWithSalesType = {} as OrderWithSalesType;
   selectedCashier: string = 'All';
+  selectedSalesType: string = 'ALL';
   isLoading: boolean = true;
   
-  // New properties for date range filtering
   dateRangeOptions = [
     { value: 1, label: 'Today' },
     { value: 3, label: 'Last 3 Days' },
@@ -33,10 +41,9 @@ export class SalesComponent implements OnInit {
     { value: 30, label: 'Last Month' },
     { value: 0, label: 'All Time' }
   ];
-  selectedDateRange: number = 1; // Default to Today
+  selectedDateRange: number = 1;
   customDaysFilter: number | null = null;
 
-  // Pagination properties
   currentPage: number = 1;
   itemsPerPage: number = 10;
   totalPages: number = 1;
@@ -48,11 +55,17 @@ export class SalesComponent implements OnInit {
     { value: 'PENDING', label: 'Pending' }
   ];
 
+  salesTypeOptions = [
+    { value: 'ALL', label: 'All' },
+    { value: 'ONLINE', label: 'Online' },
+    { value: 'IN-STORE', label: 'In-store' }
+  ];
+
   cashiers: string[] = ['All', 'John', 'Ben', 'Winifred', 'Conrad'];
 
   constructor(
     private metadataService: MetadataService,
-    private storeOrderService: StoreOrderService, // NEW INJECTION
+    private storeOrderService: StoreOrderService,
     private router: Router
   ) { }
   
@@ -60,29 +73,44 @@ export class SalesComponent implements OnInit {
     this.loadOrders();
   }
   
-  loadOrders(): void {
-    this.isLoading = true;
-    
-    // CHANGED: Use the dedicated POS/Walk-in Orders API (general endpoint)
-    this.storeOrderService.getPosOrders({}).subscribe({
-      next: (orders) => {
-         // Filter: Assuming POS/Walk-in orders do NOT have deliveryInfo set
-         const posOrders = orders.filter((order: any) => !order.deliveryInfo);
 
-         this.orders = posOrders;
-         console.log('Sales: Loaded POS/Walk-in orders from dedicated API.');
-         this.isLoading = false;
-         this.applyFiltersAndSort();
-      },
-      error: (err: any) => {
-         console.error('❌ Failed to load POS orders:', err);
-         this.isLoading = false;
-         // Handle error
-      }
-    });
+loadOrders(): void {
+  this.isLoading = true;
+
+  this.storeOrderService.getAllOrdersAsOrderType({}).subscribe({
+    next: (orders: Order[]) => {
+      this.orders = orders.map(order => ({
+        ...order,
+        salesType: (order as any).isOnline ? 'ONLINE' : 'IN-STORE',
+        isOnline: (order as any).isOnline
+      })) as OrderWithSalesType[];
+
+      console.log(`Sales: Loaded ${this.orders.length} total orders`);
+      this.isLoading = false;
+      this.applyFiltersAndSort();
+    },
+    error: (err: any) => {
+      console.error('❌ Failed to load orders:', err);
+      this.isLoading = false;
+    }
+  });
+}
+  
+  // Get display sales type
+  getDisplaySalesType(order: OrderWithSalesType): string {
+    return order.salesType === 'ONLINE' ? 'Online' : 'In-store';
   }
   
-  // New methods for calculating tax and total with tax
+  getSalesTypeBadge(order: OrderWithSalesType): { text: string, class: string } {
+    const displayType = this.getDisplaySalesType(order);
+    
+    if (displayType === 'Online') {
+      return { text: 'Online', class: 'bg-green-100 text-green-800' };
+    } else {
+      return { text: 'In-store', class: 'bg-blue-100 text-blue-800' };
+    }
+  }
+  
   calculateOrderTax(order: Order): number {
     if (!order.orderItem || !order.orderItem.length) return 0;
     
@@ -93,7 +121,7 @@ export class SalesComponent implements OnInit {
       const unitPrice = variantPrice || productPrice;
       
       const subtotal = unitPrice * quantity;
-      const taxRate = item.product?.tax?.rate || 5; // Default 5% tax if none specified
+      const taxRate = item.product?.tax?.rate || 5;
       const itemTax = (taxRate / 100) * subtotal;
       
       return totalTax + itemTax;
@@ -106,7 +134,6 @@ export class SalesComponent implements OnInit {
     return subtotal + tax;
   }
   
-  // New methods for date range filtering
   onDateRangeChange(): void {
     if (this.selectedDateRange !== null) {
       this.daysFilter = this.selectedDateRange;
@@ -118,32 +145,39 @@ export class SalesComponent implements OnInit {
   onCustomDaysChange(): void {
     if (this.customDaysFilter !== null && this.customDaysFilter > 0) {
       this.daysFilter = this.customDaysFilter;
-      this.selectedDateRange = -1; // Use a value not in the options to indicate custom
+      this.selectedDateRange = -1;
       this.applyFiltersAndSort();
     }
   }
 
-  viewOrderDetails(order: Order): void {
+  viewOrderDetails(order: OrderWithSalesType): void {
     this.isViewPageOpen = true;
-    this.activeOrder = { ...order }; // Create a copy to avoid reference issues
+    this.activeOrder = { ...order };
     console.log('Viewing order details:', this.activeOrder);
   }
   
   closeViewDetail(){
     this.isViewPageOpen = false;
-    this.activeOrder = {} as Order;
+    this.activeOrder = {} as OrderWithSalesType;
   }
   
   applyFiltersAndSort(): void {
-    // Reset to first page when filters change
     this.currentPage = 1;
     
-    // Apply filters
     let filtered = [...this.orders];
     
     // Status filter
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
+    }
+    
+    // Sales Type filter
+    if (this.selectedSalesType && this.selectedSalesType !== 'ALL') {
+      filtered = filtered.filter(order => {
+        const displayType = this.getDisplaySalesType(order).toUpperCase();
+        const filterType = this.selectedSalesType.toUpperCase();
+        return displayType === filterType;
+      });
     }
     
     // Days filter
@@ -174,11 +208,16 @@ export class SalesComponent implements OnInit {
     // Search filter
     if (this.searchText) {
       const searchLower = this.searchText.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.orderNumber.toLowerCase().includes(searchLower) ||
-        (order.customer?.name && order.customer.name.toLowerCase().includes(searchLower)) ||
-        (order.salesperson?.name && order.salesperson.name.toLowerCase().includes(searchLower))
-      );
+      filtered = filtered.filter(order => {
+        if (order.orderNumber?.toLowerCase().includes(searchLower)) return true;
+        if (order.customer?.name?.toLowerCase().includes(searchLower)) return true;
+        if (order.salesperson?.name?.toLowerCase().includes(searchLower)) return true;
+        
+        const displayType = this.getDisplaySalesType(order).toLowerCase();
+        if (displayType.includes(searchLower)) return true;
+        
+        return false;
+      });
     }
     
     // Apply sorting
@@ -197,6 +236,14 @@ export class SalesComponent implements OnInit {
         case 'customer':
           aValue = a.customer?.name || '';
           bValue = b.customer?.name || '';
+          break;
+        case 'salesperson':
+          aValue = a.salesperson?.name || '';
+          bValue = b.salesperson?.name || '';
+          break;
+        case 'salesType':
+          aValue = this.getDisplaySalesType(a);
+          bValue = this.getDisplaySalesType(b);
           break;
         case 'totalAmount':
           aValue = a.totalAmount;
@@ -218,10 +265,6 @@ export class SalesComponent implements OnInit {
           aValue = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2]).getTime();
           bValue = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2]).getTime();
           break;
-        case 'salesperson':
-          aValue = a.salesperson?.name || '';
-          bValue = b.salesperson?.name || '';
-          break;
         default:
           aValue = a.id;
           bValue = b.id;
@@ -240,19 +283,17 @@ export class SalesComponent implements OnInit {
     this.updatePagination();
   }
   
-  // Pagination methods
   updatePagination(): void {
     this.totalPages = Math.ceil(this.filteredOrders.length / this.itemsPerPage);
-    this.totalPages = Math.max(1, this.totalPages); // Ensure at least 1 page
+    this.totalPages = Math.max(1, this.totalPages);
     
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.paginatedOrders = this.filteredOrders.slice(startIndex, endIndex);
   }
   
-  // PrimeNG pagination event handler
   onPageChange(event: any): void {
-    this.currentPage = event.page + 1; // PrimeNG uses 0-based index
+    this.currentPage = event.page + 1;
     this.itemsPerPage = event.rows;
     this.updatePagination();
   }
@@ -290,7 +331,6 @@ export class SalesComponent implements OnInit {
     return order.salesperson?.name || 'N/A';
   }
 
-  // Add Math to template access
   get Math() {
     return Math;
   }

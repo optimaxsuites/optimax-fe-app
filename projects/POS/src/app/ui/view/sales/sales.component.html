@@ -27,7 +27,7 @@
     </div>
 
     <!-- Filters Grid - Bottom Line -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
       <!-- Date Range Dropdown -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Date Range</span>
@@ -82,6 +82,22 @@
         </ng-select>
       </label>
 
+      <!-- Sales Type Filter -->
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600 mb-1">Sales Type</span>
+        <ng-select
+          [items]="salesTypeOptions"
+          bindLabel="label"
+          bindValue="value"
+          placeholder="All types"
+          class="rounded-md border-gray-300 shadow-sm"
+          [(ngModel)]="selectedSalesType"
+          (ngModelChange)="applyFiltersAndSort()"
+          aria-label="Filter by sales type"
+        >
+        </ng-select>
+      </label>
+
       <!-- Status -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Status</span>
@@ -120,6 +136,10 @@
               Salesperson 
               <span class="ml-1">{{ sortBy === 'salesperson' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('salesType')">
+              Sales Type 
+              <span class="ml-1">{{ sortBy === 'salesType' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
             <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalAmount')">
               Subtotal 
               <span class="ml-1">{{ sortBy === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
@@ -151,6 +171,16 @@
             <td class="py-4 px-4 text-gray-900">{{ order.orderNumber }}</td>
             <td class="py-4 px-4 text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
             <td class="py-4 px-4 text-gray-900">{{ getSalespersonName(order) }}</td>
+            <td class="py-4 px-4">
+              <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                    [ngClass]="{
+                      'bg-green-100 text-green-800': getDisplaySalesType(order) === 'Online',
+                      'bg-blue-100 text-blue-800': getDisplaySalesType(order) === 'In-store',
+                      'bg-gray-100 text-gray-800': !getDisplaySalesType(order) || getDisplaySalesType(order) === 'N/A'
+                    }">
+                {{ getDisplaySalesType(order) }}
+              </span>
+            </td>
             <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
             <td class="py-4 px-4 text-gray-900">₦{{ calculateOrderTax(order).toLocaleString() }}</td>
             <td class="py-4 px-4 text-gray-900 font-semibold">₦{{ calculateOrderTotalWithTax(order).toLocaleString() }}</td>

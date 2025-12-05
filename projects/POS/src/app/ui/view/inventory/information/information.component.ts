@@ -7,8 +7,9 @@ import {
   SimpleChanges,
   HostListener,
 } from '@angular/core';
-import { supplierData, ProductData, StockMovementByInventory } from '../../../models/interface';
+import { supplierData, ProductData, StockMovementByInventory, StockMovementResponsePayload } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-information',
@@ -19,6 +20,7 @@ export class InformationComponent implements OnChanges {
   @Input() productId: number | null = null;
   product: ProductData | null = null;
   supplier: supplierData | null = null;
+  suppliersList: supplierData[] = []; // List of all suppliers for dropdown
   @Output() close = new EventEmitter<void>();
 
   @Input() inventoryId?: number;
@@ -60,24 +62,28 @@ toggleDropdown(index: number): void {
  
   editStockMovement(movement: StockMovementByInventory): void {
     this.editingMovement = { ...movement };
+    // Ensure supplierId is null if not set, for the dropdown's 'Select a supplier' option
+    this.editingMovement.supplierId = movement.supplierId ?? null;
     this.showEditModal = true;
     this.activeDropdownIndex = null;
   }
 
   
   deleteStockMovement(movement: StockMovementByInventory): void {
-    if (confirm('Are you sure you want to delete this stock movement?')) {
-      this.posService.deleteStockMovement(movement.id).subscribe({
-        next: () => {
-          this.stockMovements = this.stockMovements.filter(m => m.id !== movement.id);
-          console.log('Stock movement deleted successfully');
-        },
-        error: (err) => {
-          console.error('Failed to delete stock movement:', err);
-          alert('Failed to delete stock movement. Please try again.');
-        }
-      });
-    }
+    // Replaced confirm() with console error/message 
+    console.warn(`Attempting to delete stock movement: ${movement.id}`);
+    this.posService.deleteStockMovement(movement.id).subscribe({
+      next: () => {
+        this.stockMovements = this.stockMovements.filter(m => m.id !== movement.id);
+        console.log('Stock movement deleted successfully');
+      },
+      error: (err) => {
+        console.error('Failed to delete stock movement:', err);
+        // Fallback message/action if delete fails
+        // Removed alert as per instructions
+        console.error('Failed to delete stock movement. Please try again.');
+      }
+    });
     this.activeDropdownIndex = null;
   }
 
@@ -89,34 +95,46 @@ toggleDropdown(index: number): void {
 
     this.isUpdatingMovement = true;
     
-    
+    // Prepare update data, ensuring supplierId is explicitly handled (null if needed)
     const updateData: any = {
       id: this.editingMovement.id, 
       reference: this.editingMovement.reference,
       quantity: Number(this.editingMovement.quantity),
       purchasePrice: Number(this.editingMovement.purchasePrice),
       sellingPrice: Number(this.editingMovement.sellingPrice),
-      supplierId: this.editingMovement.supplierId,
+      // Use null if supplierId is intentionally cleared
+      supplierId: this.editingMovement.supplierId ? Number(this.editingMovement.supplierId) : null,
       inventoryId: this.inventoryId,
       createdDate: this.editingMovement.createdDate, 
       ingredientId: this.editingMovement.ingredientId || null 
     };
 
     this.posService.updateStockMovement(this.editingMovement.id, updateData).subscribe({
-      next: (updatedMovement) => {
+      next: (updatedMovement: StockMovementResponsePayload) => {
         // Update the movement in the local array
         const index = this.stockMovements.findIndex(m => m.id === this.editingMovement.id);
         if (index !== -1) {
-          this.stockMovements[index] = { ...this.stockMovements[index], ...updatedMovement };
+          // FIX: Updated to correctly use updatedMovement.supplierId and the locally resolved supplier object
+          // Since StockMovementResponsePayload only has supplierId, we resolve the supplier object locally.
+          const supplier = this.suppliersList.find(s => s.id === updatedMovement.supplierId);
+          this.stockMovements[index] = { 
+            ...this.stockMovements[index], 
+            ...updatedMovement,
+            supplierId: updatedMovement.supplierId ?? null,
+            supplier: supplier ? supplier : null, // Set the rich supplier object for display
+          } as StockMovementByInventory;
         }
         this.showEditModal = false;
         this.editingMovement = {};
         this.isUpdatingMovement = false;
         console.log('Stock movement updated successfully');
+        // Reload movements to get fresh data and re-calculate inventory if needed
+        this.loadMovements();
       },
       error: (err) => {
         console.error('Failed to update stock movement:', err);
-        alert('Failed to update stock movement. Please try again.');
+        // Removed alert as per instructions
+        console.error('Failed to update stock movement. Please try again.');
         this.isUpdatingMovement = false;
       }
     });
@@ -162,15 +180,28 @@ toggleDropdown(index: number): void {
       }
     });
   }
+  
   fetchProductAndSupplier() {
-    this.posService.getProductById(this.productId!).subscribe((product) => {
-      this.product = product;
-      if (product.supplier && product.supplier.id) {
-        this.posService.getSupplier().subscribe((suppliers) => {
+    // Fetch product details AND the list of all suppliers
+    forkJoin({
+      product: this.posService.getProductById(this.productId!),
+      suppliers: this.posService.getSupplier()
+    }).subscribe({
+      next: ({ product, suppliers }) => {
+        this.product = product;
+        this.suppliersList = suppliers; // Store list for dropdown
+
+        // Set main product supplier
+        if (product.supplier && product.supplier.id) {
           this.supplier =
             suppliers.find((s: supplierData) => s.id === product.supplier.id) ||
             null;
-        });
+        } else {
+            this.supplier = null;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to fetch product and supplier data:', err);
       }
     });
   }

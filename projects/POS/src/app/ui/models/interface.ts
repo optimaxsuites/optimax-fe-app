@@ -204,6 +204,7 @@ export interface SalesReportBreakdownDTO {
 }
 
 export interface Order {
+  isOnline: any;
   deliveryStatus: string;
   salesperson: any;
   branch: any; 
