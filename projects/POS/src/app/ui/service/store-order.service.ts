@@ -767,7 +767,8 @@ export class StoreOrderService {
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
       deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
-      deliveryStatus: orderData.deliveryStatus || 'PENDING'
+      deliveryStatus: orderData.deliveryStatus || 'PENDING',
+      isOnline: true
     };
 
   console.log('🔍 Sanitized order data:', JSON.stringify(sanitized, null, 2));
