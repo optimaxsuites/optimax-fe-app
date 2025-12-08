@@ -213,14 +213,14 @@ export class MenuItemsService {
           icon: 'pi pi-warehouse',
           description: 'Manage stock levels, warehouse items, and inventory adjustments.'
         },
-        {
-          label: 'Ingredients',
-          code: 'POS_ING',
-          route: this.navigationLink.getLink('ingredientLink'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-warehouse',
-          description: 'Track and manage raw materials or ingredients used in product creation.'
-        },
+        // {
+        //   label: 'Ingredients',
+        //   code: 'POS_ING',
+        //   route: this.navigationLink.getLink('ingredientLink'),
+        //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        //   icon: 'pi pi-warehouse',
+        //   description: 'Track and manage raw materials or ingredients used in product creation.'
+        // },
         {
           label: 'Refunds',
           code: 'POS_RFND',
