@@ -39,6 +39,7 @@ import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 const routes: Routes = [
   {
     path: 'users/auth/verify',
+    canActivate: [UuidGuard],
     component: VerifyTokenComponent,
   },
   {

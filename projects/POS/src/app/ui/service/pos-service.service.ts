@@ -617,7 +617,7 @@ deleteTax(id: any): Observable<any> {
 
     if (Array.isArray(data.stockMovement) && data.stockMovement.length > 0) {
       createPayload.stockMovement = data.stockMovement.map(m => {
-        const mv: any = {
+        const mv: any = { 
           quantity: Number(m.quantity),
           reference: m.reference ?? '',
           purchasePrice: Number(m.purchasePrice ?? 0),
