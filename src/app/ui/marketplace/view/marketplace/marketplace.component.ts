@@ -33,6 +33,7 @@ export class MarketplaceComponent {
   selectedModuleDetails$ = new BehaviorSubject<any>(null);
   String = String
   Number = Number
+  showAdminUI: boolean = false
 
   constructor(
     private menuService: MenuItemsService,
@@ -84,8 +85,14 @@ export class MarketplaceComponent {
           console.error(err)
         },
       })
-    }
 
+    const hostname = window.location.hostname; 
+    
+    const subdomain = hostname.split('.')[0]; 
+
+    this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
+  }
+   
     showDialog(module: any ) {
       this.visible = true;
       this.module = module;
