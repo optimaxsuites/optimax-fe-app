@@ -254,6 +254,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TourGuideComponent } from './ui/onboarding/tour-guide';
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { EstimatedDeliveryPipe } from 'projects/settings/src/app/ui/view/pos/delvery/estimated-delivery.pipe';
+import { ModuleComponent } from './ui/marketplace/view/module/module.component';
 
 
 const dbConfig: DBConfig = {
@@ -489,6 +490,7 @@ const dbConfig: DBConfig = {
     PaymentComponent,
     TourGuideComponent,
     TenantsComponent,
+    ModuleComponent,
     //  EstimatedDeliveryPipe
 
   ],

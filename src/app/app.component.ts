@@ -6,6 +6,7 @@ import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.servic
 import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
 import { TOUR_STEPS, TourStep } from './ui/onboarding/tour-guide';
 import { AuthenticationService } from './ui/auth/service/authentication.service';
+import { TenantService } from './ui/tenants/service/tenant.service';
 
 declare global {
   interface Window {
@@ -62,7 +63,7 @@ export class AppComponent implements OnInit {
     private checkoutService: CheckoutService,
     private offlineService: OfflineService,
     private authenticationService: AuthenticationService,
-    private cdr: ChangeDetectorRef
+    private tenantService: TenantService
   ) {
     // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
     window.addEventListener('online', () => this._isOffline.next(false));
@@ -90,6 +91,8 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.checkEligibility();
     this.checkOnboardingStatus();
+    this.tenantService.loadFullTenants();
+
   }
 
   @HostListener('window:resize', ['$event'])

@@ -28,6 +28,7 @@ export class MarketplaceComponent {
   history: any[] = []
   appList  = []
   showDetails: boolean = false;
+  openAddModule: boolean = false
   // selectedModuleDetails: any = null
   selectedModuleDetails$ = new BehaviorSubject<any>(null);
   String = String

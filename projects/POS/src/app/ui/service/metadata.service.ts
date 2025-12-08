@@ -113,7 +113,7 @@ export class MetadataService {
   enrichedProduct$ = this.enrichedProductSubject.asObservable();
   enrichedInventory$ = this.enrichedInventorySubject.asObservable().pipe(
    shareReplay(1)
-);;
+);
 
 
   constructor(

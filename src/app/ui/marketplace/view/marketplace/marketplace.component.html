@@ -4,10 +4,18 @@
     <!-- Search & Filter Section -->
     <div class="flex items-center justify-between space-x-4 mb-6">
       <input type="text" placeholder="Search modules..." class="p-2 border rounded w-1/3" />
-      <button (click)="openHistory = !openHistory"
+
+      <div class="flex gap-3">
+        <button *ngIf="!openHistory" (click)="openAddModule = !openAddModule"
+              class="bg-customBlue text-white px-4 py-2 rounded hover:bg-customBlueHover">
+        New Module
+      </button>
+       <button (click)="openHistory = !openHistory"
               class="bg-customBlue text-white px-4 py-2 rounded hover:bg-customBlueHover">
         {{openHistory? "Back to modules" :"Subscription History"}}
       </button>
+      </div>
+     
     </div>
   <ng-container *ngIf="!loading; else loadingTpl">
 
@@ -229,6 +237,10 @@
   </div>
 
   </ng-container>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddModule" (close)="openAddModule = false">
+  <app-module></app-module>
 </app-side-modal>
 
 <ng-template #loadingTpl>
