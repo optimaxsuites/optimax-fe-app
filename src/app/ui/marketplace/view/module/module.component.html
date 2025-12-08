@@ -29,7 +29,7 @@
     <div class="space-y-4">
       <div class="flex justify-between items-center">
         <h3 class="text-xl font-semibold">Subscription Plans</h3>
-        <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded" (click)="addPlan()">
+        <button type="button" class="px-4 py-2 bg-customBlue text-white rounded" (click)="addPlan()">
           + Add Plan
         </button>
       </div>
@@ -86,7 +86,7 @@
           <div class="mt-4">
             <div class="flex justify-between items-center">
               <h4 class="font-medium">Features</h4>
-              <button type="button" class="text-blue-600" (click)="addFeature(i)">+ Add Feature</button>
+              <button type="button" class="text-customBlue" (click)="addFeature(i)">+ Add Feature</button>
             </div>
 
             <div formArrayName="features" class="mt-2 space-y-2">
@@ -144,7 +144,7 @@
 
 
     <!-- SUBMIT BUTTON -->
-    <button type="submit" class="w-full py-3 text-white bg-blue-600 rounded-lg font-semibold">
+    <button type="submit" class="w-full py-3 text-white bg-customBlue rounded-lg font-semibold">
       Create Module
     </button>
   </form>
