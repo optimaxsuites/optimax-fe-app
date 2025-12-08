@@ -54,10 +54,10 @@
             <td class="p-3 border-b">{{ formatDate(order.dateJoined) | date:'medium' }}</td>
 
             <td class=" p-3 border-b text-center relative z-20">
-              <div class="inline-block text-left relative">
-                <button (click)="
+              <div class="inline-block text-left relative" (click)="
                   $event.stopPropagation();
-                  order.showMenu = !order.showMenu;" class="p-2 rounded relative hover:bg-gray-200">
+                  order.showMenu = !order.showMenu;">
+                <button  class="p-2 rounded relative hover:bg-gray-200">
                   ⋮
 
 
