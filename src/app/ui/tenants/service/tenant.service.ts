@@ -95,6 +95,12 @@ export class TenantService {
       );
     }
 
+    deleteTenant(domain: number) {
+        return this.http
+          .delete<any>(this.getBaseApiUrl() + `/x/api/v2/us/tenant/${domain}`)
+          .pipe(catchError(this.handleError));
+    }
+
 
 
   loadFullTenants() {
@@ -130,5 +136,11 @@ export class TenantService {
       }
       return throwError(`${error.status}`);
       // 'Something bad happened; please try again later.');
+    }
+
+    removeTenantFromState(tenantId: number | undefined) {
+      const currentTenant = this.tenantsSubject.value;
+      const updatedTenant = currentTenant.filter(c => c.id !== tenantId);
+      this.tenantsSubject.next(updatedTenant);
     }
 }

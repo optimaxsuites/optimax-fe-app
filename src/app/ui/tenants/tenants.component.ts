@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TenantService } from './service/tenant.service';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-tenants',
@@ -14,7 +14,7 @@ openDetailsModal: boolean = false
  tenants$ = this.tenantService.tenants$;
 loading$ = this.tenantService.loading$;
 
-constructor(private tenantService: TenantService, private confirmationService: ConfirmationService){}
+constructor(private tenantService: TenantService, private confirmationService: ConfirmationService, private messageService: MessageService){}
 
 ngOnInit(){
 
@@ -61,6 +61,11 @@ openDetails(order: any){
   }
 
   deleteTenant(tenant: any){
-
+     this.tenantService.deleteTenant(tenant.domain).subscribe({
+      next: () => {
+                this.tenantService.removeTenantFromState(tenant.id)
+                this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Tenant Deleted', life: 3000, key:"tf" });
+      }
+     })
   }
 }

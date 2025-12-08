@@ -71,10 +71,10 @@ export class QuotationComponent implements OnInit {
       acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
       accept:()=>{
         this.quotationService.deleteItem(id);
-        this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
+        this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000, key:"tl" });
       },
       reject: () => {
-        this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Product not Deleted', life: 3000 });
+        this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Product not Deleted', life: 3000, key:"tl" });
       }
     });
   }
