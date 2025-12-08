@@ -88,9 +88,11 @@
     [value]="selectedCategory" 
     (change)="onMobileCategoryChange($any($event.target).value)"
   >
-    <!-- <option value="All">All</option> -->
-   @for (category of getCategoryOptions(); track $index) {
-      <option [value]="category.value">{{ category.label }}</option>
+    <option value="All">All</option>
+    @for (category of getCategoryOptions(); track $index) {
+      @if (category.value !== 'All') {
+        <option [value]="category.value">{{ category.label }}</option>
+      }
     }
   </select>
 </div>
@@ -102,16 +104,18 @@
           
           <!-- Category Filter -->
           <div class="relative border-r border-gray-300">
-            <select
-              class="appearance-none bg-transparent border-none pl-4 pr-8 py-2 text-gray-700 focus:outline-none focus:ring-0 cursor-pointer min-w-[50px]"
-              [value]="selectedCategory"
-              (change)="onCategoryFilterChange($any($event.target).value)"
-            >
-              <option value="All">All</option>
-              @for (category of getCategoryOptions(); track $index) {
-                <option [value]="category.value">{{ category.label }}</option>
-              }
-            </select>
+<select
+  class="appearance-none bg-transparent border-none pl-4 pr-8 py-2 text-gray-700 focus:outline-none focus:ring-0 cursor-pointer min-w-[50px]"
+  [value]="selectedCategory"
+  (change)="onCategoryFilterChange($any($event.target).value)"
+>
+  <option value="All">All</option>
+  @for (category of getCategoryOptions(); track $index) {
+    @if (category.value !== 'All') {
+      <option [value]="category.value">{{ category.label }}</option>
+    }
+  }
+</select>
             <div class="absolute inset-y-0 right-2 flex items-center pointer-events-none">
               <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
             </div>

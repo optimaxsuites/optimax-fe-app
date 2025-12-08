@@ -146,7 +146,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   // Get category options dynamically
   getCategoryOptions(): any[] {
     if (!this.allProducts || this.allProducts.length === 0) {
-      return [{ label: 'Category', value: 'All' }];
+      // return [{ label: 'Category', value: 'All' }];
     }
     
     // Get unique categories from products
@@ -163,7 +163,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     
     // Create options array
     const options = [
-      { label: 'Category', value: 'All' }
+      { label: 'All', value: 'All' }
     ];
     
     // Add each category
@@ -554,7 +554,6 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     } else if (hour < 17) {
       return `Good Afternoon ${emojis[1]}`;
     } else {
-
       return `Good Evening ${emojis[2]}`;
     }
   }
