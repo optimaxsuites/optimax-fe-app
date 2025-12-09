@@ -2042,20 +2042,20 @@ async addToProduct() {
           );
           
           // Show success message with price info if applicable
-          let successMessage = 'Product added successfully.';
-          if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
-            successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
-          }
+          // let successMessage = 'Product added successfully.';
+          // if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+          //   successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+          // }
 
           this.metadataService.fetchMetaData()
           
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Product Added',
-            detail: successMessage,
-            key: 'tl',
-            life: 5000,
-          });
+          // this.messageService.add({
+          //   severity: 'success',
+          //   summary: 'Product Added',
+          //   detail: successMessage,
+          //   key: 'tl',
+          //   life: 5000,
+          // });
           this.loading = false;
           this.addSuccessfull = true;
           this.resetFormAfterSuccess();
