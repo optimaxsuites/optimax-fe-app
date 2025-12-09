@@ -425,7 +425,7 @@ discountTypes: any[] = [
   // Get selected tax objects
   getSelectedTaxes(): any[] {
     const selectedTaxIds = this.productForm.get('selectedTaxes')?.value || [];
-    return this.taxes.filter(tax => selectedTaxIds.includes(tax.id));
+    return this.taxes.filter(tax => selectedTaxIds.includes(tax));
   }
 
   // Get selected taxes for a specific branch
@@ -1072,6 +1072,7 @@ checkPriceValidation(): void {
       isBundle: this.activeItem.isBundle || false,
       bundleItems: this.activeItem.bundleItems || [],
       measurementUnit: this.activeItem.measurementUnit || '',
+      selectedTaxes: this.activeItem.tax || []
     });
 
     this.setRelatedObjects();

@@ -125,7 +125,26 @@
           Pricing & Inventory
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
+  class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
+   'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
+   'bg-red-50 border-red-200': calculatePriceDifference() < 0
+ }">
+  <div class="flex justify-between items-center">
+    <span class="text-sm font-medium">Profit/Loss:</span>
+    <span [ngClass]="{
+      'text-green-600 font-semibold': calculatePriceDifference() >= 0,
+      'text-red-600 font-semibold': calculatePriceDifference() < 0
+    }">
+      {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
+      ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
+    </span>
+  </div>
+  <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
+    ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
+  </div>
+</div>
 <!-- Cost Price -->
 <div>
   <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
@@ -156,6 +175,8 @@
     [class.border-green-300]="productForm.get('sellingPrice')?.valid && productForm.get('sellingPrice')?.touched"
     (onBlur)="onPriceFieldBlur()"> <!-- Add blur event -->
   </p-inputNumber>
+
+  
 </div>
           <!-- sellingPrice -->
           <!-- <div class="col-span-1">
@@ -185,25 +206,7 @@
           </div> -->
 
           <!-- Add this after the selling price field -->
-  <div *ngIf="productForm.get('costPrice')?.value && productForm.get('sellingPrice')?.value"
-  class="col-span-3 mt-2 p-3 rounded-lg border" [ngClass]="{
-   'bg-green-50 border-green-200': calculatePriceDifference() >= 0,
-   'bg-red-50 border-red-200': calculatePriceDifference() < 0
- }">
-  <div class="flex justify-between items-center">
-    <span class="text-sm font-medium">Profit/Loss:</span>
-    <span [ngClass]="{
-      'text-green-600 font-semibold': calculatePriceDifference() >= 0,
-      'text-red-600 font-semibold': calculatePriceDifference() < 0
-    }">
-      {{ calculatePriceDifference() >= 0 ? '+' : '' }}₦{{ calculatePriceDifference() | number:'1.2-2' }}
-      ({{ getPriceDifferencePercentage() | number:'1.0-1' }}%)
-    </span>
-  </div>
-  <div *ngIf="calculatePriceDifference() < 0" class="text-xs text-red-600 mt-1">
-    ⚠️ You're selling at a loss. Consider adding a discount or adjusting prices.
-  </div>
-</div>
+
 
           <!-- quantity -->
           <div>
@@ -271,6 +274,27 @@
             </div>
           </div>
 
+             <!-- Supplier -->
+          <div>
+            <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">
+              Supplier <span class="text-red-500">*</span>
+            </label>
+            <div class="flex gap-1">
+              <ng-select [items]="suppliers" bindLabel="name" formControlName="supplier" placeholder="Select supplier"
+                class="flex-1"></ng-select>
+              <button class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition" type="button"
+                (click)="openAddSupplier = true">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <div *ngIf="
+                productForm.get('supplier')?.invalid &&
+                productForm.get('supplier')?.touched
+              " class="mt-1 text-sm text-red-500">
+              {{ getErrorMessage("supplier") }}
+            </div>
+          </div>
+
           <!-- tax -->
           <div class="col-span-2">
             <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
@@ -307,7 +331,7 @@
 
             <!-- Display selected taxes -->
             <div *ngIf="getSelectedTaxes().length > 0" class="mt-2">
-              <div class="flex flex-wrap gap-2">
+              <!-- <div class="flex flex-wrap gap-2">
                 <div *ngFor="let tax of getSelectedTaxes()"
                   class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                   <span>{{ tax.name }} ({{ tax.rate }}%)</span>
@@ -315,36 +339,17 @@
                     <i class="fa-solid fa-times"></i>
                   </button>
                 </div>
-              </div>
+              </div> -->
               <div class="mt-1 text-sm text-gray-600">
                 Total Tax Rate: {{ calculateTotalTaxRate() }}%
               </div>
             </div>
           </div>
 
-          <!-- Supplier -->
-          <div>
-            <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">
-              Supplier <span class="text-red-500">*</span>
-            </label>
-            <div class="flex gap-1">
-              <ng-select [items]="suppliers" bindLabel="name" formControlName="supplier" placeholder="Select supplier"
-                class="flex-1"></ng-select>
-              <button class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition" type="button"
-                (click)="openAddSupplier = true">
-                <i class="fa-solid fa-plus"></i>
-              </button>
-            </div>
-            <div *ngIf="
-                productForm.get('supplier')?.invalid &&
-                productForm.get('supplier')?.touched
-              " class="mt-1 text-sm text-red-500">
-              {{ getErrorMessage("supplier") }}
-            </div>
-          </div>
+       
 
 
-          <div class="col-span-3">
+          <div class="">
             <div class="flex items-center gap-4"> <!-- Changed to gap-4 for consistent spacing -->
               <!-- Label and info icon section -->
               <div class="flex items-center gap-2">
