@@ -417,6 +417,63 @@ discountTypes: any[] = [
     }
   }
 
+    private initializeEditMode() {
+    console.log('Initializing edit mode with activeItem:', this.activeItem);
+
+    // Set basic form values with proper fallbacks
+    this.productForm.patchValue({
+      name: this.activeItem.name || '',
+      code: this.activeItem.code || '',
+      description: this.activeItem.description || '',
+      isAvailableInStore: this.activeItem.isAvailableInStore ?? true,
+      sku: this.activeItem.sku || '',
+      weight: this.activeItem.weight || 0,
+      costPrice:
+        this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
+      sellingPrice: this.activeItem.sellingPrice || 0,
+      quantity: this.activeItem.quantity || 0,
+      partNumber: this.activeItem.partNumber || '',
+      reorderThreshold: this.activeItem.reorderThreshold || 12,
+      expiryDate:
+        this.activeItem.expiryDate || this._defaultExpiryDate.toISOString(),
+      isBundle: this.activeItem.isBundle || false,
+      bundleItems: this.activeItem.bundleItems || [],
+      measurementUnit: this.activeItem.measurementUnit || '',
+      supplier: this.activeItem.supplier,
+      discount: this.activeItem.discount,
+      selectedTaxes: this.activeItem.tax
+      .map((t: { id: number | undefined; }) => this.taxes.find(x => x.id === t.id))
+      .filter(Boolean)
+    });
+
+    this.setRelatedObjects();
+    if (this.activeItem.isBundle && this.activeItem.bundleItems) {
+      this.selectedBundleItems = this.activeItem.bundleItems.map(
+        (item: any) => ({
+          product:
+            this.availableProducts.find((p) => p.id === item.productId) || item,
+          quantity: item.quantity || 1,
+          priceAdjustment: item.priceAdjustment || 0,
+        })
+      );
+    }
+    // Set variants
+    if (this.activeItem.variants && this.activeItem.variants.length > 0) {
+      this.variants = [...this.activeItem.variants];
+    }
+
+    
+
+    // Set branch information
+    this.setBranchInformation();
+
+    // Initialize product images
+    this.initializeProductImages();
+
+    console.log('Form after initialization:', this.productForm.value);
+  }
+
+
   // Helper method to get tax control for a branch
   getBranchTaxControl(branch: AbstractControl): FormControl {
     return branch.get('tax') as FormControl;
@@ -437,7 +494,9 @@ discountTypes: any[] = [
   // Calculate total tax rate
   calculateTotalTaxRate(): number {
     const selectedTaxes = this.getSelectedTaxes();
-    return selectedTaxes.reduce((total, tax) => total + (tax.rate || 0), 0);
+    console.log(selectedTaxes)
+    if(selectedTaxes.length > 0)  return selectedTaxes.reduce((total, tax) => total + (tax.rate || 0), 0)
+    return 0
   }
 
   // Remove a tax from selection
@@ -1050,55 +1109,6 @@ checkPriceValidation(): void {
     return Math.abs(value);
   }
 
-  private initializeEditMode() {
-    console.log('Initializing edit mode with activeItem:', this.activeItem);
-
-    // Set basic form values with proper fallbacks
-    this.productForm.patchValue({
-      name: this.activeItem.name || '',
-      code: this.activeItem.code || '',
-      description: this.activeItem.description || '',
-      isAvailableInStore: this.activeItem.isAvailableInStore ?? true,
-      sku: this.activeItem.sku || '',
-      weight: this.activeItem.weight || 0,
-      costPrice:
-        this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
-      sellingPrice: this.activeItem.sellingPrice || 0,
-      quantity: this.activeItem.quantity || 0,
-      partNumber: this.activeItem.partNumber || '',
-      reorderThreshold: this.activeItem.reorderThreshold || 12,
-      expiryDate:
-        this.activeItem.expiryDate || this._defaultExpiryDate.toISOString(),
-      isBundle: this.activeItem.isBundle || false,
-      bundleItems: this.activeItem.bundleItems || [],
-      measurementUnit: this.activeItem.measurementUnit || '',
-      selectedTaxes: this.activeItem.tax || []
-    });
-
-    this.setRelatedObjects();
-    if (this.activeItem.isBundle && this.activeItem.bundleItems) {
-      this.selectedBundleItems = this.activeItem.bundleItems.map(
-        (item: any) => ({
-          product:
-            this.availableProducts.find((p) => p.id === item.productId) || item,
-          quantity: item.quantity || 1,
-          priceAdjustment: item.priceAdjustment || 0,
-        })
-      );
-    }
-    // Set variants
-    if (this.activeItem.variants && this.activeItem.variants.length > 0) {
-      this.variants = [...this.activeItem.variants];
-    }
-
-    // Set branch information
-    this.setBranchInformation();
-
-    // Initialize product images
-    this.initializeProductImages();
-
-    console.log('Form after initialization:', this.productForm.value);
-  }
 
   private setRelatedObjects() {
     // Set category
@@ -1111,34 +1121,34 @@ checkPriceValidation(): void {
       }
     }
 
-    // Set taxes (multiple)
-    if (this.activeItem.taxes && Array.isArray(this.activeItem.taxes)) {
-      const taxIds = this.activeItem.taxes.map((tax: any) => tax.id);
-      this.productForm.patchValue({ selectedTaxes: taxIds });
-    } else if (this.activeItem.tax) {
-      // Fallback for single tax (backward compatibility)
-      this.productForm.patchValue({ selectedTaxes: [this.activeItem.tax.id] });
-    }
+    // // Set taxes (multiple)
+    // if (this.activeItem.taxes && Array.isArray(this.activeItem.taxes)) {
+    //   const taxIds = this.activeItem.taxes
+    //   this.productForm.patchValue({ selectedTaxes: taxIds });
+    // } else if (this.activeItem.tax) {
+    //   // Fallback for single tax (backward compatibility)
+    //   this.productForm.patchValue({ selectedTaxes: [this.activeItem.tax.id] });
+    // }
 
-    // Set discount
-    if (this.activeItem.discount) {
-      const discount = this.discounts.find(
-        (d) => d.id === this.activeItem.discount.id
-      );
-      if (discount) {
-        this.productForm.patchValue({ discount: discount });
-      }
-    }
+    // // Set discount
+    // if (this.activeItem.discount) {
+    //   const discount = this.discounts.find(
+    //     (d) => d.id === this.activeItem.discount.id
+    //   );
+    //   if (discount) {
+    //     this.productForm.patchValue({ discount: discount });
+    //   }
+    // }
 
-    // Set supplier
-    if (this.activeItem.supplier) {
-      const supplier = this.suppliers.find(
-        (s) => s.id === this.activeItem.supplier.id
-      );
-      if (supplier) {
-        this.productForm.patchValue({ supplier: supplier });
-      }
-    }
+    // // Set supplier
+    // if (this.activeItem.supplier) {
+    //   const supplier = this.suppliers.find(
+    //     (s) => s.id === this.activeItem.supplier.id
+    //   );
+    //   if (supplier) {
+    //     this.productForm.patchValue({ supplier: supplier });
+    //   }
+    // }
   }
 
   private setBranchInformation() {
@@ -3122,4 +3132,9 @@ getErrorMessage(controlName: string, displayName?: string): string {
     
     return this.getPlaceholderImage();
   }
+
+  compareTax(t1: any, t2: any): boolean {
+  return t1 && t2 ? t1.id === t2.id : false;
+}
+
 }
