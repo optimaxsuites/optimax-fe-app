@@ -2011,11 +2011,17 @@ async addToProduct() {
     formData.append('product', JSON.stringify(product));
 
     // Append all product images
+    if(this.productImages.length > 0) {
     this.productImages.forEach((image, index) => {
       if (image.file) {
         formData.append('files', image.file);
       }
     });
+  } else {
+    const defaultImage = await this.createDefaultImage(product.name);
+    formData.append("files", defaultImage, 'default_product.jpg');
+  }
+    
 
     if (formValues.image instanceof File) {
       formData.append('files', formValues.image);
@@ -2077,6 +2083,60 @@ async addToProduct() {
       }
     );
   }
+}
+
+private createDefaultImage(name?: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const baseSize = 200;
+    const scale = 2; // crisp on retina
+    const canvas = document.createElement('canvas');
+    canvas.width = baseSize * scale;
+    canvas.height = baseSize * scale;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      // fallback to empty blob
+      return resolve(new Blob());
+    }
+
+    // stable color palette
+    const palette = [
+      '#3B82F6', // blue
+      '#10B981', // emerald
+      '#F59E0B', // amber
+      '#EF4444', // red
+      '#8B5CF6', // violet
+      '#06B6D4', // cyan
+      '#F97316', // orange
+      '#14B8A6', // teal
+      '#EC4899', // pink
+      '#84CC16', // lime
+    ];
+
+    const initial = (name?.trim()?.[0] ?? 'P').toUpperCase();
+    const color = palette[initial.charCodeAt(0) % palette.length];
+
+    // background
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // letter
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // responsive font size
+    const fontPx = Math.floor(baseSize * 0.6);
+    ctx.font = `bold ${fontPx * scale}px Inter, Segoe UI, Arial, sans-serif`;
+
+    ctx.fillText(initial, (baseSize * scale) / 2, (baseSize * scale) / 2);
+
+    canvas.toBlob(
+      (blob) => resolve(blob ?? new Blob()),
+      'image/jpeg',
+      0.9
+    );
+  });
 }
 
   private markFormGroupTouched(formGroup: FormGroup) {
