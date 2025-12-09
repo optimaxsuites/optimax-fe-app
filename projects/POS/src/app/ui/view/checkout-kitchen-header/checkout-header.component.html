@@ -1,5 +1,7 @@
-<div class="flex justify-between items-center px-5">
-  <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
+<!-- Add this wrapper div around your existing navbar content -->
+<div class="navbar-fixed">
+  <div class="flex justify-between items-center px-5">
+    <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
 
   <nav>
     <ul class="flex gap-12 list-none">
@@ -24,43 +26,49 @@
       <a class="cursor-pointer" (click)="setMode('waiter')">Waiter</a>
       </li>
 
-      <li [class.active]="mode === 'chef'">
-        <a class="cursor-pointer" (click)="setMode('chef')">Chef</a>
-      </li>
+        <li [class.active]="mode === 'chef'">
+          <a class="cursor-pointer" (click)="setMode('chef')">Chef</a>
+        </li>
 
-      <li [class.active]="mode === 'cashier'">
-        <a class="cursor-pointer" (click)="setMode('cashier')">Cashier</a>
-      </li>
-    </ul>
-  </nav>
+        <li [class.active]="mode === 'cashier'">
+          <a class="cursor-pointer" (click)="setMode('cashier')">Cashier</a>
+        </li>
+      </ul>
+    </nav>
 
-  <div>
-    <div (click)="op.toggle($event)" class="profile">
-      <img [src]="profileImgUrl" alt="Test Profile" class="profile-img" />
-      <p class="capitalize mb-0">{{ userRegData.username }}</p>
-    </div>
-    <p-overlayPanel #op>
-      <div class="panel-container">
-        <div class="profile-name">
-          <h3 class="name-2">{{ userRegData.username }}</h3>
-          <h5 class="my-2"><strong>ID: </strong>{{ userRegData.accountId }}</h5>
-        </div>
-        <p-divider></p-divider>
-        <div>
-          <h4 routerLink="/settings" class="settings">
-            <i class="pi pi-cog"></i>Settings
-          </h4>
-          <h4 (click)="logout()" class="logout">
-            <i class="pi pi-sign-out"></i> Sign Out
-          </h4>
-        </div>
+    <div>
+      <div (click)="op.toggle($event)" class="profile">
+        <img [src]="profileImgUrl" alt="Test Profile" class="profile-img" />
+        <p class="capitalize mb-0">{{ userRegData.username }}</p>
       </div>
-    </p-overlayPanel>
-  </div>
+      <p-overlayPanel #op>
+        <div class="panel-container">
+          <div class="profile-name">
+            <h3 class="name-2">{{ userRegData.username }}</h3>
+            <h5 class="my-2"><strong>ID: </strong>{{ userRegData.accountId }}</h5>
+          </div>
+          <p-divider></p-divider>
+          <div>
+            <h4 routerLink="/settings" class="settings">
+              <i class="pi pi-cog"></i>Settings
+            </h4>
+            <h4 (click)="logout()" class="logout">
+              <i class="pi pi-sign-out"></i> Sign Out
+            </h4>
+          </div>
+        </div>
+      </p-overlayPanel>
+    </div>
 
-  <div class="md:hidden">
-    <button class="hamburger-icon" (click)="onToggleSidebar()">&#9776;</button>
+    <div class="md:hidden">
+      <button class="hamburger-icon" (click)="onToggleSidebar()">&#9776;</button>
+    </div>
   </div>
+</div>
+
+<!-- Your page content should be placed after the navbar -->
+<div class="page-content">
+  <!-- Your page content goes here -->
 </div>
 
 <!-- Close Register Modal -->
@@ -70,4 +78,4 @@
   [closeAmount]="closingAmount"
   (finalizeRegisterEvent)="finalizeRegister($event)"
   (closeModalEvent)="showCloseRegisterModal = false"
-></app-close-register-modal> -->      
+></app-close-register-modal> -->

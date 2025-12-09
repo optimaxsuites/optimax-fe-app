@@ -138,8 +138,6 @@ export class CheckoutKitchenComponent implements OnInit {
   // ===== PAYMENT MODAL STATE =====
   showPaymentModal = false;
   selectedPaymentMethod?: 'CASH' | 'TRANSFER' | 'CARD';
-  transferReference = '';
-  cardReference = '';
 
   // Payment methods configuration
   paymentMethods = [
@@ -495,42 +493,47 @@ export class CheckoutKitchenComponent implements OnInit {
     
     this.showPaymentModal = true;
     this.selectedPaymentMethod = undefined;
-    this.transferReference = '';
-    this.cardReference = '';
   }
 
   closePaymentModal() {
     this.showPaymentModal = false;
     this.selectedPaymentMethod = undefined;
-    this.transferReference = '';
-    this.cardReference = '';
   }
 
   selectPaymentMethod(method: 'CASH' | 'TRANSFER' | 'CARD') {
     this.selectedPaymentMethod = method;
   }
 
+  // NEW: Get payment icon for display
+  getPaymentIcon(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
+    const icons = {
+      'CASH': '💰',
+      'TRANSFER': '🏦',
+      'CARD': '💳'
+    };
+    return icons[method];
+  }
+
+  // UPDATED: Get payment method display name
+  getPaymentMethodDisplayName(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
+    const methodNames = {
+      'CASH': 'Cash',
+      'TRANSFER': 'Bank Transfer',
+      'CARD': 'Card Payment'
+    };
+    return methodNames[method];
+  }
+
   async confirmPayment() {
     if (!this.selectedOrder || !this.selectedPaymentMethod) return;
-    
-    // Validate reference numbers for non-cash payments
-    if (this.selectedPaymentMethod === 'TRANSFER' && !this.transferReference.trim()) {
-      alert('Please enter transaction reference for bank transfer');
-      return;
-    }
-    
-    if (this.selectedPaymentMethod === 'CARD' && !this.cardReference.trim()) {
-      alert('Please enter transaction reference for card payment');
-      return;
-    }
 
     try {
       this.isProcessingPayment = true;
       
-      // Create payment breakdown based on endpoint
+      // Create payment breakdown with auto-generated reference
       const paymentBreakdown: PaymentBreakdown[] = [{
         amountPaid: this.getGrandTotal(this.selectedOrder),
-        transactionReference: this.getTransactionReference(),
+        transactionReference: this.generateAutoReference(this.selectedPaymentMethod),
         paymentMethod: this.selectedPaymentMethod
       }];
 
@@ -567,26 +570,21 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  private getTransactionReference(): string {
-    switch (this.selectedPaymentMethod) {
+  // NEW: Generate auto reference for payments
+  private generateAutoReference(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 10000);
+    
+    switch (method) {
       case 'CASH':
-        return `CASH-${Date.now()}`;
+        return `CASH-${timestamp}-${randomNum}`;
       case 'TRANSFER':
-        return this.transferReference.trim() || `TRF-${Date.now()}`;
+        return `TRF-${timestamp}-${randomNum}`;
       case 'CARD':
-        return this.cardReference.trim() || `CARD-${Date.now()}`;
+        return `CARD-${timestamp}-${randomNum}`;
       default:
-        return `PAY-${Date.now()}`;
+        return `PAY-${timestamp}-${randomNum}`;
     }
-  }
-
-  private getPaymentMethodDisplayName(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
-    const methodNames = {
-      'CASH': 'Cash',
-      'TRANSFER': 'Bank Transfer',
-      'CARD': 'Card Payment'
-    };
-    return methodNames[method];
   }
 
   // ===== LOCAL STORAGE METHODS =====

@@ -3,6 +3,29 @@
   padding: 0;
 }
 
+/* Fixed navbar styles */
+.navbar-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: white; /* Add background color */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add shadow for better visibility */
+  border-bottom: 1px solid #e5e7eb; /* Optional: Add border */
+}
+
+/* Add margin/padding to body or main content to prevent hiding under navbar */
+body {
+  padding-top: 70px; /* Adjust this value based on your navbar height */
+}
+
+/* OR if you have a specific content container */
+.page-content {
+  margin-top: 70px; /* Same value as above */
+  padding: 20px;
+}
+
 .profile {
   @apply flex items-center gap-2 cursor-pointer;
 }
@@ -17,4 +40,13 @@ a {
 
 .active a {
   @apply font-bold text-customGreen;
+}
+
+/* Optional: Add styles for the flex container inside navbar */
+.flex.justify-between.items-center.px-5 {
+  height: 70px; /* Set a fixed height for consistency */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.25rem;
 }
