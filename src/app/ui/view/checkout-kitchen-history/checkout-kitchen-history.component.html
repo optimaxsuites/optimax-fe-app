@@ -42,7 +42,7 @@
         <i class="fas fa-money-bill-wave"></i>
       </div>
       <div class="stat-content">
-        <div class="stat-value">₦{{ getTotalRevenue().toFixed(2) }}</div>
+        <div class="stat-value">₦{{ formatAmount(getTotalRevenue()) }}</div>
         <div class="stat-label">Total Revenue</div>
       </div>
     </div>
@@ -60,7 +60,7 @@
         <i class="fas fa-chart-line"></i>
       </div>
       <div class="stat-content">
-        <div class="stat-value">₦{{ todayRevenue.toFixed(2) }}</div>
+        <div class="stat-value">₦{{ formatAmount(todayRevenue) }}</div>
         <div class="stat-label">Today's Revenue</div>
       </div>
     </div>
@@ -90,14 +90,14 @@
         >
       </div>
 
-      <div class="status-filter">
+      <!-- <div class="status-filter">
         <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="status-select">
           <option value="">All Statuses</option>
           <option value="paid">Paid</option>
           <option value="completed">Completed</option>
           <option value="pending">Pending</option>
         </select>
-      </div>
+      </div> -->
 
       <div class="payment-filter">
         <select [(ngModel)]="paymentMethodFilter" (change)="applyFilters()" class="payment-select">
@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- NEW: Staff-Specific Filters Section -->
+  <!-- Staff-Specific Filters Section (Simplified) -->
   <div class="staff-filters-section">
     <div class="filter-group">
       <div class="role-filter">
@@ -130,15 +130,7 @@
         </select>
       </div>
       
-      <div class="staff-filter">
-        <label>Filter by Staff:</label>
-        <select [(ngModel)]="selectedStaffFilter" (change)="applyStaffFilter()" class="staff-select">
-          <option value="">All Staff</option>
-          <option *ngFor="let staff of availableStaff" [value]="staff.id">
-            {{ staff.name }} ({{ staff.role }})
-          </option>
-        </select>
-      </div>
+      <!-- Staff filter removed since we only have current user -->
       
       <div class="my-activities-filter">
         <label class="checkbox-label">
@@ -223,7 +215,7 @@
               <div class="items-list">
                 <span *ngFor="let item of order.items" class="item-tag">
                   {{ item.name }} x{{ item.qty }}
-                  <span class="item-price">₦{{ item.total.toFixed(2) }}</span>
+                  <span class="item-price">₦{{ formatAmount(item.total) }}</span>
                 </span>
               </div>
               <div *ngIf="order.note" class="order-note">
@@ -235,7 +227,7 @@
               </div>
             </td>
             
-            <!-- NEW: Staff Involved Column -->
+            <!-- Staff Involved Column -->
             <td class="staff-involved">
               <div class="order-staff-info">
                 <div *ngIf="order.createdBy" class="staff-badge waiter">
@@ -259,7 +251,7 @@
             <td class="order-status">
               <span [class]="'status-badge status-' + order.status.toLowerCase()" class="capitalize">
                 <i class="fas" [ngClass]="getStatusIcon(order.status)"></i>
-                {{ order.status }}
+                PAID
               </span>
             </td>
             <td class="payment-method">
@@ -269,16 +261,21 @@
               </span>
             </td>
             <td class="order-total">
-              <strong>₦{{ getOrderTotal(order).toFixed(2) }}</strong>
+              <strong>₦{{ formatAmount(getOrderTotal(order)) }}</strong>
             </td>
             <td class="order-actions">
               <div class="action-buttons">
+                <!-- Print Receipt Button -->
                 <button class="btn btn-sm btn-info" (click)="printOrder(order)" title="Print Receipt">
                   <i class="fas fa-print"></i>
                 </button>
+                
+                <!-- View Timeline Button -->
                 <button class="btn btn-sm btn-outline" (click)="showOrderTimeline(order)" title="View Timeline">
                   <i class="fas" [ngClass]="selectedOrderForTimeline === order ? 'fa-chevron-up' : 'fa-history'"></i>
                 </button>
+                
+                <!-- View Details Button - FIXED: This should open the details modal -->
                 <button class="btn btn-sm btn-success" (click)="viewOrderDetails(order)" title="View Details">
                   <i class="fas fa-eye"></i>
                 </button>
@@ -289,7 +286,7 @@
       </table>
     </div>
 
-    <!-- Order Timeline Section -->
+    <!-- Order Timeline Section (opens when timeline icon is clicked) -->
     <div *ngIf="selectedOrderForTimeline" class="timeline-section">
       <div class="timeline-header">
         <h4>
@@ -360,7 +357,6 @@
         Page {{ currentPage }} of {{ totalPages }} 
         • Showing {{ paginatedOrders.length }} of {{ filteredOrders.length }} orders
         <span *ngIf="selectedRoleFilter"> • Filtered by: {{ selectedRoleFilter }}</span>
-        <span *ngIf="selectedStaffFilter"> • Staff: {{ getStaffById(selectedStaffFilter)?.name || selectedStaffFilter }}</span>
         <span *ngIf="showOnlyMyActivities && currentUser"> • My Activities</span>
       </div>
 
@@ -375,29 +371,214 @@
       </div>
     </div>
   </div>
-  
-  <!-- Debug & Admin Section (Optional - can be removed in production) -->
-  <div class="debug-section" *ngIf="currentUser">
-    <div class="debug-actions">
-      <button class="btn btn-sm btn-outline" (click)="debugDataSources()">
-        <i class="fas fa-bug"></i>
-        Debug Data
-      </button>
-      <button class="btn btn-sm btn-outline" (click)="forceSyncWithCashier()">
-        <i class="fas fa-sync"></i>
-        Sync with Cashier
-      </button>
-      <button class="btn btn-sm btn-outline" (click)="addTestStaff()">
-        <i class="fas fa-user-plus"></i>
-        Add Test Staff
-      </button>
+</div>
+
+<!-- View Details Modal (Redesigned and Organized) -->
+<div *ngIf="showDetailsModal && selectedOrderForDetails" class="modal-overlay">
+  <div class="modal-content-details">
+    <div class="modal-header-details">
+      <div class="header-left">
+        <h3><i class="fas fa-receipt"></i> Order Details</h3>
+        <div class="order-number-details">#{{ selectedOrderForDetails.orderNo }}</div>
+      </div>
+      <button class="close-button-details" (click)="closeDetailsModal()">×</button>
     </div>
-    <div class="debug-info">
-      <small>
-        Logged in as: <strong>{{ currentUser.name }}</strong> ({{ currentUser.role }}) 
-        • Staff in system: {{ availableStaff.length }}
-        • Orders loaded: {{ orders.length }}
-      </small>
+    
+    <div class="modal-body-details">
+      <!-- Order Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="summary-icon">
+            <i class="fas fa-table"></i>
+          </div>
+          <div class="summary-content">
+            <div class="summary-label">Table</div>
+            <div class="summary-value">{{ selectedOrderForDetails.table }}</div>
+          </div>
+        </div>
+        
+        <div class="summary-card">
+          <div class="summary-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="summary-content">
+            <div class="summary-label">Date & Time</div>
+            <div class="summary-value">{{ formatDateForDisplay(selectedOrderForDetails.date || '') }}</div>
+          </div>
+        </div>
+        
+        <div class="summary-card">
+          <div class="summary-icon">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="summary-content">
+            <div class="summary-label">Payment Method</div>
+            <div class="summary-value">{{ selectedOrderForDetails.payment || 'Cash' }}</div>
+          </div>
+        </div>
+        
+        <div class="summary-card">
+          <div class="summary-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="summary-content">
+            <div class="summary-label">Status</div>
+            <div class="summary-value status-value paid">PAID</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Items Section -->
+      <div class="section-container">
+        <div class="section-header">
+          <i class="fas fa-utensils"></i>
+          <h4>Order Items ({{ selectedOrderForDetails.items.length }})</h4>
+        </div>
+        <div class="items-container">
+          <table class="items-table-details">
+            <thead>
+              <tr>
+                <th class="item-number">#</th>
+                <th class="item-name">Item Name</th>
+                <th class="item-qty">Qty</th>
+                <th class="item-price">Unit Price</th>
+                <th class="item-total">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of selectedOrderForDetails.items; let i = index" class="item-row">
+                <td class="item-number">{{ i + 1 }}</td>
+                <td class="item-name">{{ item.name }}</td>
+                <td class="item-qty">{{ item.qty }}</td>
+                <td class="item-price">₦{{ formatAmount(item.price) }}</td>
+                <td class="item-total">₦{{ formatAmount(item.total) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Two Column Layout for Staff Info and Order Summary -->
+      <div class="two-column-section">
+        <!-- Left Column: Staff Information -->
+        <div class="column">
+          <div class="section-container">
+            <div class="section-header">
+              <i class="fas fa-users"></i>
+              <h4>Staff Information</h4>
+            </div>
+            <div class="staff-list-details">
+              <div *ngIf="selectedOrderForDetails.createdBy" class="staff-item-details">
+                <div class="staff-icon waiter-icon">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="staff-info">
+                  <div class="staff-role">Waiter</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.createdBy }}</div>
+                </div>
+              </div>
+              
+              <div *ngIf="selectedOrderForDetails.preparedBy" class="staff-item-details">
+                <div class="staff-icon chef-icon">
+                  <i class="fas fa-utensils"></i>
+                </div>
+                <div class="staff-info">
+                  <div class="staff-role">Chef</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.preparedBy }}</div>
+                </div>
+              </div>
+              
+              <div *ngIf="selectedOrderForDetails.paidBy" class="staff-item-details">
+                <div class="staff-icon cashier-icon">
+                  <i class="fas fa-cash-register"></i>
+                </div>
+                <div class="staff-info">
+                  <div class="staff-role">Cashier</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.paidBy }}</div>
+                </div>
+              </div>
+              
+              <div *ngIf="!selectedOrderForDetails.createdBy && !selectedOrderForDetails.preparedBy && !selectedOrderForDetails.paidBy" 
+                   class="no-staff-details">
+                <i class="fas fa-info-circle"></i>
+                <span>No staff information available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Column: Order Summary -->
+        <div class="column">
+          <div class="section-container">
+            <div class="section-header">
+              <i class="fas fa-calculator"></i>
+              <h4>Order Summary</h4>
+            </div>
+            <div class="summary-details">
+              <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails)) }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Tax (5%):</span>
+                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails) * 0.05) }}</span>
+              </div>
+              <div class="summary-row grand-total-row">
+                <span>GRAND TOTAL:</span>
+                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails) * 1.05) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Notes Section -->
+      <div *ngIf="selectedOrderForDetails.note" class="section-container notes-container">
+        <div class="section-header">
+          <i class="fas fa-sticky-note"></i>
+          <h4>Order Notes</h4>
+        </div>
+        <div class="notes-content">
+          <p>{{ selectedOrderForDetails.note }}</p>
+        </div>
+      </div>
+
+      <!-- Payment & System Information -->
+      <div class="section-container">
+        <div class="section-header">
+          <i class="fas fa-info-circle"></i>
+          <h4>Additional Information</h4>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Payment Status:</div>
+            <div class="info-value status-value paid">PAID</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Order Source:</div>
+            <div class="info-value">{{ selectedOrderForDetails.backendId ? 'Backend System' : 'Local System (Cashier)' }}</div>
+          </div>
+          <div *ngIf="selectedOrderForDetails.paidAt" class="info-item">
+            <div class="info-label">Paid At:</div>
+            <div class="info-value">{{ formatDateForDisplay(selectedOrderForDetails.paidAt) }}</div>
+          </div>
+          <div *ngIf="selectedOrderForDetails.backendId" class="info-item">
+            <div class="info-label">Backend ID:</div>
+            <div class="info-value">{{ selectedOrderForDetails.backendId }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer-details">
+      <button class="btn btn-secondary" (click)="closeDetailsModal()">
+        <i class="fas fa-times"></i>
+        Close
+      </button>
+      <button class="btn btn-primary" (click)="printOrder(selectedOrderForDetails)">
+        <i class="fas fa-print"></i>
+        Print Receipt
+      </button>
     </div>
   </div>
 </div>

@@ -778,9 +778,9 @@ export class StoreOrderService {
     console.error('Original paymentId was:', orderData.paymentId);
   }
 
-  if (!sanitized.isOnline) {
-    console.warn('⚠️ WARNING: isOnline flag is not set!');
-  }
+  // if (!sanitized.isOnline) {
+  //   console.warn('⚠️ WARNING: isOnline flag is not set!');
+  // }
 
   return sanitized;
 }
