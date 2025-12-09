@@ -2337,23 +2337,23 @@ async updateProduct() {
   const userName = sessionStorage.getItem('username');
 
   // Check price validation before proceeding
-  this.checkPriceValidation();
+  // this.checkPriceValidation();
   
-  const costPrice = this.productForm.get('costPrice')?.value;
-  const sellingPrice = this.productForm.get('sellingPrice')?.value;
+  // const costPrice = this.productForm.get('costPrice')?.value;
+  // const sellingPrice = this.productForm.get('sellingPrice')?.value;
   
   // Validate that cost price is not greater than selling price
-  if (costPrice && sellingPrice && costPrice > sellingPrice) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Price Validation Failed',
-      detail: 'Cannot update: Cost price is higher than selling price. Please adjust prices or add a discount.',
-      key: 'tl',
-      life: 5000,
-    });
-    this.loading = false;
-    return;
-  }
+  // if (costPrice && sellingPrice && costPrice > sellingPrice) {
+  //   this.messageService.add({
+  //     severity: 'error',
+  //     summary: 'Price Validation Failed',
+  //     detail: 'Cannot update: Cost price is higher than selling price. Please adjust prices or add a discount.',
+  //     key: 'tl',
+  //     life: 5000,
+  //   });
+  //   this.loading = false;
+  //   return;
+  // }
 
   // Only validate if required fields are missing
   if (this.productForm.invalid) {
@@ -2442,22 +2442,24 @@ async updateProduct() {
 
     if (response) {
       // Show success message with price info if applicable
-      let successMessage = 'Product updated successfully.';
-      if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
-        successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
-      } else if (costPrice && sellingPrice && costPrice === sellingPrice) {
-        successMessage += ' Note: You are selling at cost price. Consider adding a margin.';
-      }
+      // let successMessage = 'Product updated successfully.';
+      // if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+      //   successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+      // } else if (costPrice && sellingPrice && costPrice === sellingPrice) {
+      //   successMessage += ' Note: You are selling at cost price. Consider adding a margin.';
+      // }
       
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: successMessage,
-        key: 'tl',
-        life: 5000,
-      });
+      // this.messageService.add({
+      //   severity: 'success',
+      //   summary: 'Success',
+      //   detail: successMessage,
+      //   key: 'tl',
+      //   life: 5000,
+      // });
 
       // Close the modal and refresh data
+          this.metadataService.fetchMetaData()
+
       this.triggerClose();
     } else {
       this.messageService.add({
