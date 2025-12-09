@@ -18,6 +18,7 @@ import { environment } from 'src/environments/environment.prod';
 import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions, isSuperUser } from 'projects/POS/src/app/shared/pipes/helper';
 import { SubscriptionService } from 'src/app/ui/marketplace/service/subscription.service';
 import { MetadataService } from 'projects/POS/src/app/ui/service/metadata.service';
+import { TenantService } from 'src/app/ui/tenants/service/tenant.service';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -78,7 +79,8 @@ export class LoginComponent implements OnInit {
     private route: ActivatedRoute,
     private randomTokenService: RandomTokenService,
     private subscriptionService: SubscriptionService,
-    private metadataService: MetadataService
+    private metadataService: MetadataService,
+    private tenantService: TenantService
   ){}
 
   ngOnInit(): void {
@@ -290,6 +292,8 @@ async posLoginAction(): Promise<void> {
     this.getUserBranchInfo();
     this.loadPlanLimits()
     this.metadataService.fetchMetaData()
+    this.tenantService.loadFullTenants();
+
 
 
 

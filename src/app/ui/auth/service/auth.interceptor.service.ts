@@ -28,11 +28,11 @@ export class AuthInterceptor implements HttpInterceptor {
 
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    let tenantId = 'optimax'; 
+    let tenantId = 'farmaco'; 
 
     if (!isLocalhost) {
       const parts = host.split('.');
-      tenantId = parts[0] || 'optimax';
+      tenantId = parts[0] || 'farmaco';
     }
 
     const defaultTenantEndpoints = ['admin/login'];
@@ -43,7 +43,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
     let updatedRequest = request.clone({
       setHeaders: {
-        'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
+        'X-Tenant-ID': isDefaultTenantEndpoint ? 'farmaco' : tenantId,
       },
     });
 
