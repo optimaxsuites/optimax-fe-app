@@ -255,6 +255,7 @@ import { TourGuideComponent } from './ui/onboarding/tour-guide';
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { EstimatedDeliveryPipe } from 'projects/settings/src/app/ui/view/pos/delvery/estimated-delivery.pipe';
 import { ModuleComponent } from './ui/marketplace/view/module/module.component';
+import { TenantInit } from './ui/tenants/service/tenant-init.service';
 
 
 const dbConfig: DBConfig = {
@@ -587,6 +588,12 @@ const dbConfig: DBConfig = {
           provide: APP_INITIALIZER,
           useFactory: (appInitService: AppInitService) => () => appInitService.init(),
           deps: [AppInitService],
+          multi: true
+        },
+     {
+          provide: APP_INITIALIZER,
+          useFactory: (tenantInitService: TenantInit) => () => tenantInitService.init(),
+          deps: [TenantInit],
           multi: true
         },
     JwtHelperService,

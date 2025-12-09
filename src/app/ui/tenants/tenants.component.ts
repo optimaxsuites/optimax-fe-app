@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TenantService } from './service/tenant.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-tenants',
@@ -11,10 +12,13 @@ export class TenantsComponent {
 tenants: any = []
 selectedTenant: any = null
 openDetailsModal: boolean = false
- tenants$ = this.tenantService.tenants$;
-loading$ = this.tenantService.loading$;
+tenants$: Observable<any>;
+loading$: Observable<boolean>;
 
-constructor(private tenantService: TenantService, private confirmationService: ConfirmationService, private messageService: MessageService){}
+constructor(private tenantService: TenantService, private confirmationService: ConfirmationService, private messageService: MessageService){
+    this.tenants$ = this.tenantService.tenants$;
+  this.loading$ = this.tenantService.loading$;
+}
 
 ngOnInit(){
 
