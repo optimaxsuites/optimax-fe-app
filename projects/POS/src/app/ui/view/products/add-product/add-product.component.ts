@@ -468,7 +468,7 @@ discountTypes: any[] = [
     this.setBranchInformation();
 
     // Initialize product images
-    this.initializeProductImage();
+    this.initializeProductImages();
 
     console.log('Form after initialization:', this.productForm.value);
   }
@@ -1166,59 +1166,76 @@ checkPriceValidation(): void {
     }
   }
 
-private initializeProductImage() {
-    console.log('Initializing product image for activeItem:', this.activeItem);
+private initializeProductImages() {
+  console.log('🖼️ === STARTING IMAGE INITIALIZATION ===');
+  
+  // Reset
+  this.productImages = [];
+  this.mainProductImage = '';
+
+  // Check if we have product images in the expected format
+  if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages)) {
+    console.log('✅ Found product images array:', this.activeItem.productImages);
     
-    // Check if productImages array exists and has items
-    if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-        const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
-        console.log('Found last image:', lastImage);
+    // Process each image
+    this.activeItem.productImages.forEach((imageItem: any, index: number) => {
+      try {
+        const imageUrl = this.imageCacheService.getImageUrlFromDTO(imageItem);
+        console.log(`🖼️ Image ${index} URL:`, imageUrl);
         
-        // If it's already a complete URL, use it directly
-        if (typeof lastImage === 'string' && (lastImage.startsWith('http') || lastImage.startsWith('data:'))) {
-            this.productImage = lastImage;
-            console.log('Using direct URL:', this.productImage);
-            return;
+        if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
+          const imageData = {
+            file: null,
+            url: imageUrl
+          };
+          
+          this.productImages.push(imageData);
+          
+          // Set the first image as main if no main image is set
+          if (index === 0 && !this.mainProductImage) {
+            this.mainProductImage = imageUrl;
+            console.log('✅ Set first image as main image:', imageUrl);
+          }
+        } else {
+          console.warn(`⚠️ Skipped invalid image ${index}:`, imageItem);
         }
-        
-        // If it's an object with imageUrl property
-        if (lastImage?.imageUrl) {
-            this.productImage = lastImage.imageUrl;
-            console.log('Using imageUrl property:', this.productImage);
-            return;
-        }
-        
-        // If lastImage is an object, try to use it directly without service call
-        if (typeof lastImage === 'object' && lastImage !== null) {
-            // Check if we can construct a data URL or use base64
-            if (lastImage.data || lastImage.base64) {
-                this.productImage = `data:image/jpeg;base64,${lastImage.data || lastImage.base64}`;
-                return;
-            }
-            
-            // For now, skip the service call that's causing 401 and use placeholder
-            console.log('Skipping service call due to auth issues, using placeholder');
-            this.productImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-            return;
-        }
-    }
+      } catch (error) {
+        console.error(`❌ Error processing image ${index}:`, error);
+      }
+    });
+  } else {
+    console.log('❌ No valid product images found in activeItem');
     
-    // Try direct properties on activeItem
+    // Try alternative image sources
     if (this.activeItem?.imageUrl) {
-        this.productImage = this.activeItem.imageUrl;
-        console.log('Using activeItem.imageUrl:', this.productImage);
-        return;
+      console.log('🔄 Trying imageUrl property:', this.activeItem.imageUrl);
+      const imageData = {
+        file: null,
+        url: this.activeItem.imageUrl
+      };
+      this.productImages.push(imageData);
+      this.mainProductImage = this.activeItem.imageUrl;
     }
-    
-    if (this.activeItem?.image) {
-        this.productImage = this.activeItem.image;
-        console.log('Using activeItem.image:', this.productImage);
-        return;
-    }
-    
-    // Default fallback
-    this.productImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-    console.log('Using fallback image');
+  }
+
+  // If no images were processed successfully, use placeholder
+  if (this.productImages.length === 0) {
+    console.log('⚠️ No valid images processed, using placeholder');
+    const placeholderUrl = this.getPlaceholderImage();
+    this.mainProductImage = placeholderUrl;
+    this.productImages.push({
+      file: null,
+      url: placeholderUrl
+    });
+  }
+
+  console.log('📊 FINAL STATE:', {
+    mainProductImage: this.mainProductImage,
+    productImagesCount: this.productImages.length,
+    productImages: this.productImages.map(img => img.url)
+  });
+  
+  this.updateImageFormValidation();
 }
 
  
@@ -2300,10 +2317,10 @@ async updateProduct() {
   }
 
   const formValues = this.productForm.value;
-  const hasNewImage = this.productImages.length > 0
+  const hasNewImage = this.productImages.length > this.activeItem.productImages.length
 
   console.log('Form values:', formValues);
-  console.log('Has new image:', hasNewImage);
+  console.log('Has new image:', hasNewImage, this.productImages);
 
   // Build the product object with proper fallbacks
   const product = {
@@ -2350,13 +2367,9 @@ async updateProduct() {
 			  formData.append("files", image.file);
 			}
 		  });
-        // formData.append("files", formValues.image);
-        // formData.append("replaceImages", "true");
-        // formData.append("clearExistingImages", "true");
     } else if (this.activeItem.productImages && this.activeItem.productImages.length > 0) {
-        // Keep the existing images if no new image is provided
         const existingImages = this.activeItem.productImages.map((img: any) => img.id);
-        // formData.append("existingImageIds", JSON.stringify(existingImages));
+      
     }
 
 
