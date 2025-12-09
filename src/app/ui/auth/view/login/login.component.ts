@@ -85,10 +85,13 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authenticationService.isLoggedIn()) {
+
       this.authenticationService.logout();
       this.loggedOutMessage1 = 'You have been logged out. Please log in again';
       this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
     }
+
+
   }
 
   // Method to toggle the login mode

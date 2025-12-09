@@ -20,7 +20,7 @@ export class AuthInterceptor implements HttpInterceptor {
      const locationIqUrl = 'https://us1.locationiq.com/';
 
         // If the request is going to LocationIQ, don't attach auth≈
-        if (request.url.startsWith(locationIqUrl)) {
+        if (request.url.startsWith(locationIqUrl) ) {
           return next.handle(request);
         }
 
@@ -28,11 +28,11 @@ export class AuthInterceptor implements HttpInterceptor {
 
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    let tenantId = 'farmaco'; 
+    let tenantId = 'optimax'; 
 
     if (!isLocalhost) {
       const parts = host.split('.');
-      tenantId = parts[0] || 'farmaco';
+      tenantId = parts[0] || 'optimax';
     }
 
     const defaultTenantEndpoints = ['admin/login'];
@@ -43,7 +43,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
     let updatedRequest = request.clone({
       setHeaders: {
-        'X-Tenant-ID': isDefaultTenantEndpoint ? 'farmaco' : tenantId,
+        'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
       },
     });
 

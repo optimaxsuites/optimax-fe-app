@@ -91,6 +91,7 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.checkEligibility();
     this.checkOnboardingStatus();
+    // this.tenantService.loadFullTenants(); 
 
   }
 

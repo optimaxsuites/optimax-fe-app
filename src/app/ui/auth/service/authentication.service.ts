@@ -32,6 +32,7 @@ export class AuthenticationService {
   }
   
   logout(): void {
+
     sessionStorage.removeItem("username");
     sessionStorage.removeItem("token");
 
@@ -54,7 +55,9 @@ export class AuthenticationService {
   }
 
   isLoggedIn(): boolean {
-    return !!sessionStorage.getItem('userid');
+   const token = sessionStorage.getItem('Token');
+   console.log(token)
+  return token !== null && !this.jwtHelper.isTokenExpired(token);
   }
 
 
