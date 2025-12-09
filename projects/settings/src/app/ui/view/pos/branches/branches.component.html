@@ -142,7 +142,7 @@
                 [disabled]="sameAsPhone"
               />
             } @else {
-            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.whatsappPhoneNumber }}</p>
+            <p class="w-full border border-gray-300 rounded-md p-2">{{ branch.whatsappPhoneNumber || "N/A" }}</p>
             }
           </div>
 
