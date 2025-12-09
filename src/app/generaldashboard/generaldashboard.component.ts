@@ -26,7 +26,21 @@ export class GeneraldashboardComponent implements OnInit {
     branchName: '',
     phoneNumber: '',
     companyName: '',
-    accountId: ''
+    accountId: '',
+    address: '',
+    city: '',
+    country: '',
+    state: '',
+    postalCode: '',
+    bio: '',
+    currency: '',
+    language: '',
+    timeZone: '',
+    username: '',
+    gender: '',
+    profileImage: '',
+    clientType: '',
+    domain: ''
   };
   
   userId: number | null = null;
@@ -135,12 +149,107 @@ export class GeneraldashboardComponent implements OnInit {
   }
 
   /**
-   * Extract user information from sessionStorage
+   * Extract user information from sessionStorage using userprimaryinfodata
    */
   loadUserInfoFromSessionStorage() {
     console.log('Loading user info from sessionStorage...');
     
-    // Check all possible storage locations
+    // First, check for userprimaryinfodata as requested by supervisor
+    const userPrimaryInfoDataStr = sessionStorage.getItem('userprimaryinfodata');
+    
+    console.log('userprimaryinfodata from session:', userPrimaryInfoDataStr);
+    
+    // Try to get data from userprimaryinfodata first
+    if (userPrimaryInfoDataStr) {
+      try {
+        const userPrimaryData = JSON.parse(userPrimaryInfoDataStr);
+        console.log('Parsed userprimaryinfodata:', userPrimaryData);
+        
+        // Extract data based on the structure you provided
+        this.userInfo = {
+          // Personal Info
+          id: userPrimaryData.id || 1,
+          fullname: userPrimaryData.fullname || '',
+          name: userPrimaryData.fullname || '',
+          email: userPrimaryData.email || '',
+          phoneNumber: userPrimaryData.phoneNumber || '',
+          username: userPrimaryData.username || userPrimaryData.user?.username || '',
+          gender: userPrimaryData.gender || '',
+          profileImage: userPrimaryData.profileImage || '',
+          
+          // Company Info
+          companyName: userPrimaryData.companyName || '',
+          accountId: userPrimaryData.accountId || '',
+          clientType: userPrimaryData.clientType || '',
+          industry: userPrimaryData.industry || '',
+          
+          // Location Info
+          address: userPrimaryData.address || '',
+          city: userPrimaryData.city || '',
+          state: userPrimaryData.state || '',
+          country: userPrimaryData.country || '',
+          postalCode: userPrimaryData.postalCode || '',
+          
+          // Additional Info
+          bio: userPrimaryData.bio || '',
+          currency: userPrimaryData.currency || 'NGN',
+          language: userPrimaryData.language || 'English',
+          timeZone: userPrimaryData.timeZone || 'Africa/Lagos',
+          domain: userPrimaryData.domain || '',
+          
+          // Derived fields
+          employeeId: userPrimaryData.accountId ? `EMP-${userPrimaryData.accountId}` : 
+                     (userPrimaryData.id ? `EMP-${userPrimaryData.id}` : 'N/A'),
+          role: this.extractUserRole(userPrimaryData),
+          roles: this.extractUserRoles(userPrimaryData),
+          department: this.getDepartmentFromUserData(userPrimaryData),
+          bankName: 'Standard Bank', // Default or from user data if available
+          daysWorked: this.calculateDaysWorked(),
+          branchId: null,
+          branchName: ''
+        };
+        
+        this.userId = this.userInfo.id;
+        
+      } catch (error) {
+        console.error('Error parsing userprimaryinfodata:', error);
+        // Fallback to existing method if userprimaryinfodata fails
+        this.loadFromOtherSessionSources();
+      }
+    } else {
+      console.warn('userprimaryinfodata not found in session storage');
+      // Fallback to existing method
+      this.loadFromOtherSessionSources();
+    }
+
+    // Load branch info if available
+    const branchInfoStr = sessionStorage.getItem('userBranchInfoRegData');
+    if (branchInfoStr) {
+      try {
+        const branchInfo = JSON.parse(branchInfoStr);
+        this.userInfo.branchId = branchInfo.branchId;
+        this.userInfo.branchName = branchInfo.branchName;
+        if (branchInfo.department && !this.userInfo.department) {
+          this.userInfo.department = branchInfo.department;
+        }
+      } catch (error) {
+        console.error('Error parsing branch info:', error);
+      }
+    }
+
+    console.log('Final user info loaded from userprimaryinfodata:', this.userInfo);
+    console.log('User ID:', this.userId);
+    console.log('User Fullname:', this.userInfo.fullname);
+    console.log('User Email:', this.userInfo.email);
+    console.log('User Company:', this.userInfo.companyName);
+  }
+
+  /**
+   * Fallback method to load from other session storage sources
+   */
+  loadFromOtherSessionSources() {
+    console.log('Falling back to other session storage sources...');
+    
     const userRegDataStr = sessionStorage.getItem('userRegData');
     const userInfoStr = sessionStorage.getItem('userInfo');
     const fullnameStr = sessionStorage.getItem('fullname');
@@ -148,18 +257,10 @@ export class GeneraldashboardComponent implements OnInit {
     const userIdStr = sessionStorage.getItem('userid');
     const roleStr = sessionStorage.getItem('role');
     
-    console.log('userRegData from session:', userRegDataStr);
-    console.log('userInfo from session:', userInfoStr);
-    console.log('fullname from session:', fullnameStr);
-    console.log('email from session:', emailStr);
-    
-    // Try to get data from userRegData first (your main API response)
+    // Try to get data from userRegData first
     if (userRegDataStr) {
       try {
         const userRegData = JSON.parse(userRegDataStr);
-        console.log('Parsed userRegData:', userRegData);
-        
-        // Extract data based on your API response structure
         this.userInfo = {
           name: userRegData.fullname || userRegData.name || '',
           fullname: userRegData.fullname || '',
@@ -225,31 +326,67 @@ export class GeneraldashboardComponent implements OnInit {
         this.userInfo.roles = [roleStr];
       }
     }
+  }
 
-    // Load branch info if available
-    const branchInfoStr = sessionStorage.getItem('userBranchInfoRegData');
-    if (branchInfoStr) {
-      try {
-        const branchInfo = JSON.parse(branchInfoStr);
-        this.userInfo.branchId = branchInfo.branchId;
-        this.userInfo.branchName = branchInfo.branchName;
-        if (branchInfo.department && !this.userInfo.department) {
-          this.userInfo.department = branchInfo.department;
-        }
-      } catch (error) {
-        console.error('Error parsing branch info:', error);
-      }
+  /**
+   * Extract user role from primary info data
+   */
+  private extractUserRole(userData: any): string {
+    // Try to get role from different possible locations
+    const roleSources = [
+      userData.role,
+      userData.user?.role,
+      sessionStorage.getItem('role'),
+      'User' // Default
+    ];
+    
+    for (const source of roleSources) {
+      if (source) return source;
     }
+    
+    return 'User';
+  }
 
-    // Final fallback for department
-    if (!this.userInfo.department) {
-      this.userInfo.department = this.getDepartmentFromRole();
+  /**
+   * Extract user roles from primary info data
+   */
+  private extractUserRoles(userData: any): string[] {
+    if (userData.roles && Array.isArray(userData.roles)) {
+      return userData.roles;
     }
+    
+    if (userData.role) {
+      return [userData.role];
+    }
+    
+    const roleFromSession = sessionStorage.getItem('role');
+    if (roleFromSession) {
+      return [roleFromSession];
+    }
+    
+    return [];
+  }
 
-    console.log('Final user info loaded:', this.userInfo);
-    console.log('User ID:', this.userId);
-    console.log('User Name:', this.userInfo.name);
-    console.log('User Fullname:', this.userInfo.fullname);
+  /**
+   * Get department from user data
+   */
+  private getDepartmentFromUserData(userData: any): string {
+    // Use industry to determine department
+    const industry = (userData.industry || '').toLowerCase();
+    
+    if (industry.includes('pharmacy')) return 'Pharmacy';
+    if (industry.includes('food') || industry.includes('beverage')) return 'Food & Beverage';
+    if (industry.includes('retail')) return 'Retail';
+    if (industry.includes('hospital')) return 'Healthcare';
+    if (industry.includes('technology')) return 'Technology';
+    if (industry.includes('finance')) return 'Finance';
+    
+    // Use client type
+    const clientType = (userData.clientType || '').toLowerCase();
+    if (clientType.includes('company')) return 'Corporate';
+    if (clientType.includes('individual')) return 'Individual';
+    
+    return 'General Operations';
   }
 
   /**
@@ -368,8 +505,6 @@ export class GeneraldashboardComponent implements OnInit {
     this.showNotifications = !this.showNotifications;
     if (this.showNotifications) {
       this.unreadNotifications = 0;
-      // Optional: Call debug to see what's in storage
-      this.debugSessionStorage();
     }
   }
 
