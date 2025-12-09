@@ -18,6 +18,7 @@ interface BranchDTO {
   isEditing?: boolean;
   latitude: number | null,
   longitude: number | null
+  whatsappPhoneNumber: string
 
 }
 
@@ -36,9 +37,11 @@ export class BranchesComponent implements OnInit {
     address: '',
     phoneNo: '',
     latitude: null,
-    longitude: null
+    longitude: null,
+    whatsappPhoneNumber: ""
   
   };
+  sameAsPhone: boolean = false;
   mapVisible = false;
   map!: L.Map;
   showAddForm: boolean = false;
@@ -152,8 +155,8 @@ loadMap() {
       address: '',
       phoneNo: '',
       latitude: null,
-      longitude: null
-
+      longitude: null,
+      whatsappPhoneNumber: ''
     };
   }
 
