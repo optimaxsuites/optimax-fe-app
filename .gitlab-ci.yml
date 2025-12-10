@@ -50,6 +50,7 @@ deploy_to_vercel_prod:
   image: node:20
   rules:
     - if: '$CI_COMMIT_BRANCH == "prod"'
+  environment: production
   script:
     - npm install -g vercel
     - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_PROD_PROJECT
@@ -59,6 +60,7 @@ deploy_to_vercel_staging:
   image: node:20
   rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
+  environment: production
   script:
     - npm install -g vercel
     - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_STAGING_PROJECT
