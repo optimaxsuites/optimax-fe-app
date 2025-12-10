@@ -4,6 +4,8 @@ import { Observable, throwError, from, of } from 'rxjs';
 import { catchError, switchMap, tap, map } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
 import { PaystackService, PaystackPaymentData } from './paystack.service';
+import { Order as ComponentOrder } from "../models/interface";
+
 export interface PaymentKey {
   id: number;
   publicKey: string;
@@ -56,11 +58,9 @@ export interface OrderPayment {
 }
 
 export interface Discount {
-
 }
 
 export interface Tax {
-
 }
 
 export interface DeliveryInfo {
@@ -77,47 +77,17 @@ export interface OrderDTO {
   orderNumber: string;
   orderStatus: string;
   updatedAt: string;
-  createdDate: string;
+  createdDate: any; // Changed to 'any' to handle both String and Array input
   createdDateArray?: number[]; 
   cashierId: number;
   totalAmount: number;
-  isOnline?: boolean; // From API
+  isOnline?: boolean; 
   customer: Customer;
   salesperson?: Salesperson;
   branch: Branch;
   orderItem: OrderItem[];
   diveryStatus?: string;
 }
-
-import { Order as ComponentOrder } from "../models/interface";
-export interface ServiceOrder {
-  id: number;
-  orderNumber: string;
-  orderStatus: string;
-  updatedAt: string;
-  createdDate: number[]; // Converted date array
-  totalAmount: number;
-  deliveryStatus: string;
-  payment: OrderPayment;
-  amountTendered: number;
-  status: string;
-  salesperson: Salesperson | null;
-  branch: Branch | null;
-  orderItem: OrderItem[];
-  customer: Customer | null;
-  deliveryFee: number;
-  estimatedReadyTime: string;
-  estimatedDeliveryTime: string;
-  customerEmail: string;
-  deliveryInfoId: number | null;
-  deliverTypeId: number | null;
-  discount: Discount | null;
-  tax: Tax | null;
-  isRefunded: boolean;
-  deliveryInfo: DeliveryInfo | null;
-  isOnline?: boolean;
-}
-
 
 export interface StoreOrderPOST {
   id: number;
@@ -157,6 +127,13 @@ export interface StoreOrderItemPOST {
   providedIn: 'root'
 })
 export class StoreOrderService {
+  private paymentKeysCache: PaymentKey[] | null = null;
+
+  constructor(
+    private http: HttpClient,
+    private paystackService: PaystackService
+  ) {}
+
   getAllOrdersAsOrderType(filters?: any): Observable<ComponentOrder[]> {
     const params = this.buildQueryParams(filters || {});
     const endpoint = '/x/api/v2/pos/orders';
@@ -178,12 +155,6 @@ export class StoreOrderService {
       catchError(this.handleError)
     );
   }
-  private paymentKeysCache: PaymentKey[] | null = null;
-
-  constructor(
-    private http: HttpClient,
-    private paystackService: PaystackService
-  ) {}
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
@@ -194,7 +165,6 @@ export class StoreOrderService {
       'Content-Type': 'application/json',
     });
 
-    // Add tenant ID if available
     const tenantId = localStorage.getItem('tenantId');
     if (tenantId) {
       return headers.set('X-Tenant-ID', tenantId);
@@ -230,7 +200,7 @@ export class StoreOrderService {
   getEStoreOrders(filters?: any): Observable<ComponentOrder[]> {
     const params = this.buildQueryParams(filters || {});
     
-    const branchId = filters?.branchId || 1; // Default branch
+    const branchId = filters?.branchId || 1;
     const endpoint = `/x/api/v2/pos/orders/get/order/from/eStore/${branchId}`;
     
     console.log(` Fetching eStore orders from: ${endpoint}`, params);
@@ -247,7 +217,7 @@ export class StoreOrderService {
       }),
       map((orderDTOs: OrderDTO[]) => {
         const orders = orderDTOs.map(orderDTO => {
-          orderDTO.isOnline = true; // Explicitly mark as online
+          orderDTO.isOnline = true;
           return this.convertOrderDTOToComponentOrder(orderDTO);
         });
         console.log(` Converted ${orders.length} eStore Order DTOs to ComponentOrder interface`);
@@ -273,7 +243,6 @@ export class StoreOrderService {
       }
     ).pipe(
       map((orders: OrderDTO[]) => {
-        // Filter for POS orders (isOnline = false or undefined)
         const posOrders = orders.filter(order => !order.isOnline);
         console.log(`✅ Retrieved ${posOrders.length} POS orders (filtered from ${orders.length} total)`);
         
@@ -303,6 +272,7 @@ export class StoreOrderService {
       catchError(this.handleError)
     );
   }
+
   getOrdersByBranch(branchId: number, filters?: any): Observable<OrderDTO[]> {
     const params = this.buildQueryParams(filters || {});
     const endpoint = `/x/api/v2/pos/orders/get/by/branch/id/${branchId}`;
@@ -319,6 +289,7 @@ export class StoreOrderService {
       catchError(this.handleError)
     );
   }
+
   getOrderById(orderId: number): Observable<OrderDTO> {
     const endpoint = `/x/api/v2/pos/orders/${orderId}`;
     console.log(`🔍 Fetching order ${orderId} from: ${endpoint}`);
@@ -330,6 +301,7 @@ export class StoreOrderService {
       catchError(this.handleError)
     );
   }
+
   getOrdersByOrderNumber(orderNumber: string): Observable<OrderDTO[]> {
     const endpoint = `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${orderNumber}`;
     
@@ -343,9 +315,7 @@ export class StoreOrderService {
     );
   }
 
-  // ========== PAYMENT KEYS METHODS ==========
   getPaymentKeys(): Observable<PaymentKey[]> {
-    // Return cached keys if available
     if (this.paymentKeysCache) {
       return of(this.paymentKeysCache);
     }
@@ -359,11 +329,10 @@ export class StoreOrderService {
     ).pipe(
       tap((keys) => {
         console.log('✅ Payment keys fetched successfully:', keys);
-        this.paymentKeysCache = keys; // Cache the results
+        this.paymentKeysCache = keys;
       }),
       catchError((error) => {
         console.error('❌ Failed to fetch payment keys:', error);
-        // Return empty array as fallback
         return of([]);
       })
     );
@@ -372,7 +341,6 @@ export class StoreOrderService {
   getPublicKeyForBranch(branchId: number = 1): Observable<string> {
     return this.getPaymentKeys().pipe(
       map((keys: PaymentKey[]) => {
-        // Find key for specific branch or use first available key
         const key = keys.find(k => k.branchId === branchId) || keys[0];
         
         if (!key) {
@@ -389,21 +357,18 @@ export class StoreOrderService {
     );
   }
 
-  // ========== PAYSTACK METHODS ==========
   processPaystackPayment(
     email: string,
-    amount: number, // This should be in kobo already
+    amount: number,
     orderNumber: string
   ): Observable<any> {
-    // First get the public key, then process payment
     return this.getPublicKeyForBranch().pipe(
       switchMap((publicKey: string) => {
-        // Set the public key in Paystack service
         this.paystackService.setPublicKey(publicKey);
 
         const paymentData: PaystackPaymentData = {
           email: email,
-          amount: amount, // Already in kobo from component
+          amount: amount,
           reference: this.paystackService.generateReference(),
           metadata: {
             custom_fields: [
@@ -432,7 +397,6 @@ export class StoreOrderService {
     );
   }
 
-  // ========== ORDER CREATION METHODS ==========
   createOrderWithPayment(
     orderData: StoreOrderPOST,
     paymentMethod: string,
@@ -443,7 +407,6 @@ export class StoreOrderService {
     console.log('Payment method:', paymentMethod);
     console.log('Payment reference:', paymentReference);
     
-    // Ensure the base order object always has a deliveryStatus
     const baseOrder: StoreOrderPOST = {
         ...orderData,
         deliveryStatus: orderData.deliveryStatus || 'PENDING'
@@ -461,7 +424,6 @@ export class StoreOrderService {
         console.log('Payment ID:', paymentResponse.id);
       }),
       switchMap((paymentResponse: any) => {
-        // Handle the payment response format
         const paymentId = paymentResponse.id;
         
         if (!paymentId || paymentId === 0) {
@@ -504,7 +466,6 @@ export class StoreOrderService {
             })
           );
         } else {
-          // This path handles pickup orders
           const pickupOrder = {
             ...orderWithPayment,
           };
@@ -549,7 +510,6 @@ export class StoreOrderService {
     );
   }
 
-
   private buildQueryParams(filters: any): any {
     const params: any = {};
     
@@ -566,32 +526,56 @@ export class StoreOrderService {
     return params;
   }
 
-  private parseDateToArray(dateString: string): number[] {
+  // =========================================================
+  // CRITICAL FIX: Robust Date Parsing for both Arrays and Strings
+  // =========================================================
+  private parseDateToArray(dateInput: any): number[] {
+    // 1. If it is null or undefined
+    if (!dateInput) return [0, 0, 0, 0, 0, 0];
+
+    // 2. If it's already an array (e.g. [2025, 12, 10, ...])
+    if (Array.isArray(dateInput)) {
+      // Just return it, ensuring we have at least year/month/day
+      return [
+        dateInput[0] || 0,
+        dateInput[1] || 0,
+        dateInput[2] || 0,
+        dateInput[3] || 0,
+        dateInput[4] || 0,
+        dateInput[5] || 0
+      ];
+    }
+
+    // 3. If it is a string or timestamp number
     try {
-      const date = new Date(dateString);
-      // Check if date is valid
+      const date = new Date(dateInput);
+      
+      // Check if Date is invalid
       if (isNaN(date.getTime())) {
-         throw new Error('Invalid Date String');
+        console.warn('Invalid date received:', dateInput);
+        return [0, 0, 0, 0, 0, 0];
       }
+
       return [
         date.getFullYear(),
-        date.getMonth() + 1, // Month is 0-indexed
+        date.getMonth() + 1, // Store as 1-based index to match standard array convention
         date.getDate(),
         date.getHours(),
         date.getMinutes(),
         date.getSeconds()
       ];
     } catch (error) {
-      console.error('Error parsing date string:', dateString, error);
-      return [0, 0, 0, 0, 0, 0]; // Default fallback
+      console.error('Error parsing date:', dateInput, error);
+      return [0, 0, 0, 0, 0, 0];
     }
   }
-  
 
   private convertOrderDTOToComponentOrder(orderDTO: OrderDTO): ComponentOrder {
     const createdDateArray = this.parseDateToArray(orderDTO.createdDate);
     const totalAmountNum = orderDTO.totalAmount || 0;
-    const isOnline = orderDTO.isOnline === undefined ? (orderDTO.diveryStatus ? true : false) : orderDTO.isOnline;
+    
+    // Explicitly check isOnline, do not guess based on delivery status
+    const isOnline = orderDTO.isOnline === true;
 
     return {
       id: orderDTO.orderNumber, 
@@ -605,7 +589,7 @@ export class StoreOrderService {
       orderItem: orderDTO.orderItem || [],
       customer: orderDTO.customer || null,
       isOnline: isOnline,
-      payment: null, // Placeholder.
+      payment: null,
       amountTendered: totalAmountNum,
       status: orderDTO.orderStatus || 'PENDING',
       deliveryStatus: orderDTO.diveryStatus || (isOnline ? 'PENDING' : 'N/A'), 
@@ -621,7 +605,6 @@ export class StoreOrderService {
     };
   }
 
-
   private createPaymentRecord(
     totalAmount: string,
     orderNumber: string,
@@ -631,10 +614,9 @@ export class StoreOrderService {
   ): Observable<any> {
     const amount = parseFloat(totalAmount);
     
-    // Create payment data matching the API schema
     const paymentData = {
-      status: status, // PAID or PENDING
-      method: method, // CASH, TRANSFER, CARD, MOBILE_MONEY
+      status: status,
+      method: method,
       amount: amount,
       totalAmount: amount,
       transactionDate: new Date().toISOString(),
@@ -654,7 +636,6 @@ export class StoreOrderService {
         console.log('Response type:', typeof response);
         this.debugPaymentResponse(response);
       }),
-      // Map the response to ensure we have a consistent format
       map((response) => {
         const paymentId = this.extractIdFromResponse(response);
         
@@ -665,7 +646,6 @@ export class StoreOrderService {
         
         console.log('✅ Extracted Payment ID:', paymentId);
         
-        // Return consistent format
         return {
           id: paymentId,
           originalResponse: response
@@ -717,7 +697,6 @@ export class StoreOrderService {
       return throwError(() => 'Payment record must be created before order');
     }
 
-    // perform the final check for dilivery.
     const sanitizedOrderData = this.sanitizeOrderData(orderData);
 
     console.log('🚀 Sending final order data to API:', JSON.stringify(sanitizedOrderData, null, 2));
@@ -751,7 +730,7 @@ export class StoreOrderService {
       customerId: orderData.customerId || 1,
       branchId: orderData.branchId || 1,
       discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
-      paymentId: orderData.paymentId, // This must be set!
+      paymentId: orderData.paymentId,
       cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,
       orderItem: orderData.orderItem.map((item: StoreOrderItemPOST) => ({
         id: 0,
@@ -771,32 +750,24 @@ export class StoreOrderService {
       isOnline: true
     };
 
-  console.log('🔍 Sanitized order data:', JSON.stringify(sanitized, null, 2));
-  
-  // Final validation
-  if (!sanitized.paymentId) {
-    console.error('❌ CRITICAL: paymentId is null in sanitized data!');
-    console.error('Original paymentId was:', orderData.paymentId);
-  }
-
-  // if (!sanitized.isOnline) {
-  //   console.warn('⚠️ WARNING: isOnline flag is not set!');
-  // }
+    console.log('🔍 Sanitized order data with fixed deliveryStatus:', JSON.stringify(sanitized, null, 2));
+    
+    if (!sanitized.paymentId) {
+      console.error('❌ CRITICAL: paymentId is null in sanitized data!');
+      console.error('Original paymentId was:', orderData.paymentId);
+    }
 
   return sanitized;
 }
   private extractIdFromResponse(response: any): number {
     if (typeof response === 'number') {
-      return response; // Direct ID response
+      return response;
     } else if (response && typeof response.id === 'number') {
-      return response.id; // Object with id property
+      return response.id;
     } else if (response && typeof response === 'object') {
-      // Try to find ID in response object
-      // Safely check for properties
       const id = response.paymentId || response.deliveryInfoId || response.ID;
       if (typeof id === 'number') return id;
     } 
-    // Fallback - try to convert whole response to number if it wasn't a complex object with an 'id'
     if (response) {
       const id = Number(response);
       return isNaN(id) ? 0 : id;

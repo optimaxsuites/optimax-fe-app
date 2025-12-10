@@ -18,7 +18,7 @@
           </button>
           <button (click)="printReport()"
             class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <i class="fas fa-print mr-2"></i> Print
+            <i class="fas fa-print mr-2"></i> Print All
           </button>
           <button
             class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue"
@@ -120,10 +120,11 @@
       </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" [class.opacity-50]="isLoading">
       <div class="relative">
         <button (click)="toggleDropdown('totalItems')"
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue w-full text-left transition-transform transform hover:scale-105">
+          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue w-full text-left transition-transform transform hover:scale-105"
+          [disabled]="isLoading">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Total Items in Stock</p>
@@ -162,7 +163,8 @@
 
       <div class="relative">
         <button (click)="toggleDropdown('lowStockItems')"
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500 w-full text-left transition-transform transform hover:scale-105">
+          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500 w-full text-left transition-transform transform hover:scale-105"
+          [disabled]="isLoading">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
@@ -202,7 +204,8 @@
       </div>
 
       <div
-        class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 relative">
+        class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 relative"
+        [class.opacity-50]="isLoading">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500">Total Inventory
@@ -238,7 +241,7 @@
       </div>
     </div>
 
-    <div class="mb-8">
+    <div class="mb-8" [class.opacity-50]="isLoading">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-lg shadow p-6">
           <div id="categoryChart">
@@ -297,15 +300,14 @@
       </div>
     </div>
 
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8" #movementPrintContent>
       <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-start">
         <div class="flex-1">
           <h3 class="text-lg leading-6 font-medium text-gray-900">
             Detailed Stock Movement History (Inflow/Outflow)
           </h3>
           <p class="mt-1 max-w-2xl text-sm text-gray-500">
-             <!-- ({{ (filterForm.get('branchIds')?.value?.length || 0) > 0 ? (filterForm.get('branchIds')?.value | json) : 'All' }}), **Categories** ({{ (filterForm.get('categoryIds')?.value?.length || 0) > 0 ? (filterForm.get('categoryIds')?.value | json) : 'All' }}). -->
-          </p>
+             </p>
           <div *ngIf="movementReportData" class="mt-3 flex space-x-4 text-sm font-medium">
             <span class="text-green-600">Total Inflow: {{ movementReportData.totalInflow | number }} units</span>
             <span class="text-red-600">Total Outflow: {{ movementReportData.totalOutflow | number }} units</span>
@@ -314,14 +316,21 @@
             </span>
           </div>
         </div>
-        <button
-          (click)="toggleMovementFilter()"
-          class="ml-4 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
-          <i class="fas fa-filter mr-2"></i> Filter Movements
-        </button>
+        <div class="flex space-x-3">
+          <button
+            (click)="printStockMovementHistory()"
+            class="ml-4 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
+            <i class="fas fa-print mr-2"></i> Print Table
+          </button>
+          <button
+            (click)="toggleMovementFilter()"
+            class="ml-4 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
+            <i class="fas fa-filter mr-2"></i> Filter Movements
+          </button>
+        </div>
       </div>
 
-      <div class="px-4 py-5 border-b border-gray-200 bg-gray-50" *ngIf="isMovementFilterOpen">
+      <div class="px-4 py-5 border-b border-gray-200 bg-gray-50 print-hidden" *ngIf="isMovementFilterOpen">
         <form [formGroup]="movementFilterForm" (ngSubmit)="applyMovementFilters()">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -436,7 +445,7 @@
                 class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                 Selling Price
                 <span *ngIf="movementSortColumn === 'sellingPrice'" class="ml-1">
-                  <i *ngIf="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
+                  <i *ngFif="movementSortDirection === 'asc'" class="fas fa-sort-up"></i>
                   <i *ngIf="movementSortDirection === 'desc'" class="fas fa-sort-down"></i>
                 </span>
               </th>
@@ -507,7 +516,7 @@
       </div>
 
       <div *ngIf="!isMovementLoading && ((movementReportData?.movements?.length || 0) > movementPageSize)"
-        class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 print-hidden">
           <div class="flex-1 flex justify-between sm:hidden">
             <button [disabled]="movementPage === 1" (click)="movementPage = movementPage - 1"
               class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium text-gray-700 bg-white hover:bg-gray-50"

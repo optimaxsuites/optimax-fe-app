@@ -1188,6 +1188,8 @@ export enum PaymentMethod {
 // new stock report DTOs
 
 export interface StockMovementReportItemDTO {
+  productDisplayName: string;
+  categoryName: any;
   id: number;
   createdDate: string; 
   quantity: number; 

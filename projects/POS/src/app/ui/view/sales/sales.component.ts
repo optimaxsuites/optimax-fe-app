@@ -73,37 +73,35 @@ export class SalesComponent implements OnInit {
     this.loadOrders();
   }
   
+  loadOrders(): void {
+    this.isLoading = true;
 
-loadOrders(): void {
-  this.isLoading = true;
+    this.storeOrderService.getAllOrdersAsOrderType({}).subscribe({
+      next: (orders: Order[]) => {
+        this.orders = orders.map(order => ({
+          ...order,
+          // Trust the isOnline flag from the fixed service
+          salesType: (order as any).isOnline ? 'ONLINE' : 'IN-STORE',
+          isOnline: (order as any).isOnline || false
+        })) as OrderWithSalesType[];
 
-  this.storeOrderService.getAllOrdersAsOrderType({}).subscribe({
-    next: (orders: Order[]) => {
-      this.orders = orders.map(order => ({
-        ...order,
-        salesType: (order as any).isOnline ? 'ONLINE' : 'IN-STORE',
-        isOnline: (order as any).isOnline
-      })) as OrderWithSalesType[];
-
-      console.log(`Sales: Loaded ${this.orders.length} total orders`);
-      this.isLoading = false;
-      this.applyFiltersAndSort();
-    },
-    error: (err: any) => {
-      console.error('❌ Failed to load orders:', err);
-      this.isLoading = false;
-    }
-  });
-}
+        console.log(`Sales: Loaded ${this.orders.length} total orders`);
+        this.isLoading = false;
+        this.applyFiltersAndSort();
+      },
+      error: (err: any) => {
+        console.error('❌ Failed to load orders:', err);
+        this.isLoading = false;
+      }
+    });
+  }
   
-  // Get display sales type
   getDisplaySalesType(order: OrderWithSalesType): string {
     return order.salesType === 'ONLINE' ? 'Online' : 'In-store';
   }
   
   getSalesTypeBadge(order: OrderWithSalesType): { text: string, class: string } {
     const displayType = this.getDisplaySalesType(order);
-    
     if (displayType === 'Online') {
       return { text: 'Online', class: 'bg-green-100 text-green-800' };
     } else {
@@ -153,7 +151,6 @@ loadOrders(): void {
   viewOrderDetails(order: OrderWithSalesType): void {
     this.isViewPageOpen = true;
     this.activeOrder = { ...order };
-    console.log('Viewing order details:', this.activeOrder);
   }
   
   closeViewDetail(){
@@ -180,20 +177,30 @@ loadOrders(): void {
       });
     }
     
-    // Days filter
+    // Date Logic
     if (this.daysFilter > 0) {
       const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
+      // If today (1), subtract 0 days. If Week (7), subtract 6 days.
+      const daysToSubtract = this.daysFilter === 1 ? 0 : this.daysFilter;
+      
+      cutoffDate.setDate(cutoffDate.getDate() - daysToSubtract);
+      cutoffDate.setHours(0, 0, 0, 0); // Start of that day
       
       filtered = filtered.filter(order => {
         if (!order.createdDate || order.createdDate.length < 3) return false;
         
+        // Month is 0-indexed in JS Date, but stored as 1-based in Array
         const orderDate = new Date(
           Number(order.createdDate[0]),
-          Number(order.createdDate[1]) - 1,
-          Number(order.createdDate[2])
+          Number(order.createdDate[1]) - 1, 
+          Number(order.createdDate[2]),
+          Number(order.createdDate[3] || 0),
+          Number(order.createdDate[4] || 0),
+          Number(order.createdDate[5] || 0)
         );
         
+        if (isNaN(orderDate.getTime())) return false;
+
         return orderDate >= cutoffDate;
       });
     }
@@ -212,70 +219,45 @@ loadOrders(): void {
         if (order.orderNumber?.toLowerCase().includes(searchLower)) return true;
         if (order.customer?.name?.toLowerCase().includes(searchLower)) return true;
         if (order.salesperson?.name?.toLowerCase().includes(searchLower)) return true;
-        
         const displayType = this.getDisplaySalesType(order).toLowerCase();
         if (displayType.includes(searchLower)) return true;
-        
         return false;
       });
     }
     
-    // Apply sorting
+    // Sorting
     filtered.sort((a, b) => {
-      let aValue, bValue;
+      let aValue: any, bValue: any;
       
       switch (this.sortBy) {
         case 'id':
-          aValue = a.id;
-          bValue = b.id;
-          break;
+          aValue = a.id; bValue = b.id; break;
         case 'orderNumber':
-          aValue = a.orderNumber;
-          bValue = b.orderNumber;
-          break;
+          aValue = a.orderNumber; bValue = b.orderNumber; break;
         case 'customer':
-          aValue = a.customer?.name || '';
-          bValue = b.customer?.name || '';
-          break;
+          aValue = a.customer?.name || ''; bValue = b.customer?.name || ''; break;
         case 'salesperson':
-          aValue = a.salesperson?.name || '';
-          bValue = b.salesperson?.name || '';
-          break;
+          aValue = a.salesperson?.name || ''; bValue = b.salesperson?.name || ''; break;
         case 'salesType':
-          aValue = this.getDisplaySalesType(a);
-          bValue = this.getDisplaySalesType(b);
-          break;
+          aValue = this.getDisplaySalesType(a); bValue = this.getDisplaySalesType(b); break;
         case 'totalAmount':
-          aValue = a.totalAmount;
-          bValue = b.totalAmount;
-          break;
+          aValue = a.totalAmount; bValue = b.totalAmount; break;
         case 'tax':
-          aValue = this.calculateOrderTax(a);
-          bValue = this.calculateOrderTax(b);
-          break;
+          aValue = this.calculateOrderTax(a); bValue = this.calculateOrderTax(b); break;
         case 'totalWithTax':
-          aValue = this.calculateOrderTotalWithTax(a);
-          bValue = this.calculateOrderTotalWithTax(b);
-          break;
+          aValue = this.calculateOrderTotalWithTax(a); bValue = this.calculateOrderTotalWithTax(b); break;
         case 'orderStatus':
-          aValue = a.orderStatus;
-          bValue = b.orderStatus;
-          break;
+          aValue = a.orderStatus; bValue = b.orderStatus; break;
         case 'date':
           aValue = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2]).getTime();
           bValue = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2]).getTime();
           break;
         default:
-          aValue = a.id;
-          bValue = b.id;
+          aValue = a.id; bValue = b.id;
       }
       
-      if (aValue < bValue) {
-        return this.sortDirection === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return this.sortDirection === 'asc' ? 1 : -1;
-      }
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
     
@@ -286,7 +268,6 @@ loadOrders(): void {
   updatePagination(): void {
     this.totalPages = Math.ceil(this.filteredOrders.length / this.itemsPerPage);
     this.totalPages = Math.max(1, this.totalPages);
-    
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.paginatedOrders = this.filteredOrders.slice(startIndex, endIndex);
@@ -314,9 +295,7 @@ loadOrders(): void {
   }
   
   getSortIcon(column: string): string {
-    if (this.sortBy !== column) {
-      return 'fa-sort';
-    }
+    if (this.sortBy !== column) return 'fa-sort';
     return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
   
