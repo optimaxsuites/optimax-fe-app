@@ -1,5 +1,6 @@
 stages:
     - update_subtrees
+    - deploy
 
 update_subtrees:
     stage: update_subtrees
@@ -43,9 +44,6 @@ update_subtrees:
 
     rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
-
-stages:
-  - deploy
 
 deploy_to_vercel_prod:
   stage: deploy
