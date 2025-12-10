@@ -1,11 +1,11 @@
 <div class="bg-white rounded-lg shadow-md p-6" id="print-area">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6 no-print">
       <div class="flex items-center gap-3">
         <h2 class="text-xl font-semibold text-gray-800">Order Details</h2>
         
         <button 
           (click)="printOrderDetails()"
-          class="flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 transition duration-200"
+          class="flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 transition duration-200 no-print"
         >
           <i class="fa-solid fa-print"></i>
           <span>Print</span>
@@ -13,7 +13,7 @@
         
         <button 
             (click)="openCancelModal()"
-            class="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-md hover:bg-red-200 transition duration-200 font-medium"
+            class="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-md hover:bg-red-200 transition duration-200 font-medium no-print"
         >
           <i class="fa-solid fa-ban"></i>
           <span>Cancel Order</span>
@@ -21,12 +21,13 @@
         
       </div>
       
-      <button (click)="goBack()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition duration-200">
+      <button (click)="goBack()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition duration-200 no-print">
         Back to Orders
       </button>
     </div>
   
-    <div *ngIf="order" class="print-content"> <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div *ngIf="order" class="print-content"> 
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-sm text-gray-500 uppercase">Order Number</h3>
           <p class="font-medium text-gray-900">{{ order.orderNumber || 'N/A' }}</p>
@@ -161,7 +162,7 @@
     </div>
 </div>
 
-<div *ngIf="showCancelModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div *ngIf="showCancelModal" class="fixed inset-0 z-50 overflow-y-auto no-print" aria-labelledby="modal-title" role="dialog" aria-modal="true">
   <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" (click)="closeCancelModal()"></div>
 
@@ -230,5 +231,3 @@
     </div>
   </div>
 </div>
-<div id="print-container" style="display: none;">
-  </div>

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { catchError, map, tap, shareReplay } from 'rxjs/operators';
 import {
   BranchDTO,
   SalesReportDTO,
@@ -16,17 +17,11 @@ import {
   InventoryReportRequestDTO,
   CashierReportDTO,
   CashierReportRequestDTO,
-  PaymentMethodDTO,
-  ProductStatsDTO,
-  ProductPerformanceDTO,
   ProductDTO,
-  PromotionPerformanceDTO,
-  BranchPerformanceDTO,
-  InventoryProductDTO,
   InventoryItemDTO,
   StockMovementReportDTO,
+  StockMovementReportItemDTO,
   StockMovementReportRequestDTO,
-  StockMovementByInventory,
   StockMovementResponsePayload
 } from '../models/interface';
 
@@ -36,15 +31,189 @@ import {
 export class ReportService {
   private baseUrl = 'https://be.optimaxsuites.com/x/api/v2/pos';
 
+  // Caches
+  private branchesCache: BranchDTO[] | null = null;
+  private categoriesCache: CategoryDTO[] | null = null;
+  private productCache = new Map<number, ProductDTO>();
+  private branchCache = new Map<number, BranchDTO>();
+  private categoryCache = new Map<number, CategoryDTO>();
+  private allProductsCache: ProductDTO[] | null = null;
+
   constructor(private http: HttpClient) {}
 
+  // Cached Branches
   getBranches(): Observable<BranchDTO[]> {
+    if (this.branchesCache) {
+      return of(this.branchesCache);
+    }
+    
     return this.http.get<BranchDTO[]>(`${this.baseUrl}/branches`).pipe(
+      tap(data => {
+        this.branchesCache = data;
+        data.forEach(branch => {
+          if (branch.id) {
+            this.branchCache.set(branch.id, branch);
+          }
+        });
+      }),
       catchError((err) => {
         console.error('Error fetching branches:', err);
         return throwError(() => err);
+      }),
+      shareReplay(1)
+    );
+  }
+
+  // Cached Categories
+  getCategories(): Observable<CategoryDTO[]> {
+    if (this.categoriesCache) {
+      return of(this.categoriesCache);
+    }
+    
+    return this.http
+      .get<CategoryDTO[]>(`${this.baseUrl}/productCategories`)
+      .pipe(
+        tap(data => {
+          this.categoriesCache = data;
+          data.forEach(category => {
+            if (category.id) {
+              this.categoryCache.set(category.id, category);
+            }
+          });
+        }),
+        catchError((err) => {
+          console.error('Error fetching categories:', err);
+          return throwError(() => err);
+        }),
+        shareReplay(1)
+      );
+  }
+
+  // Get ALL products at once
+  getAllProducts(): Observable<ProductDTO[]> {
+    if (this.allProductsCache) {
+      return of(this.allProductsCache);
+    }
+    
+    return this.http.get<ProductDTO[]>(`${this.baseUrl}/products`).pipe(
+      tap(products => {
+        this.allProductsCache = products;
+        products.forEach(product => {
+          if (product.id) {
+            this.productCache.set(product.id, product);
+          }
+        });
+      }),
+      catchError((err) => {
+        console.error('Error fetching all products:', err);
+        return of([]);
+      }),
+      shareReplay(1)
+    );
+  }
+
+  // Cached Product by ID
+  getProductById(id: number): Observable<ProductDTO> {
+    if (this.productCache.has(id)) {
+      return of(this.productCache.get(id)!);
+    }
+    
+    return this.http.get<ProductDTO>(`${this.baseUrl}/products/${id}`).pipe(
+      tap(product => {
+        if (product && product.id) {
+          this.productCache.set(product.id, product);
+        }
+      }),
+      catchError((err) => {
+        console.error(`Error fetching product with ID ${id}:`, err);
+        return throwError(() => err);
       })
     );
+  }
+
+  // Cached Category by ID
+  getCategoryById(id: number): Observable<CategoryDTO> {
+    if (this.categoryCache.has(id)) {
+      return of(this.categoryCache.get(id)!);
+    }
+    
+    return this.http.get<CategoryDTO>(`${this.baseUrl}/productCategories/${id}`).pipe(
+      tap(category => {
+        if (category && category.id) {
+          this.categoryCache.set(category.id, category);
+        }
+      }),
+      catchError((err) => {
+        console.error(`Error fetching category with ID ${id}:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  // Cached Branch by ID
+  getBranchById(id: number): Observable<BranchDTO> {
+    if (this.branchCache.has(id)) {
+      return of(this.branchCache.get(id)!);
+    }
+    
+    return this.http.get<BranchDTO>(`${this.baseUrl}/branches/${id}`).pipe(
+      tap(branch => {
+        if (branch && branch.id) {
+          this.branchCache.set(branch.id, branch);
+        }
+      }),
+      catchError((err) => {
+        console.error(`Error fetching branch with ID ${id}:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  // Bulk enrichment methods
+  getProductsByIds(ids: number[]): Observable<Map<number, ProductDTO>> {
+    const missingIds = ids.filter(id => !this.productCache.has(id));
+    
+    if (missingIds.length === 0) {
+      const result = new Map<number, ProductDTO>();
+      ids.forEach(id => {
+        const product = this.productCache.get(id);
+        if (product) {
+          result.set(id, product);
+        }
+      });
+      return of(result);
+    }
+    
+    if (this.allProductsCache) {
+      const result = new Map<number, ProductDTO>();
+      ids.forEach(id => {
+        const product = this.allProductsCache?.find(p => p.id === id);
+        if (product) {
+          result.set(id, product);
+          this.productCache.set(id, product);
+        }
+      });
+      return of(result);
+    }
+    
+    const requests = missingIds.map(id => 
+      this.getProductById(id).pipe(
+        catchError(() => of(null))
+      )
+    );
+    
+    return requests.length ? forkJoin(requests).pipe(
+      map(products => {
+        const result = new Map<number, ProductDTO>();
+        products.forEach(product => {
+          if (product && product.id) {
+            result.set(product.id, product);
+            this.productCache.set(product.id, product);
+          }
+        });
+        return result;
+      })
+    ) : of(new Map<number, ProductDTO>());
   }
 
   getSalesPerformanceReport(payload: any): Observable<SalesReportDTO> {
@@ -92,17 +261,6 @@ export class ReportService {
       );
   }
 
-  getCategories(): Observable<CategoryDTO[]> {
-    return this.http
-      .get<CategoryDTO[]>(`${this.baseUrl}/productCategories`)
-      .pipe(
-        catchError((err) => {
-          console.error('Error fetching categories:', err);
-          return throwError(() => err);
-        })
-      );
-  }
-
   getCashierPerformanceReport(
     payload: CashierReportRequestDTO
   ): Observable<CashierReportDTO> {
@@ -115,7 +273,6 @@ export class ReportService {
           : [0],
       shift: payload.shift || 'string',
     };
-    console.log('Service: Sending to API:', formattedPayload);
     return this.http
       .post<CashierReportDTO>(
         `${this.baseUrl}/salesreport/cashierperformancereport`,
@@ -123,20 +280,13 @@ export class ReportService {
       )
       .pipe(
         map((response) => {
-          console.log('Service: Raw response received:', response);
           const normalizedResponse: CashierReportDTO = {
             cashiers: response?.cashiers || [],
           };
-          console.log('Service: Normalized response:', normalizedResponse);
           return normalizedResponse;
         }),
         catchError((err) => {
-          console.error('Service: Error details:', {
-            status: err.status,
-            statusText: err.statusText,
-            url: err.url,
-            error: err.error,
-          });
+          console.error('Service: Error details:', err);
           return throwError(() => err);
         })
       );
@@ -161,7 +311,6 @@ export class ReportService {
           ? payload.promotionIds
           : [],
     };
-    console.log('Sending promotion report request:', formattedPayload);
     return this.http
       .post<PromotionsReportDTO>(
         `${this.baseUrl}/salesreport/promotionperformancereport`,
@@ -169,23 +318,15 @@ export class ReportService {
       )
       .pipe(
         map((response) => {
-          console.log('Raw promotion response:', response);
           const normalizedResponse: PromotionsReportDTO = {
             promotions: Array.isArray(response?.promotions)
               ? response.promotions
               : [],
           };
-          console.log('Normalized promotion response:', normalizedResponse);
           return normalizedResponse;
         }),
         catchError((err) => {
-          console.error('Error fetching promotion performance report:', {
-            status: err.status,
-            statusText: err.statusText,
-            url: err.url,
-            error: err.error,
-            payload: formattedPayload,
-          });
+          console.error('Error fetching promotion performance report:', err);
           return of({ promotions: [] });
         })
       );
@@ -259,20 +400,10 @@ export class ReportService {
                 }))
               : [],
           };
-          console.log(
-            'Service: Normalized inventory response:',
-            normalizedResponse
-          );
           return normalizedResponse;
         }),
         catchError((err) => {
-          console.error('Service: Error fetching inventory report:', {
-            status: err.status,
-            statusText: err.statusText,
-            url: err.url,
-            error: err.error,
-            payload: formattedPayload,
-          });
+          console.error('Service: Error fetching inventory report:', err);
           return of({ inventory: [] });
         })
       );
@@ -293,20 +424,17 @@ export class ReportService {
     if (payload.branchIds && payload.branchIds.length > 0) {
       params = params.set('branchIds', payload.branchIds.join(','));
     }
-    // Add productId filtering
     if (payload.productId) {
       params = params.set('productId', payload.productId.toString());
     }
-    // Add categoryIds filtering
     if (payload.categoryIds && payload.categoryIds.length > 0) {
       params = params.set('categoryIds', payload.categoryIds.join(','));
     }
 
     console.log('Service: Sending GET stock movements request with params:', params.toString());
     
-    // Using the general GET /stockMovements endpoint for fetching filtered data
     return this.http
-      .get<StockMovementResponsePayload[]>(
+      .get<any[]>( // Changed to any[] to allow flexible inspection
         `${this.baseUrl}/stockMovements`, 
         { params }
       )
@@ -314,26 +442,49 @@ export class ReportService {
         map((response: any) => {
           console.log('Service: Raw stock movement response:', response);
 
-          // Assuming the raw response is an array of StockMovementResponsePayload objects
-          const movements: StockMovementReportDTO['movements'] = Array.isArray(response)
-            ? response.map((item: any) => ({
-                id: item.id || Math.random(), 
-                createdDate: item.createdDate || new Date().toISOString(), 
-                quantity: item.quantity || 0, 
-                reference: item.reference || null,
-                purchasePrice: item.purchasePrice || null,
-                sellingPrice: item.sellingPrice || null, 
+          const movements: StockMovementReportItemDTO[] = Array.isArray(response)
+            ? response.map((item: any) => {
                 
-                productName: 'N/A (Enriching...)', // Placeholder
-                productSku: 'N/A',
-                productCategory: 'N/A',
-                branchName: 'N/A (Enriching...)', // Placeholder
-                supplierName: 'N/A',
+                // --- FIX: Robust extraction of Product ID ---
+                let extractedProductId: number;
                 
-                // Use inventoryId and ingredientId 
-                productId: item.ingredientId || item.inventory?.productId || item.productId, 
-                branchId: item.inventory?.branchId || item.branchId || payload.branchIds?.[0], 
-              }))
+                if (item.ingredientId) {
+                    extractedProductId = item.ingredientId;
+                } else if (item.inventory && item.inventory.productId) {
+                    extractedProductId = item.inventory.productId;
+                } else if (item.productId) {
+                    extractedProductId = item.productId;
+                } else if (item.product && item.product.id) {
+                    extractedProductId = item.product.id; // Check nested product object
+                } else if (item.inventory && item.inventory.product && item.inventory.product.id) {
+                    extractedProductId = item.inventory.product.id; // Check deeply nested
+                } else {
+                    extractedProductId = 0; // Default to 0 to prevent undefined
+                }
+
+                return {
+                    id: item.id || Math.random(), 
+                    createdDate: item.createdDate || new Date().toISOString(), 
+                    quantity: item.quantity || 0, 
+                    reference: item.reference || null,
+                    purchasePrice: item.purchasePrice || null,
+                    sellingPrice: item.sellingPrice || null, 
+                    
+                    productName: 'N/A (Enriching...)',
+                    productSku: 'N/A',
+                    productCategory: 'N/A',
+                    productDisplayName: 'N/A (Enriching...)',
+                    categoryName: 'N/A',
+                    branchName: 'N/A (Enriching...)',
+                    supplierName: 'N/A',
+                    
+                    productId: extractedProductId,
+                    // IMPORTANT: Pass inventoryId through for fallback lookup in component
+                    // We cast to 'any' here if DTO interface is strict, to ensure data flows
+                    inventoryId: item.inventoryId, 
+                    branchId: item.inventory?.branchId || item.branchId || payload.branchIds?.[0], 
+                } as any;
+            })
             : [];
             
           const totalInflow = movements.filter(m => m.quantity > 0).reduce((sum, m) => sum + m.quantity, 0);
@@ -350,19 +501,13 @@ export class ReportService {
           return normalizedResponse;
         }),
         catchError((err) => {
-          console.error('Service: ERROR fetching stock movement report:', {
-            status: err.status,
-            statusText: err.statusText,
-            url: err.url,
-            error: err.error,
-            params: params.toString(),
-          });
+          console.error('Service: ERROR fetching stock movement report:', err);
           return of({
             movements: [],
             totalInflow: 0,
             totalOutflow: 0,
             netChange: 0,
-          });
+          } as StockMovementReportDTO);
         })
       );
   }
@@ -378,35 +523,15 @@ export class ReportService {
       );
   }
 
-  // Methods to get full details by ID (kept for enrichment)
-  getProductById(id: number): Observable<ProductDTO> {
-    return this.http.get<ProductDTO>(`${this.baseUrl}/products/${id}`).pipe(
-      catchError((err) => {
-        console.error(`Error fetching product with ID ${id}:`, err);
-        return throwError(() => err);
-      })
-    );
+  clearCaches(): void {
+    this.branchesCache = null;
+    this.categoriesCache = null;
+    this.allProductsCache = null;
+    this.productCache.clear();
+    this.branchCache.clear();
+    this.categoryCache.clear();
   }
 
-  getCategoryById(id: number): Observable<CategoryDTO> {
-    return this.http.get<CategoryDTO>(`${this.baseUrl}/productCategories/${id}`).pipe(
-      catchError((err) => {
-        console.error(`Error fetching category with ID ${id}:`, err);
-        return throwError(() => err);
-      })
-    );
-  }
-
-  getBranchById(id: number): Observable<BranchDTO> {
-    return this.http.get<BranchDTO>(`${this.baseUrl}/branches/${id}`).pipe(
-      catchError((err) => {
-        console.error(`Error fetching branch with ID ${id}:`, err);
-        return throwError(() => err);
-      })
-    );
-  }
-
-  // Get current user's branch
   getCurrentUserBranchId(): number | null {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
