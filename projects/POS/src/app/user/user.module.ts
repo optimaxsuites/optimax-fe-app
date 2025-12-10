@@ -100,7 +100,8 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     StoreCheckoutComponent,
     ProductDetailsComponent,
     CategoryProductsComponent,
-    WhatsappWidgetComponent
+    WhatsappWidgetComponent,
+    CheckoutKitchenHistoryComponent
     // ProductVariantModalComponent,
   ],
   imports: [
