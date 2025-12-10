@@ -220,7 +220,7 @@ deleteTax(id: any): Observable<any> {
 
   getProductsByBranchId(id: number) {
     return (this.products$ = this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}?page=1&size=100`)
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}?page=1&size=300`)
       .pipe(
         catchError(this.handleError),
         shareReplay(this.shareReplayOptions)

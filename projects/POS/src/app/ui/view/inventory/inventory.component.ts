@@ -182,11 +182,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
       console.log('categories loaded:', this.categories); 
     });
 
-    this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
-      this.products = data;
-      this.originalProducts = data
-      console.log('inventories loaded:', this.products); 
-    });
+   this.getInventory()
     
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
@@ -203,6 +199,34 @@ export class InventoryComponent implements OnInit, OnDestroy {
         this.productPermissions = getUserPermissionsFor('POS_PDT');
     }
 
+  }
+
+  getInventory(){
+     this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
+      console.log("inventory:", data)
+     
+      this.originalProducts = data.sort((a: any, b: any) => {
+          const dateA = new Date(
+            a.__inventory.product.createdDate[0],
+            a.__inventory.product.createdDate[1] - 1,
+            a.__inventory.product.createdDate[2],
+            a.__inventory.product.createdDate[3],
+            a.__inventory.product.createdDate[4],
+            a.__inventory.product.createdDate[5],
+          );
+          const dateB = new Date(
+            b.__inventory.product.createdDate[0],
+            b.__inventory.product.createdDate[1] - 1,
+            b.__inventory.product.createdDate[2],
+            b.__inventory.product.createdDate[3],
+            b.__inventory.product.createdDate[4],
+            b.__inventory.product.createdDate[5],
+          );
+          return dateB.getTime() - dateA.getTime();
+        });
+        this.products = [...this.originalProducts]
+      console.log('inventories loaded:', this.products); 
+    });
   }
 
   fetchUserBranchId(){
