@@ -1,0 +1,592 @@
+<div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-6">
+  <div class="gap-3 w-full flex justify-between items-center">
+    <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
+    <div class="flex gap-3">
+      <ng-container *ngIf="categories.length > 0; else categorySkeleton">
+        <ng-select
+          [items]="categories"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="selectedCategories"
+          [multiple]="true"
+          placeholder="Categories"
+          (change)="filterProductsByCategory()"
+        >
+        </ng-select>
+      </ng-container>
+      
+      <ng-template #categorySkeleton>
+        <div class="category-skeleton-container">
+          <p-skeleton width="150px" height="40px" borderRadius="6px"></p-skeleton>
+        </div>
+      </ng-template>
+
+      <ng-select
+        *ngIf="superUser"
+        [items]="branches"
+        bindLabel="name"
+        bindValue="id"
+        placeholder="Branches"
+        [(ngModel)]="selectedBranch"
+        (ngModelChange)="metadataService.setSelectedBranch($event)"
+      >
+      </ng-select>
+    </div>
+      
+    <div class="w-1/2 flex gap-2">
+      <app-searchbar
+        class="flex-1"
+        [listToSearch]="originalProducts"
+        [listToUpdate]="products"
+        (listToUpdateChange)="onSearchResultsChange($event)"
+        [globalSearchResults]="globalSearchResults"
+        [isSearching]="isSearching"
+        [searchError]="searchError"
+        [globalSearchQuery]="currentGlobalSearchQuery"
+        (globalSearch)="onGlobalSearch($event)"
+        (productSelected)="onGlobalProductSelected($event)"
+      ></app-searchbar>
+
+      <div class="flex">
+        <div
+          (click)="toggleView()"
+          class="flex bg-[var(--background-color)] rounded-lg shadow-md border-[0.5px] text-[var(--text-color)] text-gray-400"
+        >
+          <i
+            class="fa-brands fa-microsoft text-2xl px-3 py-1.5 cursor-pointer"
+            [ngClass]="{
+              'bg-white rounded-l-lg text-customBlue': !tableSections
+            }"
+          ></i>
+          <i
+            class="fa-solid fa-list text-2xl px-3 py-1.5 cursor-pointer"
+            [ngClass]="{
+              'bg-white rounded-r-lg text-customBlue': tableSections
+            }"
+          ></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button
+          text="Delete"
+          *ngIf="productPermissions.canDelete"
+          class="btn-delete"
+          (click)="toggleMultiDeleteModal()"
+          [disabled]="!listOfSelectedItems.length"
+        ></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button
+          text="Add New"
+          *ngIf="productPermissions.canCreate"
+          class="btn-navigate"
+          (btnClick)="openAddProduct()"
+        ></app-button>
+        <app-button
+          *ngIf="productPermissions.canCreate"
+          text="Import"
+          class="btn-export"
+          (btnClick)="toggleImportDialog()"
+        ></app-button>
+        
+        @if(isImportDialogOpen){
+          <div 
+            class="w-full bg-black/50 h-full fixed inset-0 z-50 flex items-center justify-center" 
+            (click)="toggleImportDialog()">
+            <div 
+              class="bg-white p-4 rounded shadow-md" 
+              (click)="$event.stopPropagation()">
+              <app-excel-export-and-import
+                (fileUploaded)="processExcelImport($event)"
+                (close)="toggleImportDialog()"
+                [parsedProductArray]="parsedProductData"
+              ></app-excel-export-and-import>
+            </div>
+          </div>
+        }
+      </ng-template>
+    </p-toolbar>
+
+    <!-- No Products Available Message -->
+   <div
+      *ngIf="products.length === 0 && !(isLoading | async) && !categoryLoading"
+      class="flex flex-col items-center justify-center py-16 bg-white rounded-lg shadow-sm border border-gray-100"
+    >
+      <div class="text-center max-w-md">
+        <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+
+        <!-- Conditional Title -->
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">
+          No Products Available
+        </h3>
+
+        <!-- Conditional Message -->
+        <p class="text-gray-500 mb-6">
+          <ng-container *ngIf="branches.length === 0">
+            You don’t have any branches yet. To create a product, you must first add at least one branch.
+          </ng-container>
+          <ng-container *ngIf="branches.length > 0">
+            There are no products in your inventory yet. Start by adding your first product to manage your stock.
+          </ng-container>
+        </p>
+
+        <!-- Conditional Button -->
+        <app-button
+          *ngIf="branches.length === 0 && productPermissions.canCreate"
+          text="Add Your First Branch"
+          class="btn-navigate mt-3"
+          (btnClick)="openAddBranch()"
+        ></app-button>
+
+        <app-button
+          *ngIf="branches.length > 0 && productPermissions.canCreate"
+          text="Add Your First Product"
+          class="btn-navigate mt-3"
+          (btnClick)="openAddProduct()"
+        ></app-button>
+      </div>
+    </div>
+
+
+
+    <!-- Products Table View -->
+    <p-table
+      *ngIf="tableSections && paginatedProducts.length > 0"
+      [value]="paginatedProducts"
+      [paginator]="true"
+      dataKey="id"
+      responsiveLayout="stack"
+      [breakpoint]="'960px'"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{
+        'min-height': 'fit-content',
+        'max-height': '650px',
+        'table-layout': 'fixed'
+      }"
+      [rows]="15"
+    >
+      <ng-template pTemplate="header" class="header" let-columns>
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          @for (header of productTableHeaders | keyvalue:originalOrder; track $index) {
+          <th
+            class="table-item clickable"
+            [class]="
+              sortingData.headerToSort == header.value ? 'selected-header' : ''
+            "
+            (click)="sortProductsByHeader(header.value)"
+          >
+            {{ header.value }}
+            <span
+              class="hidden"
+              [class]="
+                sortingData.headerToSort == header.value
+                  ? sortingData.order == 'asc'
+                    ? 'display-inline-block'
+                    : 'display-inline-block vertical-invert'
+                  : ''
+              "
+              >&#9650;</span
+            >
+          </th>
+          }
+        </tr>
+      </ng-template>
+      <ng-template
+        pTemplate="body"
+        let-item
+        let-i="rowIndex"
+        let-columns="columns"
+      >
+        <tr>
+          <td>
+            <p-tableCheckbox
+              [value]="item"
+              class="custom-checkbox"
+              (click)="toggleSelectedItemInList(item)"
+            />
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Product SKU</span>{{ item.sku }}
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Product Code</span>{{ item.code }}
+          </td>
+
+          <td class="table-item">
+            <span class="p-column-title">Name</span>{{ item.name }}
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Price</span>{{ item.sellingPrice | currency : "₦" }}
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Quantity</span>
+            <div class="flex items-center gap-2">
+              <span
+                class="font-extrabold text-sm"
+                [ngClass]="
+                  item?.quantity > 0 
+                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800')
+                    : 'text-gray-500'
+                "
+              >{{ item?.quantity }}</span>
+              <span
+                class="text-xs font-extrabold ml-2"
+                [ngClass]="
+                  item?.quantity > 0
+                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800') 
+                    : 'text-gray-500'
+                "
+              >
+                {{ item?.quantity === 0 ? "Not in Stock" : (item?.quantity >= 11 ? "In Stock" : "Low Stock") }}
+              </span>
+            </div>
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Category</span
+            >{{ item.productCategory?.name }}
+          </td>
+          <td class="actions table-item actions-tab">
+            <span class="p-column-title">Action</span>
+            <div>
+              <i
+                class="pi pi-ellipsis-v table-item"
+                (click)="op.toggle($event)"
+              ></i>
+
+              <p-overlayPanel #op ngClass="padding: 0;">
+                <ul class="">
+                  <li
+                    class="table-item-panel"
+                    (click)="openViewProduct(item)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-eye table-item me-2"></i>
+                    <span>View</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    (click)="openEdit(item)"
+                    style="column-gap: 0.5rem"
+                    *ngIf="productPermissions.canEdit"
+                  >
+                    <i class="pi pi-pen-to-square table-item me-2"></i>
+                    <span>Edit</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    (click)="promptBarcode(item, op)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-download table-item me-2"></i>
+                    <span>Generate Barcode</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    *ngIf="productPermissions.canDelete"
+                    (click)="openDeleteModalWithValidation(item)"
+                    style="column-gap: 0.5rem"
+                    [title]="!canDeleteProduct(item) ? 'Warning: ' + getDeleteRestrictionMessage(item) : ''"
+                    [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
+                  >
+                    <i class="pi pi-times-circle table-item me-2"></i>
+                    <span>Delete</span>
+                    <i *ngIf="!canDeleteProduct(item)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+                  </li>
+                </ul>
+              </p-overlayPanel>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Products Grid View -->
+    <div *ngIf="!tableSections && products.length > 0" class="card-grid">
+      <ng-container *ngIf="(isLoading | async) || categoryLoading; else productList">
+        <div
+          *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+          class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+        >
+          <p-skeleton width="100%" height="15rem"></p-skeleton>
+          <div class="p-4">
+            <p-skeleton width="100%" height="50%" class="mb-3"></p-skeleton>
+            <p-skeleton width="100%" class="mb-2"></p-skeleton>
+            <p-skeleton width="100%" class="mb-2"></p-skeleton>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #productList>
+        <div 
+          *ngFor="let product of paginatedProducts" 
+          class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+          (click)="openViewProduct(product)"
+        >
+          <div class="relative">
+            <img
+              [src]="product.imageUrl$"
+              alt="{{product.name}}"
+              class="w-full h-48 object-cover"
+              onerror="this.src='assets/logo.png'"
+            /> 
+            <div class="absolute top-3 right-3">
+              <button 
+                class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+                (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
+              >
+                <i class="pi pi-ellipsis-v text-gray-700"></i>
+              </button>
+              <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
+                <ul class="">
+                  <li
+                    class="table-item-panel"
+                    (click)="openViewProduct(product)"
+                  >
+                    <i class="pi pi-eye table-item me-2"></i>
+                    <span>View</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    *ngIf="productPermissions.canEdit"
+                    (click)="openEdit(product)"
+                  >
+                    <i class="pi pi-pen-to-square table-item me-2"></i>
+                    <span>Edit</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    (click)="promptBarcode(product, op)"
+                  >
+                    <i class="pi pi-download table-item me-2"></i>
+                    <span>Generate Barcode</span>
+                  </li>
+                  <li
+                    class="table-item-panel"
+                    *ngIf="productPermissions.canDelete"
+                    (click)="openDeleteModalWithValidation(product); op.hide()"
+                    [title]="!canDeleteProduct(product) ? 'Warning: ' + getDeleteRestrictionMessage(product) : ''"
+                    [ngClass]="{'text-orange-600': !canDeleteProduct(product)}"
+                  >
+                    <i class="pi pi-times-circle table-item me-2"></i>
+                    <span>Delete</span>
+                    <i *ngIf="!canDeleteProduct(product)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+                  </li>
+                </ul>
+              </p-overlayPanel>
+            </div>
+          </div>
+
+          <div class="p-4 flex flex-col flex-grow">
+            <h3 class="font-medium text-gray-800 mb-2 line-clamp-2 h-10 text-[13px]">{{ product.name }}</h3>
+            
+            <div class="mt-2 space-y-1 text-sm flex-grow">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Price:</span>
+                <span class="font-semibold text-gray-800">{{ product?.sellingPrice | currency : "₦" }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500 font-extrabold">Stock:</span>
+                <ng-container *ngIf="product.quantity !== undefined">
+                  <span
+                    [ngClass]="
+                      product.quantity === 0 ? 'text-gray-500' : 'text-gray-800'
+                    "
+                    class="font-extrabold"
+                  >
+                    {{ product.quantity }}
+                    <span
+                      *ngIf="product.quantity === 0"
+                      class="ml-2 text-sm font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full"
+                    >
+                      Not in Stock
+                    </span>
+                  </span>
+                </ng-container>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Category:</span>
+                <span class="font-semibold text-gray-800">{{ product.productCategory.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Paginator for Grid View -->
+    <div class="w-full mt-4" *ngIf="!tableSections && products.length > 0">
+      <p-paginator
+        [rows]="rowsPerPage"
+        [totalRecords]="products.length"
+        [rowsPerPageOptions]="[10, 15, 20]"
+        (onPageChange)="onPageChange($event)"
+      >
+      </p-paginator>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Single Product Modal -->
+<app-modal
+  *ngIf="deleteModal && activeItem"
+  [header]="'Delete ' + (activeItem.name || 'Product')"
+  [title]="'Cancel'"
+  (close)="deleteModal = false"
+>
+  <div class="modalText">
+    <p>Are you sure you want to delete this product?</p>
+    <div class="bg-gray-100 p-3 rounded mt-2 mb-3">
+      <strong>{{ activeItem.name }}</strong>
+      <br>
+      <small class="text-gray-600">SKU: {{ activeItem.sku }} | Code: {{ activeItem.code }}</small>
+    </div>
+    
+    <div *ngIf="!canDeleteProduct(activeItem)" class="bg-orange-50 border-l-4 border-orange-400 p-3 mb-3">
+      <div class="flex items-center">
+        <i class="pi pi-exclamation-triangle text-orange-400 mr-2"></i>
+        <div>
+          <p class="text-orange-800 font-medium">Warning</p>
+          <p class="text-orange-700 text-sm">
+            This product {{ getDeleteRestrictionMessage(activeItem) }}. 
+            Are you sure you want to delete this product.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <p class="text-red-600 font-semibold">This action cannot be undone.</p>
+  </div>
+
+  <div class="modalBtn">
+    <button 
+      class="btn create-invoice-btn" 
+      (click)="deleteModal = false"
+      type="button">
+      Cancel
+    </button>
+
+    <button
+      class="btn create-invoice-btn"
+      style="background-color: red !important"
+      (click)="deleteProduct()"
+      type="button">
+      Delete Anyway
+    </button>
+  </div>
+</app-modal>
+
+<!-- Delete Multiple Products Modal -->
+@if (deleteMultipleItemsModal) {
+<app-modal
+  [header]="
+    'Delete ' + listOfSelectedItems.length + (listOfSelectedItems.length > 1)
+      ? ' Items'
+      : ' Item'
+  "
+  [title]="'Cancel'"
+  (close)="toggleMultiDeleteModal()"
+>
+  <p class="modalText">
+    Are You sure you want to carry out this action? <br />
+    Clicking on <span style="color: red; font-weight: bold">DELETE </span>,
+    would lead to permanent removal of
+    <span style="font-weight: bold"
+      >{{ listOfSelectedItems.length }}
+      {{ listOfSelectedItems.length > 1 ? " Items" : " Item" }}</span
+    >
+  </p>
+
+  <div class="modalBtn">
+    <button class="btn create-invoice-btn" (click)="toggleMultiDeleteModal()">
+      Cancel
+    </button>
+
+    <button
+      class="btn create-invoice-btn"
+      style="background-color: red !important"
+      (click)="deleteSelectedProducts()"
+    >
+      Delete
+    </button>
+  </div>
+</app-modal>
+}
+
+<!-- Add Product Component -->
+<div *ngIf="addProduct">
+  <app-add-product (close)="closeAddProduct()"></app-add-product>
+</div>
+
+<!-- View Product Component -->
+<div *ngIf="viewProduct">
+  <app-view-product
+    [activeItem]="activeItem"
+    (edit)="openEdit(activeItem)"
+    (closeView)="openViewProduct()"
+  ></app-view-product>
+</div>
+
+<!-- Edit Product Component -->
+<div *ngIf="editProduct">
+  <app-add-product
+    [activeItem]="activeItem"
+    [isEditMode]="true"
+    (close)="closeEdit()"
+  ></app-add-product>
+</div>
+
+<!-- Toast Notifications -->
+<p-toast position="top-right" key="tl" />
+
+<!-- Barcode Configuration Modal -->
+<app-modal
+  *ngIf="configureBarcode"
+  (close)="configureBarcode = false"
+  header="Barcode for {{activeItem.name}}"
+  headerClass="text-lg font-semibold"
+>
+  <div class="flex gap-3 mt-2 flex-col">
+    <div class="">
+      <label for="name">Quantity</label>
+      <p-inputGroup>
+        <input
+          class="name editInput"
+          type="number"
+          placeholder="1"
+          id="name"
+          [(ngModel)]="barcodeConfig.barcodeQuantity"
+        />
+        <p-inputGroupAddon
+          class="cursor-pointer bg-customBlue"
+          (click)="barcodeConfig.barcodeQuantity = activeItem.quantity"
+        >
+          <p class="cursor-pointer bg-customBlue text-white text-center">
+            Quantity
+          </p>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+    <div class="flex gap-3 items-center" *ngIf="activeItem.variants.length">
+      <input
+        class="name cursor-pointer"
+        type="checkbox"
+        id="name"
+        [(ngModel)]="barcodeConfig.variants"
+      />
+      <label for="name">Include Variants</label>
+    </div>
+
+    <div class="flex justify-center my-5 items-center">
+      <button class="btn create-invoice-btn px-8 py-2" (click)="printBarcode()">
+        Print
+      </button>
+    </div>
+  </div>
+</app-modal>

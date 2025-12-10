@@ -1,0 +1,50 @@
+/* room-welcome-note.component.scss */
+.welcome-container {
+  background-image: radial-gradient(
+    circle at 10% 20%,
+    rgba(199, 210, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.01) 90%
+  );
+
+  &:hover {
+    .feature-card {
+      transform: translateY(-5px);
+    }
+  }
+}
+body {
+  font-family: "Inter", sans-serif;
+  color: #333;
+  line-height: 1.6;
+  background-color: #f8fafc;
+  margin: 0;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.service-card {
+  transition: all 0.3s ease;
+}
+.service-card:hover {
+  transform: translateY(-5px);
+}
+.stats-counter {
+  font-weight: bold;
+  font-size: 2.5rem;
+}

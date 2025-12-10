@@ -1,0 +1,76 @@
+<div *ngIf="project" class="space-y-6">
+    <div class="flex justify-between items-center p-3 border-b-2">
+      <h2 class="text-2xl font-semibold">{{ project.name }}</h2>
+      <span
+        class="px-3 py-1 rounded-full text-sm"
+        [ngClass]="{
+          'bg-green-100 text-green-700': project.status === 'Ongoing',
+          'bg-blue-100 text-blue-700': project.status === 'Completed',
+          'bg-yellow-100 text-yellow-700': project.status === 'Pending'
+        }"
+      >
+        {{ project.status }}
+      </span>
+    </div>
+  
+    <p class="text-2xl font-bold text-gray-700">Objective</p>
+    <p class="text-gray-600">{{ project.description }}</p>
+    <p class="text-sm text-gray-500">📅 {{ project.startDate }} → {{ project.endDate }}</p>
+  
+    <!-- Progress Overview -->
+    <div class="bg-gray-100 p-4 rounded-lg">
+      <p class="font-medium mb-2">Project Progress</p>
+      <div class="w-full bg-gray-200 rounded-full h-3 mb-1">
+        <div
+          class="bg-customBlue h-3 rounded-full transition-all"
+          [style.width.%]="taskCompletionRate"
+        ></div>
+      </div>
+      <p class="text-sm text-gray-600">{{ taskCompletionRate }}% tasks completed</p>
+    </div>
+  
+    <!-- Task Table -->
+    <div class="bg-white rounded-xl p-3 border">
+      <h3 class="font-semibold mb-2 text-lg">Tasks</h3>
+      <table class="w-full border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left p-2">Title</th>
+            <th class="text-left p-2">Description</th>
+            <th class="text-center p-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let task of project.tasks" class="border-t">
+            <td class="p-2">{{ task.title }}</td>
+            <td class="p-2">{{ task.description || '-' }}</td>
+            <td class="text-center p-2">
+              <span
+                [ngClass]="{
+                  'text-green-600': task.completed,
+                  'text-gray-500': !task.completed
+                }"
+              >
+                {{ task.completed ? '✅ Done' : '⏳ Pending' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  
+    <!-- Notes -->
+    <div *ngIf="project && project.notes.length > 0"  class="bg-white rounded-xl px-3 py-3 border">
+      <h3 class="font-semibold mb-2 text-lg">Recent Notes</h3>
+      <ul class="text-sm">
+        <li
+          *ngFor="let note of project.notes"
+          class="border-b py-2 text-gray-700"
+        >
+          <strong>{{ note.user }}</strong> — {{ note.message }}
+          <span class="text-gray-400 text-xs ml-2">({{ note.date }})</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+  
