@@ -1,0 +1,311 @@
+<!-- store-checkout.component.html - ENHANCED VERSION -->
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-[1100px] mx-auto px-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <button class="flex items-center text-customGreen hover:text-green-700 font-medium transition-colors"
+        (click)="goBack()">
+        <i class="fa-solid fa-arrow-left mr-2"></i>
+        Back to Store
+      </button>
+      <div class="text-sm text-gray-500">
+        <i class="fa-solid fa-lock mr-1"></i>
+        Secure Checkout
+      </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="mb-8 text-center">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">Checkout</h1>
+      <p class="text-gray-600">Complete your purchase securely</p>
+    </div>
+
+    <!-- Error Messages -->
+       <!-- Error Messages -->
+    <div *ngIf="formErrors.length > 0" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <i class="fa-solid fa-exclamation-circle text-red-500 mr-2"></i>
+        <h3 class="text-red-800 font-semibold">Please fix the following errors:</h3>
+      </div>
+      <ul class="list-disc list-inside text-red-700 text-sm">
+        <li *ngFor="let error of formErrors">{{ error }}</li>
+      </ul>
+    </div>
+
+    <!-- Payment Warning Toast -->
+    <div *ngIf="showPaymentWarning" 
+      class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 animate-fade-in">
+      <div class="flex items-center">
+        <i class="fa-solid fa-exclamation-triangle text-yellow-600 mr-3 text-xl"></i>
+        <div class="flex-1">
+          <h3 class="text-yellow-800 font-semibold mb-1">Card Payments Temporarily Unavailable</h3>
+          <p class="text-yellow-700 text-sm">
+            Online card payments are currently unavailable. Please use Cash on Pickup or Bank Transfer instead. 
+            We apologize for any inconvenience.
+          </p>
+        </div>
+        <button (click)="showPaymentWarning = false" 
+          class="text-yellow-600 hover:text-yellow-800 ml-2">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Left Column - Order Details & Forms -->
+      <div class="lg:col-span-8 space-y-6">
+        <!-- Cart Summary (Mobile) -->
+        <div class="lg:hidden bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
+          <div class="space-y-3">
+            <div *ngFor="let item of cartItems | keyvalue"
+              class="flex items-center justify-between py-3 border-b border-gray-100">
+              <div class="flex items-center space-x-3 flex-1">
+                <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img [src]="getProductImage(item.value.product) | async" [alt]="item.value.product.name"
+                    class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-800 capitalize text-sm">{{ item.value.product.name }}</p>
+                  <p *ngIf="item.value.selectedVariants?.length" class="text-xs text-gray-500">
+                    {{ item.value.selectedVariants[0]?.name }}
+                  </p>
+                  <div class="flex items-center space-x-2 mt-1">
+                    <button (click)="updateQuantity(item.value, -1)"
+                      class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs hover:bg-gray-300">
+                      -
+                    </button>
+                    <span class="text-sm font-medium w-8 text-center">{{ item.value.quantity }}</span>
+                    <button (click)="updateQuantity(item.value, 1)"
+                      class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs hover:bg-gray-300">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="font-medium text-gray-800">₦{{ (item.value.product.sellingPrice * item.value.quantity) |
+                  number }}</p>
+                <button (click)="removeItem(item.value)" class="text-red-500 hover:text-red-700 text-xs mt-1">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery/Pickup Toggle -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Delivery Method</h2>
+          <div class="flex bg-gray-100 rounded-lg p-1">
+            <button
+              class="flex-1 py-4 px-4 rounded-md text-sm font-medium transition-all duration-300 flex items-center justify-center"
+              [class]="!isDelivery ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              (click)="toggleDelivery(false)">
+              <i class="fa-solid fa-store mr-3 text-lg"></i>
+              <div class="text-left">
+                <div class="font-semibold">Pickup in Store</div>
+                <div class="text-xs opacity-75">Free • Ready in 15-25 min</div>
+              </div>
+            </button>
+            <button
+              class="flex-1 py-4 px-4 rounded-md text-sm font-medium transition-all duration-300 flex items-center justify-center"
+              [class]="isDelivery ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              (click)="toggleDelivery(true)">
+              <i class="fa-solid fa-truck mr-3 text-lg"></i>
+              <div class="text-left">
+                <div class="font-semibold">Home Delivery</div>
+                <div class="text-xs opacity-75">₦{{ deliveryFee | number }} • 30-45 min</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Delivery Form -->
+        <div *ngIf="isDelivery" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-fade-in">
+          <div class="flex items-center mb-4">
+            <div class="w-8 h-8 bg-customGreen rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-truck text-white text-sm"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Delivery Information</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+              <input type="text" [(ngModel)]="deliveryInfo.fullName"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all"
+                placeholder="Enter your full name" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+              <input type="tel" [(ngModel)]="deliveryInfo.phoneNumber"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all"
+                placeholder="+234 XXX XXX XXXX" required>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <input type="email" [(ngModel)]="deliveryInfo.email"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all"
+                placeholder="your.email@example.com">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
+              <textarea [(ngModel)]="deliveryInfo.address" rows="3"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all resize-none"
+                placeholder="Enter your complete delivery address including landmarks" required></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Instructions (Optional)</label>
+              <textarea [(ngModel)]="deliveryInfo.instructions" rows="2"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all resize-none"
+                placeholder="Any special delivery instructions, gate codes, etc."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex items-center mb-4">
+            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-credit-card text-white text-sm"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Payment Method</h2>
+          </div>
+
+          <div class="space-y-3">
+            <label *ngFor="let method of paymentMethods"
+              class="flex items-center p-4 border-2 rounded-lg transition-all duration-300"
+              [class]="getPaymentMethodClasses(method)">
+              <input type="radio" name="paymentMethod" [value]="method.value" [(ngModel)]="paymentMethod"
+                [attr.disabled]="method.disabled || null" class="text-customGreen focus:ring-customGreen">
+              <div class="ml-4 flex-1">
+                <span class="font-semibold" [class]="method.disabled ? 'text-gray-400' : 'text-gray-800'">
+                  {{ method.label }}
+                </span>
+                <p class="text-sm mt-1" [class]="method.disabled ? 'text-gray-400' : 'text-gray-500'">
+                  {{ method.description }}
+                </p>
+              </div>
+              <i
+                [class]="'fa-solid ' + method.icon + ' text-2xl ' + (method.disabled ? 'text-gray-300' : (paymentMethod === method.value ? 'text-customGreen' : 'text-gray-400'))"></i>
+            </label>
+          </div>
+
+          <!-- Bank Transfer Details -->
+          <div *ngIf="paymentMethod === 'transfer'"
+            class="mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200 animate-fade-in">
+            <div class="flex items-center mb-4">
+              <i class="fa-solid fa-info-circle text-blue-500 mr-2"></i>
+              <h4 class="font-semibold text-blue-800">Bank Transfer Instructions</h4>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-blue-700 font-medium">Bank Name:</span>
+                  <span>Your Bank Name</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-blue-700 font-medium">Account Name:</span>
+                  <span>Your Business Name</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-blue-700 font-medium">Account Number:</span>
+                  <span class="font-mono">0123456789</span>
+                </div>
+              </div>
+              <div class="bg-white rounded p-3 border border-blue-100">
+                <p class="text-blue-600 text-xs font-medium mb-1">Important:</p>
+                <p class="text-blue-600 text-xs">Please include your <strong>order number</strong> in the transfer
+                  reference. Your order will be processed once payment is confirmed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Order Summary -->
+      <div class="lg:col-span-4">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 sticky top-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-6 pb-4 border-b border-gray-200">Order Summary</h2>
+
+          <!-- Cart Items -->
+          <div class="space-y-4 mb-6 max-h-80 overflow-y-auto">
+            <div *ngFor="let item of cartItems | keyvalue"
+              class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+              <div class="flex items-center space-x-3 flex-1">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img [src]="getProductImage(item.value.product) | async" [alt]="item.value.product.name"
+                    class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-gray-800 capitalize text-sm truncate">{{ item.value.product.name }}</p>
+                  <p *ngIf="item.value.selectedVariants?.length" class="text-xs text-gray-500 truncate">
+                    {{ item.value.selectedVariants[0]?.name }}
+                  </p>
+                  <p class="text-xs text-gray-500">Qty: {{ item.value.quantity }}</p>
+                </div>
+              </div>
+              <span class="font-semibold text-gray-800 whitespace-nowrap">
+                ₦{{ (item.value.product.sellingPrice * item.value.quantity) | number }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Pricing Breakdown -->
+          <div class="space-y-3 border-t border-gray-200 pt-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Subtotal ({{ totalItems }} items):</span>
+              <span class="font-medium">₦{{ subtotal | number }}</span>
+            </div>
+            <div class="flex justify-between text-sm" *ngIf="isDelivery">
+              <span class="text-gray-600">Delivery Fee:</span>
+              <span class="font-medium">₦{{ deliveryFee | number }}</span>
+            </div>
+            <div class="flex justify-between text-lg font-bold mt-3 pt-3 border-t border-gray-200">
+              <span>Total:</span>
+              <span class="text-customGreen text-xl">₦{{ total | number }}</span>
+            </div>
+          </div>
+
+          <!-- Delivery Estimate -->
+          <div *ngIf="isDelivery" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div class="flex items-center text-sm text-blue-700">
+              <i class="fa-solid fa-clock mr-2"></i>
+              <span>Estimated delivery: 30-45 minutes</span>
+            </div>
+          </div>
+
+          <!-- Place Order Button -->
+          <button
+            class="w-full mt-6 px-6 py-4 bg-customGreen text-white rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+            (click)="placeOrder()" [disabled]="!canPlaceOrder() || isLoading"
+            [class]="!canPlaceOrder() || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'">
+            <span *ngIf="!isLoading" class="flex items-center">
+              <i class="fa-solid fa-lock mr-2"></i>
+              Place Order • ₦{{ total | number }}
+            </span>
+            <span *ngIf="isLoading" class="flex items-center">
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+              Processing...
+            </span>
+          </button>
+
+          <!-- Security Badge -->
+          <div class="mt-4 text-center">
+            <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+              <div class="flex items-center">
+                <i class="fa-solid fa-shield-alt mr-1"></i>
+                <span>Secure Payment</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-lock mr-1"></i>
+                <span>SSL Encrypted</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

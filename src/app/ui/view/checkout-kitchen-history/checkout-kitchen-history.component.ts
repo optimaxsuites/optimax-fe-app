@@ -1,0 +1,1444 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { PosServiceService } from '../../service/pos-service.service';
+import { CheckoutService } from '../../service/checkout.service';
+import { Subscription } from 'rxjs';
+import { UserService } from '../../service/user.service';
+import { ImageCacheService } from '../../service/image-cache.service';
+import { TableOrderStatusGET } from "../../models/interfaces/kitchen";
+
+interface OrderItem {
+  id: number;
+  name: string;
+  price: number;
+  qty: number;
+  total: number;
+  image?: string;
+  category?: string;
+  product?: any;
+}
+
+interface Order {
+  table: number;
+  orderNo: string;
+  items: OrderItem[];
+  status: string;
+  payment?: string;
+  date?: string;
+  createdAt?: string;
+  note?: string;
+  backendId?: number;
+  orderId?: number;
+  paymentMethod?: string;
+  isPaid?: boolean;
+  paymentStatus?: string;
+  paidAt?: string;
+  createdBy?: string;
+  createdById?: string | number;
+  preparedBy?: string;
+  preparedById?: string | number;
+  servedBy?: string;
+  servedById?: string | number;
+  paidBy?: string;
+  paidById?: string | number;
+  staffInvolved?: StaffInvolved[];
+}
+
+interface StaffInvolved {
+  staffId: string | number;
+  staffName: string;
+  role: 'waiter' | 'chef' | 'cashier';
+  action: string;
+  timestamp: string;
+}
+
+interface TimelineEvent {
+  orderNo: string;
+  action: string;
+  timestamp: string;
+  performedBy?: string;
+  performedById?: string | number;
+  role?: 'waiter' | 'chef' | 'cashier';
+}
+
+interface StaffMember {
+  id: string | number;
+  name: string;
+  role: 'waiter' | 'chef' | 'cashier';
+  username?: string;
+  email?: string;
+}
+
+@Component({
+  selector: 'app-checkout-kitchen-history',
+  templateUrl: './checkout-kitchen-history.component.html',
+  styleUrls: ['./checkout-kitchen-history.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
+})
+export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
+  // Navbar properties
+  logoUrl: string = 'assets/images/logo.png';
+  profileImgUrl: string = 'assets/images/default-profile.png';
+  userRegData: any = {};
+  mode: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  showCloseRegisterModal: boolean = false;
+  openingAmount: number = 0;
+  closingAmount: number = 0;
+  
+  // Page properties
+  searchText: string = '';
+  selectedDate: string = '';
+  statusFilter: string = '';
+  paymentMethodFilter: string = '';
+  
+  selectedRoleFilter: string = '';
+  selectedStaffFilter: string = '';
+  showOnlyMyActivities: boolean = false;
+  
+  filteredOrders: Order[] = [];
+  currentPage: number = 1;
+  itemsPerPage: number = 10;
+  
+  orders: Order[] = [];
+  private ordersSubscription!: Subscription;
+  isLoading: boolean = false;
+  errorMessage: string = '';
+
+  selectedOrderForTimeline: Order | null = null;
+  selectedOrderForReceipt: Order | null = null;
+  isPrinting: boolean = false;
+
+  // For view details modal
+  selectedOrderForDetails: Order | null = null;
+  showDetailsModal: boolean = false;
+
+  companyInfo = {
+    name: 'Restaurant Name',
+    address: 'Address will load from session storage',
+    phone: 'Phone number',
+    email: 'Email address',
+    vatNumber: 'VAT-Number'
+  };
+
+  private imageCache = new Map<number, string>();
+  Math = Math;
+
+  private _todayOrders: Order[] = [];
+  private _todayRevenue: number = 0;
+  private _totalRevenue: number = 0;
+
+  private readonly CASHIER_STORAGE_KEY = 'restaurant_orders_data';
+  private readonly CASHIER_PAID_ORDERS_KEY = 'cashier_paid_orders';
+  
+  availableStaff: StaffMember[] = [];
+  currentUser: StaffMember | null = null;
+  private readonly STAFF_STORAGE_KEY = 'restaurant_staff_data';
+
+  constructor(
+    private posService: PosServiceService,
+    private checkoutService: CheckoutService,
+    private userService: UserService,
+    private imageCacheService: ImageCacheService,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    console.log('🚀 History component initialized');
+    
+    // Initialize navbar user data
+    this.initializeNavbarData();
+    
+    // Load company info
+    this.getCompanyInfoFromSessionStorage();
+    this.initializeCurrentUser();
+    this.loadStaffData();
+    this.loadPaidOrders();
+  }
+
+  // ===== HELPER METHODS FOR NUMBER FORMATTING =====
+  formatAmount(amount: number): string {
+    // Format number with commas and 2 decimal places
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  formatAmountNoDecimals(amount: number): string {
+    // Format number with commas and no decimal places
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+
+  // ===== STAFF FILTERING METHODS =====
+  getFilteredStaffByRole(): StaffMember[] {
+    if (!this.selectedRoleFilter) {
+      return this.availableStaff;
+    }
+    
+    return this.availableStaff.filter(staff => 
+      staff.role.toLowerCase() === this.selectedRoleFilter.toLowerCase()
+    );
+  }
+
+  // ===== NAVBAR METHODS =====
+  private initializeNavbarData() {
+    try {
+      // Get user data from session storage for navbar
+      const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
+      if (userDataStr) {
+        this.userRegData = JSON.parse(userDataStr);
+        console.log('👤 Navbar user data loaded:', this.userRegData);
+      }
+      
+      // Get logo and profile image URLs
+      const businessData = JSON.parse(sessionStorage.getItem('businessData') || '{}');
+      if (businessData.logoUrl) {
+        this.logoUrl = businessData.logoUrl;
+      }
+      if (businessData.profileImageUrl) {
+        this.profileImgUrl = businessData.profileImageUrl;
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading navbar data:', error);
+      // Set default user data for navbar
+      this.userRegData = {
+        username: 'User',
+        accountId: '001',
+        uuid: 'default-uuid'
+      };
+    }
+  }
+
+  setMode(mode: 'waiter' | 'chef' | 'cashier') {
+    this.mode = mode;
+    // Navigate to the appropriate page based on mode
+    switch (mode) {
+      case 'waiter':
+        this.router.navigate(['/checkout-kitchen']);
+        break;
+      case 'chef':
+        this.router.navigate(['/checkout-kitchen']);
+        break;
+      case 'cashier':
+        this.router.navigate(['/checkout-kitchen']);
+        break;
+    }
+  }
+
+  onToggleSidebar() {
+    // Toggle mobile sidebar
+    console.log('Toggle sidebar');
+  }
+
+  closeRegister() {
+    this.showCloseRegisterModal = true;
+  }
+
+  finalizeRegister(data: any) {
+    console.log('Finalize register:', data);
+    this.showCloseRegisterModal = false;
+  }
+
+  logout() {
+    console.log('Logging out...');
+    // Clear session storage and redirect to login
+    sessionStorage.clear();
+    localStorage.clear();
+    this.router.navigate(['/login']);
+  }
+
+  // ===== COMPANY INFO METHODS =====
+  private getCompanyInfoFromSessionStorage(): void {
+    try {
+      const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        
+        this.companyInfo = {
+          name: userData.companyName || 'Restaurant Name',
+          address: this.formatAddress(userData),
+          phone: userData.phoneNumber || 'Not specified',
+          email: userData.email || 'Not specified',
+          vatNumber: userData.vatNumber || `VAT-${userData.id || '000000'}`
+        };
+        
+        console.log('🏢 Company info loaded from session storage in history:', this.companyInfo);
+      } else {
+        console.warn('⚠️ No user data found in session storage (history), using default company info');
+        this.setDefaultCompanyInfo();
+      }
+    } catch (error) {
+      console.error('❌ Error getting company info from session storage:', error);
+      this.setDefaultCompanyInfo();
+    }
+  }
+
+  private formatAddress(userData: any): string {
+    const addressParts = [];
+    
+    if (userData.address) addressParts.push(userData.address);
+    if (userData.city) addressParts.push(userData.city);
+    if (userData.state) addressParts.push(userData.state);
+    if (userData.country) addressParts.push(userData.country);
+    if (userData.postalCode) addressParts.push(userData.postalCode);
+    
+    return addressParts.length > 0 ? 
+      addressParts.join(', ') : 
+      'Address not specified';
+  }
+
+  private setDefaultCompanyInfo(): void {
+    this.companyInfo = {
+      name: 'Restaurant Name',
+      address: '123 Main Street, City, Country',
+      phone: '+234 123 456 7890',
+      email: 'info@restaurant.com',
+      vatNumber: 'VAT-123456789'
+    };
+  }
+
+  private initializeCurrentUser() {
+    try {
+      const userData = this.userService.getUserData() as any;
+      if (userData) {
+        let userName = 'Current User';
+        if (userData.name) {
+          userName = userData.name;
+        } else if (userData.username) {
+          userName = userData.username;
+        } else if (userData.firstName && userData.lastName) {
+          userName = `${userData.firstName} ${userData.lastName}`;
+        } else if (userData.fullName) {
+          userName = userData.fullName;
+        }
+        
+        this.currentUser = {
+          id: (userData.id || userData.username || 'current-user').toString(),
+          name: userName,
+          role: this.determineUserRole(userData),
+          username: userData.username,
+          email: userData.email
+        };
+        console.log('👤 Current user:', this.currentUser);
+        
+        // Add current user to available staff
+        this.availableStaff = [this.currentUser];
+      }
+    } catch (error) {
+      console.error('❌ Error getting current user:', error);
+    }
+  }
+
+  private determineUserRole(userData: any): 'waiter' | 'chef' | 'cashier' {
+    if (!userData) return 'waiter';
+    
+    const role = userData.role || userData.userType || '';
+    
+    if (role.toLowerCase().includes('cashier')) return 'cashier';
+    if (role.toLowerCase().includes('chef') || role.toLowerCase().includes('kitchen')) return 'chef';
+    if (role.toLowerCase().includes('waiter') || role.toLowerCase().includes('server')) return 'waiter';
+    
+    return 'waiter';
+  }
+
+  private async loadStaffData() {
+    try {
+      // Only load current user, no sample data
+      if (this.currentUser) {
+        this.availableStaff = [this.currentUser];
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading staff data:', error);
+    }
+  }
+
+  private saveStaffToLocalStorage() {
+    try {
+      localStorage.setItem(this.STAFF_STORAGE_KEY, JSON.stringify(this.availableStaff));
+    } catch (error) {
+      console.error('Error saving staff data:', error);
+    }
+  }
+
+  getStaffById(staffId: string | number): StaffMember | undefined {
+    return this.availableStaff.find(staff => 
+      staff.id === staffId || staff.id?.toString() === staffId?.toString()
+    );
+  }
+
+  // ===== MAIN ORDER LOADING =====
+  loadPaidOrders() {
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    const localStorageOrders = this.getLocalStoragePaidOrders();
+    console.log('📦 Found paid orders in localStorage:', localStorageOrders.length);
+    
+    const startTime = performance.now();
+    console.log('📡 Fetching paid orders from backend...');
+    
+    this.ordersSubscription = this.posService.getTableOrderStatuses().subscribe({
+      next: (tableOrders: TableOrderStatusGET[]) => {
+        console.log('📋 Raw API orders from backend:', tableOrders);
+        console.log(`📊 Total orders from backend: ${tableOrders.length}`);
+        
+        const backendOrders = this.filterAndConvertPaidOrders(tableOrders);
+        console.log(`💰 Paid orders from backend: ${backendOrders.length}`);
+        
+        const allOrders = this.mergeOrders(backendOrders, localStorageOrders);
+        
+        this.orders = allOrders.map(order => ({
+          ...order,
+          status: 'PAID',
+          paymentStatus: 'PAID'
+        }));
+        
+        this.enrichOrdersWithStaffData();
+        
+        console.log('✅ Combined paid orders:', this.orders);
+        console.log(`✅ Final paid orders count: ${this.orders.length}`);
+        
+        this.updateStatistics();
+        this.applyFilters();
+        this.isLoading = false;
+        this.trackPerformance('Load paid orders', startTime);
+        
+        this.saveCombinedOrdersToLocalStorage();
+      },
+      error: (error) => {
+        console.error('❌ Error loading orders from backend:', error);
+        this.errorMessage = 'Failed to load orders from server. Using local data.';
+        
+        this.orders = localStorageOrders.map(order => ({
+          ...order,
+          status: 'PAID',
+          paymentStatus: 'PAID'
+        }));
+        
+        this.enrichOrdersWithStaffData();
+        this.updateStatistics();
+        this.applyFilters();
+        this.isLoading = false;
+        this.trackPerformance('Load paid orders (with error)', startTime);
+      }
+    });
+  }
+
+  private getLocalStoragePaidOrders(): Order[] {
+    try {
+      let paidOrdersData = localStorage.getItem(this.CASHIER_PAID_ORDERS_KEY);
+      let paidOrders: any[] = [];
+      
+      if (paidOrdersData) {
+        paidOrders = JSON.parse(paidOrdersData);
+        console.log('💳 Found dedicated paid orders storage:', paidOrders.length);
+      } else {
+        const savedData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          
+          if (parsedData.historyOrders && Array.isArray(parsedData.historyOrders)) {
+            paidOrders = parsedData.historyOrders;
+          } else if (parsedData.allOrders && Array.isArray(parsedData.allOrders)) {
+            paidOrders = parsedData.allOrders.filter((order: any) => this.isOrderPaid(order));
+          }
+        }
+      }
+      
+      const convertedOrders = paidOrders.map((order: any) => {
+        const converted = this.convertLocalStorageOrder(order);
+        return {
+          ...converted,
+          status: 'PAID',
+          paymentStatus: 'PAID'
+        };
+      });
+      
+      console.log(`💰 Converted ${convertedOrders.length} paid orders from localStorage`);
+      return convertedOrders;
+      
+    } catch (error) {
+      console.error('❌ Error reading localStorage:', error);
+      return [];
+    }
+  }
+
+  private isOrderPaid(order: any): boolean {
+    return (
+      order.isPaid === true || 
+      order.paymentStatus === 'PAID' ||
+      order.status === 'CONFIRMED' ||
+      order.status === 'PAID' ||
+      (order.paidAt && order.paidAt !== '') ||
+      (order.paymentMethod && order.paymentMethod !== '')
+    );
+  }
+
+  private convertLocalStorageOrder(localOrder: any): Order {
+    let orderDate = localOrder.date || localOrder.createdAt || localOrder.paidAt || '';
+    if (!orderDate && localOrder.paidAt) {
+      orderDate = localOrder.paidAt;
+    }
+    
+    let paymentMethod = localOrder.paymentMethod || 'Cash';
+    if (!paymentMethod && localOrder.isPaid) {
+      paymentMethod = 'Cash';
+    }
+    
+    const items: OrderItem[] = localOrder.items ? localOrder.items.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      qty: item.qty,
+      total: item.total,
+      image: item.image,
+      category: item.category
+    })) : [];
+    
+    return {
+      table: localOrder.table || 1,
+      orderNo: localOrder.orderNo || `LOCAL-${Date.now()}`,
+      items: items,
+      status: 'PAID',
+      payment: paymentMethod,
+      date: orderDate,
+      createdAt: orderDate,
+      note: localOrder.note || '',
+      backendId: localOrder.backendId,
+      orderId: localOrder.orderId,
+      paymentMethod: paymentMethod,
+      isPaid: true,
+      paymentStatus: 'PAID',
+      paidAt: localOrder.paidAt,
+      createdBy: localOrder.createdBy,
+      createdById: localOrder.createdById,
+      preparedBy: localOrder.preparedBy,
+      preparedById: localOrder.preparedById,
+      servedBy: localOrder.servedBy,
+      servedById: localOrder.servedById,
+      paidBy: localOrder.paidBy,
+      paidById: localOrder.paidById,
+      staffInvolved: localOrder.staffInvolved
+    };
+  }
+
+  private enrichOrdersWithStaffData() {
+    this.orders.forEach(order => {
+      if (!order.staffInvolved) {
+        order.staffInvolved = this.extractStaffFromOrder(order);
+      }
+      
+      if (order.staffInvolved && order.staffInvolved.length > 0) {
+        order.staffInvolved.forEach(staff => {
+          switch (staff.role) {
+            case 'waiter':
+              if (!order.createdBy) {
+                order.createdBy = staff.staffName;
+                order.createdById = staff.staffId;
+              }
+              break;
+            case 'chef':
+              if (!order.preparedBy) {
+                order.preparedBy = staff.staffName;
+                order.preparedById = staff.staffId;
+              }
+              break;
+            case 'cashier':
+              if (!order.paidBy) {
+                order.paidBy = staff.staffName;
+                order.paidById = staff.staffId;
+              }
+              break;
+          }
+        });
+      }
+    });
+  }
+
+  private extractStaffFromOrder(order: Order): StaffInvolved[] {
+    const staffInvolved: StaffInvolved[] = [];
+    
+    const timeline = this.getOrderTimeline(order.orderNo);
+    
+    timeline.forEach(event => {
+      if (event.performedBy && event.role) {
+        staffInvolved.push({
+          staffId: event.performedById || event.performedBy.toLowerCase().replace(' ', '-'),
+          staffName: event.performedBy,
+          role: event.role,
+          action: event.action,
+          timestamp: event.timestamp
+        });
+      }
+    });
+    
+    // If no staff involved found in timeline, use current user if applicable
+    if (staffInvolved.length === 0) {
+      if (!order.createdBy && this.currentUser?.role === 'waiter') {
+        staffInvolved.push({
+          staffId: this.currentUser.id,
+          staffName: this.currentUser.name,
+          role: 'waiter',
+          action: 'Order created',
+          timestamp: order.createdAt || order.date || new Date().toISOString()
+        });
+      }
+      
+      if ((order.status === 'completed' || order.status === 'confirmed') && this.currentUser?.role === 'chef') {
+        staffInvolved.push({
+          staffId: this.currentUser.id,
+          staffName: this.currentUser.name,
+          role: 'chef',
+          action: 'Order prepared',
+          timestamp: order.paidAt || order.date || new Date().toISOString()
+        });
+      }
+      
+      if ((order.isPaid || order.paymentStatus === 'PAID') && this.currentUser?.role === 'cashier') {
+        staffInvolved.push({
+          staffId: this.currentUser.id,
+          staffName: this.currentUser.name,
+          role: 'cashier',
+          action: 'Payment processed',
+          timestamp: order.paidAt || order.date || new Date().toISOString()
+        });
+      }
+    }
+    
+    return staffInvolved;
+  }
+
+  private enrichLocalStorageOrder(order: Order, originalData: any) {
+    if (originalData.createdBy) {
+      order.createdBy = originalData.createdBy;
+    }
+    if (originalData.preparedBy) {
+      order.preparedBy = originalData.preparedBy;
+    }
+    if (originalData.paidBy) {
+      order.paidBy = originalData.paidBy;
+    }
+    if (originalData.servedBy) {
+      order.servedBy = originalData.servedBy;
+    }
+    
+    if (order.createdBy) {
+      const staff = this.getStaffByName(order.createdBy);
+      if (staff) {
+        order.createdById = staff.id;
+      }
+    }
+    if (order.preparedBy) {
+      const staff = this.getStaffByName(order.preparedBy);
+      if (staff) {
+        order.preparedById = staff.id;
+      }
+    }
+    if (order.paidBy) {
+      const staff = this.getStaffByName(order.paidBy);
+      if (staff) {
+        order.paidById = staff.id;
+      }
+    }
+  }
+
+  private getStaffByName(staffName: string): StaffMember | undefined {
+    return this.availableStaff.find(staff => 
+      staff.name.toLowerCase().includes(staffName.toLowerCase()) ||
+      staff.username?.toLowerCase().includes(staffName.toLowerCase())
+    );
+  }
+
+  private mergeOrders(backendOrders: Order[], localStorageOrders: Order[]): Order[] {
+    const orderMap = new Map<string, Order>();
+    
+    backendOrders.forEach(order => {
+      if (order.orderNo) {
+        orderMap.set(order.orderNo, order);
+      }
+    });
+    
+    localStorageOrders.forEach(order => {
+      if (order.orderNo) {
+        const existingOrder = orderMap.get(order.orderNo);
+        if (existingOrder) {
+          const existingDate = this.parseCustomDate(existingOrder.date || '');
+          const newDate = this.parseCustomDate(order.date || '');
+          
+          if (newDate.getTime() > existingDate.getTime()) {
+            orderMap.set(order.orderNo, order);
+          }
+        } else {
+          orderMap.set(order.orderNo, order);
+        }
+      }
+    });
+    
+    const mergedOrders = Array.from(orderMap.values());
+    
+    console.log(`🔄 Merged ${backendOrders.length} backend + ${localStorageOrders.length} local = ${mergedOrders.length} total orders`);
+    
+    return mergedOrders;
+  }
+
+  private saveCombinedOrdersToLocalStorage() {
+    try {
+      const backupData = {
+        combinedOrders: this.orders,
+        lastSynced: new Date().toISOString(),
+        source: 'history-component'
+      };
+      localStorage.setItem('kitchenHistoryCombinedOrders', JSON.stringify(backupData));
+      console.log('💾 Saved combined orders to localStorage as backup');
+    } catch (error) {
+      console.error('❌ Error saving combined orders:', error);
+    }
+  }
+
+  private filterAndConvertPaidOrders(tableOrders: TableOrderStatusGET[]): Order[] {
+    if (!tableOrders || !Array.isArray(tableOrders)) {
+      console.warn('⚠️ No table orders found or invalid data format');
+      return [];
+    }
+
+    console.log('🔍 Filtering for PAID orders from backend...');
+    
+    const paidOrders = tableOrders.filter(tableOrder => {
+      const status = tableOrder.status?.toUpperCase();
+      const orderStatus = tableOrder.order?.orderStatus?.toUpperCase();
+      
+      const isPaid = status === 'PAID' || orderStatus === 'PAID' || orderStatus === 'CONFIRMED';
+      const hasPayment = tableOrder.order?.payment || 
+                         (tableOrder.order as any)?.['paymentMethod'];
+      
+      return isPaid || hasPayment;
+    });
+
+    console.log(`✅ Found ${paidOrders.length} paid orders from ${tableOrders.length} total backend orders`);
+    
+    return paidOrders.map(tableOrder => this.convertToLocalOrder(tableOrder));
+  }
+
+  private convertToLocalOrder(tableOrder: TableOrderStatusGET): Order {
+    const order = tableOrder.order || {};
+    
+    let effectiveStatus = 'PAID';
+    
+    let formattedDate = '';
+    if (tableOrder.orderedOn) {
+      if (Array.isArray(tableOrder.orderedOn)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = tableOrder.orderedOn;
+        formattedDate = `${year}-${month}-${day}-${hour}-${minute}-${second}`;
+      } else if (typeof tableOrder.orderedOn === 'string') {
+        formattedDate = tableOrder.orderedOn;
+      }
+    }
+    
+    let createdBy = '';
+    let preparedBy = '';
+    let paidBy = '';
+    
+    const anyOrder = order as any;
+    if (anyOrder.createdBy) {
+      createdBy = anyOrder.createdBy;
+    }
+    
+    const localOrder: Order = {
+      table: this.convertTableNumber(tableOrder.tableNumber),
+      orderNo: order.orderNumber || `T${tableOrder.tableNumber}-${tableOrder.id}`,
+      items: this.convertOrderItems(order.orderItem || []),
+      status: effectiveStatus,
+      payment: this.getPaymentMethod(order),
+      date: formattedDate,
+      createdAt: formattedDate,
+      note: tableOrder.note || '',
+      backendId: tableOrder.id,
+      orderId: order.id,
+      paymentMethod: this.getPaymentMethod(order),
+      isPaid: true,
+      paymentStatus: 'PAID',
+      createdBy: createdBy,
+      preparedBy: preparedBy,
+      paidBy: paidBy
+    };
+
+    console.log('🔄 Converted backend order to PAID:', {
+      orderNo: localOrder.orderNo,
+      table: localOrder.table,
+      status: localOrder.status
+    });
+    
+    return localOrder;
+  }
+
+  private convertOrderItems(orderItems: any[]): OrderItem[] {
+    if (!orderItems || !Array.isArray(orderItems)) {
+      console.warn('⚠️ No order items found');
+      return [];
+    }
+
+    return orderItems.map(item => {
+      const product = item.product || {};
+      const quantity = item.quantity || 1;
+      const unitPrice = item.unitPrice || 0;
+      const totalPrice = item.totalPrice || (quantity * unitPrice);
+
+      return {
+        id: product.id || item.id || 0,
+        name: product.name || 'Unknown Item',
+        price: unitPrice,
+        qty: quantity,
+        total: totalPrice,
+        image: product.imageUrl || '',
+        category: product.productCategory?.name || '',
+        product: product
+      };
+    });
+  }
+
+  private getPaymentMethod(order: any): string {
+    if (order.paymentMethod) return order.paymentMethod;
+    if (order.payment?.paymentMethod) return order.payment.paymentMethod;
+    if (order.orderStatus === 'PAID' || order.status === 'PAID' || order.orderStatus === 'CONFIRMED') {
+      return 'Cash';
+    }
+    return 'Unknown';
+  }
+
+  private convertTableNumber(tableNumber: string): number {
+    if (!tableNumber) return 1;
+    const num = parseInt(tableNumber.replace(/\D/g, ''));
+    return isNaN(num) ? 1 : num;
+  }
+
+  // ===== VIEW DETAILS METHODS =====
+  viewOrderDetails(order: Order) {
+    console.log('👁️ View order details:', order);
+    this.selectedOrderForDetails = order;
+    this.showDetailsModal = true;
+  }
+
+  closeDetailsModal() {
+    this.selectedOrderForDetails = null;
+    this.showDetailsModal = false;
+  }
+
+  parseCustomDate(dateString: string): Date {
+    if (!dateString) return new Date();
+    
+    try {
+      const parts = dateString.split('-');
+      
+      if (parts.length >= 6) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const hour = parseInt(parts[3], 10) || 0;
+        const minute = parseInt(parts[4], 10) || 0;
+        const second = parseInt(parts[5], 10) || 0;
+        
+        return new Date(year, month, day, hour, minute, second);
+      }
+      
+      return new Date(dateString);
+    } catch (error) {
+      console.error('Error parsing date:', dateString, error);
+      return new Date();
+    }
+  }
+
+  formatDateForDisplay(dateString: string): string {
+    const date = this.parseCustomDate(dateString);
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  private trackPerformance(operation: string, startTime: number) {
+    const duration = performance.now() - startTime;
+    console.log(`⏱️ ${operation} completed in ${duration.toFixed(2)}ms`);
+  }
+
+  private updateStatistics() {
+    console.log('📊 Updating statistics...');
+    
+    this._totalRevenue = this.orders.reduce((sum, order) => 
+      sum + this.getOrderTotal(order), 0
+    );
+    
+    const today = new Date();
+    this._todayOrders = this.orders.filter(order => {
+      if (!order.date) return false;
+      const orderDate = this.parseCustomDate(order.date);
+      return orderDate.toDateString() === today.toDateString();
+    });
+    
+    this._todayRevenue = this._todayOrders.reduce((sum, order) => 
+      sum + this.getOrderTotal(order), 0
+    );
+    
+    console.log(`📊 Statistics Updated:
+      Total Orders: ${this.orders.length}
+      Total Revenue: ₦${this.formatAmount(this._totalRevenue)}
+      Today's Orders: ${this._todayOrders.length}
+      Today's Revenue: ₦${this.formatAmount(this._todayRevenue)}
+    `);
+  }
+
+  applyFilters() {
+    console.log('🔍 Applying filters...');
+    
+    this.filteredOrders = this.orders.filter(order => {
+      const matchesSearch = !this.searchText || 
+        order.table.toString().includes(this.searchText) ||
+        order.orderNo.toLowerCase().includes(this.searchText.toLowerCase()) ||
+        order.items.some(item => item.name.toLowerCase().includes(this.searchText.toLowerCase()));
+      
+      const matchesDate = !this.selectedDate || 
+        (order.date && this.formatDateForDisplay(order.date).includes(this.selectedDate));
+      
+      const matchesStatus = !this.statusFilter || 
+        order.status.toLowerCase().includes(this.statusFilter.toLowerCase());
+      
+      const matchesPayment = !this.paymentMethodFilter || 
+        (order.payment || 'Unknown').toLowerCase() === this.paymentMethodFilter.toLowerCase();
+      
+      const matchesRole = !this.selectedRoleFilter || this.doesOrderInvolveRole(order, this.selectedRoleFilter);
+      
+      const matchesStaff = !this.selectedStaffFilter || this.doesOrderInvolveStaff(order, this.selectedStaffFilter);
+      
+      const matchesMyActivities = !this.showOnlyMyActivities || this.doesOrderInvolveCurrentUser(order);
+      
+      return matchesSearch && matchesDate && matchesStatus && 
+             matchesPayment && matchesRole && matchesStaff && matchesMyActivities;
+    });
+    
+    console.log(`✅ Filtered orders: ${this.filteredOrders.length} of ${this.orders.length}`);
+    
+    this.sortOrders();
+    this.currentPage = 1;
+  }
+
+  private doesOrderInvolveRole(order: Order, role: string): boolean {
+    if (!role) return true;
+    
+    if (role === 'waiter' && order.createdBy) return true;
+    if (role === 'chef' && order.preparedBy) return true;
+    if (role === 'cashier' && order.paidBy) return true;
+    
+    if (order.staffInvolved && order.staffInvolved.some(staff => staff.role === role)) {
+      return true;
+    }
+    
+    const timeline = this.getOrderTimeline(order.orderNo);
+    if (timeline.some(event => event.role === role)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  private doesOrderInvolveStaff(order: Order, staffId: string | number): boolean {
+    if (!staffId) return true;
+    
+    const staffIdStr = staffId.toString();
+    if (order.createdById?.toString() === staffIdStr || 
+        order.preparedById?.toString() === staffIdStr || 
+        order.paidById?.toString() === staffIdStr || 
+        order.servedById?.toString() === staffIdStr) {
+      return true;
+    }
+    
+    if (order.staffInvolved && order.staffInvolved.some(staff => staff.staffId?.toString() === staffIdStr)) {
+      return true;
+    }
+    
+    const staff = this.getStaffById(staffId);
+    if (staff) {
+      if (order.createdBy === staff.name || order.preparedBy === staff.name || 
+          order.paidBy === staff.name || order.servedBy === staff.name) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  private doesOrderInvolveCurrentUser(order: Order): boolean {
+    if (!this.currentUser) return true;
+    
+    return this.doesOrderInvolveStaff(order, this.currentUser.id);
+  }
+
+  applyStaffFilter() {
+    console.log('👤 Applying staff filter...');
+    
+    // If a role is selected but no staff is selected, clear any staff filter that doesn't match the role
+    if (this.selectedRoleFilter && this.selectedStaffFilter) {
+      const selectedStaff = this.getStaffById(this.selectedStaffFilter);
+      if (selectedStaff && selectedStaff.role.toLowerCase() !== this.selectedRoleFilter.toLowerCase()) {
+        this.selectedStaffFilter = '';
+      }
+    }
+    
+    this.applyFilters();
+  }
+
+  showMyActivitiesOnly() {
+    this.showOnlyMyActivities = true;
+    this.selectedRoleFilter = '';
+    this.selectedStaffFilter = '';
+    this.applyFilters();
+  }
+
+  clearStaffFilters() {
+    this.selectedRoleFilter = '';
+    this.selectedStaffFilter = '';
+    this.showOnlyMyActivities = false;
+    this.applyFilters();
+  }
+
+  private sortOrders() {
+    this.filteredOrders.sort((a, b) => {
+      const dateA = this.parseCustomDate(a.date || a.createdAt || '');
+      const dateB = this.parseCustomDate(b.date || b.createdAt || '');
+      return dateB.getTime() - dateA.getTime();
+    });
+  }
+
+  clearFilters() {
+    this.searchText = '';
+    this.selectedDate = '';
+    this.statusFilter = '';
+    this.paymentMethodFilter = '';
+    this.clearStaffFilters();
+  }
+
+  onItemsPerPageChange() {
+    this.currentPage = 1;
+  }
+
+  getOrderTotal(order: Order): number {
+    if (!order || !order.items) return 0;
+    return order.items.reduce((sum, item) => sum + (item.total || 0), 0);
+  }
+
+  isToday(dateString?: string): boolean {
+    if (!dateString) return false;
+    const orderDate = this.parseCustomDate(dateString);
+    const today = new Date();
+    return orderDate.toDateString() === today.toDateString();
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredOrders.length / this.itemsPerPage);
+  }
+
+  get paginatedOrders(): Order[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    return this.filteredOrders.slice(startIndex, startIndex + this.itemsPerPage);
+  }
+
+  getVisiblePages(): (number | string)[] {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+    
+    if (this.totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (this.currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(this.totalPages);
+      } else if (this.currentPage >= this.totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = this.totalPages - 3; i <= this.totalPages; i++) pages.push(i);
+        pages.push('...');
+        pages.push(this.totalPages);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = this.currentPage - 1; i <= this.currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(this.totalPages);
+      }
+    }
+    
+    return pages;
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  goToPage(page: number | string) {
+    if (typeof page === 'number' && page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  getTotalRevenue(): number {
+    return this._totalRevenue;
+  }
+
+  get todayOrders(): Order[] {
+    return this._todayOrders;
+  }
+
+  get todayRevenue(): number {
+    return this._todayRevenue;
+  }
+
+  get paymentMethods(): string[] {
+    const methods = new Set(this.orders.map(order => order.payment || 'Unknown'));
+    return Array.from(methods);
+  }
+
+  getDetailedOrderHistory(): TimelineEvent[] {
+    try {
+      const history = localStorage.getItem('orderHistory');
+      return history ? JSON.parse(history) : [];
+    } catch (error) {
+      console.error('❌ Error reading detailed order history:', error);
+      return [];
+    }
+  }
+
+  getOrderTimeline(orderNo: string): TimelineEvent[] {
+    const fullHistory = this.getDetailedOrderHistory();
+    return fullHistory
+      .filter(entry => entry.orderNo === orderNo)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  showOrderTimeline(order: Order) {
+    this.selectedOrderForTimeline = this.selectedOrderForTimeline === order ? null : order;
+  }
+
+  printOrder(order: Order) {
+    this.selectedOrderForReceipt = order;
+    this.isPrinting = true;
+    
+    const printContent = this.generateReceiptHTML(order);
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice - ${order.orderNo}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 20px; }
+                .no-print { display: none; }
+              }
+              body { font-family: Arial, sans-serif; }
+              .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2EB270; padding-bottom: 10px; }
+              .company-name { color: #2EB270; margin: 0; font-size: 24px; }
+              .company-info { margin: 5px 0; font-size: 12px; }
+              .invoice-info { display: flex; justify-content: space-between; margin: 20px 0; }
+              .invoice-details p { margin: 5px 0; }
+              .staff-info { background-color: #f0f9f4; padding: 10px; border-radius: 5px; margin: 10px 0; }
+              .staff-row { display: flex; justify-content: space-between; margin: 5px 0; }
+              .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              .items-table th { background-color: #2EB270; color: white; padding: 10px; text-align: left; }
+              .items-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+              .summary { border-top: 2px solid #ddd; padding-top: 10px; margin-top: 20px; }
+              .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
+              .total-row { font-size: 1.2em; font-weight: bold; border-top: 1px solid #ddd; padding-top: 10px; }
+              .footer { margin-top: 30px; text-align: center; font-style: italic; color: #666; font-size: 12px; }
+              .payment-method { background-color: #f0f9f4; padding: 10px; border-radius: 5px; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+            <div class="no-print" style="margin-top: 20px; text-align: center;">
+              <button onclick="window.print()" style="background: #2EB270; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                🖨 Print Receipt
+              </button>
+              <button onclick="window.close()" style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                Close
+              </button>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      setTimeout(() => {
+        printWindow.print();
+        this.isPrinting = false;
+      }, 500);
+    } else {
+      this.isPrinting = false;
+    }
+  }
+
+  private generateReceiptHTML(order: Order): string {
+    const subtotal = this.getOrderTotal(order);
+    const tax = subtotal * 0.05;
+    const grandTotal = subtotal + tax;
+    
+    const source = order.backendId ? 'Backend System' : 'Local System (Cashier)';
+    
+    const staffInfo = [];
+    if (order.createdBy) staffInfo.push({ role: 'Waiter', name: order.createdBy });
+    if (order.preparedBy) staffInfo.push({ role: 'Chef', name: order.preparedBy });
+    if (order.paidBy) staffInfo.push({ role: 'Cashier', name: order.paidBy });
+    if (order.servedBy) staffInfo.push({ role: 'Server', name: order.servedBy });
+    
+    return `
+      <div style="padding: 20px;">
+        <div class="header">
+          <h1 class="company-name">${this.companyInfo.name}</h1>
+          <p class="company-info">${this.companyInfo.address}</p>
+          <p class="company-info">📞 ${this.companyInfo.phone} | ✉️ ${this.companyInfo.email}</p>
+          ${this.companyInfo.vatNumber ? `<p class="company-info">📋 ${this.companyInfo.vatNumber}</p>` : ''}
+          <p class="company-info" style="font-size: 10px; color: #666;">Source: ${source}</p>
+        </div>
+        
+        <div class="invoice-info">
+          <div class="invoice-details">
+            <h3 style="margin: 0; color: #2E6276;">TAX INVOICE</h3>
+            <p><strong>Invoice #:</strong> ${order.orderNo}</p>
+            <p><strong>Date:</strong> ${this.formatDateForDisplay(order.date || '')}</p>
+            ${order.paidAt ? `<p><strong>Paid At:</strong> ${this.formatDateForDisplay(order.paidAt)}</p>` : ''}
+          </div>
+          <div class="invoice-details">
+            <p><strong>Table:</strong> ${order.table}</p>
+            <p><strong>Order Status:</strong> ${order.status}</p>
+          </div>
+        </div>
+        
+        ${staffInfo.length > 0 ? `
+          <div class="staff-info">
+            <h4 style="margin: 0 0 10px 0; color: #2E6276;">Staff Information</h4>
+            ${staffInfo.map(staff => `
+              <div class="staff-row">
+                <span><strong>${staff.role}:</strong></span>
+                <span>${staff.name}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        <div class="payment-method">
+          <p><strong>Payment Method:</strong> ${order.payment || 'Cash'}</p>
+          <p><strong>Payment Status:</strong> ${order.paymentStatus || 'PAID'}</p>
+        </div>
+        
+        ${order.note ? `
+          <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0;"><strong>Order Note:</strong> ${order.note}</p>
+          </div>
+        ` : ''}
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Unit Price</th>
+              <th style="text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.items.map((item, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${item.name}</td>
+                <td style="text-align: center;">${item.qty}</td>
+                <td style="text-align: right;">₦${this.formatAmount(item.price)}</td>
+                <td style="text-align: right;">₦${this.formatAmount(item.total)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="summary">
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span>₦${this.formatAmount(subtotal)}</span>
+          </div>
+          <div class="summary-row">
+            <span>Tax (5%):</span>
+            <span>₦${this.formatAmount(tax)}</span>
+          </div>
+          <div class="summary-row total-row">
+            <span>TOTAL:</span>
+            <span>₦${this.formatAmount(grandTotal)}</span>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>Thank you for dining with us!</p>
+          <p>This is a computer generated receipt</p>
+          <p>For inquiries: ${this.companyInfo.phone} | ${this.companyInfo.email}</p>
+          <p>${this.companyInfo.name} - ${this.companyInfo.address}</p>
+          <p>Generated on ${this.formatDateForDisplay(new Date().toISOString())}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  getCashierName(): string {
+    try {
+      const userData = this.userService.getUserData() as any;
+      
+      if (userData) {
+        return userData.username || 'Cashier';
+      }
+      
+      return 'Cashier';
+      
+    } catch (error) {
+      console.log('Error getting cashier name:', error);
+      return 'Cashier';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status.toLowerCase()) {
+      case 'paid': return 'fa-check-circle';
+      case 'confirmed': return 'fa-check-circle';
+      case 'completed': return 'fa-check-double';
+      case 'pending': return 'fa-clock';
+      default: return 'fa-circle';
+    }
+  }
+
+  getPaymentIcon(payment?: string): string {
+    switch ((payment || '').toLowerCase()) {
+      case 'cash': return 'fa-money-bill';
+      case 'card': return 'fa-credit-card';
+      case 'transfer': return 'fa-exchange-alt';
+      default: return 'fa-wallet';
+    }
+  }
+
+  getTimelineIcon(action: string): string {
+    switch (action.toLowerCase()) {
+      case 'created': return 'fa-plus-circle';
+      case 'paid': return 'fa-money-bill-wave';
+      case 'completed': return 'fa-check-circle';
+      case 'served': return 'fa-utensils';
+      default: return 'fa-circle';
+    }
+  }
+
+  refreshOrders() {
+    console.log('🔄 Manual refresh triggered');
+    this.loadPaidOrders();
+  }
+
+  exportToCSV() {
+    console.log('📥 Exporting to CSV...');
+    
+    const headers = [
+      'Order No', 'Table', 'Date', 'Status', 'Payment Method', 
+      'Total Amount', 'Items Count', 'Waiter', 'Chef', 'Cashier',
+      'Items Details', 'Note'
+    ];
+    
+    const csvData = this.filteredOrders.map(order => [
+      `"${order.orderNo}"`,
+      order.table,
+      `"${this.formatDateForDisplay(order.date || '')}"`,
+      order.status,
+      order.payment || 'Unknown',
+      this.formatAmount(this.getOrderTotal(order)),
+      order.items.length,
+      `"${order.createdBy || ''}"`,
+      `"${order.preparedBy || ''}"`,
+      `"${order.paidBy || ''}"`,
+      `"${order.items.map(item => `${item.name} (x${item.qty})`).join('; ')}"`,
+      `"${order.note || ''}"`
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    this.downloadCSV(csvContent, `orders-history-${new Date().toISOString().split('T')[0]}.csv`);
+  }
+
+  private downloadCSV(content: string, filename: string) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ CSV downloaded:', filename);
+  }
+
+  forceSyncWithCashier() {
+    console.log('🔄 Force syncing with cashier page data...');
+    
+    localStorage.removeItem('kitchenHistoryCombinedOrders');
+    
+    this.loadPaidOrders();
+    
+    alert('Successfully synced with cashier page data!');
+  }
+
+  debugDataSources() {
+    console.log('🔍 Debugging data sources...');
+    
+    const cashierData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
+    const historyBackup = localStorage.getItem('kitchenHistoryCombinedOrders');
+    
+    alert(`Data Sources Debug:
+      - Cashier localStorage: ${cashierData ? 'Found' : 'Not found'}
+      - History backup: ${historyBackup ? 'Found' : 'Not found'}
+      - Current orders: ${this.orders.length}
+      - Filtered orders: ${this.filteredOrders.length}
+      - Current user: ${this.currentUser?.name || 'Not set'}
+      - Available staff: ${this.availableStaff.length}
+    `);
+  }
+
+  addTestStaff() {
+    // Removed this function since we don't want test staff
+    console.log('Test staff function removed');
+  }
+
+  ngOnDestroy() {
+    console.log('🛑 History component destroyed');
+    
+    if (this.ordersSubscription) {
+      this.ordersSubscription.unsubscribe();
+    }
+  }
+}
