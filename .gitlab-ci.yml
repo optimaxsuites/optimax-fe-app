@@ -52,7 +52,7 @@ deploy_to_vercel_prod:
   environment: production
   script:
     - npm install -g vercel
-    - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_PROD_PROJECT
+    - vercel --token $VERCEL_TOKEN --prod --confirm --project $VERCEL_PROD_PROJECT
 
 deploy_to_vercel_staging:
   stage: deploy
@@ -62,4 +62,4 @@ deploy_to_vercel_staging:
   environment: production
   script:
     - npm install -g vercel
-    - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_STAGING_PROJECT
+    - vercel --token $VERCEL_TOKEN --prod --confirm --project $VERCEL_STAGING_PROJECT
