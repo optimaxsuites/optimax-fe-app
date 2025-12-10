@@ -30,7 +30,7 @@ export class StoreCheckoutComponent implements OnInit {
     instructions: '',
   };
 
-  paymentMethods = [
+   paymentMethods = [
     {
       value: 'cash',
       label: 'Pay with Cash',
@@ -54,6 +54,9 @@ export class StoreCheckoutComponent implements OnInit {
     },
   ];
 
+  paymentKeysAvailable: boolean = true;
+  showPaymentWarning: boolean = false;
+  
   constructor(
     private router: Router,
     private route: ActivatedRoute,

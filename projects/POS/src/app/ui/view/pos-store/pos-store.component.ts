@@ -3,7 +3,7 @@ import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
 import { ActivatedRoute } from '@angular/router'; 
 import { ImageCacheService } from '../../service/image-cache.service';
-import { PaymentServiceService } from '../../service/payment-service.service';
+// import { PaymentServiceService } from '../../service/payment-service.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { ProductHelperService } from '../../service/product-helper.service';
 import { Router } from '@angular/router';
@@ -39,9 +39,10 @@ interface Toast {
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
    // WhatsApp configuration
-  whatsappPhone = '+2348155026555';
+  whatsappPhone = '';
   whatsappMessage = 'Hello! I visited your store and would love to get more information.';
   whatsappHoverMessage = "Hi, let's chat! We're here to help you with any questions.";
+  showWhatsAppFallback = false;
   
   private _allProducts: ProductData[] = [];
   @ViewChild('allProductsSection') allProductsSection!: ElementRef;
@@ -176,7 +177,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     private router: Router,
     private _imgCacheService: ImageCacheService,
     private _productHelper: ProductHelperService,
-    private _paymentService: PaymentServiceService,
+    // private _paymentService: PaymentServiceService,
     private cartService: StoreCartService,
     private route: ActivatedRoute,
     private metadataService: MetadataService,
@@ -239,6 +240,7 @@ private loadUserFromStorage(): void {
         const initialBranch = branches[0];
         this.selectedBranch.set(initialBranch);
         this.metadataService.setSelectedBranch(initialBranch.id);
+        this.updateWhatsAppNumber(initialBranch);
       }
     });
 
@@ -407,20 +409,20 @@ private loadUserFromStorage(): void {
     }
   }
 
-  showToast(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info'): void {
-    const toast: Toast = {
-      id: Date.now(),
-      title,
-      message,
-      type
-    };
+  // showToast(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info'): void {
+  //   const toast: Toast = {
+  //     id: Date.now(),
+  //     title,
+  //     message,
+  //     type
+  //   };
     
-    this.toasts.update(toasts => [...toasts, toast]);
+  //   this.toasts.update(toasts => [...toasts, toast]);
     
-    setTimeout(() => {
-      this.removeToast(toast.id);
-    }, 5000);
-  }
+  //   setTimeout(() => {
+  //     this.removeToast(toast.id);
+  //   }, 5000);
+  // }
 
   removeToast(toastId: number): void {
     this.toasts.update(toasts => {
@@ -528,11 +530,82 @@ private showAuthModalOnFirstVisit(): void {
   onBranchChange(branch: any): void {
     this.selectedBranch.set(branch);
     this.metadataService.setSelectedBranch(branch.id);
+    this.updateWhatsAppNumber(branch);
   }
 
 onMobileCategoryNavigate(categoryName: string): void {
   this.navigateToCategoryPage(categoryName);
 }
+
+  private updateWhatsAppNumber(branch: any): void {
+    if (branch && branch.whatsappPhoneNumber && branch.whatsappPhoneNumber.trim() !== '') {
+      // Clean the WhatsApp number (remove any non-numeric characters except +)
+      const cleanedNumber = this.cleanWhatsAppNumber(branch.whatsappPhoneNumber);
+      this.whatsappPhone = cleanedNumber;
+      this.showWhatsAppFallback = false;
+      
+      // Show toast notification with branch WhatsApp info
+      this.showToast(
+        'Branch Support Available',
+        `You can now contact ${branch.name} directly via WhatsApp.`,
+        'success'
+      );
+    } else {
+      // No WhatsApp number available for this branch
+      this.whatsappPhone = '';
+      this.showWhatsAppFallback = true;
+      
+      // Show warning toast
+      this.showWhatsAppUnavailableToast(branch?.name || 'This branch');
+    }
+  }
+
+  private cleanWhatsAppNumber(phoneNumber: string): string {
+    // Remove all non-numeric characters except +
+    let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    
+    // If it starts with 0, replace with country code
+    if (cleaned.startsWith('0')) {
+      cleaned = '+234' + cleaned.substring(1);
+    }
+    
+    // If it doesn't have +, add it for Nigeria
+    if (!cleaned.startsWith('+') && cleaned.length === 11) {
+      cleaned = '+234' + cleaned.substring(1);
+    }
+    
+    return cleaned;
+  }
+
+  private showWhatsAppUnavailableToast(branchName: string): void {
+    this.showToast(
+      'Customer Care Unavailable',
+      `${branchName} WhatsApp customer care service isn't available at the moment. Please check again later or visit another branch.`,
+      'warning',
+      6000 // Show for 6 seconds
+    );
+  }
+
+  // Add this method to override showToast with optional duration
+  showToast(
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    duration: number = 5000
+  ): void {
+    const toast: Toast = {
+      id: Date.now(),
+      title,
+      message,
+      type
+    };
+    
+    this.toasts.update(toasts => [...toasts, toast]);
+    
+    setTimeout(() => {
+      this.removeToast(toast.id);
+    }, duration);
+  }
 
 // And make sure this method exists:
 navigateToCategoryPage(category: string): void {

@@ -523,13 +523,14 @@
   } <!-- Close @if (isContentReady()) -->
 
   <!-- WhatsApp Widget with conditional visibility -->
-  <app-whatsapp-widget
-   *ngIf="!isCartVisible()"
-    [phoneNumber]="whatsappPhone"
-    [message]="whatsappMessage"
-    [hoverMessage]="whatsappHoverMessage"
-    position="bottom-right">
-  </app-whatsapp-widget>
+<app-whatsapp-widget
+  *ngIf="!isCartVisible()"
+  [phoneNumber]="whatsappPhone"
+  [message]="whatsappMessage"
+  [hoverMessage]="whatsappHoverMessage"
+  [showFallbackMessage]="showWhatsAppFallback"
+  position="bottom-right">
+</app-whatsapp-widget>
 
 
 <!-- Simple Footer Version -->

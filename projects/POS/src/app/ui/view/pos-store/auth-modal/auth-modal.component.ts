@@ -320,7 +320,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
             setTimeout(() => {
               this.closeModal();
               const uuid = this.storeUuid || this.getCurrentStoreUuid();
-              this.router.navigate(['user/checkout//store', uuid, 'verify-required']);
+              this.router.navigate(['/store', uuid, 'verify-required']);
             }, 2000);
           } else {
             this.errorMessage = response.message || 'Signup failed. Please try again.';

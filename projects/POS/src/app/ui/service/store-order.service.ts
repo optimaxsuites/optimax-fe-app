@@ -357,7 +357,8 @@ export class StoreOrderService {
     );
   }
 
-  processPaystackPayment(
+  // ========== PAYSTACK METHODS ==========
+processPaystackPayment(
     email: string,
     amount: number,
     orderNumber: string
@@ -392,11 +393,20 @@ export class StoreOrderService {
       }),
       catchError((error) => {
         console.error('❌ Paystack payment initialization failed:', error);
-        return throwError(() => 'Payment service unavailable');
+        
+        // Provide specific error messages
+        if (error.message?.includes('No payment keys available')) {
+          return throwError(() => 'Card payments are currently unavailable. Please use cash or bank transfer.');
+        }
+        if (error.message?.includes('Unable to retrieve payment key')) {
+          return throwError(() => 'Unable to process card payments at this time. Please try another payment method.');
+        }
+        
+        return throwError(() => 'Payment service unavailable. Please use cash or bank transfer.');
       })
     );
   }
-
+  // ========== ORDER CREATION METHODS ==========
   createOrderWithPayment(
     orderData: StoreOrderPOST,
     paymentMethod: string,
@@ -686,20 +696,28 @@ export class StoreOrderService {
     );
   }
 
-  private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
-    console.log('🔍 Validating order data before finalization...');
-    console.log('Payment ID:', orderData.paymentId);
-    console.log('Order Status:', orderData.orderStatus);
-    
-    if (!orderData.paymentId || orderData.paymentId === 0) {
-      console.error('❌ Payment ID is missing or invalid!');
-      console.error('Full order data:', JSON.stringify(orderData, null, 2));
-      return throwError(() => 'Payment record must be created before order');
-    }
+private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
+  console.log('🔍 Validating order data before finalization...');
+  console.log('Payment ID:', orderData.paymentId);
+  console.log('Order Status:', orderData.orderStatus);
+  console.log('Is Online:', orderData.isOnline);
+  console.log('Delivery Status:', orderData.deliveryStatus);
+  
+  if (!orderData.paymentId || orderData.paymentId === 0) {
+    console.error('❌ Payment ID is missing or invalid!');
+    console.error('Full order data:', JSON.stringify(orderData, null, 2));
+    return throwError(() => 'Payment record must be created before order');
+  }
 
-    const sanitizedOrderData = this.sanitizeOrderData(orderData);
+  // 🔥 FIX 7: Ensure isOnline is always true for e-store orders
+  const sanitizedOrderData = this.sanitizeOrderData(orderData);
+  
+  if (!sanitizedOrderData.isOnline) {
+    console.warn('⚠️ WARNING: isOnline flag is false for e-store order! Forcing to true.');
+    sanitizedOrderData.isOnline = true;
+  }
 
-    console.log('🚀 Sending final order data to API:', JSON.stringify(sanitizedOrderData, null, 2));
+  console.log('🚀 Sending final order data to API:', JSON.stringify(sanitizedOrderData, null, 2));
 
     return this.http.post<any>(
       this.getBaseApiUrl() + '/x/api/v2/pos/orders',
@@ -746,16 +764,29 @@ export class StoreOrderService {
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
       deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
-      deliveryStatus: orderData.deliveryStatus || 'PENDING',
-      isOnline: true
+      deliveryStatus: orderData.deliveryStatus || 'PENDING'
     };
 
-    console.log('🔍 Sanitized order data with fixed deliveryStatus:', JSON.stringify(sanitized, null, 2));
-    
-    if (!sanitized.paymentId) {
-      console.error('❌ CRITICAL: paymentId is null in sanitized data!');
-      console.error('Original paymentId was:', orderData.paymentId);
-    }
+  // 🔥 CRITICAL VALIDATIONS
+  console.log('🔍 Sanitized order validation:', {
+    // isOnline: sanitized.isOnline,
+    orderStatus: sanitized.orderStatus,
+    paymentId: sanitized.paymentId,
+    totalAmount: sanitized.totalAmount
+  });
+  
+  // if (!sanitized.isOnline) {
+  //   console.error('❌ CRITICAL: isOnline flag is not set!');
+  // }
+  
+  if (!sanitized.paymentId) {
+    console.error('❌ CRITICAL: paymentId is null in sanitized data!');
+    console.error('Original paymentId was:', orderData.paymentId);
+  }
+
+  // if (!sanitized.isOnline) {
+  //   console.warn('⚠️ WARNING: isOnline flag is not set!');
+  // }
 
   return sanitized;
 }
