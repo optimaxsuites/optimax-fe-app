@@ -139,6 +139,12 @@ deleteTax(id: any): Observable<any> {
       .pipe(catchError(this.handleError));
   }
 
+  bulkCreateProducts(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product/batch', data)
+      .pipe(catchError(this.handleError));
+  }
+
   addBranchData(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/branchDatas', data)
