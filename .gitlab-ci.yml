@@ -48,8 +48,8 @@ update_subtrees:
 deploy_to_vercel_prod:
   stage: deploy
   image: node:20
-  only:
-    - prod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prod"'
   script:
     - npm install -g vercel
     - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_PROD_PROJECT
@@ -57,8 +57,8 @@ deploy_to_vercel_prod:
 deploy_to_vercel_staging:
   stage: deploy
   image: node:20
-  only:
-    - mod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "mod"'
   script:
     - npm install -g vercel
     - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_STAGING_PROJECT
