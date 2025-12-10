@@ -38,7 +38,7 @@ import { PayslipViewComponent } from './ui/view/dashboard-page/payslip-view/pays
 import { EmployeePayslipsListComponent } from './ui/view/employee-payslips-list/employee-payslips-list.component';
 import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.component';
-
+import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
@@ -63,6 +63,7 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
   DashboardDropdownComponent,
     GeneraldashboardComponent,
     HrDashboardComponent,
+     SideModalComponent,
     
   ],
   imports: [
@@ -95,7 +96,8 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
     ButtonModule,
     NgSelectModule,
     NgApexchartsModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule, 
+   
   ],
   providers: [
      {
