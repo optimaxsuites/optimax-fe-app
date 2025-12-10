@@ -43,3 +43,24 @@ update_subtrees:
 
     rules:
     - if: '$CI_COMMIT_BRANCH == "mod"'
+
+stages:
+  - deploy
+
+deploy_to_vercel_prod:
+  stage: deploy
+  image: node:20
+  only:
+    - prod
+  script:
+    - npm install -g vercel
+    - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_PROD_PROJECT
+
+deploy_to_vercel_staging:
+  stage: deploy
+  image: node:20
+  only:
+    - mod
+  script:
+    - npm install -g vercel
+    - vercel --token $VERCEL_TOKEN --prod --confirm --cwd ./frontend --project $VERCEL_STAGING_PROJECT

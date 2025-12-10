@@ -697,6 +697,8 @@ async processProductImport(data: any[]): Promise<void> {
   let successCount = 0;
   let errorCount = 0;
   this.loading = true;
+  const failedRows: { rowNumber: number; row: any; error: string }[] = [];
+
 
   const existingCodes = new Set<string>();
 
@@ -813,10 +815,9 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
               Number(product.sellingPrice || 0),
               product.supplierId ?? null
             );
-            // optional: console.log the new inventory id if backend returns it
-            // console.log('Inventory created for product', response.id);
+         
           } catch (invErr) {
-            // Don’t fail the whole row if inventory creation fails—just warn and continue
+
             console.warn('Inventory create failed for product', response.id, invErr);
           }
 
@@ -833,7 +834,7 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
       errorCount++;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Error importing row ${rowNumber}:`, errorMessage);
-
+      failedRows.push({ rowNumber, row, error: errorMessage });
       this.messageService.add({
         severity: 'error',
         summary: `Row ${rowNumber} Error`,
@@ -855,6 +856,12 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
     });
     this.close.emit(true);
   } else {
+    if (failedRows.length > 0) {
+      this.createFailedImportSheet(failedRows);
+    }
+
+    
+
     this.messageService.add({
       severity: successCount > 0 ? 'warn' : 'error',
       summary: 'Import Completed',
@@ -864,6 +871,32 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
     });
   }
 }
+
+private createFailedImportSheet(failedRows: { rowNumber: number; row: any; error: string }[]) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Failed Imports');
+
+  const headers = [...Object.keys(failedRows[0].row), 'Error'];
+  worksheet.addRow(headers);
+
+  failedRows.forEach(({ row, error }) => {
+    const rowData = [...Object.values(row), error];
+    worksheet.addRow(rowData);
+  });
+
+  workbook.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'failed_products.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
+}
+
 
 
 // Helper methods
