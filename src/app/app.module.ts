@@ -590,12 +590,6 @@ const dbConfig: DBConfig = {
           deps: [AppInitService],
           multi: true
         },
-     {
-          provide: APP_INITIALIZER,
-          useFactory: (tenantInitService: TenantInit) => () => tenantInitService.init(),
-          deps: [TenantInit],
-          multi: true
-        },
     JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),

@@ -1,6 +1,6 @@
 import { Component, computed, HostListener, signal, ViewEncapsulation, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
-import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
+import { ActivatedRoute, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
 import { firstValueFrom, lastValueFrom, Observable, BehaviorSubject } from 'rxjs';
 import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.service';
 import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
@@ -63,7 +63,7 @@ export class AppComponent implements OnInit {
     private checkoutService: CheckoutService,
     private offlineService: OfflineService,
     private authenticationService: AuthenticationService,
-    private tenantService: TenantService
+    private route: ActivatedRoute
   ) {
     // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
     window.addEventListener('online', () => this._isOffline.next(false));
@@ -91,6 +91,7 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.checkEligibility();
     this.checkOnboardingStatus();
+  
     // this.tenantService.loadFullTenants(); 
 
   }
@@ -102,6 +103,7 @@ export class AppComponent implements OnInit {
   }
 
   checkEligibility(){
+
       // Check if URL contains a token at all
       const urlParams = new URLSearchParams(window.location.search);
       const hasToken = urlParams.has('token');
