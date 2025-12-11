@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { PosServiceService } from '../../service/pos-service.service';
 import { CheckoutService } from '../../service/checkout.service';
 import { Subscription } from 'rxjs';
 import { UserService } from '../../service/user.service';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { TableOrderStatusGET } from "../../models/interfaces/kitchen";
+import { UserModule } from "../../../user/user.module";
 
 interface OrderItem {
   id: number;
@@ -77,16 +78,16 @@ interface StaffMember {
   styleUrls: ['./checkout-kitchen-history.component.scss'],
 })
 export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
-  // Navbar properties
+  // ===== NAVIGATION PROPERTIES =====
   logoUrl: string = 'assets/images/logo.png';
   profileImgUrl: string = 'assets/images/default-profile.png';
   userRegData: any = {};
-  mode: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  mode: 'waiter' | 'chef' | 'cashier' = 'cashier';
   showCloseRegisterModal: boolean = false;
   openingAmount: number = 0;
   closingAmount: number = 0;
   
-  // Page properties
+  // ===== PAGE PROPERTIES =====
   searchText: string = '';
   selectedDate: string = '';
   statusFilter: string = '';
@@ -144,11 +145,55 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
+  // ===== NAVIGATION METHODS =====
+  setMode(mode: 'waiter' | 'chef' | 'cashier'): void {
+    console.log('Setting mode to:', mode);
+    this.mode = mode;
+    
+    // Navigate to the kitchen page
+    this.router.navigate(['/checkout-kitchen']).then(success => {
+      if (success) {
+        console.log('Navigation successful to kitchen');
+      } else {
+        console.error('Navigation failed');
+      }
+    });
+  }
+
+  onToggleSidebar(): void {
+    console.log('Toggle sidebar clicked');
+    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    if (sidebar) {
+      sidebar.classList.toggle('active');
+    }
+  }
+
+  closeRegister(): void {
+    console.log('Close register clicked');
+    this.showCloseRegisterModal = true;
+  }
+
+  cancelCloseRegister(): void {
+    this.showCloseRegisterModal = false;
+  }
+
+  finalizeRegister(data: any): void {
+    console.log('Finalizing register with data:', data);
+    this.showCloseRegisterModal = false;
+  }
+
+  logout(): void {
+    console.log('Logout clicked');
+    sessionStorage.clear();
+    localStorage.clear();
+    this.router.navigate(['/login']);
+  }
+
   ngOnInit() {
     console.log('🚀 History component initialized');
     
     // Initialize navbar user data
-    this.initializeNavbarData();
+    this.initializeUserData();
     
     // Load company info
     this.getCompanyInfoFromSessionStorage();
@@ -157,9 +202,35 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     this.loadPaidOrders();
   }
 
+  private initializeUserData(): void {
+    try {
+      const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
+      if (userDataStr) {
+        this.userRegData = JSON.parse(userDataStr);
+        console.log('👤 User data loaded:', this.userRegData);
+        
+        // Set mode based on user role
+        const userRole = (this.userRegData.role || '').toLowerCase();
+        if (userRole.includes('cashier')) {
+          this.mode = 'cashier';
+        } else if (userRole.includes('chef') || userRole.includes('kitchen')) {
+          this.mode = 'chef';
+        } else if (userRole.includes('waiter')) {
+          this.mode = 'waiter';
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading user data:', error);
+      this.userRegData = {
+        username: 'User',
+        accountId: '001',
+        uuid: 'default-uuid'
+      };
+    }
+  }
+
   // ===== HELPER METHODS FOR NUMBER FORMATTING =====
   formatAmount(amount: number): string {
-    // Format number with commas and 2 decimal places
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -167,7 +238,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   }
 
   formatAmountNoDecimals(amount: number): string {
-    // Format number with commas and no decimal places
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -185,74 +255,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     );
   }
 
-  // ===== NAVBAR METHODS =====
-  private initializeNavbarData() {
-    try {
-      // Get user data from session storage for navbar
-      const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
-      if (userDataStr) {
-        this.userRegData = JSON.parse(userDataStr);
-        console.log('👤 Navbar user data loaded:', this.userRegData);
-      }
-      
-      // Get logo and profile image URLs
-      const businessData = JSON.parse(sessionStorage.getItem('businessData') || '{}');
-      if (businessData.logoUrl) {
-        this.logoUrl = businessData.logoUrl;
-      }
-      if (businessData.profileImageUrl) {
-        this.profileImgUrl = businessData.profileImageUrl;
-      }
-      
-    } catch (error) {
-      console.error('❌ Error loading navbar data:', error);
-      // Set default user data for navbar
-      this.userRegData = {
-        username: 'User',
-        accountId: '001',
-        uuid: 'default-uuid'
-      };
-    }
-  }
-
-  setMode(mode: 'waiter' | 'chef' | 'cashier') {
-    this.mode = mode;
-    // Navigate to the appropriate page based on mode
-    switch (mode) {
-      case 'waiter':
-        this.router.navigate(['/checkout-kitchen']);
-        break;
-      case 'chef':
-        this.router.navigate(['/checkout-kitchen']);
-        break;
-      case 'cashier':
-        this.router.navigate(['/checkout-kitchen']);
-        break;
-    }
-  }
-
-  onToggleSidebar() {
-    // Toggle mobile sidebar
-    console.log('Toggle sidebar');
-  }
-
-  closeRegister() {
-    this.showCloseRegisterModal = true;
-  }
-
-  finalizeRegister(data: any) {
-    console.log('Finalize register:', data);
-    this.showCloseRegisterModal = false;
-  }
-
-  logout() {
-    console.log('Logging out...');
-    // Clear session storage and redirect to login
-    sessionStorage.clear();
-    localStorage.clear();
-    this.router.navigate(['/login']);
-  }
-
   // ===== COMPANY INFO METHODS =====
   private getCompanyInfoFromSessionStorage(): void {
     try {
@@ -268,13 +270,12 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
           vatNumber: userData.vatNumber || `VAT-${userData.id || '000000'}`
         };
         
-        console.log('🏢 Company info loaded from session storage in history:', this.companyInfo);
+        console.log('🏢 Company info loaded:', this.companyInfo);
       } else {
-        console.warn('⚠️ No user data found in session storage (history), using default company info');
         this.setDefaultCompanyInfo();
       }
     } catch (error) {
-      console.error('❌ Error getting company info from session storage:', error);
+      console.error('❌ Error getting company info:', error);
       this.setDefaultCompanyInfo();
     }
   }
@@ -327,7 +328,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
         };
         console.log('👤 Current user:', this.currentUser);
         
-        // Add current user to available staff
         this.availableStaff = [this.currentUser];
       }
     } catch (error) {
@@ -336,7 +336,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   }
 
   private determineUserRole(userData: any): 'waiter' | 'chef' | 'cashier' {
-    if (!userData) return 'waiter';
+    if (!userData) return 'cashier';
     
     const role = userData.role || userData.userType || '';
     
@@ -344,12 +344,11 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     if (role.toLowerCase().includes('chef') || role.toLowerCase().includes('kitchen')) return 'chef';
     if (role.toLowerCase().includes('waiter') || role.toLowerCase().includes('server')) return 'waiter';
     
-    return 'waiter';
+    return 'cashier';
   }
 
   private async loadStaffData() {
     try {
-      // Only load current user, no sample data
       if (this.currentUser) {
         this.availableStaff = [this.currentUser];
       }
@@ -989,7 +988,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   applyStaffFilter() {
     console.log('👤 Applying staff filter...');
     
-    // If a role is selected but no staff is selected, clear any staff filter that doesn't match the role
     if (this.selectedRoleFilter && this.selectedStaffFilter) {
       const selectedStaff = this.getStaffById(this.selectedStaffFilter);
       if (selectedStaff && selectedStaff.role.toLowerCase() !== this.selectedRoleFilter.toLowerCase()) {
@@ -1431,11 +1429,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       - Current user: ${this.currentUser?.name || 'Not set'}
       - Available staff: ${this.availableStaff.length}
     `);
-  }
-
-  addTestStaff() {
-    // Removed this function since we don't want test staff
-    console.log('Test staff function removed');
   }
 
   ngOnDestroy() {

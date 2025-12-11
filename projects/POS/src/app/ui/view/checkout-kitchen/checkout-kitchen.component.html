@@ -545,7 +545,11 @@
   </div>
 </div>
 
-<!-- Payment Mode Selection Modal - SIMPLIFIED VERSION -->
+<div *ngIf="activePage === 'history'">
+  <app-checkout-kitchen-history></app-checkout-kitchen-history>
+</div>
+
+<!-- Payment Mode Selection Modal - UPDATED WITH REFERENCE NUMBER FIELDS -->
 <div *ngIf="showPaymentModal" class="payment-modal-overlay">
   <div class="payment-modal">
     <div class="payment-modal-header">
@@ -578,12 +582,34 @@
         </div>
       </div>
 
-      <!-- Simplified confirmation message for all payment methods -->
-      <div *ngIf="selectedPaymentMethod" class="payment-confirmation">
-        <div class="confirmation-icon">{{ getPaymentIcon(selectedPaymentMethod) }}</div>
-        <h4>{{ getPaymentMethodDisplayName(selectedPaymentMethod) }} Payment</h4>
-        <!-- <p>Click "Confirm Payment" to mark this order as paid with {{ getPaymentMethodDisplayName(selectedPaymentMethod).toLowerCase() }}.</p>
-        <p class="payment-note">No transaction reference required for quick payment processing.</p> -->
+      <!-- Transfer Reference Input (shown only for TRANSFER) -->
+      <div *ngIf="selectedPaymentMethod === 'TRANSFER'" class="transfer-reference">
+        <label for="transferRef">Transaction Reference:</label>
+        <input type="text" 
+               id="transferRef" 
+               [(ngModel)]="transferReference"
+               placeholder="Enter bank transfer reference"
+               class="transfer-input">
+        <p class="hint">Please enter the bank transfer reference number</p>
+      </div>
+
+      <!-- Card Details Input (shown only for CARD) -->
+      <div *ngIf="selectedPaymentMethod === 'CARD'" class="card-details">
+        <div class="form-group">
+          <label for="cardRef">Transaction Reference:</label>
+          <input type="text" 
+                 id="cardRef" 
+                 [(ngModel)]="cardReference"
+                 placeholder="Enter card transaction reference"
+                 class="card-input">
+        </div>
+        <p class="hint">Please enter the card transaction reference number</p>
+      </div>
+
+      <!-- Cash Payment Note -->
+      <div *ngIf="selectedPaymentMethod === 'CASH'" class="cash-payment-note">
+        <div class="cash-icon">💰</div>
+        <p class="cash-note">Cash payment selected. No reference number required.</p>
       </div>
     </div>
 
@@ -591,7 +617,9 @@
       <button class="btn-cancel" (click)="closePaymentModal()">Cancel</button>
       <button class="btn-confirm" 
               (click)="confirmPayment()"
-              [disabled]="!selectedPaymentMethod">
+              [disabled]="!selectedPaymentMethod || 
+                         (selectedPaymentMethod === 'TRANSFER' && !transferReference) ||
+                         (selectedPaymentMethod === 'CARD' && !cardReference)">
         Confirm Payment
       </button>
     </div>

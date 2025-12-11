@@ -70,11 +70,11 @@ export class KitchenOrderComponent {
       this.setRangeToToday();
     }
 
-    changeTestMode(mode: "waiter" | "chef" | "cashier") {
+    changeTestMode(mode: "waiter" | "chef" | "cashier" | "history") {
 		this.testMode.update(() => (mode));
 	}
   
-  get mode(): "waiter" | "chef" | "cashier" {
+  get mode(): "waiter" | "chef" | "cashier" | "history" {
 		return this.testMode() ?? "chef";
 	}
   

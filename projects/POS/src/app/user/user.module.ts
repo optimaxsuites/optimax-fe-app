@@ -101,7 +101,9 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     ProductDetailsComponent,
     CategoryProductsComponent,
     WhatsappWidgetComponent,
-    CheckoutKitchenHistoryComponent
+    CheckoutKitchenHistoryComponent,
+    
+    // CheckoutKitchenHeaderComponent
     // ProductVariantModalComponent,
   ],
   imports: [
@@ -147,7 +149,7 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     MenubarModule,
     TagModule,
   ],
-  exports: [CheckoutKitchenComponent, CheckoutHeaderComponent],
+  exports: [CheckoutKitchenComponent, CheckoutHeaderComponent, CheckoutKitchenHeaderComponent],
   providers: [PosCheckoutPageComponent, DecimalPipe, TitleCasePipe, DatePipe],
 })
 export class UserModule {}

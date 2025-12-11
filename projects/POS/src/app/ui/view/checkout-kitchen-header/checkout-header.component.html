@@ -3,28 +3,29 @@
   <div class="flex justify-between items-center px-5">
     <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
 
-  <nav>
-    <ul class="flex gap-12 list-none">
-      <!-- ========== UPDATED HISTORY LINK ========== -->
-      <li>
-        <a [routerLink]="['/user/checkout/kitchen/history', uuid]">History</a>
-      </li>
-      <!-- ========== END OF UPDATED HISTORY LINK ========== -->
-      
-      <!-- <li (click)="closeRegister()">
-        <a class="cursor-pointer"> Close Register </a>
-      </li> -->
-      <!-- <li>
-        <a [routerLink]="navigationLink.getLink('kitchen')">Kitchen</a>
-      </li> -->
-      <!-- <li>
-        <a [routerLink]="navigationLink.getLink('orderRefund')"
-          >Return/Refund</a
-        >
-      </li> -->
-     <li  [class.active]="mode === 'waiter'">
-      <a class="cursor-pointer" (click)="setMode('waiter')">Waiter</a>
-      </li>
+    <nav>
+      <ul class="flex gap-12 list-none">
+        <!-- ========== UPDATED HISTORY LINK ========== -->
+        <li [class.active]="mode === 'history'">
+          <a class="cursor-pointer" (click)="setMode('history')" >History</a>
+        </li>
+        <!-- ========== END OF UPDATED HISTORY LINK ========== -->
+        
+        <!-- <li (click)="closeRegister()">
+          <a class="cursor-pointer"> Close Register </a>
+        </li> -->
+        <!-- <li>
+          <a [routerLink]="navigationLink.getLink('kitchen')">Kitchen</a>
+        </li> -->
+        <!-- <li>
+          <a [routerLink]="navigationLink.getLink('orderRefund')"
+            >Return/Refund</a
+          >
+        </li> -->
+        <li [class.active]="mode === 'waiter'">
+          <a class="cursor-pointer" (click)="setMode('waiter');"
+            >Waiter</a>
+        </li>
 
         <li [class.active]="mode === 'chef'">
           <a class="cursor-pointer" (click)="setMode('chef')">Chef</a>

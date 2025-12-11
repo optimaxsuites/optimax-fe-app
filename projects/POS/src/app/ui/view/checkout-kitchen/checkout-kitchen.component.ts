@@ -58,6 +58,7 @@ interface Order {
   isPaid: boolean;
   paidAt?: string;
   paymentStatus: 'UNPAID' | 'PAID';
+  transactionReference?: string; // Added transaction reference
   // NEW: Staff tracking fields for history page
   createdBy?: string;
   createdById?: string | number;
@@ -92,16 +93,6 @@ interface PaymentBreakdown {
 // Company types from v17
 type TableOrder = Map<ProductData, number>;
 
-// NEW: Staff member interface
-interface StaffMember {
-  id: string | number;
-  name: string;
-  role: 'waiter' | 'chef' | 'cashier' | 'manager';
-  username?: string;
-  email?: string;
-  active?: boolean;
-}
-
 @Component({
   selector: 'app-checkout-kitchen',
   templateUrl: './checkout-kitchen.component.html',
@@ -109,7 +100,7 @@ interface StaffMember {
 })
 export class CheckoutKitchenComponent implements OnInit {
   // ===== ORIGINAL PAGES ONLY =====
-  @Input() activePage: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  @Input() activePage: 'waiter' | 'chef' | 'cashier'| "history" = 'waiter';
   @Output() orderCompleted = new EventEmitter<Order>();
 
   // ===== STATE =====
@@ -138,6 +129,8 @@ export class CheckoutKitchenComponent implements OnInit {
   // ===== PAYMENT MODAL STATE =====
   showPaymentModal = false;
   selectedPaymentMethod?: 'CASH' | 'TRANSFER' | 'CARD';
+  transferReference = '';
+  cardReference = '';
 
   // Payment methods configuration
   paymentMethods = [
@@ -191,7 +184,7 @@ export class CheckoutKitchenComponent implements OnInit {
     canCreate: false,
   };
 
-  testMode: 'waiter' | 'chef' | 'cashier' = 'waiter';
+  testMode: 'waiter' | 'chef' | 'cashier' | 'history' = 'waiter';
   tableData: TableOrder = new Map();
   selectedOrderSignal: TableOrderStatusGET | null = null;
   
@@ -214,11 +207,9 @@ export class CheckoutKitchenComponent implements OnInit {
 
   // Local storage key for persisting orders
   private readonly STORAGE_KEY = 'restaurant_orders_data';
-  
-  // NEW: Staff data and storage
-  private readonly STAFF_STORAGE_KEY = 'restaurant_staff_data';
-  availableStaff: StaffMember[] = [];
-  currentUser: StaffMember | null = null;
+
+  // Current user
+  currentUser: any = null;
 
   constructor(
     private _posService: PosServiceService,
@@ -239,9 +230,6 @@ export class CheckoutKitchenComponent implements OnInit {
     // First load from localStorage to maintain persistence
     this.loadFromLocalStorage();
     
-    // Load staff data
-    this.loadStaffData();
-    
     // Then initialize company data
     this.initializeCompanyData();
     
@@ -259,8 +247,8 @@ export class CheckoutKitchenComponent implements OnInit {
         canCreate: true,
       };
     } else {
-      this.orderPermissions = getUserPermissionsFor('kitchen_order');
-      this.paymentPermissions = getUserPermissionsFor('kitchen_payment');
+      this.orderPermissions = getUserPermissionsFor('POS_KITCHEN_WAITER');
+      this.paymentPermissions = getUserPermissionsFor('POS_KITCHEN_CASHIER');
     }
 
     this.testMode = this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef";
@@ -342,149 +330,28 @@ export class CheckoutKitchenComponent implements OnInit {
         this.currentUser = {
           id: (userData.id || userData.username || 'current-user').toString(),
           name: userName,
-          role: this.determineUserRole(userData),
           username: userData.username,
           email: userData.email,
-          active: true
         };
         console.log('👤 Current user initialized:', this.currentUser);
       } else {
         // Fallback for testing
         this.currentUser = {
-          id: 'waiter-1',
+          id: 'user-1',
           name: 'John Doe',
-          role: 'waiter',
           username: 'john',
           email: 'john@restaurant.com',
-          active: true
         };
       }
     } catch (error) {
       console.error('❌ Error getting current user:', error);
       // Default user for testing
       this.currentUser = {
-        id: 'waiter-1',
+        id: 'user-1',
         name: 'John Doe',
-        role: 'waiter',
         username: 'john',
-        active: true
       };
     }
-  }
-
-  // ===== NEW: DETERMINE USER ROLE =====
-  private determineUserRole(userData: any): 'waiter' | 'chef' | 'cashier' {
-    if (!userData) return 'waiter';
-    
-    // Check role from user data
-    const role = userData.role || userData.userType || '';
-    
-    if (role.toLowerCase().includes('cashier')) return 'cashier';
-    if (role.toLowerCase().includes('chef') || role.toLowerCase().includes('kitchen')) return 'chef';
-    if (role.toLowerCase().includes('waiter') || role.toLowerCase().includes('server')) return 'waiter';
-    
-    // Default based on current page
-    if (this.activePage === 'cashier') return 'cashier';
-    if (this.activePage === 'chef') return 'chef';
-    return 'waiter';
-  }
-
-  // ===== NEW: LOAD STAFF DATA =====
-  private loadStaffData() {
-    try {
-      // First try to get from localStorage
-      const savedStaff = localStorage.getItem(this.STAFF_STORAGE_KEY);
-      if (savedStaff) {
-        this.availableStaff = JSON.parse(savedStaff);
-        console.log('👥 Loaded staff from localStorage:', this.availableStaff.length);
-      }
-      
-      // If no staff in localStorage, create sample data
-      if (this.availableStaff.length === 0) {
-        this.availableStaff = this.createSampleStaff();
-        this.saveStaffToLocalStorage();
-      }
-      
-      // Add current user if not in list
-      if (this.currentUser && !this.availableStaff.find(s => s.id === this.currentUser?.id)) {
-        this.availableStaff.push(this.currentUser);
-        this.saveStaffToLocalStorage();
-      }
-      
-    } catch (error) {
-      console.error('❌ Error loading staff data:', error);
-      this.availableStaff = this.createSampleStaff();
-    }
-  }
-
-  // ===== NEW: CREATE SAMPLE STAFF DATA =====
-  private createSampleStaff(): StaffMember[] {
-    return [
-      { id: 'waiter-1', name: 'John Doe', role: 'waiter', username: 'john', email: 'john@restaurant.com', active: true },
-      { id: 'waiter-2', name: 'Jane Smith', role: 'waiter', username: 'jane', email: 'jane@restaurant.com', active: true },
-      { id: 'chef-1', name: 'Chef Gordon', role: 'chef', username: 'gordon', email: 'gordon@restaurant.com', active: true },
-      { id: 'chef-2', name: 'Chef Maria', role: 'chef', username: 'maria', email: 'maria@restaurant.com', active: true },
-      { id: 'cashier-1', name: 'Cashier Mike', role: 'cashier', username: 'mike', email: 'mike@restaurant.com', active: true },
-      { id: 'cashier-2', name: 'Cashier Sarah', role: 'cashier', username: 'sarah', email: 'sarah@restaurant.com', active: true }
-    ];
-  }
-
-  // ===== NEW: SAVE STAFF TO LOCALSTORAGE =====
-  private saveStaffToLocalStorage() {
-    try {
-      localStorage.setItem(this.STAFF_STORAGE_KEY, JSON.stringify(this.availableStaff));
-    } catch (error) {
-      console.error('Error saving staff data:', error);
-    }
-  }
-
-  // ===== NEW: TRACK STAFF INVOLVEMENT IN ORDERS =====
-  private trackStaffInOrder(order: Order, action: 'created' | 'updated' | 'prepared' | 'served' | 'paid' | 'cancelled') {
-    if (!this.currentUser) return;
-    
-    const staffInfo = {
-      staffId: this.currentUser.id,
-      staffName: this.currentUser.name,
-      role: this.currentUser.role,
-      action: action,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Initialize staffInvolved array if it doesn't exist
-    if (!order.staffInvolved) {
-      order.staffInvolved = [];
-    }
-    
-    // Add staff involvement record
-    order.staffInvolved.push(staffInfo);
-    
-    // Also set individual fields for easier access
-    switch (action) {
-      case 'created':
-        order.createdBy = this.currentUser.name;
-        order.createdById = this.currentUser.id;
-        order.createdByRole = this.currentUser.role as 'waiter';
-        break;
-      case 'prepared':
-        order.preparedBy = this.currentUser.name;
-        order.preparedById = this.currentUser.id;
-        order.preparedByRole = 'chef';
-        break;
-      case 'served':
-        order.servedBy = this.currentUser.name;
-        order.servedById = this.currentUser.id;
-        break;
-      case 'paid':
-        order.paidBy = this.currentUser.name;
-        order.paidById = this.currentUser.id;
-        order.paidByRole = 'cashier';
-        break;
-    }
-    
-    console.log(`👤 Staff tracking: ${this.currentUser.name} (${this.currentUser.role}) ${action} order ${order.orderNo}`);
-    
-    // Save to local storage so history component can read it
-    this.saveToLocalStorage();
   }
 
   // ===== PAYMENT MODAL METHODS =====
@@ -493,11 +360,15 @@ export class CheckoutKitchenComponent implements OnInit {
     
     this.showPaymentModal = true;
     this.selectedPaymentMethod = undefined;
+    this.transferReference = '';
+    this.cardReference = '';
   }
 
   closePaymentModal() {
     this.showPaymentModal = false;
     this.selectedPaymentMethod = undefined;
+    this.transferReference = '';
+    this.cardReference = '';
   }
 
   selectPaymentMethod(method: 'CASH' | 'TRANSFER' | 'CARD') {
@@ -526,16 +397,30 @@ export class CheckoutKitchenComponent implements OnInit {
 
   async confirmPayment() {
     if (!this.selectedOrder || !this.selectedPaymentMethod) return;
+    
+    // Validate reference numbers for non-cash payments
+    if (this.selectedPaymentMethod === 'TRANSFER' && !this.transferReference.trim()) {
+      alert('Please enter transaction reference for bank transfer');
+      return;
+    }
+    
+    if (this.selectedPaymentMethod === 'CARD' && !this.cardReference.trim()) {
+      alert('Please enter transaction reference for card payment');
+      return;
+    }
 
     try {
       this.isProcessingPayment = true;
       
-      // Create payment breakdown with auto-generated reference
-      const paymentBreakdown: PaymentBreakdown[] = [{
-        amountPaid: this.getGrandTotal(this.selectedOrder),
-        transactionReference: this.generateAutoReference(this.selectedPaymentMethod),
-        paymentMethod: this.selectedPaymentMethod
-      }];
+      // Create transaction reference based on payment method
+      let transactionReference = '';
+      if (this.selectedPaymentMethod === 'CASH') {
+        transactionReference = `CASH-${Date.now()}`;
+      } else if (this.selectedPaymentMethod === 'TRANSFER') {
+        transactionReference = this.transferReference.trim();
+      } else if (this.selectedPaymentMethod === 'CARD') {
+        transactionReference = this.cardReference.trim();
+      }
 
       // Mark order as paid locally
       this.selectedOrder.isPaid = true;
@@ -543,9 +428,26 @@ export class CheckoutKitchenComponent implements OnInit {
       this.selectedOrder.paidAt = new Date().toISOString();
       this.selectedOrder.paymentMethod = this.getPaymentMethodDisplayName(this.selectedPaymentMethod);
       this.selectedOrder.status = 'CONFIRMED';
+      this.selectedOrder.transactionReference = transactionReference;
       
       // TRACK STAFF: Mark who processed the payment
-      this.trackStaffInOrder(this.selectedOrder, 'paid');
+      if (this.currentUser) {
+        if (!this.selectedOrder.staffInvolved) {
+          this.selectedOrder.staffInvolved = [];
+        }
+        
+        this.selectedOrder.staffInvolved.push({
+          staffId: this.currentUser.id || 'cashier',
+          staffName: this.currentUser.name || 'Cashier',
+          role: 'cashier',
+          action: 'paid',
+          timestamp: new Date().toISOString()
+        });
+        
+        this.selectedOrder.paidBy = this.currentUser.name || 'Cashier';
+        this.selectedOrder.paidById = this.currentUser.id || 'cashier';
+        this.selectedOrder.paidByRole = 'cashier';
+      }
 
       // Move to history and remove from active orders
       this.moveToHistory(this.selectedOrder);
@@ -567,23 +469,6 @@ export class CheckoutKitchenComponent implements OnInit {
       console.error('Payment error:', error);
       this.isProcessingPayment = false;
       alert('Error processing payment. Please try again.');
-    }
-  }
-
-  // NEW: Generate auto reference for payments
-  private generateAutoReference(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
-    const timestamp = Date.now();
-    const randomNum = Math.floor(Math.random() * 10000);
-    
-    switch (method) {
-      case 'CASH':
-        return `CASH-${timestamp}-${randomNum}`;
-      case 'TRANSFER':
-        return `TRF-${timestamp}-${randomNum}`;
-      case 'CARD':
-        return `CARD-${timestamp}-${randomNum}`;
-      default:
-        return `PAY-${timestamp}-${randomNum}`;
     }
   }
 
@@ -667,14 +552,9 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   // ===== CHANGE TEST MODE =====
-  changeTestMode(mode: "waiter" | "chef" | "cashier") {
+  changeTestMode(mode: "waiter" | "chef" | "cashier" | "history") {
     this.testMode = mode;
     this.activePage = mode;
-    
-    // Update current user role based on test mode
-    if (this.currentUser) {
-      this.currentUser.role = mode;
-    }
   }
 
   // ===== TABLE NUMBER INPUT HANDLER =====
@@ -765,11 +645,6 @@ export class CheckoutKitchenComponent implements OnInit {
   updateOrderStatus(order: Order, newStatus: Order['status']): void {
     order.status = newStatus;
     
-    // TRACK STAFF: If chef is preparing/serving, track it
-    if (newStatus === 'PREPARING' || newStatus === 'READY') {
-      this.trackStaffInOrder(order, 'prepared');
-    }
-    
     this.saveToLocalStorage(); // Save after status update
   }
 
@@ -819,7 +694,23 @@ export class CheckoutKitchenComponent implements OnInit {
     }
     
     // TRACK STAFF: Mark who updated the order
-    this.trackStaffInOrder(this.editingOrder, 'updated');
+    if (this.currentUser) {
+      if (!this.editingOrder.staffInvolved) {
+        this.editingOrder.staffInvolved = [];
+      }
+      
+      this.editingOrder.staffInvolved.push({
+        staffId: this.currentUser.id || 'waiter',
+        staffName: this.currentUser.name || 'Waiter',
+        role: 'waiter',
+        action: 'updated',
+        timestamp: new Date().toISOString()
+      });
+      
+      this.editingOrder.createdBy = this.currentUser.name || 'Waiter';
+      this.editingOrder.createdById = this.currentUser.id || 'waiter';
+      this.editingOrder.createdByRole = 'waiter';
+    }
     
     // Clear editing state
     this.editingOrder = null;
@@ -1183,7 +1074,19 @@ export class CheckoutKitchenComponent implements OnInit {
       };
 
       // TRACK STAFF: Mark who created this order
-      this.trackStaffInOrder(newOrder, 'created');
+      if (this.currentUser) {
+        newOrder.staffInvolved = [{
+          staffId: this.currentUser.id || 'waiter',
+          staffName: this.currentUser.name || 'Waiter',
+          role: 'waiter',
+          action: 'created',
+          timestamp: new Date().toISOString()
+        }];
+        
+        newOrder.createdBy = this.currentUser.name || 'Waiter';
+        newOrder.createdById = this.currentUser.id || 'waiter';
+        newOrder.createdByRole = 'waiter';
+      }
       
       this.orders.push(newOrder);
       this.allOrders.push(newOrder);
@@ -1212,7 +1115,21 @@ export class CheckoutKitchenComponent implements OnInit {
       
       // TRACK STAFF: Mark who prepared this order
       if (newStatus === 'READY') {
-        this.trackStaffInOrder(order, 'prepared');
+        if (!order.staffInvolved) {
+          order.staffInvolved = [];
+        }
+        
+        order.staffInvolved.push({
+          staffId: 'chef',
+          staffName: 'Chef',
+          role: 'chef',
+          action: 'prepared',
+          timestamp: new Date().toISOString()
+        });
+        
+        order.preparedBy = 'Chef';
+        order.preparedById = 'chef';
+        order.preparedByRole = 'chef';
       }
       
       // Save to localStorage
@@ -1233,7 +1150,19 @@ export class CheckoutKitchenComponent implements OnInit {
       this.selectedOrder.isPaid = false;
       
       // TRACK STAFF: Mark who cancelled the order
-      this.trackStaffInOrder(this.selectedOrder, 'cancelled');
+      if (this.currentUser) {
+        if (!this.selectedOrder.staffInvolved) {
+          this.selectedOrder.staffInvolved = [];
+        }
+        
+        this.selectedOrder.staffInvolved.push({
+          staffId: this.currentUser.id || 'cashier',
+          staffName: this.currentUser.name || 'Cashier',
+          role: 'cashier',
+          action: 'cancelled',
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // Move cancelled orders to history immediately
       this.moveToHistory(this.selectedOrder);
@@ -1264,33 +1193,54 @@ export class CheckoutKitchenComponent implements OnInit {
     this.orderCompleted.emit(order);
   }
 
-  // ===== UPDATED ORDER FILTERING BY PAGE =====
+  // ===== UPDATED ORDER FILTERING BY PAGE (SORTED IN DESCENDING ORDER) =====
   get activeWaiterOrders(): Order[] {
     // Waiter sees PENDING, PREPARING, READY orders that are NOT paid
-    return this.orders.filter(o => 
-      !o.isPaid && 
-      (o.status === 'PENDING' || 
-       o.status === 'PREPARING' || 
-       o.status === 'READY')
-    );
+    return this.orders
+      .filter(o => 
+        !o.isPaid && 
+        (o.status === 'PENDING' || 
+         o.status === 'PREPARING' || 
+         o.status === 'READY')
+      )
+      .sort((a, b) => {
+        // Sort by createdAt in descending order (newest first)
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Descending order
+      });
   }
 
   get activeChefOrders(): Order[] {
     // Chef sees PENDING, PREPARING, and READY orders that are NOT paid
-    return this.orders.filter(o => 
-      !o.isPaid && 
-      (o.status === 'PENDING' || 
-       o.status === 'PREPARING' || 
-       o.status === 'READY')
-    );
+    return this.orders
+      .filter(o => 
+        !o.isPaid && 
+        (o.status === 'PENDING' || 
+         o.status === 'PREPARING' || 
+         o.status === 'READY')
+      )
+      .sort((a, b) => {
+        // Sort by createdAt in descending order (newest first)
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Descending order
+      });
   }
 
   get activeCashierOrders(): Order[] {
     // Cashier sees READY orders that are NOT paid
-    return this.orders.filter(o => 
-      !o.isPaid && 
-      o.status === 'READY'
-    );
+    return this.orders
+      .filter(o => 
+        !o.isPaid && 
+        o.status === 'READY'
+      )
+      .sort((a, b) => {
+        // Sort by createdAt in descending order (newest first)
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // Descending order
+      });
   }
 
   // ===== HELPER METHODS =====
@@ -1569,7 +1519,19 @@ export class CheckoutKitchenComponent implements OnInit {
       const order = this.orders[index];
       
       // TRACK STAFF: Mark who deleted the order
-      this.trackStaffInOrder(order, 'cancelled');
+      if (this.currentUser) {
+        if (!order.staffInvolved) {
+          order.staffInvolved = [];
+        }
+        
+        order.staffInvolved.push({
+          staffId: this.currentUser.id || 'waiter',
+          staffName: this.currentUser.name || 'Waiter',
+          role: 'waiter',
+          action: 'cancelled',
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // Remove from all arrays
       this.orders.splice(index, 1);
@@ -1655,29 +1617,7 @@ export class CheckoutKitchenComponent implements OnInit {
       this.orders = [];
       this.historyOrders = [];
       localStorage.removeItem(this.STORAGE_KEY);
-      localStorage.removeItem(this.STAFF_STORAGE_KEY);
       console.log('All orders cleared');
     }
-  }
-
-  // ===== NEW: GET CURRENT USER DISPLAY INFO =====
-  getCurrentUserDisplay(): string {
-    if (!this.currentUser) return 'Unknown User';
-    return `${this.currentUser.name} (${this.currentUser.role})`;
-  }
-
-  // ===== NEW: UPDATE STAFF INFORMATION =====
-  updateStaffMember(staffId: string | number, updates: Partial<StaffMember>) {
-    const index = this.availableStaff.findIndex(s => s.id === staffId);
-    if (index !== -1) {
-      this.availableStaff[index] = { ...this.availableStaff[index], ...updates };
-      this.saveStaffToLocalStorage();
-    }
-  }
-
-  // ===== NEW: ADD NEW STAFF MEMBER =====
-  addNewStaffMember(staff: StaffMember) {
-    this.availableStaff.push(staff);
-    this.saveStaffToLocalStorage();
   }
 }
