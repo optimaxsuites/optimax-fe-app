@@ -6,8 +6,8 @@
     <nav>
       <ul class="flex gap-12 list-none">
         <!-- ========== UPDATED HISTORY LINK ========== -->
-        <li>
-          <a [routerLink]="['/checkout-kitchen-history', userRegData?.uuid]">History</a>
+        <li [class.active]="mode === 'history'">
+          <a class="cursor-pointer" (click)="setMode('history')" >History</a>
         </li>
         <!-- ========== END OF UPDATED HISTORY LINK ========== -->
         
@@ -23,7 +23,8 @@
           >
         </li> -->
         <li [class.active]="mode === 'waiter'">
-          <a class="cursor-pointer" (click)="setMode('waiter')">Waiter</a>
+          <a class="cursor-pointer" (click)="setMode('waiter');"
+            >Waiter</a>
         </li>
 
         <li [class.active]="mode === 'chef'">

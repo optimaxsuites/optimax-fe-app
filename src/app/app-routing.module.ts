@@ -25,6 +25,7 @@ import { PermissionGuard } from './ui/permission/permission.guard';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 import { CheckoutKitchenHistoryComponent } from './ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
+import { CheckoutKitchenHeaderComponent } from './ui/view/checkout-kitchen-header/checkout-header.component';
 
 const routes: Routes = [
   {
@@ -150,6 +151,12 @@ const routes: Routes = [
   {
     path: 'checkout-kitchen-history/:uuid',
     component: CheckoutKitchenHistoryComponent,
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_CHKOUT'] }
+  },
+  {
+    path: 'checkout-kitchen-header',
+    component: CheckoutKitchenHeaderComponent,
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_CHKOUT'] }
   },

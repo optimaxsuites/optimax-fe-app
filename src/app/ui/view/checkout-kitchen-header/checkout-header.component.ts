@@ -8,6 +8,7 @@ import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper
   selector: 'app-checkout-kitchen-header',
   templateUrl: './checkout-header.component.html',
   styleUrl: './checkout-header.component.scss',
+  standalone: false,
   providers: [],
 })
 export class CheckoutKitchenHeaderComponent {
@@ -15,8 +16,11 @@ export class CheckoutKitchenHeaderComponent {
   @Output() closeRegisterEvent = new EventEmitter<void>();
   @Input() closingAmount: number = 0; // Add this property
   @Input() total: number = 0; // Already exists
-  @Output() changeMode = new EventEmitter<"waiter" | "chef" | "cashier">();
-  @Input() mode: "waiter" | "chef" | "cashier" = "chef";
+  @Output() changeMode = new EventEmitter<"waiter" | "chef" | "cashier"| "history">();
+  @Input() mode: "waiter" | "chef" | "cashier" | "history" = "chef";
+  @Input() modefromHistory: boolean = false;
+
+  console= console
 
   userInfoRegData: any[] = [];
   userRegData: any = {};
@@ -83,13 +87,17 @@ export class CheckoutKitchenHeaderComponent {
       console.log(Object(this.paymentPermissions)); 
   }
 
+  // clicked(mode: string){
+  //   alert('licke don waiter:' mode);
+  //          this.setMode('waiter')
+  // }
 
   closeRegister() {
     this.closeRegisterEvent.emit();
     this.showCloseRegisterModal = true;
   }
 
-  setMode(mode: "waiter" | "chef" | "cashier") {
+  setMode(mode: "waiter" | "chef" | "cashier" | "history") {
     this.changeMode.emit(mode);
   }
 
