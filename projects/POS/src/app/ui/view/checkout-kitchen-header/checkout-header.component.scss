@@ -5,7 +5,7 @@
 
 /* Fixed navbar styles */
 .navbar-fixed {
-  position: fixed;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
@@ -17,12 +17,12 @@
 
 /* Add margin/padding to body or main content to prevent hiding under navbar */
 body {
-  padding-top: 70px; /* Adjust this value based on your navbar height */
+  padding-top: 20px; /* Adjust this value based on your navbar height */
 }
 
 /* OR if you have a specific content container */
 .page-content {
-  margin-top: 70px; /* Same value as above */
+  margin-top: 20px; /* Same value as above */
   padding: 20px;
 }
 

@@ -129,8 +129,9 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   private _todayRevenue: number = 0;
   private _totalRevenue: number = 0;
 
+  // Updated storage keys to match cashier component
   private readonly CASHIER_STORAGE_KEY = 'restaurant_orders_data';
-  private readonly CASHIER_PAID_ORDERS_KEY = 'cashier_paid_orders';
+  private readonly HISTORY_BACKUP_KEY = 'restaurant_history_backup';
   
   availableStaff: StaffMember[] = [];
   currentUser: StaffMember | null = null;
@@ -199,7 +200,30 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     this.getCompanyInfoFromSessionStorage();
     this.initializeCurrentUser();
     this.loadStaffData();
+    
+    // Load orders from cashier localStorage
     this.loadPaidOrders();
+    
+    // Set up interval to check for new orders every 10 seconds
+    setInterval(() => {
+      this.checkForNewOrders();
+    }, 10000);
+  }
+
+  private checkForNewOrders() {
+    console.log('🔄 Checking for new orders from cashier...');
+    const cashierOrders = this.getCashierLocalStorageOrders();
+    const currentOrderNos = this.orders.map(order => order.orderNo);
+    const newOrders = cashierOrders.filter(order => 
+      !currentOrderNos.includes(order.orderNo)
+    );
+    
+    if (newOrders.length > 0) {
+      console.log(`📥 Found ${newOrders.length} new orders from cashier`);
+      this.orders = [...newOrders, ...this.orders];
+      this.updateStatistics();
+      this.applyFilters();
+    }
   }
 
   private initializeUserData(): void {
@@ -377,8 +401,9 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
     
-    const localStorageOrders = this.getLocalStoragePaidOrders();
-    console.log('📦 Found paid orders in localStorage:', localStorageOrders.length);
+    // Load from cashier localStorage FIRST (this is where new orders are saved)
+    const cashierOrders = this.getCashierLocalStorageOrders();
+    console.log('💰 Found orders in cashier localStorage:', cashierOrders.length);
     
     const startTime = performance.now();
     console.log('📡 Fetching paid orders from backend...');
@@ -391,7 +416,8 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
         const backendOrders = this.filterAndConvertPaidOrders(tableOrders);
         console.log(`💰 Paid orders from backend: ${backendOrders.length}`);
         
-        const allOrders = this.mergeOrders(backendOrders, localStorageOrders);
+        // Merge cashier orders with backend orders
+        const allOrders = this.mergeAllOrders(backendOrders, cashierOrders);
         
         this.orders = allOrders.map(order => ({
           ...order,
@@ -404,29 +430,29 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
         console.log('✅ Combined paid orders:', this.orders);
         console.log(`✅ Final paid orders count: ${this.orders.length}`);
         
+        // DEBUG: Log today's orders
+        this.debugTodayOrders();
+        
         this.updateStatistics();
         this.applyFilters();
         this.isLoading = false;
         this.trackPerformance('Load paid orders', startTime);
         
-        // Save to localStorage as backup
-        // this.saveOrdersToLocalStorage();
-
-        this.cdr.detectChanges();
-        // Save combined results to local storage as backup
-        this.saveCombinedOrdersToLocalStorage();
+        this.saveHistoryBackup();
       },
       error: (error) => {
         console.error('❌ Error loading orders from backend:', error);
         this.errorMessage = 'Failed to load orders from server. Using local data.';
         
-        this.orders = localStorageOrders.map(order => ({
+        // Use cashier orders when backend fails
+        this.orders = cashierOrders.map(order => ({
           ...order,
           status: 'PAID',
           paymentStatus: 'PAID'
         }));
         
         this.enrichOrdersWithStaffData();
+        this.debugTodayOrders();
         this.updateStatistics();
         this.applyFilters();
         this.isLoading = false;
@@ -435,80 +461,176 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getLocalStoragePaidOrders(): Order[] {
+  // NEW METHOD: Get orders from cashier localStorage - FIXED VERSION
+  private getCashierLocalStorageOrders(): Order[] {
     try {
-      let paidOrdersData = localStorage.getItem(this.CASHIER_PAID_ORDERS_KEY);
-      let paidOrders: any[] = [];
-      
-      if (paidOrdersData) {
-        paidOrders = JSON.parse(paidOrdersData);
-        console.log('💳 Found dedicated paid orders storage:', paidOrders.length);
-      } else {
-        const savedData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          
-          if (parsedData.historyOrders && Array.isArray(parsedData.historyOrders)) {
-            paidOrders = parsedData.historyOrders;
-          } else if (parsedData.allOrders && Array.isArray(parsedData.allOrders)) {
-            paidOrders = parsedData.allOrders.filter((order: any) => this.isOrderPaid(order));
-          }
-        }
+      const savedData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
+      if (!savedData) {
+        console.log('ℹ️ No cashier localStorage data found');
+        return [];
       }
       
-      const convertedOrders = paidOrders.map((order: any) => {
-        const converted = this.convertLocalStorageOrder(order);
-        return {
-          ...converted,
-          status: 'PAID',
-          paymentStatus: 'PAID'
-        };
+      const parsedData = JSON.parse(savedData);
+      console.log('📂 Parsed cashier localStorage data structure:', {
+        hasHistoryOrders: parsedData.historyOrders ? `Array(${parsedData.historyOrders.length})` : 'No',
+        hasAllOrders: parsedData.allOrders ? `Array(${parsedData.allOrders.length})` : 'No',
+        hasOrders: parsedData.orders ? `Array(${parsedData.orders.length})` : 'No',
+        lastUpdated: parsedData.lastUpdated || 'Unknown'
       });
       
-      console.log(`💰 Converted ${convertedOrders.length} paid orders from localStorage`);
-      return convertedOrders;
+      let allPaidOrders: Order[] = [];
+      
+      // 1. First check historyOrders (this is where cashier moves paid orders)
+      if (parsedData.historyOrders && Array.isArray(parsedData.historyOrders)) {
+        console.log(`📚 Found ${parsedData.historyOrders.length} orders in historyOrders`);
+        const historyPaidOrders = parsedData.historyOrders
+          .filter((order: any) => this.isOrderPaid(order))
+          .map((order: any) => this.convertLocalStorageOrder(order));
+        
+        console.log(`✅ ${historyPaidOrders.length} paid orders from historyOrders`);
+        allPaidOrders = [...allPaidOrders, ...historyPaidOrders];
+      }
+      
+      // 2. Check allOrders for any paid orders that might not be in historyOrders yet
+      if (parsedData.allOrders && Array.isArray(parsedData.allOrders)) {
+        const paidAllOrders = parsedData.allOrders
+          .filter((order: any) => this.isOrderPaid(order))
+          .map((order: any) => this.convertLocalStorageOrder(order));
+        
+        console.log(`📝 Found ${paidAllOrders.length} paid orders in allOrders`);
+        
+        // Only add orders that aren't already in our list
+        const existingOrderNos = allPaidOrders.map(o => o.orderNo);
+        const newOrders = paidAllOrders.filter((order: any) => 
+  !existingOrderNos.includes(order.orderNo)
+);
+        
+        console.log(`➕ Adding ${newOrders.length} new orders from allOrders`);
+        allPaidOrders = [...allPaidOrders, ...newOrders];
+      }
+      
+      // 3. Check orders array (active unpaid orders) - should be empty for paid
+      if (parsedData.orders && Array.isArray(parsedData.orders)) {
+        const paidOrders = parsedData.orders
+          .filter((order: any) => this.isOrderPaid(order))
+          .map((order: any) => this.convertLocalStorageOrder(order));
+        
+        console.log(`⚡ Found ${paidOrders.length} paid orders in orders array`);
+        
+        const existingOrderNos = allPaidOrders.map(o => o.orderNo);
+        const newOrders = paidOrders.filter((order: any) => 
+  !existingOrderNos.includes(order.orderNo)
+);
+        
+        console.log(`➕ Adding ${newOrders.length} new orders from orders array`);
+        allPaidOrders = [...allPaidOrders, ...newOrders];
+      }
+      
+      console.log(`💰 Total cashier paid orders found: ${allPaidOrders.length}`);
+      
+      // Log some sample orders for debugging
+      if (allPaidOrders.length > 0) {
+        console.log('📋 Sample cashier orders:', allPaidOrders.slice(0, 3).map(order => ({
+          orderNo: order.orderNo,
+          table: order.table,
+          isPaid: order.isPaid,
+          paymentMethod: order.paymentMethod,
+          date: order.date,
+          items: order.items?.length || 0
+        })));
+      }
+      
+      return allPaidOrders;
       
     } catch (error) {
-      console.error('❌ Error reading localStorage:', error);
+      console.error('❌ Error reading cashier localStorage:', error);
       return [];
     }
   }
 
   private isOrderPaid(order: any): boolean {
-    return (
+    // Check multiple indicators of a paid order
+    const isPaid = 
       order.isPaid === true || 
       order.paymentStatus === 'PAID' ||
       order.status === 'CONFIRMED' ||
       order.status === 'PAID' ||
       (order.paidAt && order.paidAt !== '') ||
-      (order.paymentMethod && order.paymentMethod !== '')
-    );
+      (order.paymentMethod && order.paymentMethod !== '') ||
+      (order.transactionReference && order.transactionReference !== '');
+    
+    // Debug log for questionable orders
+    if (!isPaid && (order.status || order.paymentMethod)) {
+      console.log('❓ Order not considered paid:', {
+        orderNo: order.orderNo,
+        isPaid: order.isPaid,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod
+      });
+    }
+    
+    return isPaid;
   }
 
   private convertLocalStorageOrder(localOrder: any): Order {
-    let orderDate = localOrder.date || localOrder.createdAt || localOrder.paidAt || '';
-    if (!orderDate && localOrder.paidAt) {
+    // Extract date from various possible fields
+    let orderDate = localOrder.paidAt || localOrder.date || localOrder.createdAt || new Date().toISOString();
+    
+    // Ensure proper date format
+    if (orderDate && typeof orderDate === 'string' && orderDate.includes('-')) {
+      // Already in string format
+    } else if (localOrder.paidAt) {
       orderDate = localOrder.paidAt;
     }
     
+    // Extract payment method
     let paymentMethod = localOrder.paymentMethod || 'Cash';
     if (!paymentMethod && localOrder.isPaid) {
       paymentMethod = 'Cash';
     }
     
+    // Convert items
     const items: OrderItem[] = localOrder.items ? localOrder.items.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      qty: item.qty,
-      total: item.total,
-      image: item.image,
-      category: item.category
+      id: item.id || 0,
+      name: item.name || 'Unknown Item',
+      price: item.price || 0,
+      qty: item.qty || 1,
+      total: item.total || (item.price * (item.qty || 1)),
+      image: item.image || '',
+      category: item.category || '',
+      product: item.product || null
     })) : [];
+    
+    // Get staff information
+    const staffInvolved: StaffInvolved[] = localOrder.staffInvolved || [];
+    
+    // Extract individual staff from staffInvolved array
+    let createdBy = localOrder.createdBy;
+    let preparedBy = localOrder.preparedBy;
+    let paidBy = localOrder.paidBy;
+    let servedBy = localOrder.servedBy;
+    
+    if (staffInvolved.length > 0) {
+      staffInvolved.forEach(staff => {
+        if (staff.action.includes('created') && !createdBy) {
+          createdBy = staff.staffName;
+        }
+        if (staff.action.includes('prepared') && !preparedBy) {
+          preparedBy = staff.staffName;
+        }
+        if (staff.action.includes('paid') && !paidBy) {
+          paidBy = staff.staffName;
+        }
+        if (staff.action.includes('served') && !servedBy) {
+          servedBy = staff.staffName;
+        }
+      });
+    }
     
     return {
       table: localOrder.table || 1,
-      orderNo: localOrder.orderNo || `LOCAL-${Date.now()}`,
+      orderNo: localOrder.orderNo || `CASHIER-${Date.now()}`,
       items: items,
       status: 'PAID',
       payment: paymentMethod,
@@ -520,16 +642,16 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       paymentMethod: paymentMethod,
       isPaid: true,
       paymentStatus: 'PAID',
-      paidAt: localOrder.paidAt,
-      createdBy: localOrder.createdBy,
+      paidAt: localOrder.paidAt || orderDate,
+      createdBy: createdBy,
       createdById: localOrder.createdById,
-      preparedBy: localOrder.preparedBy,
+      preparedBy: preparedBy,
       preparedById: localOrder.preparedById,
-      servedBy: localOrder.servedBy,
+      servedBy: servedBy,
       servedById: localOrder.servedById,
-      paidBy: localOrder.paidBy,
+      paidBy: paidBy,
       paidById: localOrder.paidById,
-      staffInvolved: localOrder.staffInvolved
+      staffInvolved: staffInvolved
     };
   }
 
@@ -539,6 +661,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
         order.staffInvolved = this.extractStaffFromOrder(order);
       }
       
+      // Ensure staff fields are populated from staffInvolved
       if (order.staffInvolved && order.staffInvolved.length > 0) {
         order.staffInvolved.forEach(staff => {
           switch (staff.role) {
@@ -569,116 +692,62 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   private extractStaffFromOrder(order: Order): StaffInvolved[] {
     const staffInvolved: StaffInvolved[] = [];
     
-    const timeline = this.getOrderTimeline(order.orderNo);
+    // Add staff from order fields
+    if (order.createdBy) {
+      staffInvolved.push({
+        staffId: order.createdById || order.createdBy.toLowerCase().replace(' ', '-'),
+        staffName: order.createdBy,
+        role: 'waiter',
+        action: 'created',
+        timestamp: order.createdAt || order.date || new Date().toISOString()
+      });
+    }
     
-    timeline.forEach(event => {
-      if (event.performedBy && event.role) {
-        staffInvolved.push({
-          staffId: event.performedById || event.performedBy.toLowerCase().replace(' ', '-'),
-          staffName: event.performedBy,
-          role: event.role,
-          action: event.action,
-          timestamp: event.timestamp
-        });
-      }
-    });
+    if (order.preparedBy) {
+      staffInvolved.push({
+        staffId: order.preparedById || order.preparedBy.toLowerCase().replace(' ', '-'),
+        staffName: order.preparedBy,
+        role: 'chef',
+        action: 'prepared',
+        timestamp: order.paidAt || order.date || new Date().toISOString()
+      });
+    }
     
-    // If no staff involved found in timeline, use current user if applicable
-    if (staffInvolved.length === 0) {
-      if (!order.createdBy && this.currentUser?.role === 'waiter') {
-        staffInvolved.push({
-          staffId: this.currentUser.id,
-          staffName: this.currentUser.name,
-          role: 'waiter',
-          action: 'Order created',
-          timestamp: order.createdAt || order.date || new Date().toISOString()
-        });
-      }
-      
-      if ((order.status === 'completed' || order.status === 'confirmed') && this.currentUser?.role === 'chef') {
-        staffInvolved.push({
-          staffId: this.currentUser.id,
-          staffName: this.currentUser.name,
-          role: 'chef',
-          action: 'Order prepared',
-          timestamp: order.paidAt || order.date || new Date().toISOString()
-        });
-      }
-      
-      if ((order.isPaid || order.paymentStatus === 'PAID') && this.currentUser?.role === 'cashier') {
-        staffInvolved.push({
-          staffId: this.currentUser.id,
-          staffName: this.currentUser.name,
-          role: 'cashier',
-          action: 'Payment processed',
-          timestamp: order.paidAt || order.date || new Date().toISOString()
-        });
-      }
+    if (order.paidBy) {
+      staffInvolved.push({
+        staffId: order.paidById || order.paidBy.toLowerCase().replace(' ', '-'),
+        staffName: order.paidBy,
+        role: 'cashier',
+        action: 'paid',
+        timestamp: order.paidAt || order.date || new Date().toISOString()
+      });
     }
     
     return staffInvolved;
   }
 
-  private enrichLocalStorageOrder(order: Order, originalData: any) {
-    if (originalData.createdBy) {
-      order.createdBy = originalData.createdBy;
-    }
-    if (originalData.preparedBy) {
-      order.preparedBy = originalData.preparedBy;
-    }
-    if (originalData.paidBy) {
-      order.paidBy = originalData.paidBy;
-    }
-    if (originalData.servedBy) {
-      order.servedBy = originalData.servedBy;
-    }
-    
-    if (order.createdBy) {
-      const staff = this.getStaffByName(order.createdBy);
-      if (staff) {
-        order.createdById = staff.id;
-      }
-    }
-    if (order.preparedBy) {
-      const staff = this.getStaffByName(order.preparedBy);
-      if (staff) {
-        order.preparedById = staff.id;
-      }
-    }
-    if (order.paidBy) {
-      const staff = this.getStaffByName(order.paidBy);
-      if (staff) {
-        order.paidById = staff.id;
-      }
-    }
-  }
-
-  private getStaffByName(staffName: string): StaffMember | undefined {
-    return this.availableStaff.find(staff => 
-      staff.name.toLowerCase().includes(staffName.toLowerCase()) ||
-      staff.username?.toLowerCase().includes(staffName.toLowerCase())
-    );
-  }
-
-  private mergeOrders(backendOrders: Order[], localStorageOrders: Order[]): Order[] {
+  private mergeAllOrders(backendOrders: Order[], cashierOrders: Order[]): Order[] {
     const orderMap = new Map<string, Order>();
     
+    // Add backend orders first
     backendOrders.forEach(order => {
       if (order.orderNo) {
         orderMap.set(order.orderNo, order);
       }
     });
     
-    localStorageOrders.forEach(order => {
+    // Add/update with cashier orders (these are more recent)
+    cashierOrders.forEach(order => {
       if (order.orderNo) {
         const existingOrder = orderMap.get(order.orderNo);
+        
         if (existingOrder) {
+          // Check which order is more recent
           const existingDate = this.parseCustomDate(existingOrder.date || '');
           const newDate = this.parseCustomDate(order.date || '');
           
-          if (newDate.getTime() > existingDate.getTime()) {
-            orderMap.set(order.orderNo, order);
-          }
+          // Always prefer cashier orders as they're from today
+          orderMap.set(order.orderNo, order);
         } else {
           orderMap.set(order.orderNo, order);
         }
@@ -687,22 +756,46 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     
     const mergedOrders = Array.from(orderMap.values());
     
-    console.log(`🔄 Merged ${backendOrders.length} backend + ${localStorageOrders.length} local = ${mergedOrders.length} total orders`);
+    console.log(`🔄 Merged ${backendOrders.length} backend + ${cashierOrders.length} cashier = ${mergedOrders.length} total orders`);
     
     return mergedOrders;
   }
 
-  private saveCombinedOrdersToLocalStorage() {
+  private saveHistoryBackup() {
     try {
       const backupData = {
-        combinedOrders: this.orders,
-        lastSynced: new Date().toISOString(),
-        source: 'history-component'
+        orders: this.orders,
+        lastUpdated: new Date().toISOString(),
+        todayRevenue: this._todayRevenue,
+        totalRevenue: this._totalRevenue
       };
-      localStorage.setItem('kitchenHistoryCombinedOrders', JSON.stringify(backupData));
-      console.log('💾 Saved combined orders to localStorage as backup');
+      
+      localStorage.setItem(this.HISTORY_BACKUP_KEY, JSON.stringify(backupData));
+      console.log('💾 Saved history backup to localStorage');
     } catch (error) {
-      console.error('❌ Error saving combined orders:', error);
+      console.error('❌ Error saving history backup:', error);
+    }
+  }
+
+  private debugTodayOrders() {
+    const today = new Date();
+    const todayOrders = this.orders.filter(order => {
+      if (!order.date) return false;
+      const orderDate = this.parseCustomDate(order.date);
+      return orderDate.toDateString() === today.toDateString();
+    });
+    
+    console.log(`📅 Today's orders (${today.toLocaleDateString()}):`, todayOrders.length);
+    
+    if (todayOrders.length > 0) {
+      console.log('📋 Today\'s order details:', todayOrders.map(order => ({
+        orderNo: order.orderNo,
+        table: order.table,
+        paymentMethod: order.paymentMethod,
+        total: this.getOrderTotal(order),
+        date: order.date,
+        source: order.backendId ? 'Backend' : 'Cashier'
+      })));
     }
   }
 
@@ -733,8 +826,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   private convertToLocalOrder(tableOrder: TableOrderStatusGET): Order {
     const order = tableOrder.order || {};
     
-    let effectiveStatus = 'PAID';
-    
     let formattedDate = '';
     if (tableOrder.orderedOn) {
       if (Array.isArray(tableOrder.orderedOn)) {
@@ -745,20 +836,11 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       }
     }
     
-    let createdBy = '';
-    let preparedBy = '';
-    let paidBy = '';
-    
-    const anyOrder = order as any;
-    if (anyOrder.createdBy) {
-      createdBy = anyOrder.createdBy;
-    }
-    
     const localOrder: Order = {
       table: this.convertTableNumber(tableOrder.tableNumber),
       orderNo: order.orderNumber || `T${tableOrder.tableNumber}-${tableOrder.id}`,
       items: this.convertOrderItems(order.orderItem || []),
-      status: effectiveStatus,
+      status: 'PAID',
       payment: this.getPaymentMethod(order),
       date: formattedDate,
       createdAt: formattedDate,
@@ -767,17 +849,8 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       orderId: order.id,
       paymentMethod: this.getPaymentMethod(order),
       isPaid: true,
-      paymentStatus: 'PAID',
-      createdBy: createdBy,
-      preparedBy: preparedBy,
-      paidBy: paidBy
+      paymentStatus: 'PAID'
     };
-
-    console.log('🔄 Converted backend order to PAID:', {
-      orderNo: localOrder.orderNo,
-      table: localOrder.table,
-      status: localOrder.status
-    });
     
     return localOrder;
   }
@@ -838,19 +911,23 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     if (!dateString) return new Date();
     
     try {
-      const parts = dateString.split('-');
-      
-      if (parts.length >= 6) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        const hour = parseInt(parts[3], 10) || 0;
-        const minute = parseInt(parts[4], 10) || 0;
-        const second = parseInt(parts[5], 10) || 0;
+      // Handle various date formats
+      if (dateString.includes('-')) {
+        const parts = dateString.split('-');
         
-        return new Date(year, month, day, hour, minute, second);
+        if (parts.length >= 6) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          const hour = parseInt(parts[3], 10) || 0;
+          const minute = parseInt(parts[4], 10) || 0;
+          const second = parseInt(parts[5], 10) || 0;
+          
+          return new Date(year, month, day, hour, minute, second);
+        }
       }
       
+      // Try ISO string
       return new Date(dateString);
     } catch (error) {
       console.error('Error parsing date:', dateString, error);
@@ -942,11 +1019,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     if (role === 'cashier' && order.paidBy) return true;
     
     if (order.staffInvolved && order.staffInvolved.some(staff => staff.role === role)) {
-      return true;
-    }
-    
-    const timeline = this.getOrderTimeline(order.orderNo);
-    if (timeline.some(event => event.role === role)) {
       return true;
     }
     
@@ -1204,7 +1276,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     const tax = subtotal * 0.05;
     const grandTotal = subtotal + tax;
     
-    const source = order.backendId ? 'Backend System' : 'Local System (Cashier)';
+    const source = order.backendId ? 'Backend System' : 'Cashier System';
     
     const staffInfo = [];
     if (order.createdBy) staffInfo.push({ role: 'Waiter', name: order.createdBy });
@@ -1408,27 +1480,47 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   forceSyncWithCashier() {
     console.log('🔄 Force syncing with cashier page data...');
     
-    localStorage.removeItem('kitchenHistoryCombinedOrders');
+    // Clear any cached data
+    localStorage.removeItem(this.HISTORY_BACKUP_KEY);
     
+    // Reload from cashier localStorage
     this.loadPaidOrders();
     
-    alert('Successfully synced with cashier page data!');
+    console.log('✅ Successfully synced with cashier page data!');
   }
 
   debugDataSources() {
     console.log('🔍 Debugging data sources...');
     
     const cashierData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
-    const historyBackup = localStorage.getItem('kitchenHistoryCombinedOrders');
+    const historyBackup = localStorage.getItem(this.HISTORY_BACKUP_KEY);
     
-    alert(`Data Sources Debug:
+    const cashierParsed = cashierData ? JSON.parse(cashierData) : null;
+    
+    const debugInfo = `Data Sources Debug:
       - Cashier localStorage: ${cashierData ? 'Found' : 'Not found'}
       - History backup: ${historyBackup ? 'Found' : 'Not found'}
       - Current orders: ${this.orders.length}
-      - Filtered orders: ${this.filteredOrders.length}
+      - Today's orders: ${this._todayOrders.length}
+      - Today's revenue: ₦${this.formatAmount(this._todayRevenue)}
+      - Cashier historyOrders: ${cashierParsed?.historyOrders?.length || 0}
+      - Cashier allOrders: ${cashierParsed?.allOrders?.length || 0}
+      - Cashier orders: ${cashierParsed?.orders?.length || 0}
       - Current user: ${this.currentUser?.name || 'Not set'}
       - Available staff: ${this.availableStaff.length}
-    `);
+    `;
+    
+    console.log(debugInfo);
+  }
+
+  // NEW: Check if cashier localStorage has new orders
+  hasNewCashierOrders(): boolean {
+    const cashierOrders = this.getCashierLocalStorageOrders();
+    const currentOrderNos = this.orders.map(order => order.orderNo);
+    const newOrders = cashierOrders.filter(order => 
+      !currentOrderNos.includes(order.orderNo)
+    );
+    return newOrders.length > 0;
   }
 
   ngOnDestroy() {
