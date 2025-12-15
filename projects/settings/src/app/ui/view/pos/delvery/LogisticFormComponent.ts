@@ -117,6 +117,7 @@ export class LogisticFormComponent {
 
     save() {
         if (!this.payload.name) return;
+        this.payload.id = 0
         this.loading = true;
         this.logisticsService.createLogistic(this.payload).subscribe({
             next: (res) => {
