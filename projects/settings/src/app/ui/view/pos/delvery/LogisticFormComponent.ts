@@ -13,16 +13,23 @@ import { LogisticsService } from '../../../service/logistics.service';
         <textarea class="w-full border p-2 rounded" placeholder="Notes" [(ngModel)]="payload.notes"></textarea>
 
         <div class="flex gap-2 justify-end mt-2">
-          <button class="px-3 py-2" (click)="_cancel()">Cancel</button>
           <button class="px-3 py-2 bg-customBlue text-white rounded" (click)="save()" [disabled]="loading">
             {{ loading ? 'Saving...' : 'Create' }}
           </button>
         </div>
       </div> -->
 
-        <h3 class="text-lg font-medium text-gray-700 mb-4 pb-2 border-b">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b">
+
+
+        <h3 class="text-lg font-medium text-gray-700 ">
         Add New Logistic Partner
       </h3>
+
+      <button class="px-3 py-2 border shadow" (click)="_cancel()">Cancel</button>
+
+      </div>
+         
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <!-- Category Name -->

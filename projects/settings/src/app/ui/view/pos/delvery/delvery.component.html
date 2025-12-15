@@ -366,7 +366,7 @@
 
 <!-- side modal (simple conditional render) -->
 <app-side-modal *ngIf="showLogisticModal" (close)="closeCreateLogistic()">
-  <app-logistic-form (created)="onLogisticCreated($event)" [logistics]="logistics"></app-logistic-form>
+  <app-logistic-form (created)="onLogisticCreated($event)" [logistics]="logistics" (cancel)="closeCreateLogistic()"></app-logistic-form>
   
 </app-side-modal>
 
