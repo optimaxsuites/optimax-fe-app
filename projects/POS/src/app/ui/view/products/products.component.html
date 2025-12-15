@@ -232,7 +232,7 @@
                 class="font-extrabold text-sm"
                 [ngClass]="
                   item?.quantity > 0 
-                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800')
+                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
                     : 'text-gray-500'
                 "
               >{{ item?.quantity }}</span>
@@ -240,11 +240,11 @@
                 class="text-xs font-extrabold ml-2"
                 [ngClass]="
                   item?.quantity > 0
-                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800') 
+                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800') 
                     : 'text-gray-500'
                 "
               >
-                {{ item?.quantity === 0 ? "Not in Stock" : (item?.quantity >= 11 ? "In Stock" : "Low Stock") }}
+                {{ item?.quantity === 0 ? "Not in Stock" : item?.quantity >= (item.reorderThreshold ?? 10) ? "In Stock" : "Low Stock" }}
               </span>
             </div>
           </td>
@@ -396,17 +396,21 @@
                 <ng-container *ngIf="product.quantity !== undefined">
                   <span
                     [ngClass]="
-                      product.quantity === 0 ? 'text-gray-500' : 'text-gray-800'
-                    "
+                  product.quantity > 0 
+                    ? (product.quantity >= (product.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
+                    : 'text-gray-500'
+                "
                     class="font-extrabold"
                   >
                     {{ product.quantity }}
                     <span
-                      *ngIf="product.quantity === 0"
-                      class="ml-2 text-sm font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full"
+               
+                      class="ml-2 text-sm font-bold bg-gray-100 px-2 py-1 rounded-full"
                     >
-                      Not in Stock
+                                         {{ getStockStatus(product)}}
+
                     </span>
+
                   </span>
                 </ng-container>
               </div>

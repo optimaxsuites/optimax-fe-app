@@ -1113,4 +1113,15 @@ export class ProductsComponent implements OnInit {
 
     pdf.save("barcodes.pdf");
   }
+
+  getStockStatus(item: any): string {
+  const quantity = Number(item?.quantity ?? 0);
+  const threshold = Number( 20);
+
+  if (quantity === 0) return 'Not in Stock';
+  if (quantity >= threshold) return 'In Stock';
+  return 'Low Stock';
+}
+
+
 }
