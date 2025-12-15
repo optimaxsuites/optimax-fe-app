@@ -38,7 +38,12 @@
           <!-- Name -->
           <div class="col-span-2">
             <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-              Name <span class="text-red-500">*</span>
+              Name <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="This is the name customers will see for this product across sales, inventory, and reports."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <input
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-colors"
@@ -57,7 +62,12 @@
           <!-- Description -->
           <div class="col-span-2">
             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-              Description <span class="text-red-500">*</span>
+              Description <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Provide a short but clear description to help staff and customers understand this product."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <textarea
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
@@ -75,7 +85,12 @@
             <!-- Branch -->
             <div class="">
               <label for="branch" class="block text-sm font-medium text-gray-700 mb-1">
-                Branch <span class="text-red-500">*</span>
+                Branch <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Select the branch or branches where this product will be available and managed."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
               </label>
               <ng-select [items]="branches" bindLabel="name" formControlName="selectedBranch"
                 [multiple]="userBranch === 'headquarters'" *ngIf="!isEditMode && userBranch === 'headquarters'"
@@ -99,7 +114,12 @@
             <!-- Category -->
             <div class="">
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                Category <span class="text-red-500">*</span>
+                Category <div class="relative group mx-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Categories help organize products and make them easier to find in reports and on your store."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
               </label>
               <div class="flex gap-2">
                 <ng-select [items]="categories" bindLabel="name" formControlName="category" [multiple]="false"
@@ -148,7 +168,12 @@
 <!-- Cost Price -->
 <div>
   <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
-    Cost Price <span class="text-red-500">*</span>
+    Cost Price <div class="relative group mr-3 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="This is how much it costs you to acquire or produce this product. It is used to calculate profit or loss."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
   </label>
   <p-inputNumber 
     formControlName="costPrice" 
@@ -164,7 +189,10 @@
 <!-- Selling Price -->
 <div class="col-span-1">
   <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
-    Selling Price <span class="text-red-500">*</span>
+    Selling Price  <div class="relative group mr-1 inline-block">
+    <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs" pTooltip="This is the price customers will pay before tax and discounts." tooltipPosition="right" ></i>
+  </div> <span class="text-red-500">*</span>
+   
   </label>
   <p-inputNumber 
     formControlName="sellingPrice" 
@@ -211,7 +239,12 @@
           <!-- quantity -->
           <div>
             <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
-              Quantity <span class="text-red-500">*</span>
+              Quantity <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="This is the number of units currently available in stock for this product."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" [readonly]="isEditMode"
               styleClass="w-full"></p-inputNumber>
@@ -231,6 +264,12 @@
           <div>
             <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
               Expiry Date
+              <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Set an expiry date if this product has a limited shelf life. Leave empty if not applicable."
+     tooltipPosition="right"></i>
+</div>
+
             </label>
 
             <input
@@ -246,6 +285,12 @@
               class="block text-sm font-medium text-gray-700 mb-1"
             >
               Discount 
+              <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Apply a discount to reduce the selling price under specific conditions or time periods."
+     tooltipPosition="right"></i>
+</div>
+
             </label>
             <div class="flex gap-1">
               <ng-select
@@ -277,7 +322,12 @@
              <!-- Supplier -->
           <div>
             <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">
-              Supplier <span class="text-red-500">*</span>
+              Supplier <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Select the supplier responsible for providing this product for restocking and tracking."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <div class="flex gap-1">
               <ng-select [items]="suppliers" bindLabel="name" formControlName="supplier" placeholder="Select supplier"
@@ -298,7 +348,12 @@
           <!-- tax -->
           <div class="col-span-2">
             <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
-              Tax(es) <span class="text-red-500">*</span>
+              Tax(es) <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Select one or more taxes that will be applied when this product is sold."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <div class="flex gap-1">
               <ng-select [items]="taxes" bindLabel="name" formControlName="selectedTaxes"
@@ -355,18 +410,14 @@
               <div class="flex items-center gap-2">
                 <label for="isAvailableInStore" class="block text-sm font-medium text-gray-700">
                   Available in Online Store
+                  <div class="relative group mr-3 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="When enabled, this product will be visible and available for purchase on your online store."
+     tooltipPosition="right"></i>
+</div>
+
                 </label>
 
-                <div class="relative group">
-                  <i class="fa-solid fa-info-circle text-gray-400 hover:text-gray-600 cursor-help text-sm"></i>
-                  <div
-                    class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                    When enabled, this product will be visible and available for purchase on your online store
-                    <div
-                      class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800">
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <!-- Toggle section -->
@@ -427,7 +478,12 @@
               (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)
             ">
             <label for="partNumber" class="block text-sm font-medium text-gray-700 mb-1">
-              Part Number <span class="text-red-500">*</span>
+              Part Number <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="A manufacturer or internal reference number used to identify this product."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <input id="partNumber"
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
@@ -446,7 +502,12 @@
               (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)
             ">
             <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">
-              SKU <span class="text-red-500">*</span>
+              SKU <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="A unique stock keeping unit automatically generated to track this product in inventory."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <div class="flex gap-2">
               <input id="sku"
@@ -474,7 +535,12 @@
               (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)
             ">
             <label for="code" class="block text-sm font-medium text-gray-700 mb-1">
-              Code <span class="text-red-500">*</span>
+              Code <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="An internal product code used for quick identification and system references."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <input
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
@@ -490,7 +556,12 @@
           <!-- Measurement Unit -->
           <div>
             <label for="measurementUnit" class="block text-sm font-medium text-gray-700 mb-1">
-              Measurement Unit <span class="text-red-500">*</span>
+              Measurement Unit <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Defines how this product is measured or sold, such as pieces, kilograms, or liters."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <ng-select [items]="measurementUnits" bindLabel="name" formControlName="measurementUnit" [multiple]="false"
               placeholder="Select unit" class="ng-select-custom">
@@ -506,7 +577,12 @@
           <!-- Reorder Threshold -->
           <div>
             <label for="reorderThreshold" class="block text-sm font-medium text-gray-700 mb-1">
-              Reorder Threshold <span class="text-red-500">*</span>
+              Reorder Threshold <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="When stock reaches this level, the system can notify you to restock this product."
+     tooltipPosition="right"></i>
+</div>
+ <span class="text-red-500">*</span>
             </label>
             <input id="reorderThreshold"
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
@@ -523,6 +599,12 @@
           <div>
             <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">
               Weight (in KG)
+              <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Used for shipping, packaging, or reporting purposes. Optional if not required."
+     tooltipPosition="right"></i>
+</div>
+
             </label>
             <input
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
@@ -534,6 +616,8 @@
       <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
           Combo Options
+         
+
         </h2>
 
         <div class="space-y-4">
@@ -544,20 +628,14 @@
                 id="isBundle" formControlName="isBundle" (change)="onBundleToggle($event)" />
               <label for="isBundle" class="ml-2 block text-sm font-medium text-gray-700">
                 Is this a combo product?
+                 <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Enable this if the product is made up of multiple individual products sold together."
+     tooltipPosition="right"></i>
+</div>
               </label>
             </div>
 
-            <!-- Info tooltip -->
-            <div class="relative group">
-              <i class="fa-solid fa-info-circle text-gray-400 hover:text-gray-600 cursor-help text-sm"></i>
-              <div
-                class="absolute bottom-full right-0 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 w-64">
-                A combo product combines multiple individual products at a potentially discounted price
-                <div
-                  class="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800">
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Bundle Configuration (Only shown when isBundle is true) -->
@@ -567,6 +645,12 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Select Products for Combo <span class="text-red-500">*</span>
+                <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Choose the individual products that will be included in this combo."
+     tooltipPosition="right"></i>
+</div>
+
               </label>
 
               <!-- Fixed ng-select with proper binding -->
@@ -733,7 +817,14 @@
       <!-- Product Variants -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <div class="flex justify-between items-center mb-4 pb-2 border-b">
-          <h2 class="text-lg font-semibold text-gray-800">Product Variants</h2>
+          <h2 class="text-lg font-semibold text-gray-800">Product Variants
+            <div class="relative group mr-3 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Variants allow you to sell the same product in different options like size or color."
+     tooltipPosition="right"></i>
+</div>
+
+          </h2>
           <button type="button" class="text-customGreen hover:text-customGreenHover font-medium flex items-center gap-1"
             (click)="openAddVariant = true; console.log(selecteddBranch)">
             <i class="fa-solid fa-plus"></i> Add Variant
@@ -931,6 +1022,11 @@
         class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer"
       >
         <i class="fa-solid fa-upload mr-2"></i> Upload Product Image
+        <div class="relative group mr-1 inline-block">
+  <i class="fa-solid fa-info-circle text-gray-400 cursor-help text-xs"
+     pTooltip="Upload clear images of the product. The first image will be shown by default."
+     tooltipPosition="right"></i>
+</div>
         <span class="text-red-500">*</span>
       </label>
       <input
@@ -944,7 +1040,8 @@
       
       <!-- Image Grid with External Buttons -->
     <div *ngIf="productImages.length > 0" class="w-full">
-  <h3 class="text-sm font-medium text-gray-700 mb-3">Product Images</h3>
+  <h3 class="text-sm font-medium text-gray-700 mb-3">Product Images 
+</h3>
 
   <div class="grid grid-cols-3 gap-4">
     <div
