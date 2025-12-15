@@ -2,8 +2,6 @@ import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } fro
 import { DecimalPipe } from '@angular/common';
 import { Observable, of, lastValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-// Import all your company interfaces and services
 import {
   BranchDTO,
   ProductData,
@@ -25,7 +23,6 @@ import { UserService } from "../../service/user.service";
 import { arrayToDate, dateToArray } from "../../shared";
 import { isSuperUser, getUserPermissionsFor } from "../../../shared/pipes/helper";
 
-// Updated interfaces with isPaid and staff tracking fields
 interface MenuItem {
   id: number;
   name: string;
@@ -42,8 +39,6 @@ interface OrderItem extends MenuItem {
   status?: string;
 }
 
-// UPDATED: Added isPaid, paymentStatus, and staff tracking fields
-// ADDED: chefNote and chefNoteTime for chef's note box feature
 interface Order {
   table: number;
   orderNo: string;
@@ -75,7 +70,6 @@ interface Order {
   paidBy?: string;
   paidById?: string | number;
   paidByRole?: 'cashier';
-  // For detailed staff involvement tracking
   staffInvolved?: Array<{
     staffId: string | number;
     staffName: string;
@@ -85,7 +79,6 @@ interface Order {
   }>;
 }
 
-// Payment Breakdown Interface based on endpoint
 interface PaymentBreakdown {
   id?: number;
   amountPaid: number;
@@ -94,7 +87,6 @@ interface PaymentBreakdown {
   paymentMethod: 'CASH' | 'TRANSFER' | 'CARD';
 }
 
-// Company types from v17
 type TableOrder = Map<ProductData, number>;
 
 interface StaffMember {
@@ -111,11 +103,9 @@ interface StaffMember {
   styleUrls: ['./checkout-kitchen.component.scss']
 })
 export class CheckoutKitchenComponent implements OnInit {
-  // ===== ORIGINAL PAGES ONLY =====
   @Input() activePage: 'waiter' | 'chef' | 'cashier'| "history" = 'waiter';
   @Output() orderCompleted = new EventEmitter<Order>();
 
-  // ===== STATE =====
   waiterView: 'overview' | 'take-order' = 'overview';
   search = '';
   activeCategory = 'All';
@@ -124,41 +114,33 @@ export class CheckoutKitchenComponent implements OnInit {
   orderNo = '#A' + Math.floor(1000 + Math.random() * 9000);
   isProcessingPayment = false;
   expandedOrder: Order | null = null;
-
-  // ===== EDIT FUNCTIONALITY =====
   editingOrder: Order | null = null;
   originalOrderItems: OrderItem[] = [];
   originalOrderStatus: Order['status'] | null = null;
 
-  // ===== DATA =====
   menu: MenuItem[] = [];
-  allOrders: Order[] = []; // Store all orders (both paid and unpaid)
-  orders: Order[] = []; // Active orders (unpaid)
-  historyOrders: Order[] = []; // Paid orders
+  allOrders: Order[] = []; 
+  orders: Order[] = []; 
+  historyOrders: Order[] = [];
   orderItems: OrderItem[] = [];
   selectedOrder?: Order;
 
-  // ===== LOADING STATES =====
   isLoadingOrders = false;
   isServerDataAvailable = false;
   serverLoadError = false;
 
-  // ===== CHEF NOTE BOX FEATURE =====
   chefNoteText: string = '';
   selectedChefNote: string = '';
   selectedChefNoteTime: string = '';
   showChefNoteModal: boolean = false;
 
-  // ===== CASHIER FILTER =====
   cashierFilter: 'all' | 'pending' | 'preparing' | 'ready' = 'all';
 
-  // ===== PAYMENT MODAL STATE =====
   showPaymentModal = false;
   selectedPaymentMethod?: 'CASH' | 'TRANSFER' | 'CARD';
   transferReference = '';
   cardReference = '';
 
-  // Payment methods configuration
   paymentMethods = [
     { 
       value: 'CASH' as const, 
@@ -180,10 +162,8 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   ];
 
-  // ===== STOCK MANAGEMENT =====
   lowStockThreshold = 5;
 
-  // ===== UPDATED: COMPANY INFORMATION FROM SESSION STORAGE =====
   companyInfo = {
     name: 'Restaurant Name',
     address: 'Address will load from session storage',
@@ -192,10 +172,8 @@ export class CheckoutKitchenComponent implements OnInit {
     vatNumber: 'VAT-Number'
   };
 
-  // Image cache to store resolved image URLs
   private imageCache = new Map<number, string>();
 
-  // ===== COMPANY V17 PROPERTIES =====
   orderPermissions = {
     canView: false,
     canEdit: false,
@@ -217,7 +195,7 @@ export class CheckoutKitchenComponent implements OnInit {
   productCategories = new Map<string, ProductData[]>();
   currCategoryProducts: ProductData[] = [];
 
-  // Company modal states
+ 
   isReceiptModalOpen = false;
   isCreateOrderModalOpen = false;
   isEditingOrder = false;
@@ -227,14 +205,12 @@ export class CheckoutKitchenComponent implements OnInit {
   orderTableNumber = 1;
 
   private _productIdAndDataMap = new Map<number, ProductData>();
-  private _fetchedBranches: BranchDTO[] = []; // DECLARED but NOT FETCHED (like first code)
+  private _fetchedBranches: BranchDTO[] = []; 
   private _tableStatuses = new Map<number, TableOrderStatusGET>();
   private readonly _dummyTableOrderStatus = 9999999;
 
-  // Local storage key for persisting orders
   private readonly STORAGE_KEY = 'restaurant_orders_data';
 
-  // Current user
   currentUser: StaffMember | null = null;
   availableStaff: StaffMember[] = [];
 
@@ -251,16 +227,10 @@ export class CheckoutKitchenComponent implements OnInit {
   ngOnInit() {
     console.log('🚀 Kitchen component initialized');
     
-    // Initialize current user FIRST
+  
     this.initializeCurrentUser();
-    
-    // UPDATED: Get company info from session storage
     this.getCompanyInfoFromSessionStorage();
-    
-    // First load from localStorage to maintain persistence
     this.loadFromLocalStorage();
-    
-    // Then initialize company data
     this.initializeCompanyData();
     
     if (isSuperUser()) {
@@ -284,39 +254,28 @@ export class CheckoutKitchenComponent implements OnInit {
     this.testMode = this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef";
     
     this.findNextAvailableTable();
-    
-    // Set up auto-refresh for chef page
     this.setupAutoRefresh();
   }
-
-  // ===== SETUP AUTO REFRESH =====
   private setupAutoRefresh() {
-    // Auto-refresh orders every 5 seconds when on chef page
     setInterval(() => {
       if (this.activePage === 'chef') {
         this.refreshChefOrders();
       }
     }, 5000);
   }
-
-  // ===== NEW METHOD: MANUALLY REFRESH CHEF ORDERS =====
   refreshChefOrders() {
     console.log('🔄 Manually refreshing chef orders...');
     this.cdr.detectChanges();
     
-    // Also trigger a re-evaluation of the getter
     const chefOrders = this.activeChefOrders;
     console.log(`👨‍🍳 Chef orders refreshed: ${chefOrders.length} orders`);
   }
 
-  // ===== NEW: GET COMPANY INFO FROM SESSION STORAGE =====
   private getCompanyInfoFromSessionStorage(): void {
     try {
       const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
       if (userDataStr) {
         const userData = JSON.parse(userDataStr);
-        
-        // Extract company information
         this.companyInfo = {
           name: userData.companyName || 'Restaurant Name',
           address: this.formatAddress(userData),
@@ -336,7 +295,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // Helper method to format address from session storage data
   private formatAddress(userData: any): string {
     const addressParts = [];
     
@@ -351,7 +309,6 @@ export class CheckoutKitchenComponent implements OnInit {
       'Address not specified';
   }
 
-  // Set default company info if session storage fails
   private setDefaultCompanyInfo(): void {
     this.companyInfo = {
       name: 'Restaurant Name',
@@ -362,10 +319,8 @@ export class CheckoutKitchenComponent implements OnInit {
     };
   }
 
-  // ===== FIXED: INITIALIZE CURRENT USER WITH REAL DATA =====
   private initializeCurrentUser() {
     try {
-      // Try to get user data from session storage first
       const sessionUserDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
       let userData: any = null;
       
@@ -373,8 +328,7 @@ export class CheckoutKitchenComponent implements OnInit {
         userData = JSON.parse(sessionUserDataStr);
         console.log('📋 User data from session storage:', userData);
       }
-      
-      // Fallback to UserService if session storage doesn't have data
+
       if (!userData) {
         userData = this._userService.getUserData();
         console.log('📋 User data from UserService:', userData);
@@ -384,7 +338,6 @@ export class CheckoutKitchenComponent implements OnInit {
         let userName = '';
         let userRole: 'waiter' | 'chef' | 'cashier' | 'manager' = 'cashier';
         
-        // Extract name from user data
         if (userData.fullName) {
           userName = userData.fullName;
         } else if (userData.name) {
@@ -397,7 +350,6 @@ export class CheckoutKitchenComponent implements OnInit {
           userName = 'User';
         }
         
-        // Determine role from user data
         const roleString = (userData.role || userData.userType || '').toLowerCase();
         if (roleString.includes('cashier')) {
           userRole = 'cashier';
@@ -418,8 +370,7 @@ export class CheckoutKitchenComponent implements OnInit {
         };
         
         console.log('👤 Current user initialized with REAL data:', this.currentUser);
-        
-        // Initialize available staff with current user
+     
         this.availableStaff = [this.currentUser];
         
       } else {
@@ -433,18 +384,14 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== CHEF NOTE BOX FEATURE METHODS =====
   saveChefNoteAndSetAwaiting() {
     if (!this.selectedOrder || !this.chefNoteText.trim()) return;
     
-    // Save note
     this.selectedOrder.chefNote = this.chefNoteText;
     this.selectedOrder.chefNoteTime = new Date().toISOString();
     
-    // Set status to AWAITING_CONFIRMATION (replaces PENDING)
     this.selectedOrder.status = 'AWAITING_CONFIRMATION';
     
-    // TRACK STAFF: Mark who added the note and set to awaiting
     if (this.currentUser) {
       if (!this.selectedOrder.staffInvolved) {
         this.selectedOrder.staffInvolved = [];
@@ -458,7 +405,6 @@ export class CheckoutKitchenComponent implements OnInit {
         timestamp: new Date().toISOString()
       });
       
-      // Update preparedBy field for chef
       if (this.currentUser.role === 'chef') {
         this.selectedOrder.preparedBy = this.currentUser.name;
         this.selectedOrder.preparedById = this.currentUser.id;
@@ -466,22 +412,19 @@ export class CheckoutKitchenComponent implements OnInit {
       }
     }
     
-    // Save to localStorage
     this.saveToLocalStorage();
     
-    // Clear note text
+   
     this.chefNoteText = '';
     
-    // Force update for chef page
+
     this.cdr.detectChanges();
   }
 
-  // Waiter actions for AWAITING_CONFIRMATION orders
   confirmOrderChanges(order: Order) {
-    // Set status back to PENDING for chef to prepare
+
     order.status = 'PENDING';
-    
-    // TRACK STAFF: Mark who confirmed the changes
+
     if (this.currentUser) {
       if (!order.staffInvolved) {
         order.staffInvolved = [];
@@ -500,13 +443,11 @@ export class CheckoutKitchenComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // FIXED: Waiter can cancel order (new method)
   cancelOrderByWaiter(order: Order) {
     order.status = 'CANCELLED';
     order.paymentStatus = 'UNPAID';
     order.isPaid = false;
-    
-    // TRACK STAFF: Mark who cancelled the order
+
     if (this.currentUser) {
       if (!order.staffInvolved) {
         order.staffInvolved = [];
@@ -520,11 +461,9 @@ export class CheckoutKitchenComponent implements OnInit {
         timestamp: new Date().toISOString()
       });
     }
-    
-    // Move cancelled orders to history immediately
+
     this.moveToHistory(order);
-    
-    // Clear expanded view if this order was expanded
+  
     if (this.expandedOrder === order) {
       this.expandedOrder = null;
     }
@@ -532,7 +471,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // View chef note in modal
   viewChefNote(note: string, time: string) {
     this.selectedChefNote = note;
     this.selectedChefNoteTime = time;
@@ -545,7 +483,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.selectedChefNoteTime = '';
   }
 
-  // ===== CASHIER FILTER METHODS =====
   setCashierFilter(filter: 'all' | 'pending' | 'preparing' | 'ready') {
     this.cashierFilter = filter;
   }
@@ -565,13 +502,13 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   getAllActiveOrders(): Order[] {
-    // All unpaid orders regardless of status
+  
     return this.orders
       .filter(o => !o.isPaid)
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        return dateB - dateA; 
       });
   }
 
@@ -581,7 +518,7 @@ export class CheckoutKitchenComponent implements OnInit {
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        return dateB - dateA; 
       });
   }
 
@@ -601,7 +538,7 @@ export class CheckoutKitchenComponent implements OnInit {
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        return dateB - dateA; 
       });
   }
 
@@ -626,7 +563,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.selectedPaymentMethod = method;
   }
 
-  // NEW: Get payment icon for display
   getPaymentIcon(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
     const icons = {
       'CASH': '💰',
@@ -636,7 +572,6 @@ export class CheckoutKitchenComponent implements OnInit {
     return icons[method];
   }
 
-  // UPDATED: Get payment method display name
   getPaymentMethodDisplayName(method: 'CASH' | 'TRANSFER' | 'CARD'): string {
     const methodNames = {
       'CASH': 'Cash',
@@ -652,7 +587,6 @@ export class CheckoutKitchenComponent implements OnInit {
     try {
       this.isProcessingPayment = true;
       
-      // Create transaction reference based on payment method
       let transactionReference = '';
       if (this.selectedPaymentMethod === 'CASH') {
         transactionReference = `CASH-${Date.now()}`;
@@ -662,7 +596,6 @@ export class CheckoutKitchenComponent implements OnInit {
         transactionReference = this.cardReference.trim();
       }
 
-      // Mark order as paid locally
       this.selectedOrder.isPaid = true;
       this.selectedOrder.paymentStatus = 'PAID';
       this.selectedOrder.paidAt = new Date().toISOString();
@@ -670,7 +603,6 @@ export class CheckoutKitchenComponent implements OnInit {
       this.selectedOrder.status = 'CONFIRMED';
       this.selectedOrder.transactionReference = transactionReference;
       
-      // TRACK STAFF: Mark who processed the payment
       if (this.currentUser) {
         if (!this.selectedOrder.staffInvolved) {
           this.selectedOrder.staffInvolved = [];
@@ -689,21 +621,16 @@ export class CheckoutKitchenComponent implements OnInit {
         this.selectedOrder.paidByRole = this.currentUser.role === 'cashier' ? 'cashier' : 'cashier';
       }
 
-      // Move to history and remove from active orders
       this.moveToHistory(this.selectedOrder);
       
-      // Store order for printing
       const paidOrder = { ...this.selectedOrder };
       
-      // Close modals and clear selection
       this.closePaymentModal();
       this.selectedOrder = undefined;
       this.isProcessingPayment = false;
       
-      // Force update for chef page
       this.cdr.detectChanges();
       
-      // Automatically print invoice
       setTimeout(() => {
         this.autoPrintInvoice(paidOrder);
       }, 300);
@@ -714,14 +641,12 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== LOCAL STORAGE METHODS =====
   private loadFromLocalStorage(): void {
     try {
       const savedData = localStorage.getItem(this.STORAGE_KEY);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         
-        // Load all orders from storage
         this.allOrders = parsedData.allOrders || [];
         this.orders = parsedData.orders || [];
         this.historyOrders = parsedData.historyOrders || [];
@@ -734,7 +659,6 @@ export class CheckoutKitchenComponent implements OnInit {
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error);
-      // Reset to empty arrays if there's an error
       this.allOrders = [];
       this.orders = [];
       this.historyOrders = [];
@@ -757,7 +681,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== DATE PARSING METHODS =====
   parseCustomDate(dateString: string): Date {
     if (!dateString) return new Date();
     
@@ -793,14 +716,12 @@ export class CheckoutKitchenComponent implements OnInit {
     });
   }
 
-  // ===== CHANGE TEST MODE =====
   changeTestMode(mode: "waiter" | "chef" | "cashier" | "history") {
     this.testMode = mode;
     this.activePage = mode;
-    this.cdr.detectChanges(); // Force UI update
+    this.cdr.detectChanges(); 
   }
 
-  // ===== TABLE NUMBER INPUT HANDLER =====
   onTableNumberChange(): void {
     if (this.currentTable < 1) {
       this.currentTable = 1;
@@ -811,11 +732,9 @@ export class CheckoutKitchenComponent implements OnInit {
     this.orderTableNumber = this.currentTable;
   }
 
-  // ===== FIXED TABLE NUMBER INCREMENTATION =====
   private findNextAvailableTable(): void {
     const usedTables = new Set<number>();
-    
-    // Only consider unpaid orders for table assignment
+
     this.orders.forEach(order => {
       if (order.table) {
         usedTables.add(order.table);
@@ -842,7 +761,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.orderTableNumber = nextTable;
   }
 
-  // ===== STOCK MANAGEMENT METHODS =====
   getStockStatus(item: MenuItem): 'in-stock' | 'low-stock' | 'out-of-stock' {
     if (!item.stockQuantity && item.stockQuantity !== 0) {
       return 'in-stock';
@@ -882,7 +800,6 @@ export class CheckoutKitchenComponent implements OnInit {
     return this.getStockStatus(item) !== 'out-of-stock';
   }
 
-  // ===== WAITER ACCORDION METHODS =====
   toggleOrderExpansion(order: Order): void {
     if (this.expandedOrder === order) {
       this.expandedOrder = null;
@@ -895,13 +812,11 @@ export class CheckoutKitchenComponent implements OnInit {
   updateOrderStatus(order: Order, newStatus: Order['status']): void {
     order.status = newStatus;
     
-    this.saveToLocalStorage(); // Save after status update
+    this.saveToLocalStorage();
     this.cdr.detectChanges();
   }
 
-  // ===== EDIT ORDER METHODS - UPDATED & FIXED =====
   editOrder(order: Order): void {
-    // FIX: Make sure we can edit AWAITING_CONFIRMATION orders
     if (!this.canEditOrder(order)) {
       return;
     }
@@ -909,8 +824,7 @@ export class CheckoutKitchenComponent implements OnInit {
     this.editingOrder = order;
     this.originalOrderItems = [...order.items];
     this.originalOrderStatus = order.status;
-    
-    // Switch to take-order view with existing items
+ 
     this.orderItems = [...order.items];
     this.currentTable = order.table;
     this.orderNo = order.orderNo;
@@ -923,7 +837,6 @@ export class CheckoutKitchenComponent implements OnInit {
 
   cancelEdit(): void {
     if (this.editingOrder && this.originalOrderStatus) {
-      // Restore original items and status
       this.editingOrder.items = [...this.originalOrderItems];
       this.editingOrder.status = this.originalOrderStatus;
       this.editingOrder = null;
@@ -942,20 +855,14 @@ export class CheckoutKitchenComponent implements OnInit {
     if (this.orderItems.length === 0) {
       return;
     }
-    
-    // Update the existing order with new items
+
     this.editingOrder.items = [...this.orderItems];
     this.editingOrder.note = this.orderNote;
-    
-    // IMPORTANT: If order was being prepared or ready, reset status to PENDING
-    // so chef knows there are new items to prepare
+  
     if (this.editingOrder.status === 'PREPARING' || this.editingOrder.status === 'READY') {
       this.editingOrder.status = 'PENDING';
     }
-    // If order was AWAITING_CONFIRMATION, keep it as AWAITING_CONFIRMATION
-    // because chef still needs to confirm availability
-    
-    // TRACK STAFF: Mark who updated the order
+  
     if (this.currentUser) {
       if (!this.editingOrder.staffInvolved) {
         this.editingOrder.staffInvolved = [];
@@ -973,23 +880,19 @@ export class CheckoutKitchenComponent implements OnInit {
       this.editingOrder.createdById = this.currentUser.id;
       this.editingOrder.createdByRole = this.currentUser.role === 'waiter' ? 'waiter' : 'waiter';
     }
-    
-    // Clear editing state
+
     this.editingOrder = null;
     this.originalOrderItems = [];
     this.originalOrderStatus = null;
-    
-    // Save to localStorage
+
     this.saveToLocalStorage();
-    
-    // Clear form and return to overview
+ 
     this.clearOrderForm();
     this.waiterView = 'overview';
     
     this.cdr.detectChanges();
   }
 
-  // Helper method to clear order form
   private clearOrderForm(): void {
     this.orderItems = [];
     this.orderNo = '#A' + Math.floor(1000 + Math.random() * 9000);
@@ -997,7 +900,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.findNextAvailableTable();
   }
 
-  // ===== CASHIER/RECEIPT METHODS =====
   getCashierName(): string {
     try {
       if (this.currentUser) {
@@ -1053,7 +955,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // Auto print method (used after payment)
   private autoPrintInvoice(order: Order) {
     const tempOrder = { ...order };
     
@@ -1107,9 +1008,9 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // UPDATED: Generate receipt HTML with company info from session storage
+ 
   private generateReceiptHTML(order: Order): string {
-    // NEW: Staff information
+
     const staffInfo = [];
     if (order.createdBy) staffInfo.push({ role: 'Waiter', name: order.createdBy });
     if (order.preparedBy) staffInfo.push({ role: 'Chef', name: order.preparedBy });
@@ -1205,13 +1106,10 @@ export class CheckoutKitchenComponent implements OnInit {
     `;
   }
 
-  // ===== CHECK IF ORDER CAN BE EDITED =====
   canEditOrder(order: Order): boolean {
-    // Waiters can edit PENDING and AWAITING_CONFIRMATION orders only AND order must be unpaid
     return (order.status === 'PENDING' || order.status === 'AWAITING_CONFIRMATION') && !order.isPaid;
   }
 
-  // ===== MODIFIED: INITIALIZE COMPANY DATA (NO BRANCH FETCHING like first code) =====
   private async initializeCompanyData() {
     this.isLoadingOrders = true;
     this.serverLoadError = false;
@@ -1220,7 +1118,6 @@ export class CheckoutKitchenComponent implements OnInit {
     try {
       console.log('🔄 Initializing company data...');
 
-      // 1. FETCH TABLE ORDER STATUSES (NO BRANCH FETCHING - like first code)
       console.log('📋 Fetching table order statuses...');
       const fetchedTableOrderStatuses = await lastValueFrom(
         this._posService.getTableOrderStatuses()
@@ -1237,8 +1134,7 @@ export class CheckoutKitchenComponent implements OnInit {
         );
         
         console.log(`✅ Successfully loaded ${fetchedTableOrderStatuses.length} table orders from server`);
-        
-        // Only sync backend data if we don't have local data
+
         if (this.allOrders.length === 0) {
           this.syncOrdersWithCompanyData();
         }
@@ -1247,7 +1143,6 @@ export class CheckoutKitchenComponent implements OnInit {
         this.serverLoadError = true;
       }
 
-      // 2. FETCH PRODUCTS
       console.log('🛒 Fetching products...');
       const fetchedProducts = await lastValueFrom(
         this._posService.getProducts()
@@ -1297,8 +1192,7 @@ export class CheckoutKitchenComponent implements OnInit {
       }
 
       this.findNextAvailableTable();
-      
-      // Force UI update after data is loaded
+
       this.cdr.detectChanges();
       
     } catch (error: any) {
@@ -1313,9 +1207,7 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== SYNC ORDERS WITH COMPANY DATA =====
   private syncOrdersWithCompanyData() {
-    // Clear existing arrays
     const newAllOrders: Order[] = [];
     const newOrders: Order[] = [];
     const newHistoryOrders: Order[] = [];
@@ -1325,8 +1217,7 @@ export class CheckoutKitchenComponent implements OnInit {
       
       if (localOrder) {
         newAllOrders.push(localOrder);
-        
-        // Determine if order is paid based on payment status
+
         const isPaid = localOrder.paymentStatus === 'PAID' || localOrder.status === 'CONFIRMED';
         
         if (isPaid) {
@@ -1339,29 +1230,23 @@ export class CheckoutKitchenComponent implements OnInit {
       }
     }
 
-    // Only replace arrays if we have data from backend
-    // This prevents overwriting local data if backend has no orders
     if (newAllOrders.length > 0) {
       console.log(`🔄 Syncing ${newAllOrders.length} orders from server with local data`);
-      
-      // Preserve local orders that might not be on server yet
+
       const localOnlyOrders = this.allOrders.filter(localOrder => 
         !newAllOrders.some(serverOrder => 
           serverOrder.backendId === localOrder.backendId
         )
       );
-      
-      // Merge server orders with local-only orders
+
       this.allOrders = [...newAllOrders, ...localOnlyOrders];
       this.orders = [...newOrders, ...localOnlyOrders.filter(o => !o.isPaid)];
       this.historyOrders = [...newHistoryOrders, ...localOnlyOrders.filter(o => o.isPaid)];
-      
-      // Save to localStorage
+
       this.saveToLocalStorage();
       
       console.log('✅ Server data synced with local storage');
-      
-      // Force UI update
+
       this.cdr.detectChanges();
     } else {
       console.log('⚠️ No server orders to sync, using local data only');
@@ -1370,7 +1255,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.findNextAvailableTable();
   }
 
-  // ===== SIMPLIFIED CREATE ORDER - UPDATED =====
   async sendToKitchenNew() {
     if (this.orderItems.length === 0) {
       return;
@@ -1392,7 +1276,6 @@ export class CheckoutKitchenComponent implements OnInit {
         isPaid: false
       };
 
-      // TRACK STAFF: Mark who created this order with REAL user data
       if (this.currentUser) {
         newOrder.staffInvolved = [{
           staffId: this.currentUser.id,
@@ -1410,13 +1293,11 @@ export class CheckoutKitchenComponent implements OnInit {
       this.orders.push(newOrder);
       this.allOrders.push(newOrder);
 
-      // Save to localStorage
       this.saveToLocalStorage();
 
       this.clearOrderForm();
       this.waiterView = 'overview';
-      
-      // Force UI update
+    
       this.cdr.detectChanges();
       
     } catch (error: any) {
@@ -1424,17 +1305,15 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== FIXED: CHEF ORDER PROCESSING - UPDATED =====
   async updateOrderByChef(order: Order, newStatus: 'PREPARING' | 'READY') {
     try {
-      // Chef can only update status if order is not paid
+
       if (order.isPaid) {
         return;
       }
       
       order.status = newStatus;
       
-      // TRACK STAFF: Mark who prepared this order with REAL chef data
       if (this.currentUser) {
         if (!order.staffInvolved) {
           order.staffInvolved = [];
@@ -1447,8 +1326,7 @@ export class CheckoutKitchenComponent implements OnInit {
           action: newStatus === 'READY' ? 'prepared' : 'updated',
           timestamp: new Date().toISOString()
         });
-        
-        // Update preparedBy field for chef
+
         if (newStatus === 'READY') {
           order.preparedBy = this.currentUser.name;
           order.preparedById = this.currentUser.id;
@@ -1456,10 +1334,9 @@ export class CheckoutKitchenComponent implements OnInit {
         }
       }
       
-      // Save to localStorage
+
       this.saveToLocalStorage();
-      
-      // Force UI update
+
       this.cdr.detectChanges();
       
     } catch (error) {
@@ -1467,7 +1344,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== CASHIER PAYMENT PROCESSING - UPDATED =====
   async updateCashierStatus(newStatus: 'PAID' | 'CANCELLED') {
     if (!this.selectedOrder) return;
     
@@ -1475,8 +1351,6 @@ export class CheckoutKitchenComponent implements OnInit {
       this.selectedOrder.status = 'CANCELLED';
       this.selectedOrder.paymentStatus = 'UNPAID';
       this.selectedOrder.isPaid = false;
-      
-      // TRACK STAFF: Mark who cancelled the order with REAL user data
       if (this.currentUser) {
         if (!this.selectedOrder.staffInvolved) {
           this.selectedOrder.staffInvolved = [];
@@ -1491,44 +1365,31 @@ export class CheckoutKitchenComponent implements OnInit {
         });
       }
       
-      // Move cancelled orders to history immediately
       this.moveToHistory(this.selectedOrder);
       this.selectedOrder = undefined;
-      
-      // Force UI update
       this.cdr.detectChanges();
     }
-    // For PAID, we now use the payment modal
+
   }
 
-  // ===== ORDER FLOW METHODS =====
   moveToHistory(order: Order) {
-    // Remove from active orders array
     this.orders = this.orders.filter(o => o !== order);
     
-    // Add to history if not already there
     if (!this.historyOrders.find(h => h.orderNo === order.orderNo && h.table === order.table)) {
       this.historyOrders.push(order);
     }
     
-    // Update in allOrders
     const index = this.allOrders.findIndex(o => o === order);
     if (index !== -1) {
       this.allOrders[index] = order;
     }
-    
-    // Save to localStorage
     this.saveToLocalStorage();
     
     this.orderCompleted.emit(order);
-    
-    // Force UI update
     this.cdr.detectChanges();
   }
 
-  // ===== FIXED: CHEF ORDERS GETTER WITH CHANGE DETECTION =====
   get activeChefOrders(): Order[] {
-    // Chef sees PENDING, AWAITING_CONFIRMATION, PREPARING, and READY orders that are NOT paid
     const chefOrders = this.orders
       .filter(o => 
         !o.isPaid && 
@@ -1538,15 +1399,13 @@ export class CheckoutKitchenComponent implements OnInit {
          o.status === 'READY')
       )
       .sort((a, b) => {
-        // Sort by createdAt in descending order (newest first)
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA; // Descending order
+        return dateB - dateA;
       });
     
     console.log(`👨‍🍳 Chef orders calculated: ${chefOrders.length} orders`);
     
-    // Force change detection if needed
     if (this.activePage === 'chef') {
       setTimeout(() => this.cdr.markForCheck(), 0);
     }
@@ -1555,17 +1414,18 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   get activeWaiterOrders(): Order[] {
-    // Waiter sees PENDING and AWAITING_CONFIRMATION orders that are NOT paid
     return this.orders
       .filter(o => 
         !o.isPaid && 
-        (o.status === 'PENDING' || o.status === 'AWAITING_CONFIRMATION')
+        (o.status === 'PENDING' || 
+         o.status === 'AWAITING_CONFIRMATION' ||
+         o.status === 'PREPARING' || 
+         o.status === 'READY')
       )
       .sort((a, b) => {
-        // Sort by createdAt in descending order (newest first)
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA; // Descending order
+        return dateB - dateA; 
       });
   }
 
@@ -1610,12 +1470,10 @@ export class CheckoutKitchenComponent implements OnInit {
                          'Cash';
 
     const effectiveStatus = this.determineEffectiveStatus(tableStatus);
-    
-    // Format date properly
+  
     let formattedDate = '';
     if (tableStatus.orderedOn) {
       if (Array.isArray(tableStatus.orderedOn)) {
-        // Convert array to date string
         const [year, month, day, hour = 0, minute = 0, second = 0] = tableStatus.orderedOn;
         formattedDate = `${year}-${month}-${day}-${hour}-${minute}-${second}`;
       } else if (typeof tableStatus.orderedOn === 'string') {
@@ -1623,7 +1481,6 @@ export class CheckoutKitchenComponent implements OnInit {
       }
     }
 
-    // Determine payment status and isPaid
     const paymentStatus = effectiveStatus === 'CONFIRMED' ? 'PAID' : 'UNPAID';
     const isPaid = paymentStatus === 'PAID';
 
@@ -1644,7 +1501,6 @@ export class CheckoutKitchenComponent implements OnInit {
     };
   }
 
-  // ===== UPDATED STATUS MAPPING =====
   private mapCompanyStatusToLocal(backendStatus: string): Order['status'] {
     switch (backendStatus?.toUpperCase()) {
       case 'PAID': 
@@ -1654,7 +1510,7 @@ export class CheckoutKitchenComponent implements OnInit {
       case 'PENDING': 
       case 'AWAITING': 
       case 'WAITING':
-        return 'PENDING'; // Default to PENDING, will be changed to AWAITING_CONFIRMATION by chef
+        return 'PENDING';
       case 'PREPARING': 
         return 'PREPARING';
       case 'READY': 
@@ -1666,7 +1522,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== PRODUCT AND STOCK METHODS =====
   private async mapProductsToMenu(fetchedProducts: ProductData[]) {
     const menuItems: MenuItem[] = [];
     
@@ -1690,7 +1545,6 @@ export class CheckoutKitchenComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // Method to get product stock quantity from backend
   private async getProductStockQuantity(productId: number): Promise<number> {
     try {
       const random = Math.random();
@@ -1712,7 +1566,6 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
 
-  // ===== UPDATED ADD TO ORDER WITH STOCK VALIDATION =====
   addToOrder(item: MenuItem) {
     if (!this.canAddToOrder(item)) {
       return;
@@ -1767,7 +1620,6 @@ export class CheckoutKitchenComponent implements OnInit {
     return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled); 
   }
 
-  // ===== EXISTING UI INTERACTION METHODS =====
   changeQty(tableNo: number, itemId: number, delta: number) {
     const order = this.orders.find(o => o.table === tableNo);
     if (!order) return;
@@ -1778,8 +1630,7 @@ export class CheckoutKitchenComponent implements OnInit {
     item.total = item.qty * item.price;
 
     if (item.qty <= 0) order.items = order.items.filter(i => i.id !== itemId);
-    
-    // Save changes
+ 
     this.saveToLocalStorage();
     this.cdr.detectChanges();
   }
@@ -1850,8 +1701,7 @@ export class CheckoutKitchenComponent implements OnInit {
 
   deleteOrder(index: number) {
     const order = this.orders[index];
-    
-    // TRACK STAFF: Mark who deleted the order with REAL user data
+  
     if (this.currentUser) {
       if (!order.staffInvolved) {
         order.staffInvolved = [];
@@ -1865,13 +1715,11 @@ export class CheckoutKitchenComponent implements OnInit {
         timestamp: new Date().toISOString()
       });
     }
-    
-    // Remove from all arrays
+
     this.orders.splice(index, 1);
     this.allOrders = this.allOrders.filter(o => o !== order);
     this.historyOrders = this.historyOrders.filter(o => o !== order);
-    
-    // Save to localStorage
+  
     this.saveToLocalStorage();
     
     this.cdr.detectChanges();
@@ -1879,7 +1727,6 @@ export class CheckoutKitchenComponent implements OnInit {
 
   selectOrder(order: Order) {
     this.selectedOrder = this.selectedOrder === order ? undefined : order;
-    // Reset chef note text when selecting a new order
     if (this.selectedOrder) {
       this.chefNoteText = this.selectedOrder.chefNote || '';
     }
@@ -1890,7 +1737,6 @@ export class CheckoutKitchenComponent implements OnInit {
     return order.items.map(i => `${i.name} x${i.qty}`).join(', ');
   }
 
-  // ===== COMPANY SERVICE METHODS =====
   getProductData(product: ProductData) {
     return this._productHelperService.getData(product);
   }
@@ -1903,7 +1749,6 @@ export class CheckoutKitchenComponent implements OnInit {
     return this._productIdAndDataMap.get(id);
   }
 
-  // ===== ADDITIONAL COMPANY METHODS FOR COMPATIBILITY =====
   openOrderDetails(table: TableOrderStatusGET) {
     this.selectedOrderSignal = table;
     
@@ -1946,14 +1791,11 @@ export class CheckoutKitchenComponent implements OnInit {
     this.orderNote = note;
     this.cdr.detectChanges();
   }
-
-  // ===== REMOVE ITEM FROM ORDER =====
   removeItemFromOrder(index: number): void {
     this.orderItems.splice(index, 1);
     this.cdr.detectChanges();
   }
 
-  // ===== CLEAR ALL ORDERS (for testing/debugging) =====
   clearAllOrders(): void {
     this.allOrders = [];
     this.orders = [];
@@ -1962,8 +1804,6 @@ export class CheckoutKitchenComponent implements OnInit {
     console.log('🗑️ All orders cleared');
     this.cdr.detectChanges();
   }
-
-  // ===== NEW: FORCE CHEF ORDERS DISPLAY =====
   forceChefOrdersDisplay() {
     console.log('🔧 Force chef orders display');
     this.cdr.detectChanges();
