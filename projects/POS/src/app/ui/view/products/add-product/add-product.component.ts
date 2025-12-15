@@ -338,7 +338,7 @@ discountTypes: any[] = [
 
   // Image properties
   mainProductImage: string = '';
-  productImages: { file: File | null; url: string }[] = [];
+  productImages: { id: number, file: File | null; url: string }[] = [];
 
   constructor(
     private messageService: MessageService,
@@ -1185,6 +1185,7 @@ private initializeProductImages() {
         
         if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
           const imageData = {
+            id: imageItem.id,
             file: null,
             url: imageUrl
           };
@@ -1210,6 +1211,7 @@ private initializeProductImages() {
     if (this.activeItem?.imageUrl) {
       console.log('🔄 Trying imageUrl property:', this.activeItem.imageUrl);
       const imageData = {
+        id: 0,
         file: null,
         url: this.activeItem.imageUrl
       };
@@ -1224,6 +1226,7 @@ private initializeProductImages() {
     const placeholderUrl = this.getPlaceholderImage();
     this.mainProductImage = placeholderUrl;
     this.productImages.push({
+      id: 0,
       file: null,
       url: placeholderUrl
     });
@@ -1242,23 +1245,45 @@ private initializeProductImages() {
 
 
 
-removeImage(index: number) {
+removeImage(image: any, index: number) {
     const removedImage = this.productImages[index];
+    console.log(image, removedImage)
 
-    // If removing the main image, set a new main image
-    if (this.mainProductImage === removedImage.url) {
-      if (this.productImages.length > 1) {
-        // Set the next image as main, or the previous if it's the last
-        const newMainIndex =
-          index === this.productImages.length - 1 ? index - 1 : index + 1;
-        this.mainProductImage = this.productImages[newMainIndex].url;
-      } else {
-        this.mainProductImage = '';
-      }
-    }
+    this.posService.deleteProductImage(removedImage.id).subscribe({
+      next: () => {
+        // if (this.mainProductImage === removedImage.url) {
+        //       if (this.productImages.length > 1) {
+        //         // Set the next image as main, or the previous if it's the last
+        //         const newMainIndex =
+        //           index === this.productImages.length - 1 ? index - 1 : index + 1;
+        //         this.mainProductImage = this.productImages[newMainIndex].url;
+        //       } else {
+        //         this.mainProductImage = '';
+        //       }
+        //     }
 
-    this.productImages.splice(index, 1);
-    this.updateImageFormValidation();
+            this.productImages.splice(index, 1);
+            this.updateImageFormValidation();
+             this.messageService.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: `Image deleted successfully.`,
+            key: 'tl',
+            life: 3000,
+          });
+      },
+      error: (err) => {
+         this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Could not delete image. Try again.`,
+            key: 'tl',
+            life: 3000,
+          });
+      },
+    })
+
+   
   }
 
   clearAllImages() {
@@ -1399,7 +1424,7 @@ getMainImage(): string {
         // Update our local state with this constructed URL
         this.mainProductImage = constructedUrl;
         if (this.productImages.length === 0) {
-          this.productImages.push({ file: null, url: constructedUrl });
+          this.productImages.push({id: firstImageItem.id, file: null, url: constructedUrl });
         }
         return constructedUrl;
       }
@@ -1832,6 +1857,7 @@ getMainImage(): string {
         const reader = new FileReader();
         reader.onload = (e: any) => {
           const imageData = {
+            id: 0,
             file: file,
             url: e.target.result,
           };
