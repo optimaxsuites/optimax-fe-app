@@ -2084,7 +2084,6 @@ async addToProduct() {
           // });
           this.loading = false;
           this.addSuccessfull = true;
-          this.resetFormAfterSuccess();
         } else {
           this.messageService.add({
             severity: 'error',
@@ -2926,30 +2925,66 @@ async updateProduct() {
   }
 
   generateBarcode(variantSKU?: string, shouldPrint?: boolean) {
-    const sku = this.productForm.get('sku')?.value;
+  const sku = this.productForm.get('sku')?.value;
 
-    if (typeof sku === 'string') {
-      const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
+  if (typeof sku === 'string') {
+    const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
 
-      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        const barcodeSvg = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'svg'
-        );
-        JsBarcode(barcodeSvg, productCode, {
-          format: this.barcodeConfig.barcodeType,
-          lineColor: '#000',
-          width: 2,
-          height: 125,
-          displayValue: true,
-        });
+    const barcodeImages: string[] = [];
 
-        this.convertSvgToPng(barcodeSvg, shouldPrint);
-      }
-    } else {
-      alert('Please fill in the SKU with valid data.');
+    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+      const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      JsBarcode(barcodeSvg, productCode, {
+        format: this.barcodeConfig.barcodeType,
+        lineColor: '#000',
+        width: 2,
+        height: 125,
+        displayValue: true,
+      });
+
+      const svgString = new XMLSerializer().serializeToString(barcodeSvg);
+      const encodedSvg = encodeURIComponent(svgString);
+      const imgData = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+      barcodeImages.push(imgData);
     }
+
+    if (shouldPrint) {
+      this.printBarcodesAsPages(barcodeImages);
+    } else {
+      barcodeImages.forEach(img => this.generatePDF(img));
+    }
+
+    this.resetFormAfterSuccess();
   }
+}
+
+printBarcodesAsPages(barcodeImages: string[]) {
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) return;
+
+  doc.open();
+  doc.write('<html><body>');
+  
+  barcodeImages.forEach((imgData, index) => {
+    doc.write(`<div style="page-break-after: always; text-align:center;">
+                <img src="${imgData}" />
+               </div>`);
+  });
+
+  doc.write('</body></html>');
+  doc.close();
+
+  // Trigger print
+  iframe.contentWindow?.print();
+
+  // Cleanup
+  setTimeout(() => document.body.removeChild(iframe), 5000);
+}
+
 
   convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
     const svgString = new XMLSerializer().serializeToString(svgElement);

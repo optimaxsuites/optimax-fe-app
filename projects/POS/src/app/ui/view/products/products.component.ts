@@ -24,6 +24,14 @@ import { getUserPermissionsFor, isSuperUser } from "../../../shared/pipes/helper
 import { Route, Router } from "@angular/router";
 import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 
+
+interface BarcodePrintItem {
+  svg: SVGSVGElement;
+  text: string;
+  quantity: number;
+}
+
+
 @Component({
   selector: "app-products",
   templateUrl: "./products.component.html",
@@ -908,66 +916,130 @@ export class ProductsComponent implements OnInit {
   }
 
   generateBarcode(shouldPrint?: boolean) {
-    const barcodes: { svg: SVGSVGElement; text: string }[] = [];
+  const barcodes: BarcodePrintItem[] = [];
 
-    const sku = this.activeItem?.code;
-    if (typeof sku === "string") {
-      const displayValue = `${(
-        this.activeItem.name?.split(" ")[0] || ""
-      ).toLowerCase()}-${sku}`;
+  /** ---------- MAIN PRODUCT ---------- **/
+  const sku = this.activeItem?.code;
 
-      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        const barcodeSvg = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "svg",
+  if (typeof sku === 'string') {
+    const displayValue = `${(
+      this.activeItem.name?.split(' ')[0] || ''
+    ).toLowerCase()}-${sku}`;
+
+    const svg = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
+
+    JsBarcode(svg, sku, {
+      format: this.barcodeConfig.barcodeType,
+      lineColor: '#000',
+      width: 3,
+      height: 150,
+      displayValue: true,
+      text: displayValue,
+    });
+
+    barcodes.push({
+      svg,
+      text: displayValue,
+      quantity: this.barcodeConfig.barcodeQuantity || 1,
+    });
+  } else {
+    alert('Please fill in the SKU with valid data.');
+    return;
+  }
+
+  /** ---------- VARIANTS ---------- **/
+  if (Array.isArray(this.activeItem?.variants)) {
+    this.activeItem.variants.forEach(
+      (variant: { sku: string; name: string; quantity: number }) => {
+        if (!variant?.sku || variant.quantity <= 0) return;
+
+        const displayValue = `${(
+          variant.name?.split(' ')[0] || ''
+        ).toLowerCase()}-${variant.sku}`;
+
+        const svg = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
         );
-        JsBarcode(barcodeSvg, sku, {
+
+        JsBarcode(svg, variant.sku, {
           format: this.barcodeConfig.barcodeType,
-          lineColor: "#000",
+          lineColor: '#000',
           width: 3,
           height: 150,
           displayValue: true,
           text: displayValue,
         });
-        barcodes.push({ svg: barcodeSvg, text: displayValue });
+
+        barcodes.push({
+          svg,
+          text: displayValue,
+          quantity: variant.quantity,
+        });
       }
-    } else {
-      alert("Please fill in the SKU with valid data.");
-    }
+    );
+  }
 
-    if (Array.isArray(this.activeItem?.variants)) {
-      this.activeItem.variants.forEach(
-        (variant: { sku: string; name: string; quantity: number }) => {
-          const variantSKU = variant?.sku;
-          if (typeof variantSKU === "string") {
-            const displayValue = `${(
-              variant.name?.split(" ")[0] || ""
-            ).toLowerCase()}-${variantSKU}`;
+  if (shouldPrint) {
+    this.printBarcodes(barcodes);
+  }
+}
 
-            for (let i = 0; i < variant.quantity; i++) {
-              const barcodeSvg = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "svg",
-              );
-              JsBarcode(barcodeSvg, variantSKU, {
-                format: this.barcodeConfig.barcodeType,
-                lineColor: "#000",
-                width: 3,
-                height: 150,
-                displayValue: true,
-                text: displayValue,
-              });
-              barcodes.push({ svg: barcodeSvg, text: displayValue });
+printBarcodes(barcodes: BarcodePrintItem[]) {
+  const printWindow = window.open('', '', 'width=800,height=600');
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        // <title>Print Barcodes</title>
+        <style>
+          @media print {
+            .page {
+              page-break-after: always;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
             }
           }
-        },
-      );
-    }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+        </style>
+      </head>
+      <body>
+  `);
 
-    if (shouldPrint) {
-      this.printBarcodesSeparately(barcodes);
+  barcodes.forEach(barcode => {
+    for (let i = 0; i < barcode.quantity; i++) {
+      printWindow.document.write(`
+        <div class="page">
+          ${barcode.svg.outerHTML}
+        </div>
+      `);
     }
-  }
+  });
+
+  printWindow.document.write(`
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+}
+
+
 
   printBarcodesSeparately(barcodes: { svg: SVGSVGElement; text: string }[]) {
     barcodes.forEach((barcode, index) => {

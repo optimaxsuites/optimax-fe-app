@@ -1554,7 +1554,9 @@
 <!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
 
 <!-- !SECTION -->
-<app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
+<app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false; 
+          this.resetFormAfterSuccess();
+">
   <div class="flex flex-col items-center justify-center gap-3 px-4">
     <img class="w-96 h-96"
       src="https://png.pngtree.com/png-vector/20220319/ourmid/pngtree-vector-eps10-icon-of-badge-with-a-check-mark-indicating-success-and-approval-vector-png-image_44982234.jpg"
@@ -1573,12 +1575,12 @@
 
 <app-modal *ngIf="configureBarcode" (close)="configureBarcode = false" header="Configure Barcode" class="">
   <div class="flex gap-3 mt-2 flex-col w-96">
-    <div class="">
+    <!-- <div class="">
       <label for="type">Barcode Type</label>
       <ng-select [items]="barcodes" bindLabel="label" bindValue="value" [(ngModel)]="barcodeConfig.barcodeType"
         [multiple]="false" placeholder="Select branch">
       </ng-select>
-    </div>
+    </div> -->
 
     <div class="">
       <label for="name">Quantity</label>
@@ -1589,9 +1591,9 @@
     <!-- <svg id="barcode"></svg> -->
 
     <div class="flex justify-between gap-10 my-5 items-center">
-      <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
+      <!-- <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
         Get PDF
-      </button>
+      </button> -->
       <button class="btn create-invoice-btn w-full" (click)="printBarcode()">
         Print
       </button>
