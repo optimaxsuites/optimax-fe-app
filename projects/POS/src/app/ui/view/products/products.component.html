@@ -292,7 +292,6 @@
                     *ngIf="productPermissions.canDelete"
                     (click)="openDeleteModalWithValidation(item)"
                     style="column-gap: 0.5rem"
-                    [title]="!canDeleteProduct(item) ? 'Warning: ' + getDeleteRestrictionMessage(item) : ''"
                     [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
                   >
                     <i class="pi pi-times-circle table-item me-2"></i>

@@ -142,17 +142,17 @@
                   <span
                     class="font-extrabold text-2xl"
                     [ngClass]="
-                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                      item?.quantity >= (item.__originalProduct.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800'
                     "
                     >{{ item?.quantity }}</span
                   >
                   <span
                     class="text-xl font-extrabold ml-2"
                     [ngClass]="
-                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                      item?.quantity >= (item.__originalProduct.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800'
                     "
                   >
-                    {{ item?.quantity >= 11 ? "In Stock" : "Low Stock" }}
+                    {{ item?.quantity >= (item.__originalProduct.reorderThreshold ?? 10) ? "In Stock" : "Low Stock" }}
                   </span>
                 </div>
               </td>
@@ -312,6 +312,17 @@
         <i class="pi pi-chart-line table-item me-2"></i>
         <span>Stock Movement</span>
       </li>
+       <li
+                    class="table-item-panel"
+                    *ngIf="productPermissions.canDelete"
+                    (click)="openDeleteModalWithValidation(product)"
+                    style="column-gap: 0.5rem"
+                    [ngClass]="{'text-orange-600': !canDeleteProduct(product)}"
+                  >
+                    <i class="pi pi-times-circle table-item me-2"></i>
+                    <span>Delete Product</span>
+                    <i *ngIf="!canDeleteProduct(product)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+                  </li>
     </ul>
   </p-overlayPanel>
 </div>
@@ -334,7 +345,7 @@
             <ng-container *ngIf="product.quantity !== undefined">
               <span
                 [ngClass]="
-                  product.quantity >= 11
+                  product.quantity >= (product.__originalProduct.reorderThreshold ?? 10)
                     ? 'text-green-800'
                     : 'text-red-800'
                 "
@@ -346,12 +357,12 @@
   [ngClass]="
     product.quantity === 0
       ? 'bg-gray-100 text-gray-500 px-2 py-1 rounded-full'
-      : (product.quantity >= 11
+      : (product.quantity >= (product.__originalProduct.reorderThreshold ?? 10)
           ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full'
           : 'bg-red-100 text-red-800 px-2 py-1 rounded-full')
   "
 >
-  {{ product.quantity === 0 ? "Not in Stock" : (product.quantity >= 11 ? "In Stock" : "Low Stock") }}
+  {{ product.quantity === 0 ? "Not in Stock" : (product.quantity >= (product.__originalProduct.reorderThreshold ?? 10) ? "In Stock" : "Low Stock") }}
 </span>
               </span>
             </ng-container>
@@ -433,3 +444,54 @@
     </div>
   </div>
 </div>
+
+
+
+
+<app-modal
+  *ngIf="productDeleteModal && activeItem"
+  [header]="'Delete ' + (activeItem.name || 'Product')"
+  [title]="'Cancel'"
+  (close)="productDeleteModal = false"
+>
+  <div class="modalText">
+    <p>Are you sure you want to delete this product?</p>
+    <div class="bg-gray-100 p-3 rounded mt-2 mb-3">
+      <strong>{{ activeItem.name }}</strong>
+      <br>
+      <small class="text-gray-600">SKU: {{ activeItem.sku }} | Code: {{ activeItem.code }}</small>
+    </div>
+    
+    <div *ngIf="!canDeleteProduct(activeItem)" class="bg-orange-50 border-l-4 border-orange-400 p-3 mb-3">
+      <div class="flex items-center">
+        <i class="pi pi-exclamation-triangle text-orange-400 mr-2"></i>
+        <div>
+          <p class="text-orange-800 font-medium">Warning</p>
+          <p class="text-orange-700 text-sm">
+            This product {{ getDeleteRestrictionMessage(activeItem) }}. 
+            Are you sure you want to delete this product.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <p class="text-red-600 font-semibold">This action cannot be undone.</p>
+  </div>
+
+  <div class="modalBtn">
+    <button 
+      class="btn create-invoice-btn" 
+      (click)="deleteModal = false"
+      type="button">
+      Cancel
+    </button>
+
+    <button
+      class="btn create-invoice-btn"
+      style="background-color: red !important"
+      (click)="deleteProduct()"
+      type="button">
+      Delete Anyway
+    </button>
+  </div>
+</app-modal>
