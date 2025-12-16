@@ -472,7 +472,7 @@ export class ProductsComponent implements OnInit {
     this.posService.deleteProduct(this.activeItem.id).subscribe({
       next: (response) => {
         this.deleteModal = false;
-        this.getProducts();
+        this.metadataService.fetchMetaData();
         this.messageService.add({
           severity: "success",
           summary: "Product Deleted",
@@ -581,7 +581,7 @@ export class ProductsComponent implements OnInit {
   }
 
   private handleBulkDeleteComplete(successCount: number, errorCount: number) {
-    this.getProducts();
+    this.metadataService.fetchMetaData();
     
     if (successCount > 0 && errorCount === 0) {
       this.messageService.add({

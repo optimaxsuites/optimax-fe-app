@@ -390,7 +390,7 @@ deleteTax(id: any): Observable<any> {
 
   deleteProduct(id: number) {
     return this.http
-      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`)
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/exclude/product/${id}`, {})
       .pipe(catchError(this.handleError));
   }
 
