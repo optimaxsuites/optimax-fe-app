@@ -924,8 +924,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     this.posService.deleteProduct(this.activeItem.id).subscribe({
       next: (response) => {
-        this.deleteModal = false;
-        this.metadataService.fetchMetaData();
+   
         this.messageService.add({
           severity: "success",
           summary: "Product Deleted",
@@ -934,10 +933,16 @@ export class InventoryComponent implements OnInit, OnDestroy {
           life: 3000,
         });
         this.activeItem = {};
+        this.deleteModal = false;
+        this.productDeleteModal = false;
+
+        this.metadataService.fetchMetaData();
       },
       error: (error: HttpErrorResponse) => {
         this.deleteModal = false;
         console.error('Delete error:', error);
+        this.productDeleteModal = false;
+
         
         if (error.status === 500 && 
             (error.error?.exception === 'DataIntegrityViolationException' || 
