@@ -1,5 +1,5 @@
 <div
-  class="font-sans antialiased text-gray-800 bg-gray-50 min-h-screen p-6 text-2xl font-extrabold"
+  class="font-sans antialiased text-gray-800 bg-gray-50 min-h-screen p-6 "
   [attr.aria-hidden]="showInformation ? 'true' : null"
   [class.pointer-events-none]="showInformation"
   [class.overflow-hidden]="showInformation"
@@ -9,6 +9,8 @@
     <!-- Search and Filter Section -->
     <div class="gap-3 w-full flex justify-between items-center">
       <div class="flex gap-3">
+        <div>
+        <p class="text-sm">Category:</p>
         <ng-select
           [items]="categories"
           bindLabel="name"
@@ -19,7 +21,10 @@
           (ngModelChange)="applyFilters()"
         >
         </ng-select>
+        </div>
 
+        <div>
+        <p class="text-sm">Branch:</p>
         <ng-select
         *ngIf="superUser"
           [items]="branches"
@@ -30,6 +35,21 @@
           (ngModelChange)="onBranchChange($event)"
         >
         </ng-select>
+           </div>
+
+        <div>
+        <p class="text-sm">Status:</p>
+        <ng-select
+          [items]="status"
+          bindLabel="name"
+          bindValue="id"
+          placeholder="Branches"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onStatusChange($event)"
+        >
+        </ng-select>
+        </div>
+       
       </div>
 
       <div class="w-1/2 flex gap-2">
@@ -279,14 +299,30 @@
           (error)="onImageError($event)"
         />
 
+         @if (!product.__originalProduct.active) {
+            <div
+              class="absolute inset-0 bg-gray-800 bg-opacity-30 flex items-center justify-center pointer-events-none"
+            >
+              <div
+                class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-[200%] h-10 
+                      bg-red-600 text-white text-center font-extrabold text-xl leading-10 shadow-lg"
+                style="z-index: 10;"
+              >
+                Discontinued
+              </div>
+            </div>
+            }
+
         <!-- Menu Button + Overlay -->
         <div class="absolute top-3 right-3">
-  <button 
-    class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
-    (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
-  >
-    <i class="pi pi-ellipsis-v text-gray-700"></i>
-  </button>
+          <button 
+            class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+            (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
+          >
+            <i class="pi pi-ellipsis-v text-gray-700"></i>
+
+           
+          </button>
 
   <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
     <ul>
@@ -300,6 +336,7 @@
       <li
         class="table-item-panel"
         (click)="openEditInventory(product, 'child'); op.hide()"
+        *ngIf="product.__originalProduct.active"
       >
         <i class="pi pi-pen-to-square table-item me-2"></i>
         <span>Edit</span>
@@ -308,13 +345,14 @@
       <li
         class="table-item-panel text-green-700 hover:bg-green-50 border-t border-gray-100"
         (click)="openStockMovement(product, 'child'); op.hide()"
+         *ngIf="product.__originalProduct.active"
       >
         <i class="pi pi-chart-line table-item me-2"></i>
         <span>Stock Movement</span>
       </li>
        <li
                     class="table-item-panel"
-                    *ngIf="productPermissions.canDelete"
+                    *ngIf="productPermissions.canDelete && product.__originalProduct.active"
                     (click)="openDeleteModalWithValidation(product)"
                     style="column-gap: 0.5rem"
                     [ngClass]="{'text-orange-600': !canDeleteProduct(product)}"

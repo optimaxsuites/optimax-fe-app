@@ -62,7 +62,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }];
-
+  status = ['All', 'Active', 'Discontinued'];
+  selectedStatus: string = 'Active';
   dropdownVisible: boolean[] = [];
   selectedAction!: string;
   originalProducts: any[] = [];
@@ -204,7 +205,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   getInventory(){
      this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
-      console.log("inventory:", data)
+      // console.log("inventory:", data)
      
       this.originalProducts = data.sort((a: any, b: any) => {
           const dateA = new Date(
@@ -226,8 +227,11 @@ export class InventoryComponent implements OnInit, OnDestroy {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts]
-      console.log('inventories loaded:', this.products); 
+      // console.log('inventories loaded:', this.products); 
+    this.applyFilters()
+       
     });
+
   }
 
   fetchUserBranchId(){
@@ -241,6 +245,10 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.selectedBranch = branchId;
     this.isBranchSwitching = true; // Set branch switching state
     this.metadataService.setSelectedBranch(branchId);
+  }
+
+  onStatusChange(status: string): void {
+    this.filterProductsByStatus(status)
   }
 
   onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
@@ -437,6 +445,13 @@ export class InventoryComponent implements OnInit, OnDestroy {
     let tempProducts = [...this.originalProducts];
     const lowerCaseSearchTerm = this.searchTerm.toLowerCase().trim();
 
+    // Apply status filter
+    if (this.selectedStatus !== 'All') {
+      tempProducts = tempProducts.filter(product =>
+        this.selectedStatus === 'Active' ? product.__originalProduct.active : !product.__originalProduct.active
+      );
+    }
+
     // Apply category filter
     if (this.selectedCategories.length > 0) {
       tempProducts = tempProducts.filter(product =>
@@ -462,6 +477,11 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   filterProductsByCategory() {
+    this.applyFilters();
+  }
+
+  filterProductsByStatus(status: string) {
+    this.selectedStatus = status;
     this.applyFilters();
   }
 
