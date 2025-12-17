@@ -415,6 +415,8 @@ discountTypes: any[] = [
         this.debugImageFlow();
       }, 100);
     }
+
+    console.log(this.productImages)
   }
 
     private initializeEditMode() {
@@ -468,7 +470,7 @@ discountTypes: any[] = [
     this.setBranchInformation();
 
     // Initialize product images
-    this.initializeProductImages();
+    // this.initializeProductImages();
 
     console.log('Form after initialization:', this.productForm.value);
   }
@@ -1249,6 +1251,12 @@ removeImage(image: any, index: number) {
     const removedImage = this.productImages[index];
     console.log(image, removedImage)
 
+    if(removedImage.id === 0){
+      this.productImages.splice(index, 1);
+      this.updateImageFormValidation();
+      return;
+    }
+
     this.posService.deleteProductImage(removedImage.id).subscribe({
       next: () => {
         // if (this.mainProductImage === removedImage.url) {
@@ -1264,6 +1272,7 @@ removeImage(image: any, index: number) {
 
             this.productImages.splice(index, 1);
             this.updateImageFormValidation();
+            this.metadataService.fetchMetaData()
              this.messageService.add({
             severity: 'success',
             summary: 'Deleted',
@@ -2029,6 +2038,7 @@ async addToProduct() {
       createdBy: userName,
       createdDate: new Date().toISOString(),
       expiryDate: formValues.expiryDate,
+      active: true
     };
 
     console.log('Final product payload:', JSON.stringify(product, null, 2));
@@ -2439,6 +2449,7 @@ async updateProduct() {
     expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
     // Clear existing images if new image is provided
     clearExistingImages: hasNewImage,
+    active: true
   };
 
   console.log('Product data to update:', product);
