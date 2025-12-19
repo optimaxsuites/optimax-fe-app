@@ -228,6 +228,45 @@ export interface Order {
   id: string; 
   deliveryMethod?: DeliveryMethod | string;
   deliveryInfo?: DeliveryInfoDTO | null; 
+  updatedBy?: string; // Added field for Admin/User who updated status
+}
+
+/**
+ * Payload for updating an order via PUT /orders/{id}
+ */
+export interface OrderUpdateDTO {
+  orderStatus?: string;
+  deliveryStatus?: string;
+  updatedBy?: string;
+  
+  // Optional fields that might be supported by the endpoint for cancellation logic
+  cancellationReason?: string;
+  processChargeback?: boolean;
+}
+
+/**
+ * Payload for updating an order via PUT /orders/{id}
+ * The backend requires mandatory fields like totalAmount, quantity, etc.
+ */
+export interface OrderUpdateDTO {
+  id?: number | string;
+  orderStatus?: string;
+  deliveryStatus?: string;
+  updatedBy?: string;
+  
+  // Required fields for validation
+  totalAmount?: number | string;
+  quantity?: number;
+  customerId?: number;
+  branchId?: number;
+  amountTendered?: number;
+  
+  // Cancellation specific
+  cancellationReason?: string;
+  processChargeback?: boolean;
+  
+  // Allow other fields to satisfy the full object requirement
+  [key: string]: any; 
 }
 
 export type PaymentModes = "card" | "mobile" | "cash" | "loyalty";
@@ -472,46 +511,6 @@ export interface CustomerDTO {
   loyaltyPoints?: number;
 }
 interface HotelProductDTO extends ProductDTO {}
-
-// abstract class Product implements ProductDTO {
-//   constructor(
-//     public readonly id: number,
-//     public readonly name: string,
-//     public readonly code: string,
-//     public readonly description: string,
-//     public readonly sku: string,
-//     public readonly weight: number | null,
-//     public readonly createdBy: string | null,
-//     public readonly partNumber: string,
-//     public readonly tax: number,
-//     public readonly branches: Map<string, BranchDTO>,
-//     public readonly discount: DiscountDTO,
-//     public readonly productCategory: ProductCategoryDTO,
-//     public readonly productImages: ProductImageDTO[],
-//     public readonly variants: VariantDTO[],
-//     public readonly createdDate: string
-//   ) {}
-
-//   branchData(branchName: string) {
-//     return this.branches.get(branchName) as BranchDTO;
-//   }
-
-//   effectiveQuantity(branchName: string) {
-//     return this.branchData(branchName).regularQuantity;
-//   }
-
-//   effectivePrice(branchName: string) {
-//     const price = this.branchData(branchName).regularPrice;
-
-//     return (
-//       price + (price * this.discount.value) / 100 + (price * this.tax) / 100
-//     );
-//   }
-
-//   supplierId(branchName: string) {
-//     return this.branchData(branchName).supplierId;
-//   }
-// }
 
 export const MeasurementUnit = {
   UNIT: "UNIT",
@@ -1134,6 +1133,7 @@ export interface OrderDTO {
   deliveryInfoId: number;
   deliveryMethod?: 'DELIVERY' | 'PICKUP';
   deliveryInfo?: DeliveryInfoDTO;
+  updatedBy?: string; // Admin who last updated the order
 }
 
 export interface DeliveryInfoDTO {

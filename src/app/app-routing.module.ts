@@ -48,7 +48,7 @@ const routes: Routes = [
   {
     path: 'e-store-sales/:uuid',
     component: EStoreSalesComponent,
-    canActivate: [PermissionGuard],
+    // canActivate: [PermissionGuard],
   },
   {
     path: 'Update-stock/:uuid',

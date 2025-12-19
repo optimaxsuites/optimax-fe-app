@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChange
 import { ActivatedRoute, Router } from '@angular/router';
 import { Order, DateType } from '../../../models/interface'; 
 import { HttpErrorResponse } from '@angular/common/http'; 
+import { StoreOrderService } from '../../../service/store-order.service';
 
 export interface CancellationEvent {
   orderId: number | string;
@@ -17,25 +18,53 @@ export interface CancellationEvent {
 export class SalesDetailsComponent implements OnInit, OnChanges {
 
   @Input() order?: Order;
+  @Input() isEstore: boolean = false; 
   @Output() back = new EventEmitter<void>();
   @Output() cancelOrderConfirmed = new EventEmitter<CancellationEvent>(); 
+  @Output() statusUpdated = new EventEmitter<void>();
   
   loading = true;
   error = false;
   
-
   showCancelModal = false;
+  showStatusDropdown = false;
   cancellationReason: string = '';
   requireChargeback: boolean = false;
   
+  // Display labels for the dropdown
+  statusOptions = [
+    'Pending',
+    'Processing', // Changed from Packaged to align closer to backend 'PROCESSING'
+    'Out for Delivery',
+    'Delivered',
+    'Cancelled'
+  ];
+
+  // Mapping from Display Label -> Backend Enum
+  // Backend Accepted: [CANCELLED, PROCESSING, DELIVERED, REFUNDED, OUT_FOR_DELIVERY, CONFIRMED, PENDING]
+  private deliveryStatusMap: { [key: string]: string } = {
+    'Awaiting Payment': 'PENDING',
+    'Pending': 'PENDING',
+    'Processing': 'PROCESSING',
+    'Packaged': 'PROCESSING', // Legacy mapping
+    'Out for Delivery': 'OUT_FOR_DELIVERY',
+    'Delivered': 'DELIVERED',
+    'Failed Delivery': 'CANCELLED',
+    'Cancelled': 'CANCELLED'
+  };
+
+  currentUser: string = 'System'; 
+
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private storeOrderService: StoreOrderService
   ) { }
 
   ngOnInit(): void {
     this.loading = false;
-    console.log('Sales details initialized with order:', this.order);
+    this.fetchCurrentUser();
+    console.log('Sales details initialized with order:', this.order, 'isEstore:', this.isEstore);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -45,11 +74,73 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     }
   }
 
+  fetchCurrentUser(): void {
+    const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        this.currentUser = userObj.name || userObj.username || userObj.email || 'Admin';
+      } catch (e) {
+        this.currentUser = userStr; 
+      }
+    } else {
+        this.currentUser = 'Admin';
+    }
+  }
+
   goBack(): void {
     this.back.emit();
   }
   
+  toggleStatusDropdown(): void {
+    this.showStatusDropdown = !this.showStatusDropdown;
+  }
+
+  updateStatus(statusLabel: string): void {
+    this.showStatusDropdown = false;
+    
+    if(!this.order || !this.order.id) return;
+
+    // Convert display label to backend Enum
+    const backendStatus = this.deliveryStatusMap[statusLabel] || statusLabel.toUpperCase();
+    
+    console.log(`Updating status: "${statusLabel}" mapped to Backend Enum: "${backendStatus}"`);
+
+    this.loading = true;
+    
+    // Pass the full order object and the CORRECTED backend status
+    this.storeOrderService.updateDeliveryStatus(this.order, backendStatus, this.currentUser).subscribe({
+      next: (res) => {
+        console.log('Status updated', res);
+        alert(`Order status updated to ${statusLabel}`);
+        
+        if(this.order) {
+           this.order.deliveryStatus = backendStatus; // Update local model with backend enum
+           this.order.updatedBy = this.currentUser; 
+           
+           if (res && res.orderStatus) {
+               this.order.orderStatus = res.orderStatus;
+           }
+        }
+        
+        this.statusUpdated.emit();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Failed to update status', err);
+        const msg = err.error?.message || err.message || 'Failed to update status';
+        alert(`Error: ${msg}`);
+        this.loading = false;
+      }
+    });
+  }
+
   openCancelModal(): void {
+    if (this.order?.deliveryStatus === 'OUT_FOR_DELIVERY' || this.order?.deliveryStatus === 'DELIVERED') {
+        alert('Cannot cancel order that is Out for Delivery or Delivered.');
+        return;
+    }
+
     this.cancellationReason = '';
     this.requireChargeback = false;
     this.showCancelModal = true;
@@ -61,15 +152,14 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
       return;
     }
 
-    // Emit the event with cancellation data. The parent component will call the service.
     this.cancelOrderConfirmed.emit({
       orderId: this.order.id, 
       reason: this.cancellationReason,
       chargeback: this.requireChargeback
     });
-
-    if (this.requireChargeback) {
-      console.log(`Chargeback requested for Order ${this.order.orderNumber}. Client needs refund.`);
+    
+    if (this.order) {
+        this.order.updatedBy = this.currentUser;
     }
 
     this.showCancelModal = false;
@@ -79,6 +169,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   closeCancelModal(): void {
     this.showCancelModal = false;
   }
+
   formatDate(date: DateType): string {
     if (!date) return 'N/A';
     
@@ -88,7 +179,6 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
     if (Array.isArray(date) && date.length >= 3) {
       const [year, month, day, hour, minute, second] = date;
-      // Subtract 1 from month for 0-indexing
       const dateObj = new Date(Number(year), Number(month) - 1, Number(day), Number(hour) || 0, Number(minute) || 0, Number(second) || 0);
       return dateObj.toLocaleString();
     }

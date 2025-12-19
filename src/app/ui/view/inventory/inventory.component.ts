@@ -754,6 +754,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     this.tableSection = false;
     this.viewProduct = false;
+    this.viewInventory = false; // FIX: Ensure view modal is closed
     this.addProduct = false;
     this.editInventory = true;
     this.tableSections = false;
@@ -769,13 +770,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.mode = 'create';
       this.activeItem = null;
     } else {
-      // For child mode (dropdown click), pass the selected product
+      // For child mode (dropdown or view modal click), pass the selected product
       this.mode = 'edit';
       this.activeItem = item;
     }
 
     this.tableSection = false;
     this.viewProduct = false;
+    this.viewInventory = false; // FIX: Ensure view modal is closed
     this.addProduct = false;
     this.editInventory = true;
     this.tableSections = false;
