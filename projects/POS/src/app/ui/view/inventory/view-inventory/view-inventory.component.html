@@ -11,13 +11,24 @@
         </button>
         <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Product Details</h1>
       </div>
-      <button
-        class="px-4 py-2 sm:px-6 sm:py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-70 cursor-pointer text-sm sm:text-base"
-        type="button"
-        (click)="printPage()"
-      >
-        <i class="fa fa-print" aria-hidden="true"></i> Print Report
-      </button>
+      
+      <div class="flex gap-3">
+        <button
+          class="px-4 py-2 sm:px-6 sm:py-3 bg-white border-2 border-customBlue text-customBlue rounded-lg hover:bg-gray-50 transition flex items-center gap-2 cursor-pointer text-sm sm:text-base font-semibold"
+          type="button"
+          (click)="triggerRecordStockMovement()"
+        >
+          <i class="fa-solid fa-chart-line"></i> Record Stock Movement
+        </button>
+
+        <button
+          class="px-4 py-2 sm:px-6 sm:py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-70 cursor-pointer text-sm sm:text-base"
+          type="button"
+          (click)="printPage()"
+        >
+          <i class="fa fa-print" aria-hidden="true"></i> Print Report
+        </button>
+      </div>
     </div>
 
     <div *ngIf="loading" class="flex justify-center items-center py-10">
@@ -27,9 +38,7 @@
     </div>
 
     <div *ngIf="!loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-[calc(100%-4rem)]">
-      <!-- Left Column - Stock Movements (3/4 width) -->
       <div class="lg:col-span-3 h-full">
-        <!-- Stock Movements Section -->
         <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
           <div class="flex justify-between items-center mb-4 pb-2 border-b">
             <h2 class="text-lg font-semibold text-gray-800">Stock Movement History</h2>
@@ -151,9 +160,7 @@
         </div>
       </div>
 
-      <!-- Right Column - Image and Product Details (1/4 width) -->
       <div class="lg:col-span-1 h-full overflow-auto">
-        <!-- Product Image -->
         <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
           <div class="flex flex-col items-center gap-3 sm:gap-4">
             <div class="w-32 h-32 sm:w-40 sm:h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
@@ -170,14 +177,12 @@
           </div>
         </div>
 
-        <!-- Product Information -->
         <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
           <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 pb-2 border-b">
             Product Details
           </h2>
 
           <div class="space-y-2 sm:space-y-3">
-            <!-- Name -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Product Name
@@ -185,7 +190,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.name || '-' }}</p>
             </div>
 
-            <!-- Category -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Category
@@ -193,7 +197,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.productCategory?.name || '-' }}</p>
             </div>
 
-            <!-- Quantity -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Current Quantity
@@ -201,7 +204,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.quantity || 0 }}</p>
             </div>
 
-            <!-- Price -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Current Price
@@ -209,7 +211,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.sellingPrice | currency : "₦" }}</p>
             </div>
 
-            <!-- SKU -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 SKU
@@ -217,7 +218,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.sku || '-' }}</p>
             </div>
 
-            <!-- Product Code -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Product Code
@@ -227,14 +227,12 @@
           </div>
         </div>
 
-        <!-- Supplier Information -->
         <div *ngIf="supplier && activeItem?.supplier" class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
           <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 pb-2 border-b">
             Supplier Details
           </h2>
 
           <div class="space-y-2 sm:space-y-3">
-            <!-- Name -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Name
@@ -242,7 +240,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.name || '-' }}</p>
             </div>
 
-            <!-- Contact Person -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Contact Person
@@ -250,7 +247,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.contactPerson || '-' }}</p>
             </div>
 
-            <!-- Email -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -258,7 +254,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.email || '-' }}</p>
             </div>
 
-            <!-- Phone -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Phone Number
@@ -266,7 +261,6 @@
               <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.phoneNumber || '-' }}</p>
             </div>
 
-            <!-- Address -->
             <div>
               <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Address
@@ -282,19 +276,17 @@
 
 
 
-<!-- Edit Stock Movement Modal -->
 <div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-300">
   <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100 opacity-100 max-h-[90vh] overflow-y-auto">
-    <!-- Modal Header -->
-    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl sticky top-0">
+    <div class="px-6 py-4 border-b border-gray-200 bg-customBlue rounded-t-xl sticky top-0">
       <div class="flex items-center justify-between">
-        <h3 class="text-xl font-semibold text-gray-800 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <h3 class="text-xl font-semibold text-white flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           Edit Stock Movement
         </h3>
-        <button (click)="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+        <button (click)="cancelEdit()" class="text-gray-200 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -302,14 +294,11 @@
       </div>
     </div>
     
-    <!-- Modal Body -->
     <div class="px-6 py-6">
-      <!-- Added ngForm for proper ngModel binding and form preservation -->
       <form class="space-y-6" #editMovementForm="ngForm"> 
-        <!-- Reference Field -->
         <div>
           <label for="editReference" class="block text-sm font-semibold text-gray-700 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Reference
@@ -319,15 +308,14 @@
             type="text"
             [(ngModel)]="editingMovement.reference"
             name="reference"
-            class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all duration-200"
             placeholder="Enter reference number or description"
           />
         </div>
         
-        <!-- Quantity Field -->
         <div>
           <label for="editQuantity" class="block text-sm font-semibold text-gray-700 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             Quantity Change
@@ -337,15 +325,13 @@
             type="number"
             [(ngModel)]="editingMovement.quantity"
             name="quantity"
-            class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all duration-200"
             placeholder="Enter quantity (+ for stock in, - for stock out)"
           />
           <p class="text-xs text-gray-500 mt-1">Use positive numbers for stock additions, negative for removals</p>
         </div>
         
-        <!-- Price Fields in Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Purchase Price -->
           <div>
             <label for="editPurchasePrice" class="block text-sm font-semibold text-gray-700 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -361,13 +347,12 @@
                 step="0.01"
                 [(ngModel)]="editingMovement.purchasePrice"
                 name="purchasePrice"
-                class="w-full border-2 border-gray-200 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all duration-200"
                 placeholder="0.00"
               />
             </div>
           </div>
           
-          <!-- Selling Price -->
           <div>
             <label for="editSellingPrice" class="block text-sm font-semibold text-gray-700 mb-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,14 +368,13 @@
                 step="0.01"
                 [(ngModel)]="editingMovement.sellingPrice"
                 name="sellingPrice"
-                class="w-full border-2 border-gray-200 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all duration-200"
                 placeholder="0.00"
               />
             </div>
           </div>
         </div>
         
-        <!-- Supplier Field -->
         <div>
           <label for="editSupplierId" class="block text-sm font-semibold text-gray-700 mb-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -399,15 +383,13 @@
             Supplier
           </label>
           <div class="relative">
-            <!-- Using a standard select for supplier selection -->
             <select
               id="editSupplierId"
               [(ngModel)]="editingMovement.supplierId"
               name="supplierId"
-              class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
+              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all duration-200 appearance-none bg-white"
             >
               <option [value]="null" class="text-gray-400">Select a supplier (optional)</option>
-              <!-- Populate dropdown with fetched suppliersList -->
               <option *ngFor="let supplier of suppliersList" [value]="supplier.id" class="text-gray-800">
                 {{ supplier.name }}
               </option>
@@ -422,13 +404,12 @@
       </form>
     </div>
     
-    <!-- Modal Footer -->
     <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl sticky bottom-0">
       <div class="flex gap-3">
         <button
           (click)="saveStockMovement()"
           [disabled]="isUpdatingMovement"
-          class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center font-semibold"
+          class="flex-1 bg-customBlue text-white px-6 py-3 rounded-lg hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-customBlue focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center font-semibold"
         >
           <svg *ngIf="isUpdatingMovement" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -451,7 +432,6 @@
   </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 transform transition-all">
     <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">

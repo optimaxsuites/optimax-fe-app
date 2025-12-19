@@ -1,12 +1,10 @@
 @if(!isViewPageOpen){
   <div class="bg-white rounded-lg shadow-md p-6 m-6">
    <div class="flex flex-col gap-4 md:gap-6 mb-6">
-    <!-- Title -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <h2 class="text-xl font-semibold text-gray-800">E-Store Orders</h2>
     </div>
 
-    <!-- Search Bar - Top Line -->
     <div class="grid grid-cols-1 gap-3">
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Search Orders</span>
@@ -28,7 +26,6 @@
 
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-      <!-- Date Range Dropdown -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Date Range</span>
         <ng-select
@@ -44,7 +41,6 @@
         </ng-select>
       </label>
 
-      <!-- Custom Date Range -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1 flex items-center">
           Custom Days
@@ -68,21 +64,19 @@
         />
       </label>
 
-      <!-- Cashier -->
       <label class="block">
-        <span class="block text-xs font-medium text-gray-600 mb-1">Cashier</span>
+        <span class="block text-xs font-medium text-gray-600 mb-1">Salesperson</span>
         <ng-select
-          [items]="cashiers"
-          placeholder="All cashiers"
+          [items]="salespersons"
+          placeholder="All salespersons"
           class="rounded-md border-gray-300 shadow-sm"
-          [(ngModel)]="selectedCashier"
+          [(ngModel)]="selectedSalesperson"
           (ngModelChange)="applyFiltersAndSort()"
-          aria-label="Filter by cashier"
+          aria-label="Filter by salesperson"
         >
         </ng-select>
       </label>
 
-      <!-- Order Status -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Order Status</span>
         <ng-select
@@ -98,7 +92,6 @@
         </ng-select>
       </label>
 
-      <!-- Delivery Status Filter** -->
       <label class="block">
         <span class="block text-xs font-medium text-gray-600 mb-1">Delivery Status</span>
         <ng-select
@@ -168,9 +161,9 @@
           <tr *ngFor="let order of paginatedOrders" class="hover:bg-gray-50">
             <td class="py-4 px-4 text-gray-900">{{ order.id }}</td>
             <td class="py-4 px-4 text-gray-900">{{ order.orderNumber }}</td>
-            <td class="py-4 px-4 text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
+            <td class="py-4 px-4 text-gray-900">{{ getCustomerName(order) }}</td>
             <td class="py-4 px-4 text-gray-900">{{ getSalespersonName(order) }}</td>
-            <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount?.toLocaleString() || '0' }}</td>
             <td class="py-4 px-4 text-gray-900">₦{{ calculateOrderTax(order).toLocaleString() }}</td>
             <td class="py-4 px-4 text-gray-900 font-semibold">₦{{ calculateOrderTotalWithTax(order).toLocaleString() }}</td>
             <td class="py-4 px-4">
@@ -211,7 +204,6 @@
       </div>
     </ng-template>
 
-    <!-- Pagination -->
     <div class="flex items-center justify-between mt-6" *ngIf="filteredOrders.length > 0">
       <div class="text-sm text-gray-700">
         Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to 
@@ -219,7 +211,6 @@
         {{ filteredOrders.length }} entries
       </div>
       
-      <!-- PrimeNG style pagination -->
       <p-paginator 
         [rows]="itemsPerPage" 
         [totalRecords]="filteredOrders.length" 
@@ -234,11 +225,11 @@
   </div>
 }
 
-<!-- Order Details View (Including Cancel Modal) -->
 @if(isViewPageOpen){
   <app-sales-details
-  [order] = 'activeOrder'
-  (back) = 'closeViewDetail()'
+  [order]="activeOrder"
+  [isEstore]="true"
+  (back)="closeViewDetail()"
   (cancelOrderConfirmed)="handleCancellation($event)"
   >
   </app-sales-details>

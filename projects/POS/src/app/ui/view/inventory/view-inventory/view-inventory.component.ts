@@ -18,15 +18,16 @@ export class ViewInventoryComponent implements OnInit {
   @Input() updatedProduct: any;
   @Output() edit = new EventEmitter<any>();
   @Output() close = new EventEmitter<void>();
+  @Output() recordStockMovement = new EventEmitter<any>(); 
 
   supplier: supplierData | null = null;
-  suppliersList: supplierData[] = []; // List of all suppliers for dropdown
+  suppliersList: supplierData[] = []; 
   revivedDate: Date = new Date();
   loading = true;
 
   stockMovements: StockMovementByInventory[] = [];
   isMovementsLoading = false;
-  hasTriedMovements = false;             // show "no data" only after we attempt a load
+  hasTriedMovements = false;             
   private inventoryId: number | null = null;
 
   // Dropdown and Edit Modal properties
@@ -48,7 +49,6 @@ export class ViewInventoryComponent implements OnInit {
   ) {}
 
     getImageUrl(item: any): Observable<string> {
-    // Check if we have image data in different places
     const productImages = item.__originalProduct?.productImages || 
                          item.productImages || 
                          item.__inventory?.product?.productImages ||
@@ -59,7 +59,6 @@ export class ViewInventoryComponent implements OnInit {
       return this.imageCacheService.getImage(remoteImageUrl);
     }
     
-    // Return placeholder URL as Observable
     return new Observable(observer => {
       observer.next('https://via.placeholder.com/300x200?text=No+Image');
       observer.complete();
@@ -67,7 +66,6 @@ export class ViewInventoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // capture inventoryId BEFORE we overwrite activeItem
     const passed = this.activeItem ?? {};
     this.inventoryId =
       passed?.inventoryId ??
@@ -75,14 +73,11 @@ export class ViewInventoryComponent implements OnInit {
       history.state?.inventoryId ??
       null;
 
-    // figure out productId
     const productId = passed?.id ?? history.state?.productId ?? null;
 
-    // fetch product (or use passed) + suppliers
     this.loading = true;
     const product$ = productId ? this.posService.getProductById(productId) : of(passed);
 
-    // Fetch product and all suppliers list concurrently
     forkJoin({
       product: product$,
       suppliers: this.posService.getSupplier(),
@@ -90,13 +85,9 @@ export class ViewInventoryComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: ({ product, suppliers }) => {
-          // keep inventoryId merged into activeItem so the template can still see it if needed
           this.activeItem = { ...product, inventoryId: this.inventoryId, __inventory: passed?.__inventory };
-
-          // Store suppliers list for dropdown
           this.suppliersList = suppliers;
 
-          // handle supplier resolution for the main product detail
           if (product?.supplier) {
             this.supplier = suppliers.find((s: supplierData) => s.id === product.supplier.id) || null;
           } else if (suppliers.length === 1) {
@@ -105,10 +96,8 @@ export class ViewInventoryComponent implements OnInit {
             this.supplier = null;
           }
 
-          // createdDate can be ISO or [Y,M,D,H,m,s]
           this.revivedDate = this.parseApiDate(product?.createdDate);
 
-          // finally load movements if we have an inventory id
           if (this.inventoryId) {
             this.loadMovements(this.inventoryId);
           } else {
@@ -135,16 +124,11 @@ export class ViewInventoryComponent implements OnInit {
     return new Date(d);
   }
 
-  // must be public for template usage
-// Replace the existing toIsoString method with this:
-toIsoString(d: string | number[] | Date): string {
+  toIsoString(d: string | number[] | Date): string {
   if (Array.isArray(d)) {
-    
     const [y, m = 1, day = 1, h = 0, mi = 0, s = 0] = d;
-   
     return new Date(y, m - 1, day, h, mi, s).toISOString();
   } else if (typeof d === 'string') {
-  
     return new Date(d).toISOString();
   }
   return d.toISOString();
@@ -177,9 +161,12 @@ toIsoString(d: string | number[] | Date): string {
   triggerClose() { this.close.emit(); }
   closeEdit()    { this.close.emit(); }
   closeEditInventory() { this.close.emit(); }
+  
+  triggerRecordStockMovement() {
+    this.recordStockMovement.emit(this.activeItem);
+  }
 
 printPage() {
-  // Create print content
   const printContent = `
     <!DOCTYPE html>
     <html>
@@ -407,22 +394,17 @@ printPage() {
     </html>
   `;
 
- 
   try {
-    
     const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-    
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
     } else {
-     
       const blob = new Blob([printContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const newWindow = window.open(url, '_blank');
       
       if (!newWindow) {
-       
         const link = document.createElement('a');
         link.href = url;
         link.download = `product-report-${this.activeItem?.name || 'inventory'}-${new Date().getTime()}.html`;
@@ -430,17 +412,14 @@ printPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
-        console.error('Print popup was blocked. The report has been downloaded as an HTML file. Open it in your browser to print.');
+        console.error('Print popup was blocked.');
       }
     }
   } catch (error) {
     console.error('Print error:', error);
-    
     this.printInline();
   }
 }
-
 
 private printInline() {
   const originalContent = document.body.innerHTML;
@@ -454,13 +433,11 @@ private printInline() {
         ${printContent}
       </div>
     `;
-    
     window.print();
     document.body.innerHTML = originalContent;
     window.location.reload();
   } else {
-    // Removed alert as per instructions
-    console.error('Unable to print. Please try again or use your browser\'s print function.');
+    console.error('Unable to print.');
   }
 }
 
@@ -486,12 +463,9 @@ private movementDateDesc = (
 ): number => {
   const dateA = new Date(this.toIsoString(a.createdDate)).getTime();
   const dateB = new Date(this.toIsoString(b.createdDate)).getTime();
-  
-
   return dateB - dateA;
 };
 
-// Close dropdown when clicking outside
 @HostListener('document:click', ['$event'])
 onDocumentClick(e: MouseEvent) {
   const target = e.target as HTMLElement;
@@ -500,7 +474,6 @@ onDocumentClick(e: MouseEvent) {
   }
 }
 
- // Toggle
 toggleDropdown(index: number): void {
   this.activeDropdownIndex = this.activeDropdownIndex === index ? null : index;
 }
@@ -508,8 +481,7 @@ toggleDropdown(index: number): void {
  
   editStockMovement(movement: StockMovementByInventory): void {
     this.editingMovement = { ...movement }; 
-    // Ensure supplierId is null if not set, for the dropdown's 'Select a supplier' option
-    this.editingMovement.supplierId = movement.supplierId ?? null;
+    this.editingMovement.supplierId = movement.supplierId || (movement.supplier as any)?.id || null;
     this.showEditModal = true;
     this.activeDropdownIndex = null;
   }
@@ -560,14 +532,12 @@ toggleDropdown(index: number): void {
 
     this.isUpdatingMovement = true;
     
-    // Prepare update data, ensuring supplierId is explicitly handled (null if needed)
     const updateData: any = {
       id: this.editingMovement.id, 
       reference: this.editingMovement.reference,
       quantity: Number(this.editingMovement.quantity),
       purchasePrice: Number(this.editingMovement.purchasePrice),
       sellingPrice: Number(this.editingMovement.sellingPrice),
-      // Use null if supplierId is intentionally cleared
       supplierId: this.editingMovement.supplierId ? Number(this.editingMovement.supplierId) : null,
       inventoryId: this.inventoryId,
       createdDate: this.editingMovement.createdDate, 
@@ -579,19 +549,25 @@ toggleDropdown(index: number): void {
         
         const index = this.stockMovements.findIndex(m => m.id === this.editingMovement.id);
         if (index !== -1) {
-          // FIX: Updated to correctly use updatedMovement.supplierId and the locally resolved supplier object
-          // Since StockMovementResponsePayload only has supplierId, we resolve the supplier object locally.
           const supplier = this.suppliersList.find(s => s.id === updatedMovement.supplierId);
-          this.stockMovements[index] = { 
+          
+          // Update the specific item and force array reference change
+          const updatedItem = { 
             ...this.stockMovements[index], 
             ...updatedMovement,
             supplierId: updatedMovement.supplierId ?? null,
-            supplier: supplier ? supplier : null, // Set the rich supplier object for display
+            supplier: supplier ? supplier : null,
           } as StockMovementByInventory;
+
+          const newMovements = [...this.stockMovements];
+          newMovements[index] = updatedItem;
+          this.stockMovements = newMovements;
         }
+
         this.showEditModal = false;
         this.editingMovement = {};
         this.isUpdatingMovement = false;
+        
         console.log('Stock movement updated successfully');
         this.messageService.add({
           severity: 'success',
@@ -600,10 +576,8 @@ toggleDropdown(index: number): void {
           life: 3000,
           key: 'tg',
         });
-        // Reload movements to get fresh data and re-calculate inventory if needed
-        if (this.inventoryId) {
-          this.loadMovements(this.inventoryId);
-        }
+        
+        // Removed the immediate reload here to prevent overwriting local updates with stale server data
       },
       error: (err) => {
         console.error('Failed to update stock movement:', err);
@@ -619,7 +593,6 @@ toggleDropdown(index: number): void {
     });
   }
 
-  // Cancel edit
   cancelEdit(): void {
     this.showEditModal = false;
     this.editingMovement = {};
