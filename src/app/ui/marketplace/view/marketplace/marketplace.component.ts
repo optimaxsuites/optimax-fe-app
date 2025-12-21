@@ -31,6 +31,7 @@ export class MarketplaceComponent {
   openAddModule: boolean = false
   openConfirmDialog: boolean = false
   deletingModule: boolean = false
+  editingModule: any = null;
   // selectedModuleDetails: any = null
   selectedModuleDetails$ = new BehaviorSubject<any>(null);
   String = String
@@ -302,11 +303,10 @@ enrichModuleWithPlanLimits(module: any) {
 
 
 editModule(module: any) {
-  // Open edit modal, similar to openAddModule but pass module for editing
-  // this.selectedModuleForEdit = module;
-  // this.openEditModule = true;
-  // this.showDetails = false;
-}
+    this.editingModule = module;
+    this.openAddModule = true;
+    this.showDetails = false;
+  }
 
 deleteModule(module: any) {
   this.openConfirmDialog = true;

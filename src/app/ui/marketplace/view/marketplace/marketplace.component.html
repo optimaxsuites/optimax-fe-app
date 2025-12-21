@@ -250,8 +250,8 @@
 </app-side-modal>
 <!-- ...existing code... -->
 
-<app-side-modal *ngIf="openAddModule" (close)="openAddModule = false">
-  <app-module (reload)="loadModules()"></app-module>
+<app-side-modal *ngIf="openAddModule" (close)="openAddModule = false; editingModule = null;">
+  <app-module (reload)="loadModules();  editingModule = null;" [moduleToEdit]="editingModule" (close)="openAddModule = false; editingModule = null;"></app-module>
 </app-side-modal>
 
 <ng-template #loadingTpl>

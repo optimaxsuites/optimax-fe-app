@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { MarketplaceService } from '../../service/marketplace.service';
 import { forkJoin } from 'rxjs';
@@ -11,19 +11,86 @@ import { forkJoin } from 'rxjs';
 export class ModuleComponent {
   moduleForm!: FormGroup;
   @Output() reload = new EventEmitter<void>();
+   @Output() close = new EventEmitter<void>();
+  @Input() moduleToEdit: any = null;
   loading = false;
+  isEditing = false;
 
-  constructor(private fb: FormBuilder, private marketplaceService: MarketplaceService) {}
+  constructor(private fb: FormBuilder, private marketplaceService: MarketplaceService) {
+     this.initializeForm();
+  }
 
   ngOnInit() {
+    // this.moduleForm = this.fb.group({
+    //   name: ['', Validators.required],
+    //   description: ['', Validators.required],
+    //   status: ['ACTIVE', Validators.required],
+
+    //   subscriptionPlans: this.fb.array([]),
+    // });
+
+    
+    if (this.moduleToEdit) {
+      this.isEditing = true;
+      this.populateForm(this.moduleToEdit);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['moduleToEdit'] && changes['moduleToEdit'].currentValue) {
+      this.isEditing = true;
+      this.populateForm(changes['moduleToEdit'].currentValue);
+    }
+  }
+
+    initializeForm() {
     this.moduleForm = this.fb.group({
       name: ['', Validators.required],
       description: ['', Validators.required],
       status: ['ACTIVE', Validators.required],
-
       subscriptionPlans: this.fb.array([]),
     });
   }
+
+    populateForm(module: any) {
+    this.moduleForm.patchValue({
+      name: module.name,
+      description: module.description,
+      status: module.status,
+    });
+
+    // Clear existing plans
+    while (this.plans.length) {
+      this.plans.removeAt(0);
+    }
+
+    // Add plans from module
+    module.subscriptionPlans.forEach((plan: any) => {
+      this.plans.push(
+        this.fb.group({
+          id: [plan.id || 0],
+          name: [plan.name, Validators.required],
+          description: [plan.description],
+          price: [plan.price],
+          duration: [plan.duration],
+          yearlyPrice: [plan.yearlyPrice, Validators.required],
+          monthlyPrice: [plan.monthlyPrice, Validators.required],
+          isActive: [plan.isActive],
+          features: this.fb.array(plan.features || []),
+          limits: this.fb.group({
+            id: [plan.limit?.id || 0],
+            users: [plan.limit?.subscriptionLimit?.[0]?.users || 0],
+            roles: [plan.limit?.subscriptionLimit?.[0]?.roles || 0],
+            branches: [plan.limit?.subscriptionLimit?.[0]?.branches || 0],
+            ecommerce: [plan.limit?.subscriptionLimit?.[0]?.ecommerce || false],
+            customizedEcommerce: [plan.limit?.subscriptionLimit?.[0]?.customizedEcommerce || false],
+            loyaltyProgram: [plan.limit?.subscriptionLimit?.[0]?.loyaltyProgram || false],
+            report: [plan.limit?.subscriptionLimit?.[0]?.report || false],
+          }),
+        })
+      );
+    });
+    }
 
   /** ACCESSORS */
   get plans(): FormArray {
@@ -79,6 +146,27 @@ export class ModuleComponent {
   buildModulePayload() {
   const raw = this.moduleForm.value;
 
+  if (this.isEditing && this.moduleToEdit?.id) {
+    return {
+      id: this.moduleToEdit.id,
+      name: raw.name,
+      description: raw.description,
+      status: raw.status,
+      subscriptionPlans: raw.subscriptionPlans.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        duration: p.duration,
+        yearlyPrice: p.yearlyPrice,
+        monthlyPrice: p.monthlyPrice,
+        features: p.features,
+        isActive: p.isActive,
+        subscriptionModuleId: this.moduleToEdit.id
+      }))
+    };
+  }
+
   return {
     name: raw.name,
     description: raw.description,
@@ -132,7 +220,7 @@ export class ModuleComponent {
 
       if (hasLimits) {
         const limitPayload = {
-          id: 0,
+          id: limits.id || 0,
           users: limits.users,
           roles: limits.roles,
           branches: limits.branches,
@@ -152,6 +240,8 @@ export class ModuleComponent {
         next: () => {
           this.loading = false;
           this.reload.emit();
+          this.close.emit();
+
         },
         error: (err) => {
           console.error('Limit creation failed', err);
@@ -161,6 +251,8 @@ export class ModuleComponent {
     } else {
       this.loading = false;
       this.reload.emit();
+      this.close.emit();
+
     }
   }
 
