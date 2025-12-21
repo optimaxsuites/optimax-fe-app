@@ -91,7 +91,7 @@
 
             <div formArrayName="features" class="mt-2 space-y-2">
               <div *ngFor="let f of features(i).controls; let j = index" class="flex items-center gap-2">
-                <input [formControlName]="j" class="w-full border p-2 rounded" />
+                <input [formControlName]="j" class="w-full border p-2 rounded" placeholder="Enter a feature" />
                 <button type="button" class="text-red-500" (click)="removeFeature(i, j)">✕</button>
               </div>
             </div>
