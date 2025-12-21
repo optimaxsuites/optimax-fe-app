@@ -21,7 +21,7 @@ constructor(private tenantService: TenantService, private confirmationService: C
 }
 
 ngOnInit(){
-
+// this.tenantService.loadFullTenants();
 }
 
 formatDate(parts: any): Date | null {
