@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { MarketplaceService } from '../../service/marketplace.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-module',
@@ -10,6 +11,7 @@ import { MarketplaceService } from '../../service/marketplace.service';
 export class ModuleComponent {
   moduleForm!: FormGroup;
   @Output() reload = new EventEmitter<void>();
+  loading = false;
 
   constructor(private fb: FormBuilder, private marketplaceService: MarketplaceService) {}
 
@@ -96,49 +98,71 @@ export class ModuleComponent {
 
 
   /** SUBMIT */
-  submit() {
-    console.log("click")
-  if (this.moduleForm.invalid) {
-    console.log("module invalid")
-    this.moduleForm.markAllAsTouched();
-    return;
+ submit() {
+    if (this.moduleForm.invalid) {
+      this.moduleForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+    const modulePayload = this.buildModulePayload();
+
+    this.marketplaceService.createModule(modulePayload).subscribe({
+      next: (res: any) => {
+        this.createLimits(res.subscriptionPlans);
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      }
+    });
   }
 
-  const modulePayload = this.buildModulePayload();
+  createLimits(createdPlans: any[]) {
+    const formPlans = this.moduleForm.value.subscriptionPlans;
+    const limitObservables: any[] = [];
 
-  this.marketplaceService.createModule(modulePayload).subscribe({
-    next: (res: any) => {
-      console.log("res"+ res)
-      // res should contain module + plans with IDs
-      this.createLimits(res.subscriptionPlans);
-    },
-    error: (err) => console.error(err)
-  });
-}
+    createdPlans.forEach((createdPlan, index) => {
+      const limits = formPlans[index].limits;
 
-createLimits(createdPlans: any[]) {
-  const formPlans = this.moduleForm.value.subscriptionPlans;
+      // Check if there are any meaningful limits set
+      const hasLimits = Object.values(limits).some(value => 
+        (typeof value === 'number' && value > 0) || (typeof value === 'boolean' && value === true)
+      );
 
-  createdPlans.forEach((createdPlan, index) => {
-    const limits = formPlans[index].limits;
+      if (hasLimits) {
+        const limitPayload = {
+          id: 0,
+          users: limits.users,
+          roles: limits.roles,
+          branches: limits.branches,
+          ecommerce: limits.ecommerce,
+          customizedEcommerce: limits.customizedEcommerce,
+          loyaltyProgram: limits.loyaltyProgram,
+          report: limits.report,
+          planId: createdPlan.id
+        };
 
-    const limitPayload = {
-      id: 0,
-      users: limits.users,
-      roles: limits.roles,
-      branches: limits.branches,
-      ecommerce: limits.ecommerce,
-      customizedEcommerce: limits.customizedEcommerce,
-      loyaltyProgram: limits.loyaltyProgram,
-      report: limits.report,
-      planId: createdPlan.id
-    };
-
-    this.marketplaceService.createLimit(limitPayload).subscribe({
-      error: err => console.error('Limit failed', err)
+        limitObservables.push(this.marketplaceService.createLimit(limitPayload));
+      }
     });
-  });
-}
+
+    if (limitObservables.length > 0) {
+      forkJoin(limitObservables).subscribe({
+        next: () => {
+          this.loading = false;
+          this.reload.emit();
+        },
+        error: (err) => {
+          console.error('Limit creation failed', err);
+          this.loading = false;
+        }
+      });
+    } else {
+      this.loading = false;
+      this.reload.emit();
+    }
+  }
 
 
 }

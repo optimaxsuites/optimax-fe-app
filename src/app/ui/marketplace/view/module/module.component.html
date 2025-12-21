@@ -144,8 +144,8 @@
 
 
     <!-- SUBMIT BUTTON -->
-    <button type="submit" class="w-full py-3 text-white bg-customBlue rounded-lg font-semibold">
-      Create Module
+    <button type="submit" class="w-full py-3 text-white bg-customBlue rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"  [disabled]="loading || moduleForm.invalid">
+        {{ loading ? 'Creating...' : 'Create Module' }}
     </button>
   </form>
 </div>
