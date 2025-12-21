@@ -51,9 +51,26 @@ export class MarketplaceComponent {
       if (!this.role) return;
 
       // show global loading until both endpoints return
+
+     this.loadModules()
+
+    const hostname = window.location.hostname; 
+    
+    const subdomain = hostname.split('.')[0]; 
+
+    this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
+  }
+   
+    showDialog(module: any ) {
+      this.visible = true;
+      this.module = module;
+   }
+
+   loadModules() {
+
       this.loading = true;
 
-      forkJoin({
+     forkJoin({
         apps: this.marketplaceService.getApps(),
         registered: this.appRegisterService.getRegisteredApp()
       }).subscribe({
@@ -85,17 +102,6 @@ export class MarketplaceComponent {
           console.error(err)
         },
       })
-
-    const hostname = window.location.hostname; 
-    
-    const subdomain = hostname.split('.')[0]; 
-
-    this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
-  }
-   
-    showDialog(module: any ) {
-      this.visible = true;
-      this.module = module;
    }
 
  openModuledetails(module: any) {
@@ -292,4 +298,22 @@ enrichModuleWithPlanLimits(module: any) {
   return null;
 }
 
+
+editModule(module: any) {
+  // Open edit modal, similar to openAddModule but pass module for editing
+  // this.selectedModuleForEdit = module;
+  // this.openEditModule = true;
+  // this.showDetails = false;
+}
+
+deleteModule(module: any) {
+  // if (confirm(`Delete ${module.name}?`)) {
+  //   // Call delete service
+  //   this.marketplaceService.deleteModule(module.id).subscribe(() => {
+  //     this.loadModules();
+  //     this.showDetails = false;
+  //   });
+  // }
+}
+// ...existing code...
 }

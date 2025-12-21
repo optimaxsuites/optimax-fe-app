@@ -70,4 +70,19 @@ export class MarketplaceService {
     return throwError(`${error.status}`);
     // 'Something bad happened; please try again later.');
   }
+
+  createModule(body: any) {
+  return this.http.post(
+   this.getBaseApiUrl() + '/x/api/v2/sub/subscriptionModules',
+    body,
+  );
+}
+
+createLimit(body: any) {
+  return this.http.post(
+   this.getBaseApiUrl() +  '/x/api/v2/sub/subscriptionLimit',
+    body,
+  );
+}
+
 }

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
+import { MarketplaceService } from '../../service/marketplace.service';
 
 @Component({
   selector: 'app-module',
@@ -8,8 +9,9 @@ import { FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
 })
 export class ModuleComponent {
   moduleForm!: FormGroup;
+  @Output() reload = new EventEmitter<void>();
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private marketplaceService: MarketplaceService) {}
 
   ngOnInit() {
     this.moduleForm = this.fb.group({
@@ -36,10 +38,10 @@ export class ModuleComponent {
       this.fb.group({
         name: ['', Validators.required],
         description: [''],
-        price: [0, Validators.required],
-        duration: [0, Validators.required],
-        yearlyPrice: [0],
-        monthlyPrice: [0],
+        price: [0],
+        duration: [0],
+        yearlyPrice: [0, Validators.required],
+        monthlyPrice: [0, Validators.required],
         isActive: [true],
 
         features: this.fb.array([]),
@@ -72,16 +74,71 @@ export class ModuleComponent {
     this.features(planIndex).removeAt(featureIndex);
   }
 
+  buildModulePayload() {
+  const raw = this.moduleForm.value;
+
+  return {
+    name: raw.name,
+    description: raw.description,
+    status: raw.status,
+    subscriptionPlans: raw.subscriptionPlans.map((p: any) => ({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      duration: p.duration,
+      yearlyPrice: p.yearlyPrice,
+      monthlyPrice: p.monthlyPrice,
+      features: p.features,
+      isActive: p.isActive
+    }))
+  };
+}
+
+
   /** SUBMIT */
   submit() {
-    if (this.moduleForm.invalid) {
-      this.moduleForm.markAllAsTouched();
-      return;
-    }
-
-    const body = this.moduleForm.value;
-
-    console.log('Final Body:', body);
-    // TODO: this.moduleService.createModule(body).subscribe(...)
+    console.log("click")
+  if (this.moduleForm.invalid) {
+    console.log("module invalid")
+    this.moduleForm.markAllAsTouched();
+    return;
   }
+
+  const modulePayload = this.buildModulePayload();
+
+  this.marketplaceService.createModule(modulePayload).subscribe({
+    next: (res: any) => {
+      console.log("res"+ res)
+      // res should contain module + plans with IDs
+      this.createLimits(res.subscriptionPlans);
+    },
+    error: (err) => console.error(err)
+  });
+}
+
+createLimits(createdPlans: any[]) {
+  const formPlans = this.moduleForm.value.subscriptionPlans;
+
+  createdPlans.forEach((createdPlan, index) => {
+    const limits = formPlans[index].limits;
+
+    const limitPayload = {
+      id: 0,
+      users: limits.users,
+      roles: limits.roles,
+      branches: limits.branches,
+      ecommerce: limits.ecommerce,
+      customizedEcommerce: limits.customizedEcommerce,
+      loyaltyProgram: limits.loyaltyProgram,
+      report: limits.report,
+      planId: createdPlan.id
+    };
+
+    this.marketplaceService.createLimit(limitPayload).subscribe({
+      error: err => console.error('Limit failed', err)
+    });
+  });
+}
+
+
 }
