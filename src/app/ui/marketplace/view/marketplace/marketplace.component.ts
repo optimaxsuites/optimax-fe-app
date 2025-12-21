@@ -29,6 +29,8 @@ export class MarketplaceComponent {
   appList  = []
   showDetails: boolean = false;
   openAddModule: boolean = false
+  openConfirmDialog: boolean = false
+  deletingModule: boolean = false
   // selectedModuleDetails: any = null
   selectedModuleDetails$ = new BehaviorSubject<any>(null);
   String = String
@@ -307,6 +309,8 @@ editModule(module: any) {
 }
 
 deleteModule(module: any) {
+  this.openConfirmDialog = true;
+  // Implement delete logic here
   // if (confirm(`Delete ${module.name}?`)) {
   //   // Call delete service
   //   this.marketplaceService.deleteModule(module.id).subscribe(() => {
@@ -314,6 +318,24 @@ deleteModule(module: any) {
   //     this.showDetails = false;
   //   });
   // }
+}
+
+confirmDelete(){
+  this.deletingModule =true
+  this.marketplaceService.deleteModule(this.selectedModuleDetails$.value.id).subscribe({
+    next: () => {
+      this.loadModules();
+      this.showDetails = false;
+      this.openConfirmDialog = false;
+      this.deletingModule = false
+    },
+    error: (err) => {
+      console.error('Error deleting module', err);
+      this.openConfirmDialog = false;
+      this.deletingModule = false
+
+    }
+  })
 }
 // ...existing code...
 }

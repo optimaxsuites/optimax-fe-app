@@ -78,6 +78,13 @@ export class MarketplaceService {
   );
 }
 
+
+  deleteModule(id: any) {
+  return this.http.delete(
+   this.getBaseApiUrl() + `/x/api/v2/sub/subscriptionModules/${id}`
+  );
+}
+
 createLimit(body: any) {
   return this.http.post(
    this.getBaseApiUrl() +  '/x/api/v2/sub/subscriptionLimit',
