@@ -107,13 +107,14 @@ export interface StoreOrderPOST {
   discountId: number | null;
   paymentId: number | null;
   cashierId: number | null;
+  taxId: number | null;
   orderItem: StoreOrderItemPOST[];
   deliveryFee: number;
   estimatedReadyTime: string;
   estimatedDeliveryTime: string;
   customerEmail: string;
   deliveryInfoId: number | null;
-  deliverTypeId: number | null;
+  deliveryTypeId: number | null;
   deliveryStatus: string;
 }
 
@@ -508,10 +509,8 @@ export class StoreOrderService {
     
     const baseOrder: StoreOrderPOST = {
         ...orderData,
-        // Only set deliveryStatus to PENDING if payment is successful
-        deliveryStatus: paymentMethod === 'card' && orderData.orderStatus === 'PAID' 
-          ? 'PENDING' 
-          : 'AWAITING_PAYMENT'
+        // Only set deliveryStatus to PENDING for all payment statuses
+        deliveryStatus: 'PENDING'
     };
     
     return this.createPaymentRecord(
@@ -570,26 +569,57 @@ export class StoreOrderService {
     );
   }
 
+  updateOrder(
+    order: ComponentOrder,
+    updateData: Partial<OrderUpdateDTO>
+  ): Observable<OrderDTO> {
 
-  updateOrder(orderId: number | string, updateData: OrderUpdateDTO): Observable<OrderDTO> {
-    const endpoint = `/x/api/v2/pos/orders/${orderId}`;
-    console.log(`🔄 Updating order ${orderId} via PUT:`, updateData);
+    const endpoint = `/x/api/v2/pos/orders`;
+    const completeOrderPayload = this.buildCompleteOrderPayload(order, updateData);
 
-    return this.http.put<OrderDTO>(
+    console.log(' Updating order via POST:', completeOrderPayload);
+
+    return this.http.post<OrderDTO>(
       this.getBaseApiUrl() + endpoint,
-      updateData,
+      completeOrderPayload,
       { headers: this.getHeaders() }
     ).pipe(
-      tap(res => console.log('✅ Order updated successfully', res)),
+      tap(res => console.log('Order updated successfully', res)),
       catchError(error => this.handleError(error))
     );
   }
 
+  private buildCompleteOrderPayload(order: ComponentOrder, updates: Partial<OrderUpdateDTO>): any {
+    return {
+      id: Number(order.id) || 0, 
+      orderNumber: order.orderNumber,
+      orderStatus: updates.orderStatus || order.orderStatus,
+      deliveryStatus: updates.deliveryStatus || order.deliveryStatus,
+      updatedBy: updates.updatedBy || 'System',
+      totalAmount: updates.totalAmount || order.totalAmount,
+      quantity: this.calculateQuantity(order),
+      customerId: order.customer?.id || 1,
+      branchId: order.branch?.id || 1,
+      deliveryInfoId: order.deliveryInfo?.id || null,
+      isOnline: order.isOnline,
+      createdDate: this.formatDateForBackend(order.createdDate),
+      
+      // Map order items ensuring types are correct
+      orderItem: (order.orderItem || []).map((item: { id: any; totalPrice: any; quantity: any; product: { id: any; }; productId: any; productVariant: { id: any; }; productVariantId: any; }) => ({
+        id: item.id || 0,
+        totalPrice: item.totalPrice || 0,
+        quantity: item.quantity || 1,
+        productId: item.product?.id || item.productId || 0,
+        productVariantId: item.productVariant?.id || item.productVariantId || null,
+        orderId: Number(order.id) || 0
+      }))
+    };
+  }
+
   cancelOrder(order: ComponentOrder, reason: string, requireChargeback: boolean): Observable<OrderDTO> {
-    // must map the ComponentOrder back to the backend DTO format 
-    // to satisfy @NotNull constraints on totalAmount, quantity, deliveryStatus
+    // Construct payload with required fields
     const payload: OrderUpdateDTO = {
-      id: order.id,
+      id: order.id, 
       orderNumber: order.orderNumber,
       
       // The crucial change: Update status
@@ -599,7 +629,7 @@ export class StoreOrderService {
       
       // Include mandatory fields to pass validation
       totalAmount: order.totalAmount,
-      quantity: this.calculateQuantity(order), // Helper to ensure quantity is present
+      quantity: this.calculateQuantity(order), 
       deliveryStatus: order.deliveryStatus || 'PENDING',
       
       // Map other necessary fields
@@ -613,9 +643,10 @@ export class StoreOrderService {
       createdDate: this.formatDateForBackend(order.createdDate)
     };
     
-    console.log(`🚫 Cancelling order ${order.id} with full payload:`, payload);
+    console.log(`🚫 Cancelling order ${order.orderNumber} (ID: ${order.id}) with full payload:`, payload);
 
-    return this.updateOrder(order.id, payload);
+    // FIXED: Passing the full 'order' object, not 'order.id', because updateOrder expects ComponentOrder
+    return this.updateOrder(order, payload);
   }
 
 
@@ -639,9 +670,10 @@ export class StoreOrderService {
       createdDate: this.formatDateForBackend(order.createdDate)
     };
 
-    console.log(`🚚 Updating delivery status for order ${order.id} with payload:`, payload);
+    console.log(`🚚 Updating delivery status for order ${order.orderNumber} to ${status}`);
 
-    return this.updateOrder(order.id, payload);
+    // FIXED: Passing the full 'order' object, not 'order.id'
+    return this.updateOrder(order, payload);
   }
 
   // Helper to ensure quantity is not null
@@ -741,13 +773,16 @@ export class StoreOrderService {
         // If paid but no delivery status, set to PENDING
         deliveryStatus = 'PENDING';
       } else {
-        // If not paid, awaiting payment
-        deliveryStatus = 'AWAITING_PAYMENT';
+        // If not paid, set to PENDING (awaiting payment)
+        deliveryStatus = 'PENDING';
       }
     }
 
     return {
-      id: orderDTO.orderNumber, 
+      // FIXED: Use the database ID (number) cast to string if present, 
+      // otherwise fallback to orderNumber. This ensures updates target the correct PK.
+      id: (orderDTO.id) ? orderDTO.id.toString() : orderDTO.orderNumber,
+      
       orderNumber: orderDTO.orderNumber, 
       orderStatus: orderDTO.orderStatus || 'PENDING',
       updatedAt: orderDTO.updatedAt,
@@ -886,6 +921,7 @@ export class StoreOrderService {
       discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
       paymentId: orderData.paymentId,
       cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,
+      taxId: orderData.taxId && orderData.taxId > 0 ? orderData.taxId : null,
       orderItem: orderData.orderItem.map((item: StoreOrderItemPOST) => ({
         id: 0,
         totalPrice: item.totalPrice,
@@ -899,7 +935,7 @@ export class StoreOrderService {
       estimatedDeliveryTime: orderData.estimatedDeliveryTime,
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
-      deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null,
+      deliveryTypeId: orderData.deliveryTypeId && orderData.deliveryTypeId > 0 ? orderData.deliveryTypeId : null,
       deliveryStatus: orderData.deliveryStatus || 'PENDING'
     };
   }

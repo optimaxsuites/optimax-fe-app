@@ -300,6 +300,17 @@ export class StockReportComponent implements OnInit {
 
         this.reportData = inventoryReport;
         
+        // --- 0. ADDITIONAL ENRICHMENT: Populate productMap from Inventory Items ---
+        // This helps ensure we have product data for movements
+        if (this.reportData.inventory) {
+          this.reportData.inventory.forEach((invItem: any) => {
+            if (invItem.product?.id && !this.productMap.has(invItem.product.id)) {
+              this.productMap.set(invItem.product.id, invItem.product);
+              console.log(`Added product from inventory: ID=${invItem.product.id}, Name=${invItem.product.name}`);
+            }
+          });
+        }
+        
         // --- 1. Populate Inventory Map for Fallback Lookup ---
         this.inventoryMap.clear();
         if (this.reportData.inventory) {
@@ -455,37 +466,53 @@ export class StockReportComponent implements OnInit {
 
   private enrichMovementData(): void {
     console.log('Enriching movement data, movements count:', this.movementReportData.movements.length);
+    console.log('Available maps - Products:', this.productMap.size, 'Inventory:', this.inventoryMap.size);
     
-    this.movementReportData.movements.forEach((item: any) => {
+    this.movementReportData.movements.forEach((item: any, index: number) => {
       const actualProductId = item.productId;
       const inventoryId = item.inventoryId;
       
-      // 1. Primary Lookup: By Product ID
-      let product = this.productMap.get(actualProductId);
+      console.log(`Movement ${index}: productId=${actualProductId}, inventoryId=${inventoryId}, hasProduct=${!!item.product}`);
       
-      // 2. Fallback Lookup: By Inventory ID (if Product ID is missing/0)
-      if ((!product || actualProductId === 0) && inventoryId) {
+      // 1. Check if product data is already included in the movement item
+      let product = item.product;
+      
+      // 2. If not, try Primary Lookup: By Product ID
+      if (!product && actualProductId) {
+        product = this.productMap.get(actualProductId);
+        if (product) {
+          console.log(`Movement ${index}: Found product by productId=${actualProductId}`);
+        }
+      }
+      
+      // 3. Fallback Lookup: By Inventory ID (if Product ID is missing/0)
+      if ((!product || actualProductId === 0 || actualProductId === null) && inventoryId) {
           product = this.inventoryMap.get(inventoryId);
+          if (product) {
+            console.log(`Movement ${index}: Found product by inventoryId=${inventoryId}`);
+          }
       }
 
       const branch = this.branchMap.get(item.branchId);
       
       if (product) {
-        item.productName = product.name || `Product ${actualProductId}`;
-        item.productSku = product.sku || 'N/A';
+        item.productName = product.name || item.productName || `Product ${actualProductId}`;
+        item.productSku = product.sku || item.productSku || 'N/A';
         item.productDisplayName = `${product.name || 'Unknown'} (${product.sku || 'N/A'})`;
-        item.categoryName = product.productCategory?.name || 'N/A';
+        item.categoryName = product.productCategory?.name || item.categoryName || 'N/A';
         // Only override price if 0 or null
         if (!item.sellingPrice) {
             item.sellingPrice = product.sellingPrice || null;
         }
         item.supplierName = product.supplier?.name || item.supplierName || 'N/A';
       } else {
-        item.productName = `Unknown Product (InvID: ${inventoryId || 'N/A'})`;
-        item.productSku = 'N/A';
-        item.productDisplayName = `Unknown Product`;
-        item.categoryName = 'N/A';
-        item.supplierName = 'N/A';
+        // Fallback: Use product name from item if available, or show diagnostic info
+        item.productName = item.productName || item.product?.name || `Unknown Product (ID: ${actualProductId}, InvID: ${inventoryId || 'N/A'})`;
+        item.productSku = item.productSku || item.product?.sku || 'N/A';
+        item.productDisplayName = item.productName;
+        item.categoryName = item.categoryName || 'N/A';
+        item.supplierName = item.supplierName || 'N/A';
+        console.warn(`Movement ${index}: Could not enrich product - productId=${actualProductId}, inventoryId=${inventoryId}`);
       }
       
       if (branch) {

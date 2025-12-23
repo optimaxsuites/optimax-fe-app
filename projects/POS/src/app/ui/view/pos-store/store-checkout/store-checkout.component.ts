@@ -111,6 +111,7 @@ export class StoreCheckoutComponent implements OnInit {
 
     if (this.cartItems.size === 0) {
       this.formErrors.push('Your cart is empty. Please add items before placing an order.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return false;
     }
 
@@ -118,12 +119,14 @@ export class StoreCheckoutComponent implements OnInit {
       const validation = this.cartService.validateDeliveryInfo(this.deliveryInfo);
       if (!validation.isValid) {
         this.formErrors = validation.errors;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return false;
       }
     }
 
     if (!this.paymentMethod) {
       this.formErrors.push('Please select a payment method');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return false;
     }
 
@@ -222,12 +225,11 @@ private async handlePaystackPayment(orderData: StoreOrderPOST): Promise<void> {
                 console.log('✅ Navigation successful');
               } else {
                 console.error('❌ Navigation failed');
-                // Fallback: show success message
-                alert('Payment successful! Your order has been placed.');
+                this.formErrors = ['Payment successful! Your order has been placed.'];
               }
             }).catch(err => {
               console.error('❌ Navigation error:', err);
-              alert('Payment successful! Your order has been placed.');
+              this.formErrors = ['Payment successful! Your order has been placed.'];
             });
           }, 100);
         },
@@ -247,6 +249,7 @@ private async handlePaystackPayment(orderData: StoreOrderPOST): Promise<void> {
       } else {
         this.formErrors = ['Payment failed. Please try again or use a different payment method.'];
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 }
@@ -289,11 +292,11 @@ private async handleCashPayment(orderData: StoreOrderPOST): Promise<void> {
             console.log('✅ Navigation successful');
           } else {
             console.error('❌ Navigation failed');
-            alert('Order placed successfully!');
+            this.formErrors = ['Order placed successfully!'];
           }
         }).catch(err => {
           console.error('❌ Navigation error:', err);
-          alert('Order placed successfully!');
+          this.formErrors = ['Order placed successfully!'];
         });
       }, 100);
     },
@@ -358,13 +361,14 @@ private prepareOrderData(): StoreOrderPOST {
     discountId: null,
     paymentId: null,
     cashierId: null,
+    taxId: null,
     orderItem: orderItems,
     deliveryFee: this.isDelivery ? Number(this.deliveryFee) : 0,
     estimatedReadyTime: readyTime.toISOString(),
     estimatedDeliveryTime: deliveryTime.toISOString(),
     customerEmail: customerEmail,
     deliveryInfoId: null,
-    deliverTypeId: this.isDelivery ? 1 : null,
+    deliveryTypeId: 1,
     deliveryStatus: 'PENDING'
   };
 
