@@ -27,7 +27,6 @@ type DateString = string;
 export type DateArray = ReadonlyArray<number> & {
   length: 1 | 2 | 3 | 4 | 5 | 6 | 7;
 };
-/** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
 export type DateType = DateString | DateArray;
 
 export interface ProductJSONFormat<TDateType extends "string" | "array"> {
@@ -44,9 +43,7 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   inventoryId?: number;
   __originalProduct?: ProductDTO | any
 
-  /** Date String Format: "2025-02-02T22:56:31.935Z" */
   createdDate: TDateType extends "string" ? DateString : DateArray;
-  /** Date String Format: "2025-02-02T22:56:31.935Z" */
   expiryDate: TDateType extends "string" ? DateString : DateArray;
   createdBy: string | null;
   partNumber: string;
@@ -74,24 +71,15 @@ type ProductDataShared = {
   branchDetails?: any;
   imageUrl$?: Observable<unknown> | Subscribable<unknown> | Promise<unknown>;
   showMenu: any;
-  // FIXME: REMOVE THIS "any" >~<
   supplier: any;
-  // The total price of all instances of a single product in the cart
   cartPriceTotal: string;
-  /** The number of instances of a product in the cart*/
   count: number;
-  // The total discount of all instances of a single product in the cart
   discountedPrice: number;
-
   selectedVariants?: VariantDTO[];
-
   pricingQuantity: any;
   quantity: number;
 };
 
-/**
- * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
- */
 export type ProductData = ProductJSONFormatPOST & ProductDataShared;
 export type ProductDataGET = ProductJSONFormatGET & ProductDataShared;
 export type HistoryData = Map<number, ProductData[]>;
@@ -105,13 +93,8 @@ export interface DiscountDTO {
   active?: boolean;
   discountType: any
   discountValue?: number;
-
-  // Date String Format: "2025-02-02T22:56:31.935Z"
   startDate: Date;
   endDate: Date;
-  /**
-   * The idea behind minimum quantity is when the discount only applies on quantity , for instance by 2 get 1
-   */
   minQuantity: number;
 }
 
@@ -127,7 +110,6 @@ interface ProductCategoryShared<TDateType extends "string" | "array"> {
   name: string;
   code: string;
   description: string;
-  /** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
   endDate: TDateType extends "string" ? DateString : DateArray;
 }
 export interface ProductCategoryPOST extends ProductCategoryShared<"string"> {}
@@ -136,9 +118,6 @@ export interface ProductCategoryGET extends ProductCategoryShared<"array"> {}
 export interface ProductImageDTO {
   id: number;
   name: string;
-  /**
-   * It's actually the image id. FOr example, "d03BR3TK6L3", which is used in constructing the appropriate image url.
-   */
   imgNo: string;
 }
 
@@ -151,10 +130,6 @@ export interface VariantDTO {
   variantType?: number;
   selectedQuantity?: number;
   branches?: BranchDTO[];
-
-  /**
-   * Might revert this type to a regular `string`
-   */
   color: string;
   size: "XXS" | "XS" | "Small" | "Medium" | "Regular" | "Large" | "XL" | "XXL";
 }
@@ -163,6 +138,7 @@ export interface DiscountOption {
   label: string;
   value: number | string;
 }
+
 export interface SalesReportDTO {
   totalRevenue: number;
   totalTransactions: number;
@@ -197,6 +173,7 @@ export interface SalesReportBreakdownDTO {
   date: Date;
   branch: BranchDTO;
   cashier?: any;
+  channel?: string;
   paymentMethod?: string;
   transactions: number;
   revenue: number;
@@ -228,45 +205,37 @@ export interface Order {
   id: string; 
   deliveryMethod?: DeliveryMethod | string;
   deliveryInfo?: DeliveryInfoDTO | null; 
-  updatedBy?: string; // Added field for Admin/User who updated status
+  updatedBy?: string; 
 }
 
 /**
- * Payload for updating an order via PUT /orders/{id}
+ * Updated OrderUpdateDTO to support the full payload required by the POST endpoint
  */
 export interface OrderUpdateDTO {
-  orderStatus?: string;
-  deliveryStatus?: string;
-  updatedBy?: string;
+  id: number | string;
+  orderNumber: string;
+  orderStatus: string;
+  deliveryStatus: string;
+  updatedBy: string;
+  totalAmount: number;
+  quantity: number;
   
-  // Optional fields that might be supported by the endpoint for cancellation logic
-  cancellationReason?: string;
-  processChargeback?: boolean;
-}
-
-/**
- * Payload for updating an order via PUT /orders/{id}
- * The backend requires mandatory fields like totalAmount, quantity, etc.
- */
-export interface OrderUpdateDTO {
-  id?: number | string;
-  orderStatus?: string;
-  deliveryStatus?: string;
-  updatedBy?: string;
+  customerId: number;
+  branchId: number;
+  isOnline: boolean;
+  createdDate: string; // ISO String
   
-  // Required fields for validation
-  totalAmount?: number | string;
-  quantity?: number;
-  customerId?: number;
-  branchId?: number;
-  amountTendered?: number;
+  // Optional but often required fields
+  deliveryInfoId?: number | null;
+  customerEmail?: string;
+  deliveryFee?: number;
   
   // Cancellation specific
   cancellationReason?: string;
   processChargeback?: boolean;
   
-  // Allow other fields to satisfy the full object requirement
-  [key: string]: any; 
+  // Item details for reconstruction
+  orderItem?: any[];
 }
 
 export type PaymentModes = "card" | "mobile" | "cash" | "loyalty";
@@ -292,7 +261,6 @@ export type Cart = {
   paymentMethod: any;
   state: any;
   timestamp: any;
-  /** Doubt we use this */
   cart: ProductData[];
   deliveryStatus: string; 
 }>;
@@ -349,13 +317,10 @@ export interface SelectedRequest extends Refund {
   selectedItems: any;
 }
 
-// TODO: Fill this up with the appropriate types
 export interface InventoryProductDTO {
   costPrice: string;
   sellingPrice: string;
-  // The inventory to be associated to
   inventoryId: number;
-  // The product to be associated to
   productId: number;
   history: HistoryDTO;
   name: string;
@@ -397,21 +362,12 @@ export type TaxDTO = {
   description?: string;
 };
 
-/**
- * This is the interface that should be implemented by components that wish to change behaviour or UI based on the business type.
- *
- * @export
- * @interface Business
- * @typedef {Business}
- */
 export interface Business {
   businessType: BusinessType;
 }
 
-/////
-
 export interface ProductDTO {
-sellingPrice: number;
+  sellingPrice: number;
   category: any;
   price: number;
   id: number;
@@ -423,15 +379,9 @@ sellingPrice: number;
   createdDate: string;
   discountedUnits?: number;
   totalDiscountAmount?: number;
-
   createdBy: string | null;
   partNumber: string;
   tax: number;
-
-  /**
-   * Each branch would be indexed by their name e.g (Headquarters, Wuse)
-   */
-  // branches: Map<string, BranchDTO>;
   branches: ProductBranchDTO[];
   discount: DiscountDTO;
   productCategory: ProductCategoryPOST;
@@ -500,7 +450,6 @@ export interface IngredientDTO {
   purchasePrice: number;
   currentStock: number;
   reorderThreshold?: number;
-  // stockMovements: StockMovementDTO[];
 }
 
 export interface CustomerDTO {
@@ -547,102 +496,17 @@ export const MeasurementUnit = {
   PER_TRIP: "Per Trip",
 } as const;
 
-/**
- * Represents the status of a table order.
- */
-interface TableOrderStatusDTO {
-  /** Unique identifier (64-bit integer) */
-  id?: number;
-
-  /**
-   * Table number (string)
-   * @maxLength 255
-   * @minLength 0
-   */
-  tableNumber: string;
-
-  /**
-   * Status of the order
-   * @remarks Enum: 'PAID' | 'UNPAID'
-   */
-  status?: "PAID" | "UNPAID";
-
-  /** Identifier for water (32-bit integer) */
-  waterId?: number;
-
-  /** Identifier for chef (32-bit integer) */
-  chefId?: number;
-
-  /** Date and time when the order was placed (ISO 8601 format) */
-  orderedOn?: string;
-
-  /** Date and time when the order was processed (ISO 8601 format) */
-  processedOn?: string;
-
-  /** Date and time when the order became ready (ISO 8601 format) */
-  readyOn?: string;
-
-  /** Date and time when the order was completed (ISO 8601 format) */
-  completedOn?: string;
-
-  /**
-   * Additional note
-   * @maxLength 255
-   * @minLength 0
-   */
-  note?: string;
-
-  /** List of items associated with the order */
-  // orderItems?: OrderItemsFullDTO[];
-}
-
-/**
- * Represents the full status of a table order.
- */
 export interface TableOrderStatusFullDTO {
-  /** Unique identifier (64-bit integer) */
   id?: number;
-
-  /**
-   * Table number (string)
-   * @maxLength 255
-   * @minLength 0
-   */
   tableNumber: string;
-
-  /**
-   * Status of the order
-   * @remarks Enum: 'PAID' | 'UNPAID'
-   */
   status?: "PAID" | "UNPAID";
-
-  /** Identifier for water (32-bit integer) */
   waterId?: number;
-
-  /** Identifier for chef (32-bit integer) */
   chefId?: number;
-
-  /** Date and time when the order was placed (ISO 8601 format) */
   orderedOn?: string;
-
-  /** Date and time when the order was processed (ISO 8601 format) */
   processedOn?: string;
-
-  /** Date and time when the order became ready (ISO 8601 format) */
   readyOn?: string;
-
-  /** Date and time when the order was completed (ISO 8601 format) */
   completedOn?: string;
-
-  /**
-   * Additional note
-   * @maxLength 255
-   * @minLength 0
-   */
   note?: string;
-
-  /** List of items associated with the order */
-  // orderItems?: OrderItemsFullDTO[];
 }
 
 export interface OrderItemDTO {
@@ -685,7 +549,6 @@ export interface UserDTO {
   id: number;
   name: string;
   email?: string;
-  // Add other relevant user fields
 }
 
 export interface ReturnDTO {
@@ -827,20 +690,17 @@ export interface RecipePayload {
   ingredient: string[];
   createdById: number;
 }
-// ...existing exports
 
 export interface StockMovementCreateDTO {
-  // id: number; // <-- omit for create
-  quantity: number; // negative for OUT
+  quantity: number;
   reference: string;
   purchasePrice: number;
   sellingPrice: number;
-  createdDate: string; // ISO with Z
+  createdDate: string;
   supplierId?: number | null;
-  ingredientId: number; // backend "product" id
+  ingredientId: number; 
   inventoryId: number;
   createdById?: number; 
-  // stockMovementsId?: number; // only include if server mandates it; otherwise omit
 }
 
 export type InventoryStatus = "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
@@ -988,7 +848,6 @@ export interface InventoryReportRequestDTO {
   includeLowStock?: boolean;
 }
 
-// Stock Movement Report Request DTO
 export interface StockMovementReportRequestDTO extends InventoryReportRequestDTO {
   groupBy?: 'none' | 'day' | 'week' | 'month'; 
   productId?: number | null;
@@ -1108,9 +967,6 @@ export interface CategoryDTO {
   description?: string;
 }
 
-
-// interfaces for e-store orders
-
 export interface OrderDTO {
   id: number;
   orderNumber: string;
@@ -1133,7 +989,7 @@ export interface OrderDTO {
   deliveryInfoId: number;
   deliveryMethod?: 'DELIVERY' | 'PICKUP';
   deliveryInfo?: DeliveryInfoDTO;
-  updatedBy?: string; // Admin who last updated the order
+  updatedBy?: string; 
 }
 
 export interface DeliveryInfoDTO {
@@ -1158,7 +1014,6 @@ export interface OrderItemsDTO {
   selectedVariants?: VariantDTO[];
 }
 
-// Add order status enum
 export enum OrderStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
@@ -1182,8 +1037,6 @@ export enum PaymentMethod {
   MOBILE = 'MOBILE'
 }
 
-// new stock report DTOs
-
 export interface StockMovementReportItemDTO {
   productDisplayName: string;
   categoryName: any;
@@ -1193,15 +1046,11 @@ export interface StockMovementReportItemDTO {
   reference: string | null;
   purchasePrice: number | null;
   sellingPrice: number | null; 
-  
-  //fields for easy display
   productName: string;
   productSku: string;
   productCategory: string;
   branchName: string;
   supplierName: string | null;
-  
-  // Foreign keys for enrichment in the component
   productId: number;
   branchId: number;
 }

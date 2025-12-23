@@ -252,16 +252,22 @@
             Products
           </button>
           <button 
+            (click)="setTab('cashiers')"
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'cashiers', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'cashiers'}"
+            class="py-4 px-6 text-center border-b-2 font-medium">
+            Cashiers
+          </button>
+          <button 
             (click)="setTab('payments')" 
             [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'payments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'payments'}"
             class="py-4 px-6 text-center border-b-2 font-medium">
             Payment Methods
           </button>
           <button 
-            (click)="setTab('details')" 
-            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'details', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'details'}"
+            (click)="setTab('orderItems')"
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'orderItems', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'orderItems'}"
             class="py-4 px-6 text-center border-b-2 font-medium">
-            Detailed Report
+            Order Items
           </button>
         </nav>
       </div>
@@ -370,6 +376,32 @@
         </div>
       </div>
 
+      <div *ngIf="selectedTab === 'cashiers'" class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-700 mb-4">Cashier Performance</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branches</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Order Value</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let cashier of cashiersPerformance">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ cashier.cashier?.name || 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ cashier.branchesCount }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(cashier.revenue) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ cashier.transactions }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(cashier.averageOrderValue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div *ngIf="selectedTab === 'products'" class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Selling Products</h2>
         <div class="overflow-x-auto">
@@ -431,32 +463,38 @@
         </div>
       </div>
 
-      <div *ngIf="selectedTab === 'details'" class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-700 mb-4">Detailed Transactions</h2>
-        <p class="text-sm text-gray-500 mb-4">Comprehensive breakdown of all sales transactions</p>
+      <div *ngIf="selectedTab === 'orderItems'" class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-700 mb-4">Order Items</h2>
+        <p class="text-sm text-gray-500 mb-4">Detailed breakdown of all order items</p>
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEMA</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VARIANTE</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QUALITYY</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USEFORCE</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PACKAGE</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HELIVERY CANDLE</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USEFORCE BY</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TO USE</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let item of paginatedBreakdown">
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.date | date:'MMM d, y' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ item.branch.name }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.cashier?.name || 'N/A' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.paymentMethod || 'N/A' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.transactions }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(item.revenue) }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ formatCurrency(item.discounts) }}</td>
+              <tr *ngFor="let item of orderItems">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ getProductName(item) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ getVariant(item) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ getQuantity(item) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(getUnitPrice(item)) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ getPackageType(item) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span [class]="getDeliveryStatusClass(item)">
+                    {{ getDeliveryStatus(item) }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ getCashierName(item) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ formatCurrency(getTotalAmount(item)) }}</td>
               </tr>
             </tbody>
           </table>
@@ -477,9 +515,9 @@
                 Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
                 to <span class="font-medium">
                   {{
-                    Math.min(currentPage * itemsPerPage, salesReport.breakdown.length)
+                    Math.min(currentPage * itemsPerPage, orderItems.length)
                   }}
-                </span> of <span class="font-medium">{{ salesReport.breakdown.length }}</span> results
+                </span> of <span class="font-medium">{{ orderItems.length }}</span> results
               </p>
 
               <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">

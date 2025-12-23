@@ -3,6 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Order, DateType } from '../../../models/interface'; 
 import { HttpErrorResponse } from '@angular/common/http'; 
 import { StoreOrderService } from '../../../service/store-order.service';
+import * as XLSX from 'xlsx';
+import * as FileSaver from 'file-saver';
 
 export interface CancellationEvent {
   orderId: number | string;
@@ -25,28 +27,35 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   
   loading = true;
   error = false;
+  errorMessage: string = '';
+  successMessage: string = '';
   
   showCancelModal = false;
   showStatusDropdown = false;
+  showPrintDropdown = false; //toggle for print menu
+  
   cancellationReason: string = '';
   requireChargeback: boolean = false;
   
   // Display labels for the dropdown
   statusOptions = [
     'Pending',
-    'Processing', // Changed from Packaged to align closer to backend 'PROCESSING'
+    'Processing',
     'Out for Delivery',
     'Delivered',
     'Cancelled'
   ];
 
-  // Mapping from Display Label -> Backend Enum
-  // Backend Accepted: [CANCELLED, PROCESSING, DELIVERED, REFUNDED, OUT_FOR_DELIVERY, CONFIRMED, PENDING]
+  printOptions = [
+    { label: 'Export to PDF (Print)', icon: 'fa-file-pdf', action: 'pdf' },
+    { label: 'Export to Excel', icon: 'fa-file-excel', action: 'excel' }
+  ];
+
   private deliveryStatusMap: { [key: string]: string } = {
     'Awaiting Payment': 'PENDING',
     'Pending': 'PENDING',
     'Processing': 'PROCESSING',
-    'Packaged': 'PROCESSING', // Legacy mapping
+    'Packaged': 'PROCESSING',
     'Out for Delivery': 'OUT_FOR_DELIVERY',
     'Delivered': 'DELIVERED',
     'Failed Delivery': 'CANCELLED',
@@ -64,12 +73,10 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.loading = false;
     this.fetchCurrentUser();
-    console.log('Sales details initialized with order:', this.order, 'isEstore:', this.isEstore);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['order'] && changes['order'].currentValue) {
-      console.log('Order data changed:', changes['order'].currentValue);
       this.loading = false;
     }
   }
@@ -94,6 +101,98 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   
   toggleStatusDropdown(): void {
     this.showStatusDropdown = !this.showStatusDropdown;
+    this.showPrintDropdown = false;
+  }
+
+  togglePrintDropdown(): void {
+    this.showPrintDropdown = !this.showPrintDropdown;
+    this.showStatusDropdown = false;
+  }
+
+  handlePrintAction(action: string): void {
+    this.showPrintDropdown = false;
+    if (action === 'pdf') {
+      this.printToPdf();
+    } else if (action === 'excel') {
+      this.exportToExcel();
+    }
+  }
+
+  printToPdf(): void {
+    window.print();
+  }
+
+  exportToExcel(): void {
+    if (!this.order) return;
+
+    // 1. Prepare Data for Excel Structure
+    // We create an Array of Arrays (AOA) to manually layout the Excel sheet
+    const data: any[][] = [];
+
+    // Header
+    data.push(['ORDER DETAILS REPORT']);
+    data.push([]); // Empty row
+    data.push(['Order Number:', this.order.orderNumber, '', 'Date:', this.formatDate(this.order.createdDate)]);
+    data.push(['Status:', this.order.orderStatus, '', 'Total Amount:', `N${(this.order.totalAmount || 0).toLocaleString()}`]);
+    data.push([]);
+
+    // Customer & Branch Section
+    data.push(['CUSTOMER INFORMATION', '', '', 'BRANCH INFORMATION']);
+    data.push(['Name:', this.order.customer?.name || 'Walk-in', '', 'Branch:', this.order.branch?.name || 'N/A']);
+    data.push(['Email:', this.order.customer?.email || 'N/A', '', 'Phone:', this.order.branch?.phoneNo || 'N/A']);
+    data.push([]);
+
+    // Items Header
+    data.push(['ORDER ITEMS']);
+    data.push(['Item Name', 'Variant', 'Quantity', 'Unit Price', 'Tax (%)', 'Total']);
+
+    // Items Rows
+    if (this.order.orderItem) {
+        this.order.orderItem.forEach((item: { product: { name: any; }; productVariant: { name: any; }; quantity: any; totalPrice: any; }) => {
+            data.push([
+                item.product?.name || 'N/A',
+                item.productVariant?.name || 'Standard',
+                item.quantity || 0,
+                this.getItemUnitPrice(item),
+                this.getItemTaxRate(item),
+                item.totalPrice || 0
+            ]);
+        });
+    }
+    data.push([]);
+
+    // Summary Section
+    data.push(['', '', '', '', 'Subtotal:', this.calculateSubtotal()]);
+    data.push(['', '', '', '', 'Tax:', this.calculateTax()]);
+    data.push(['', '', '', '', 'Discount:', this.calculateDiscount()]);
+    data.push(['', '', '', '', 'GRAND TOTAL:', this.calculateTotal()]);
+
+    // 2. Create Workbook
+    const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Optional: Set column widths for better readability
+    ws['!cols'] = [
+        { wch: 25 }, // Col A
+        { wch: 20 }, // Col B
+        { wch: 10 }, // Col C
+        { wch: 20 }, // Col D
+        { wch: 15 }, // Col E
+        { wch: 15 }  // Col F
+    ];
+
+    const wb: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Order Details');
+
+    // 3. Save File
+    const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    this.saveAsExcelFile(excelBuffer, `order_${this.order.orderNumber || 'details'}`);
+  }
+
+  private saveAsExcelFile(buffer: any, fileName: string): void {
+    const EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+    const EXCEL_EXTENSION = '.xlsx';
+    const data: Blob = new Blob([buffer], { type: EXCEL_TYPE });
+    FileSaver.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
   }
 
   updateStatus(statusLabel: string): void {
@@ -101,23 +200,19 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     
     if(!this.order || !this.order.id) return;
 
-    // Convert display label to backend Enum
     const backendStatus = this.deliveryStatusMap[statusLabel] || statusLabel.toUpperCase();
     
-    console.log(`Updating status: "${statusLabel}" mapped to Backend Enum: "${backendStatus}"`);
-
     this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
     
-    // Pass the full order object and the CORRECTED backend status
     this.storeOrderService.updateDeliveryStatus(this.order, backendStatus, this.currentUser).subscribe({
       next: (res) => {
-        console.log('Status updated', res);
-        alert(`Order status updated to ${statusLabel}`);
+        this.successMessage = `Order status updated to ${statusLabel}`;
         
         if(this.order) {
-           this.order.deliveryStatus = backendStatus; // Update local model with backend enum
+           this.order.deliveryStatus = backendStatus;
            this.order.updatedBy = this.currentUser; 
-           
            if (res && res.orderStatus) {
                this.order.orderStatus = res.orderStatus;
            }
@@ -125,19 +220,32 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
         
         this.statusUpdated.emit();
         this.loading = false;
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
       },
       error: (err) => {
-        console.error('Failed to update status', err);
         const msg = err.error?.message || err.message || 'Failed to update status';
-        alert(`Error: ${msg}`);
+        this.errorMessage = `Error: ${msg}`;
         this.loading = false;
+        
+        // Clear error message after 5 seconds
+        setTimeout(() => {
+          this.errorMessage = '';
+        }, 5000);
       }
     });
   }
 
   openCancelModal(): void {
+    this.errorMessage = '';
     if (this.order?.deliveryStatus === 'OUT_FOR_DELIVERY' || this.order?.deliveryStatus === 'DELIVERED') {
-        alert('Cannot cancel order that is Out for Delivery or Delivered.');
+        this.errorMessage = 'Cannot cancel order that is Out for Delivery or Delivered.';
+        setTimeout(() => {
+          this.errorMessage = '';
+        }, 5000);
         return;
     }
 
@@ -148,7 +256,10 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   
   confirmCancellation(): void {
     if (!this.order || !this.cancellationReason || !this.order.id) {
-      alert('Order ID or reason is missing. Cannot proceed with cancellation.');
+      this.errorMessage = 'Order ID or reason is missing. Cannot proceed with cancellation.';
+      setTimeout(() => {
+        this.errorMessage = '';
+      }, 5000);
       return;
     }
 
@@ -163,7 +274,11 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     }
 
     this.showCancelModal = false;
-    this.cancellationReason = ''; 
+    this.cancellationReason = '';
+    this.successMessage = 'Order cancellation requested.';
+    setTimeout(() => {
+      this.successMessage = '';
+    }, 3000);
   }
 
   closeCancelModal(): void {
@@ -172,17 +287,12 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   formatDate(date: DateType): string {
     if (!date) return 'N/A';
-    
-    if (typeof date === 'string') {
-      return new Date(date).toLocaleString();
-    }
-
+    if (typeof date === 'string') return new Date(date).toLocaleString();
     if (Array.isArray(date) && date.length >= 3) {
       const [year, month, day, hour, minute, second] = date;
       const dateObj = new Date(Number(year), Number(month) - 1, Number(day), Number(hour) || 0, Number(minute) || 0, Number(second) || 0);
       return dateObj.toLocaleString();
     }
-    
     return 'N/A';
   }
 
@@ -231,7 +341,20 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     return item.product.tax.rate;
   }
 
-  printOrderDetails(): void {
-    window.print();
+  // Fixed: Added getDeliveryStatusClass method with proper type handling
+  getDeliveryStatusClass(status?: string): string {
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    const statusClassMap: { [key: string]: string } = {
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'PROCESSING': 'bg-blue-100 text-blue-800',
+      'OUT_FOR_DELIVERY': 'bg-purple-100 text-purple-800',
+      'DELIVERED': 'bg-green-100 text-green-800',
+      'CANCELLED': 'bg-red-100 text-red-800',
+      'FAILED': 'bg-red-100 text-red-800',
+      'AWAITING_PAYMENT': 'bg-orange-100 text-orange-800'
+    };
+    
+    return statusClassMap[status.toUpperCase()] || 'bg-gray-100 text-gray-800';
   }
 }

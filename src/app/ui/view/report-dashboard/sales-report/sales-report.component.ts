@@ -93,6 +93,53 @@ export type TrendChartOptions = {
   styleUrls: ['./sales-report.component.scss'],
 })
 export class SalesReportComponent implements OnInit {
+  getProductName(item: any): string {
+    return item?.product?.name || 'N/A';
+  }
+
+  getVariant(item: any): string {
+    return item?.productVariant?.name || 'Standard';
+  }
+
+  getQuantity(item: any): number {
+    return item?.quantity || 0;
+  }
+
+  getUnitPrice(item: any): number {
+    const variantPrice = item?.productVariant?.price;
+    const productPrice = parseFloat(item?.product?.sellingPrice || '0');
+    return variantPrice || productPrice || 0;
+  }
+
+  getPackageType(item: any): string {
+    return item?.product?.packageType || 'Pcs';
+  }
+
+  getDeliveryStatusClass(item: any): string {
+    const status = item?.order?.deliveryStatus || 'PENDING';
+    const statusClasses: { [key: string]: string } = {
+      'PENDING': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold',
+      'CONFIRMED': 'bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold',
+      'PROCESSING': 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold',
+      'OUT_FOR_DELIVERY': 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold',
+      'DELIVERED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold',
+      'CANCELLED': 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold',
+      'REFUNDED': 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold'
+    };
+    return statusClasses[status] || 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold';
+  }
+
+  getDeliveryStatus(item: any): string {
+    return item?.order?.deliveryStatus || 'PENDING';
+  }
+
+  getCashierName(item: any): string {
+    return item?.order?.cashier?.name || item?.order?.updatedBy || 'System';
+  }
+
+  getTotalAmount(item: any): number {
+    return item?.totalPrice || 0;
+  }
   @ViewChild('branchChart') branchChart!: ChartComponent;
   @ViewChild('productChart') productChart!: ChartComponent;
   @ViewChild('paymentChart') paymentChart!: ChartComponent;
@@ -135,6 +182,7 @@ export class SalesReportComponent implements OnInit {
   // Filter properties
   branches: BranchDTO[] = [];
 Number: any;
+orderItems: any;
 
   constructor(private reportService: ReportService, private fb: FormBuilder) {
     this.initChartOptions();
@@ -354,6 +402,55 @@ Number: any;
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
     }
+  }
+
+  get cashiersPerformance() {
+    const breakdown = this.salesReport?.breakdown || [];
+    const map = new Map<number|string, { cashier: any; revenue: number; transactions: number; branches: Set<number> }>();
+
+    breakdown.forEach((item) => {
+      const cashierObj = item.cashier || (item as any).cashier || null;
+      const cashierId = (cashierObj && cashierObj.id) || (item as any).cashierId || (cashierObj && cashierObj.name) || 'unknown';
+      const key = cashierId ?? 'unknown';
+
+      if (!map.has(key)) {
+        map.set(key, { cashier: cashierObj || { id: key, name: cashierObj?.name || 'Unknown' }, revenue: 0, transactions: 0, branches: new Set<number>() });
+      }
+
+      const entry = map.get(key)!;
+      entry.revenue += item.revenue || 0;
+      entry.transactions += item.transactions || 0;
+      if (item.branch && (item.branch as any).id) entry.branches.add((item.branch as any).id);
+    });
+
+    return Array.from(map.values()).map((e) => ({
+      cashier: e.cashier,
+      revenue: e.revenue,
+      transactions: e.transactions,
+      averageOrderValue: e.transactions ? e.revenue / e.transactions : 0,
+      branchesCount: e.branches.size,
+    }));
+  }
+
+  getChannel(item: any): string {
+    // Prefer explicit channel field
+    if (item.channel) return String(item.channel);
+
+    //  check common flags returned by different endpoints
+    if (item.order?.isOnline === true || item.isOnline === true) return 'Online';
+    if (item.order?.deliveryStatus && item.order.deliveryStatus !== 'PENDING') return 'Online';
+
+    // check kitchen-specific flags used in app
+    if (item.isKitchen === true || item.order?.kitchenOrder === true) return 'Kitchen';
+
+    // If payment method or other hints indicate walk-in
+    const pm = (item.paymentMethod || '').toString().toLowerCase();
+    if (pm.includes('cash') || pm.includes('card') || pm.includes('gift_card') || pm.includes('voucher')) return 'Walk-in';
+
+    //  if there's a salesperson or table info, treat as Walk-in
+    if (item.salesperson || item.table || item.order?.table) return 'Walk-in';
+
+    return 'Unknown';
   }
 
   initChartOptions() {
@@ -641,6 +738,7 @@ Number: any;
         date: formatDate(new Date(item.date), 'shortDate', 'en-US'),
         branch: item.branch?.name || 'N/A',
         cashier: item.cashier?.name || 'N/A',
+        channel: this.getChannel(item),
         paymentMethod: item.paymentMethod || 'N/A',
         transactions: item.transactions,
         revenue: item.revenue,
