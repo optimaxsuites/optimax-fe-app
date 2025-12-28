@@ -13,7 +13,7 @@ import {
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
 import { MessageService } from "primeng/api";
-import { debounceTime, skipUntil } from "rxjs";
+import { debounceTime, distinctUntilChanged, skipUntil } from "rxjs";
 import {
   BranchDTO,
   DiscountDTO,
@@ -32,6 +32,7 @@ import { MetadataService } from "../../../service/metadata.service";
 import { PosServiceService } from "../../../service/pos-service.service";
 import { firstValueFrom } from 'rxjs';
 import { of, Observable } from 'rxjs'; 
+import { UpcLookupService, UpcProduct } from "../../../service/upc-lookup.service";
 
 interface SelectedIngredientDTO {
   ingredient: IngredientDTO;
@@ -296,6 +297,7 @@ discountTypes: any[] = [
 	openAddDiscount: boolean = false;
 	openAddSupplier: boolean = false;
 	openAddTax: boolean = false;
+  upcLoading: boolean = false;
 
 	openBranchData = false;
 	categories: any[] = [];
@@ -314,6 +316,7 @@ discountTypes: any[] = [
 		{ label: "Codabar", value: "Codabar" },
 		{ label: "CODE39", value: "CODE39" },
 	] as const;
+
 	/**
 	 * This is the branch name that is used to determine what branch data to be edited
 	 *
@@ -347,7 +350,8 @@ discountTypes: any[] = [
     private fb: FormBuilder,
     private industryData: IndustryDataService,
     private metadataService: MetadataService,
-    private imageCacheService: ImageCacheService
+    private imageCacheService: ImageCacheService,
+    private upcLookupService: UpcLookupService
   ) {}
 
   ngOnInit(): void {
@@ -416,7 +420,9 @@ discountTypes: any[] = [
       }, 100);
     }
 
-    console.log(this.productImages)
+      this.productForm.get('code')?.valueChanges
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe(upc => this.onBarcodeChange(upc));
   }
 
     private initializeEditMode() {
@@ -475,6 +481,49 @@ discountTypes: any[] = [
     console.log('Form after initialization:', this.productForm.value);
   }
 
+    async onBarcodeChange(upc: string) {
+        if (!/^\d{12,13}$/.test(upc)) return;
+        // this.loading = true;
+         this.upcLoading = true;
+
+
+        const product: UpcProduct | null = await this.upcLookupService.lookup(upc);
+        if (product) {
+          this.productForm.patchValue({
+            name: product.title,
+            // brand: product.brand,
+            // category: product.category,
+            description: product.description,
+            // image: product.images?.[0] || '',       
+             
+          });
+
+          if (product.images?.[0]) {
+            await this.addImageFromUrl(product.images[0]);
+          }
+        }
+
+          this.upcLoading = false;
+      }
+
+ async addImageFromUrl(url: string, fileName = 'product.jpg') {
+  try {
+    const link = "https://sheba-n8n.duckdns.org/webhook/85a5b1fa-48ab-4516-911e-4eb7129aa62c?url=" + encodeURIComponent(url);
+    const res = await fetch(link);
+    
+    if (!res.ok) throw new Error('Failed to fetch binary from n8n');
+
+    const blob = await res.blob();
+    const file = new File([blob], 'product.jpg', { type: blob.type || 'image/jpeg' });
+
+    // Create a fake event to reuse your existing handler
+    const fakeEvent = { target: { files: [file] } };
+    this.onImageUpload(fakeEvent);
+  } catch (err) {
+    console.error('Failed to load image from URL', err);
+    // 049000050103
+  }
+}
 
   // Helper method to get tax control for a branch
   getBranchTaxControl(branch: AbstractControl): FormControl {

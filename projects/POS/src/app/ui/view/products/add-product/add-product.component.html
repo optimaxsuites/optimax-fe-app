@@ -542,9 +542,15 @@
 </div>
  <span class="text-red-500">*</span>
             </label>
+            <div class="flex items-center gap-2">
             <input
-              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-              formControlName="code" placeholder="Enter code" id="code" />
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="code" placeholder="Enter code (UPC for auto-fill)" id="code" />
+            <div *ngIf="upcLoading" class="flex items-center">
+              <span class="spinner-border spinner-border-sm text-customBlue" role="status" aria-hidden="true"></span>
+              <span class="ml-2 text-sm text-gray-500">Searching...</span>
+            </div>
+          </div>
             <div *ngIf="
                 productForm.get('code')?.invalid &&
                 productForm.get('code')?.touched
