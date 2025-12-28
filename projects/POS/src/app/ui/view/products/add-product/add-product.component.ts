@@ -502,6 +502,15 @@ discountTypes: any[] = [
             await this.addImageFromUrl(product.images[0]);
           }
         }
+        else {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'UPC Lookup',
+            detail: 'No record found for this UPC code.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
 
           this.upcLoading = false;
       }
