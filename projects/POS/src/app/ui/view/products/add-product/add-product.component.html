@@ -1,5 +1,11 @@
 <form [formGroup]="productForm" (ngSubmit)="isEditMode ? updateProduct() : addToProduct()"
   class="w-full mx-auto bg-gray-50 p-12">
+   <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class=" text-customBlue">
+              <i class="fa-solid fa-info-circle mr-2"></i>
+              Enter a product code (e.g., UPC/Barcode 12-13 digits) to auto-fill product information from online databases.
+            </p>
+          </div>
   <!-- Header Section -->
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-2">
