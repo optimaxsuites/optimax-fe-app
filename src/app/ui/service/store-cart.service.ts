@@ -12,6 +12,7 @@ interface CartItem {
   isVariant: boolean;
   selectedVariants?: VariantDTO[];
   unitPrice: number;
+  originalPrice?: number;
 }
 
 interface Cart {
@@ -158,41 +159,107 @@ export class StoreCartService {
     return this.cart();
   }
 
-  addToCart(product: ProductData, variant?: VariantDTO): void {
-    const currentCart = new Map(this.cartItems());
-    const idToUse = variant ? `${product.id}-${variant.id}` : product.id.toString();
-    const unitPrice = this.getProductPrice(product, variant);
-    
-    console.log('Adding to cart:', {
-      product: product.name,
-      variant: variant?.name,
-      unitPrice: unitPrice,
-      id: idToUse
-    });
+addToCart(product: ProductData, variant?: VariantDTO): void {
+  const currentCart = new Map(this.cartItems());
+  const idToUse = variant ? `${product.id}-${variant.id}` : product.id.toString();
+  
+  // Use discounted price instead of regular selling price
+  const unitPrice = this.getDiscountedPrice(product, variant);
+  
+  console.log('Adding to cart:', {
+    product: product.name,
+    variant: variant?.name,
+    unitPrice: unitPrice,
+    id: idToUse
+  });
 
-    if (currentCart.has(idToUse)) {
-      const existingItem = currentCart.get(idToUse)!;
-      currentCart.set(idToUse, {
-        ...existingItem,
-        quantity: existingItem.quantity + 1
-      });
-    } else {
-      const clonedProduct = JSON.parse(JSON.stringify(product));
-      const selectedVariants = variant ? [variant] : [];
-      
-      currentCart.set(idToUse, {
-        product: clonedProduct,
-        quantity: 1,
-        isVariant: !!variant,
-        selectedVariants: selectedVariants,
-        unitPrice: unitPrice
-      });
-    }
+  if (currentCart.has(idToUse)) {
+    const existingItem = currentCart.get(idToUse)!;
+    currentCart.set(idToUse, {
+      ...existingItem,
+      quantity: existingItem.quantity + 1
+    });
+  } else {
+    const clonedProduct = JSON.parse(JSON.stringify(product));
+    const selectedVariants = variant ? [variant] : [];
     
-    this.cartItems.set(currentCart);
-    this.saveCartToStorage();
-    console.log('Cart updated - items:', currentCart.size, 'subtotal:', this.cart().subtotal);
+    currentCart.set(idToUse, {
+      product: clonedProduct,
+      quantity: 1,
+      isVariant: !!variant,
+      selectedVariants: selectedVariants,
+      unitPrice: unitPrice, // Store discounted price
+      originalPrice: this.getOriginalPrice(product, variant) // Store original price for reference
+    });
   }
+  
+  this.cartItems.set(currentCart);
+  this.saveCartToStorage();
+  console.log('Cart updated - items:', currentCart.size, 'subtotal:', this.cart().subtotal);
+}
+
+// Add these helper methods to StoreCartService:
+
+private getDiscountedPrice(product: ProductData, variant?: VariantDTO): number {
+  // Use variant price if available
+  if (variant && variant.price !== undefined && variant.price !== null) {
+    const variantPrice = typeof variant.price === 'string' ? parseFloat(variant.price) : variant.price;
+    if (!isNaN(variantPrice)) {
+      // Apply discount to variant if product has discount
+      if (product.discount && product.discount.value) {
+        return this.calculateDiscountedPrice(variantPrice, product.discount);
+      }
+      return variantPrice;
+    }
+  }
+  
+  // Calculate discounted price for product
+  const price = product.sellingPrice;
+  if (price === undefined || price === null) {
+    console.warn('No price found for product:', product.name, 'defaulting to 0');
+    return 0;
+  }
+  
+  const productPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  if (product.discount && product.discount.value) {
+    return this.calculateDiscountedPrice(productPrice, product.discount);
+  }
+  
+  return isNaN(productPrice) ? 0 : productPrice;
+}
+
+private calculateDiscountedPrice(originalPrice: number, discount: any): number {
+  if (!discount || !discount.value) return originalPrice;
+  
+  const discountTypeName = discount.discountType?.name || discount.discountType;
+  
+  if (discountTypeName === 'PERCENTAGE') {
+    const discountAmount = originalPrice * (discount.value / 100);
+    return Math.max(0, originalPrice - discountAmount);
+  }
+  
+  if (discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') {
+    return Math.max(0, originalPrice - discount.value);
+  }
+  
+  // Default: assume percentage
+  const discountAmount = originalPrice * (discount.value / 100);
+  return Math.max(0, originalPrice - discountAmount);
+}
+
+private getOriginalPrice(product: ProductData, variant?: VariantDTO): number {
+  if (variant && variant.price !== undefined && variant.price !== null) {
+    const variantPrice = typeof variant.price === 'string' ? parseFloat(variant.price) : variant.price;
+    if (!isNaN(variantPrice)) return variantPrice;
+  }
+  
+  const price = product.sellingPrice;
+  if (price === undefined || price === null) return 0;
+  
+  return typeof price === 'string' ? parseFloat(price) : price;
+}
+
 
   removeFromCart(product: ProductData, variant?: VariantDTO): void {
     const currentCart = new Map(this.cartItems());

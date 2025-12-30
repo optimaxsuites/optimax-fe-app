@@ -149,7 +149,7 @@ const routes: Routes = [
       component: OrderHistoryComponent
     },
     {
-      path: 'category/:categoryName',  // ADD THIS ROUTE
+      path: 'category/:categoryName',
       component: CategoryProductsComponent,
     },
   { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },

@@ -8,13 +8,21 @@ import { PosServiceService } from '../../../service/pos-service.service';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { ProductHelperService } from '../../../service/product-helper.service';
-import { AuthStateService } from '../../../service/auth-state.service'; // Add this
+import { AuthStateService } from '../../../service/auth-state.service';
 
 interface FilterState {
   priceRange: string;
   inStock: boolean;
   outOfStock: boolean;
   sortBy: string;
+}
+
+interface Toast {
+  id: number;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  leaving?: boolean;
 }
 
 @Component({
@@ -44,11 +52,14 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   // UI state
   isCartOpen = false;
   isMobileFiltersOpen = false;
-  isCartSidebarVisible = false; // Add this for desktop cart
+  isCartSidebarVisible = false;
 
   // Header data
   branches: any[] = [];
-  user = signal({ name: 'Guest', isGuest: true }); // Change to signal
+  user = signal({ name: 'Guest', isGuest: true });
+
+  // Toast notifications
+  toasts = signal<Toast[]>([]);
 
   // Computed values
   categoryOptions = computed(() => {
@@ -74,7 +85,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     private imageCacheService: ImageCacheService,
     private cartService: StoreCartService,
     private productHelper: ProductHelperService,
-    private authStateService: AuthStateService // Add this
+    private authStateService: AuthStateService
   ) {}
 
   ngOnInit(): void {
@@ -130,7 +141,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   }
 
   private handleSearchResultsPage(): void {
-    // Load all products for search results
     this.isLoading.set(true);
     
     this.posService.getProducts()
@@ -214,7 +224,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
 
   private applyPriceFilter(products: ProductData[], priceRange: string): ProductData[] {
     return products.filter(product => {
-      const price = this.getProductPrice(product);
+      const price = this.getDiscountedPrice(product);
       
       switch (priceRange) {
         case '0-1000':
@@ -231,21 +241,10 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getProductPrice(product: ProductData): number {
-    const price = product.sellingPrice;
-    if (typeof price === 'number') {
-      return price;
-    }
-    if (typeof price === 'string') {
-      return parseFloat(price) || 0;
-    }
-    return 0;
-  }
-
   private applySorting(products: ProductData[], sortBy: string): ProductData[] {
     return [...products].sort((a, b) => {
-      const priceA = this.getProductPrice(a);
-      const priceB = this.getProductPrice(b);
+      const priceA = this.getDiscountedPrice(a);
+      const priceB = this.getDiscountedPrice(b);
       const nameA = a.name || '';
       const nameB = b.name || '';
       
@@ -262,6 +261,210 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
           return 0;
       }
     });
+  }
+
+  // ============ DISCOUNT METHODS ============
+
+  // Get selling price (with discount applied)
+  getSellingPrice(product: ProductData): number {
+    if (!product || !product.sellingPrice) return 0;
+    
+    return typeof product.sellingPrice === 'string'
+      ? parseFloat(product.sellingPrice)
+      : product.sellingPrice;
+  }
+
+  // Get cost price (original price)
+  getCostPrice(product: ProductData): number {
+    if (!product || !product.costPrice) {
+      // Fallback to selling price if no cost price
+      return this.getSellingPrice(product);
+    }
+    
+    return typeof product.costPrice === 'string'
+      ? parseFloat(product.costPrice)
+      : product.costPrice;
+  }
+
+  // Check if product has discount
+  hasDiscount(product: ProductData): boolean {
+    if (!product?.discount) return false;
+    
+    const discount = product.discount;
+    
+    // Check if discount is active
+    if (discount.active === false) return false;
+    
+    // Check if discount has a valid value
+    if (discount.value && discount.value > 0) {
+      return true;
+    }
+    
+    // Check discountValue property as alternative
+    if (discount.discountValue && discount.discountValue > 0) {
+      return true;
+    }
+    
+    // Check if discount dates are valid
+    if (discount.startDate && discount.endDate) {
+      const now = new Date();
+      const startDate = new Date(discount.startDate);
+      const endDate = new Date(discount.endDate);
+      
+      if (now < startDate || now > endDate) {
+        return false;
+      }
+    }
+    
+    // Check price difference as last resort
+    return this.calculateDiscountFromPrices(product) > 0;
+  }
+
+  // Calculate discount percentage
+  getDiscountPercentage(product: ProductData): number {
+    if (!product?.discount) return 0;
+    
+    const discount = product.discount;
+    
+    // Check if discountType is an object with name property
+    if (discount.discountType) {
+      const discountTypeName = discount.discountType.name || discount.discountType;
+      
+      if (discountTypeName === 'PERCENTAGE' && discount.value) {
+        return Math.round(discount.value);
+      }
+      
+      // For fixed amount discounts, calculate percentage from price
+      if ((discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') && discount.value) {
+        const costPrice = this.getCostPrice(product);
+        if (costPrice > 0) {
+          const percentage = (discount.value / costPrice) * 100;
+          return Math.round(percentage);
+        }
+      }
+    }
+    
+    // Fallback: Check if there's a discount value
+    if (discount.value) {
+      return Math.round(discount.value);
+    }
+    
+    // Final fallback: Calculate from price difference
+    return this.calculateDiscountFromPrices(product);
+  }
+
+  // Helper method to calculate discount from price difference
+  calculateDiscountFromPrices(product: ProductData): number {
+    const sellingPrice = this.getSellingPrice(product);
+    const costPrice = this.getCostPrice(product);
+    
+    // If no valid prices or cost price is 0, return 0
+    if (!costPrice || costPrice <= 0 || sellingPrice >= costPrice) {
+      return 0;
+    }
+    
+    const discountAmount = costPrice - sellingPrice;
+    const percentage = (discountAmount / costPrice) * 100;
+    
+    // Round to nearest whole number
+    return Math.round(percentage);
+  }
+
+  // Get discounted price
+  getDiscountedPrice(product: ProductData): number {
+    const costPrice = this.getCostPrice(product);
+    
+    if (!this.hasDiscount(product)) {
+      return this.getSellingPrice(product);
+    }
+    
+    const discount = product.discount;
+    
+    if (discount?.discountType) {
+      const discountTypeName = discount.discountType.name || discount.discountType;
+      
+      // Percentage discount
+      if (discountTypeName === 'PERCENTAGE' && discount.value) {
+        const discountAmount = costPrice * (discount.value / 100);
+        return Math.max(0, costPrice - discountAmount);
+      }
+      
+      // Fixed amount discount
+      if ((discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') && discount.value) {
+        return Math.max(0, costPrice - discount.value);
+      }
+    }
+    
+    // Fallback: Use discount value if available
+    if (discount?.value) {
+      // Assume it's a percentage if no type specified
+      const discountAmount = costPrice * (discount.value / 100);
+      return Math.max(0, costPrice - discountAmount);
+    }
+    
+    // Fallback: Use discountValue if available
+    if (discount?.discountValue) {
+      const discountAmount = costPrice * (discount.discountValue / 100);
+      return Math.max(0, costPrice - discountAmount);
+    }
+    
+    // Final fallback: Return selling price
+    return this.getSellingPrice(product);
+  }
+
+  // Calculate how much customer saves
+  getSavingsAmount(product: ProductData): number {
+    if (!this.hasDiscount(product)) return 0;
+    
+    const costPrice = this.getCostPrice(product);
+    const discountedPrice = this.getDiscountedPrice(product);
+    
+    return costPrice - discountedPrice;
+  }
+
+  // Format savings for display
+  getSavingsText(product: ProductData): string {
+    const savings = this.getSavingsAmount(product);
+    if (savings <= 0) return '';
+    
+    const percentage = this.getDiscountPercentage(product);
+    return `Save ${this.formatPrice(savings)} (${percentage}%)`;
+  }
+
+  // ============ TOAST METHODS ============
+
+  showToast(
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    duration: number = 5000
+  ): void {
+    const toast: Toast = {
+      id: Date.now(),
+      title,
+      message,
+      type
+    };
+    
+    this.toasts.update(toasts => [...toasts, toast]);
+    
+    setTimeout(() => {
+      this.removeToast(toast.id);
+    }, duration);
+  }
+
+  removeToast(toastId: number): void {
+    this.toasts.update(toasts => {
+      const toast = toasts.find(t => t.id === toastId);
+      if (toast) {
+        toast.leaving = true;
+      }
+      return [...toasts];
+    });
+    
+    setTimeout(() => {
+      this.toasts.update(toasts => toasts.filter(t => t.id !== toastId));
+    }, 300);
   }
 
   // ============ FILTER METHODS ============
@@ -327,7 +530,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     this.router.navigate(['/user/checkout/store', this.storeUuid]);
   }
 
-  // FIXED: This method was not being called
   navigateToProductDetails(productId: number): void {
     this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
   }
@@ -348,6 +550,11 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   addToCart(product: ProductData): void {
     // Check if product is in stock
     if (product.quantity === 0) {
+      this.showToast(
+        'Out of Stock',
+        `${product.name} is currently out of stock.`,
+        'warning'
+      );
       return;
     }
 
@@ -356,11 +563,25 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     
     // Check if adding would exceed available stock
     if (currentQuantity >= product.quantity) {
+      this.showToast(
+        'Maximum Quantity Reached',
+        `Only ${product.quantity} items available for ${product.name}.`,
+        'warning'
+      );
       return;
     }
 
     // Add to cart
     this.cartService.addToCart(product);
+    
+    // Show success toast ONLY on mobile (screen width < 768px)
+    if (window.innerWidth < 768) {
+      this.showToast(
+        'Added to Cart! 🛒',
+        `${product.name} has been added to your cart.`,
+        'success'
+      );
+    }
     
     // Auto-open cart
     this.autoOpenCart();
@@ -397,6 +618,12 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     return this.cartSubtotal();
   }
 
+  // Add this method to get the price to display in cart
+  getCartItemPrice(cartItem: any): number {
+    // Use unitPrice if available (already discounted), otherwise fallback to selling price
+    return cartItem.unitPrice || this.getSellingPrice(cartItem.product);
+  }
+
   // ============ UI METHODS ============
 
   toggleMobileFilters(): void {
@@ -421,10 +648,10 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   }
 
   navigateToCheckout(): void {
-  this.isCartOpen = false;
-  this.isCartSidebarVisible = false;
-  this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
-}
+    this.isCartOpen = false;
+    this.isCartSidebarVisible = false;
+    this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
+  }
 
   // Price formatting helper
   formatPrice(price: any): string {
@@ -448,19 +675,134 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Add to your component
-selectedBranch: any = null;
+  // ============ BRANCH METHODS ============
 
-// Add these methods
-onBranchChange(branch: any): void {
-  this.selectedBranch = branch;
-}
+  selectedBranch: any = null;
 
-onMobileCategoryNavigate(category: string): void {
-  this.navigateToCategoryPage(category);
-}
+  onBranchChange(branch: any): void {
+    this.selectedBranch = branch;
+  }
 
-private navigateToCategoryPage(category: string): void {
-  this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
-}
+  onMobileCategoryNavigate(category: string): void {
+    this.navigateToCategoryPage(category);
+  }
+
+  private navigateToCategoryPage(category: string): void {
+    this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
+  }
+
+  // Get discount info for badge (quick version)
+  getDiscountInfoQuick(product: ProductData): string {
+    if (!this.hasDiscount(product)) return '';
+    
+    const percentage = this.getDiscountPercentage(product);
+    if (percentage > 0) {
+      return `-${Math.round(percentage)}%`;
+    }
+    
+    return 'SALE';
+  }
+
+  // Quick check for discount
+  hasDiscountQuick(product: ProductData): boolean {
+    return !!(product?.discount && product.discount.value && product.discount.value > 0);
+  }
+
+  // Get discount amount (in currency)
+  getDiscountAmount(product: ProductData): number {
+    if (!this.hasDiscount(product)) return 0;
+    
+    const costPrice = this.getCostPrice(product);
+    const sellingPrice = this.getSellingPrice(product);
+    
+    // If we have discount object with fixed amount
+    if (product.discount?.value && 
+        (product.discount.discountType?.name === 'FIXED_AMOUNT' || 
+         product.discount.discountType?.name === 'AMOUNT')) {
+      return product.discount.value;
+    }
+    
+    // Otherwise calculate from price difference
+    return Math.max(0, costPrice - sellingPrice);
+  }
+
+  // Get formatted discount info for badge
+  getDiscountInfo(product: ProductData): string {
+    if (!this.hasDiscount(product)) return '';
+    
+    const discount = product.discount;
+    let displayText = '';
+    
+    if (discount?.discountType) {
+      const discountTypeName = discount.discountType.name || discount.discountType;
+      
+      if (discountTypeName === 'PERCENTAGE' && discount.value) {
+        displayText = `${Math.round(discount.value)}% OFF`;
+      } else if ((discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') && discount.value) {
+        displayText = `-${this.formatPrice(discount.value)} OFF`;
+      } else if (discount.value) {
+        displayText = `${Math.round(discount.value)}% OFF`;
+      }
+    } else if (discount?.value) {
+      displayText = `${Math.round(discount.value)}% OFF`;
+    } else if (discount?.discountValue) {
+      displayText = `${Math.round(discount.discountValue)}% OFF`;
+    } else {
+      const percentage = this.getDiscountPercentage(product);
+      if (percentage > 0) {
+        displayText = `${percentage}% OFF`;
+      } else {
+        displayText = 'SALE';
+      }
+    }
+    
+    return displayText;
+  }
+
+  // Get discount type name for display
+  getDiscountType(product: ProductData): string {
+    if (!product?.discount?.discountType?.name) return 'Discount';
+    
+    return product.discount.discountType.name;
+  }
+
+  // Get discount name/description
+  getDiscountDescription(product: ProductData): string {
+    if (!product?.discount?.name) return '';
+    
+    return product.discount.name;
+  }
+
+  // Get discount min quantity
+  getDiscountMinQuantity(product: ProductData): number {
+    if (!product?.discount?.minQuantity) return 0;
+    
+    return product.discount.minQuantity;
+  }
+
+  // Debug method to check discount structure
+  debugDiscountStructure(product: ProductData): void {
+    console.log('🔍 Debugging discount structure for:', product.name);
+    console.log('Discount object:', product.discount);
+    
+    if (product.discount) {
+      console.log('Discount value:', product.discount.value);
+      console.log('Discount value type:', typeof product.discount.value);
+      console.log('DiscountValue:', product.discount.discountValue);
+      console.log('Discount type:', product.discount.discountType);
+      
+      if (product.discount.discountType) {
+        console.log('Discount type name:', product.discount.discountType.name);
+        console.log('Discount type typeof:', typeof product.discount.discountType);
+      }
+      
+      console.log('Active:', product.discount.active);
+      console.log('Start date:', product.discount.startDate);
+      console.log('End date:', product.discount.endDate);
+    }
+    
+    console.log('Calculated discount percentage:', this.getDiscountPercentage(product));
+    console.log('Has discount:', this.hasDiscount(product));
+    console.log('---');
+  }
 }

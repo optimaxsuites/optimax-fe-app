@@ -93,6 +93,7 @@ export type TrendChartOptions = {
   styleUrls: ['./sales-report.component.scss'],
 })
 export class SalesReportComponent implements OnInit {
+  // Helper methods for template
   getProductName(item: any): string {
     return item?.product?.name || 'N/A';
   }
@@ -116,21 +117,46 @@ export class SalesReportComponent implements OnInit {
   }
 
   getDeliveryStatusClass(item: any): string {
-    const status = item?.order?.deliveryStatus || 'PENDING';
+    const status = this.getDeliveryStatus(item);
     const statusClasses: { [key: string]: string } = {
       'PENDING': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold',
       'CONFIRMED': 'bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold',
       'PROCESSING': 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold',
       'OUT_FOR_DELIVERY': 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold',
       'DELIVERED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold',
+      'COMPLETED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold', // Added Completed
       'CANCELLED': 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold',
       'REFUNDED': 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold'
     };
     return statusClasses[status] || 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold';
   }
 
+  /**
+   * FIX: Determine if an order is Walk-in or Online
+   */
+  private isWalkIn(item: any): boolean {
+    // If explicitly marked online, it's not walk-in
+    if (item?.order?.isOnline === true || item?.isOnline === true) return false;
+    // If it's a kitchen order or has a table, it's walk-in
+    if (item?.order?.table || item?.table || item?.salesperson) return true;
+    // Check channel
+    const channel = (item?.channel || '').toString().toLowerCase();
+    if (channel.includes('walk') || channel.includes('store')) return true;
+    
+    // Default: If no online markers and no delivery status, treat as walk-in
+    return !item?.order?.deliveryStatus;
+  }
+
   getDeliveryStatus(item: any): string {
-    return item?.order?.deliveryStatus || 'PENDING';
+    const status = item?.order?.deliveryStatus || item?.status;
+    
+    // FIX: If it's a walk-in order and hasn't been cancelled/refunded, it's COMPLETED
+    if (this.isWalkIn(item)) {
+      if (status === 'CANCELLED' || status === 'REFUNDED') return status;
+      return 'COMPLETED';
+    }
+    
+    return status || 'PENDING';
   }
 
   getCashierName(item: any): string {
@@ -140,6 +166,7 @@ export class SalesReportComponent implements OnInit {
   getTotalAmount(item: any): number {
     return item?.totalPrice || 0;
   }
+
   @ViewChild('branchChart') branchChart!: ChartComponent;
   @ViewChild('productChart') productChart!: ChartComponent;
   @ViewChild('paymentChart') paymentChart!: ChartComponent;
@@ -181,8 +208,10 @@ export class SalesReportComponent implements OnInit {
 
   // Filter properties
   branches: BranchDTO[] = [];
-Number: any;
-orderItems: any;
+  
+  // Data properties
+  Number: any;
+  orderItems: any[] = []; // Initialized as empty array
 
   constructor(private reportService: ReportService, private fb: FormBuilder) {
     this.initChartOptions();
@@ -338,6 +367,10 @@ orderItems: any;
       next: (results) => {
         this.salesReport = results.current;
         this.previousPeriodReport = results.previous;
+        
+        // Populate orderItems for the breakdown tab
+        this.orderItems = this.salesReport?.breakdown || [];
+        
         this.loading = false;
         this.calculateGrowth();
         this.updateCharts();
@@ -387,6 +420,9 @@ orderItems: any;
   }
 
   get paginatedBreakdown() {
+    // If you plan to implement server-side pagination or use this getter for slicing,
+    // ensure orderItems in HTML uses this instead of the full list.
+    // Currently HTML iterates 'orderItems'.
     const start = (this.currentPage - 1) * this.itemsPerPage;
     const end = start + this.itemsPerPage;
     return this.salesReport?.breakdown?.slice(start, end) || [];
@@ -431,25 +467,13 @@ orderItems: any;
       branchesCount: e.branches.size,
     }));
   }
-
+  
+  // Helper to determine channel from item data
   getChannel(item: any): string {
-    // Prefer explicit channel field
     if (item.channel) return String(item.channel);
-
-    //  check common flags returned by different endpoints
     if (item.order?.isOnline === true || item.isOnline === true) return 'Online';
     if (item.order?.deliveryStatus && item.order.deliveryStatus !== 'PENDING') return 'Online';
-
-    // check kitchen-specific flags used in app
-    if (item.isKitchen === true || item.order?.kitchenOrder === true) return 'Kitchen';
-
-    // If payment method or other hints indicate walk-in
-    const pm = (item.paymentMethod || '').toString().toLowerCase();
-    if (pm.includes('cash') || pm.includes('card') || pm.includes('gift_card') || pm.includes('voucher')) return 'Walk-in';
-
-    //  if there's a salesperson or table info, treat as Walk-in
-    if (item.salesperson || item.table || item.order?.table) return 'Walk-in';
-
+    if (this.isWalkIn(item)) return 'Walk-in';
     return 'Unknown';
   }
 
@@ -653,16 +677,26 @@ orderItems: any;
     this.currentPage = 1;
   }
 
+  // --- NAVIGATION FIXES FOR ANALYTIC CARDS ---
+
   showTotalRevenueDetails() {
-    this.setTab('details');
+    // Opens the tab where all order items/revenue breakdown exists
+    this.setTab('orderItems');
   }
 
   showTotalTransactionsDetails() {
-    this.setTab('details');
+    // Opens the branch tab where transactions are recorded per branch
+    this.setTab('branches');
+  }
+
+  showAverageOrderValueDetails() {
+    // Opens the branch tab to see branch performance making up the AOV
+    this.setTab('branches');
   }
 
   showTotalDiscountDetails() {
-    this.setTab('details');
+    // Navigate to payments or products to see discount impact
+    this.setTab('payments');
   }
 
   onSubmit() {

@@ -1,18 +1,254 @@
-<!-- order-confirmation.component.html - FIXED -->
-<div class="min-h-screen bg-gray-50 py-12 relative overflow-hidden">
+<!-- order-confirmation.component.html - FIXED VERSION -->
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 py-12 relative overflow-hidden">
   <!-- Confetti Canvas -->
-  <canvas #confettiCanvas class="fixed top-0 left-0 w-full h-full pointer-events-none z-0"></canvas>
+  <canvas #confettiCanvas class="fixed top-0 left-0 w-full h-full pointer-events-none z-50"></canvas>
   
-  <!-- Debug Overlay (Remove after testing) -->
+  <!-- 🔥 DEBUG INFO - Remove after testing -->
+  <div *ngIf="!isLoading && orderDetails" class="max-w-4xl mx-auto px-4 mb-4">
+    <div class="bg-yellow-100 border border-yellow-400 rounded p-3 text-xs">
+      <p><strong>🐛 DEBUG:</strong> Order ID: {{ orderDetails.id }} | Customer: {{ orderDetails.customerName }} | Tax: ₦{{ formatNumber(orderDetails.taxAmount) }}</p>
+    </div>
+  </div>
+  
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="max-w-4xl mx-auto px-4 relative z-10">
+    <div class="bg-white shadow-2xl rounded-2xl p-12 border border-gray-100 text-center">
+      <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-6"></div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Loading your order...</h2>
+      <p class="text-gray-600">Please wait while we retrieve your order details</p>
+    </div>
+  </div>
 
-  <div class="max-w-4xl mx-auto px-4 relative z-10">
-      <!-- Order Confirmation Card -->
-      <div class="bg-white shadow-lg rounded-lg p-8 border border-gray-200">
-        <div class="text-center mb-6">
-          <div class="text-green-500 text-6xl mb-4">🎉</div>
-          <h1 class="text-3xl font-bold text-gray-800 mb-2">Thank you for your order!</h1>
-          <p class="text-gray-600 mb-6">Your order #{{orderDetails.id}} has been successfully placed.</p>
+  <!-- Order Confirmation Content -->
+  <div *ngIf="!isLoading && orderDetails" class="max-w-5xl mx-auto px-4 relative z-10 animate-fade-in">
+    <!-- Success Header -->
+    <div class="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100 mb-6">
+      <div class="bg-gradient-to-r from-green-500 to-green-600 p-8 text-center">
+        <div class="text-white text-7xl mb-4 animate-bounce">🎉</div>
+        <h1 class="text-4xl font-bold text-white mb-3">Order Confirmed!</h1>
+        <p class="text-green-50 text-lg">Thank you for your purchase</p>
+      </div>
+      
+      <div class="p-8">
+        <!-- Order Number Display -->
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center gap-3 bg-green-50 px-6 py-4 rounded-xl border-2 border-green-200">
+            <i class="fa-solid fa-receipt text-green-600 text-2xl"></i>
+            <div class="text-left">
+              <p class="text-sm text-green-600 font-medium">Order Number</p>
+              <p class="text-2xl font-bold text-gray-800">#{{ orderDetails.orderNumber }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔥 FIXED: Customer Info with Proper Name -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 text-center">
+          <div class="flex flex-col items-center">
+            <i class="fa-solid fa-user-circle text-3xl text-blue-500 mb-2"></i>
+            <p class="text-gray-700 text-lg font-semibold">
+              {{ orderDetails.customerName || 'Guest Customer' }}
+            </p>
+            <p class="text-gray-600 text-sm" *ngIf="orderDetails.customerEmail">
+              {{ orderDetails.customerEmail }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="mb-8">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-shopping-bag text-green-600"></i>
+            Order Items
+          </h3>
+          <div class="bg-gray-50 rounded-xl p-6 space-y-4">
+            <div *ngFor="let item of orderItems; let i = index" 
+                 class="flex items-center gap-4 pb-4 border-b border-gray-200 last:border-b-0 last:pb-0">
+              <div class="w-20 h-20 bg-white rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                <img [src]="getProductImage(item.product)" 
+                     [alt]="item.product?.name || 'Product'"
+                     class="w-full h-full object-cover"
+                     onerror="this.src='assets/images/placeholder.png'">
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-gray-800 capitalize mb-1">
+                  {{ item.product?.name || 'Product ' + (i + 1) }}
+                </h4>
+                <p *ngIf="item.selectedVariants?.length" class="text-sm text-gray-600 mb-1">
+                  {{ item.selectedVariants[0]?.name }}
+                </p>
+                <div class="flex items-center gap-4 text-sm text-gray-600">
+                  <span>Qty: {{ item.quantity }}</span>
+                  <span>₦{{ formatNumber(item.product?.sellingPrice || 0) }}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-xl font-bold text-gray-800">
+                  ₦{{ formatNumber((item.product?.sellingPrice || 0) * item.quantity) }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔥 FIXED: Order Summary with Tax Breakdown -->
+        <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-8">
+          <h3 class="text-xl font-bold text-gray-800 mb-4">Order Summary</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between text-gray-700">
+              <span>Subtotal ({{ orderItems.length }} items)</span>
+              <span class="font-semibold">₦{{ formatNumber(orderDetails.subtotal || 0) }}</span>
+            </div>
+            
+            <!-- Tax Breakdown from Backend -->
+            <ng-container *ngIf="orderDetails.taxSummary && orderDetails.taxSummary.length > 0">
+              <div class="border-t border-gray-300 pt-3">
+                <p class="text-sm font-medium text-gray-700 mb-2">Tax Breakdown:</p>
+                <div *ngFor="let tax of orderDetails.taxSummary" class="flex justify-between text-sm text-gray-600 mb-1 pl-4">
+                  <span>{{ tax.name }}:</span>
+                  <span>₦{{ formatNumber(tax.value) }}</span>
+                </div>
+              </div>
+            </ng-container>
+            
+            <!-- Tax Breakdown from Frontend -->
+            <ng-container *ngIf="orderDetails.taxBreakdown && orderDetails.taxBreakdown.length > 0">
+              <div class="border-t border-gray-300 pt-3">
+                <p class="text-sm font-medium text-gray-700 mb-2">Tax Breakdown:</p>
+                <div *ngFor="let tax of orderDetails.taxBreakdown" class="flex justify-between text-sm text-gray-600 mb-1 pl-4">
+                  <span>{{ tax.name }} ({{ tax.rate }}%):</span>
+                  <span>₦{{ formatNumber(tax.taxAmount) }}</span>
+                </div>
+              </div>
+            </ng-container>
+            
+            <!-- Total Tax -->
+            <div *ngIf="orderDetails.taxAmount && orderDetails.taxAmount > 0" 
+                 class="flex justify-between text-gray-700 font-medium pt-2">
+              <span>Total Tax:</span>
+              <span class="text-green-600">₦{{ formatNumber(orderDetails.taxAmount) }}</span>
+            </div>
+            
+            <!-- No Tax Message -->
+            <div *ngIf="!orderDetails.taxAmount || orderDetails.taxAmount === 0" 
+                 class="flex justify-between text-sm text-gray-500 italic">
+              <span>Tax:</span>
+              <span>Not applicable</span>
+            </div>
+            
+            <!-- Delivery Fee -->
+            <div *ngIf="orderDetails.deliveryFee > 0" class="flex justify-between text-gray-700 pt-2">
+              <span>Delivery Fee</span>
+              <span class="font-semibold">₦{{ formatNumber(orderDetails.deliveryFee) }}</span>
+            </div>
+            
+            <!-- Grand Total -->
+            <div class="pt-3 border-t-2 border-gray-300 mt-3">
+              <div class="flex justify-between items-center">
+                <span class="text-xl font-bold text-gray-800">Grand Total</span>
+                <span class="text-2xl font-bold text-green-600">
+                  ₦{{ formatNumber(orderDetails.grandTotal || orderDetails.total || orderDetails.totalAmount) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Info -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                <i class="fa-solid text-white text-xl"
+                   [class.fa-truck]="orderDetails.deliveryMethod === 'delivery'"
+                   [class.fa-store]="orderDetails.deliveryMethod !== 'delivery'"></i>
+              </div>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-gray-800 mb-2">
+                {{ orderDetails.deliveryMethod === 'delivery' ? 'Delivery Information' : 'Pickup Information' }}
+              </h3>
+              <div *ngIf="orderDetails.deliveryMethod === 'delivery' && orderDetails.deliveryInfo" 
+                   class="space-y-2 text-gray-700">
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-user w-5"></i>
+                  <span>{{ orderDetails.deliveryInfo.fullName }}</span>
+                </p>
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-phone w-5"></i>
+                  <span>{{ orderDetails.deliveryInfo.phoneNumber }}</span>
+                </p>
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-map-marker-alt w-5"></i>
+                  <span>{{ orderDetails.deliveryInfo.address }}</span>
+                </p>
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-clock w-5"></i>
+                  <span class="font-semibold text-blue-700">Estimated delivery: {{ getEstimatedTime() }}</span>
+                </p>
+              </div>
+              <div *ngIf="orderDetails.deliveryMethod !== 'delivery'" class="text-gray-700">
+                <p class="flex items-center gap-2 mb-2">
+                  <i class="fa-solid fa-clock w-5"></i>
+                  <span class="font-semibold text-blue-700">Ready in: {{ getEstimatedTime() }}</span>
+                </p>
+                <p class="text-sm text-gray-600">
+                  Please bring your order number when picking up your items
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button (click)="trackDelivery()" 
+                  *ngIf="orderDetails.deliveryMethod === 'delivery'"
+                  class="px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-map-location-dot"></i>
+            Track Delivery
+          </button>
+          <button (click)="printOrder()"
+                  class="px-8 py-4 bg-gray-600 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-print"></i>
+            Print Receipt
+          </button>
+          <button (click)="goToStore()"
+                  class="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-store"></i>
+            Continue Shopping
+          </button>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!isLoading && !orderDetails" class="max-w-4xl mx-auto px-4 relative z-10">
+    <div class="bg-white shadow-2xl rounded-2xl p-12 border border-gray-100 text-center">
+      <div class="text-red-500 text-6xl mb-6">❌</div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Order Not Found</h2>
+      <p class="text-gray-600 mb-8">We couldn't find the order you're looking for.</p>
+      <button (click)="goToStore()"
+              class="px-8 py-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all">
+        Return to Store
+      </button>
+    </div>
+  </div>
 </div>
+
+<style>
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+</style>

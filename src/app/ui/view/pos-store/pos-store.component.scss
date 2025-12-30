@@ -569,5 +569,15 @@ html {
   }
   50% {
     transform: translateY(-5px);
-  }
+  }  
+}
+
+.discount-badge {
+  background: linear-gradient(135deg, #ff0000, #ff4444);
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.3);
+}
+
+.savings-badge {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }

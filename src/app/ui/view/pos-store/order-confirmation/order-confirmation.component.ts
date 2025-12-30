@@ -1,18 +1,11 @@
-// order-confirmation.component.ts - COMPLETE VERSION
+// order-confirmation.component.ts - CRITICAL FIXES
+
 import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { GuestOrderService } from '../../../service/guest-order.service';
 import * as confetti from 'canvas-confetti';
-
-interface DeliveryStep {
-  status: string;
-  label: string;
-  icon: string;
-  time: string;
-  completed: boolean;
-  active: boolean;
-}
+import { StoreOrderService } from '../../../service/store-order.service';
 
 @Component({
   selector: 'app-order-confirmation',
@@ -26,28 +19,67 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   orderDetails: any = null;
   orderItems: any[] = [];
   isLoading: boolean = true;
-  isGuestOrder: boolean = true;
-  showTracking: boolean = false;
   
-  deliverySteps: DeliveryStep[] = [];
-  
-  // Debug properties
-  debugMode: boolean = true;
-  displayState: string = 'loading';
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private cartService: StoreCartService,
     private guestOrderService: GuestOrderService,
+    private storeOrderService: StoreOrderService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    console.log('🚀 Order Confirmation Component Initialized');
+    
+    // Get order ID from route
     this.orderId = this.route.snapshot.paramMap.get('id') || '';
-    console.log('🔄 Order Confirmation - Order ID:', this.orderId);
-    this.displayState = 'loading';
-    this.loadOrderDetails();
+    console.log('🎯 Order ID from route:', this.orderId);
+    
+    // Try to get order data from navigation state first
+    const navigation = this.router.getCurrentNavigation();
+    const historyState = history.state;
+    
+    let orderData = null;
+    
+    // Priority 1: Navigation state (fix TypeScript index signature error)
+    if (navigation?.extras?.state && navigation.extras.state['orderData']) {
+      orderData = navigation.extras.state['orderData'];
+      console.log('✅ Found order in navigation state');
+    }
+    // Priority 2: History state
+    else if (historyState && historyState['orderData']) {
+      orderData = historyState['orderData'];
+      console.log('✅ Found order in history state');
+    }
+    // Priority 3: localStorage
+    else {
+      const cachedOrder = localStorage.getItem('lastOrder');
+      if (cachedOrder) {
+        try {
+          orderData = JSON.parse(cachedOrder);
+          console.log('✅ Found order in localStorage');
+        } catch (e) {
+          console.error('❌ Failed to parse localStorage:', e);
+        }
+      }
+    }
+    
+    if (orderData) {
+      this.orderDetails = orderData;
+      console.log('📦 Order details loaded:', this.orderDetails);
+      this.processOrderData();
+      this.isLoading = false;
+      
+      // Also fetch from backend for latest data (silent update)
+      if (this.orderId && this.orderId !== '0') {
+        this.fetchOrderFromBackend(Number(this.orderId), true);
+      }
+    } else {
+      // Must fetch from backend
+      console.log('⚠️ No local order data, fetching from backend...');
+      this.loadOrderDetails();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -57,344 +89,181 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   loadOrderDetails(): void {
-    console.log('🔍 Starting order details loading...');
-    
-    try {
-      // Method 1: Check navigation state (most recent order)
-      const navigation = this.router.getCurrentNavigation();
-      const stateOrder = navigation?.extras?.state?.['orderData'];
-      
-      if (stateOrder) {
-        console.log('✅ Found order in navigation state');
-        this.orderDetails = stateOrder;
-        this.processData();
-        return;
-      }
-
-      // Method 2: Check all possible storage locations
-      this.checkAllStorageLocations();
-      
-    } catch (error) {
-      console.error('❌ Error loading order details:', error);
-      this.createDemoOrderData();
-    }
-  }
-
-  private checkAllStorageLocations(): void {
-    console.log('🔍 Checking all storage locations...');
-    
-    // Check multiple storage keys
-    const storageKeys = ['guest_orders', 'store_orders', 'recent_orders'];
-    
-    for (const key of storageKeys) {
-      console.log(`🔍 Checking localStorage key: ${key}`);
-      const storedData = localStorage.getItem(key);
-      
-      if (storedData) {
-        try {
-          const data = JSON.parse(storedData);
-          console.log(`📁 Data found in ${key}:`, data);
-          
-          let foundOrder = this.findOrderInData(data, this.orderId);
-          
-          if (foundOrder) {
-            console.log(`✅ Order found in ${key}:`, foundOrder);
-            this.orderDetails = foundOrder;
-            this.processData();
-            return;
-          }
-        } catch (error) {
-          console.error(`❌ Error parsing ${key}:`, error);
-        }
-      }
-    }
-    
-    // If still not found, check guest service
-    console.log('🔍 Checking guest order service...');
-    const guestOrder = this.guestOrderService.getOrder(this.orderId);
-    if (guestOrder) {
-      console.log('✅ Found order in guest service:', guestOrder);
-      this.orderDetails = guestOrder;
-      this.processData();
+    if (!this.orderId || this.orderId === '0') {
+      console.error('❌ Invalid order ID');
+      this.isLoading = false;
       return;
     }
-    
-    // Final fallback - create demo data
-    console.log('🔄 No order found, creating demo data');
-    this.createDemoOrderData();
+
+    const numericId = Number(this.orderId);
+    if (!isNaN(numericId) && numericId > 0) {
+      this.fetchOrderFromBackend(numericId);
+    } else {
+      this.isLoading = false;
+    }
   }
 
-  private findOrderInData(data: any, orderId: string): any {
-    if (Array.isArray(data)) {
-      // Array of orders
-      return data.find(order => 
-        order.id === orderId || 
-        order.orderId === orderId ||
-        order.orderNumber === orderId
-      );
-    } else if (data && typeof data === 'object') {
-      // Single order object
-      if (data.id === orderId || data.orderId === orderId || data.orderNumber === orderId) {
-        return data;
-      }
-      
-      // Check if it's a cart structure
-      if (data.items && (data.subtotal !== undefined || data.total !== undefined)) {
-        console.log('🛒 Found cart-like structure, converting to order');
-        return this.convertCartToOrder(data, orderId);
-      }
+  private fetchOrderFromBackend(orderId: number, silentUpdate: boolean = false): void {
+    console.log('🌐 Fetching order from backend:', orderId);
+    
+    if (!silentUpdate) {
+      this.isLoading = true;
     }
     
-    return null;
+    this.storeOrderService.getOrderById(orderId).subscribe({
+      next: (order: any) => {
+        console.log('✅ Backend order received:', order);
+        
+        const normalizedOrder = this.normalizeOrderData(order);
+        
+        if (silentUpdate) {
+          // Merge with existing data
+          this.orderDetails = {
+            ...this.orderDetails,
+            ...normalizedOrder,
+            items: normalizedOrder.items?.length > 0 ? normalizedOrder.items : this.orderDetails.items
+          };
+        } else {
+          this.orderDetails = normalizedOrder;
+          this.processOrderData();
+        }
+        
+        if (!silentUpdate) {
+          this.isLoading = false;
+        }
+        
+        this.cdr.detectChanges();
+      },
+      error: (error: any) => {
+        console.error('❌ Failed to fetch from backend:', error);
+        if (!silentUpdate) {
+          this.isLoading = false;
+        }
+      }
+    });
   }
 
-  private convertCartToOrder(cartData: any, orderId: string): any {
-    const items = cartData.items instanceof Map ? 
-      Array.from(cartData.items.values()) : 
-      Object.values(cartData.items || {});
+  private normalizeOrderData(order: any): any {
+    console.log('🔄 Normalizing backend order:', order);
     
-    const subtotal = cartData.subtotal || this.calculateSubtotal(items);
-    const deliveryFee = cartData.deliveryFee || 0;
-    const total = subtotal + deliveryFee;
-
-    return {
-      id: orderId,
-      orderNumber: orderId,
-      items: items,
-      subtotal: subtotal,
-      deliveryFee: deliveryFee,
-      total: total,
-      deliveryMethod: 'pickup',
-      paymentMethod: 'cash',
-      orderDate: new Date().toISOString(),
-      status: 'confirmed'
-    };
-  }
-
-  private calculateSubtotal(items: any[]): number {
-    return items.reduce((total, item) => {
-      const price = item.product?.sellingPrice || item.price || 0;
+    const items = order.orderItem || order.items || [];
+    
+    // Calculate subtotal
+    const subtotal = items.reduce((total: number, item: any) => {
+      const price = item.product?.sellingPrice || item.totalPrice || 0;
       const quantity = item.quantity || 1;
       return total + (price * quantity);
     }, 0);
+    
+    // Get tax info
+    let taxAmount = order.taxAmount || order.totalTax || 0;
+    let taxBreakdown = order.taxBreakdown || [];
+    
+    if (order.taxSummary && Array.isArray(order.taxSummary)) {
+      taxBreakdown = order.taxSummary.map((tax: any) => ({
+        name: tax.name || 'Tax',
+        rate: tax.rate || 0,
+        taxAmount: tax.value || 0
+      }));
+      
+      if (taxAmount === 0) {
+        taxAmount = taxBreakdown.reduce((total: number, tax: any) => total + tax.taxAmount, 0);
+      }
+    }
+    
+    // Parse date
+    let createdDate = order.createdDate;
+    if (Array.isArray(createdDate)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = createdDate;
+      createdDate = new Date(year, month - 1, day, hour, minute, second);
+    } else if (typeof createdDate === 'string') {
+      createdDate = new Date(createdDate);
+    }
+    
+    // 🔥 CRITICAL FIX: Get actual customer name from order
+    const customerName = order.customer?.name || 'Guest Customer';
+    const customerEmail = order.customerEmail || order.customer?.email || '';
+    
+    console.log('👤 Customer from backend:', {
+      name: customerName,
+      email: customerEmail,
+      fullCustomer: order.customer
+    });
+    
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber || `ORD-${order.id}`,
+      orderStatus: order.orderStatus || 'PENDING',
+      status: order.orderStatus || 'PENDING',
+      createdDate: createdDate,
+      orderDate: createdDate,
+      totalAmount: order.totalAmount || order.grandTotal || 0,
+      total: order.totalAmount || order.grandTotal || 0,
+      grandTotal: order.grandTotal || order.totalAmount || 0,
+      subtotal: order.subtotal || subtotal,
+      taxAmount: taxAmount,
+      taxBreakdown: taxBreakdown,
+      taxSummary: order.taxSummary,
+      deliveryFee: order.deliveryFee || 0,
+      customerName: customerName,
+      customerEmail: customerEmail,
+      customer: order.customer,
+      deliveryMethod: order.deliveryFee > 0 ? 'delivery' : 'pickup',
+      deliveryInfo: order.deliveryInfo,
+      items: items,
+      orderItem: items,
+      paymentMethod: order.paymentMethod || 'cash',
+      branch: order.branch
+    };
   }
 
-  private processData(): void {
+  private processOrderData(): void {
     console.log('🔄 Processing order data...');
     
     if (!this.orderDetails) {
-      console.error('❌ No order details to process');
-      this.createDemoOrderData();
+      console.error('❌ No order details');
       return;
     }
     
-    console.log('📊 Raw order details:', this.orderDetails);
+    console.log('📊 Order details:', {
+      orderNumber: this.orderDetails.orderNumber,
+      customerName: this.orderDetails.customerName,
+      subtotal: this.orderDetails.subtotal,
+      taxAmount: this.orderDetails.taxAmount,
+      taxBreakdown: this.orderDetails.taxBreakdown,
+      total: this.orderDetails.total || this.orderDetails.totalAmount
+    });
     
-    this.isGuestOrder = true;
     this.processOrderItems();
-    this.initializeDeliveryTracking();
-    
-    // CRITICAL: Set loading to false and force change detection
-    this.isLoading = false;
-    this.displayState = 'confirmed';
     this.cdr.detectChanges();
-    
-    console.log('✅ Order processing complete');
-    console.log('📊 isLoading:', this.isLoading);
-    console.log('📊 displayState:', this.displayState);
-    console.log('📦 Order Items Count:', this.orderItems.length);
-    console.log('📦 Order Items:', this.orderItems);
-    
-    // Force another change detection after a brief delay
-    setTimeout(() => {
-      this.cdr.detectChanges();
-      console.log('🔄 Forced change detection completed');
-    }, 100);
-  }
-
-  private createDemoOrderData(): void {
-    console.log('🎭 Creating demo order data');
-    
-    this.orderDetails = {
-      id: this.orderId,
-      orderNumber: `DEMO-${this.orderId}`,
-      items: [
-        {
-          product: {
-            id: 1,
-            name: 'Demo Product 1',
-            sellingPrice: 25.99,
-            selectedVariants: []
-          },
-          quantity: 2,
-          isVariant: false
-        },
-        {
-          product: {
-            id: 2,
-            name: 'Demo Product 2',
-            sellingPrice: 45.50,
-            selectedVariants: []
-          },
-          quantity: 1,
-          isVariant: false
-        }
-      ],
-      subtotal: 97.48,
-      deliveryFee: 10.00,
-      total: 107.48,
-      deliveryMethod: 'delivery',
-      paymentMethod: 'cash',
-      deliveryInfo: {
-        fullName: 'Demo Customer',
-        phoneNumber: '+1234567890',
-        address: '123 Demo Street, Demo City',
-        instructions: 'Demo delivery instructions'
-      },
-      orderDate: new Date().toISOString(),
-      status: 'confirmed'
-    };
-    
-    this.processData();
   }
 
   processOrderItems(): void {
-    console.log('🔄 Processing order items...');
+    console.log('📦 Processing order items...');
     
     if (!this.orderDetails) {
-      console.warn('❌ No order details available');
       this.orderItems = [];
       return;
     }
 
-    try {
-      let items = this.orderDetails.items;
-      
-      console.log('📦 Raw items data type:', typeof items);
-      console.log('📦 Raw items data:', items);
-      
-      // Handle different data structures
-      if (items instanceof Map) {
-        console.log('🗺️ Items is a Map, converting to array');
-        this.orderItems = Array.from(items.values());
-      } else if (Array.isArray(items)) {
-        console.log('📋 Items is already an array');
-        this.orderItems = items;
-      } else if (typeof items === 'object' && items !== null) {
-        console.log('🔤 Items is an object, converting to array');
-        this.orderItems = Object.values(items);
-      } else {
-        console.warn('❌ Unknown items format:', items);
-        this.orderItems = [];
-      }
-      
-      console.log('✅ Final processed order items:', this.orderItems);
-      console.log('✅ Order items count:', this.orderItems.length);
-      
-    } catch (error) {
-      console.error('❌ Error processing order items:', error);
+    let items = this.orderDetails.items || this.orderDetails.orderItem || [];
+    
+    if (items instanceof Map) {
+      this.orderItems = Array.from(items.values());
+    } else if (Array.isArray(items)) {
+      this.orderItems = items;
+    } else if (typeof items === 'object') {
+      this.orderItems = Object.values(items);
+    } else {
       this.orderItems = [];
     }
-  }
-
-  initializeDeliveryTracking(): void {
-    if (!this.orderDetails) return;
-
-    // Ensure required fields exist
-    if (!this.orderDetails.status) {
-      this.orderDetails.status = 'confirmed';
-    }
-    if (!this.orderDetails.deliveryMethod) {
-      this.orderDetails.deliveryMethod = 'pickup';
-    }
-
-    const orderDate = new Date(this.orderDetails.orderDate);
     
-    this.deliverySteps = [
-      {
-        status: 'confirmed',
-        label: 'Order Confirmed',
-        icon: '✓',
-        time: this.formatTime(orderDate),
-        completed: true,
-        active: this.orderDetails.status === 'confirmed'
-      },
-      {
-        status: 'preparing',
-        label: 'Preparing',
-        icon: '👨‍🍳',
-        time: this.formatTime(new Date(orderDate.getTime() + 10 * 60000)),
-        completed: this.isStepCompleted('preparing'),
-        active: this.orderDetails.status === 'preparing'
-      },
-      {
-        status: 'on_the_way',
-        label: 'On the Way',
-        icon: '🚗',
-        time: this.formatTime(new Date(orderDate.getTime() + 20 * 60000)),
-        completed: this.isStepCompleted('on_the_way'),
-        active: this.orderDetails.status === 'on_the_way'
-      },
-      {
-        status: 'delivered',
-        label: 'Delivered',
-        icon: '🏠',
-        time: this.formatTime(new Date(orderDate.getTime() + 45 * 60000)),
-        completed: this.isStepCompleted('delivered'),
-        active: this.orderDetails.status === 'delivered'
-      }
-    ];
-
-    console.log('✅ Delivery tracking initialized:', this.deliverySteps);
-  }
-
-  isStepCompleted(stepStatus: string): boolean {
-    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-    const stepStatusIndex = statusOrder.indexOf(stepStatus);
-    
-    return stepStatusIndex <= currentStatusIndex;
-  }
-
-  isStepActive(stepStatus: string): boolean {
-    return this.orderDetails.status === stepStatus;
-  }
-
-  getStepClass(step: DeliveryStep): string {
-    if (step.completed) {
-      return step.active ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white';
-    }
-    return 'bg-gray-200 text-gray-500';
-  }
-
-  getDeliveryProgress(): number {
-    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-    return Math.max(25, ((currentStatusIndex + 1) / statusOrder.length) * 100);
-  }
-
-  trackDelivery(): void {
-    this.showTracking = true;
-    setTimeout(() => {
-      const element = document.querySelector('.bg-white.shadow-lg');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
-  }
-
-  formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    console.log('✅ Processed items:', this.orderItems.length);
   }
 
   fireConfetti(): void {
     if (!this.confettiCanvas?.nativeElement) {
-      console.log('❌ Confetti canvas not found, will retry');
-      setTimeout(() => this.fireConfetti(), 100);
+      setTimeout(() => this.fireConfetti(), 200);
       return;
     }
 
@@ -409,31 +278,44 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
       });
 
       myConfetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 }
+        particleCount: 200,
+        spread: 120,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b']
       });
 
       setTimeout(() => {
         myConfetti({
-          particleCount: 80,
+          particleCount: 100,
           angle: 60,
-          spread: 65,
-          origin: { x: 0 }
+          spread: 70,
+          origin: { x: 0, y: 0.6 }
         });
 
         myConfetti({
-          particleCount: 80,
+          particleCount: 100,
           angle: 120,
-          spread: 65,
-          origin: { x: 1 }
+          spread: 70,
+          origin: { x: 1, y: 0.6 }
         });
       }, 300);
-      
-      console.log('🎉 Confetti fired successfully');
     } catch (error) {
       console.error('❌ Confetti error:', error);
     }
+  }
+
+  getProductImage(product: any): string {
+    if (!product) return 'assets/images/placeholder.png';
+    
+    if (product.productImage?.imgNo) {
+      return `your-image-base-url/${product.productImage.imgNo}`;
+    }
+    
+    if (product.imageUrl) {
+      return product.imageUrl;
+    }
+    
+    return 'assets/images/placeholder.png';
   }
 
   goToStore(): void {
@@ -449,49 +331,49 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
     window.print();
   }
 
-  getStatusColorClass(): string {
-    switch (this.orderDetails?.status) {
-      case 'confirmed': return 'text-blue-600';
-      case 'preparing': return 'text-yellow-600';
-      case 'on_the_way': return 'text-orange-600';
-      case 'delivered': return 'text-green-600';
-      default: return 'text-gray-600';
-    }
-  }
-
-  getStatusBadgeClass(): string {
-    switch (this.orderDetails?.status) {
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'preparing': return 'bg-yellow-100 text-yellow-800';
-      case 'on_the_way': return 'bg-orange-100 text-orange-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  trackDelivery(): void {
+    console.log('Track delivery clicked');
   }
 
   getEstimatedTime(): string {
-    if (this.orderDetails?.deliveryMethod === 'delivery') {
-      return '30-45 minutes';
-    }
-    return '15-25 minutes';
+    const deliveryMethod = this.orderDetails?.deliveryMethod || 'pickup';
+    return deliveryMethod === 'delivery' ? '30-45 minutes' : '15-25 minutes';
   }
 
   formatNumber(value: number): string {
-    if (!value && value !== 0) return '0.00';
-    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  formatTitleCase(text: string): string {
-    if (!text) return '';
-    return text.replace(/\w\S*/g, (txt) => {
-      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    if (value === null || value === undefined) return '0.00';
+    
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    
+    if (isNaN(numValue)) return '0.00';
+    
+    return numValue.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
     });
   }
 
-  formatDate(dateString: string): string {
-    if (!dateString) return 'Unknown date';
+  formatDate(dateInput: any): string {
+    if (!dateInput) return 'Unknown date';
+    
     try {
-      const date = new Date(dateString);
+      let date: Date;
+      
+      if (Array.isArray(dateInput)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = dateInput;
+        date = new Date(year, month - 1, day, hour, minute, second);
+      } else if (typeof dateInput === 'string') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else {
+        return 'Invalid date';
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -500,27 +382,8 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
         minute: '2-digit'
       });
     } catch (error) {
+      console.error('Error formatting date:', error);
       return 'Invalid date';
     }
-  }
-
-  // Add this method to test template rendering
-  testTemplateRendering(): void {
-    console.log('🧪 Testing template rendering...');
-    console.log('🧪 isLoading:', this.isLoading);
-    console.log('🧪 orderDetails:', !!this.orderDetails);
-    console.log('🧪 orderItems length:', this.orderItems.length);
-    
-    // Force Angular to re-render the template
-    this.cdr.detectChanges();
-    
-    // Check if the main content element exists in DOM
-    setTimeout(() => {
-      const mainContent = document.querySelector('.bg-white.shadow-lg');
-      console.log('🧪 Main content element in DOM:', !!mainContent);
-      console.log('🧪 Main content visibility:', mainContent ? window.getComputedStyle(mainContent).visibility : 'N/A');
-      console.log('🧪 Main content display:', mainContent ? window.getComputedStyle(mainContent).display : 'N/A');
-      console.log('🧪 Main content opacity:', mainContent ? window.getComputedStyle(mainContent).opacity : 'N/A');
-    }, 100);
   }
 }

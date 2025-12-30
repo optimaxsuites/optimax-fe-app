@@ -1,5 +1,17 @@
-<!-- store-checkout.component.html - ENHANCED VERSION -->
 <div class="min-h-screen bg-gray-50 py-8">
+  <!-- DEBUG SECTION (Optional - remove in production) -->
+  <div *ngIf="false" class="max-w-[1100px] mx-auto px-4 mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Debug Info:</h3>
+    <div class="text-xs text-yellow-700 grid grid-cols-2 gap-2">
+      <div>Branch Coordinates: {{ branchCoordinates?.lat }}, {{ branchCoordinates?.lng }}</div>
+      <div>Customer Coordinates: {{ deliveryInfo.coordinates?.lat }}, {{ deliveryInfo.coordinates?.lng }}</div>
+      <div>Distance: {{ calculatedDistance }} km</div>
+      <div>Delivery Config: {{ deliveryConfig?.baseFee }} + {{ deliveryConfig?.perKmRate }}/km</div>
+      <div>Customer Name: {{ customerName }}</div>
+      <div>Customer Email: {{ customerEmail }}</div>
+    </div>
+  </div>
+  
   <div class="max-w-[1100px] mx-auto px-4">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -21,7 +33,6 @@
     </div>
 
     <!-- Error Messages -->
-       <!-- Error Messages -->
     <div *ngIf="formErrors.length > 0" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
       <div class="flex items-center mb-2">
         <i class="fa-solid fa-exclamation-circle text-red-500 mr-2"></i>
@@ -32,68 +43,10 @@
       </ul>
     </div>
 
-    <!-- Payment Warning Toast -->
-    <div *ngIf="showPaymentWarning" 
-      class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 animate-fade-in">
-      <div class="flex items-center">
-        <i class="fa-solid fa-exclamation-triangle text-yellow-600 mr-3 text-xl"></i>
-        <div class="flex-1">
-          <h3 class="text-yellow-800 font-semibold mb-1">Card Payments Temporarily Unavailable</h3>
-          <p class="text-yellow-700 text-sm">
-            Online card payments are currently unavailable. Please use Cash on Pickup or Bank Transfer instead. 
-            We apologize for any inconvenience.
-          </p>
-        </div>
-        <button (click)="showPaymentWarning = false" 
-          class="text-yellow-600 hover:text-yellow-800 ml-2">
-          <i class="fa-solid fa-times"></i>
-        </button>
-      </div>
-    </div>
-
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- Left Column - Order Details & Forms -->
       <div class="lg:col-span-8 space-y-6">
-        <!-- Cart Summary (Mobile) -->
-        <div class="lg:hidden bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
-          <div class="space-y-3">
-            <div *ngFor="let item of cartItems | keyvalue"
-              class="flex items-center justify-between py-3 border-b border-gray-100">
-              <div class="flex items-center space-x-3 flex-1">
-                <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                  <img [src]="getProductImage(item.value.product) | async" [alt]="item.value.product.name"
-                    class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1">
-                  <p class="font-medium text-gray-800 capitalize text-sm">{{ item.value.product.name }}</p>
-                  <p *ngIf="item.value.selectedVariants?.length" class="text-xs text-gray-500">
-                    {{ item.value.selectedVariants[0]?.name }}
-                  </p>
-                  <div class="flex items-center space-x-2 mt-1">
-                    <button (click)="updateQuantity(item.value, -1)"
-                      class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs hover:bg-gray-300">
-                      -
-                    </button>
-                    <span class="text-sm font-medium w-8 text-center">{{ item.value.quantity }}</span>
-                    <button (click)="updateQuantity(item.value, 1)"
-                      class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs hover:bg-gray-300">
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="text-right">
-                <p class="font-medium text-gray-800">₦{{ (item.value.product.sellingPrice * item.value.quantity) |
-                  number }}</p>
-                <button (click)="removeItem(item.value)" class="text-red-500 hover:text-red-700 text-xs mt-1">
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        
         <!-- Delivery/Pickup Toggle -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300">
           <h2 class="text-xl font-semibold text-gray-800 mb-4">Delivery Method</h2>
@@ -115,7 +68,12 @@
               <i class="fa-solid fa-truck mr-3 text-lg"></i>
               <div class="text-left">
                 <div class="font-semibold">Home Delivery</div>
-                <div class="text-xs opacity-75">₦{{ deliveryFee | number }} • 30-45 min</div>
+                <div class="text-xs opacity-75">
+                  <span *ngIf="isCalculatingDelivery">Calculating...</span>
+                  <span *ngIf="!isCalculatingDelivery">
+                    ₦{{ deliveryFee | number:'1.0-0' }} • 30-45 min
+                  </span>
+                </div>
               </div>
             </button>
           </div>
@@ -149,12 +107,42 @@
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all"
                 placeholder="your.email@example.com">
             </div>
+            
+            <!-- Delivery Address with Location Picker -->
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
+              <div class="flex justify-between items-center mb-2">
+                <label class="block text-sm font-medium text-gray-700">Delivery Address *</label>
+                <button type="button" (click)="openLocationPicker()" 
+                  class="text-sm text-customBlue hover:text-blue-700 flex items-center">
+                  <i class="fa-solid fa-map-marker-alt mr-1"></i>
+                  Pick on Map
+                </button>
+              </div>
               <textarea [(ngModel)]="deliveryInfo.address" rows="3"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all resize-none"
-                placeholder="Enter your complete delivery address including landmarks" required></textarea>
+                placeholder="Enter your complete delivery address including landmarks" 
+                required
+                (blur)="geocodeAddress()">
+              </textarea>
+              
+              <!-- Show coordinates if available -->
+              <div *ngIf="deliveryInfo.coordinates" class="mt-2 text-xs text-gray-500 flex items-center">
+                <i class="fa-solid fa-check-circle text-green-500 mr-1"></i>
+                <span>
+                  Location set: {{ deliveryInfo.coordinates.lat | number:'1.6-6' }}, {{ deliveryInfo.coordinates.lng | number:'1.6-6' }}
+                  <span *ngIf="calculatedDistance" class="ml-2">
+                    • {{ calculatedDistance }} km from store
+                  </span>
+                </span>
+              </div>
+              
+              <!-- Calculating indicator -->
+              <div *ngIf="isCalculatingDelivery" class="mt-2 text-xs text-blue-600 flex items-center">
+                <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                <span>Calculating delivery fee...</span>
+              </div>
             </div>
+            
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Instructions (Optional)</label>
               <textarea [(ngModel)]="deliveryInfo.instructions" rows="2"
@@ -187,39 +175,8 @@
                   {{ method.description }}
                 </p>
               </div>
-              <i
-                [class]="'fa-solid ' + method.icon + ' text-2xl ' + (method.disabled ? 'text-gray-300' : (paymentMethod === method.value ? 'text-customGreen' : 'text-gray-400'))"></i>
+              <i [class]="'fa-solid ' + method.icon + ' text-2xl ' + (method.disabled ? 'text-gray-300' : (paymentMethod === method.value ? 'text-customGreen' : 'text-gray-400'))"></i>
             </label>
-          </div>
-
-          <!-- Bank Transfer Details -->
-          <div *ngIf="paymentMethod === 'transfer'"
-            class="mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200 animate-fade-in">
-            <div class="flex items-center mb-4">
-              <i class="fa-solid fa-info-circle text-blue-500 mr-2"></i>
-              <h4 class="font-semibold text-blue-800">Bank Transfer Instructions</h4>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div class="space-y-2">
-                <div class="flex justify-between">
-                  <span class="text-blue-700 font-medium">Bank Name:</span>
-                  <span>Your Bank Name</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-blue-700 font-medium">Account Name:</span>
-                  <span>Your Business Name</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-blue-700 font-medium">Account Number:</span>
-                  <span class="font-mono">0123456789</span>
-                </div>
-              </div>
-              <div class="bg-white rounded p-3 border border-blue-100">
-                <p class="text-blue-600 text-xs font-medium mb-1">Important:</p>
-                <p class="text-blue-600 text-xs">Please include your <strong>order number</strong> in the transfer
-                  reference. Your order will be processed once payment is confirmed.</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -235,20 +192,37 @@
               class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
               <div class="flex items-center space-x-3 flex-1">
                 <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                  <img [src]="getProductImage(item.value.product) | async" [alt]="item.value.product.name"
-                    class="w-full h-full object-cover">
+                  <img [src]="getProductImage(item.value.product) | async" 
+                       [alt]="item.value.product.name"
+                       class="w-full h-full object-cover">
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-medium text-gray-800 capitalize text-sm truncate">{{ item.value.product.name }}</p>
-                  <p *ngIf="item.value.selectedVariants?.length" class="text-xs text-gray-500 truncate">
-                    {{ item.value.selectedVariants[0]?.name }}
-                  </p>
-                  <p class="text-xs text-gray-500">Qty: {{ item.value.quantity }}</p>
+                  
+                  <!-- Show discount badge if item has discount -->
+                  <div *ngIf="hasItemDiscount(item.value.product)" class="flex items-center mt-1">
+                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                      -{{ getItemDiscountPercentage(item.value.product) }}%
+                    </span>
+                    <p *ngIf="item.value.selectedVariants?.length" class="text-xs text-gray-500 truncate ml-2">
+                      {{ item.value.selectedVariants[0]?.name }}
+                    </p>
+                  </div>
+                  
+                  <p class="text-xs text-gray-500 mt-1">Qty: {{ item.value.quantity }}</p>
                 </div>
               </div>
-              <span class="font-semibold text-gray-800 whitespace-nowrap">
-                ₦{{ (item.value.product.sellingPrice * item.value.quantity) | number }}
-              </span>
+              <div class="text-right">
+                <!-- Show original and discounted price -->
+                <div *ngIf="hasItemDiscount(item.value.product)" class="mb-1">
+                  <span class="text-sm text-gray-500 line-through">
+                    ₦{{ (item.value.product.sellingPrice * item.value.quantity) | number:'1.0-0' }}
+                  </span>
+                </div>
+                <span class="font-semibold text-gray-800 whitespace-nowrap">
+                  ₦{{ (getDiscountedPrice(item.value.product, item.value.selectedVariants?.[0]) * item.value.quantity) | number:'1.0-0' }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -256,34 +230,110 @@
           <div class="space-y-3 border-t border-gray-200 pt-4">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Subtotal ({{ totalItems }} items):</span>
-              <span class="font-medium">₦{{ subtotal | number }}</span>
+              <span class="font-medium">₦{{ subtotal | number:'1.2-2' }}</span>
             </div>
+
+            <!-- Discounts Section -->
+            <ng-container *ngIf="totalDiscount > 0">
+              <div class="flex justify-between text-sm text-green-600">
+                <span>Discounts:</span>
+                <span class="font-medium">-₦{{ totalDiscount | number:'1.2-2' }}</span>
+              </div>
+              
+              <!-- Discount Breakdown -->
+              <div *ngIf="discountBreakdown.length > 0" class="ml-4 pl-4 border-l border-green-200">
+                <p class="text-xs font-medium text-green-700 mb-1">Discount breakdown:</p>
+                <div *ngFor="let discount of discountBreakdown" class="flex justify-between text-xs text-green-600 mb-1">
+                  <span class="truncate">{{ discount.productName }}:</span>
+                  <span>-₦{{ discount.discountAmount | number:'1.2-2' }}</span>
+                </div>
+              </div>
+              
+              <!-- Savings Summary -->
+              <div class="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+                <div class="flex items-center text-sm text-green-700">
+                  <i class="fa-solid fa-tag mr-2"></i>
+                  <span>{{ savingsSummary }}</span>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- Tax Breakdown Section -->
+            <ng-container *ngIf="taxBreakdown && taxBreakdown.length > 0">
+              <div class="border-t border-gray-200 pt-3 mt-3">
+                <p class="text-sm font-medium text-gray-700 mb-2">Tax Breakdown:</p>
+                <div *ngFor="let tax of taxBreakdown" class="flex justify-between text-sm text-gray-600 mb-1 pl-4">
+                  <span>{{ tax.name }} ({{ tax.rate }}%):</span>
+                  <span>₦{{ tax.taxAmount | number:'1.2-2' }}</span>
+                </div>
+                
+                <!-- Total Tax -->
+                <div class="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 mt-2">
+                  <span class="text-gray-700">Total Tax:</span>
+                  <span class="text-green-600">₦{{ taxAmount | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </ng-container>
+            
+            <ng-container *ngIf="(!taxAmount || taxAmount === 0) && totalDiscount === 0">
+              <div class="flex justify-between text-sm text-gray-500 italic">
+                <span>Tax:</span>
+                <span>Not applicable</span>
+              </div>
+            </ng-container>
+            
+            <!-- Delivery Fee with Distance Info -->
             <div class="flex justify-between text-sm" *ngIf="isDelivery">
-              <span class="text-gray-600">Delivery Fee:</span>
-              <span class="font-medium">₦{{ deliveryFee | number }}</span>
+              <div>
+                <span class="text-gray-600">Delivery Fee:</span>
+                <span *ngIf="calculatedDistance" class="text-xs text-gray-500 ml-2">
+                  ({{ calculatedDistance }} km)
+                </span>
+              </div>
+              <span class="font-medium" [class.text-blue-600]="isCalculatingDelivery">
+                <span *ngIf="isCalculatingDelivery">
+                  <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+                  Calculating...
+                </span>
+                <span *ngIf="!isCalculatingDelivery">
+                  ₦{{ deliveryFee | number:'1.2-2' }}
+                </span>
+              </span>
             </div>
+
+            <!-- Grand Total -->
             <div class="flex justify-between text-lg font-bold mt-3 pt-3 border-t border-gray-200">
               <span>Total:</span>
-              <span class="text-customGreen text-xl">₦{{ total | number }}</span>
+              <span class="text-customGreen text-xl">₦{{ total | number:'1.2-2' }}</span>
             </div>
           </div>
 
           <!-- Delivery Estimate -->
-          <div *ngIf="isDelivery" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <div class="flex items-center text-sm text-blue-700">
+          <!-- <div *ngIf="isDelivery" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div class="flex items-center text-sm text-blue-700 mb-1">
               <i class="fa-solid fa-clock mr-2"></i>
               <span>Estimated delivery: 30-45 minutes</span>
             </div>
-          </div>
+            <div *ngIf="branchInfo?.name" class="text-xs text-blue-600">
+              <i class="fa-solid fa-store mr-1"></i>
+              Delivering from: {{ branchInfo.name }}
+            </div>
+            <div *ngIf="deliveryConfig?.sameDayDeliveryCutoffTime" class="text-xs text-blue-600 mt-1">
+              <i class="fa-solid fa-bolt mr-1"></i>
+              Same-day cutoff: {{ deliveryConfig.sameDayDeliveryCutoffTime }}
+            </div>
+          </div> -->
 
           <!-- Place Order Button -->
           <button
             class="w-full mt-6 px-6 py-4 bg-customGreen text-white rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-            (click)="placeOrder()" [disabled]="!canPlaceOrder() || isLoading"
-            [class]="!canPlaceOrder() || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'">
+            (click)="placeOrder()" 
+            [disabled]="!canPlaceOrder() || isLoading || isCalculatingDelivery"
+            [class.opacity-50]="!canPlaceOrder() || isLoading || isCalculatingDelivery"
+            [class.cursor-not-allowed]="!canPlaceOrder() || isLoading || isCalculatingDelivery">
             <span *ngIf="!isLoading" class="flex items-center">
               <i class="fa-solid fa-lock mr-2"></i>
-              Place Order • ₦{{ total | number }}
+              Place Order • ₦{{ total | number:'1.2-2' }}
             </span>
             <span *ngIf="isLoading" class="flex items-center">
               <i class="fa-solid fa-spinner fa-spin mr-2"></i>
@@ -307,5 +357,17 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Location Picker Modal -->
+<div *ngIf="showLocationPicker" class="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+  <div class="relative w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <!-- Fixed location picker usage -->
+    <app-location-picking
+      [initialLocation]="deliveryInfo.coordinates"
+      (locationSelected)="onLocationSelected($event)"
+      (close)="closeLocationPicker()">
+    </app-location-picking>
   </div>
 </div>
