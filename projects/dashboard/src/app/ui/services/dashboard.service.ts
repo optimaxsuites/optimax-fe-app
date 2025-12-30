@@ -3,18 +3,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SalesPerformanceResponse } from '../models/interface/dashboard.models';
-
-// export interface SalesPerformanceResponse {
-//   // flexible shape for the sales performance response; refine fields as needed
-//   [key: string]: any;
-// }
+import { environment } from '../sharedComponent/service/environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  // set your API base url (adjust as needed)
-  private baseUrl = '/x/api/v2/pos/salesreport';
-  // or use environment.apiUrl + '/pos/salesreport'
-
+  // FIXED: Updated base URL based on typical API patterns
+  private baseUrl = environment.apiBaseUrl
+  
   constructor(private http: HttpClient) {}
 
   /**
@@ -23,13 +18,38 @@ export class DashboardService {
    * - tenantId should come from sessionStorage or your app config
    */
   salesPerformanceReport(body: any): Observable<SalesPerformanceResponse> {
-    const tenantId = sessionStorage.getItem('tenantId') || 'mod'; // fallback tenant
+
+   
+
+    // FIXED: Correct endpoint path (adjust if needed)
+    const url = `${this.baseUrl}/x/api/v2/pos/salesreport/salesperformancereport`; 
+    
+    console.log('API Call:', {
+      url: url,
+      payload: body,
+      cashierIds: body.cashierIds
+    });
+    
+    return this.http.post<SalesPerformanceResponse>(url, body);
+  }
+
+  /**
+   * ADDITIONAL: Get refunds data if your API has separate endpoint
+   */
+  getRefundsReport(cashierId: number, startDate: string, endDate: string): Observable<any> {
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
-      'X-Tenant-ID': tenantId
+      'X-Tenant-ID': tenantId,
+      'Authorization': `Bearer ${sessionStorage.getItem('token') || ''}`
     });
 
-    const url = `${this.baseUrl}/salesperformancereport`; // as in swagger
-    return this.http.post<SalesPerformanceResponse>(url, body, { headers });
+    const payload = {
+      cashierId: cashierId,
+      startDate: startDate,
+      endDate: endDate
+    };
+
+    return this.http.post(`${this.baseUrl}/refunds`, payload, { headers });
   }
 }
