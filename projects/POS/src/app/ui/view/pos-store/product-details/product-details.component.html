@@ -156,17 +156,63 @@
                   </div>
                 </div>
 
-                <!-- Price -->
-                <div class="flex items-baseline space-x-3">
-                  <span class="text-4xl font-bold text-customBlue">
-                    {{ formatPrice(calculateTotalPrice()) }}
-                  </span>
-                  @if (hasDiscount()) {
-                    <span class="text-xl text-gray-500 line-through">
-                      {{ formatPrice(getCostPrice()) }}
-                    </span>
-                  }
-                </div>
+<!-- Price with Discount Details -->
+<div class="space-y-3">
+  <!-- Discount Badge -->
+  @if (hasDiscount()) {
+    <div class="flex items-center gap-3">
+      <span class="bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+        🎉 {{ getDiscountPercentage() }}% OFF
+      </span>
+      @if (getDiscountType()) {
+        <span class="bg-red-100 text-red-700 px-2.5 py-1 rounded text-xs font-medium">
+          {{ getDiscountType() }}
+        </span>
+      }
+    </div>
+  }
+  
+  <!-- Price Display -->
+  <div class="flex items-baseline space-x-4">
+    <!-- New/Discounted Price -->
+    <span class="text-4xl font-bold text-customBlue">
+      {{ formatPrice(getDiscountedPrice()) }}
+    </span>
+    
+    <!-- Original Price -->
+    @if (hasDiscount()) {
+      <div class="flex flex-col">
+        <span class="text-xl text-gray-500 line-through">
+          {{ formatPrice(getCostPrice()) }}
+        </span>
+        <!-- Savings Info -->
+        <div class="mt-1">
+          <p class="text-sm text-gray-600">
+            You save: <span class="font-semibold text-green-600">{{ formatPrice(getSavingsAmount()) }}</span>
+          </p>
+          @if (getDiscountDescription()) {
+            <p class="text-xs text-gray-500 mt-1">{{ getDiscountDescription() }}</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+  
+  <!-- Savings Summary -->
+  @if (hasDiscount()) {
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="font-medium text-green-800">Great Deal!</span>
+          <p class="text-sm text-green-600 mt-1">
+            {{ getSavingsText() }}
+          </p>
+        </div>
+        <i class="fa-solid fa-tag text-green-500 text-lg"></i>
+      </div>
+    </div>
+  }
+</div>
 
                 <!-- Stock & Delivery Status -->
                 <div class="space-y-3">
@@ -201,37 +247,48 @@
                   </div>
                 }
 
-                <!-- Variants -->
-                @if (hasVariants()) {
-                  <div class="space-y-4 pt-2">
-                    <h3 class="text-lg font-semibold text-gray-900">Options</h3>
-                    <div class="space-y-4">
-                      @for (variant of getVariants(); track variant.id) {
-                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:shadow-sm transition-all">
-                          <div>
-                            <span class="font-medium text-gray-900 capitalize">{{ variant.name }}</span>
-                            @if (variant.quantity > 0) {
-                              <span class="text-green-600 text-sm ml-2">({{ variant.quantity }} available)</span>
-                            } @else {
-                              <span class="text-red-600 text-sm ml-2">(Out of stock)</span>
-                            }
-                          </div>
-                          <div class="flex items-center space-x-4">
-                            <span class="text-customBlue font-semibold text-lg">{{ formatPrice(variant.price) }}</span>
-                            <button 
-                              class="bg-customGreen text-white px-5 py-2.5 rounded-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-customGreen/90 transition-colors"
-                              (click)="addVariantToCart(variant)"
-                              [disabled]="variant.quantity === 0"
-                            >
-                              <i class="fa-solid fa-plus"></i>
-                              <span>Add</span>
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
+<!-- Variants -->
+@if (hasVariants()) {
+  <div class="space-y-4 pt-2">
+    <h3 class="text-lg font-semibold text-gray-900">Options</h3>
+    <div class="space-y-4">
+      @for (variant of getVariants(); track variant.id) {
+        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:shadow-sm transition-all">
+          <div>
+            <span class="font-medium text-gray-900 capitalize">{{ variant.name }}</span>
+            @if (variant.quantity > 0) {
+              <span class="text-green-600 text-sm ml-2">({{ variant.quantity }} available)</span>
+            } @else {
+              <span class="text-red-600 text-sm ml-2">(Out of stock)</span>
+            }
+          </div>
+          <div class="flex items-center space-x-4">
+            <!-- Variant Price with Discount Info -->
+            <div class="flex flex-col items-end">
+              <span class="text-customBlue font-semibold text-lg">
+                {{ formatPrice(variant.price) }}
+              </span>
+              <!-- Show original price if product has discount -->
+              @if (hasDiscount()) {
+                <span class="text-gray-500 text-sm line-through">
+                  {{ formatPrice(variant.price / (1 - getDiscountPercentage() / 100)) }}
+                </span>
+              }
+            </div>
+            <button 
+              class="bg-customGreen text-white px-5 py-2.5 rounded-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-customGreen/90 transition-colors"
+              (click)="addVariantToCart(variant)"
+              [disabled]="variant.quantity === 0"
+            >
+              <i class="fa-solid fa-plus"></i>
+              <span>Add</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
 
                 <!-- Add to Cart Section -->
                 <div class="space-y-6 pt-4">
@@ -351,40 +408,57 @@
               }
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              @for (relatedProduct of paginatedRelatedProducts(); track relatedProduct.id) {
-                <div 
-                  class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group"
-                  (click)="navigateToProductDetails(relatedProduct.id)"
-                >
-                  <div class="bg-gray-50 overflow-hidden flex items-center justify-center h-48 group-hover:bg-gray-100 transition-colors">
-                    <img 
-                      [src]="getProductImage(relatedProduct) | async" 
-                      [alt]="relatedProduct.name"
-                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      (error)="handleImageError($event)"
-                    />
-                  </div>
-                  <div class="p-4">
-                    <h3 class="font-medium text-gray-800 text-base line-clamp-2 capitalize mb-3">
-                      {{ relatedProduct.name }}
-                    </h3>
-                    <div class="flex items-center justify-between">
-                      <span class="text-customBlue font-semibold text-lg">
-                        {{ formatPrice(relatedProduct.sellingPrice) }}
-                      </span>
-                      <button 
-                        class="bg-customGreen text-white px-3 py-2 rounded-full text-sm hover:bg-customGreen/90 transition-colors"
-                        (click)="$event.stopPropagation(); addRelatedToCart(relatedProduct)"
-                        [disabled]="!relatedProduct.quantity || relatedProduct.quantity === 0"
-                      >
-                        <i class="fa-solid fa-plus"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  @for (relatedProduct of paginatedRelatedProducts(); track relatedProduct.id) {
+    <div 
+      class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group relative"
+      (click)="navigateToProductDetails(relatedProduct.id)"
+    >
+      <!-- Discount Badge for Related Products -->
+      @if (hasDiscount(relatedProduct)) {
+        <div class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+          🎉 {{ getDiscountPercentage(relatedProduct) }}% OFF
+        </div>
+      }
+      
+      <div class="bg-gray-50 overflow-hidden flex items-center justify-center h-48 group-hover:bg-gray-100 transition-colors">
+        <img 
+          [src]="getProductImage(relatedProduct) | async" 
+          [alt]="relatedProduct.name"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          (error)="handleImageError($event)"
+        />
+      </div>
+      <div class="p-4">
+        <h3 class="font-medium text-gray-800 text-base line-clamp-2 capitalize mb-3">
+          {{ relatedProduct.name }}
+        </h3>
+        <div class="flex items-center justify-between">
+          <!-- Price Display for Related Products -->
+          <div class="flex flex-col">
+            <!-- Discounted Price -->
+            <span class="text-customBlue font-semibold text-lg">
+              {{ formatPrice(getDiscountedPrice(relatedProduct)) }}
+            </span>
+            <!-- Original Price (if discount exists) -->
+            @if (hasDiscount(relatedProduct)) {
+              <span class="text-gray-500 text-sm line-through">
+                {{ formatPrice(getCostPrice(relatedProduct)) }}
+              </span>
+            }
+          </div>
+          <button 
+            class="bg-customGreen text-white px-3 py-2 rounded-full text-sm hover:bg-customGreen/90 transition-colors"
+            (click)="$event.stopPropagation(); addRelatedToCart(relatedProduct)"
+            [disabled]="!relatedProduct.quantity || relatedProduct.quantity === 0"
+          >
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
           </div>
         }
       }
@@ -435,9 +509,20 @@
                     <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
                       {{ data.value.product.name }}
                     </h4>
-                    <p class="text-lg text-gray-600 mt-1">
-                      {{ formatPrice(data.value.product.sellingPrice) }} each
-                    </p>
+                    <!-- Price Display in Cart -->
+<div class="flex flex-col">
+  <!-- Discounted Price -->
+  <p class="text-lg text-gray-800 font-medium">
+    {{ formatPrice(data.value.unitPrice) }} each
+  </p>
+  
+  <!-- Show original price if there's a discount -->
+  @if (hasDiscount(data.value.product)) {
+    <p class="text-sm text-gray-500 line-through">
+      {{ formatPrice(getCostPrice(data.value.product)) }}
+    </p>
+  }
+</div>
                   </div>
 
                   <!-- Quantity Controls -->
@@ -554,9 +639,20 @@
                   <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
                     {{ data.value.product.name }}
                   </h4>
-                  <p class="text-lg text-gray-600 mt-1">
-                    {{ formatPrice(data.value.product.sellingPrice) }} each
-                  </p>
+                  <!-- Price Display in Cart -->
+<div class="flex flex-col">
+  <!-- Discounted Price -->
+  <p class="text-lg text-gray-800 font-medium">
+    {{ formatPrice(data.value.unitPrice) }} each
+  </p>
+  
+  <!-- Show original price if there's a discount -->
+  @if (hasDiscount(data.value.product)) {
+    <p class="text-sm text-gray-500 line-through">
+      {{ formatPrice(getCostPrice(data.value.product)) }}
+    </p>
+  }
+</div>
                 </div>
 
                 <!-- Quantity Controls -->

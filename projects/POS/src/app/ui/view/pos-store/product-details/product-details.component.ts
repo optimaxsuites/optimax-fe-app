@@ -4,7 +4,7 @@ import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { Observable, Subscription } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 
-import { ProductData, VariantDTO, ProductImageDTO } from '../../../models/interface';
+import { ProductData, VariantDTO, ProductImageDTO, DiscountDTO } from '../../../models/interface';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { StoreCartService } from '../../../service/store-cart.service';
@@ -438,7 +438,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
 
   addToCart(product?: ProductData): void {
     const productToAdd = product || this.product();
-    if (!productToAdd || !this.isInStock()) return;
+    if (!productToAdd || !this.isInStock(productToAdd)) return;
 
     for (let i = 0; i < this.quantity(); i++) {
       this.cartService.addToCart(productToAdd);
@@ -516,43 +516,219 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
     this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
   }
 
-  // Helper methods
-  getSellingPrice(): number {
-    const product = this.product();
-    if (!product || !product.sellingPrice) return 0;
+  // Helper methods with null safety
+  getSellingPrice(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse?.sellingPrice) return 0;
 
-    return typeof product.sellingPrice === 'string'
-      ? parseFloat(product.sellingPrice)
-      : product.sellingPrice;
+    return typeof productToUse.sellingPrice === 'string'
+      ? parseFloat(productToUse.sellingPrice)
+      : productToUse.sellingPrice;
   }
 
-  getCostPrice(): number {
-    const product = this.product();
-    if (!product || !product.costPrice) return 0;
+  getCostPrice(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse?.costPrice) {
+      // Fallback to selling price if no cost price
+      return this.getSellingPrice(productToUse || undefined);
+    }
 
-    return typeof product.costPrice === 'string'
-      ? parseFloat(product.costPrice)
-      : product.costPrice;
+    return typeof productToUse.costPrice === 'string'
+      ? parseFloat(productToUse.costPrice)
+      : productToUse.costPrice;
   }
 
-  hasDiscount(): boolean {
-    const product = this.product();
-    if (!product || !product.costPrice || !product.sellingPrice) return false;
-
-    const costPrice = this.getCostPrice();
-    const sellingPrice = this.getSellingPrice();
-
-    return sellingPrice < costPrice;
+  // Discount-related methods with null safety
+  hasDiscount(product?: ProductData): boolean {
+    const productToUse = product || this.product();
+    if (!productToUse) return false;
+    
+    // First check if there's a discount object
+    if (productToUse.discount) {
+      return this.isDiscountActive(productToUse.discount);
+    }
+    
+    // Fallback: Check price difference
+    return this.calculateDiscountFromPrices(productToUse) > 0;
   }
 
-  isInStock(): boolean {
-    const product = this.product();
-    return !!(product?.quantity && product.quantity > 0);
+  private isDiscountActive(discount: DiscountDTO): boolean {
+    if (discount.active === false) return false;
+    
+    // Check if discount has a valid value
+    if (discount.value && discount.value > 0) {
+      // Check discount dates if they exist
+      if (discount.startDate && discount.endDate) {
+        const now = new Date();
+        const startDate = new Date(discount.startDate);
+        const endDate = new Date(discount.endDate);
+        
+        if (now < startDate || now > endDate) {
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    return false;
   }
 
-  getAvailableQuantity(): number {
-    const product = this.product();
-    return product?.quantity || 0;
+  private calculateDiscountFromPrices(product: ProductData): number {
+    if (!product) return 0;
+    
+    const sellingPrice = this.getSellingPrice(product);
+    const costPrice = this.getCostPrice(product);
+    
+    // If no valid prices or cost price is 0, return 0
+    if (!costPrice || costPrice <= 0 || sellingPrice >= costPrice) {
+      return 0;
+    }
+    
+    const discountAmount = costPrice - sellingPrice;
+    const percentage = (discountAmount / costPrice) * 100;
+    
+    // Round to nearest whole number
+    return Math.round(percentage);
+  }
+
+  getDiscountPercentage(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse?.discount) return 0;
+    
+    const discount = productToUse.discount;
+    
+    // Check if discountType is an object with name property
+    if (discount.discountType) {
+      const discountTypeName = discount.discountType.name || discount.discountType;
+      
+      if (discountTypeName === 'PERCENTAGE' && discount.value) {
+        return Math.round(discount.value);
+      }
+      
+      // For fixed amount discounts, calculate percentage from price
+      if ((discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') && discount.value) {
+        const costPrice = this.getCostPrice(productToUse);
+        if (costPrice > 0) {
+          const percentage = (discount.value / costPrice) * 100;
+          return Math.round(percentage);
+        }
+      }
+    }
+    
+    // Fallback: Check if there's a discount value
+    if (discount.value) {
+      return Math.round(discount.value);
+    }
+    
+    // Final fallback: Calculate from price difference
+    return this.calculateDiscountFromPrices(productToUse);
+  }
+
+  getDiscountType(product?: ProductData): string {
+    const productToUse = product || this.product();
+    if (!productToUse?.discount?.discountType?.name) return 'Discount';
+    
+    return productToUse.discount.discountType.name;
+  }
+
+  getDiscountDescription(product?: ProductData): string {
+    const productToUse = product || this.product();
+    if (!productToUse?.discount?.name) return '';
+    
+    return productToUse.discount.name;
+  }
+
+  getDiscountedPrice(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse) return 0;
+    
+    const costPrice = this.getCostPrice(productToUse);
+    
+    if (!this.hasDiscount(productToUse)) {
+      return this.getSellingPrice(productToUse);
+    }
+    
+    const discount = productToUse.discount;
+    
+    if (discount?.discountType) {
+      const discountTypeName = discount.discountType.name || discount.discountType;
+      
+      // Percentage discount
+      if (discountTypeName === 'PERCENTAGE' && discount.value) {
+        const discountAmount = costPrice * (discount.value / 100);
+        return Math.max(0, costPrice - discountAmount);
+      }
+      
+      // Fixed amount discount
+      if ((discountTypeName === 'FIXED_AMOUNT' || discountTypeName === 'AMOUNT') && discount.value) {
+        return Math.max(0, costPrice - discount.value);
+      }
+    }
+    
+    // Fallback: Use discount value if available
+    if (discount?.value) {
+      // Assume it's a percentage if no type specified
+      const discountAmount = costPrice * (discount.value / 100);
+      return Math.max(0, costPrice - discountAmount);
+    }
+    
+    // Fallback: Use discountValue if available
+    if (discount?.discountValue) {
+      const discountAmount = costPrice * (discount.discountValue / 100);
+      return Math.max(0, costPrice - discountAmount);
+    }
+    
+    // Final fallback: Return selling price
+    return this.getSellingPrice(productToUse);
+  }
+
+  getDiscountAmount(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse || !this.hasDiscount(productToUse)) return 0;
+    
+    const costPrice = this.getCostPrice(productToUse);
+    const sellingPrice = this.getSellingPrice(productToUse);
+    
+    // If we have discount object with fixed amount
+    if (productToUse.discount?.value && 
+        (productToUse.discount.discountType?.name === 'FIXED_AMOUNT' || 
+         productToUse.discount.discountType?.name === 'AMOUNT')) {
+      return productToUse.discount.value;
+    }
+    
+    // Otherwise calculate from price difference
+    return Math.max(0, costPrice - sellingPrice);
+  }
+
+  getSavingsAmount(product?: ProductData): number {
+    const productToUse = product || this.product();
+    if (!productToUse || !this.hasDiscount(productToUse)) return 0;
+    
+    const costPrice = this.getCostPrice(productToUse);
+    const discountedPrice = this.getDiscountedPrice(productToUse);
+    
+    return costPrice - discountedPrice;
+  }
+
+  getSavingsText(product?: ProductData): string {
+    const productToUse = product || this.product();
+    if (!productToUse) return '';
+    
+    const savings = this.getSavingsAmount(productToUse);
+    if (savings <= 0) return '';
+    
+    const percentage = this.getDiscountPercentage(productToUse);
+    return `Save ${this.formatPrice(savings)} (${percentage}%)`;
+  }
+
+  isInStock(product?: ProductData): boolean {
+    const productToUse = product || this.product();
+    return !!(productToUse?.quantity && productToUse.quantity > 0);
+  }
+
+  getAvailableQuantity(product?: ProductData): number {
+    const productToUse = product || this.product();
+    return productToUse?.quantity || 0;
   }
 
   hasVariants(): boolean {
@@ -572,7 +748,10 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   }
 
   calculateTotalPrice(): number {
-    return this.getSellingPrice() * this.quantity();
+    const product = this.product();
+    if (!product) return 0;
+    
+    return this.getDiscountedPrice(product) * this.quantity();
   }
 
   formatPrice(price: any): string {

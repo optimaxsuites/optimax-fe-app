@@ -86,6 +86,7 @@ export interface OrderDTO {
   salesperson?: Salesperson;
   branch: Branch;
   orderItem: OrderItem[];
+  diveryStatus?: string;
   deliveryStatus?: string;
   payment?: OrderPayment;
   deliveryInfo?: DeliveryInfo;
@@ -115,6 +116,7 @@ export interface StoreOrderPOST {
   customerEmail: string;
   deliveryInfoId: number | null;
   deliveryTypeId: number | null;
+  deliverTypeId?: number | null; // Keep both for compatibility
   deliveryStatus: string;
 }
 
@@ -127,6 +129,21 @@ export interface StoreOrderItemPOST {
   orderId: number | null;
 }
 
+// NEW Add Ons for Tax Calculation from Code A
+export interface TaxCalculation {
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+  taxBreakdown: TaxBreakdownItem[];
+}
+
+export interface TaxBreakdownItem {
+  taxName: string;
+  rate: number;
+  taxableAmount: number;
+  taxAmount: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -137,6 +154,59 @@ export class StoreOrderService {
     private http: HttpClient,
     private paystackService: PaystackService
   ) {}
+
+  // ========== TAX CALCULATION METHODS FROM CODE A ==========
+  calculateTaxes(orderItems: StoreOrderItemPOST[], products: Map<string, any>): TaxCalculation {
+    const taxBreakdown: TaxBreakdownItem[] = [];
+    let subtotal = 0;
+    let taxAmount = 0;
+    
+    // Group items by tax rate for calculation
+    const taxGroups = new Map<number, { rate: number; name: string; taxableAmount: number }>();
+    
+    orderItems.forEach(item => {
+      const product = products.get(item.productId.toString());
+      const itemTotal = item.totalPrice || (product?.sellingPrice * item.quantity);
+      subtotal += itemTotal;
+      
+      // Get tax info from product
+      const productTax = product?.tax;
+      if (productTax && typeof productTax === 'object' && 'rate' in productTax) {
+        const taxId = productTax.id;
+        const taxRate = productTax.rate || 0;
+        const taxName = productTax.name || `Tax ${taxRate}%`;
+        
+        if (!taxGroups.has(taxId)) {
+          taxGroups.set(taxId, { rate: taxRate, name: taxName, taxableAmount: 0 });
+        }
+        
+        const group = taxGroups.get(taxId)!;
+        group.taxableAmount += itemTotal;
+      }
+    });
+    
+    // Calculate tax for each group
+    taxGroups.forEach((group, taxId) => {
+      const taxAmt = (group.taxableAmount * group.rate) / 100;
+      taxAmount += taxAmt;
+      
+      taxBreakdown.push({
+        taxName: group.name,
+        rate: group.rate,
+        taxableAmount: group.taxableAmount,
+        taxAmount: taxAmt
+      });
+    });
+    
+    const total = subtotal + taxAmount;
+    
+    return {
+      subtotal,
+      taxAmount,
+      total,
+      taxBreakdown
+    };
+  }
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
@@ -152,7 +222,7 @@ export class StoreOrderService {
       headers = headers.set('X-Tenant-ID', tenantId);
     }
 
-    // Add Authorization header if available
+    // Add Authorization header if available (from Code B)
     const token = localStorage.getItem('token') || localStorage.getItem('authToken');
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
@@ -164,7 +234,7 @@ export class StoreOrderService {
   getAllOrdersAsOrderType(filters?: any): Observable<ComponentOrder[]> {
     const params = this.buildQueryParams(filters || {});
     const endpoint = '/x/api/v2/pos/orders';
-    console.log(`📋 Fetching all orders as Order[] from: ${endpoint}`, params);
+    console.log(` Fetching all orders as Order[] from: ${endpoint}`, params);
 
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -177,7 +247,7 @@ export class StoreOrderService {
         return orderDTOs.map(orderDTO => this.convertOrderDTOToComponentOrder(orderDTO));
       }),
       tap((orders) => {
-        console.log(`✅ Converted ${orders?.length || 0} orders to ComponentOrder[] type`);
+        console.log(` Converted ${orders?.length || 0} orders to ComponentOrder[] type`);
       }),
       catchError(this.handleError)
     );
@@ -186,7 +256,7 @@ export class StoreOrderService {
   getAllOrders(filters?: any): Observable<ComponentOrder[]> {
     const params = this.buildQueryParams(filters || {});
     const endpoint = '/x/api/v2/pos/orders';
-    console.log(`📋 Fetching all orders from: ${endpoint}`, params);
+    console.log(` Fetching all orders from: ${endpoint}`, params);
     
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -210,7 +280,7 @@ export class StoreOrderService {
   getEStoreOrders(filters?: any): Observable<ComponentOrder[]> {
     const branchId = filters?.branchId || 1;
     
-    // Build query parameters for the specialized endpoint
+    // Build query parameters for the specialized endpoint (from Code B)
     let params = new HttpParams()
       .set('isOnline', 'true')
       .set('page', (filters?.page || 1).toString())
@@ -218,7 +288,7 @@ export class StoreOrderService {
 
     const endpoint = `/x/api/v2/pos/orders/get/order/from/eStore/${branchId}`;
     
-    console.log('🛒 Fetching E-Store orders from specialized endpoint:', {
+    console.log(' Fetching E-Store orders from specialized endpoint:', {
       endpoint,
       branchId,
       params: params.toString()
@@ -233,22 +303,22 @@ export class StoreOrderService {
     ).pipe(
       map((orderDTOs: OrderDTO[]) => {
         if (!Array.isArray(orderDTOs)) {
-          console.warn('⚠️ Unexpected response format, expected array:', orderDTOs);
+          console.warn(' Unexpected response format, expected array:', orderDTOs);
           return [];
         }
 
-        console.log(`📦 Received ${orderDTOs.length} e-store orders from API`);
+        console.log(` Received ${orderDTOs.length} e-store orders from API`);
 
         // Convert DTOs to ComponentOrder
         const orders = orderDTOs.map(dto => this.convertOrderDTOToComponentOrder(dto));
 
-        // Additional client-side filtering to ensure data quality
+        // Additional client-side filtering to ensure data quality (from Code B)
         const filteredOrders = orders.filter(order => {
           const customerName = (order.customer?.name || order.name || '').toLowerCase();
           
           // Exclude walk-in customers (they should be POS only)
           if (customerName === 'walk-in') {
-            console.log(`🚫 Filtering out walk-in order: ${order.orderNumber}`);
+            console.log(`Filtering out walk-in order: ${order.orderNumber}`);
             return false;
           }
 
@@ -257,19 +327,19 @@ export class StoreOrderService {
           const hasDeliveryInfo = order.deliveryInfo != null;
           
           if (!hasOnlineFlag && !hasDeliveryInfo) {
-            console.log(`🚫 Filtering out non-online order: ${order.orderNumber}`);
+            console.log(` Filtering out non-online order: ${order.orderNumber}`);
             return false;
           }
 
           return true;
         });
 
-        console.log(`✅ Filtered to ${filteredOrders.length} valid e-store orders`);
+        console.log(` Filtered to ${filteredOrders.length} valid e-store orders`);
 
-        // Sort by creation date (newest first)
+        // Sort by creation date (newest first) - from Code B
         const sortedOrders = this.sortOrdersByDate(filteredOrders);
 
-        console.log('📊 E-Store orders loaded and sorted:', {
+        console.log(' E-Store orders loaded and sorted:', {
           total: sortedOrders.length,
           firstOrder: sortedOrders[0]?.orderNumber,
           lastOrder: sortedOrders[sortedOrders.length - 1]?.orderNumber
@@ -278,13 +348,13 @@ export class StoreOrderService {
         return sortedOrders;
       }),
       catchError((error) => {
-        console.error('❌ Failed to fetch e-store orders:', error);
+        console.error(' Failed to fetch e-store orders:', error);
         
         // If the specialized endpoint fails, provide helpful error message
         if (error.status === 404) {
-          console.warn('⚠️ Specialized e-store endpoint not found, check API documentation');
+          console.warn(' Specialized e-store endpoint not found, check API documentation');
         } else if (error.status === 401 || error.status === 403) {
-          console.error('🔒 Authentication/Authorization failed - check token and tenant ID');
+          console.error(' Authentication/Authorization failed - check token and tenant ID');
         }
         
         return this.handleError(error);
@@ -336,7 +406,7 @@ export class StoreOrderService {
     const params = this.buildQueryParams(filters || {});
     
     const endpoint = '/x/api/v2/pos/orders';
-    console.log(`🏪 Fetching POS orders from: ${endpoint}`, params);
+    console.log(` Fetching POS orders from: ${endpoint}`, params);
 
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -347,7 +417,7 @@ export class StoreOrderService {
     ).pipe(
       map((orders: OrderDTO[]) => {
         const posOrders = orders.filter(order => !order.isOnline);
-        console.log(`✅ Retrieved ${posOrders.length} POS orders (filtered from ${orders.length} total)`);
+        console.log(` Retrieved ${posOrders.length} POS orders (filtered from ${orders.length} total)`);
         
         posOrders.forEach(order => {
           order.isOnline = false;
@@ -363,7 +433,7 @@ export class StoreOrderService {
     const params = this.buildQueryParams(filters || {});
     const endpoint = `/x/api/v2/pos/orders/get/by/orderstatus/${orderStatus}`;
     
-    console.log(`📊 Fetching orders by status ${orderStatus} from: ${endpoint}`, params);
+    console.log(`Fetching orders by status ${orderStatus} from: ${endpoint}`, params);
 
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -380,7 +450,7 @@ export class StoreOrderService {
     const params = this.buildQueryParams(filters || {});
     const endpoint = `/x/api/v2/pos/orders/get/by/branch/id/${branchId}`;
     
-    console.log(`🏬 Fetching orders by branch ${branchId} from: ${endpoint}`, params);
+    console.log(` Fetching orders by branch ${branchId} from: ${endpoint}`, params);
 
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -395,7 +465,7 @@ export class StoreOrderService {
 
   getOrderById(orderId: number): Observable<OrderDTO> {
     const endpoint = `/x/api/v2/pos/orders/${orderId}`;
-    console.log(`🔍 Fetching order ${orderId} from: ${endpoint}`);
+    console.log(`Fetching order ${orderId} from: ${endpoint}`);
 
     return this.http.get<OrderDTO>(
       this.getBaseApiUrl() + endpoint,
@@ -408,7 +478,7 @@ export class StoreOrderService {
   getOrdersByOrderNumber(orderNumber: string): Observable<OrderDTO[]> {
     const endpoint = `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${orderNumber}`;
     
-    console.log(`🔎 Searching orders by order number ${orderNumber} from: ${endpoint}`);
+    console.log(` Searching orders by order number ${orderNumber} from: ${endpoint}`);
 
     return this.http.get<OrderDTO[]>(
       this.getBaseApiUrl() + endpoint,
@@ -424,14 +494,14 @@ export class StoreOrderService {
     }
 
     const endpoint = '/x/api/v2/pos/paymentKeyss';
-    console.log('🔑 Fetching payment keys from:', endpoint);
+    console.log(' Fetching payment keys from:', endpoint);
 
     return this.http.get<PaymentKey[]>(
       this.getBaseApiUrl() + endpoint,
       { headers: this.getHeaders() }
     ).pipe(
       tap((keys) => {
-        console.log('✅ Payment keys fetched successfully:', keys);
+        console.log('Payment keys fetched successfully:', keys);
         this.paymentKeysCache = keys;
       }),
       catchError((error) => {
@@ -450,16 +520,17 @@ export class StoreOrderService {
           throw new Error('No payment keys available');
         }
 
-        console.log('🔑 Using public key for branch:', branchId, key.publicKey.substring(0, 20) + '...');
+        console.log('Using public key for branch:', branchId, key.publicKey.substring(0, 20) + '...');
         return key.publicKey;
       }),
       catchError((error) => {
-        console.error('❌ Failed to get public key:', error);
+        console.error('Failed to get public key:', error);
         return throwError(() => new Error('Unable to retrieve payment key'));
       })
     );
   }
 
+  // ========== PAYSTACK METHODS (Enhanced from Code A) ==========
   processPaystackPayment(
     email: string,
     amount: number,
@@ -484,28 +555,31 @@ export class StoreOrderService {
           }
         };
 
-        console.log('💳 Processing Paystack payment:', {
+        console.log('Processing Paystack payment:', {
           email: paymentData.email,
           amount: paymentData.amount,
-          reference: paymentData.reference
+          reference: paymentData.reference,
+          publicKey: publicKey.substring(0, 20) + '...'
         });
         
         return from(this.paystackService.processPayment(paymentData));
       }),
       catchError((error) => {
-        console.error('❌ Paystack payment failed:', error);
+        console.error('Paystack payment failed:', error);
         return throwError(() => 'Payment service unavailable. Please use cash or bank transfer.');
       })
     );
   }
 
+  // ========== ORDER CREATION METHODS (Enhanced with cartItems support) ==========
   createOrderWithPayment(
     orderData: StoreOrderPOST,
     paymentMethod: string,
     paymentReference: string,
-    deliveryInfo?: any
+    deliveryInfo?: any,
+    cartItems?: Map<string, any>, // Added from Code A
   ): Observable<any> {
-    console.log('🔄 Starting order creation with payment...');
+    console.log('Starting order creation with payment...');
     
     const baseOrder: StoreOrderPOST = {
         ...orderData,
@@ -521,13 +595,15 @@ export class StoreOrderService {
       paymentReference
     ).pipe(
       tap((paymentResponse: any) => {
-        console.log(' Payment record created:', paymentResponse);
+        console.log('✅ Payment record created successfully:', paymentResponse);
+        console.log('Payment ID:', paymentResponse.id);
       }),
       switchMap((paymentResponse: any) => {
         const paymentId = paymentResponse.id;
         
         if (!paymentId || paymentId === 0) {
-          throw new Error('Payment record creation failed - no valid payment ID');
+          console.error('❌ Payment response invalid - no ID found:', paymentResponse);
+          throw new Error('Payment record creation failed - no valid payment ID returned');
         }
 
         const orderWithPayment = {
@@ -536,8 +612,19 @@ export class StoreOrderService {
           orderStatus: paymentMethod === 'card' ? 'PAID' : 'PENDING'
         };
 
+        console.log('📦 Order with payment ID attached:', {
+          orderId: orderWithPayment.id,
+          paymentId: orderWithPayment.paymentId,
+          orderStatus: orderWithPayment.orderStatus,
+          deliveryStatus: orderWithPayment.deliveryStatus 
+        });
+
         if (deliveryInfo && baseOrder.deliveryFee > 0) {
+          console.log('🚚 Creating delivery info...');
           return this.createDeliveryInfo(deliveryInfo).pipe(
+            tap((deliveryResponse: any) => {
+              console.log('✅ Delivery info created:', deliveryResponse);
+            }),
             switchMap((deliveryResponse: any) => {
               const deliveryId = this.extractIdFromResponse(deliveryResponse);
               const orderWithDelivery = {
@@ -545,30 +632,73 @@ export class StoreOrderService {
                 deliveryInfoId: deliveryId,
                 customerEmail: deliveryInfo.email || baseOrder.customerEmail,
               };
-              return this.finalizeOrderCreation(orderWithDelivery);
+              console.log('📦 Final order data with delivery:', orderWithDelivery);
+              return this.finalizeOrderCreation(orderWithDelivery, cartItems); // Pass cartItems
+            }),
+            catchError((error) => {
+              console.error('❌ Delivery info creation failed:', error);
+              return throwError(() => 'Failed to create delivery information');
             })
           );
         } else {
-          return this.finalizeOrderCreation(orderWithPayment);
+          const pickupOrder = {
+            ...orderWithPayment,
+          };
+          console.log('📦 Final pickup order data:', pickupOrder);
+          return this.finalizeOrderCreation(pickupOrder, cartItems); // Pass cartItems
         }
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ Order creation with payment failed:', error);
+        return this.handleError(error);
+      })
     );
   }
 
   createCashOrder(
     orderData: StoreOrderPOST,
+    cartItems?: Map<string, any>, // Added from Code A
     deliveryInfo?: any
   ): Observable<any> {
-    console.log('💵 Creating cash order...');
+    console.log(' Creating cash order...');
     return this.createOrderWithPayment(
       orderData,
       'cash',
       `CASH-${orderData.orderNumber}`,
-      deliveryInfo
+      deliveryInfo,
+      cartItems // Pass cartItems
+    ).pipe(
+      map((response: any) => {
+        // 🔥 IMPORTANT: Ensure we're returning the backend response (from Code A)
+        console.log('🎯 Backend response structure:', response);
+        
+        // The response should contain the backend-generated ID
+        if (response && response.id) {
+          return {
+            id: response.id,
+            orderNumber: response.orderNumber || orderData.orderNumber,
+            status: response.orderStatus || orderData.orderStatus,
+            totalAmount: response.totalAmount || orderData.totalAmount,
+            createdDate: response.createdDate || orderData.createdDate,
+            // Include other fields from response
+            ...response
+          };
+        }
+        
+        // Fallback to local data if backend response is incomplete
+        return {
+          id: response?.id || 0,
+          orderNumber: orderData.orderNumber,
+          status: orderData.orderStatus,
+          totalAmount: orderData.totalAmount,
+          createdDate: orderData.createdDate,
+          ...response
+        };
+      })
     );
   }
 
+  // ========== ORDER UPDATE METHODS FROM CODE B ==========
   updateOrder(
     order: ComponentOrder,
     updateData: Partial<OrderUpdateDTO>
@@ -577,14 +707,14 @@ export class StoreOrderService {
     const endpoint = `/x/api/v2/pos/orders`;
     const completeOrderPayload = this.buildCompleteOrderPayload(order, updateData);
 
-    console.log(' Updating order via POST:', completeOrderPayload);
+    console.log('✏️ Updating order via POST:', completeOrderPayload);
 
     return this.http.post<OrderDTO>(
       this.getBaseApiUrl() + endpoint,
       completeOrderPayload,
       { headers: this.getHeaders() }
     ).pipe(
-      tap(res => console.log('Order updated successfully', res)),
+      tap(res => console.log('✅ Order updated successfully', res)),
       catchError(error => this.handleError(error))
     );
   }
@@ -622,7 +752,6 @@ export class StoreOrderService {
       id: order.id, 
       orderNumber: order.orderNumber,
       
-      // The crucial change: Update status
       orderStatus: 'CANCELLED',
       cancellationReason: reason,
       processChargeback: requireChargeback,
@@ -643,23 +772,20 @@ export class StoreOrderService {
       createdDate: this.formatDateForBackend(order.createdDate)
     };
     
-    console.log(`🚫 Cancelling order ${order.orderNumber} (ID: ${order.id}) with full payload:`, payload);
+    console.log(`Cancelling order ${order.orderNumber} (ID: ${order.id}) with full payload:`, payload);
 
-    // FIXED: Passing the full 'order' object, not 'order.id', because updateOrder expects ComponentOrder
+    //  Passing the full 'order' object, not 'order.id', because updateOrder expects ComponentOrder
     return this.updateOrder(order, payload);
   }
-
 
   updateDeliveryStatus(order: ComponentOrder, status: string, currentUser: string): Observable<OrderDTO> {
     const payload: OrderUpdateDTO = {
       id: order.id,
       orderNumber: order.orderNumber,
       
-      // The crucial change
       deliveryStatus: status,
       updatedBy: currentUser,
       
-      // Include mandatory fields to pass validation
       orderStatus: order.orderStatus,
       totalAmount: order.totalAmount,
       quantity: this.calculateQuantity(order),
@@ -670,9 +796,9 @@ export class StoreOrderService {
       createdDate: this.formatDateForBackend(order.createdDate)
     };
 
-    console.log(`🚚 Updating delivery status for order ${order.orderNumber} to ${status}`);
+    console.log(`Updating delivery status for order ${order.orderNumber} to ${status}`);
 
-    // FIXED: Passing the full 'order' object, not 'order.id'
+    //Passing the full 'order' object, not 'order.id'
     return this.updateOrder(order, payload);
   }
 
@@ -711,10 +837,16 @@ export class StoreOrderService {
     return params;
   }
 
+  // =========================================================
+  // CRITICAL FIX: Robust Date Parsing for both Arrays and Strings
+  // =========================================================
   private parseDateToArray(dateInput: any): number[] {
+    // 1. If it is null or undefined
     if (!dateInput) return [0, 0, 0, 0, 0, 0];
 
+    // 2. If it's already an array (e.g. [2025, 12, 10, ...])
     if (Array.isArray(dateInput)) {
+      // Just return it, ensuring we have at least year/month/day
       return [
         dateInput[0] || 0,
         dateInput[1] || 0,
@@ -725,18 +857,19 @@ export class StoreOrderService {
       ];
     }
 
-    // String or timestamp
+    // 3. If it is a string or timestamp number
     try {
       const date = new Date(dateInput);
       
+      // Check if Date is invalid
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date:', dateInput);
+        console.warn('Invalid date received:', dateInput);
         return [0, 0, 0, 0, 0, 0];
       }
 
       return [
         date.getFullYear(),
-        date.getMonth() + 1,
+        date.getMonth() + 1, // Store as 1-based index to match standard array convention
         date.getDate(),
         date.getHours(),
         date.getMinutes(),
@@ -752,13 +885,13 @@ export class StoreOrderService {
     const createdDateArray = this.parseDateToArray(orderDTO.createdDate);
     const totalAmountNum = orderDTO.totalAmount || 0;
     
-    // Determine if online
+    // Determine if online (enhanced from Code B)
     let isOnline = orderDTO.isOnline === true;
     if (!isOnline && orderDTO.deliveryInfo) {
       isOnline = true;
     }
 
-    // Determine delivery status based on payment status
+    // Determine delivery status based on payment status (from Code B)
     let deliveryStatus = 'N/A';
     
     if (isOnline) {
@@ -769,6 +902,9 @@ export class StoreOrderService {
       if (orderDTO.deliveryStatus && orderDTO.deliveryStatus !== 'N/A') {
         // Use existing delivery status if available
         deliveryStatus = orderDTO.deliveryStatus;
+      } else if (orderDTO.diveryStatus && orderDTO.diveryStatus !== 'N/A') {
+        // Check alternate spelling from Code A
+        deliveryStatus = orderDTO.diveryStatus;
       } else if (isPaid) {
         // If paid but no delivery status, set to PENDING
         deliveryStatus = 'PENDING';
@@ -780,7 +916,7 @@ export class StoreOrderService {
 
     return {
       // FIXED: Use the database ID (number) cast to string if present, 
-      // otherwise fallback to orderNumber. This ensures updates target the correct PK.
+      // otherwise fallback to orderNumber. This ensures updates target the correct PK. (from Code B)
       id: (orderDTO.id) ? orderDTO.id.toString() : orderDTO.orderNumber,
       
       orderNumber: orderDTO.orderNumber, 
@@ -806,7 +942,7 @@ export class StoreOrderService {
       total: totalAmountNum,
       cart: [], 
       deliveryMethod: isOnline ? 'DELIVERY' : 'PICKUP',
-      updatedBy: orderDTO.updatedBy || 'System'
+      updatedBy: orderDTO.updatedBy || 'System' // From Code B
     };
   }
 
@@ -829,26 +965,38 @@ export class StoreOrderService {
       paymentReference: reference
     };
 
-    console.log('Creating payment record:', paymentData);
+    console.log('💳 Creating payment record with data:', JSON.stringify(paymentData, null, 2));
 
     return this.http.post<any>(
       this.getBaseApiUrl() + '/x/api/v2/pos/payments',
       paymentData,
       { headers: this.getHeaders() }
     ).pipe(
+      tap((response) => {
+        console.log('✅ Payment API raw response:', response);
+        console.log('Response type:', typeof response);
+        this.debugPaymentResponse(response);
+      }),
       map((response) => {
         const paymentId = this.extractIdFromResponse(response);
         
         if (!paymentId) {
-          throw new Error('Invalid payment response - no ID found');
+          console.error('❌ Could not extract payment ID from response:', response);
+          throw new Error('Invalid payment response format - no ID found');
         }
+        
+        console.log('✅ Extracted Payment ID:', paymentId);
         
         return {
           id: paymentId,
           originalResponse: response
         };
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ Payment record creation failed:', error);
+        console.error('Request payload was:', paymentData);
+        return this.handleError(error);
+      })
     );
   }
 
@@ -879,7 +1027,24 @@ export class StoreOrderService {
     );
   }
 
-  private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
+  private finalizeOrderCreation(orderData: StoreOrderPOST, cartItems?: Map<string, any>): Observable<any> {
+    console.log('🔍 Validating order data before finalization...');
+    
+    // Calculate taxes if cartItems are provided (from Code A)
+    let taxCalculation: TaxCalculation | undefined;
+    if (cartItems) {
+      const orderItemsForTax = orderData.orderItem.map(item => ({
+        ...item,
+        totalPrice: item.totalPrice
+      }));
+      taxCalculation = this.calculateTaxes(orderItemsForTax, cartItems);
+      
+      // Update order totals with tax
+      orderData.totalAmount = (taxCalculation.total + orderData.deliveryFee).toFixed(2);
+    }
+    
+    console.log('📊 Tax calculation:', taxCalculation);
+    
     if (!orderData.paymentId || orderData.paymentId === 0) {
       return throwError(() => 'Payment record must be created before order');
     }
@@ -891,22 +1056,38 @@ export class StoreOrderService {
       sanitizedOrderData.isOnline = true;
     }
 
-    console.log('🚀 Creating order:', sanitizedOrderData);
+    console.log('🚀 Sending final order data to API:', JSON.stringify(sanitizedOrderData, null, 2));
 
     return this.http.post<any>(
       this.getBaseApiUrl() + '/x/api/v2/pos/orders',
       sanitizedOrderData,
       { headers: this.getHeaders() }
     ).pipe(
-      tap((response) => {
-        console.log(' Order created:', response);
+      map((response) => {
+        console.log('✅ Order created successfully:', response);
+        
+        // 🔥 IMPORTANT: Use the backend-generated ID, not our local one (from Code A)
+        if (response && response.id) {
+          console.log('🎯 Using backend order ID:', response.id);
+          return {
+            ...response,
+            taxCalculation: taxCalculation, // Include tax calculation in response
+            useBackendId: true // Flag to indicate we're using backend ID
+          };
+        }
+        
+        return response;
       }),
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ Order creation API call failed:', error);
+        console.error('Request payload was:', sanitizedOrderData);
+        return this.handleError(error);
+      })
     );
   }
 
   private sanitizeOrderData(orderData: StoreOrderPOST): any {
-    return {
+    const sanitized = {
       id: 0,
       orderNumber: orderData.orderNumber,
       orderStatus: orderData.orderStatus,
@@ -936,8 +1117,28 @@ export class StoreOrderService {
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
       deliveryTypeId: orderData.deliveryTypeId && orderData.deliveryTypeId > 0 ? orderData.deliveryTypeId : null,
+      deliverTypeId: orderData.deliverTypeId && orderData.deliverTypeId > 0 ? orderData.deliverTypeId : null, // Keep both
       deliveryStatus: orderData.deliveryStatus || 'PENDING'
     };
+
+    // 🔥 CRITICAL VALIDATIONS from Code A
+    console.log('🔍 Sanitized order validation:', {
+      isOnline: sanitized.isOnline,
+      orderStatus: sanitized.orderStatus,
+      paymentId: sanitized.paymentId,
+      totalAmount: sanitized.totalAmount
+    });
+    
+    if (!sanitized.paymentId) {
+      console.error('❌ CRITICAL: paymentId is null in sanitized data!');
+      console.error('Original paymentId was:', orderData.paymentId);
+    }
+
+    if (!sanitized.isOnline && (sanitized.deliveryFee > 0 || sanitized.deliveryInfoId)) {
+      console.warn('⚠️ WARNING: isOnline flag is false but delivery info/fee present!');
+    }
+
+    return sanitized;
   }
 
   private extractIdFromResponse(response: any): number {
@@ -956,6 +1157,20 @@ export class StoreOrderService {
     return 0;
   }
 
+  private debugPaymentResponse(response: any): void {
+    console.log('🔍 DEBUG - Payment Response Analysis:');
+    console.log('Response:', response);
+    console.log('Type:', typeof response);
+    console.log('Is number:', typeof response === 'number');
+    console.log('Is object:', typeof response === 'object');
+    
+    if (typeof response === 'object') {
+      console.log('Keys:', Object.keys(response));
+      console.log('Has id property:', 'id' in response);
+      console.log('Has paymentId property:', 'paymentId' in response);
+    }
+  }
+
   private mapPaymentMethod(storeMethod: string): string {
     const methodMap: { [key: string]: string } = {
       'cash': 'CASH',
@@ -963,15 +1178,18 @@ export class StoreOrderService {
       'card': 'CARD',
       'mobile': 'MOBILE_MONEY'
     };
-    return methodMap[storeMethod] || 'CASH';
+    const mapped = methodMap[storeMethod] || 'CASH';
+    console.log(`Mapped payment method: ${storeMethod} -> ${mapped}`);
+    return mapped;
   }
 
   private handleError(error: HttpErrorResponse) {
     console.error('❌ API Error Details:', {
       status: error.status,
+      statusText: error.statusText,
       message: error.message,
-      url: error.url,
-      serverError: error.error // This contains the SQL exception details
+      error: error.error,
+      url: error.url
     });
     
     let errorMessage = 'An unknown error occurred!';
@@ -993,7 +1211,7 @@ export class StoreOrderService {
           errorMessage = 'The requested resource was not found.';
           break;
         case 500:
-          // Check for specific backend exception messages if exposed
+          // Check for specific backend exception messages if exposed (from Code B)
           if (error.error && error.error.exception === 'InvalidDataAccessResourceUsageException') {
              errorMessage = 'Database Schema Error: The server is trying to access a missing column/table.';
           } else {
@@ -1004,11 +1222,21 @@ export class StoreOrderService {
           errorMessage = 'Unable to connect to the server. Please check your internet connection.';
           break;
         default:
-          errorMessage = this.extractErrorMessage(error.error) || 'An unexpected error occurred.';
+          // Enhanced error messages from Code A
+          if (error.message?.includes('Payment record creation failed')) {
+            errorMessage = 'Payment processing failed. Please try a different payment method.';
+          } else if (error.message?.includes('Invalid payment response format')) {
+            errorMessage = 'Payment service returned an unexpected response. Please contact support.';
+          } else if (error.message?.includes('No payment keys available') || 
+                      error.message?.includes('Unable to retrieve payment key')) {
+            errorMessage = 'Payment service is currently unavailable. Please try another payment method.';
+          } else {
+            errorMessage = this.extractErrorMessage(error.error) || 'An unexpected error occurred. Please try again.';
+          }
       }
     }
     
-    console.error('📤 Throwing error message:', errorMessage);
+    console.error('📤 Throwing error:', errorMessage);
     return throwError(() => errorMessage);
   }
 

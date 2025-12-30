@@ -268,66 +268,116 @@
             }
           </div>
         } @else {
-          <!-- Products Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            @for (product of filteredProducts(); track product.id) {
-              <div 
-                class="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:shadow-lg duration-300 cursor-pointer group"
-                (click)="navigateToProductDetails(product.id)"
-              >
-                <!-- Product Image -->
-                <div class="relative h-48 bg-gray-100 overflow-hidden">
-                  <img 
-                    [src]="getProductImage(product) | async" 
-                    [alt]="product.name"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    (error)="handleImageError($event)"
-                  />
-                  
-                  <!-- Stock Badge -->
-                  @if (product.quantity === 0) {
-                    <div class="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      Out of stock
-                    </div>
-                  }
-                </div>
-
-                <!-- Product Info -->
-                <div class="p-4">
-                  <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-2">
-                    {{ product.name }}
-                  </h3>
-                  
-                  <p class="text-[#2E6276] font-semibold text-xl mb-3">
-                    {{ formatPrice(product.sellingPrice) }}
-                  </p>
-
-                  <!-- Stock Info -->
-                  <div class="flex items-center justify-between mb-4">
-                    @if (product.quantity > 0) {
-                      <span class="text-sm text-gray-600">
-                        {{ product.quantity }} in stock
-                      </span>
-                    } @else {
-                      <span class="text-sm text-red-600">Out of stock</span>
-                    }
-                  </div>
-
-                  <!-- Add to Cart Button -->
-                  <button 
-                    class="w-full py-3 bg-[#2EB270] hover:bg-[#239c5c] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    (click)="$event.stopPropagation(); addToCart(product)"
-                    [disabled]="product.quantity === 0"
-                  >
-                    <i class="fa-solid fa-cart-plus"></i>
-                    <span>Add to Cart</span>
-                  </button>
-                </div>
+     <!-- Products Grid -->
+<div class="container mx-auto px-4 py-6">
+  @if (filteredProducts().length === 0) {
+    <!-- No Results State -->
+    <div class="text-center py-12">
+      <i class="fa-solid fa-search text-5xl text-gray-300 mb-4"></i>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+      <p class="text-gray-600 mb-6">
+        @if (searchText()) {
+          No results found for "{{ searchText() }}". Try a different search term or clear filters.
+        } @else {
+          No products available in this category.
+        }
+      </p>
+      @if (hasActiveFilters() || searchText()) {
+        <button 
+          class="px-6 py-3 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors"
+          (click)="clearFilters(); searchText.set('')"
+        >
+          Clear Filters & Search
+        </button>
+      }
+    </div>
+  } @else {
+    <!-- Products Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      @for (product of filteredProducts(); track product.id) {
+        <div 
+          class="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:shadow-lg duration-300 cursor-pointer group"
+          (click)="navigateToProductDetails(product.id)"
+        >
+          <!-- Product Image -->
+          <div class="relative h-48 bg-gray-100 overflow-hidden">
+            <img 
+              [src]="getProductImage(product) | async" 
+              [alt]="product.name"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              (error)="handleImageError($event)"
+            />
+            
+            <!-- Discount Badge - Top Left -->
+            @if (hasDiscount(product)) {
+              <div class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+                🎉{{ getDiscountPercentage(product) }}% OFF
+              </div>
+            }
+            
+            <!-- Stock Badge - Top Right -->
+            @if (product.quantity === 0) {
+              <div class="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium z-10">
+                Out of stock
               </div>
             }
           </div>
-        }
-      </div>
+
+          <!-- Product Info -->
+          <div class="p-4">
+            <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-2">
+              {{ product.name }}
+            </h3>
+            
+            <!-- Price Display -->
+            <div class="flex flex-col gap-1 mb-3">
+              <!-- Current/New Price -->
+              <p class="text-customBlue font-semibold text-xl">
+                {{ formatPrice(getDiscountedPrice(product)) }}
+              </p>
+
+              <!-- Original Price with Strikethrough -->
+              @if (hasDiscount(product)) {
+                <div class="flex items-center gap-2">
+                  <p class="text-gray-500 text-sm line-through">
+                    {{ formatPrice(getCostPrice(product)) }}
+                  </p>
+                  <!-- Discount Percentage Badge inline -->
+                  <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">
+                    Save {{ getDiscountPercentage(product) }}%
+                  </span>
+                </div>
+              }
+            </div>
+
+            <!-- Stock Info -->
+            <div class="flex items-center justify-between mb-4">
+              @if (product.quantity > 0) {
+                <span class="text-sm text-gray-600">
+                  {{ product.quantity }} items left
+                </span>
+              } @else {
+                <span class="text-sm text-red-600">Out of stock</span>
+              }
+            </div>
+
+            <!-- Add to Cart Button -->
+            <button 
+              class="w-full py-3 bg-[#2EB270] hover:bg-[#239c5c] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              (click)="$event.stopPropagation(); addToCart(product)"
+              [disabled]="product.quantity === 0"
+            >
+              <i class="fa-solid fa-cart-plus"></i>
+              <span>Add to Cart</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+            }
+          </div>
     </main>
 
     <!-- Desktop Filters Sidebar -->
@@ -470,14 +520,22 @@
                   </div>
 
                   <!-- Product Details -->
-                  <div class="flex-1 min-w-0">
-                    <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
-                      {{ data.value.product.name }}
-                    </h4>
-                    <p class="text-lg text-gray-600 mt-1">
-                      {{ formatPrice(data.value.product.sellingPrice) }} each
-                    </p>
-                  </div>
+<div class="flex-1 min-w-0">
+  <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+    {{ data.value.product.name }}
+  </h4>
+  <div class="flex flex-col">
+    <p class="text-lg text-gray-800 font-medium">
+      {{ formatPrice(data.value.unitPrice) }} each
+    </p>
+    
+    @if (hasDiscount(data.value.product)) {
+      <p class="text-sm text-gray-500 line-through">
+        {{ formatPrice(getCostPrice(data.value.product)) }}
+      </p>
+    }
+  </div>
+</div>
 
                   <!-- Quantity Controls -->
                   <div class="flex items-center space-x-2">
@@ -569,14 +627,22 @@
                 </div>
 
                 <!-- Product Details -->
-                <div class="flex-1 min-w-0">
-                  <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
-                    {{ data.value.product.name }}
-                  </h4>
-                  <p class="text-lg text-gray-600 mt-1">
-                    {{ formatPrice(data.value.product.sellingPrice) }} each
-                  </p>
-                </div>
+<div class="flex-1 min-w-0">
+  <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+    {{ data.value.product.name }}
+  </h4>
+  <div class="flex flex-col">
+    <p class="text-lg text-gray-800 font-medium">
+      {{ formatPrice(data.value.unitPrice) }} each
+    </p>
+    
+    @if (hasDiscount(data.value.product)) {
+      <p class="text-sm text-gray-500 line-through">
+        {{ formatPrice(getCostPrice(data.value.product)) }}
+      </p>
+    }
+  </div>
+</div>
 
                 <!-- Quantity Controls -->
                 <div class="flex items-center space-x-4">

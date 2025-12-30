@@ -138,6 +138,7 @@ import { ReturnsRefundsComponent } from './ui/view/pos-store/returns-refunds/ret
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 import { EStoreOrdersListComponent } from './ui/view/sales/e-store-sales/estore-orders-list/estore-orders-list.component';
 import { WhatsappWidgetComponent } from './ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
+import { LocationPickingComponent } from './ui/view/pos-store/location-picking/location-picking.component';
 // import { CheckoutKitchenHeaderComponent } from './ui/view/checkout-kitchen-header/checkout-header.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
@@ -284,6 +285,7 @@ const dbConfig: DBConfig = {
     ReturnsRefundsComponent,
     EStoreSalesComponent,
     EStoreOrdersListComponent,
+    // LocationPickingComponent,
     // CheckoutKitchenHeaderComponent
     // WhatsappWidgetComponent,
     // CategoryProductsComponent,

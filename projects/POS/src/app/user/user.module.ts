@@ -1,3 +1,5 @@
+// user.module.ts - COMPLETE FIX
+
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
@@ -42,9 +44,6 @@ import { CartItemCardComponent } from '../ui/view/cart-item-card/cart-item-card.
 import { CashPaymentComponent } from '../ui/view/cash-payment/cash-payment.component';
 import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-kitchen.component';
 import { CheckoutOrdersComponent } from '../ui/view/checkout-orders/checkout-orders.component';
-// import { CloseRegisterModalComponent } from '../ui/view/close-register-modal/close-register-modal.component';
-// import { CloseRegisterComponent } from '../ui/view/close-register/close-register.component';
-// import { DeliveryModalComponent } from '../ui/view/delivery-modal/delivery-modal.component';
 import { NotesModalComponent } from '../ui/view/notes-modal/notes-modal.component';
 import { OpenRegisterComponent } from '../ui/view/open-register/open-register.component';
 import { OrderDetailComponent } from '../ui/view/order-detail/order-detail.component';
@@ -67,15 +66,13 @@ import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/pr
 import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
 import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
 import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
-// import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
-// import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
-// import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
+import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
+import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
 
 @NgModule({
   declarations: [
     CartItemCardComponent,
     CashPaymentComponent,
-      // CloseRegisterComponent,
     OpenRegisterComponent,
     OrderDetailComponent,
     OrderRefundComponent,
@@ -86,12 +83,10 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     EditProductComponent,
     CheckoutOrdersComponent,
     NotesModalComponent,
-      // DeliveryModalComponent,
     AllPaymentsModalComponent,
     CheckoutKitchenComponent,
     CheckoutHeaderComponent,
     AppResizeDirective,
-        // CloseRegisterModalComponent,
     PosStoreComponent,
     CheckoutKitchenHeaderComponent,
     KitchenOrderComponent,
@@ -102,9 +97,8 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     CategoryProductsComponent,
     WhatsappWidgetComponent,
     CheckoutKitchenHistoryComponent,
-    
-    // CheckoutKitchenHeaderComponent
-    // ProductVariantModalComponent,
+    OrderConfirmationComponent, 
+    LocationPickingComponent
   ],
   imports: [
     CommonModule,
@@ -149,7 +143,13 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     MenubarModule,
     TagModule,
   ],
-  exports: [CheckoutKitchenComponent, CheckoutHeaderComponent, CheckoutKitchenHeaderComponent],
+  exports: [
+    CheckoutKitchenComponent, 
+    CheckoutHeaderComponent, 
+    CheckoutKitchenHeaderComponent,
+    LocationPickingComponent
+    // OrderConfirmationComponent 
+  ],
   providers: [PosCheckoutPageComponent, DecimalPipe, TitleCasePipe, DatePipe],
 })
 export class UserModule {}

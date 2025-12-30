@@ -341,7 +341,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     return item.product.tax.rate;
   }
 
-  // Fixed: Added getDeliveryStatusClass method with proper type handling
+  //  Added getDeliveryStatusClass method with proper type handling
   getDeliveryStatusClass(status?: string): string {
     if (!status) return 'bg-gray-100 text-gray-800';
     
