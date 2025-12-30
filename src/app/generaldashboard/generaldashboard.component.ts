@@ -199,8 +199,8 @@ export class GeneraldashboardComponent implements OnInit {
           domain: userPrimaryData.domain || '',
           
           // Derived fields
-          employeeId: userPrimaryData.accountId ? `EMP-${userPrimaryData.accountId}` : 
-                     (userPrimaryData.id ? `EMP-${userPrimaryData.id}` : 'N/A'),
+          employeeId: userPrimaryData.accountId ? `${userPrimaryData.accountId}` : 
+                     (userPrimaryData.id ? `${userPrimaryData.id}` : 'N/A'),
           role: this.extractUserRole(userPrimaryData),
           roles: this.extractUserRoles(userPrimaryData),
           department: this.getDepartmentFromUserData(userPrimaryData),

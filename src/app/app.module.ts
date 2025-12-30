@@ -109,7 +109,8 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
       provide: JWT_OPTIONS,
       useValue: {}
     },
-    JwtHelperService
+    JwtHelperService,
+    DashboardOverviewComponent
   ],
   bootstrap: [AppComponent]
 })

@@ -8,31 +8,69 @@
     <div>
       <h1 class="text-2xl font-semibold text-gray-800">POS Dashboard</h1>
       <p class="text-sm text-gray-500 mt-1">
-        Welcome back!
+        Welcome back, {{ userInfo.name }}!
         <span *ngIf="branchInfo?.branchName" class="ml-2">| Branch: {{ branchInfo.branchName }}</span>
       </p>
       <p class="text-xs text-gray-400 mt-1">
-        User ID: {{ userId || 'Not logged in' }} | 
+        Username: {{ username || 'Not logged in' }} | 
         Last Login: {{ today | date:'medium' }}
       </p>
     </div>
 
     <div class="flex items-center gap-3">
-      <button 
-        *ngIf="hasPermission('export') && hasRealData"
-        class="px-3 py-2 bg-white border rounded shadow-sm text-sm hover:bg-gray-50 transition-colors"
-        (click)="exportData()"
-      >
-        Export
-      </button>
-      <button 
-        *ngIf="hasPermission('generate_reports')"
-        class="px-4 py-2 bg-customBlue text-white rounded shadow-sm text-sm hover:bg-customBlueHover transition-colors"
-        (click)="generateNewReport()"
-        [disabled]="isLoading"
-      >
-        {{ isLoading ? 'Loading...' : 'Refresh Data' }}
-      </button>
+      <!-- FILTER DROPDOWN -->
+      <div class="relative" *ngIf="hasPermission('generate_reports')">
+        <button 
+          class="px-4 py-2 bg-customBlue text-white rounded shadow-sm text-sm hover:bg-customBlueHover transition-colors flex items-center gap-2"
+          (click)="toggleFilterDropdown()"
+          [disabled]="isLoading"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          </svg>
+          {{ isLoading ? 'Loading...' : 'Filter' }}
+        </button>
+        
+        <!-- Filter Dropdown Menu -->
+        <div *ngIf="showFilterDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+          <div class="p-3">
+            <p class="text-xs font-medium text-gray-500 mb-2">Filter by Time Period</p>
+            <div class="space-y-1">
+              <button 
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                (click)="applyFilter('today')"
+              >
+                Today
+              </button>
+              <button 
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                (click)="applyFilter('week')"
+              >
+                This Week
+              </button>
+              <button 
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                (click)="applyFilter('month')"
+              >
+                This Month
+              </button>
+              <button 
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                (click)="applyFilter('year')"
+              >
+                This Year
+              </button>
+              <button 
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                (click)="applyFilter('30days')"
+              >
+                Last 30 Days
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <button 
         class="px-3 py-2 bg-gray-100 border rounded shadow-sm text-sm hover:bg-gray-200 transition-colors"
         (click)="refreshDashboard()"
@@ -55,7 +93,7 @@
   </div>
 
   <!-- Error message -->
-  <!-- <div *ngIf="reportError && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4">
+  <div *ngIf="reportError && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4">
     <div class="flex items-start">
       <svg class="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
@@ -67,7 +105,7 @@
         </button>
       </div>
     </div>
-  </div> -->
+  </div>
 
   <!-- Top metric cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" *ngIf="!isLoading">
@@ -126,81 +164,131 @@
       <span>•</span>
       <span>User ID: {{ userId || 'N/A' }}</span>
       <span>•</span>
-      <span>Data Source: {{ hasRealData ? 'Live API Data' : 'No Data Available' }}</span>
-      <span>•</span>
-      <span>Last Update: {{ today | date:'shortTime' }}</span>
+      <span>Filter: {{ currentFilterLabel }}</span>
     </div>
   </div>
 
-  <!-- Bar chart - Full width -->
-  <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200" *ngIf="!isLoading">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-md font-medium text-gray-700">
-        Sales Performance - {{ userInfo.name }}
-        <span class="text-sm text-gray-500 ml-2">(Last 30 Days)</span>
-      </h3>
-      <div class="text-sm text-gray-500">Cashier Specific</div>
-    </div>
+  <!-- Main Charts Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Bar chart - Daily Revenue -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-md font-medium text-gray-700">
+          Sales Performance - {{ userInfo.name }}
+          <span class="text-sm text-gray-500 ml-2">({{ currentFilterLabel }})</span>
+        </h3>
+        <div class="text-sm text-gray-500">Cashier Specific</div>
+      </div>
 
-    <div>
-      <apx-chart
-        [series]="barChartOptions.series || []"
-        [chart]="barChartOptions.chart || { type: 'bar', height: 320 }"
-        [xaxis]="barChartOptions.xaxis || {}"
-        [dataLabels]="barChartOptions.dataLabels || {}"
-        [stroke]="barChartOptions.stroke || {}"
-        [grid]="barChartOptions.grid || {}"
-        [tooltip]="barChartOptions.tooltip || {}"
-        [fill]="barChartOptions.fill || {}"
-      ></apx-chart>
-    </div>
-    
-    <div class="mt-4 text-xs text-gray-500 text-center">
-      {{ hasRealData ? 'Showing sales data for: ' + userInfo.employeeId : 'No sales data available for the selected period' }}
-    </div>
-  </div>
-
-  <!-- Pie chart - Full width -->
-  <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200" *ngIf="!isLoading">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-md font-medium text-gray-700">Category Breakdown</h3>
-      <div class="text-sm text-gray-500">Share</div>
-    </div>
-
-    <div>
-      <apx-chart
-        [series]="pieChartOptions.series || []"
-        [chart]="pieChartOptions.chart || { type: 'pie', height: 320 }"
-        [labels]="pieChartOptions.labels || []"
-        [responsive]="pieChartOptions.responsive || []"
-        [tooltip]="pieChartOptions.tooltip || {}"
-        [fill]="pieChartOptions.fill || {}"
-      ></apx-chart>
-    </div>
-    
-    <div class="mt-4 text-center">
-      <p class="text-xs text-gray-500">
-        {{ hasRealData ? 'Based on ' + metrics.transactions + ' transactions' : 'No category data available' }}
-      </p>
-    </div>
-  </div>
-
-  <!-- No data message - Only show if there's an error or no data after load -->
-  <div *ngIf="!isLoading && !hasRealData && !reportError" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-    <div class="flex items-center">
-      <svg class="w-6 h-6 text-yellow-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-      </svg>
       <div>
-        <h3 class="text-lg font-medium text-yellow-800">Waiting for Sales Data</h3>
-        <p class="text-yellow-700 mt-1">No sales transactions found for {{ userInfo.name }} in the last 30 days.</p>
-        <p class="text-yellow-600 text-sm mt-2">The graphs above will update automatically when sales data becomes available.</p>
+        <apx-chart
+          [series]="barChartOptions.series || []"
+          [chart]="barChartOptions.chart || { type: 'line', height: 320 }"
+          [xaxis]="barChartOptions.xaxis || {}"
+          [yaxis]="barChartOptions.yaxis || {}"
+          [dataLabels]="barChartOptions.dataLabels || {}"
+          [stroke]="barChartOptions.stroke || {}"
+          [grid]="barChartOptions.grid || {}"
+          [tooltip]="barChartOptions.tooltip || {}"
+          [fill]="barChartOptions.fill || {}"
+        ></apx-chart>
+      </div>
+      
+      <div class="mt-4 text-xs text-gray-500 text-center">
+        {{ hasRealData ? 'Showing sales data for: ' + userInfo.employeeId : 'No sales data available for the selected period' }}
+      </div>
+    </div>
+
+    <!-- Pie chart - Payment Method Breakdown -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-md font-medium text-gray-700">Payment Method Breakdown</h3>
+        <div class="text-sm text-gray-500">Share</div>
+      </div>
+
+      <div>
+        <apx-chart
+          [series]="pieChartOptions.series || []"
+          [chart]="pieChartOptions.chart || { type: 'pie', height: 320 }"
+          [labels]="pieChartOptions.labels || []"
+          [responsive]="pieChartOptions.responsive || []"
+          [tooltip]="pieChartOptions.tooltip || {}"
+          [fill]="pieChartOptions.fill || {}"
+          [legend]="pieChartOptions.legend || {}"
+        ></apx-chart>
+      </div>
+      
+      <div class="mt-4 text-center">
+        <p class="text-xs text-gray-500">
+          {{ hasRealData ? 'Based on ' + metrics.transactions + ' transactions' : 'No payment data available' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Top Selling Products Donut Chart -->
+   <!-- Top Selling Products Donut Chart -->
+<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-md font-medium text-gray-700">
+      Top Selling Products
+      <span class="text-sm text-gray-500 ml-2">({{ currentFilterLabel }})</span>
+    </h3>
+    <div class="text-sm text-gray-500">Revenue Generated</div>
+  </div>
+
+  <div>
+    <apx-chart
+      [series]="topProductsChartOptions.series || []"
+      [chart]="topProductsChartOptions.chart || { type: 'donut', height: 350 }"
+      [labels]="topProductsChartOptions.labels || []"
+      [plotOptions]="topProductsChartOptions.plotOptions || {}"
+      [dataLabels]="topProductsChartOptions.dataLabels || {}"
+      [tooltip]="topProductsChartOptions.tooltip || {}"
+      [responsive]="topProductsChartOptions.responsive || []"
+      [fill]="topProductsChartOptions.fill || {}"
+      [legend]="topProductsChartOptions.legend || {}"
+      [colors]="topProductsChartOptions.colors || []"
+    ></apx-chart>
+  </div>
+  
+  <div class="mt-4 text-xs text-gray-500 text-center">
+    {{ hasRealData && hasTopProductsData ? 'Showing top products by revenue' : 'No product data available' }}
+  </div>
+</div>
+    <!-- Revenue per Branch Line Chart -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-md font-medium text-gray-700">
+          Revenue per Branch
+          <span class="text-sm text-gray-500 ml-2">({{ currentFilterLabel }})</span>
+        </h3>
+        <div class="text-sm text-gray-500">Branch Performance</div>
+      </div>
+
+      <div>
+        <apx-chart
+          [series]="branchSalesChartOptions.series || []"
+          [chart]="branchSalesChartOptions.chart || { type: 'line', height: 350 }"
+          [xaxis]="branchSalesChartOptions.xaxis || {}"
+          [yaxis]="branchSalesChartOptions.yaxis || {}"
+          [dataLabels]="branchSalesChartOptions.dataLabels || {}"
+          [stroke]="branchSalesChartOptions.stroke || {}"
+          [grid]="branchSalesChartOptions.grid || {}"
+          [tooltip]="branchSalesChartOptions.tooltip || {}"
+          [fill]="branchSalesChartOptions.fill || {}"
+          [legend]="branchSalesChartOptions.legend || {}"
+          [colors]="branchSalesChartOptions.colors || []"
+        ></apx-chart>
+      </div>
+      
+      <div class="mt-4 text-xs text-gray-500 text-center">
+        {{ hasRealData && hasBranchSalesData ? 'Showing revenue for ' + branchSalesCount + ' branches' : 'No branch revenue data available' }}
       </div>
     </div>
   </div>
 
   <!-- Recent transactions table - Only show if we have data -->
-  <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200" *ngIf="!isLoading && hasRealData && recentTransactions.length > 0">
+  <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200" *ngIf="!isLoading && recentTransactions.length > 0">
     <div class="flex items-center justify-between mb-3">
       <div>
         <h3 class="text-md font-medium text-gray-700">Recent Transactions</h3>
@@ -219,20 +307,18 @@
       <table class="min-w-full text-left">
         <thead class="text-xs text-gray-500 uppercase bg-gray-50">
           <tr>
-            <th class="py-2 px-3">Reference</th>
             <th class="py-2 px-3">Date</th>
-            <th class="py-2 px-3">Customer</th>
             <th class="py-2 px-3">Amount</th>
+            <th class="py-2 px-3">Payment Method</th>
             <th class="py-2 px-3">Status</th>
             <th class="py-2 px-3">Action</th>
           </tr>
         </thead>
         <tbody class="text-sm text-gray-700">
           <tr *ngFor="let tx of recentTransactions" class="border-t hover:bg-gray-50 transition-colors">
-            <td class="py-3 px-3 font-medium">{{ tx.id }}</td>
             <td class="py-3 px-3">{{ tx.date }}</td>
-            <td class="py-3 px-3">{{ tx.customer }}</td>
             <td class="py-3 px-3 font-medium">{{ formatCurrency(tx.amount) }}</td>
+            <td class="py-3 px-3">{{ tx.paymentMethod }}</td>
             <td class="py-3 px-3">
               <span
                 class="px-2 py-1 rounded text-xs font-medium"
@@ -270,7 +356,7 @@
   </div>
 
   <!-- No transactions message -->
-  <div *ngIf="!isLoading && hasRealData && recentTransactions.length === 0" class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+  <div *ngIf="!isLoading && recentTransactions.length === 0" class="bg-gray-50 border border-gray-200 rounded-lg p-6">
     <div class="flex items-center">
       <svg class="w-6 h-6 text-gray-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
@@ -288,5 +374,118 @@
     [transaction]="selectedTransaction"
     (close)="closeDetailsModal()">
   </app-dashboardside-modal>
+
+  <!-- All Transactions Side Modal -->
+  <div *ngIf="showAllTransactionsModal" class="fixed inset-0 z-50 overflow-hidden">
+    <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeAllTransactionsModal()"></div>
+    
+    <div class="fixed inset-y-0 right-0 flex max-w-full pl-10">
+      <div class="relative w-screen max-w-4xl">
+        <div class="flex h-full flex-col bg-white shadow-xl">
+          <!-- Header -->
+          <div class="bg-gray-50 px-4 py-6 sm:px-6">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-lg font-medium text-gray-900">All Transactions</h2>
+                <p class="mt-1 text-sm text-gray-500">Showing all transactions for {{ userInfo.name }}</p>
+                <p class="mt-1 text-xs text-gray-400">Period: {{ currentFilterLabel }}</p>
+              </div>
+              <div class="ml-3 flex h-7 items-center">
+                <button 
+                  type="button"
+                  class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
+                  (click)="closeAllTransactionsModal()"
+                >
+                  <span class="sr-only">Close panel</span>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+              <!-- Summary -->
+              <div class="mb-6 grid grid-cols-3 gap-4">
+                <div class="bg-gray-50 p-4 rounded">
+                  <p class="text-sm text-gray-500">Total Transactions</p>
+                  <p class="text-xl font-bold text-gray-800">{{ allTransactions.length }}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded">
+                  <p class="text-sm text-gray-500">Total Amount</p>
+                  <p class="text-xl font-bold text-gray-800">{{ formatCurrency(allTransactionsTotal) }}</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded">
+                  <p class="text-sm text-gray-500">Period</p>
+                  <p class="text-xl font-bold text-gray-800">{{ currentFilterLabel }}</p>
+                </div>
+              </div>
+              
+              <!-- Transactions Table -->
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                      <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white">
+                    <tr *ngFor="let tx of allTransactions" class="hover:bg-gray-50">
+                      <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ tx.date }}</td>
+                      <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">{{ formatCurrency(tx.amount) }}</td>
+                      <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ tx.paymentMethod }}</td>
+                      <td class="whitespace-nowrap px-4 py-3">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full"
+                          [ngClass]="{
+                            'bg-green-100 text-green-800': tx.status === 'Completed',
+                            'bg-yellow-100 text-yellow-800': tx.status === 'Pending',
+                            'bg-red-100 text-red-800': tx.status === 'Refunded'
+                          }">
+                          {{ tx.status }}
+                        </span>
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3 text-sm">
+                        <button 
+                          class="text-blue-600 hover:text-blue-900"
+                          (click)="openTransactionInModal(tx)"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- No transactions -->
+                <div *ngIf="allTransactions.length === 0" class="text-center py-8">
+                  <p class="text-gray-500">No transactions found for the selected period.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div class="border-t border-gray-200 px-4 py-4 sm:px-6">
+            <div class="flex justify-between">
+              <button 
+                type="button"
+                class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none"
+                (click)="closeAllTransactionsModal()"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div>

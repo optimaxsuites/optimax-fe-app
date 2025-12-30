@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
+import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
 // import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
-
+// import { loadSalesData } from '../app/dashboard-overview/dashboard-overview.component'
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -11,7 +12,7 @@ export class AppComponent {
   title = 'erp-dashboard';
 
 
- constructor (private authenticationService: AuthenticationService,
+ constructor (private authenticationService: AuthenticationService, private dashboardOverview: DashboardOverviewComponent
   ) {
     this.userLoginAction();
   }
@@ -22,7 +23,7 @@ export class AppComponent {
       username: 'damilola',
       password: '123456',
       project: 'ERP',
-      apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',
+      apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
     };
 
     // if (!loginDetails.username || !loginDetails.password) {
@@ -76,6 +77,9 @@ export class AppComponent {
     sessionStorage['userRegData'] = JSON.stringify(data);
 
     this.getUserBranchInfo(data);
+    this.dashboardOverview.loadUserFromSessionStorage()
+
+    this.dashboardOverview.loadSalesData()
 
 
 //  this.authenticationService.getUserApplicationRole(data.id).subscribe({
@@ -122,4 +126,6 @@ export class AppComponent {
       }
     );
   }
+
+  
 }
