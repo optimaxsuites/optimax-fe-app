@@ -113,7 +113,7 @@ const routes: Routes = [
     {
     path: 'optimerce',
     component: UserComponent,
-    canActivate: [AuthGuard],
+    // canActivate: [AuthGuard],
     children: [
       {
         path: '',
