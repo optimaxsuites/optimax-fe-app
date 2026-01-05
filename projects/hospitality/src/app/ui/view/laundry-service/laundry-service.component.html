@@ -1,0 +1,807 @@
+<div class="container mx-auto p-4">
+  <!-- Header -->
+  <div
+    class="h-40 bg-gradient-to-r from-blue-900 to-emerald-800 text-white p-6 rounded-t-xl"
+  >
+    <h1 class="text-3xl font-bold">Laundry Service</h1>
+    <p class="mt-2">Professional laundry services for guests</p>
+  </div>
+
+  <!-- Main Content -->
+  <div class="bg-white shadow-lg rounded-b-xl overflow-hidden">
+    <!-- Tabs Navigation -->
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex">
+        <button
+          (click)="activeView = 'laundry'"
+          [class]="
+            activeView === 'laundry'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          "
+          class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
+        >
+          Laundry Service
+        </button>
+        <button
+          (click)="activeView = 'orders'"
+          [class]="
+            activeView === 'orders'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          "
+          class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
+        >
+          Orders
+        </button>
+      </nav>
+    </div>
+
+    <!-- Laundry Tab Content -->
+    <div *ngIf="activeView === 'laundry'" class="p-6">
+      <form (ngSubmit)="submitOrder()" #laundryForm="ngForm">
+        <!-- Customer Information Section -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+          <h2 class="text-lg font-semibold mb-4">Customer Information</h2>
+
+          <!-- Customer Type Toggle -->
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2"
+              >Customer Type</label
+            >
+            <div class="flex items-center">
+              <span class="mr-3 text-sm font-medium text-gray-700">Guest</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="isExternalCustomer"
+                  name="isExternalCustomer"
+                  (change)="toggleCustomerType()"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"
+                ></div>
+              </label>
+              <span class="ml-3 text-sm font-medium text-gray-700"
+                >External</span
+              >
+            </div>
+          </div>
+
+          <!-- Guest Selection -->
+          <div *ngIf="!isExternalCustomer" class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2"
+              >Select Guest</label
+            >
+            <ng-select
+              [(ngModel)]="selectedGuest"
+              name="selectedGuest"
+              [items]="occupiedRooms"
+              bindLabel="guestDisplay"
+              bindValue="number"
+              placeholder="Select a guest"
+              class="w-1/3 border-gray-300 rounded-md"
+              required
+            >
+              <ng-template ng-label-tmp let-item="item">
+                Room {{ item.number }} - {{ item.guest?.firstName }}
+                {{ item.guest?.lastName }}
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                Room {{ item.number }} - {{ item.guest?.firstName }}
+                {{ item.guest?.lastName }}
+              </ng-template>
+            </ng-select>
+          </div>
+
+          <!-- External Customer Form -->
+          <div
+            *ngIf="isExternalCustomer"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <div>
+              <label class="block text-gray-700 font-medium mb-1"
+                >Customer Name:</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="externalCustomer.name"
+                name="customerName"
+                placeholder="Customer Name"
+                class="w-1/2 p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1"
+                >Phone Number:</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="externalCustomer.phone"
+                name="customerPhone"
+                placeholder="Phone Number"
+                class="w-1/2 p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Laundry Items Section - Todo-style approach -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-4">Add Laundry Items</h2>
+
+          <div class="bg-gray-50 p-4 rounded-lg mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+              <!-- Item Name -->
+              <div class="md:col-span-4">
+                <label class="block text-gray-700 font-medium mb-1"
+                  >Item Name:</label
+                >
+
+                <ng-select
+                  [items]="itemOptions"
+                  name="itemName"
+                  bindLabel="label"
+                  bindValue="value"
+                  [(ngModel)]="newOrderItem.name"
+                  [multiple]="true"
+                  placeholder="Select Item(s)"
+                  [closeOnSelect]="false"
+                >
+                </ng-select>
+              </div>
+
+              <!-- Item Price -->
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-1"
+                  >Price (₦):</label
+                >
+                <input
+                  type="number"
+                  [(ngModel)]="newOrderItem.price"
+                  name="itemPrice"
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  class="w-full p-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+
+              <!-- Item Quantity -->
+              <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-1"
+                  >Quantity:</label
+                >
+                <div class="flex">
+                  <button
+                    type="button"
+                    (click)="
+                      newOrderItem.quantity = Math.max(
+                        1,
+                        newOrderItem.quantity - 1
+                      )
+                    "
+                    class="px-3 py-2 bg-gray-200 text-gray-700 rounded-l-md hover:bg-gray-300"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    [(ngModel)]="newOrderItem.quantity"
+                    name="itemQuantity"
+                    min="1"
+                    class="w-16 text-center border-y border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    (click)="newOrderItem.quantity = newOrderItem.quantity + 1"
+                    class="px-3 py-2 bg-gray-200 text-gray-700 rounded-r-md hover:bg-gray-300"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div class="md:col-span-12">
+                <label class="block text-gray-700 font-medium mb-1"
+                  >Description:</label
+                >
+                <textarea
+                  [(ngModel)]="newOrderItem.description"
+                  name="itemDescription"
+                  class="w-[50%] p-2 border border-gray-300 rounded-md"
+                  rows="2"
+                  placeholder="Item description"
+                ></textarea>
+              </div>
+
+              <!-- Add Button -->
+              <div class="md:col-span-4 flex items-end">
+                <button
+                  type="button"
+                  (click)="addCustomItemToOrder()"
+                  [disabled]="!isCustomItemValid()"
+                  [class]="
+                    isCustomItemValid()
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-gray-400 cursor-not-allowed'
+                  "
+                  class="px-4 py-2 text-white font-medium rounded-md transition-colors w-[50%]"
+                >
+                  Add Item
+                </button>
+              </div>
+
+              <!-- Item Description -->
+            </div>
+          </div>
+
+          <!-- Selected Items Display -->
+          <div
+            *ngIf="hasItems()"
+            class="bg-white border border-gray-200 rounded-lg p-4"
+          >
+            <h3 class="font-medium mb-3">Selected Items:</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-600 text-sm">
+                    <th class="py-2 px-3 text-left">Item</th>
+                    <th class="py-2 px-3 text-center">Qty</th>
+                    <th class="py-2 px-3 text-right">Price</th>
+                    <th class="py-2 px-3 text-right">Total</th>
+                    <th class="py-2 px-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of selectedItems"
+                    class="border-b border-gray-100"
+                  >
+                    <td class="py-2 px-3">
+                      <div class="font-medium">{{ item.name }}</div>
+                      <div
+                        *ngIf="item.description"
+                        class="text-xs text-gray-500"
+                      >
+                        Note: {{ item.description }}
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 text-center">
+                      <div class="flex items-center justify-center">
+                        <button
+                          type="button"
+                          (click)="updateSelectedItemQuantity(item.id, -1)"
+                          class="px-2 text-gray-500 hover:text-gray-700"
+                        >
+                          -
+                        </button>
+                        <span class="mx-2">{{ item.quantity }}</span>
+                        <button
+                          type="button"
+                          (click)="updateSelectedItemQuantity(item.id, 1)"
+                          class="px-2 text-gray-500 hover:text-gray-700"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 text-right">₦ {{ item.price }}</td>
+                    <td class="py-2 px-3 text-right">
+                      ₦ {{ item.price * item.quantity }}
+                    </td>
+                    <td class="py-2 px-3 text-center">
+                      <button
+                        type="button"
+                        (click)="removeSelectedItem(item.id)"
+                        class="text-red-500 hover:text-red-700"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Summary Section -->
+        <div class="mb-6 bg-gray-50 p-4 rounded-lg" *ngIf="hasItems()">
+          <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+
+          <!-- Cost Summary -->
+          <div class="mt-4">
+            <div class="flex justify-between py-1">
+              <span>Subtotal</span>
+              <span>₦{{ getSubtotal() }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span>Tax ({{ taxRate * 100 }}%)</span>
+              <span>₦{{ getTaxAmount() }}</span>
+            </div>
+            <div class="flex justify-between py-1 font-bold">
+              <span>Total</span>
+              <span>₦{{ getTotal() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Details Section -->
+        <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold mb-4">Order Details</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Pickup Date -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-1"
+                >Pickup Date:</label
+              >
+              <input
+                type="datetime-local"
+                [(ngModel)]="orderDetails.pickupDate"
+                name="pickupDate"
+                class="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+
+            <!-- Estimated Delivery -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-1"
+                >Estimated Delivery:</label
+              >
+              <input
+                type="datetime-local"
+                [ngModel]="
+                  getEstimatedDeliveryDate() | date : 'yyyy-MM-ddTHH:mm'
+                "
+                name="deliveryDate"
+                class="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
+                disabled
+              />
+            </div>
+
+            <!-- Payment Method -->
+            <div class="md:col-span-2">
+              <label class="block text-gray-700 font-medium mb-1"
+                >Payment Method:</label
+              >
+              <div class="flex flex-wrap gap-3">
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    [(ngModel)]="orderDetails.paymentMethod"
+                    name="paymentMethod"
+                    value="room-charge"
+                    class="mr-2"
+                    [disabled]="isExternalCustomer"
+                  />
+                  <span>Charge to Room</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    [(ngModel)]="orderDetails.paymentMethod"
+                    name="paymentMethod"
+                    value="cash"
+                    class="mr-2"
+                  />
+                  <span>Cash</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    [(ngModel)]="orderDetails.paymentMethod"
+                    name="paymentMethod"
+                    value="credit-card"
+                    class="mr-2"
+                  />
+                  <span>Credit Card</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="md:col-span-2">
+              <label class="block text-gray-700 font-medium mb-1">Notes:</label>
+              <textarea
+                [(ngModel)]="orderDetails.notes"
+                name="notes"
+                class="w-[50%] p-2 border border-gray-300 rounded-md"
+                rows="3"
+                placeholder="Any additional notes or requests"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            [disabled]="!isFormValid()"
+            [class]="
+              isFormValid()
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-gray-400 cursor-not-allowed'
+            "
+            class="px-6 py-2 text-white font-medium rounded-md transition-colors"
+          >
+            Submit Order
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Orders Tab Content -->
+    <div *ngIf="activeView === 'orders'" class="p-6">
+      <!-- Order Tabs -->
+      <div class="mb-6 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-6">
+          <button
+            *ngFor="let tab of orderTabs"
+            (click)="setActiveTab(tab.id)"
+            [class]="
+              activeTab === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            "
+            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+          >
+            {{ tab.name }}
+          </button>
+        </nav>
+      </div>
+
+      <!-- Orders List -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white">
+          <thead>
+            <tr
+              class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal"
+            >
+              <th class="py-3 px-6 text-left">Order ID</th>
+              <th class="py-3 px-6 text-left">Customer</th>
+              <th class="py-3 px-6 text-center">Date</th>
+              <th class="py-3 px-6 text-right">Amount</th>
+              <th class="py-3 px-6 text-center">Status</th>
+              <th class="py-3 px-6 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600 text-sm">
+            <tr
+              *ngFor="let order of filteredOrders"
+              class="border-b border-gray-200 hover:bg-gray-50"
+              (click)="showDetails(order)"
+            >
+              <td class="py-3 px-6 text-left">
+                <span class="font-medium">{{ order.id }}</span>
+              </td>
+              <td class="py-3 px-6 text-left">
+                <div *ngIf="order.roomNumber">
+                  <span class="font-medium">Room {{ order.roomNumber }}</span>
+                  <div class="text-xs text-gray-500">
+                    {{ getGuestNameForRoom(order.roomNumber) }}
+                  </div>
+                </div>
+                <div *ngIf="order.externalCustomer">
+                  <span class="font-medium">{{
+                    order.externalCustomer.name
+                  }}</span>
+                  <div
+                    *ngIf="order.externalCustomer.phone"
+                    class="text-xs text-gray-500"
+                  >
+                    {{ order.externalCustomer.phone }}
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-6 text-center">
+                <div>{{ order.orderDate | date : "short" }}</div>
+                <div class="text-xs text-gray-500">
+                  Due: {{ order.deliveryDate | date : "short" }}
+                </div>
+              </td>
+              <td class="py-3 px-6 text-right">
+                <span class="font-medium">{{
+                  order.totalAmount | currency : "₦" : "symbol-narrow"
+                }}</span>
+              </td>
+              <td class="py-3 px-6 text-center">
+                <span
+                  [class]="getStatusClass(order.status)"
+                  class="py-1 px-3 rounded-full text-xs"
+                >
+                  {{ order.status | titlecase }}
+                </span>
+              </td>
+              <td class="py-3 px-6 text-center">
+                <div class="flex item-center justify-center space-x-2">
+                  <button
+                    *ngIf="order.status === 'pending'"
+                    (click)="updateOrderStatus(order.id, 'processing')"
+                    class="text-xs bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600"
+                  >
+                    Process
+                  </button>
+                  <button
+                    *ngIf="order.status === 'processing'"
+                    (click)="updateOrderStatus(order.id, 'completed')"
+                    class="text-xs bg-green-500 text-white py-1 px-2 rounded hover:bg-green-600"
+                  >
+                    Complete
+                  </button>
+                  <button
+                    *ngIf="order.status === 'pending'"
+                    (click)="updateOrderStatus(order.id, 'cancelled')"
+                    class="text-xs bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    (click)="printReceipt(order)"
+                    class="text-xs bg-gray-500 text-white py-1 px-2 rounded hover:bg-gray-600"
+                  >
+                    Receipt
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Order Details Modal -->
+<div *ngIf="showDetailsModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div
+    class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+  >
+    <!-- Background overlay -->
+    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+      <div
+        class="absolute inset-0 bg-gray-500 opacity-75"
+        (click)="closeModal()"
+      ></div>
+    </div>
+
+    <!-- Modal content -->
+    <div
+      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full"
+    >
+      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="sm:flex sm:items-start">
+          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Order #{{ selectedOrderDetails?.id }}
+              </h3>
+              <button
+                type="button"
+                (click)="closeModal()"
+                class="text-gray-400 hover:text-gray-500"
+              >
+                <span class="sr-only">Close</span>
+                <svg
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Customer Information -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-700 mb-3">
+                  Customer Information
+                </h4>
+                <div *ngIf="selectedOrderDetails?.roomNumber">
+                  <p class="text-sm">
+                    <span class="font-medium">Room:</span>
+                    {{ selectedOrderDetails?.roomNumber }}
+                  </p>
+                  <p class="text-sm">
+                    <span class="font-medium">Guest:</span>
+                    <!-- {{
+                      selectedOrderDetails?.roomNumber
+                        ? 
+                        : ""
+                    }} -->
+                  </p>
+                </div>
+                <div *ngIf="selectedOrderDetails?.externalCustomer">
+                  <p class="text-sm">
+                    <span class="font-medium">Name:</span>
+                    {{ selectedOrderDetails?.externalCustomer?.name }}
+                  </p>
+                  <p
+                    *ngIf="selectedOrderDetails?.externalCustomer?.phone"
+                    class="text-sm"
+                  >
+                    <span class="font-medium">Phone:</span>
+                    {{ selectedOrderDetails?.externalCustomer?.phone }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Order Information -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-700 mb-3">
+                  Order Information
+                </h4>
+                <p class="text-sm">
+                  <span class="font-medium">Status:</span>
+                  <span
+                    [class]="getStatusClass(selectedOrderDetails?.status || '')"
+                    class="px-2 py-1 rounded-full text-xs"
+                  >
+                    {{ selectedOrderDetails?.status | titlecase }}
+                  </span>
+                </p>
+                <p class="text-sm">
+                  <span class="font-medium">Order Date:</span>
+                  {{ selectedOrderDetails?.orderDate | date : "medium" }}
+                </p>
+                <p class="text-sm">
+                  <span class="font-medium">Pickup Date:</span>
+                  {{ selectedOrderDetails?.pickupDate | date : "medium" }}
+                </p>
+                <p class="text-sm">
+                  <span class="font-medium">Delivery Date:</span>
+                  {{ selectedOrderDetails?.deliveryDate | date : "medium" }}
+                </p>
+                <p class="text-sm">
+                  <span class="font-medium">Payment:</span>
+                  {{ selectedOrderDetails?.paymentMethod | titlecase }} ({{
+                    selectedOrderDetails?.paymentStatus | titlecase
+                  }})
+                </p>
+              </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="mt-6">
+              <h4 class="font-medium text-gray-700 mb-3">Order Items</h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Item
+                      </th>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Qty
+                      </th>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Price
+                      </th>
+                      <th
+                        scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr *ngFor="let item of selectedOrderDetails?.items">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">
+                          {{ item.name }}
+                        </div>
+                        <div
+                          *ngIf="item.description"
+                          class="text-sm text-gray-500"
+                        >
+                          {{ item.description }}
+                        </div>
+                      </td>
+                      <td
+                        class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500"
+                      >
+                        {{ item.quantity }}
+                      </td>
+                      <td
+                        class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500"
+                      >
+                        ₦ {{ item.price }}
+                      </td>
+                      <td
+                        class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500"
+                      >
+                        ₦{{ item.price * item.quantity }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-700 mb-3">Order Summary</h4>
+              <div class="flex justify-between py-1">
+                <span class="text-sm">Subtotal:</span>
+                <span class="text-sm"
+                  >₦{{ selectedOrderDetails?.subtotal }}</span
+                >
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-sm">Tax ({{ taxRate * 100 }}%):</span>
+                <span class="text-sm">₦{{ selectedOrderDetails?.tax }}</span>
+              </div>
+              <div class="flex justify-between py-1 font-bold">
+                <span class="text-sm">Total:</span>
+                <span class="text-sm"
+                  >₦{{ selectedOrderDetails?.totalAmount }}</span
+                >
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div *ngIf="selectedOrderDetails?.notes" class="mt-4">
+              <h4 class="font-medium text-gray-700 mb-2">
+                Special Instructions
+              </h4>
+              <p class="text-sm text-gray-600 whitespace-pre-line">
+                {{ selectedOrderDetails?.notes }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+        <button
+          type="button"
+          (click)="printReceipt(selectedOrderDetails!)"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+        >
+          Print Receipt
+        </button>
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

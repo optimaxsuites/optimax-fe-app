@@ -1,0 +1,88 @@
+<div  class="w-full bg-white/90 my-3 rounded-2xl  p-8 text-gray-800 table-item">
+    <h2 class="font-bold text-gray-700">Apply For Leave</h2>
+    <hr>
+
+    <div class=" flex gap-28 mb-5 items-center">
+        <div class="flex gap-2 justify-center flex-col text-center">
+            <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
+            <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
+          </div>
+
+          <div class="flex gap-12 items-center">
+            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+                <p>Available days left</p>
+                <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
+              </div>
+    
+              <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+                <p>Days used</p>
+                <p class="text-[24px] pt-4 font-semibold">11.00 day(s)</p>
+              </div>
+    
+              <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+                <p>Total days accrued</p>
+                <p class="text-[24px] pt-4 font-semibold">21.00 day(s)</p>
+              </div>
+          </div>
+
+        
+    </div>
+
+    <hr>
+    <div class="my-5 justify-between gap-6 flex w-full">
+    <div class="w-[58%] flex flex-col gap-4">
+        <div class="flex w-full items-center gap-4">
+            <div class="flex flex-col w-1/2">
+             <label for="from">From*</label>
+             <input type="date" name="from" id="from" class="editInput" [(ngModel)]="fromDate">
+             
+            </div>
+            <div class="flex flex-col w-1/2">
+                <label for="to">To*</label>
+                <input type="date" name="to" id="to" class="editInput" [(ngModel)]="toDate">
+                
+               </div>
+          </div>
+
+          
+        
+          <div>
+            <label>Comments</label>
+            <textarea name="comment" id="comment" class="w-full rounded-xl outline-none bg-transparent p-3 border border-blak" placeholder="Enter comment here " rows="5" [(ngModel)]="comment"></textarea>
+          </div>
+    </div>
+    <div class="w-[38%] flex gap-4 flex-col">
+        <div>
+            <label>Leave Type*</label>
+            <div class="w-full ">
+                <ng-select 
+                  [items]="leaveTypes"
+                  bindLabel="position"
+                  [multiple]="false"
+                  placeholder="Select leave type"
+                  [(ngModel)]="selectedLeaveType"
+                  class="custom-ng-select  h-full"
+                 >
+                </ng-select>
+              </div>
+            </div>
+
+            <div>
+                <p class="font-semibold text-gray-700 outline-none mb-2">Attachment</p>
+
+                <label class="cursor-pointer text-white bg-customBlue py-3 px-4 rounded-xl hover:bg-customBlueHover" for="attachment">  <i class="pi pi-upload resume me-2  text-2xl"></i> {{docUploadStatus}}</label>
+                <input name="attachment" id="attachment" class="w-full rounded-xl outline-none bg-transparent p-3 border border-blak" type="file" [(ngModel)]="attachment"  (change)="onFileSelected($event)" hidden/>
+              </div>
+    </div>
+    
+    </div>
+
+    <div class="flex items-center justify-end ">
+        <button class=" font-bold bg-customBlue hover:bg-customBlueHover text-white rounded-xl p-4" (click)="assignLeave()">
+        Apply
+    
+        </button>
+      </div>
+</div>
+
+<p-toast></p-toast>
