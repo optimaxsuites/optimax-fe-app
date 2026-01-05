@@ -238,7 +238,7 @@ export class MenuItemsService {
           description: 'View and manage sales records, transactions, and revenue data.'
         },
         {
-          label: 'eCommerce Sales',
+          label: 'Optimerce Sales',
           code: 'POS_ESALES',
           route: this.navigationLink.getLink('esalesLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -290,7 +290,7 @@ export class MenuItemsService {
           isNotSidebarItem: true 
         },
         {
-          label: 'eCommerce',
+          label: 'Optimerce',
           code: 'POS_STORE',
           route: this.navigationLink.getLink('storeLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
