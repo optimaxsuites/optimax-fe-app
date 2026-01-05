@@ -780,7 +780,7 @@ navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     // Use the correct route path based on your routing configuration
-    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
+    this.router.navigate(['optimerce', currentUuid, 'checkout']);
   } else {
     console.error('Store UUID not found');
     this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');
@@ -804,7 +804,7 @@ navigateToCheckout(): void {
   //   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   //   if (currentUuid) {
   //     this.router.navigate(
-  //       ['user/checkout/store', currentUuid, 'category', category.toLowerCase()],
+  //       ['optimerce', currentUuid, 'category', category.toLowerCase()],
   //       {
   //         queryParams: {
   //           branch: this.selectedBranch()?.id || '',
@@ -879,7 +879,7 @@ navigateToCheckout(): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid && searchTerm.trim()) {
       this.router.navigate(
-        ['user/checkout/store', currentUuid, 'category', 'search-results'],
+        ['optimerce', currentUuid, 'category', 'search-results'],
         {
           queryParams: { search: searchTerm.trim() },
         }

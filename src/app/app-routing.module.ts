@@ -110,6 +110,19 @@ const routes: Routes = [
       },
     ],
   },
+    {
+    path: 'optimerce',
+    component: UserComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: '',
+        loadChildren: () => import('../../projects/POS/src/app/optimerce/optimerce.module').then(m => m.OptimerceModule),
+        canActivate: [UuidGuard]
+
+      }
+    ],
+  },
 
   {
     path: 'admin',

@@ -312,7 +312,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   navigateToProductDetails(productId: number): void {
     console.log('Navigating to product ID:', productId);
     this.router.navigate(
-      ['/user/checkout/store', this.storeUuid, 'product-details', productId]
+      ['/optimerce', this.storeUuid, 'product-details', productId]
     ).then(success => {
       if (!success) {
         console.error('Navigation failed for product ID:', productId);
@@ -513,7 +513,7 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   navigateToCheckout(): void {
     this.isCartOpen = false;
     this.isCartSidebarVisible = false;
-    this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
+    this.router.navigate(['optimerce', this.storeUuid, 'checkout']);
   }
 
   // Helper methods with null safety
@@ -816,14 +816,14 @@ export class ProductDetailsComponent implements OnInit, OnDestroy {
   navigateToAllProducts(): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/user/checkout/store', currentUuid]);
+      this.router.navigate(['/optimerce', currentUuid]);
     }
   }
 
   navigateToCategoryPage(categoryName: string): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/user/checkout/store', currentUuid, 'category', categoryName.toLowerCase()]);
+      this.router.navigate(['/optimerce', currentUuid, 'category', categoryName.toLowerCase()]);
     }
   }
 

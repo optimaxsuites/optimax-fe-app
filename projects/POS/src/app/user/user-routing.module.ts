@@ -126,40 +126,40 @@ const routes: Routes = [
   //   ],
   // },
 
-{
-  path: 'store/:uuid',
-  children: [
-    {
-      path: '',
-      component: PosStoreComponent,
-    },
-    {
-      path: 'checkout',
-      component: StoreCheckoutComponent,
-    },
-    {
-      path: 'order-confirmation/:id',
-      component: OrderConfirmationComponent,
-    },
-    {
-      path: 'product-details/:id',
-      component: ProductDetailsComponent,
-      runGuardsAndResolvers: 'paramsChange' 
-    },
-    {
-      path: 'order-history',
-      component: OrderHistoryComponent
-    },
-    {
-      path: 'category/:categoryName',
-      component: CategoryProductsComponent,
-    },
-  { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
-    { path: 'verify-required', component: VerificationRequiredComponent },
-  { path: 'verify-email', component: EmailVerificationComponent },
-  { path: 'return-refund', component: ReturnsRefundsComponent}
-  ]
-}
+// {
+//   path: 'optimmerce/:uuid',
+//   children: [
+//     {
+//       path: '',
+//       component: PosStoreComponent,
+//     },
+//     {
+//       path: 'checkout',
+//       component: StoreCheckoutComponent,
+//     },
+//     {
+//       path: 'order-confirmation/:id',
+//       component: OrderConfirmationComponent,
+//     },
+//     {
+//       path: 'product-details/:id',
+//       component: ProductDetailsComponent,
+//       runGuardsAndResolvers: 'paramsChange' 
+//     },
+//     {
+//       path: 'order-history',
+//       component: OrderHistoryComponent
+//     },
+//     {
+//       path: 'category/:categoryName',
+//       component: CategoryProductsComponent,
+//     },
+//   { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
+//     { path: 'verify-required', component: VerificationRequiredComponent },
+//   { path: 'verify-email', component: EmailVerificationComponent },
+//   { path: 'return-refund', component: ReturnsRefundsComponent}
+//   ]
+// }
 ];
 
 @NgModule({

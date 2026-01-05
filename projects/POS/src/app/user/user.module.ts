@@ -87,18 +87,18 @@ import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/
     CheckoutKitchenComponent,
     CheckoutHeaderComponent,
     AppResizeDirective,
-    PosStoreComponent,
+    // PosStoreComponent,
     CheckoutKitchenHeaderComponent,
     KitchenOrderComponent,
-    StoreHeaderComponent,
-    AuthModalComponent,
-    StoreCheckoutComponent,
-    ProductDetailsComponent,
-    CategoryProductsComponent,
-    WhatsappWidgetComponent,
+    // StoreHeaderComponent,
+    // AuthModalComponent,
+    // StoreCheckoutComponent,
+    // ProductDetailsComponent,
+    // CategoryProductsComponent,
+    // WhatsappWidgetComponent,
     CheckoutKitchenHistoryComponent,
-    OrderConfirmationComponent, 
-    LocationPickingComponent
+    // OrderConfirmationComponent, 
+    // LocationPickingComponent
   ],
   imports: [
     CommonModule,
@@ -147,7 +147,7 @@ import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/
     CheckoutKitchenComponent, 
     CheckoutHeaderComponent, 
     CheckoutKitchenHeaderComponent,
-    LocationPickingComponent
+    // LocationPickingComponent
     // OrderConfirmationComponent 
   ],
   providers: [PosCheckoutPageComponent, DecimalPipe, TitleCasePipe, DatePipe],

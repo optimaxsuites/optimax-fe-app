@@ -1056,7 +1056,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
 
     // Navigate to confirmation
     this.router.navigate(
-      ['user/checkout/store', currentUuid, 'order-confirmation', backendOrderId],
+      ['optimerce', currentUuid, 'order-confirmation', backendOrderId],
       {
         state: {
           orderData: fullOrderData,

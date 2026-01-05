@@ -500,7 +500,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     if (category === 'All') {
       this.navigateToAllProducts();
     } else {
-      this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
+      this.router.navigate(['/optimerce', this.storeUuid, 'category', category.toLowerCase()]);
     }
   }
 
@@ -527,11 +527,11 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   // ============ NAVIGATION METHODS ============
 
   navigateToAllProducts(): void {
-    this.router.navigate(['/user/checkout/store', this.storeUuid]);
+    this.router.navigate(['/optimerce', this.storeUuid]);
   }
 
   navigateToProductDetails(productId: number): void {
-    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
+    this.router.navigate(['/optimerce', this.storeUuid, 'product-details', productId]);
   }
 
   // ============ PRODUCT METHODS ============
@@ -650,7 +650,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   navigateToCheckout(): void {
     this.isCartOpen = false;
     this.isCartSidebarVisible = false;
-    this.router.navigate(['user/checkout/store', this.storeUuid, 'checkout']);
+    this.router.navigate(['optimerce', this.storeUuid, 'checkout']);
   }
 
   // Price formatting helper
@@ -688,7 +688,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   }
 
   private navigateToCategoryPage(category: string): void {
-    this.router.navigate(['/user/checkout/store', this.storeUuid, 'category', category.toLowerCase()]);
+    this.router.navigate(['/optimerce', this.storeUuid, 'category', category.toLowerCase()]);
   }
 
   // Get discount info for badge (quick version)
