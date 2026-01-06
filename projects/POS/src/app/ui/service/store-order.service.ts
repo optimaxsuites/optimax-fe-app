@@ -548,8 +548,47 @@ export class StoreOrderService {
     );
   }
 
-  createCashOrder(orderData: StoreOrderPOST, deliveryInfo?: any): Observable<any> {
-    return this.createOrderWithPayment(orderData, 'cash', `CASH-${orderData.orderNumber}`, deliveryInfo);
+  createCashOrder(
+    orderData: StoreOrderPOST,
+    cartItems?: Map<string, any>, // Added from Code A
+    deliveryInfo?: any
+  ): Observable<any> {
+    console.log(' Creating cash order...');
+    return this.createOrderWithPayment(
+      orderData,
+      'cash',
+      `CASH-${orderData.orderNumber}`,
+      deliveryInfo,
+      cartItems // Pass cartItems
+    ).pipe(
+      map((response: any) => {
+        // 🔥 IMPORTANT: Ensure we're returning the backend response (from Code A)
+        console.log('🎯 Backend response structure:', response);
+        
+        // The response should contain the backend-generated ID
+        if (response && response.id) {
+          return {
+            id: response.id,
+            orderNumber: response.orderNumber || orderData.orderNumber,
+            status: response.orderStatus || orderData.orderStatus,
+            totalAmount: response.totalAmount || orderData.totalAmount,
+            createdDate: response.createdDate || orderData.createdDate,
+            // Include other fields from response
+            ...response
+          };
+        }
+        
+        // Fallback to local data if backend response is incomplete
+        return {
+          id: response?.id || 0,
+          orderNumber: orderData.orderNumber,
+          status: orderData.orderStatus,
+          totalAmount: orderData.totalAmount,
+          createdDate: orderData.createdDate,
+          ...response
+        };
+      })
+    );
   }
 
   updateOrder(order: ComponentOrder, updateData: Partial<OrderUpdateDTO>): Observable<OrderDTO> {
@@ -824,7 +863,28 @@ export class StoreOrderService {
     );
   }
 
-  private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
+  private finalizeOrderCreation(orderData: StoreOrderPOST, cartItems?: Map<string, any>): Observable<any> {
+    console.log('🔍 Validating order data before finalization...');
+    
+    // Calculate taxes if cartItems are provided (from Code A)
+    let taxCalculation: TaxCalculation | undefined;
+    if (cartItems) {
+      const orderItemsForTax = orderData.orderItem.map(item => ({
+        ...item,
+        totalPrice: item.totalPrice
+      }));
+      taxCalculation = this.calculateTaxes(orderItemsForTax, cartItems);
+      
+      // Update order totals with tax
+      orderData.totalAmount = (taxCalculation.total + orderData.deliveryFee).toFixed(2);
+    }
+    
+    console.log('📊 Tax calculation:', taxCalculation);
+    
+    if (!orderData.paymentId || orderData.paymentId === 0) {
+      return throwError(() => 'Payment record must be created before order');
+    }
+
     const sanitizedOrderData = this.sanitizeOrderData(orderData);
     if (sanitizedOrderData.deliveryFee > 0 || sanitizedOrderData.deliveryInfoId) {
       sanitizedOrderData.isOnline = true;

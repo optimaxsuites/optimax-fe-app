@@ -292,7 +292,7 @@
             >
               Combo Items
             </label>
-            <ng-select [items]="activeItem.bundleItems" bindLabel="name">
+            <ng-select [items]="activeItem?.bundleItems || []" bindLabel="name">
             </ng-select>
           </div>
         </div>

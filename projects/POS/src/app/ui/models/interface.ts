@@ -29,6 +29,14 @@ export type DateArray = ReadonlyArray<number> & {
 };
 export type DateType = DateString | DateArray;
 
+export interface BundleItemDTO {
+  id: number;
+  name: string;
+  quantity: number; // Quantity of this item inside the bundle
+  code?: string;
+  sku?: string;
+}
+
 export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   id: number;
   name: string;
@@ -41,7 +49,7 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   quantity?: number;
   isAvailableInStore?: boolean;
   inventoryId?: number;
-  __originalProduct?: ProductDTO | any
+  __originalProduct?: ProductDTO | any;
 
   createdDate: TDateType extends "string" ? DateString : DateArray;
   expiryDate: TDateType extends "string" ? DateString : DateArray;
@@ -54,8 +62,11 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   productCategory: ProductCategoryPOST;
   productImages: ProductImageDTO[];
   variants: VariantDTO[];
+  
+  // Combo/Bundle Fields
   isBundle?: boolean;
-  bundleItems?: any;
+  bundleItems?: any[]; // Updated to support Bundle Content
+  
   measurementUnit?: any;
   reorderThreshold?: number | null;
 }
@@ -91,7 +102,7 @@ export interface DiscountDTO {
   code?: string;
   description?: string;
   active?: boolean;
-  discountType: any
+  discountType: any;
   discountValue?: number;
   startDate: Date;
   endDate: Date;
@@ -206,6 +217,7 @@ export interface Order {
   deliveryMethod?: DeliveryMethod | string;
   deliveryInfo?: DeliveryInfoDTO | null; 
   updatedBy?: string; 
+  deliveryFee?: number;
 }
 
 /**
@@ -391,6 +403,10 @@ export interface ProductDTO {
   productImage: ProductImageDTO;
   variants: VariantDTO[];
   supplier?: supplierData; 
+  
+  // Combo fields for ProductDTO
+  isBundle?: boolean;
+  bundleItems?: BundleItemDTO[] | any[];
 }
 
 interface ProductBranchDTO {
@@ -856,7 +872,6 @@ export interface StockMovementReportRequestDTO extends InventoryReportRequestDTO
   productId?: number | null;
 }
 
-
 export interface CashierReportRequestDTO {
   startDate: string;
   endDate: string;
@@ -1002,7 +1017,7 @@ export interface DeliveryInfoDTO {
   address: string;
   email: string;
   instructions: string;
-  deliveryStatus?: 'AWAITING_DELIVERY' | 'PACKAGED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'PENDING';
+  deliveryStatus?: 'AWAITING_DELIVERY' | 'PACKAGED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'PENDING' | 'READY_FOR_PICKUP' | 'PICKED_UP' | 'PROCESSING';
 }
 
 export interface OrderItemsDTO {
@@ -1025,7 +1040,8 @@ export enum OrderStatus {
   OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  PAID = 'PAID'
 }
 
 export enum DeliveryMethod {
@@ -1057,6 +1073,7 @@ export interface StockMovementReportItemDTO {
   productId: number;
   branchId: number;
 }
+
 export interface StockMovementReportDTO {
   movements: StockMovementReportItemDTO[];
   totalInflow: number;
