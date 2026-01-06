@@ -90,6 +90,7 @@ import { CategoryComponent } from './ui/view/pos/metadatas/category/category.com
 import { TaxComponent } from './ui/view/pos/metadatas/tax/tax.component';
 import { SupplierComponent } from './ui/view/pos/metadatas/supplier/supplier.component';
 import { DiscountComponent } from './ui/view/pos/metadatas/discount/discount.component';
+import { QrcodeComponent } from './ui/view/pos/qrcode/qrcode.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -126,7 +127,8 @@ import { DiscountComponent } from './ui/view/pos/metadatas/discount/discount.com
       CategoryComponent,
       TaxComponent,
       SupplierComponent,
-      DiscountComponent
+      DiscountComponent,
+      QrcodeComponent
   ],
   imports: [
     // BrowserModule,

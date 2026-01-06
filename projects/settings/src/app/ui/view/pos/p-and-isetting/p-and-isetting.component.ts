@@ -52,7 +52,7 @@ export interface BranchShippingSettings {
 })
 export class PAndISettingComponent {
   // Controls navigation between the two sub-pages
-  activeTab: 'payment' | 'delivery' = 'payment';
+  activeTab: 'payment' | 'delivery' | 'QRcode' = 'payment';
   expressCutOffTime: string = '13:00'; 
 
   deliveryOptions: DeliveryOption[] = [
@@ -203,7 +203,7 @@ export class PAndISettingComponent {
     }
   }
 
-  setActiveTab(tab: 'payment' | 'delivery'): void {
+  setActiveTab(tab: 'payment' | 'delivery' | 'QRcode'): void {
     this.activeTab = tab;
   }
 

@@ -37,6 +37,18 @@
             Delivery Settings
           </a>
         </li>
+        <li>
+          <a
+            (click)="setActiveTab('QRcode')"
+            [ngClass]="{
+              'border-b-4 border-customBlue text-gray-900 font-bold': activeTab === 'QRcode',
+              'text-gray-700 hover:text-gray-900': activeTab !== 'QRcode'
+            }"
+            class="inline-block py-2 px-1 cursor-pointer transition duration-150 ease-in-out"
+          >
+           QR Code Settings
+          </a>
+        </li>
       </ul>
     </nav>
    
@@ -57,6 +69,9 @@
     </ng-container>
     <ng-container *ngIf="activeTab === 'delivery'">
       <app-delvery></app-delvery>
+    </ng-container>
+     <ng-container *ngIf="activeTab === 'QRcode'">
+      <app-qrcode></app-qrcode>
     </ng-container>
     </div>
 </div>
