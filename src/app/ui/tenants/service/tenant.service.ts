@@ -103,7 +103,13 @@ export class TenantService {
 
 
 
-  loadFullTenants() {
+  loadFullTenants(): any  {
+    const token = sessionStorage.getItem("Token");
+    if (!token) {
+      console.warn("⛔ No token found. Skipping metadata fetch.");
+      return Promise.resolve(true);
+    }
+    
     this.loadingSubject.next(true);
 
     this.getAllTenantsFull()

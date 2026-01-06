@@ -594,7 +594,7 @@ const dbConfig: DBConfig = {
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
     MessageService,
-    ConfirmationService
+    ConfirmationService,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],

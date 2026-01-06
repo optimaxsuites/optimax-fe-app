@@ -106,7 +106,10 @@ export class AppComponent implements OnInit {
 
       // Check if URL contains a token at all
       const urlParams = new URLSearchParams(window.location.search);
+      console.log(window.location)
+      console.log(urlParams)
       const hasToken = urlParams.has('token');
+      console.log(hasToken)
 
       // If token exists → skip redirect and skip tenant validation
       if (hasToken) {
