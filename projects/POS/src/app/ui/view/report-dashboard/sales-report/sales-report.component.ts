@@ -36,6 +36,14 @@ type PaymentMethodBreakdown = {
   transactions: number;
 };
 
+// Interface for the Client's Grouped Report
+interface GroupedSalesCategory {
+  categoryName: string;
+  totalQuantity: number;
+  totalRevenue: number;
+  items: TopProductDTO[];
+}
+
 export type BranchChartOptions = {
   series: ApexAxisChartSeries;
   chart: ApexChart;
@@ -93,7 +101,8 @@ export type TrendChartOptions = {
   styleUrls: ['./sales-report.component.scss'],
 })
 export class SalesReportComponent implements OnInit {
-  // Helper methods for template
+  
+  // --- Helpers for Templates (Original + New) ---
   getProductName(item: any): string {
     return item?.product?.name || 'N/A';
   }
@@ -103,7 +112,7 @@ export class SalesReportComponent implements OnInit {
   }
 
   getQuantity(item: any): number {
-    return item?.quantity || 0;
+    return item?.quantity || item?.quantitySold || 0;
   }
 
   getUnitPrice(item: any): number {
@@ -124,38 +133,36 @@ export class SalesReportComponent implements OnInit {
       'PROCESSING': 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold',
       'OUT_FOR_DELIVERY': 'bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold',
       'DELIVERED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold',
-      'COMPLETED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold', // Added Completed
+      'COMPLETED': 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold',
       'CANCELLED': 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold',
       'REFUNDED': 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold'
     };
     return statusClasses[status] || 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold';
   }
 
-  /**
-   * FIX: Determine if an order is Walk-in or Online
-   */
+  // Helper for Combo Items
+  isCombo(item: any): boolean {
+    return item?.product?.isBundle === true;
+  }
+
+  getComboContent(item: any): any[] {
+    return item?.product?.bundleItems || [];
+  }
+
   private isWalkIn(item: any): boolean {
-    // If explicitly marked online, it's not walk-in
     if (item?.order?.isOnline === true || item?.isOnline === true) return false;
-    // If it's a kitchen order or has a table, it's walk-in
     if (item?.order?.table || item?.table || item?.salesperson) return true;
-    // Check channel
     const channel = (item?.channel || '').toString().toLowerCase();
     if (channel.includes('walk') || channel.includes('store')) return true;
-    
-    // Default: If no online markers and no delivery status, treat as walk-in
     return !item?.order?.deliveryStatus;
   }
 
   getDeliveryStatus(item: any): string {
     const status = item?.order?.deliveryStatus || item?.status;
-    
-    // FIX: If it's a walk-in order and hasn't been cancelled/refunded, it's COMPLETED
     if (this.isWalkIn(item)) {
       if (status === 'CANCELLED' || status === 'REFUNDED') return status;
       return 'COMPLETED';
     }
-    
     return status || 'PENDING';
   }
 
@@ -164,14 +171,18 @@ export class SalesReportComponent implements OnInit {
   }
 
   getTotalAmount(item: any): number {
-    return item?.totalPrice || 0;
+    return item?.revenue || item?.totalPrice || 0;
   }
 
+  // --- View Children ---
   @ViewChild('branchChart') branchChart!: ChartComponent;
   @ViewChild('productChart') productChart!: ChartComponent;
   @ViewChild('paymentChart') paymentChart!: ChartComponent;
   @ViewChild('trendChart') trendChart!: ChartComponent;
   @ViewChild('reportContent') reportContent!: ElementRef;
+  
+  // Specific reference for the Client's custom print requirement
+  @ViewChild('dailySalesTable') dailySalesTable!: ElementRef;
 
   public branchChartOptions!: BranchChartOptions;
   public productChartOptions!: ProductChartOptions;
@@ -181,7 +192,7 @@ export class SalesReportComponent implements OnInit {
   salesReport!: SalesReportDTO;
   previousPeriodReport!: SalesReportDTO; 
 
-  // New properties for growth percentages
+  // Growth percentages
   totalRevenueGrowth: number | null = null;
   totalTransactionsGrowth: number | null = null;
   averageOrderValueGrowth: number | null = null;
@@ -192,26 +203,19 @@ export class SalesReportComponent implements OnInit {
   currentPage = 1;
   itemsPerPage = 10;
 
-  // Filter panel properties
   isFilterFormOpen = false;
   selectedDateRange: string = 'today';
   paymentMethods: string[] = [];
   categories: CategoryDTO[] = [];
-
-  // Export dropdown properties
   isExportDropdownOpen = false;
 
   Math = Math;
-
-  // Form properties
   reportForm!: FormGroup;
-
-  // Filter properties
   branches: BranchDTO[] = [];
   
-  // Data properties
-  Number: any;
-  orderItems: any[] = []; // Initialized as empty array
+  // Data Properties
+  orderItems: any[] = []; // Kept for legacy/fallback
+  groupedSales: GroupedSalesCategory[] = []; // Added for the new requirement
 
   constructor(private reportService: ReportService, private fb: FormBuilder) {
     this.initChartOptions();
@@ -254,6 +258,14 @@ export class SalesReportComponent implements OnInit {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // New Getter for the Red Header Text
+  get dateRangeDisplay(): string {
+    const start = this.reportForm.get('startDate')?.value;
+    const end = this.reportForm.get('endDate')?.value;
+    if(!start || !end) return '';
+    return `${formatDate(start, 'mediumDate', 'en-US')} - ${formatDate(end, 'mediumDate', 'en-US')}`;
   }
 
   toggleFilterForm(): void {
@@ -368,8 +380,11 @@ export class SalesReportComponent implements OnInit {
         this.salesReport = results.current;
         this.previousPeriodReport = results.previous;
         
-        // Populate orderItems for the breakdown tab
+        // Populate orderItems (Original behavior)
         this.orderItems = this.salesReport?.breakdown || [];
+
+        // Populate Grouped Sales (New Requirement)
+        this.processGroupedSales();
         
         this.loading = false;
         this.calculateGrowth();
@@ -380,6 +395,36 @@ export class SalesReportComponent implements OnInit {
         console.error('Error loading sales data:', err);
       },
     });
+  }
+
+  // --- Logic for the New "Grouped by Category" Report ---
+  private processGroupedSales(): void {
+    if (!this.salesReport?.topSellingProducts) {
+      this.groupedSales = [];
+      return;
+    }
+
+    const map = new Map<string, GroupedSalesCategory>();
+
+    this.salesReport.topSellingProducts.forEach(item => {
+      const categoryName = item.product.category?.name || 'Uncategorized';
+      
+      if (!map.has(categoryName)) {
+        map.set(categoryName, {
+          categoryName: categoryName,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          items: []
+        });
+      }
+
+      const group = map.get(categoryName)!;
+      group.totalQuantity += item.quantitySold;
+      group.totalRevenue += item.revenue;
+      group.items.push(item);
+    });
+
+    this.groupedSales = Array.from(map.values()).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }
 
   private getDateRange(startDateStr: string, endDateStr: string): { startDate: Date, endDate: Date } {
@@ -420,9 +465,6 @@ export class SalesReportComponent implements OnInit {
   }
 
   get paginatedBreakdown() {
-    // If you plan to implement server-side pagination or use this getter for slicing,
-    // ensure orderItems in HTML uses this instead of the full list.
-    // Currently HTML iterates 'orderItems'.
     const start = (this.currentPage - 1) * this.itemsPerPage;
     const end = start + this.itemsPerPage;
     return this.salesReport?.breakdown?.slice(start, end) || [];
@@ -468,7 +510,6 @@ export class SalesReportComponent implements OnInit {
     }));
   }
   
-  // Helper to determine channel from item data
   getChannel(item: any): string {
     if (item.channel) return String(item.channel);
     if (item.order?.isOnline === true || item.isOnline === true) return 'Online';
@@ -478,6 +519,7 @@ export class SalesReportComponent implements OnInit {
   }
 
   initChartOptions() {
+    // Branch Chart (Revenue by Branch)
     this.branchChartOptions = {
       series: [{ name: 'Revenue', data: [] }],
       chart: { type: 'bar', height: 350, toolbar: { show: false } },
@@ -499,6 +541,7 @@ export class SalesReportComponent implements OnInit {
       tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
     };
 
+    // Product Chart (Top Selling)
     this.productChartOptions = {
       series: [{ name: 'Revenue', data: [] }],
       chart: { type: 'bar', height: 350, toolbar: { show: false } },
@@ -525,6 +568,7 @@ export class SalesReportComponent implements OnInit {
       fill: { opacity: 1 },
     };
 
+    // Payment Chart (Donut)
     this.paymentChartOptions = {
       series: [],
       chart: { type: 'donut', height: 350 },
@@ -547,6 +591,7 @@ export class SalesReportComponent implements OnInit {
       tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
     };
 
+    // Trend Chart (Area)
     this.trendChartOptions = {
       series: [
         { name: 'Revenue', data: [] },
@@ -577,7 +622,6 @@ export class SalesReportComponent implements OnInit {
     if (!this.salesReport) return;
     const formValue = this.reportForm.value;
 
-    // Filter data for charts based on form selection
     const filteredProducts = formValue.categoryId
       ? this.salesReport.topSellingProducts.filter(
           (p) => p.product.category === formValue.categoryId
@@ -611,7 +655,7 @@ export class SalesReportComponent implements OnInit {
     this.paymentChartOptions.series = filteredPayments.map((p) => p.revenue);
     this.paymentChartOptions.labels = filteredPayments.map((p) => p.paymentMethod);
 
-    // Update other charts as before
+    // Update Branch Chart
     this.branchChartOptions.series = [
       {
         name: 'Revenue',
@@ -622,6 +666,7 @@ export class SalesReportComponent implements OnInit {
       categories: this.salesReport.totalSalesPerBranch.map((b) => b.branch.name),
     };
     
+    // Update Trend Chart
     this.trendChartOptions.title = {
       ...this.trendChartOptions.title,
       text: `Sales Trend (${formValue.startDate} to ${formValue.endDate})`,
@@ -677,25 +722,19 @@ export class SalesReportComponent implements OnInit {
     this.currentPage = 1;
   }
 
-  // --- NAVIGATION FIXES FOR ANALYTIC CARDS ---
-
   showTotalRevenueDetails() {
-    // Opens the tab where all order items/revenue breakdown exists
     this.setTab('orderItems');
   }
 
   showTotalTransactionsDetails() {
-    // Opens the branch tab where transactions are recorded per branch
     this.setTab('branches');
   }
 
   showAverageOrderValueDetails() {
-    // Opens the branch tab to see branch performance making up the AOV
     this.setTab('branches');
   }
 
   showTotalDiscountDetails() {
-    // Navigate to payments or products to see discount impact
     this.setTab('payments');
   }
 
@@ -732,10 +771,6 @@ export class SalesReportComponent implements OnInit {
   exportReport(format: 'pdf' | 'excel') {
     this.isExportDropdownOpen = false;
     if (!this.reportContent || !this.reportContent.nativeElement) {
-      console.error('Report content element not found for PDF export.');
-      alert(
-        'Could not find report content. Please ensure it has the correct ID.'
-      );
       return;
     }
     if (format === 'pdf') {
@@ -743,6 +778,37 @@ export class SalesReportComponent implements OnInit {
     } else if (format === 'excel') {
       this.exportToExcel();
     }
+  }
+
+  // --- New Print Functionality for the Table ---
+  printReport(): void {
+    if (!this.dailySalesTable || !this.dailySalesTable.nativeElement) {
+        console.error('Table element not found');
+        return;
+    }
+
+    const content = this.dailySalesTable.nativeElement;
+    
+    html2canvas(content, { scale: 2 }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; 
+      const pageHeight = 295; 
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      pdf.save('Daily_Sales_Report.pdf');
+    });
   }
 
   private exportToPdf() {

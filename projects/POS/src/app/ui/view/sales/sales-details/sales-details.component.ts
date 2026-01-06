@@ -32,17 +32,27 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   
   showCancelModal = false;
   showStatusDropdown = false;
-  showPrintDropdown = false; //toggle for print menu
+  showPrintDropdown = false;
   
   cancellationReason: string = '';
   requireChargeback: boolean = false;
   
-  // Display labels for the dropdown
-  statusOptions = [
+  statusOptions: string[] = [];
+
+  private deliveryStatusOptions = [
     'Pending',
     'Processing',
+    'Packaged',
     'Out for Delivery',
     'Delivered',
+    'Cancelled'
+  ];
+
+  private pickupStatusOptions = [
+    'Pending',
+    'Processing',
+    'Ready for Pickup',
+    'Picked Up',
     'Cancelled'
   ];
 
@@ -62,6 +72,14 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     'Cancelled': 'CANCELLED'
   };
 
+  private pickupStatusMap: { [key: string]: string } = {
+    'Pending': 'PENDING',
+    'Processing': 'PROCESSING',
+    'Ready for Pickup': 'READY_FOR_PICKUP',
+    'Picked Up': 'PICKED_UP',
+    'Cancelled': 'CANCELLED'
+  };
+
   currentUser: string = 'System'; 
 
   constructor(
@@ -73,15 +91,56 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.loading = false;
     this.fetchCurrentUser();
+    this.updateStatusOptions();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['order'] && changes['order'].currentValue) {
       this.loading = false;
+      this.updateStatusOptions();
+    }
+  }
+
+  private isPickupOrder(): boolean {
+    if (!this.order) return false;
+    const hasNoDeliveryInfo = !this.order.deliveryInfo;
+    const hasNoDeliveryFee = (this.order as any).deliveryFee === 0;
+    const isPickupMethod = this.order.deliveryMethod === 'PICKUP';
+    return hasNoDeliveryInfo || hasNoDeliveryFee || isPickupMethod;
+  }
+
+  private updateStatusOptions(): void {
+    if (this.isPickupOrder()) {
+      this.statusOptions = [...this.pickupStatusOptions];
+      console.log('📦 Pickup order detected - using pickup status options');
+    } else {
+      this.statusOptions = [...this.deliveryStatusOptions];
+      console.log('🚚 Delivery order detected - using delivery status options');
     }
   }
 
   fetchCurrentUser(): void {
+    const sessionUserInfo = sessionStorage.getItem('userPrimaryInfoRegData');
+    if (sessionUserInfo) {
+      try {
+        const parsed = JSON.parse(sessionUserInfo);
+        if (parsed.fullname) {
+          this.currentUser = parsed.fullname;
+          console.log('👤 Active User (from session info):', this.currentUser);
+          return;
+        }
+      } catch (e) {
+        console.warn('Error parsing userPrimaryInfoRegData', e);
+      }
+    }
+
+    const sessionUsername = sessionStorage.getItem('username');
+    if (sessionUsername) {
+      this.currentUser = sessionUsername;
+      console.log('👤 Active User (from session username):', this.currentUser);
+      return;
+    }
+
     const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (userStr) {
       try {
@@ -93,6 +152,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     } else {
         this.currentUser = 'Admin';
     }
+    console.log('👤 Active User (Fallback):', this.currentUser);
   }
 
   goBack(): void {
@@ -125,30 +185,24 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   exportToExcel(): void {
     if (!this.order) return;
 
-    // 1. Prepare Data for Excel Structure
-    // We create an Array of Arrays (AOA) to manually layout the Excel sheet
     const data: any[][] = [];
 
-    // Header
     data.push(['ORDER DETAILS REPORT']);
-    data.push([]); // Empty row
+    data.push([]);
     data.push(['Order Number:', this.order.orderNumber, '', 'Date:', this.formatDate(this.order.createdDate)]);
     data.push(['Status:', this.order.orderStatus, '', 'Total Amount:', `N${(this.order.totalAmount || 0).toLocaleString()}`]);
     data.push([]);
 
-    // Customer & Branch Section
     data.push(['CUSTOMER INFORMATION', '', '', 'BRANCH INFORMATION']);
     data.push(['Name:', this.order.customer?.name || 'Walk-in', '', 'Branch:', this.order.branch?.name || 'N/A']);
     data.push(['Email:', this.order.customer?.email || 'N/A', '', 'Phone:', this.order.branch?.phoneNo || 'N/A']);
     data.push([]);
 
-    // Items Header
     data.push(['ORDER ITEMS']);
     data.push(['Item Name', 'Variant', 'Quantity', 'Unit Price', 'Tax (%)', 'Total']);
 
-    // Items Rows
     if (this.order.orderItem) {
-        this.order.orderItem.forEach((item: { product: { name: any; }; productVariant: { name: any; }; quantity: any; totalPrice: any; }) => {
+        this.order.orderItem.forEach((item: any) => {
             data.push([
                 item.product?.name || 'N/A',
                 item.productVariant?.name || 'Standard',
@@ -161,29 +215,25 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     }
     data.push([]);
 
-    // Summary Section
     data.push(['', '', '', '', 'Subtotal:', this.calculateSubtotal()]);
     data.push(['', '', '', '', 'Tax:', this.calculateTax()]);
     data.push(['', '', '', '', 'Discount:', this.calculateDiscount()]);
     data.push(['', '', '', '', 'GRAND TOTAL:', this.calculateTotal()]);
 
-    // 2. Create Workbook
     const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(data);
     
-    // Optional: Set column widths for better readability
     ws['!cols'] = [
-        { wch: 25 }, // Col A
-        { wch: 20 }, // Col B
-        { wch: 10 }, // Col C
-        { wch: 20 }, // Col D
-        { wch: 15 }, // Col E
-        { wch: 15 }  // Col F
+        { wch: 25 },
+        { wch: 20 },
+        { wch: 10 },
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 15 }
     ];
 
     const wb: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Order Details');
 
-    // 3. Save File
     const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     this.saveAsExcelFile(excelBuffer, `order_${this.order.orderNumber || 'details'}`);
   }
@@ -200,53 +250,69 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     
     if(!this.order || !this.order.id) return;
 
-    const backendStatus = this.deliveryStatusMap[statusLabel] || statusLabel.toUpperCase();
+    const isPickup = this.isPickupOrder();
+    const statusMap = isPickup ? this.pickupStatusMap : this.deliveryStatusMap;
+    const statusToSend = statusMap[statusLabel] || statusLabel.toUpperCase();
     
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
     
-    this.storeOrderService.updateDeliveryStatus(this.order, backendStatus, this.currentUser).subscribe({
+    console.log(`📝 Sending status update request:`, statusToSend);
+
+    this.storeOrderService.updateDeliveryStatus(
+      this.order, 
+      statusToSend, 
+      this.currentUser
+    ).subscribe({
       next: (res) => {
-        this.successMessage = `Order status updated to ${statusLabel}`;
+        this.successMessage = `Status updated to ${statusLabel}`;
         
-        if(this.order) {
-           this.order.deliveryStatus = backendStatus;
-           this.order.updatedBy = this.currentUser; 
+        if (this.order) {
+           // 1. Update Order Status from response
            if (res && res.orderStatus) {
-               this.order.orderStatus = res.orderStatus;
+             this.order.orderStatus = res.orderStatus;
+           }
+           // 2. Optimistic Update for Delivery Status
+           this.order.deliveryStatus = statusToSend; 
+           this.order.updatedBy = this.currentUser;
+
+           // 3. ✅ FIXED: Manually update Payment Status if Order is PAID
+           // This forces the "Payment Details" section to show "PAID"
+           if (this.order.orderStatus === 'PAID' && this.order.payment) {
+             this.order.payment.status = 'PAID';
+             console.log('💰 Payment status auto-updated to PAID based on order completion');
            }
         }
         
         this.statusUpdated.emit();
         this.loading = false;
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+        setTimeout(() => { this.successMessage = ''; }, 3000);
       },
       error: (err) => {
         const msg = err.error?.message || err.message || 'Failed to update status';
         this.errorMessage = `Error: ${msg}`;
         this.loading = false;
-        
-        // Clear error message after 5 seconds
-        setTimeout(() => {
-          this.errorMessage = '';
-        }, 5000);
+        setTimeout(() => { this.errorMessage = ''; }, 5000);
       }
     });
   }
 
   openCancelModal(): void {
     this.errorMessage = '';
-    if (this.order?.deliveryStatus === 'OUT_FOR_DELIVERY' || this.order?.deliveryStatus === 'DELIVERED') {
-        this.errorMessage = 'Cannot cancel order that is Out for Delivery or Delivered.';
-        setTimeout(() => {
-          this.errorMessage = '';
-        }, 5000);
-        return;
+    
+    // Prevent cancellation if already delivered/picked up
+    const isPickup = this.isPickupOrder();
+    const completedStatus = isPickup ? 'PICKED_UP' : 'DELIVERED';
+    const inTransitStatus = 'OUT_FOR_DELIVERY';
+    
+    if (this.order?.deliveryStatus === completedStatus || 
+        this.order?.deliveryStatus === inTransitStatus) {
+      this.errorMessage = `Cannot cancel order that is ${isPickup ? 'picked up' : 'out for delivery or delivered'}.`;
+      setTimeout(() => {
+        this.errorMessage = '';
+      }, 5000);
+      return;
     }
 
     this.cancellationReason = '';
@@ -313,6 +379,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   calculateDiscount(): number {
     return 0;
   }
+
   calculateTax(): number {
     if (!this.order?.orderItem) return 0;
     return this.order.orderItem.reduce((totalTax: number, item: any) => {
@@ -341,20 +408,25 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     return item.product.tax.rate;
   }
 
-  //  Added getDeliveryStatusClass method with proper type handling
   getDeliveryStatusClass(status?: string): string {
     if (!status) return 'bg-gray-100 text-gray-800';
     
     const statusClassMap: { [key: string]: string } = {
       'PENDING': 'bg-yellow-100 text-yellow-800',
       'PROCESSING': 'bg-blue-100 text-blue-800',
+      'READY_FOR_PICKUP': 'bg-purple-100 text-purple-800',
       'OUT_FOR_DELIVERY': 'bg-purple-100 text-purple-800',
       'DELIVERED': 'bg-green-100 text-green-800',
+      'PICKED_UP': 'bg-green-100 text-green-800',
       'CANCELLED': 'bg-red-100 text-red-800',
       'FAILED': 'bg-red-100 text-red-800',
       'AWAITING_PAYMENT': 'bg-orange-100 text-orange-800'
     };
     
     return statusClassMap[status.toUpperCase()] || 'bg-gray-100 text-gray-800';
+  }
+
+  getOrderTypeLabel(): string {
+    return this.isPickupOrder() ? 'Pickup Order' : 'Delivery Order';
   }
 }

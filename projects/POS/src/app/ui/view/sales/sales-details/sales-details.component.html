@@ -1,5 +1,4 @@
 <div class="bg-white rounded-lg shadow-md p-6 screen-only" id="print-area">
-    <!-- Error Message Banner -->
     <div *ngIf="errorMessage" class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 animate-fade-in no-print">
       <div class="flex items-center">
         <i class="fa-solid fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
@@ -12,7 +11,6 @@
       </div>
     </div>
 
-    <!-- Success Message Banner -->
     <div *ngIf="successMessage" class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 animate-fade-in no-print">
       <div class="flex items-center">
         <i class="fa-solid fa-check-circle text-green-500 mr-3 text-lg"></i>
@@ -29,6 +27,12 @@
       <div class="flex items-center gap-3">
         <h2 class="text-xl font-semibold text-gray-800">Order Details</h2>
         
+        <span class="px-3 py-1 rounded-full text-xs font-semibold"
+              [ngClass]="order?.deliveryInfo ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+            <i class="fa-solid" [ngClass]="order?.deliveryInfo ? 'fa-truck' : 'fa-store'"></i>
+            {{ order?.deliveryInfo ? 'Delivery Order' : 'Pickup Order' }}
+        </span>
+
         <div class="relative">
             <button 
               (click)="togglePrintDropdown()"
@@ -56,7 +60,7 @@
         <button 
             *ngIf="isEstore"
             (click)="openCancelModal()"
-            [disabled]="order?.deliveryStatus === 'OUT_FOR_DELIVERY' || order?.deliveryStatus === 'DELIVERED'"
+            [disabled]="order?.deliveryStatus === 'OUT_FOR_DELIVERY' || order?.deliveryStatus === 'DELIVERED' || order?.deliveryStatus === 'PICKED_UP'"
             class="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-md hover:bg-red-200 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <i class="fa-solid fa-ban"></i>
@@ -143,6 +147,18 @@
           </p>
         </div>
         
+        <div *ngIf="!order.deliveryInfo" class="bg-purple-50 p-4 rounded-md border-purple-200 border">
+            <h3 class="text-lg font-medium text-purple-800 mb-3">Pickup Information</h3>
+            <p><span class="text-purple-600">Pickup At:</span> {{ order.branch?.name || 'N/A'}}</p>
+            <p><span class="text-purple-600">Address:</span> {{ order.branch?.address || 'N/A' }}</p>
+            <p class="mt-2"><span class="text-purple-600 font-semibold">Status:</span> 
+               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                 {{ order.deliveryStatus || 'READY_FOR_PICKUP' }}
+               </span>
+            </p>
+            <p class="text-xs text-purple-600 mt-2 italic">Customer will pay upon collection.</p>
+        </div>
+        
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-lg font-medium text-gray-900 mb-3">Order Summary</h3>
           <div class="flex justify-between py-2 border-b border-gray-200">
@@ -174,7 +190,8 @@
               <p><span class="text-gray-500">Date:</span> {{ formatDate(order.payment.transactionDate) }}</p>
             </div>
             <ng-template #noPaymentTemplate>
-              <p class="text-yellow-600">Unpaid</p>
+              <p class="text-yellow-600 font-semibold">Unpaid</p>
+              <p *ngIf="!order.deliveryInfo" class="text-xs text-gray-500">Payment expected on pickup.</p>
             </ng-template>
         </div>
       </div>
@@ -218,7 +235,6 @@
 </div>
 
 <div *ngIf="order" class="print-view hidden" id="printable-report">
-    
     <div class="text-center mb-6">
         <h1 class="text-2xl font-bold text-blue-700 uppercase tracking-wide">Sales Order Report</h1>
         <div class="text-sm text-gray-500 mt-1">Generated on: {{ formatDate(order.createdDate) }}</div>

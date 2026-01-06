@@ -24,7 +24,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   isViewPageOpen: boolean = false;
   activeOrder: ComponentOrder = {} as ComponentOrder; 
   
-  // Renamed from selectedCashier to selectedSalesperson
   selectedSalesperson: string = 'All';
   isLoading: boolean = true;
   deliveryStatusFilter: string = 'ALL'; 
@@ -38,8 +37,10 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     { value: 'AWAITING_PAYMENT', label: 'Awaiting Payment' },
     { value: 'PENDING', label: 'Pending' },
     { value: 'PACKAGED', label: 'Packaged' },
+    { value: 'READY_FOR_PICKUP', label: 'Ready for Pickup' }, // Correct status for filters
     { value: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
     { value: 'DELIVERED', label: 'Delivered' },
+    { value: 'PICKED_UP', label: 'Picked Up' }, // Correct status for filters
     { value: 'FAILED', label: 'Failed Delivery' }
   ];
 
@@ -64,7 +65,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     { value: 'CANCELLED', label: 'Cancelled' }
   ];
 
-  // Dynamic list instead of hardcoded
   salespersons: string[] = ['All'];
 
   constructor(
@@ -94,27 +94,19 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
     
-    console.log('📦 Loading E-Store orders for branch:', this.currentBranchId);
-    
     this.storeOrderService.getEStoreOrders({ 
       branchId: this.currentBranchId,
       page: 1,
       size: 100 
     }).subscribe({
       next: (orders: ComponentOrder[]) => { 
-        console.log(`✅ Successfully loaded ${orders.length} E-Store orders`);
-        
         this.orders = orders;
-        
-        // Populate the dynamic salesperson dropdown
         this.extractSalespersons(orders);
-
         this.isLoading = false;
         this.applyFiltersAndSort();
       },
       error: (err: HttpErrorResponse) => {
         console.error('❌ Failed to load E-Store orders:', err);
-        
         if (err.status === 401) {
           this.errorMessage = 'Authentication failed. Please log in again.';
         } else if (err.status === 403) {
@@ -124,11 +116,8 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
         } else if (err.status === 0) {
           this.errorMessage = 'Cannot connect to server. Please check your internet connection.';
         } else {
-          this.errorMessage = typeof err.error === 'string' 
-            ? err.error 
-            : 'Failed to load orders. Please try again.';
+          this.errorMessage = typeof err.error === 'string' ? err.error : 'Failed to load orders. Please try again.';
         }
-        
         this.isLoading = false;
         this.orders = [];
         this.filteredOrders = [];
@@ -136,16 +125,14 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // NEW: Helper to extract unique admin names
   extractSalespersons(orders: ComponentOrder[]): void {
     const admins = new Set<string>();
     orders.forEach(o => {
-      // Only add if it's not null, not undefined, and not the default 'System' if you want to exclude it
+      // Collect all names that are NOT 'System'
       if (o.updatedBy && o.updatedBy !== 'System' && o.updatedBy !== 'N/A') {
         admins.add(o.updatedBy);
       }
     });
-    // Always keep 'All' at the top, then sort the rest
     this.salespersons = ['All', ...Array.from(admins).sort()];
   }
   
@@ -155,8 +142,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // 1. Find the full order object. 
-    // We check activeOrder (if detail view is open) or find it in the list.
     let orderToCancel: ComponentOrder | undefined;
 
     if (this.isViewPageOpen && this.activeOrder && this.activeOrder.id == event.orderId) {
@@ -166,12 +151,10 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     }
 
     if (!orderToCancel) {
-        console.error('Order object not found for ID:', event.orderId);
         alert('Internal Error: Could not find order details to process cancellation.');
         return;
     }
 
-    // 2. Pass the FULL order object to the service
     this.storeOrderService.cancelOrder(orderToCancel, event.reason, event.chargeback)
       .subscribe({
         next: (res) => {
@@ -182,8 +165,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
         error: (err: HttpErrorResponse) => {
           console.error('Cancellation Error:', err);
           const message = typeof err.error === 'string' ? err.error : (err.message || 'Server Error');
-          
-          // Helper for field validation errors
           if (err.error && err.error.fieldErrors) {
              const fields = err.error.fieldErrors.map((f: any) => f.field).join(', ');
              alert(`Validation Failed: Missing fields (${fields})`);
@@ -198,19 +179,9 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     this.currentPage = 1;
     let filtered = [...this.orders];
     
-    console.log('🔍 Applying filters:', {
-      total: filtered.length,
-      statusFilter: this.statusFilter,
-      deliveryStatusFilter: this.deliveryStatusFilter,
-      daysFilter: this.daysFilter,
-      searchText: this.searchText,
-      selectedSalesperson: this.selectedSalesperson
-    });
-    
     // Filter by order status
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
-      console.log(`  → After status filter: ${filtered.length} orders`);
     }
     
     // Filter by delivery status
@@ -218,65 +189,46 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(order => 
         (order.deliveryStatus || 'PENDING') === this.deliveryStatusFilter
       );
-      console.log(`  → After delivery status filter: ${filtered.length} orders`);
     }
 
-    // NEW: Filter by Salesperson (Processed By)
+    // Filter by Salesperson (Processed By)
     if (this.selectedSalesperson !== 'All') {
       filtered = filtered.filter(order => 
         order.updatedBy === this.selectedSalesperson
       );
-      console.log(`  → After salesperson filter: ${filtered.length} orders`);
     }
     
     // Filter by date range
     if (this.daysFilter > 0) {
       const cutoffDate = new Date();
       if (this.daysFilter === 1) {
-        // Today only
         cutoffDate.setHours(0, 0, 0, 0);
       } else {
-        // Go back N days
         cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
         cutoffDate.setHours(0, 0, 0, 0);
       }
       
       filtered = filtered.filter(order => {
-        if (!order.createdDate || !Array.isArray(order.createdDate) || order.createdDate.length < 3) {
-          return false;
-        }
-        
+        if (!order.createdDate || !Array.isArray(order.createdDate) || order.createdDate.length < 3) return false;
         const orderDate = new Date(
-          order.createdDate[0],
-          order.createdDate[1] - 1,
-          order.createdDate[2],
-          order.createdDate[3] || 0,
-          order.createdDate[4] || 0,
-          order.createdDate[5] || 0
+          order.createdDate[0], order.createdDate[1] - 1, order.createdDate[2],
+          order.createdDate[3] || 0, order.createdDate[4] || 0, order.createdDate[5] || 0
         );
-        
         return orderDate >= cutoffDate;
       });
-      console.log(`  → After date filter (${this.daysFilter} days): ${filtered.length} orders`);
     }
     
-    // Search filter - Updated to check delivery name too
+    // Search filter
     if (this.searchText) {
       const searchLower = this.searchText.toLowerCase();
       filtered = filtered.filter(order =>
         order.orderNumber.toLowerCase().includes(searchLower) ||
         (this.getCustomerName(order).toLowerCase().includes(searchLower)) ||
-        (order.customer?.email && order.customer.email.toLowerCase().includes(searchLower)) ||
-        (order.customer?.phoneNumber && order.customer.phoneNumber.toLowerCase().includes(searchLower))
+        (order.customer?.email && order.customer.email.toLowerCase().includes(searchLower))
       );
-      console.log(`  → After search filter: ${filtered.length} orders`);
     }
     
-    // Sort orders
     filtered = this.sortOrders(filtered);
-    
-    console.log(`✅ Final filtered result: ${filtered.length} orders`);
-    
     this.filteredOrders = filtered;
     this.updatePagination();
   }
@@ -292,78 +244,48 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
           aValue = a.orderNumber;
           bValue = b.orderNumber;
           break;
-          
         case 'customer':
-          // Updated sorting to use new customer name logic
           aValue = this.getCustomerName(a);
           bValue = this.getCustomerName(b);
           break;
-          
         case 'totalAmount':
           aValue = a.totalAmount || 0;
           bValue = b.totalAmount || 0;
           break;
-          
-        case 'tax':
-          aValue = this.calculateOrderTax(a);
-          bValue = this.calculateOrderTax(b);
-          break;
-          
-        case 'totalWithTax':
-          aValue = this.calculateOrderTotalWithTax(a);
-          bValue = this.calculateOrderTotalWithTax(b);
-          break;
-          
         case 'orderStatus':
           aValue = a.orderStatus;
           bValue = b.orderStatus;
           break;
-          
         case 'deliveryStatus':
           aValue = a.deliveryStatus || 'N/A';
           bValue = b.deliveryStatus || 'N/A';
           break;
-
         case 'salesperson':
           aValue = this.getSalespersonName(a);
           bValue = this.getSalespersonName(b);
           break;
-          
         case 'date':
         default:
-          // Convert date arrays to timestamps for proper sorting
           aValue = this.getOrderTimestamp(a);
           bValue = this.getOrderTimestamp(b);
           break;
       }
       
-      // Perform comparison
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         const comparison = aValue.localeCompare(bValue);
         return this.sortDirection === 'asc' ? comparison : -comparison;
       }
-      
-      // Numeric comparison
-      if (aValue < bValue) { 
-        return this.sortDirection === 'asc' ? -1 : 1; 
-      }
-      if (aValue > bValue) { 
-        return this.sortDirection === 'asc' ? 1 : -1; 
-      }
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1; 
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1; 
       return 0;
     });
   }
 
- 
   private getOrderTimestamp(order: ComponentOrder): number {
     if (Array.isArray(order.createdDate) && order.createdDate.length >= 3) {
       return new Date(
-        order.createdDate[0],
-        order.createdDate[1] - 1,
-        order.createdDate[2],
-        order.createdDate[3] || 0,
-        order.createdDate[4] || 0,
-        order.createdDate[5] || 0
+        order.createdDate[0], order.createdDate[1] - 1, order.createdDate[2],
+        order.createdDate[3] || 0, order.createdDate[4] || 0, order.createdDate[5] || 0
       ).getTime();
     }
     return 0;
@@ -403,7 +325,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   }
 
   viewOrderDetails(order: ComponentOrder): void {
-    console.log('👁️ Viewing order:', order.orderNumber);
     this.isViewPageOpen = true;
     this.activeOrder = { ...order }; 
   }
@@ -416,18 +337,9 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   updatePagination(): void {
     this.totalPages = Math.ceil(this.filteredOrders.length / this.itemsPerPage);
     this.totalPages = Math.max(1, this.totalPages); 
-    
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.paginatedOrders = this.filteredOrders.slice(startIndex, endIndex);
-    
-    console.log('📄 Pagination:', {
-      currentPage: this.currentPage,
-      itemsPerPage: this.itemsPerPage,
-      totalPages: this.totalPages,
-      showing: this.paginatedOrders.length,
-      total: this.filteredOrders.length
-    });
   }
   
   onPageChange(event: any): void {
@@ -442,15 +354,12 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   }
   
   sort(column: string): void {
-    console.log('🔄 Sorting by:', column);
-    
     if (this.sortBy === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortBy = column;
-      this.sortDirection = column === 'date' ? 'desc' : 'asc'; // Default to desc for dates
+      this.sortDirection = column === 'date' ? 'desc' : 'asc';
     }
-    
     this.applyFiltersAndSort();
   }
   
@@ -464,39 +373,23 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     if (!dateArray || dateArray.length < 3) return 'N/A';
     const [year, month, day, hour, minute, second] = dateArray;
     const date = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
-    
-    // Format: Dec 16, 2025 2:30 PM
     return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
     });
   }
   
-  // UPDATED: Show 'System' for pending, otherwise the Admin Name
+  // Logic: Show 'System' until a real person has updated it
   getSalespersonName(order: ComponentOrder): string {
     if (order.updatedBy && order.updatedBy !== 'System') {
         return order.updatedBy;
     }
-    return 'System'; // Or 'Pending Assignment'
+    return 'System'; 
   }
 
-  // UPDATED: Prioritize Delivery Name for E-Store Orders
   getCustomerName(order: ComponentOrder): string {
-    // 1. Check Delivery Info (This is the online shopper's name)
-    if (order.deliveryInfo && order.deliveryInfo.fullName) {
-        return order.deliveryInfo.fullName;
-    }
-    
-    // 2. Check Customer Profile (exclude 'Walk-in')
-    if (order.customer && order.customer.name && order.customer.name.toLowerCase() !== 'walk-in') {
-        return order.customer.name;
-    }
-    
-    // 3. Fallback
+    if (order.deliveryInfo && order.deliveryInfo.fullName) return order.deliveryInfo.fullName;
+    if (order.customer && order.customer.name && order.customer.name.toLowerCase() !== 'walk-in') return order.customer.name;
     return order.name || 'Guest'; 
   }
 
@@ -505,8 +398,10 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
       'AWAITING_PAYMENT': 'Awaiting Payment',
       'PENDING': 'Pending',
       'PACKAGED': 'Packaged',
+      'READY_FOR_PICKUP': 'Ready for Pickup',
       'OUT_FOR_DELIVERY': 'Out for Delivery',
       'DELIVERED': 'Delivered',
+      'PICKED_UP': 'Picked Up',
       'FAILED': 'Failed',
       'N/A': 'N/A'
     };
@@ -523,21 +418,20 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     return classMap[status] || 'badge-secondary';
   }
 
-
   getDeliveryStatusBadgeClass(status: string): string {
     const classMap: { [key: string]: string } = {
       'AWAITING_PAYMENT': 'badge-warning',
       'PENDING': 'badge-info',
       'PACKAGED': 'badge-primary',
+      'READY_FOR_PICKUP': 'badge-purple',
       'OUT_FOR_DELIVERY': 'badge-info',
       'DELIVERED': 'badge-success',
+      'PICKED_UP': 'badge-success',
       'FAILED': 'badge-danger',
       'N/A': 'badge-secondary'
     };
     return classMap[status] || 'badge-secondary';
   }
 
-  get Math() {
-    return Math;
-  }
+  get Math() { return Math; }
 }
