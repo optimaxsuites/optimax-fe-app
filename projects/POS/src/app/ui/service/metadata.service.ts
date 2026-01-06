@@ -113,7 +113,7 @@ export class MetadataService {
   enrichedProduct$ = this.enrichedProductSubject.asObservable();
   enrichedInventory$ = this.enrichedInventorySubject.asObservable().pipe(
    shareReplay(1)
-);
+);;
 
 
   constructor(
@@ -298,6 +298,33 @@ removeTaxFromState(taxId: number | undefined) {
   const updatedTax = currentTaxes.filter(c => c.id !== taxId);
   this.taxSubject.next(updatedTax);
 }
+
+
+  private loadEnrichedProductsByBranch(): Observable<void> {
+    const branchId = this.selectedBranchIdSubject.value;
+    if (!branchId) return of(undefined);
+
+    this.loadingSubject.next(true);
+
+    return this.posService.getFilteredProductsWithDetails(branchId).pipe(
+      tap((data) => this.enrichedProductSubject.next(data)),
+      finalize(() => this.loadingSubject.next(false)),
+      catchError((error) => {
+        console.error("❌ Failed to load products for branch:", error);
+        return of(undefined);
+      }),
+      switchMap(() => of(undefined))
+    );
+  }
+
+
+  private getRandomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min)) + min;
+  }
+
+  private getRandomFloat(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+  }
 
  addBranchToState(newBranch: any) {
   const currentBranches = this.branchSubject.value;
