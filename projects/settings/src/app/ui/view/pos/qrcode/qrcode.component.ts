@@ -115,7 +115,7 @@ export class QrcodeComponent implements OnInit {
   }
 
   generateNewLink(): string {
-    return `https://${window.location.host}/optimax/${uuidV4()}`;
+    return `https://${window.location.host}/optimerce/${uuidV4()}`;
   }
 
   selectDesign(design: QrDesign) {
