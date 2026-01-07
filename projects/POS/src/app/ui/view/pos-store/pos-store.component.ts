@@ -238,19 +238,19 @@ private loadUserFromStorage(): void {
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
       // console.log(branches)
-      const persistedBranchId = this.metadataService.selectedBranchId$;
+      // const persistedBranchId = this.metadataService.selectedBranchId$;
       
       if (branches.length > 0 && !this.selectedBranch()) {
-        const branchToSelect = branches.find((b: any) => b.id === persistedBranchId) || branches[0];
+        const branchToSelect = branches[0];
         this.selectedBranch.set(branchToSelect);
-        this.metadataService.setSelectedBranch(branchToSelect.id);
+        // this.metadataService.setSelectedBranch(branchToSelect.id);
         this.updateWhatsAppNumber(branchToSelect);
         console.log('🏛️ Store initialized with Branch ID:', branchToSelect.id);
       }
     });
 
-    this.subscribeToEnrichedProducts();
-    this.startImageFading();
+    // this.subscribeToEnrichedProducts();
+    // this.startImageFading();
   }
 
   private initializeUserState(): void {
