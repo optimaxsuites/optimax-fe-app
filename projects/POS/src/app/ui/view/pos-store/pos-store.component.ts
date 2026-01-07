@@ -197,10 +197,10 @@ authModalMode: 'login' | 'signup' = 'login';
 private hasSeenAuthModal = false;
 
   ngOnInit(): void {
-  this.initializeComponent();
+  // this.initializeComponent();
   this.loadUserFromStorage();
   this.showAuthModalOnFirstVisit();
-  this.debugFirstProductTax();
+  // this.debugFirstProductTax(); 
   }
 
 //   private showAuthModalOnFirstVisit(): void {
@@ -237,6 +237,7 @@ private loadUserFromStorage(): void {
 
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
+      // console.log(branches)
       const persistedBranchId = this.metadataService.selectedBranchId$;
       
       if (branches.length > 0 && !this.selectedBranch()) {

@@ -117,7 +117,7 @@ const routes: Routes = [
       {
         path: '',
         loadChildren: () => import('../../projects/POS/src/app/optimerce/optimerce.module').then(m => m.OptimerceModule),
-        canActivate: [UuidGuard]
+        // canActivate: [UuidGuard]
 
       }
     ],

@@ -84,7 +84,8 @@ export class AppComponent implements OnInit {
     // When we go online, trigger offline sync once
     window.addEventListener('online', () => this.syncOfflinePayments());
 
-    
+    this.router.events.subscribe(e => {
+  });
   }
 
   // Angular lifecycle hook must be lowercase
