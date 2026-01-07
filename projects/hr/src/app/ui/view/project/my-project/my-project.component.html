@@ -1,0 +1,40 @@
+<!-- <div class="mb-6">
+    <h2 class="text-2xl font-semibold mb-2">My Projects</h2>
+    <p class="text-gray-500">Projects assigned to you</p>
+  </div> -->
+  
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div
+      *ngFor="let project of myProjects"
+      class="border rounded-lg shadow-sm p-4 hover:shadow-lg transition bg-white"
+    >
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="font-semibold text-lg">{{ project.name }}</h3>
+        <span
+          class="text-xs px-2 py-1 rounded-full"
+          [ngClass]="{
+            'bg-green-100 text-green-700': project.status === 'Ongoing',
+            'bg-blue-100 text-blue-700': project.status === 'Completed',
+            'bg-yellow-100 text-yellow-700': project.status === 'Pending'
+          }"
+        >
+          {{ project.status }}
+        </span>
+      </div>
+      <p class="text-gray-600 text-sm mb-2">{{ project.description }}</p>
+      <p class="text-sm text-gray-500">📅 {{ project.startDate }} → {{ project.endDate }}</p>
+  
+      <button
+        (click)="openProject(project)"
+        class="mt-3 bg-customBlue text-white px-4 py-2 rounded-lg hover:bg-customBlueHover"
+      >
+        View Project
+      </button>
+    </div>
+  </div>
+
+
+  <app-large-side-modal *ngIf="viewDetail" (close)="viewDetail = !viewDetail">
+    <app-my-project-detail [selectedProjectId]="selectedProject"></app-my-project-detail>
+  </app-large-side-modal>
+  

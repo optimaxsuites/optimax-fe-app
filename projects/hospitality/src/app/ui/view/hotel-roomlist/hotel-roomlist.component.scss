@@ -1,0 +1,47 @@
+::ng-deep .ng-select .ng-select-container {
+  min-height: 60px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+::ng-deep
+  .ng-select.ng-select-multiple
+  .ng-select-container
+  .ng-value-container {
+  padding-top: 5px;
+  padding-left: 10px;
+}
+
+::ng-deep .ng-select.ng-select-multiple .ng-select-container .ng-value {
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  padding: 3px 5px;
+  margin-right: 5px;
+}
+
+/* Ensure aside and main grid scroll independently */
+:host ::ng-deep .h-screen {
+  height: 100vh !important;
+}
+:host ::ng-deep aside[sticky] {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 20;
+}
+:host ::ng-deep .sticky {
+  position: sticky;
+  z-index: 30;
+}
+:host ::ng-deep .sticky.top-0 {
+  top: 0;
+}
+:host ::ng-deep .sticky.top-\[72px\] {
+  top: 72px;
+}
+:host ::ng-deep .overflow-y-auto {
+  overflow-y: auto !important;
+}
+:host ::ng-deep .min-h-0 {
+  min-height: 0 !important;
+}
