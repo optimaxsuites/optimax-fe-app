@@ -20,11 +20,11 @@ const SVG_GRID = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg
 interface QrDesign {
   id: string;
   name: string;
-  colorDark: string;    // Color of the QR dots
-  colorLight: string;   // Background of the QR square itself (keep transparent usually)
-  textColor: string;    // Color of the "Scan to shop" text
-  artworkSrc?: string;  // The background image data URI (optional)
-  bgColorStyle?: string; // Fallback solid color if no artwork
+  colorDark: string;    
+  colorLight: string;   
+  textColor: string;   
+  artworkSrc?: string;  
+  bgColorStyle?: string; 
 }
 
 @Component({
@@ -37,14 +37,14 @@ export class QrcodeComponent implements OnInit {
   qrCodeDataUrl: string | null = null;
   error: string | null = null;
 
-  // 4 Distinct Designs with Custom Artworks
+  
   designs: QrDesign[] = [
 
     {
       id: 'classic',
       name: 'Classic',
       colorDark: '#000000',
-      colorLight: '#ffffff', // Solid white background
+      colorLight: '#ffffff', 
       textColor: '#374151',
       bgColorStyle: '#ffffff'
     },
@@ -60,14 +60,14 @@ export class QrcodeComponent implements OnInit {
       id: 'circles',
       name: 'Playful',
       colorDark: '#1f2937',
-      colorLight: '#ffffff00', // Transparent
+      colorLight: '#ffffff00', 
       textColor: '#1f2937',
       artworkSrc: SVG_CIRCLES
     },
     {
       id: 'ocean',
       name: 'Waves',
-      colorDark: '#0e7490', // Dark Cyan for contrast
+      colorDark: '#0e7490', 
       colorLight: '#ffffff00',
       textColor: '#0e7490',
       artworkSrc: SVG_WAVES
@@ -147,7 +147,7 @@ export class QrcodeComponent implements OnInit {
     await this.generateQRCode();
   }
 
-  // --- Canvas Drawing Logic for Share/Download ---
+
   private async createFinalCanvas(): Promise<HTMLCanvasElement | null> {
     if (!this.qrCodeDataUrl) return null;
 
@@ -158,7 +158,7 @@ export class QrcodeComponent implements OnInit {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // 1. Draw Background (Image or Solid Color)
+
     if (this.selectedDesign.artworkSrc) {
       await new Promise<void>((resolve) => {
         const img = new Image();
@@ -166,22 +166,21 @@ export class QrcodeComponent implements OnInit {
           ctx.drawImage(img, 0, 0, size, size);
           resolve();
         };
-        // Use the data URI
+
         img.src = this.selectedDesign.artworkSrc!;
       });
     } else {
-      // Fallback solid color (for Classic view)
+     
       ctx.fillStyle = this.selectedDesign.bgColorStyle || '#ffffff';
       ctx.fillRect(0, 0, size, size);
     }
 
-    // 2. Draw QR Code on top
+
     await new Promise<void>((resolve) => {
       const qrImg = new Image();
       qrImg.onload = () => {
-        const qrSize = 350; // Slightly smaller to show more background
+        const qrSize = 350; 
         const qrX = (size - qrSize) / 2;
-        // Center vertically but shifted up slightly for text room
         const qrY = (size - qrSize) / 2 - 20;
         ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
         resolve();
@@ -189,11 +188,9 @@ export class QrcodeComponent implements OnInit {
       qrImg.src = this.qrCodeDataUrl!;
     });
 
-    // 3. Add Text below QR
     ctx.fillStyle = this.selectedDesign.textColor;
     ctx.font = 'bold 26px sans-serif';
     ctx.textAlign = 'center';
-    // Add a slight shadow to text for better readability over images
     ctx.shadowColor = this.selectedDesign.id === 'midnight' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
     ctx.shadowBlur = 4;
     ctx.fillText('Scan to shop online!', size / 2, size - 70);
@@ -216,10 +213,7 @@ export class QrcodeComponent implements OnInit {
 
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      // Create a file object for the Web Share API
       const file = new File([blob], 'estore-qr.png', { type: 'image/png' });
-
-      // Check if the browser supports sharing files
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -231,7 +225,6 @@ export class QrcodeComponent implements OnInit {
           console.log('Share cancelled');
         }
       } else {
-        // Fallback for desktop browsers that don't support native sharing
         alert('Native sharing not supported on this device. Downloading instead.');
         this.downloadQRCode();
       }
