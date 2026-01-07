@@ -134,8 +134,9 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   private async initializeCheckout(): Promise<void> {
     this.isLoading = true;
     try {
-      this.currentBranchId = this.metadataService.getSelectedBranchId();
-      console.log('🏛️ Checkout using Branch ID:', this.currentBranchId);
+      this.metadataService.selectedBranchId$.subscribe((branchId) => {
+        this.currentBranchId = branchId || 0
+      console.log('🏛️ Checkout using Branch ID:', this.currentBranchId);})
       
       this.loadCartData();
       this.loadCustomerInfo();

@@ -237,7 +237,7 @@ private loadUserFromStorage(): void {
 
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
-      const persistedBranchId = this.metadataService.getSelectedBranchId();
+      const persistedBranchId = this.metadataService.selectedBranchId$;
       
       if (branches.length > 0 && !this.selectedBranch()) {
         const branchToSelect = branches.find((b: any) => b.id === persistedBranchId) || branches[0];

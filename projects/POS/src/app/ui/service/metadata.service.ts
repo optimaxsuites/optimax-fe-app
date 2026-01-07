@@ -79,7 +79,7 @@ export class MetadataService {
     "Gift Card",
   ];
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(this.getInitialBranchId());
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -126,19 +126,10 @@ export class MetadataService {
   async setSelectedBranch(id: number) {
     const current = this.selectedBranchIdSubject.getValue();
     if (current !== id) {
-      this.selectedBranchIdSubject.next(id);
-      localStorage.setItem('selectedBranchId', id.toString());
-      await this.fetchMetaData();
+        this.selectedBranchIdSubject.next(id);
+    await this.fetchMetaData();
+
     }
-  }
-
-  getSelectedBranchId(): number {
-    return this.selectedBranchIdSubject.getValue() || 1;
-  }
-
-  private getInitialBranchId(): number {
-    const stored = localStorage.getItem('selectedBranchId');
-    return stored ? parseInt(stored, 10) : 1;
   }
 
   
@@ -334,6 +325,30 @@ removeTaxFromState(taxId: number | undefined) {
   private getRandomFloat(min: number, max: number): number {
     return Math.random() * (max - min) + min;
   }
+
+ addBranchToState(newBranch: any) {
+  const currentBranches = this.branchSubject.value;
+  const updated = [...currentBranches, newBranch];
+  this.branchSubject.next(updated);
+}
+
+removeBranchFromState(branchId: number | undefined) {
+  const currentBranches = this.branchSubject.value;
+  const updatedBranches = currentBranches.filter(c => c.id !== branchId);
+  this.branchSubject.next(updatedBranches);
+}
+
+// addProductToState(newProduct: any) {
+//   const currentProducts = this.productSubject.value;
+//   const updated = [...currentProducts, newProduct];
+//   this.productSubject.next(updated);
+// }
+
+// removeProductFromState(productId: number) {
+//   const currentProducts = this.productSubject.value;
+//   const updatedProducts = currentProducts.filter(c => c.id !== productId);
+//   this.productSubject.next(updatedProducts);
+// }
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

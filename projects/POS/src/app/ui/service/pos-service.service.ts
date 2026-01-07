@@ -99,6 +99,14 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  deleteDiscount(id: number) {
+    return this.http
+      .delete<any>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/discounts/${id}`
+      )
+      .pipe(catchError(this.handleError));
+  }
+
   deleteSupplier(id: any) {
     return this.http
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/suppliers/${id}`)
@@ -128,6 +136,12 @@ deleteTax(id: any): Observable<any> {
   addProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  bulkCreateProducts(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product/batch', data)
       .pipe(catchError(this.handleError));
   }
 
@@ -212,7 +226,7 @@ deleteTax(id: any): Observable<any> {
 
   getProductsByBranchId(id: number) {
     return (this.products$ = this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}?page=1&size=100`)
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}?page=1&size=300`)
       .pipe(
         catchError(this.handleError),
         shareReplay(this.shareReplayOptions)
@@ -362,6 +376,12 @@ deleteTax(id: any): Observable<any> {
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/${id}`)
       .pipe(catchError(this.handleError));
   }
+
+   deleteProductImage(id: number) {
+    return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/delete/product/image/${id}`)
+      .pipe(catchError(this.handleError));
+  }
   updateProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
@@ -370,7 +390,7 @@ deleteTax(id: any): Observable<any> {
 
   deleteProduct(id: number) {
     return this.http
-      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`)
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/exclude/product/${id}`, {})
       .pipe(catchError(this.handleError));
   }
 
