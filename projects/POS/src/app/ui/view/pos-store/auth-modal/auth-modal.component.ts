@@ -187,7 +187,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
             setTimeout(() => {
               this.closeModal();
               const uuid = this.storeUuid || this.getCurrentStoreUuid();
-              this.router.navigate(['optimerce', uuid, 'verify-required']);
+              this.router.navigate(['user/checkout/store', uuid, 'verify-required']);
             }, 2000);
             return;
           }
@@ -232,7 +232,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
           
           setTimeout(() => {
             const uuid = this.storeUuid || this.getCurrentStoreUuid();
-            this.router.navigate(['/optimerce', uuid]);
+            this.router.navigate(['/user/checkout/store', uuid]);
           }, 500);
         },
         error: (error) => {

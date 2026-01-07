@@ -327,7 +327,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   navigateToCategoryPage(categoryName: string): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/optimerce', currentUuid, 'category', categoryName.toLowerCase()], {
+      this.router.navigate(['/user/checkout/store', currentUuid, 'category', categoryName.toLowerCase()], {
         queryParams: { 
           branch: this.selectedBranch?.id || '',
           branchName: this.selectedBranch?.name || ''
@@ -448,7 +448,7 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
   navigateToAllProducts(): void {
     const currentUuid = this.storeUuid;
     if (currentUuid) {
-      this.router.navigate(['/optimerce', currentUuid]);
+      this.router.navigate(['/user/checkout/store', currentUuid]);
     }
   }
 
@@ -525,9 +525,9 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     const currentUuid = this.storeUuid;
     
     if (currentUuid) {
-      this.router.navigate(['optimerce', currentUuid, 'return-refund']);
+      this.router.navigate(['user/checkout/store', currentUuid, 'return-refund']);
     } else {
-      this.router.navigate(['optimerce/return-refund']);
+      this.router.navigate(['user/checkout/store/return-refund']);
     }
     
     this.isUserDropdownOpen = false;
@@ -537,9 +537,9 @@ export class StoreHeaderComponent implements OnChanges, OnInit {
     const currentUuid = this.storeUuid;
     
     if (currentUuid) {
-      this.router.navigate(['optimerce', currentUuid, 'order-history']);
+      this.router.navigate(['user/checkout/store', currentUuid, 'order-history']);
     } else {
-      this.router.navigate(['optimerce/order-history']);
+      this.router.navigate(['user/checkout/store/order-history']);
     }
     
     this.isUserDropdownOpen = false;

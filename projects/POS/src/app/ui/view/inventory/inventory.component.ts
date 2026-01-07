@@ -62,8 +62,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }];
-  status = ['All', 'Active', 'Discontinued'];
-  selectedStatus: string = 'Active';
+
   dropdownVisible: boolean[] = [];
   selectedAction!: string;
   originalProducts: any[] = [];
@@ -73,7 +72,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
   inventoryItems = [];
   activeItem: any = {};
   deleteModal: boolean = false;
-  productDeleteModal: boolean = false
   editProduct: boolean = false;
   editInventory: boolean = false;
   addInventory: boolean = false;
@@ -184,7 +182,11 @@ export class InventoryComponent implements OnInit, OnDestroy {
       console.log('categories loaded:', this.categories); 
     });
 
-   this.getInventory()
+    this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
+      this.products = data;
+      this.originalProducts = data
+      console.log('inventories loaded:', this.products); 
+    });
     
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
@@ -203,37 +205,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   }
 
-  getInventory(){
-     this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
-      // console.log("inventory:", data)
-     
-      this.originalProducts = data.sort((a: any, b: any) => {
-          const dateA = new Date(
-            a.__inventory.product.createdDate[0],
-            a.__inventory.product.createdDate[1] - 1,
-            a.__inventory.product.createdDate[2],
-            a.__inventory.product.createdDate[3],
-            a.__inventory.product.createdDate[4],
-            a.__inventory.product.createdDate[5],
-          );
-          const dateB = new Date(
-            b.__inventory.product.createdDate[0],
-            b.__inventory.product.createdDate[1] - 1,
-            b.__inventory.product.createdDate[2],
-            b.__inventory.product.createdDate[3],
-            b.__inventory.product.createdDate[4],
-            b.__inventory.product.createdDate[5],
-          );
-          return dateB.getTime() - dateA.getTime();
-        });
-        this.products = [...this.originalProducts]
-      // console.log('inventories loaded:', this.products); 
-    this.applyFilters()
-       
-    });
-
-  }
-
   fetchUserBranchId(){
     const userBranch= sessionStorage.getItem('userBranchInfoRegData');
     this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : 1;
@@ -245,10 +216,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.selectedBranch = branchId;
     this.isBranchSwitching = true; // Set branch switching state
     this.metadataService.setSelectedBranch(branchId);
-  }
-
-  onStatusChange(status: string): void {
-    this.filterProductsByStatus(status)
   }
 
   onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
@@ -288,7 +255,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   get paginatedProducts() {
     const startIndex = this.currentPage * this.rowsPerPage;
-    // console.log(this.products.slice(startIndex, startIndex + this.rowsPerPage))
+    console.log(this.products.slice(startIndex, startIndex + this.rowsPerPage))
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
   
@@ -445,13 +412,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     let tempProducts = [...this.originalProducts];
     const lowerCaseSearchTerm = this.searchTerm.toLowerCase().trim();
 
-    // Apply status filter
-    if (this.selectedStatus !== 'All') {
-      tempProducts = tempProducts.filter(product =>
-        this.selectedStatus === 'Active' ? product.__originalProduct.active : !product.__originalProduct.active
-      );
-    }
-
     // Apply category filter
     if (this.selectedCategories.length > 0) {
       tempProducts = tempProducts.filter(product =>
@@ -477,11 +437,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   filterProductsByCategory() {
-    this.applyFilters();
-  }
-
-  filterProductsByStatus(status: string) {
-    this.selectedStatus = status;
     this.applyFilters();
   }
 
@@ -869,120 +824,5 @@ export class InventoryComponent implements OnInit, OnDestroy {
     
     // Return placeholder without logging error
     return of('assets/images/placeholder-product.jpg');
-  }
-
-    openDeleteModalWithValidation(item: ProductData) {
-    this.activeItem = item;
-    this.productDeleteModal = true;
-  }
-
-    canDeleteProduct(product: ProductData): boolean {
-    if (product.quantity && product.quantity > 0) {
-      return false;
-    }
-    
-    if (product.variants && product.variants.length > 0) {
-      const hasVariantsWithQuantity = product.variants.some(variant => variant.quantity > 0);
-      if (hasVariantsWithQuantity) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-
-   getDeleteRestrictionMessage(product: ProductData): string {
-    const reasons: string[] = [];
-    
-    if (product.quantity && product.quantity > 0) {
-      reasons.push(`has ${product.quantity} items in inventory`);
-    }
-    
-    if (product.variants && product.variants.length > 0) {
-      const variantsWithQuantity = product.variants.filter(v => v.quantity > 0);
-      if (variantsWithQuantity.length > 0) {
-        reasons.push(`has ${variantsWithQuantity.length} variants with inventory`);
-      }
-    }
-    
-    if (reasons.length === 0) {
-      return "may be referenced in transactions or other records";
-    }
-    
-    return reasons.join(" and ");
-  }
-
-   deleteProduct() {
-    if (!this.activeItem?.id) {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "No product selected for deletion",
-        key: "tl",
-        life: 3000,
-      });
-      return;
-    }
-
-    this.posService.deleteProduct(this.activeItem.id).subscribe({
-      next: (response) => {
-   
-        this.messageService.add({
-          severity: "success",
-          summary: "Product Deleted",
-          detail: `${this.activeItem.name} has been deleted successfully`,
-          key: "tl",
-          life: 3000,
-        });
-        this.activeItem = {};
-        this.deleteModal = false;
-        this.productDeleteModal = false;
-
-        this.metadataService.fetchMetaData();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.deleteModal = false;
-        console.error('Delete error:', error);
-        this.productDeleteModal = false;
-
-        
-        if (error.status === 500 && 
-            (error.error?.exception === 'DataIntegrityViolationException' || 
-             error.error?.message?.includes('foreign key constraint') ||
-             error.error?.message?.includes('violates foreign key constraint'))) {
-          this.messageService.add({
-            severity: "error",
-            summary: "Cannot Delete Product",
-            detail: `${this.activeItem.name} cannot be deleted because it's currently being used in inventory, sales, or other transactions. Please remove it from inventory first or contact your administrator.`,
-            key: "tl",
-            life: 6000,
-          });
-        } else if (error.status === 404) {
-          this.messageService.add({
-            severity: "error",
-            summary: "Product Not Found",
-            detail: "The product you're trying to delete no longer exists.",
-            key: "tl",
-            life: 3000,
-          });
-        } else if (error.status === 403) {
-          this.messageService.add({
-            severity: "error",
-            summary: "Access Denied",
-            detail: "You don't have permission to delete this product.",
-            key: "tl",
-            life: 3000,
-          });
-        } else {
-          this.messageService.add({
-            severity: "error",
-            summary: "Deletion Failed",
-            detail: error.error?.message || "An unexpected error occurred while deleting the product. Please try again or contact support.",
-            key: "tl",
-            life: 4000,
-          });
-        }
-      }
-    });
   }
 }

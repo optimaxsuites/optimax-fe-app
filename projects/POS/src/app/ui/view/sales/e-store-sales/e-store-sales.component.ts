@@ -37,10 +37,10 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     { value: 'AWAITING_PAYMENT', label: 'Awaiting Payment' },
     { value: 'PENDING', label: 'Pending' },
     { value: 'PACKAGED', label: 'Packaged' },
-    { value: 'READY_FOR_PICKUP', label: 'Ready for Pickup' }, // Correct status for filters
+    { value: 'READY_FOR_PICKUP', label: 'Ready for Pickup' },
     { value: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
     { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'PICKED_UP', label: 'Picked Up' }, // Correct status for filters
+    { value: 'PICKED_UP', label: 'Picked Up' },
     { value: 'FAILED', label: 'Failed Delivery' }
   ];
 
@@ -104,6 +104,8 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
         this.extractSalespersons(orders);
         this.isLoading = false;
         this.applyFiltersAndSort();
+        console.log(' Orders loaded:', orders.length, 'orders');
+        console.log('Salespersons extracted:', this.salespersons);
       },
       error: (err: HttpErrorResponse) => {
         console.error('❌ Failed to load E-Store orders:', err);
@@ -128,12 +130,13 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   extractSalespersons(orders: ComponentOrder[]): void {
     const admins = new Set<string>();
     orders.forEach(o => {
-      // Collect all names that are NOT 'System'
-      if (o.updatedBy && o.updatedBy !== 'System' && o.updatedBy !== 'N/A') {
-        admins.add(o.updatedBy);
+      const name = this.getSalespersonName(o);
+      if (name && name !== 'System' && name !== 'N/A' && name.trim() !== '') {
+        admins.add(name);
       }
     });
     this.salespersons = ['All', ...Array.from(admins).sort()];
+    console.log('👥 Salespersons list:', this.salespersons);
   }
   
   handleCancellation(event: CancellationEvent): void {
@@ -179,6 +182,20 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     this.currentPage = 1;
     let filtered = [...this.orders];
     
+
+    filtered = filtered.map(order => {
+      // If delivery status is READY_FOR_PICKUP or PICKED_UP, ensure status isn't PENDING
+      if ((order.deliveryStatus === 'READY_FOR_PICKUP' || order.deliveryStatus === 'PICKED_UP') && 
+          order.orderStatus === 'PENDING') {
+        order.orderStatus = order.deliveryStatus === 'PICKED_UP' ? 'PAID' : 'READY';
+      }
+      // Map PROCESSING to PREPARING 
+      if (order.orderStatus === 'PROCESSING') {
+        order.orderStatus = 'PREPARING';
+      }
+      return order;
+    });
+    
     // Filter by order status
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
@@ -193,9 +210,12 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
 
     // Filter by Salesperson (Processed By)
     if (this.selectedSalesperson !== 'All') {
-      filtered = filtered.filter(order => 
-        order.updatedBy === this.selectedSalesperson
-      );
+      filtered = filtered.filter(order => {
+        const salesperson = this.getSalespersonName(order);
+        console.log(`Comparing: "${salesperson}" === "${this.selectedSalesperson}"`, salesperson === this.selectedSalesperson);
+        return salesperson === this.selectedSalesperson;
+      });
+      console.log(`📋 Filtered by salesperson "${this.selectedSalesperson}":`, filtered.length, 'orders');
     }
     
     // Filter by date range
@@ -232,7 +252,6 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     this.filteredOrders = filtered;
     this.updatePagination();
   }
-
 
   private sortOrders(orders: ComponentOrder[]): ComponentOrder[] {
     return orders.sort((a, b) => {
@@ -332,6 +351,8 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   closeViewDetail(): void {
     this.isViewPageOpen = false;
     this.activeOrder = {} as ComponentOrder;
+    // Reload to reflect changes made in details view
+    this.loadOrders();
   }
   
   updatePagination(): void {
@@ -379,11 +400,17 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
     });
   }
   
-  // Logic: Show 'System' until a real person has updated it
+ 
   getSalespersonName(order: ComponentOrder): string {
-    if (order.updatedBy && order.updatedBy !== 'System') {
+    // Priority 1: updatedBy (most recent update)
+    if (order.updatedBy && order.updatedBy.trim() !== '' && order.updatedBy !== 'System') {
         return order.updatedBy;
     }
+    // salesperson.name (original processor)
+    if (order.salesperson?.name && order.salesperson.name !== 'System') {
+        return order.salesperson.name;
+    }
+    // Fallback
     return 'System'; 
   }
 
@@ -413,6 +440,7 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
       'PAID': 'badge-success',
       'UNPAID': 'badge-warning',
       'PENDING': 'badge-info',
+      'PROCESSING': 'badge-info',
       'CANCELLED': 'badge-danger'
     };
     return classMap[status] || 'badge-secondary';

@@ -237,11 +237,14 @@ private loadUserFromStorage(): void {
 
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
+      const persistedBranchId = this.metadataService.getSelectedBranchId();
+      
       if (branches.length > 0 && !this.selectedBranch()) {
-        const initialBranch = branches[0];
-        this.selectedBranch.set(initialBranch);
-        this.metadataService.setSelectedBranch(initialBranch.id);
-        this.updateWhatsAppNumber(initialBranch);
+        const branchToSelect = branches.find((b: any) => b.id === persistedBranchId) || branches[0];
+        this.selectedBranch.set(branchToSelect);
+        this.metadataService.setSelectedBranch(branchToSelect.id);
+        this.updateWhatsAppNumber(branchToSelect);
+        console.log('🏛️ Store initialized with Branch ID:', branchToSelect.id);
       }
     });
 
@@ -780,7 +783,7 @@ navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     // Use the correct route path based on your routing configuration
-    this.router.navigate(['optimerce', currentUuid, 'checkout']);
+    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
   } else {
     console.error('Store UUID not found');
     this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');
@@ -804,7 +807,7 @@ navigateToCheckout(): void {
   //   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   //   if (currentUuid) {
   //     this.router.navigate(
-  //       ['optimerce', currentUuid, 'category', category.toLowerCase()],
+  //       ['user/checkout/store', currentUuid, 'category', category.toLowerCase()],
   //       {
   //         queryParams: {
   //           branch: this.selectedBranch()?.id || '',
@@ -879,7 +882,7 @@ navigateToCheckout(): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid && searchTerm.trim()) {
       this.router.navigate(
-        ['optimerce', currentUuid, 'category', 'search-results'],
+        ['user/checkout/store', currentUuid, 'category', 'search-results'],
         {
           queryParams: { search: searchTerm.trim() },
         }

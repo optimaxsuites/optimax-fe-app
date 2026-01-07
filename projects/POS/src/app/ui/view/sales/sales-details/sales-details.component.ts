@@ -31,6 +31,9 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   successMessage: string = '';
   
   showCancelModal = false;
+  showConfirmPaymentModal = false; 
+  pendingStatusUpdate: string | null = null; 
+
   showStatusDropdown = false;
   showPrintDropdown = false;
   
@@ -38,23 +41,10 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   requireChargeback: boolean = false;
   
   statusOptions: string[] = [];
+  currentUser: string = 'System'; 
 
-  private deliveryStatusOptions = [
-    'Pending',
-    'Processing',
-    'Packaged',
-    'Out for Delivery',
-    'Delivered',
-    'Cancelled'
-  ];
-
-  private pickupStatusOptions = [
-    'Pending',
-    'Processing',
-    'Ready for Pickup',
-    'Picked Up',
-    'Cancelled'
-  ];
+  private deliveryStatusOptions = ['Pending', 'Processing', 'Packaged', 'Out for Delivery', 'Delivered', 'Cancelled'];
+  private pickupStatusOptions = ['Pending', 'Processing', 'Ready for Pickup', 'Picked Up', 'Cancelled'];
 
   printOptions = [
     { label: 'Export to PDF (Print)', icon: 'fa-file-pdf', action: 'pdf' },
@@ -80,8 +70,6 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     'Cancelled': 'CANCELLED'
   };
 
-  currentUser: string = 'System'; 
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -103,10 +91,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   private isPickupOrder(): boolean {
     if (!this.order) return false;
-    const hasNoDeliveryInfo = !this.order.deliveryInfo;
-    const hasNoDeliveryFee = (this.order as any).deliveryFee === 0;
-    const isPickupMethod = this.order.deliveryMethod === 'PICKUP';
-    return hasNoDeliveryInfo || hasNoDeliveryFee || isPickupMethod;
+    return !this.order.deliveryInfo || (this.order as any).deliveryFee === 0 || this.order.deliveryMethod === 'PICKUP';
   }
 
   private updateStatusOptions(): void {
@@ -124,44 +109,59 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     if (sessionUserInfo) {
       try {
         const parsed = JSON.parse(sessionUserInfo);
-        if (parsed.fullname) {
-          this.currentUser = parsed.fullname;
+        if (parsed.fullname) { 
+          this.currentUser = parsed.fullname; 
           console.log('👤 Active User (from session info):', this.currentUser);
-          return;
+          return; 
         }
-      } catch (e) {
-        console.warn('Error parsing userPrimaryInfoRegData', e);
+      } catch (e) { 
+        console.warn('Error parsing userPrimaryInfoRegData', e); 
       }
     }
 
     const sessionUsername = sessionStorage.getItem('username');
-    if (sessionUsername) {
-      this.currentUser = sessionUsername;
+    if (sessionUsername) { 
+      this.currentUser = sessionUsername; 
       console.log('👤 Active User (from session username):', this.currentUser);
-      return;
+      return; 
     }
 
     const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (userStr) {
-      try {
-        const userObj = JSON.parse(userStr);
-        this.currentUser = userObj.name || userObj.username || userObj.email || 'Admin';
-      } catch (e) {
+      try { 
+        const userObj = JSON.parse(userStr); 
+        this.currentUser = userObj.name || userObj.username || 'Admin'; 
+      } 
+      catch (e) { 
         this.currentUser = userStr; 
       }
-    } else {
-        this.currentUser = 'Admin';
+    } else { 
+      this.currentUser = 'Admin'; 
     }
     console.log('👤 Active User (Fallback):', this.currentUser);
   }
 
-  goBack(): void {
-    this.back.emit();
+  goBack(): void { 
+    this.back.emit(); 
   }
   
+  // Disable Updates if Ready for Pickup, Picked Up, or Delivered
   toggleStatusDropdown(): void {
+    if (this.isUpdateDisabled()) {
+        this.errorMessage = "Status cannot be updated after order is Ready for Pickup/Delivered.";
+        setTimeout(() => this.errorMessage = '', 3000);
+        return;
+    }
     this.showStatusDropdown = !this.showStatusDropdown;
     this.showPrintDropdown = false;
+  }
+
+  //check if update should be blocked
+  isUpdateDisabled(): boolean {
+      if (!this.order?.deliveryStatus) return false;
+      const s = this.order.deliveryStatus;
+      // Block if Ready for Pickup, Picked Up, or Delivered
+      return s === 'READY_FOR_PICKUP' || s === 'PICKED_UP' || s === 'DELIVERED';
   }
 
   togglePrintDropdown(): void {
@@ -171,15 +171,12 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   handlePrintAction(action: string): void {
     this.showPrintDropdown = false;
-    if (action === 'pdf') {
-      this.printToPdf();
-    } else if (action === 'excel') {
-      this.exportToExcel();
-    }
+    if (action === 'pdf') this.printToPdf();
+    else if (action === 'excel') this.exportToExcel();
   }
 
-  printToPdf(): void {
-    window.print();
+  printToPdf(): void { 
+    window.print(); 
   }
 
   exportToExcel(): void {
@@ -254,11 +251,49 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     const statusMap = isPickup ? this.pickupStatusMap : this.deliveryStatusMap;
     const statusToSend = statusMap[statusLabel] || statusLabel.toUpperCase();
     
+    // Check if status update implies payment (Completion)
+    // For Pickup: 'PICKED_UP' implies PAID
+    // For Delivery: 'DELIVERED' implies PAID
+    const triggersPaymentConfirmation = 
+        (isPickup && statusToSend === 'PICKED_UP') ||
+        (!isPickup && statusToSend === 'DELIVERED');
+
+    if (triggersPaymentConfirmation && this.order.orderStatus !== 'PAID') {
+        // Open Modal
+        this.pendingStatusUpdate = statusToSend;
+        this.showConfirmPaymentModal = true;
+        this.errorMessage = '';
+        this.successMessage = '';
+        return;
+    }
+
+    // Proceed directly if no confirmation needed or already paid
+    this.executeStatusUpdate(statusToSend, statusLabel);
+  }
+
+  cancelStatusUpdate(): void {
+      this.showConfirmPaymentModal = false;
+      this.pendingStatusUpdate = null;
+  }
+
+  proceedWithStatusUpdate(): void {
+      if (this.pendingStatusUpdate) {
+          const readableLabel = this.isPickupOrder() ? 'Picked Up' : 'Delivered';
+          this.executeStatusUpdate(this.pendingStatusUpdate, readableLabel);
+          this.showConfirmPaymentModal = false;
+          this.pendingStatusUpdate = null;
+      }
+  }
+
+  private executeStatusUpdate(statusToSend: string, statusLabel: string): void {
+    if(!this.order || !this.order.id) return;
+
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
     
-    console.log(`📝 Sending status update request:`, statusToSend);
+    console.log(`Sending status update request:`, statusToSend);
+    console.log(`Using current user for update:`, this.currentUser);
 
     this.storeOrderService.updateDeliveryStatus(
       this.order, 
@@ -277,10 +312,21 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
            this.order.deliveryStatus = statusToSend; 
            this.order.updatedBy = this.currentUser;
 
-           // 3. ✅ FIXED: Manually update Payment Status if Order is PAID
+           //  Manually update Payment Status if Order is PAID
            // This forces the "Payment Details" section to show "PAID"
-           if (this.order.orderStatus === 'PAID' && this.order.payment) {
-             this.order.payment.status = 'PAID';
+           if (this.order.orderStatus === 'PAID') {
+              if (this.order.payment) {
+                this.order.payment.status = 'PAID';
+              } else {
+                 // Create dummy payment object for UI so it shows "Paid" instead of "Pending"
+                 this.order.payment = {
+                    id: 0,
+                    status: 'PAID',
+                    transactionDate: new Date().toISOString(),
+                    totalAmount: this.order.totalAmount || 0,
+                    paymentBreakdown: []
+                 };
+              }
              console.log('💰 Payment status auto-updated to PAID based on order completion');
            }
         }
@@ -293,6 +339,7 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
         const msg = err.error?.message || err.message || 'Failed to update status';
         this.errorMessage = `Error: ${msg}`;
         this.loading = false;
+        console.error('❌ Status update error:', err);
         setTimeout(() => { this.errorMessage = ''; }, 5000);
       }
     });
@@ -301,14 +348,16 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   openCancelModal(): void {
     this.errorMessage = '';
     
-    // Prevent cancellation if already delivered/picked up
+    // Prevent cancellation if already delivered/picked up or ready for pickup
     const isPickup = this.isPickupOrder();
     const completedStatus = isPickup ? 'PICKED_UP' : 'DELIVERED';
+    const readyStatus = 'READY_FOR_PICKUP';
     const inTransitStatus = 'OUT_FOR_DELIVERY';
     
     if (this.order?.deliveryStatus === completedStatus || 
-        this.order?.deliveryStatus === inTransitStatus) {
-      this.errorMessage = `Cannot cancel order that is ${isPickup ? 'picked up' : 'out for delivery or delivered'}.`;
+        this.order?.deliveryStatus === inTransitStatus ||
+        this.order?.deliveryStatus === readyStatus) {
+      this.errorMessage = `Cannot cancel order that is ${isPickup ? 'ready for pickup or picked up' : 'out for delivery or delivered'}.`;
       setTimeout(() => {
         this.errorMessage = '';
       }, 5000);

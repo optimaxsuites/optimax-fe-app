@@ -47,9 +47,7 @@ export class ExcelExportAndImportComponent implements OnInit {
   departments: any[] = []
   measurementUnits = Object.keys(MeasurementUnit)
   loading = false; 
-  private readonly _defaultExpiryDate = new Date(
-      Date.now() + 100 * 365.25 * 24 * 60 * 60 * 1000
-    );
+
   @Output() fileUploaded = new EventEmitter<File>();
   @Output() close = new EventEmitter<boolean>();
 
@@ -697,29 +695,22 @@ async processProductImport(data: any[]): Promise<void> {
   let successCount = 0;
   let errorCount = 0;
   this.loading = true;
-  const failedRows: { rowNumber: number; row: any; error: string }[] = [];
-
 
   const existingCodes = new Set<string>();
 
   // ✅ Fetch all name-to-ID mappings before the loop
- const branches   = await firstValueFrom(this.metadataService.branches$);
-const categories = await firstValueFrom(this.metadataService.category$);
-const taxes      = await firstValueFrom(this.metadataService.taxes$);
-const discounts  = await firstValueFrom(this.metadataService.discount$);
-const suppliers  = await firstValueFrom(this.metadataService.supplier$);
-
+  const [branches, categories, taxes, discounts, suppliers] = await Promise.all([
+    this.posService.getBranches().toPromise(),
+    this.posService.getCategories().toPromise(),
+    this.posService.getTax().toPromise(),
+    this.posService.getDiscount().toPromise(),
+    this.posService.getSupplier().toPromise()
+  ]);
 
  const getIdByName = (list: any[], name: string): number | null => {
   const cleanName = (name || '').toString().trim().toLowerCase();
   const item = list.find((x) => (x?.name || '').toString().trim().toLowerCase() === cleanName);
   return item ? item.id : null;
-};
-
- const getItemByName = (list: any[], name: string): number | null => {
-  const cleanName = (name || '').toString().trim().toLowerCase();
-  const item = list.find((x) => (x?.name || '').toString().trim().toLowerCase() === cleanName);
-  return item || null
 };
 
 
@@ -763,7 +754,7 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
         id: 0,
         name: String(row['Name*']),
         description: String(row['Description*']),
-        code: baseCode,
+        code: uniqueCode,
 
         partNumber: row['Part Number'] || '',
         measurementUnit: row['Measurement Unit'] || 'UNIT',
@@ -771,7 +762,7 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
         bundleItems: row['Combo Items (comma separated names)'] 
           ? this.parseComboItems(String(row['Combo Items (comma separated names)']))
           : [],
-        productCategoryId: categories ? getIdByName(categories, row['Category*']) : null,
+       productCategoryId: categories ? getIdByName(categories, row['Category*']) : null,
 
         variants: [],
         sku: row['SKU'] || '',
@@ -780,61 +771,59 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
         quantity: Number(row['Quantity*']),
         weight: row['Weight (KG)'] ? Number(row['Weight (KG)']) : 0,
         reorderThreshold: row['Reorder Threshold'] ? Number(row['Reorder Threshold']) : 0,
-        tax: [getItemByName(taxes, row['Tax'])],
+        taxId: getIdByName(taxes, row['Tax']),
         discountId: getIdByName(discounts, row['Discount']),
         supplierId: getIdByName(suppliers, row['Supplier']),
         branchId: getIdByName(branches, row['Branch*']),
         createdBy: userName,
         createdDate: new Date().toISOString(),
-        expiryDate: row['Expiry Date (YYYY-MM-DD)'] || this._defaultExpiryDate.toISOString()
+        expiryDate: row['Expiry Date (YYYY-MM-DD)'] || null
       };
 
       const formData = new FormData();
       formData.append("product", JSON.stringify(product));
 
       const defaultImage = await this.createDefaultImage(product.name);
-      formData.append("files", defaultImage, 'default_product.jpg');
+formData.append("files", defaultImage, 'default_product.jpg');
 
 
-      await new Promise<void>((resolve, reject) => {
-      this.posService.addProduct(formData).subscribe(
-        async (response) => {
-          if (!response?.id) {
-            return reject(new Error('Empty product response (no id)'));
-          }
+   await new Promise<void>((resolve, reject) => {
+  this.posService.addProduct(formData).subscribe(
+    async (response) => {
+      if (!response?.id) {
+        return reject(new Error('Empty product response (no id)'));
+      }
 
-          this.metadataService.fetchMetaData()
+      // ✅ Create inventory right after product is created
+      try {
+        await this.createInventoryForNewProduct(
+          response.id,
+          Number(product.branchId || 0),
+          Number(product.quantity || 0),
+          Number(product.purchasePrice || 0),
+          Number(product.sellingPrice || 0),
+          product.supplierId ?? null
+        );
+        // optional: console.log the new inventory id if backend returns it
+        // console.log('Inventory created for product', response.id);
+      } catch (invErr) {
+        // Don’t fail the whole row if inventory creation fails—just warn and continue
+        console.warn('Inventory create failed for product', response.id, invErr);
+      }
 
-          // ✅ Create inventory right after product is created
-          try {
-            await this.createInventoryForNewProduct(
-              response.id,
-              Number(product.branchId || 0),
-              Number(product.quantity || 0),
-              Number(product.purchasePrice || 0),
-              Number(product.sellingPrice || 0),
-              product.supplierId ?? null
-            );
-         
-          } catch (invErr) {
-
-            console.warn('Inventory create failed for product', response.id, invErr);
-          }
-
-          successCount++;
-          resolve();
-        },
-        (error) => reject(error)
-      );
-    });
-
+      successCount++;
+      resolve();
+    },
+    (error) => reject(error)
+  );
+});
 
 
     } catch (error: unknown) {
       errorCount++;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Error importing row ${rowNumber}:`, errorMessage);
-      failedRows.push({ rowNumber, row, error: errorMessage });
+
       this.messageService.add({
         severity: 'error',
         summary: `Row ${rowNumber} Error`,
@@ -856,12 +845,6 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
     });
     this.close.emit(true);
   } else {
-    if (failedRows.length > 0) {
-      this.createFailedImportSheet(failedRows);
-    }
-
-    
-
     this.messageService.add({
       severity: successCount > 0 ? 'warn' : 'error',
       summary: 'Import Completed',
@@ -871,32 +854,6 @@ const suppliers  = await firstValueFrom(this.metadataService.supplier$);
     });
   }
 }
-
-private createFailedImportSheet(failedRows: { rowNumber: number; row: any; error: string }[]) {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Failed Imports');
-
-  const headers = [...Object.keys(failedRows[0].row), 'Error'];
-  worksheet.addRow(headers);
-
-  failedRows.forEach(({ row, error }) => {
-    const rowData = [...Object.values(row), error];
-    worksheet.addRow(rowData);
-  });
-
-  workbook.xlsx.writeBuffer().then(buffer => {
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'failed_products.xlsx';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  });
-}
-
 
 
 // Helper methods

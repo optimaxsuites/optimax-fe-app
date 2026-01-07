@@ -117,10 +117,17 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
         const normalizedOrder = this.normalizeOrderData(order);
         
         if (silentUpdate) {
-          // Merge with existing data
+          // Merge with existing data, but persist the local customer name if it's more specific
+          const currentName = this.orderDetails?.customerName;
+          const isGeneric = !currentName || currentName.toLowerCase().includes('guest');
+          
           this.orderDetails = {
             ...this.orderDetails,
             ...normalizedOrder,
+            // Keep local name if it's not generic and backend IS generic
+            customerName: (!isGeneric && normalizedOrder.customerName.toLowerCase().includes('guest')) 
+                          ? currentName 
+                          : normalizedOrder.customerName,
             items: normalizedOrder.items?.length > 0 ? normalizedOrder.items : this.orderDetails.items
           };
         } else {
@@ -205,8 +212,10 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
       taxBreakdown: taxBreakdown,
       taxSummary: order.taxSummary,
       deliveryFee: order.deliveryFee || 0,
-      customerName: customerName,
-      customerEmail: customerEmail,
+      totalDiscount: order.totalDiscount || 0,
+      totalTax: order.totalTax || 0,
+      customerName: order.deliveryInfo?.fullName || order.customerName || order.customer?.name || 'Guest Customer',
+      customerEmail: order.deliveryInfo?.email || order.customer?.email || '',
       customer: order.customer,
       deliveryMethod: order.deliveryFee > 0 ? 'delivery' : 'pickup',
       deliveryInfo: order.deliveryInfo,
@@ -305,17 +314,28 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   getProductImage(product: any): string {
-    if (!product) return 'assets/images/placeholder.png';
+    if (!product) return 'assets/placeholder-product.jpg';
     
-    if (product.productImage?.imgNo) {
-      return `your-image-base-url/${product.productImage.imgNo}`;
+    // 1. Try productImages array (standard ProductData from frontend/backend)
+    const images = product.productImages || product.product_images;
+    if (Array.isArray(images) && images.length > 0) {
+      const imgNo = images[0]?.imgNo || images[0]?.img_no;
+      if (imgNo) {
+        return `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imgNo}`;
+      }
     }
     
+    // 2. Try single productImage object
+    if (product.productImage?.imgNo) {
+      return `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product.productImage.imgNo}`;
+    }
+    
+    // 3. Try direct imageUrl
     if (product.imageUrl) {
       return product.imageUrl;
     }
     
-    return 'assets/images/placeholder.png';
+    return 'assets/placeholder-product.jpg';
   }
 
   goToStore(): void {

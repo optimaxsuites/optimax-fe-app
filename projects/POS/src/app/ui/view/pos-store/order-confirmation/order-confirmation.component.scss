@@ -1,22 +1,24 @@
 :host {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+  display: block;
 }
 
-.confirmation-content {
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: block !important;
+/* Confetti Canvas - Move behind content but above basic background */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5; /* Lower than content but above background */
+  pointer-events: none;
 }
 
-/* Force all elements to be visible */
-// * {
-//   opacity: 1 !important;
-//   visibility: visible !important;
-// }
+/* Ensure main content is above confetti */
+.relative.z-10 {
+  z-index: 20 !important;
+}
 
-// Animation for fade-in effect
+/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -28,165 +30,57 @@
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-
-// Progress bar animation
-.progress-bar {
-  transition: width 0.5s ease-out;
-}
-
-// Print styles
-@media print {
-  .fixed,
-  button,
-  canvas {
-    display: none !important;
-  }
-  
-  .bg-gray-50 {
-    background-color: white !important;
-  }
-  
-  .shadow-lg {
-    box-shadow: none !important;
-  }
-}
-
-// Smooth transitions
-.transition {
-  transition: all 0.3s ease;
-}
-
-// Custom scrollbar for tracking section
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* order-confirmation.component.scss */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  
-  body {
-    background: white !important;
-  }
-  
-  .bg-gray-50 {
-    background: white !important;
-  }
-  
-  .shadow-sm, .shadow-lg {
-    box-shadow: none !important;
-    border: 1px solid #e5e7eb !important;
-  }
-  
-  button {
-    display: none !important;
-  }
-}
-
-/* Success animation */
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.success-pulse {
-  animation: pulse 2s ease-in-out;
-}
-
 @keyframes scaleIn {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Add this class to the success icon div in the HTML:
-   <div class="inline-flex items-center justify-center w-16 h-16 bg-customGreen/10 rounded-full mb-4 success-icon">
-*/
-
-@keyframes fadeIn {
   from {
+    transform: scale(0.9);
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
+    transform: scale(1);
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-.success-icon {
-  animation: scaleIn 0.5s ease-out;
+.animate-fade-in {
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.5s ease-out;
-}
-
-.animate-fade-in {
-  opacity: 0;
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-/* Loading spinner animation */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
 }
 
-/* Print styles */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Print Styles */
 @media print {
-  .no-print {
+  .no-print,
+  button,
+  canvas,
+  .animate-bounce {
     display: none !important;
   }
   
-  body {
+  .min-h-screen {
     background: white !important;
+    padding: 0 !important;
   }
   
-  .shadow-sm,
-  .shadow-lg {
+  .shadow-2xl, .shadow-xl, .shadow-lg {
     box-shadow: none !important;
+    border: 1px solid #eee !important;
   }
+}
+
+/* Glassmorphism utility */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }

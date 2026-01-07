@@ -4,60 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { StoreOrderService, StoreOrderPOST, StoreOrderItemPOST } from '../../../service/store-order.service';
+import { MetadataService } from '../../../service/metadata.service';
+import { StoreCustomerService } from '../../../service/store-customer.service';
 import { TaxDTO, DiscountDTO } from '../../../models/interface';
 import { AuthStateService } from '../../../service/auth-state.service';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, lastValueFrom, throwError, Observable, catchError, map } from 'rxjs';
 import { isDevMode } from '@angular/core';
 import { environment } from '../../../sharedComponent/service/environments/environment';
-
-interface GeolocationCoordinates {
-  lat: number;
-  lng: number;
-}
-
-interface DeliveryConfig {
-  id: number;
-  baseFee: number;
-  perKmRate: number;
-  maxFee: number;
-  minFee: number;
-  expressFee: number;
-  estimatedDays: number;
-  sameDayDeliveryCutoffTime: string;
-  createdAt: string;
-  updatedAt: string;
-  branchId: number;
-  estimatedDaysType: string;
-  logisticsPartnerId: number;
-  isActive: boolean;
-}
-
-interface BranchInfo {
-  id: number;
-  name: string;
-  description: string;
-  address: string;
-  phoneNo: number;
-  whatsappPhoneNumber: string;
-  longitude: string;
-  latitude: string;
-}
-
-interface GeocodingResponse {
-  lat: string;
-  lon: string;
-  display_name: string;
-  address?: {
-    road?: string;
-    suburb?: string;
-    city?: string;
-    town?: string;
-    village?: string;
-    state?: string;
-    country?: string;
-  };
-}
 
 declare var PaystackPop: any;
 
@@ -95,22 +49,14 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   deliveryFee: number = 0;
   paymentMethod: string = 'cash';
   isLoading: boolean = false;
-  isCalculatingDelivery: boolean = false;
   formErrors: string[] = [];
   
   // Tax & totals
   taxBreakdown: any[] = [];
   taxAmount: number = 0;
   
-  // Geolocation
-  branchCoordinates: GeolocationCoordinates | null = null;
-  customerCoordinates: GeolocationCoordinates | null = null;
-  calculatedDistance: number | null = null;
-  deliveryConfig: DeliveryConfig | null = null;
-  
   // Branch & customer info
-  branchInfo: BranchInfo | null = null;
-  showLocationPicker: boolean = false;
+  branchInfo: any = null;
   customerName: string = '';
   customerEmail: string = '';
   customerPhone: string = '';
@@ -121,9 +67,12 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     phoneNumber: '',
     address: '',
     email: '',
-    instructions: '',
-    coordinates: null as GeolocationCoordinates | null
+    instructions: ''
   };
+
+  // Validation states
+  phoneTouched: boolean = false;
+  phoneError: string = '';
 
   // Payment methods
   paymentMethods = [
@@ -151,9 +100,8 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   ];
 
   // API configuration
-  private readonly LOCATIONIQ_API_KEY = 'pk.cfb14b234e3e72743ea1aa24a1104fc0';
   private apiBaseUrl: string;
-  private currentBranchId: number = 1; // Default branch ID, you can get this from your metadata service
+  private currentBranchId: number = 1;
 
   constructor(
     private router: Router,
@@ -163,7 +111,9 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     private location: Location,
     private storeOrderService: StoreOrderService,
     private authStateService: AuthStateService,
-    private http: HttpClient
+    private http: HttpClient,
+    private storeCustomerService: StoreCustomerService,
+    private metadataService: MetadataService
   ) {
     this.apiBaseUrl = this.getBaseApiUrl();
   }
@@ -182,23 +132,18 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   }
 
   private async initializeCheckout(): Promise<void> {
+    this.isLoading = true;
     try {
-      // Load customer info from auth/session
-      this.loadCustomerInfo();
+      this.currentBranchId = this.metadataService.getSelectedBranchId();
+      console.log('🏛️ Checkout using Branch ID:', this.currentBranchId);
       
-      // Load cart data
       this.loadCartData();
-      
-      // Load branch info and delivery config from API
-      await this.loadBranchAndDeliveryConfig();
-      
-      // Calculate all charges
+      this.loadCustomerInfo();
       this.calculateAllCharges();
-      
-      console.log('✅ Checkout initialization complete');
     } catch (error) {
-      console.error('❌ Failed to initialize checkout:', error);
-      this.formErrors.push('Failed to load checkout data. Please refresh the page.');
+      console.error('Error initializing checkout:', error);
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -237,89 +182,113 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   private loadCartData(): void {
     const cartData = this.cartService.getCart();
     this.cartItems = cartData.items;
-    this.subtotal = cartData.subtotal;
     this.totalItems = cartData.totalItems;
     
-    console.log('🛒 Cart loaded:', {
+    // Calculate gross subtotal from original prices
+    let grossSubtotal = 0;
+    this.cartItems.forEach(item => {
+      grossSubtotal += (item.originalPrice || item.unitPrice) * item.quantity;
+    });
+    this.subtotal = grossSubtotal;
+    
+    console.log('🛒 Cart loaded (Gross):', {
       items: this.cartItems.size,
       subtotal: this.subtotal,
       totalItems: this.totalItems
     });
   }
 
-  private async loadBranchAndDeliveryConfig(): Promise<void> {
-    try {
-      // Fetch branch details
-      const branchUrl = `${this.apiBaseUrl}/x/api/v2/pos/branches/${this.currentBranchId}`;
-      this.branchInfo = await lastValueFrom(
-        this.http.get<BranchInfo>(branchUrl).pipe(
-          catchError(error => {
-            console.error('❌ Failed to load branch info:', error);
-            return throwError(() => new Error('Could not load store information'));
-          })
-        )
-      );
+
+  calculateDiscounts(): void {
+    console.log('🎁 Populating discounts...');
+    
+    let totalDiscount = 0;
+    const discountBreakdown: any[] = [];
+    
+    this.cartItems.forEach((item) => {
+      const originalPrice = item.originalPrice || item.unitPrice;
+      const discountedUnitPrice = item.unitPrice;
+      const quantity = item.quantity;
       
-      if (this.branchInfo) {
-        // Parse coordinates
-        this.branchCoordinates = {
-          lat: parseFloat(this.branchInfo.latitude),
-          lng: parseFloat(this.branchInfo.longitude)
-        };
+      const itemDiscountAmount = (originalPrice - discountedUnitPrice) * quantity;
+      
+      if (itemDiscountAmount > 0) {
+        totalDiscount += itemDiscountAmount;
         
-        console.log('🏪 Branch loaded:', {
-          name: this.branchInfo.name,
-          coordinates: this.branchCoordinates
+        discountBreakdown.push({
+          productName: item.product.name,
+          discountAmount: Math.round(itemDiscountAmount * 100) / 100,
+          quantity: quantity
         });
-        
-        // Try to fetch delivery configuration for this branch
-        try {
-          const deliveryUrl = `${this.apiBaseUrl}/x/api/v2/pos/deliveryTypes/${this.currentBranchId}`;
-          this.deliveryConfig = await lastValueFrom(
-            this.http.get<DeliveryConfig>(deliveryUrl).pipe(
-              catchError(error => {
-                console.warn('⚠️ No delivery config found, using defaults:', error);
-                return throwError(() => new Error('Using default delivery settings'));
-              })
-            )
-          );
-          
-          if (this.deliveryConfig) {
-            console.log('🚚 Delivery config loaded:', this.deliveryConfig);
-          }
-        } catch (deliveryError) {
-          // Use default delivery config if not available
-          this.deliveryConfig = this.getDefaultDeliveryConfig();
-          console.log('⚙️ Using default delivery config:', this.deliveryConfig);
-        }
       }
-    } catch (error) {
-      console.error('❌ Failed to load branch/delivery config:', error);
-      this.formErrors.push('Could not load delivery information. Please try again later.');
-      
-      // Set default coordinates (Abuja center) as fallback
-      this.branchCoordinates = { lat: 9.0765, lng: 7.3986 };
-      this.deliveryConfig = this.getDefaultDeliveryConfig();
-    }
+    });
+    
+    this.totalDiscount = Math.round(totalDiscount * 100) / 100;
+    this.discountBreakdown = discountBreakdown;
+    
+    console.log('✅ Discounts populated:', {
+      totalDiscount: this.totalDiscount,
+      breakdown: discountBreakdown
+    });
   }
 
-  private getDefaultDeliveryConfig(): DeliveryConfig {
-    return {
-      id: 0,
-      baseFee: 1000,
-      perKmRate: 200,
-      maxFee: 5000,
-      minFee: 500,
-      expressFee: 2000,
-      estimatedDays: 1,
-      sameDayDeliveryCutoffTime: '18:30',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      branchId: this.currentBranchId,
-      estimatedDaysType: 'DAYS',
-      logisticsPartnerId: 0,
-      isActive: true
-    };
+  calculateTaxes(): void {
+    console.log('💰 Calculating taxes from net prices...');
+    
+    let taxBreakdown: any[] = [];
+    let totalTax = 0;
+    const taxGroups = new Map<number, { name: string; rate: number; taxableAmount: number }>();
+    
+    this.cartItems.forEach((item) => {
+      const product = item.product;
+      const quantity = item.quantity;
+      // Tax is calculated on the net price (discounted price)
+      const taxableAmountForItem = item.unitPrice * quantity;
+      
+      if (product.tax) {
+        let taxRate = 0;
+        let taxName = 'Tax';
+        let taxId = 0;
+        
+        if (Array.isArray(product.tax) && product.tax.length > 0) {
+          const taxObj = product.tax[0];
+          taxRate = taxObj.rate || 0;
+          taxName = taxObj.name || `Tax ${taxRate}%`;
+          taxId = taxObj.id || 0;
+        } else if (typeof product.tax === 'object' && 'rate' in product.tax) {
+          taxRate = (product.tax as TaxDTO).rate || 0;
+          taxName = (product.tax as TaxDTO).name || `Tax ${taxRate}%`;
+          taxId = (product.tax as TaxDTO).id || 0;
+        } else if (typeof product.tax === 'number') {
+          taxRate = product.tax;
+          taxName = `Tax ${taxRate}%`;
+          taxId = product.id * 1000;
+        }
+        
+        if (taxRate > 0 && taxableAmountForItem > 0) {
+          if (!taxGroups.has(taxId)) {
+            taxGroups.set(taxId, { name: taxName, rate: taxRate, taxableAmount: 0 });
+          }
+          const group = taxGroups.get(taxId)!;
+          group.taxableAmount += taxableAmountForItem;
+        }
+      }
+    });
+    
+    taxGroups.forEach((group, taxId) => {
+      const taxAmt = (group.taxableAmount * group.rate) / 100;
+      totalTax += taxAmt;
+      taxBreakdown.push({
+        taxId: taxId,
+        name: group.name,
+        rate: group.rate,
+        taxableAmount: Math.round(group.taxableAmount * 100) / 100,
+        taxAmount: Math.round(taxAmt * 100) / 100
+      });
+    });
+    
+    this.taxBreakdown = taxBreakdown;
+    this.taxAmount = Math.round(totalTax * 100) / 100;
   }
 
   private calculateAllCharges(): void {
@@ -334,273 +303,6 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     });
   }
 
-  calculateDiscounts(): void {
-    console.log('🎁 Calculating discounts...');
-    
-    let totalDiscount = 0;
-    const discountBreakdown: any[] = [];
-    
-    this.cartItems.forEach((item, key) => {
-      const product = item.product;
-      const quantity = item.quantity;
-      
-      if (product.discount && this.isDiscountActive(product.discount)) {
-        const discountInfo = this.calculateItemDiscount(product, quantity);
-        
-        if (discountInfo.amount > 0) {
-          totalDiscount += discountInfo.amount;
-          
-          discountBreakdown.push({
-            productName: product.name,
-            discountName: product.discount.name || 'Discount',
-            discountType: product.discount.discountType?.name || 'PERCENTAGE',
-            discountPercentage: discountInfo.percentage,
-            discountAmount: discountInfo.amount,
-            quantity: quantity
-          });
-        }
-      }
-    });
-    
-    this.totalDiscount = Math.round(totalDiscount * 100) / 100; // Round to 2 decimal places
-    this.discountBreakdown = discountBreakdown;
-    
-    console.log('✅ Discounts calculated:', {
-      totalDiscount: this.totalDiscount,
-      breakdown: discountBreakdown
-    });
-  }
-
-  private isDiscountActive(discount: DiscountDTO): boolean {
-    if (!discount || discount.active === false) return false;
-    
-    // Check if discount has a valid value
-    if (!discount.value || discount.value <= 0) return false;
-    
-    // Check dates if available
-    if (discount.startDate && discount.endDate) {
-      const now = new Date();
-      const startDate = new Date(discount.startDate);
-      const endDate = new Date(discount.endDate);
-      
-      if (now < startDate || now > endDate) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-
-  private calculateItemDiscount(product: any, quantity: number): { amount: number; percentage: number } {
-    const discount = product.discount;
-    const sellingPrice = product.sellingPrice || 0;
-    const itemTotal = sellingPrice * quantity;
-    
-    if (!discount || !discount.value) return { amount: 0, percentage: 0 };
-    
-    const discountType = discount.discountType?.name || discount.discountType || 'PERCENTAGE';
-    
-    if (discountType === 'PERCENTAGE') {
-      const discountAmount = (itemTotal * discount.value) / 100;
-      return { 
-        amount: Math.round(discountAmount * 100) / 100, 
-        percentage: discount.value 
-      };
-    } 
-    else if (discountType === 'FIXED_AMOUNT' || discountType === 'AMOUNT') {
-      const discountAmount = discount.value * quantity;
-      const percentage = (discountAmount / itemTotal) * 100;
-      return { 
-        amount: Math.round(discountAmount * 100) / 100, 
-        percentage: Math.round(percentage * 100) / 100 
-      };
-    }
-    
-    // Default to percentage
-    const discountAmount = (itemTotal * discount.value) / 100;
-    return { 
-      amount: Math.round(discountAmount * 100) / 100, 
-      percentage: discount.value 
-    };
-  }
-
-  calculateTaxes(): void {
-    console.log('💰 Calculating taxes...');
-    
-    let taxBreakdown: any[] = [];
-    let totalTax = 0;
-    const taxGroups = new Map<number, { name: string; rate: number; taxableAmount: number }>();
-    
-    this.cartItems.forEach((item, key) => {
-      const product = item.product;
-      const quantity = item.quantity;
-      const sellingPrice = product.sellingPrice || 0;
-      const itemTotal = sellingPrice * quantity;
-      
-      // Apply discount to taxable amount if product has discount
-      let taxableAmount = itemTotal;
-      if (product.discount && this.isDiscountActive(product.discount)) {
-        const discountInfo = this.calculateItemDiscount(product, quantity);
-        taxableAmount -= discountInfo.amount;
-      }
-      
-      if (product.tax) {
-        let taxRate = 0;
-        let taxName = 'Tax';
-        let taxId = 0;
-        
-        // Handle tax array
-        if (Array.isArray(product.tax)) {
-          if (product.tax.length > 0) {
-            const taxObj = product.tax[0];
-            taxRate = taxObj.rate || 0;
-            taxName = taxObj.name || `Tax ${taxRate}%`;
-            taxId = taxObj.id || 0;
-          }
-        }
-        // Handle single tax object
-        else if (typeof product.tax === 'object' && 'rate' in product.tax) {
-          taxRate = (product.tax as TaxDTO).rate || 0;
-          taxName = (product.tax as TaxDTO).name || `Tax ${taxRate}%`;
-          taxId = (product.tax as TaxDTO).id || 0;
-        }
-        // Handle legacy number tax
-        else if (typeof product.tax === 'number') {
-          taxRate = product.tax;
-          taxName = `Tax ${taxRate}%`;
-          taxId = product.id * 1000;
-        }
-        
-        if (taxRate > 0 && taxableAmount > 0) {
-          if (!taxGroups.has(taxId)) {
-            taxGroups.set(taxId, { name: taxName, rate: taxRate, taxableAmount: 0 });
-          }
-          
-          const group = taxGroups.get(taxId)!;
-          group.taxableAmount += taxableAmount;
-        }
-      }
-    });
-    
-    // Calculate tax amounts for each group
-    taxGroups.forEach((group, taxId) => {
-      const taxAmt = (group.taxableAmount * group.rate) / 100;
-      totalTax += taxAmt;
-      
-      taxBreakdown.push({
-        taxId: taxId,
-        name: group.name,
-        rate: group.rate,
-        taxableAmount: Math.round(group.taxableAmount * 100) / 100,
-        taxAmount: Math.round(taxAmt * 100) / 100
-      });
-    });
-    
-    this.taxBreakdown = taxBreakdown;
-    this.taxAmount = Math.round(totalTax * 100) / 100;
-    
-    console.log('✅ Taxes calculated:', {
-      taxAmount: this.taxAmount,
-      breakdown: taxBreakdown
-    });
-  }
-
-  async calculateDeliveryFee(): Promise<void> {
-    if (!this.isDelivery || !this.deliveryInfo.coordinates || !this.branchCoordinates) {
-      this.deliveryFee = 0;
-      return;
-    }
-    
-    this.isCalculatingDelivery = true;
-    
-    try {
-      // Calculate distance using Haversine formula
-      this.calculatedDistance = this.calculateDistance(
-        this.branchCoordinates.lat,
-        this.branchCoordinates.lng,
-        this.deliveryInfo.coordinates.lat,
-        this.deliveryInfo.coordinates.lng
-      );
-      
-      console.log('📍 Distance calculated:', {
-        distance: this.calculatedDistance,
-        branch: this.branchCoordinates,
-        customer: this.deliveryInfo.coordinates
-      });
-      
-      // Calculate delivery fee based on config
-      if (this.deliveryConfig) {
-        this.deliveryFee = this.calculateFeeFromDistance(
-          this.calculatedDistance,
-          this.deliveryConfig
-        );
-      } else {
-        // Fallback calculation
-        this.deliveryFee = 1000 + Math.max(0, (this.calculatedDistance - 5) * 200);
-      }
-      
-      // Round to nearest 50
-      this.deliveryFee = Math.ceil(this.deliveryFee / 50) * 50;
-      
-      console.log('🚚 Delivery fee calculated:', {
-        distance: this.calculatedDistance,
-        baseFee: this.deliveryConfig?.baseFee || 1000,
-        perKmRate: this.deliveryConfig?.perKmRate || 200,
-        finalFee: this.deliveryFee
-      });
-      
-    } catch (error) {
-      console.error('❌ Error calculating delivery fee:', error);
-      this.deliveryFee = this.deliveryConfig?.baseFee || 1500;
-    } finally {
-      this.isCalculatingDelivery = false;
-    }
-  }
-
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = this.toRad(lat2 - lat1);
-    const dLon = this.toRad(lon2 - lon1);
-    
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-    
-    return Math.round(distance * 10) / 10; // Round to 1 decimal place
-  }
-
-  private toRad(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
-
-  private calculateFeeFromDistance(distance: number, config: DeliveryConfig): number {
-    const baseFee = config.baseFee || 1000;
-    const perKmRate = config.perKmRate || 200;
-    const freeDistance = 2; // Free within 2km (configurable)
-    
-    if (distance <= freeDistance) {
-      return config.minFee || 0;
-    }
-    
-    const chargeableDistance = distance - freeDistance;
-    const distanceFee = chargeableDistance * perKmRate;
-    let totalFee = baseFee + distanceFee;
-    
-    // Apply minimum and maximum fee limits
-    if (config.minFee && totalFee < config.minFee) {
-      totalFee = config.minFee;
-    }
-    if (config.maxFee && totalFee > config.maxFee) {
-      totalFee = config.maxFee;
-    }
-    
-    return totalFee;
-  }
-
   get total(): number {
     const calculatedTotal = this.subtotal - this.totalDiscount + this.taxAmount + (this.isDelivery ? this.deliveryFee : 0);
     const finalTotal = Math.max(0, Math.round(calculatedTotal * 100) / 100);
@@ -611,137 +313,8 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     this.isDelivery = isDelivery;
     this.formErrors = [];
 
-    if (isDelivery) {
-      // Try to get user's location automatically
-      this.getUserLocation();
-    } else {
+    if (!isDelivery) {
       this.deliveryInfo.address = '';
-      this.deliveryInfo.coordinates = null;
-      this.calculatedDistance = null;
-      this.deliveryFee = 0;
-    }
-  }
-
-  async getUserLocation(): Promise<void> {
-    if (!navigator.geolocation) {
-      console.warn('⚠️ Geolocation is not supported by browser');
-      this.showLocationPicker = true;
-      return;
-    }
-
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
-      });
-
-      this.deliveryInfo.coordinates = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
-
-      // Reverse geocode to get address
-      await this.reverseGeocode(this.deliveryInfo.coordinates);
-      
-      // Calculate delivery fee
-      await this.calculateDeliveryFee();
-      
-      console.log('📍 User location acquired:', {
-        coordinates: this.deliveryInfo.coordinates,
-        address: this.deliveryInfo.address
-      });
-      
-    } catch (error) {
-      console.warn('⚠️ Could not get user location:', error);
-      this.showLocationPicker = true;
-    }
-  }
-
-  async onLocationSelected(location: { lat: number; lng: number; address?: string }): Promise<void> {
-    if (!location) return;
-    
-    this.deliveryInfo.coordinates = {
-      lat: location.lat,
-      lng: location.lng
-    };
-    
-    if (location.address) {
-      this.deliveryInfo.address = location.address;
-    }
-    
-    this.showLocationPicker = false;
-    
-    // Calculate delivery fee for new location
-    await this.calculateDeliveryFee();
-  }
-
-  async geocodeAddress(): Promise<void> {
-    if (!this.deliveryInfo.address || this.deliveryInfo.address.trim().length < 5) {
-      return;
-    }
-
-    this.isCalculatingDelivery = true;
-    
-    try {
-      // Use LocationIQ geocoding service
-      const url = `https://us1.locationiq.com/v1/search?key=${this.LOCATIONIQ_API_KEY}&q=${encodeURIComponent(this.deliveryInfo.address)}&format=json&countrycodes=ng&limit=1`;
-      
-      const response = await lastValueFrom(
-        this.http.get<GeocodingResponse[]>(url).pipe(
-          catchError(error => {
-            console.error('❌ Geocoding failed:', error);
-            return throwError(() => new Error('Could not find this address. Please check and try again.'));
-          })
-        )
-      );
-      
-      if (response && response[0]) {
-        this.deliveryInfo.coordinates = {
-          lat: parseFloat(response[0].lat),
-          lng: parseFloat(response[0].lon)
-        };
-        
-        // Update address with formatted version
-        if (!this.deliveryInfo.address.includes(response[0].display_name)) {
-          this.deliveryInfo.address = response[0].display_name;
-        }
-        
-        await this.calculateDeliveryFee();
-        
-        console.log('📍 Address geocoded:', {
-          address: this.deliveryInfo.address,
-          coordinates: this.deliveryInfo.coordinates
-        });
-      }
-    } catch (error) {
-      console.error('❌ Geocoding error:', error);
-      this.formErrors.push('Could not find this address. Please check and try again.');
-    } finally {
-      this.isCalculatingDelivery = false;
-    }
-  }
-
-  async reverseGeocode(coordinates: GeolocationCoordinates): Promise<void> {
-    try {
-      const url = `https://us1.locationiq.com/v1/reverse?key=${this.LOCATIONIQ_API_KEY}&lat=${coordinates.lat}&lon=${coordinates.lng}&format=json`;
-      
-      const response = await lastValueFrom(
-        this.http.get<GeocodingResponse>(url).pipe(
-          catchError(error => {
-            console.warn('⚠️ Reverse geocoding failed:', error);
-            return throwError(() => new Error('Could not get address from coordinates'));
-          })
-        )
-      );
-      
-      if (response && response.display_name) {
-        this.deliveryInfo.address = response.display_name;
-      }
-    } catch (error) {
-      console.warn('⚠️ Could not reverse geocode:', error);
     }
   }
 
@@ -755,23 +328,31 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     }
 
     if (this.isDelivery) {
-      if (!this.deliveryInfo.coordinates) {
-        this.formErrors.push('Please select a delivery location to calculate delivery fee.');
-        return false;
-      }
-      
       if (!this.deliveryInfo.fullName?.trim()) {
         this.formErrors.push('Full name is required for delivery');
       }
       
       if (!this.deliveryInfo.phoneNumber?.trim()) {
-        this.formErrors.push('Phone number is required for delivery');
+        const err = 'Phone number is required for delivery';
+        this.formErrors.push(err);
+        this.phoneError = err;
       } else if (!/^[0-9+\-\s()]{10,}$/.test(this.deliveryInfo.phoneNumber)) {
-        this.formErrors.push('Please enter a valid phone number');
+        const err = 'Please enter a valid phone number';
+        this.formErrors.push(err);
+        this.phoneError = err;
+      } else {
+        this.phoneError = '';
       }
       
       if (!this.deliveryInfo.address?.trim()) {
         this.formErrors.push('Delivery address is required');
+      }
+    } else {
+      // For pickup, we still want to validate phone if it's provided or required
+      if (this.deliveryInfo.phoneNumber && !/^[0-9+\-\s()]{10,}$/.test(this.deliveryInfo.phoneNumber)) {
+        this.phoneError = 'Please enter a valid phone number';
+      } else {
+        this.phoneError = '';
       }
     }
 
@@ -790,32 +371,60 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   }
 
   canPlaceOrder(): boolean {
-    if (this.isLoading || this.isCalculatingDelivery) return false;
+    if (this.isLoading) return false;
     return this.validateForm();
   }
 
   async placeOrder(): Promise<void> {
+    this.phoneTouched = true;
     if (!this.canPlaceOrder()) return;
 
     this.isLoading = true;
     this.formErrors = [];
 
+    // 1. Recipient Info (From the Form - used for Delivery and Receipts)
+    const recipientInfo = {
+      name: this.deliveryInfo.fullName || this.customerName || 'Guest Customer',
+      email: this.deliveryInfo.email || this.customerEmail || 'customer@example.com',
+      phoneNumber: this.deliveryInfo.phoneNumber || this.customerPhone
+    };
+
+    // 2. Payer Info (From the Auth Profile - used for Account/Transaction linking)
+    const currentUser = this.authStateService.getCurrentUser() as any;
+    const isGuest = !currentUser || currentUser.isGuest;
+    
+    // If logged in, we strictly use their profile details for the Payer record
+    const payerInfo = isGuest ? recipientInfo : {
+      name: currentUser.upi?.fullname || currentUser.username || recipientInfo.name,
+      email: currentUser.email || recipientInfo.email,
+      phoneNumber: currentUser.phone || recipientInfo.phoneNumber
+    };
+
+    // Use the specific POS ID if available, otherwise pass 0 to force resolution/creation
+    const customerId = (!isGuest && currentUser.posCustomerId) ? currentUser.posCustomerId : 0;
+
+    console.log('📦 Ordering initiated:', { 
+      isGuest, 
+      payer: payerInfo, 
+      recipient: recipientInfo 
+    });
+
     try {
-      const orderData = this.prepareOrderData();
+      const orderData = this.prepareOrderData(customerId);
       
       if (this.paymentMethod === 'card') {
-        await this.handlePaystackPayment(orderData);
+        await this.handlePaystackPayment(orderData, payerInfo);
       } else {
-        await this.handleCashPayment(orderData);
+        await this.handleCashPayment(orderData, payerInfo);
       }
     } catch (error) {
       this.isLoading = false;
-      console.error('❌ Order placement failed:', error);
+      console.error('❌ Order placement initiation failed:', error);
       this.handleOrderError(error);
     }
   }
 
-  private async handlePaystackPayment(orderData: any): Promise<void> {
+  private async handlePaystackPayment(orderData: any, customerInfo: any): Promise<void> {
     const customerEmail = this.deliveryInfo.email || this.customerEmail || 'customer@example.com';
     const amount = this.total * 100; // Paystack expects amount in kobo
 
@@ -828,7 +437,8 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     this.storeOrderService.processPaystackPayment(
       customerEmail,
       amount,
-      orderData.orderNumber
+      orderData.orderNumber,
+      this.currentBranchId
     ).subscribe({
       next: (paystackResponse: any) => {
         console.log('✅ Paystack payment successful:', paystackResponse);
@@ -838,11 +448,14 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
           orderStatus: 'PAID'
         };
         
+        // Check if createOrderWithPayment accepts deliveryInfo
+        // If it does, pass it; otherwise, embed it in orderData
         this.storeOrderService.createOrderWithPayment(
           paidOrderData,
           'card',
           paystackResponse.reference,
-          this.isDelivery ? this.deliveryInfo : undefined
+          this.isDelivery ? this.deliveryInfo : undefined,
+          customerInfo
         ).subscribe({
           next: (orderResponse: any) => {
             console.log('✅ Order created after payment:', orderResponse);
@@ -867,14 +480,13 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-  private async handleCashPayment(orderData: any): Promise<void> {
+  private async handleCashPayment(orderData: any, customerInfo: any): Promise<void> {
     console.log('💵 Processing cash/transfer payment...');
     
     this.storeOrderService.createCashOrder(
       orderData,
-      this.cartItems,
-      this.isDelivery ? this.deliveryInfo : undefined
+      this.isDelivery ? this.deliveryInfo : undefined,
+      customerInfo
     ).subscribe({
       next: (response: any) => {
         console.log('✅ Order placed successfully:', response);
@@ -888,7 +500,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     });
   }
 
-  private prepareOrderData(): any {
+  private prepareOrderData(customerId: number): any {
     const orderItems: StoreOrderItemPOST[] = Array.from(this.cartItems.entries()).map(
       ([key, value]) => {
         const hasValidVariant = value.selectedVariants?.[0]?.id && value.selectedVariants[0].id > 0;
@@ -950,7 +562,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       isOnline: true,
       totalAmount: totalAmount.toFixed(2),
       quantity: totalQuantity,
-      customerId: 1, // Guest customer ID
+      customerId: customerId,
       branchId: this.currentBranchId,
       discountId: null,
       paymentId: null,
@@ -962,6 +574,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       customerEmail: customerEmail,
       deliveryInfoId: null,
       deliverTypeId: this.isDelivery ? 1 : null,
+      deliveryTypeId: this.isDelivery ? 1 : null,
       deliveryStatus: 'PENDING'
     };
 
@@ -1019,7 +632,6 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
         taxAmount: this.taxAmount,
         taxBreakdown: this.taxBreakdown,
         deliveryFee: this.isDelivery ? this.deliveryFee : 0,
-        deliveryDistance: this.calculatedDistance,
         deliveryMethod: this.isDelivery ? 'delivery' : 'pickup',
         deliveryInfo: this.isDelivery ? this.deliveryInfo : null,
         items: Array.from(this.cartItems.values()),
@@ -1038,7 +650,6 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
         taxAmount: this.taxAmount,
         taxBreakdown: this.taxBreakdown,
         deliveryFee: this.isDelivery ? this.deliveryFee : 0,
-        deliveryDistance: this.calculatedDistance,
         deliveryMethod: this.isDelivery ? 'delivery' : 'pickup',
         deliveryInfo: this.isDelivery ? this.deliveryInfo : null,
         items: Array.from(this.cartItems.values()),
@@ -1056,7 +667,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
 
     // Navigate to confirmation
     this.router.navigate(
-      ['optimerce', currentUuid, 'order-confirmation', backendOrderId],
+      ['user/checkout/store', currentUuid, 'order-confirmation', backendOrderId],
       {
         state: {
           orderData: fullOrderData,
@@ -1104,35 +715,11 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     return discount.value;
   }
 
-  getDiscountedPrice(product: any, variant?: any): number {
-    const sellingPrice = product.sellingPrice || 0;
-    const discount = product.discount;
-    
-    if (!discount || !discount.value) return sellingPrice;
-    
-    const discountType = discount.discountType?.name || discount.discountType || 'PERCENTAGE';
-    
-    if (discountType === 'PERCENTAGE') {
-      return sellingPrice * (1 - discount.value / 100);
-    } 
-    else if (discountType === 'FIXED_AMOUNT' || discountType === 'AMOUNT') {
-      return Math.max(0, sellingPrice - discount.value);
-    }
-    
-    return sellingPrice;
-  }
 
   getProductImage(product: any) {
     return this.imageCacheService.getProductImage(product);
   }
 
-  openLocationPicker(): void {
-    this.showLocationPicker = true;
-  }
-
-  closeLocationPicker(): void {
-    this.showLocationPicker = false;
-  }
 
   getPaymentMethodClasses(method: any): string {
     const baseClasses = 'flex items-center p-4 border-2 rounded-lg transition-all duration-300';

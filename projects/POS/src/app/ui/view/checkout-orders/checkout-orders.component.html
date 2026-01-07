@@ -187,8 +187,8 @@
         </td>
         <td class="capitalize">{{ order?.orderNumber }}</td>
         <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
-        <td>₦{{ getOrderTotalTax(order) || 0 | number:'1.2-2' }}</td>
-        <td class="font-semibold">₦{{ order.totalAmount + getOrderTotalTax(order)| number:'1.2-2' }}</td>
+        <td>₦{{ calculateOrderTax(order) | number:'1.2-2' }}</td>
+        <td class="font-semibold">₦{{ calculateOrderTotalWithTax(order) | number:'1.2-2' }}</td>
         <td>
           <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
             <i *ngIf="order?.orderStatus === 'UNPAID'"
@@ -255,7 +255,7 @@
     </td>
     <td class="capitalize">{{ order?.order?.orderNumber || order.orderNumber }}</td>
     <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
-    <td>₦{{ getOrderTotalTax(order?.order) || 0 | number:'1.2-2' }}</td>
+    <td>₦{{ calculateOrderTax(order?.order) | number:'1.2-2' }}</td>
     <td class="font-semibold">₦{{ calculateOrderTotalWithTax(order?.order) | number:'1.2-2' }}</td>
     <td>
       <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">

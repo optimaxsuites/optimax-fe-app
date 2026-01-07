@@ -65,7 +65,7 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   
   // Combo/Bundle Fields
   isBundle?: boolean;
-  bundleItems?: any[]; // Updated to support Bundle Content
+  bundleItems?: BundleItemDTO[] | any[]; // Updated to support Bundle Content
   
   measurementUnit?: any;
   reorderThreshold?: number | null;
@@ -220,13 +220,33 @@ export interface Order {
   deliveryFee?: number;
 }
 
-/**
- * Updated OrderUpdateDTO to support the full payload required by the POST endpoint
- */
+export type ValidOrderStatus = 
+  | 'CANCELLED' 
+  | 'READY' 
+  | 'DELIVERED' 
+  | 'UNPAID' 
+  | 'PENDING' 
+  | 'PAID' 
+  | 'CONFIRMED' 
+  | 'PREPARING';
+
+export type ValidDeliveryStatus = 
+  | 'AWAITING_PAYMENT'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'PACKAGED'
+  | 'READY_FOR_PICKUP'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'PICKED_UP'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'N/A';
+
 export interface OrderUpdateDTO {
   id: number | string;
   orderNumber: string;
-  orderStatus: string;
+  orderStatus: ValidOrderStatus;
   deliveryStatus: string;
   updatedBy: string;
   totalAmount: number;
@@ -236,6 +256,9 @@ export interface OrderUpdateDTO {
   branchId: number;
   isOnline: boolean;
   createdDate: string; // ISO String
+  
+  // Payment ID - CRITICAL for avoiding NullPointerException
+  paymentId?: number | null;
   
   // Optional but often required fields
   deliveryInfoId?: number | null;
@@ -372,9 +395,6 @@ export type TaxDTO = {
   rate: number;
   order?: number;
   description?: string;
-  length?: any;
-  map?: any;
-  reduce?: any
 };
 
 export interface Business {
@@ -1017,7 +1037,7 @@ export interface DeliveryInfoDTO {
   address: string;
   email: string;
   instructions: string;
-  deliveryStatus?: 'AWAITING_DELIVERY' | 'PACKAGED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'PENDING' | 'READY_FOR_PICKUP' | 'PICKED_UP' | 'PROCESSING';
+  deliveryStatus?: ValidDeliveryStatus;
 }
 
 export interface OrderItemsDTO {

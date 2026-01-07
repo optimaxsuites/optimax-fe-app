@@ -4,6 +4,7 @@ import { Observable, throwError, from, of } from 'rxjs';
 import { catchError, switchMap, tap, map } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
 import { PaystackService, PaystackPaymentData } from './paystack.service';
+import { StoreCustomerService } from './store-customer.service';
 import { Order as ComponentOrder, OrderUpdateDTO } from "../models/interface";
 
 export interface PaymentKey {
@@ -93,6 +94,8 @@ export interface OrderDTO {
   updatedBy?: string;
   deliveryMethod?: string;
   deliveryFee?: number;
+  paymentId?: number;
+  deliveryInfoId?: number;
 }
 
 export interface StoreOrderPOST {
@@ -118,7 +121,7 @@ export interface StoreOrderPOST {
   customerEmail: string;
   deliveryInfoId: number | null;
   deliveryTypeId: number | null;
-  deliverTypeId?: number | null; // Keep both for compatibility
+  deliverTypeId?: number | null; 
   deliveryStatus: string;
 }
 
@@ -131,7 +134,6 @@ export interface StoreOrderItemPOST {
   orderId: number | null;
 }
 
-// NEW Add Ons for Tax Calculation from Code A
 export interface TaxCalculation {
   subtotal: number;
   taxAmount: number;
@@ -154,16 +156,15 @@ export class StoreOrderService {
 
   constructor(
     private http: HttpClient,
-    private paystackService: PaystackService
+    private paystackService: PaystackService,
+    private storeCustomerService: StoreCustomerService
   ) {}
 
-  // ========== TAX CALCULATION METHODS FROM CODE A ==========
   calculateTaxes(orderItems: StoreOrderItemPOST[], products: Map<string, any>): TaxCalculation {
     const taxBreakdown: TaxBreakdownItem[] = [];
     let subtotal = 0;
     let taxAmount = 0;
     
-    // Group items by tax rate for calculation
     const taxGroups = new Map<number, { rate: number; name: string; taxableAmount: number }>();
     
     orderItems.forEach(item => {
@@ -171,7 +172,6 @@ export class StoreOrderService {
       const itemTotal = item.totalPrice || (product?.sellingPrice * item.quantity);
       subtotal += itemTotal;
       
-      // Get tax info from product
       const productTax = product?.tax;
       if (productTax && typeof productTax === 'object' && 'rate' in productTax) {
         const taxId = productTax.id;
@@ -187,7 +187,6 @@ export class StoreOrderService {
       }
     });
     
-    // Calculate tax for each group
     taxGroups.forEach((group, taxId) => {
       const taxAmt = (group.taxableAmount * group.rate) / 100;
       taxAmount += taxAmt;
@@ -232,12 +231,7 @@ export class StoreOrderService {
     return headers;
   }
 
-  /**
-   * Helper to retrieve the active Admin User Name from Session/Local Storage.
-   * Priority: sessionStorage 'userPrimaryInfoRegData' > sessionStorage 'username' > localStorage > 'System'
-   */
   private getCurrentUser(): string {
-    // 1. Try Session Storage (userPrimaryInfoRegData JSON)
     const sessionUserInfo = sessionStorage.getItem('userPrimaryInfoRegData');
     if (sessionUserInfo) {
       try {
@@ -248,11 +242,9 @@ export class StoreOrderService {
       }
     }
 
-    // 2. Try Session Storage (username string)
     const sessionUsername = sessionStorage.getItem('username');
     if (sessionUsername) return sessionUsername;
 
-    // 3. Fallback to Local Storage (Legacy)
     const localUser = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (localUser) {
       try {
@@ -262,8 +254,6 @@ export class StoreOrderService {
         return localUser; 
       }
     }
-
-    // 4. Default
     return 'System';
   }
 
@@ -286,22 +276,7 @@ export class StoreOrderService {
   }
 
   getAllOrders(filters?: any): Observable<ComponentOrder[]> {
-    const params = this.buildQueryParams(filters || {});
-    const endpoint = '/x/api/v2/pos/orders';
-    
-    return this.http.get<OrderDTO[]>(
-      this.getBaseApiUrl() + endpoint,
-      { 
-        params: params,
-        headers: this.getHeaders()
-      }
-    ).pipe(
-      map((orderDTOs: OrderDTO[]) => {
-        const orders = orderDTOs.map(orderDTO => this.convertOrderDTOToComponentOrder(orderDTO));
-        return orders;
-      }),
-      catchError(this.handleError)
-    );
+    return this.getAllOrdersAsOrderType(filters);
   }
 
   getEStoreOrders(filters?: any): Observable<ComponentOrder[]> {
@@ -455,8 +430,8 @@ export class StoreOrderService {
     );
   }
 
-  processPaystackPayment(email: string, amount: number, orderNumber: string): Observable<any> {
-    return this.getPublicKeyForBranch().pipe(
+  processPaystackPayment(email: string, amount: number, orderNumber: string, branchId: number = 1): Observable<any> {
+    return this.getPublicKeyForBranch(branchId).pipe(
       switchMap((publicKey: string) => {
         this.paystackService.setPublicKey(publicKey);
         const paymentData: PaystackPaymentData = {
@@ -473,15 +448,15 @@ export class StoreOrderService {
     );
   }
 
-  // ========== ORDER CREATION METHODS (Enhanced with cartItems support) ==========
   createOrderWithPayment(
     orderData: StoreOrderPOST,
     paymentMethod: string,
     paymentReference: string,
     deliveryInfo?: any,
-    cartItems?: Map<string, any>, // Added from Code A
+    customerInfo?: any, 
   ): Observable<any> {
-    const isPickup = !deliveryInfo || orderData.deliveryFee === 0;
+    const isDeliveryType = orderData.deliverTypeId === 1 || orderData.deliveryTypeId === 1;
+    const isPickup = !deliveryInfo || !isDeliveryType;
     const initialDeliveryStatus = 'PENDING';
 
     const baseOrder: StoreOrderPOST = {
@@ -500,46 +475,45 @@ export class StoreOrderService {
         const paymentId = paymentResponse.id;
         if (!paymentId || paymentId === 0) throw new Error('Payment record creation failed');
 
-        const orderWithPayment = {
-          ...baseOrder,
-          paymentId: paymentId,
-          orderStatus: paymentMethod === 'card' ? 'PAID' : 'PENDING'
-        };
+        // Orchestrate Customer Resolution -> Delivery Info -> Finalize Order
+        // Only skip resolution if a valid registered customerId (> 1) explicitly passed
+        const customerObs = (baseOrder.customerId && baseOrder.customerId > 1)
+          ? of(baseOrder.customerId)
+          : this.resolveOrderCustomer(customerInfo);
 
-        console.log('📦 Order with payment ID attached:', {
-          orderId: orderWithPayment.id,
-          paymentId: orderWithPayment.paymentId,
-          orderStatus: orderWithPayment.orderStatus,
-          deliveryStatus: orderWithPayment.deliveryStatus 
-        });
+        return customerObs.pipe(
+          switchMap((customerId: number) => {
+            const orderWithPayment = {
+              ...baseOrder,
+              paymentId: paymentId,
+              customerId: customerId,
+              orderStatus: paymentMethod === 'card' ? 'PAID' : 'PENDING'
+            };
 
-        if (deliveryInfo && !isPickup) {
-          return this.createDeliveryInfo(deliveryInfo).pipe(
-            tap((deliveryResponse: any) => {
-              console.log('✅ Delivery info created:', deliveryResponse);
-            }),
-            switchMap((deliveryResponse: any) => {
-              const deliveryId = this.extractIdFromResponse(deliveryResponse);
-              const orderWithDelivery = {
-                ...orderWithPayment,
-                deliveryInfoId: deliveryId,
-                customerEmail: deliveryInfo.email || baseOrder.customerEmail,
-              };
-              console.log('📦 Final order data with delivery:', orderWithDelivery);
-              return this.finalizeOrderCreation(orderWithDelivery, cartItems); // Pass cartItems
-            }),
-            catchError((error) => {
-              console.error('❌ Delivery info creation failed:', error);
-              return throwError(() => 'Failed to create delivery information');
-            })
-          );
-        } else {
-          const pickupOrder = {
-            ...orderWithPayment,
-          };
-          console.log('📦 Final pickup order data:', pickupOrder);
-          return this.finalizeOrderCreation(pickupOrder, cartItems); // Pass cartItems
-        }
+            if (deliveryInfo && !isPickup) {
+              return this.createDeliveryInfo(deliveryInfo).pipe(
+                tap((deliveryResponse: any) => {
+                  console.log('✅ Delivery info created:', deliveryResponse);
+                }),
+                switchMap((deliveryResponse: any) => {
+                  const deliveryId = this.extractIdFromResponse(deliveryResponse);
+                  const orderWithDelivery = {
+                    ...orderWithPayment,
+                    deliveryInfoId: deliveryId,
+                    customerEmail: deliveryInfo.email || baseOrder.customerEmail,
+                  };
+                  return this.finalizeOrderCreation(orderWithDelivery);
+                }),
+                catchError((error) => {
+                  console.error('❌ Delivery info creation failed:', error);
+                  return throwError(() => 'Failed to create delivery information');
+                })
+              );
+            } else {
+              return this.finalizeOrderCreation(orderWithPayment);
+            }
+          })
+        );
       }),
       catchError((error) => {
         console.error('❌ Order creation with payment failed:', error);
@@ -548,53 +522,78 @@ export class StoreOrderService {
     );
   }
 
-  createCashOrder(
-    orderData: StoreOrderPOST,
-    cartItems?: Map<string, any>, // Added from Code A
-    deliveryInfo?: any
-  ): Observable<any> {
-    console.log(' Creating cash order...');
-    return this.createOrderWithPayment(
-      orderData,
-      'cash',
-      `CASH-${orderData.orderNumber}`,
-      deliveryInfo,
-      cartItems // Pass cartItems
-    ).pipe(
-      map((response: any) => {
-        // 🔥 IMPORTANT: Ensure we're returning the backend response (from Code A)
-        console.log('🎯 Backend response structure:', response);
-        
-        // The response should contain the backend-generated ID
-        if (response && response.id) {
-          return {
-            id: response.id,
-            orderNumber: response.orderNumber || orderData.orderNumber,
-            status: response.orderStatus || orderData.orderStatus,
-            totalAmount: response.totalAmount || orderData.totalAmount,
-            createdDate: response.createdDate || orderData.createdDate,
-            // Include other fields from response
-            ...response
-          };
+  /**
+   * Resolves a Customer ID for the order.
+   * If customerInfo matches an existing record, it returns that ID.
+   * Otherwise, it creates a new record. This replaces the default ID 1 fallback.
+   */
+  private resolveOrderCustomer(customerInfo: any): Observable<number> {
+    // If absolutely no info (rare), create a generic Guest record
+    if (!customerInfo || (!customerInfo.email && !customerInfo.phoneNumber)) {
+      console.log('⚠️ No specific customer info provided, creating/finding generic Guest record...');
+      customerInfo = { name: 'Guest Customer', email: 'guest@example.com', phoneNumber: '0000000000' };
+    }
+
+    const email = customerInfo.email?.trim();
+    const phone = customerInfo.phoneNumber?.trim();
+    const name = customerInfo.name?.trim() || 'Guest Customer';
+
+    console.log('🔍 Resolving order identity for:', { name, email, phone });
+
+    // 1. Try finding by phone
+    return (phone ? this.storeCustomerService.getCustomerByPhone(phone) : of(null)).pipe(
+      catchError(() => of(null)),
+      switchMap(existingByPhone => {
+        const customerByPhone = Array.isArray(existingByPhone) ? existingByPhone[0] : existingByPhone;
+        if (customerByPhone && customerByPhone.id) {
+          console.log('✅ Identity resolved by phone:', customerByPhone.id);
+          return of(customerByPhone.id);
         }
-        
-        // Fallback to local data if backend response is incomplete
-        return {
-          id: response?.id || 0,
-          orderNumber: orderData.orderNumber,
-          status: orderData.orderStatus,
-          totalAmount: orderData.totalAmount,
-          createdDate: orderData.createdDate,
-          ...response
-        };
+
+        // 2. Try finding by email
+        const isPlaceholderEmail = !email || email === 'customer@example.com' || email === 'guest@example.com';
+        return (email && !isPlaceholderEmail ? this.storeCustomerService.getCustomerByEmail(email) : of(null)).pipe(
+          catchError(() => of(null)),
+          switchMap(existingByEmail => {
+            const customerByEmail = Array.isArray(existingByEmail) ? existingByEmail[0] : existingByEmail;
+            if (customerByEmail && customerByEmail.id) {
+              console.log('✅ Identity resolved by email:', customerByEmail.id);
+              return of(customerByEmail.id);
+            }
+
+            // 3. Create new record (Strict identity)
+            console.log('🆕 Creating new POS identity record...', { name, email, phone });
+            return this.storeCustomerService.createCustomer({
+              name: name,
+              email: email || '',
+              phoneNumber: phone || '',
+              loyaltyPoints: 0
+            }).pipe(
+              map(res => {
+                const newId = this.extractIdFromResponse(res);
+                console.log('✅ New POS identity record created with ID:', newId);
+                return newId;
+              }),
+              catchError(err => {
+                console.error('❌ Failed to create POS identity (Raw API Error):', err);
+                // Re-throw the actual error to preserve backend details
+                return throwError(() => err);
+              })
+            );
+          })
+        );
       })
     );
+  }
+
+  createCashOrder(orderData: StoreOrderPOST, deliveryInfo?: any, customerInfo?: any): Observable<any> {
+    return this.createOrderWithPayment(orderData, 'cash', `CASH-${orderData.orderNumber}`, deliveryInfo, customerInfo);
   }
 
   updateOrder(order: ComponentOrder, updateData: Partial<OrderUpdateDTO>): Observable<OrderDTO> {
     const endpoint = `/x/api/v2/pos/orders`;
     const completeOrderPayload = this.buildCompleteOrderPayload(order, updateData);
-    console.log(' Updating order via POST:', completeOrderPayload);
+    console.log('🔄 Updating order payload:', completeOrderPayload);
 
     return this.http.post<OrderDTO>(
       this.getBaseApiUrl() + endpoint,
@@ -606,36 +605,112 @@ export class StoreOrderService {
   updateDeliveryStatus(order: ComponentOrder, status: string, currentUser: string): Observable<OrderDTO> {
     const isPickupOrder = this.isPickupOrder(order);
     let orderStatus = order.orderStatus;
-    
     let backendStatus = status;
 
+    // Map Frontend Labels to Backend Enums
     if (status === 'READY_FOR_PICKUP') {
-        backendStatus = 'OUT_FOR_DELIVERY'; 
+        backendStatus = 'OUT_FOR_DELIVERY';
     } else if (status === 'PICKED_UP') {
         backendStatus = 'DELIVERED';
     }
 
+    // CRITICAL FIX: Ensure payment exists before proceeding
+    const hasValidPayment = (order.payment && order.payment.id && order.payment.id > 0) || 
+                            ((order as any).paymentId && (order as any).paymentId > 0);
+
+    // If no payment exists and order isn't already PAID, create a payment record first
+    if (!hasValidPayment && order.orderStatus !== 'PAID') {
+      console.warn('⚠️ No payment record exists. Creating payment record first...');
+      
+      // Create payment record before updating status
+      return this.createPaymentRecord(
+        order.totalAmount.toString(),
+        order.orderNumber,
+        'PENDING',
+        'CASH',
+        `CASH-${order.orderNumber}-${Date.now()}`
+      ).pipe(
+        switchMap((paymentResponse: any) => {
+          const paymentId = paymentResponse.id;
+          console.log('✅ Payment record created with ID:', paymentId);
+          
+          // Update order object with payment ID
+          (order as any).paymentId = paymentId;
+          if (!order.payment) {
+            order.payment = {
+              id: paymentId,
+              totalAmount: order.totalAmount,
+              transactionDate: new Date().toISOString(),
+              status: 'PENDING',
+              paymentBreakdown: []
+            };
+          }
+          
+          // Now proceed with status update
+          return this.performStatusUpdate(order, backendStatus, orderStatus, isPickupOrder, currentUser, hasValidPayment || paymentId > 0);
+        }),
+        catchError((error) => {
+          console.error('❌ Failed to create payment record:', error);
+          return throwError(() => 'Failed to create payment record before status update');
+        })
+      );
+    }
+
+    // Proceed with normal status update if payment exists
+    return this.performStatusUpdate(order, backendStatus, orderStatus, isPickupOrder, currentUser, hasValidPayment);
+  }
+
+  private performStatusUpdate(
+    order: ComponentOrder,
+    backendStatus: string,
+    orderStatus: string,
+    isPickupOrder: boolean,
+    currentUser: string,
+    hasValidPayment: boolean
+  ): Observable<OrderDTO> {
+    
+    // Apply Rules for Order Status
+    let validOrderStatus: string = 'PENDING';
+    
     if (isPickupOrder) {
-      if (backendStatus === 'DELIVERED') { 
-        orderStatus = 'PAID'; 
-        console.log('💰 Pickup completed - updating order status to PAID');
+      if (backendStatus === 'OUT_FOR_DELIVERY') { // Frontend: READY_FOR_PICKUP
+         // Use READY instead of PROCESSING (which is invalid)
+         validOrderStatus = 'READY'; 
+      } else if (backendStatus === 'DELIVERED') { // Frontend: PICKED_UP
+         if (hasValidPayment) {
+            validOrderStatus = 'PAID';
+            console.log('✅ Pickup completed & Payment exists - Status set to PAID');
+         } else {
+            console.warn('⚠️ Pickup completed but NO PAYMENT RECORD found.');
+            validOrderStatus = 'UNPAID';
+         }
       } else if (backendStatus === 'CANCELLED') {
-        orderStatus = 'CANCELLED';
+         validOrderStatus = 'CANCELLED';
       }
     } else {
+      // Delivery Logic
       if (backendStatus === 'DELIVERED') {
-        orderStatus = 'PAID'; 
-        console.log('✅ Delivery completed - updating order status to PAID');
+        if (hasValidPayment) {
+           validOrderStatus = 'PAID';
+        } else {
+           console.warn('⚠️ Delivery completed but NO PAYMENT RECORD found.');
+           validOrderStatus = 'UNPAID';
+        }
       } else if (backendStatus === 'CANCELLED') {
-        orderStatus = 'CANCELLED';
+        validOrderStatus = 'CANCELLED';
+      } else if (backendStatus === 'PENDING') {
+        validOrderStatus = 'PENDING';
+      } else if (backendStatus === 'PROCESSING') {
+        // Map PROCESSING to PREPARING (valid backend enum)
+        validOrderStatus = 'PREPARING';
       }
     }
-  
+
     const payload: OrderUpdateDTO = {
       id: order.id,
       orderNumber: order.orderNumber,
       deliveryStatus: backendStatus,
-      orderStatus: orderStatus,
+      orderStatus: validOrderStatus as any,
       updatedBy: currentUser,
       totalAmount: order.totalAmount,
       quantity: this.calculateQuantity(order),
@@ -674,8 +749,16 @@ export class StoreOrderService {
 
   private buildCompleteOrderPayload(order: ComponentOrder, updates: Partial<OrderUpdateDTO>): any {
     const getValidId = (id: any) => (id && id > 0) ? id : null;
-    const rawPaymentId = order.payment?.id || (order as any).paymentId;
-    const paymentId = rawPaymentId || 0;
+    
+    // Ensure we always have a valid payment ID
+    let paymentId = getValidId(updates.paymentId || order.payment?.id || (order as any).paymentId);
+    
+    // If no payment ID and order is PAID or being marked as PAID, this is an error
+    if (!paymentId && (order.orderStatus === 'PAID' || updates.orderStatus === 'PAID')) {
+      console.error('❌ CRITICAL: Attempting to mark order as PAID without payment ID');
+      paymentId = null; 
+    }
+    
     const rawDeliveryId = order.deliveryInfo?.id || (order as any).deliveryInfoId;
     const deliveryInfoId = getValidId(rawDeliveryId);
 
@@ -690,12 +773,12 @@ export class StoreOrderService {
       orderNumber: order.orderNumber,
       orderStatus: updates.orderStatus || order.orderStatus,
       deliveryStatus: deliveryStatus, 
-      updatedBy: updates.updatedBy || 'System',
+      updatedBy: updates.updatedBy ? updates.updatedBy : (order.updatedBy || 'System'),
       totalAmount: updates.totalAmount || order.totalAmount,
       quantity: this.calculateQuantity(order),
       customerId: order.customer?.id || 1,
       branchId: order.branch?.id || 1,
-      paymentId: paymentId,
+      paymentId: paymentId, 
       deliveryInfoId: deliveryInfoId,
       isOnline: order.isOnline,
       createdDate: this.formatDateForBackend(order.createdDate),
@@ -737,11 +820,7 @@ export class StoreOrderService {
     return params;
   }
 
-  // =========================================================
-  // CRITICAL FIX: Robust Date Parsing for both Arrays and Strings
-  // =========================================================
   private parseDateToArray(dateInput: any): number[] {
-    // 1. If it is null or undefined
     if (!dateInput) return [0, 0, 0, 0, 0, 0];
     if (Array.isArray(dateInput)) return [dateInput[0]||0, dateInput[1]||0, dateInput[2]||0, dateInput[3]||0, dateInput[4]||0, dateInput[5]||0];
     try {
@@ -753,9 +832,11 @@ export class StoreOrderService {
 
   private isPickupOrder(order: ComponentOrder | OrderDTO): boolean {
     const hasNoDeliveryInfo = !order.deliveryInfo;
-    const hasNoDeliveryFee = (order as any).deliveryFee === 0;
+    const isPickupType = (order as any).deliverTypeId === 2 || (order as any).deliveryTypeId === 2;
     const isPickupMethod = order.deliveryMethod === 'PICKUP';
-    return hasNoDeliveryInfo || hasNoDeliveryFee || isPickupMethod;
+    
+    // An order is a pickup if it has no delivery info OR is explicitly marked as pickup
+    return hasNoDeliveryInfo || isPickupType || isPickupMethod;
   }
 
   private convertOrderDTOToComponentOrder(orderDTO: OrderDTO): ComponentOrder {
@@ -766,30 +847,61 @@ export class StoreOrderService {
     if (!isOnline && orderDTO.deliveryInfo) isOnline = true;
 
     const isPickup = this.isPickupOrder(orderDTO);
-    let deliveryStatus = 'N/A';
     
-    if (isOnline) {
-      const isPaid = orderDTO.orderStatus === 'PAID';
-      const backendStatus = orderDTO.deliveryStatus || 'PENDING';
-
-      if (isPickup) {
-        if (backendStatus === 'OUT_FOR_DELIVERY') {
-             deliveryStatus = 'READY_FOR_PICKUP';
-        } else if (backendStatus === 'DELIVERED') {
-             deliveryStatus = 'PICKED_UP';
-        } else {
-             deliveryStatus = backendStatus; 
-             if (backendStatus === 'PENDING' && isPaid) deliveryStatus = 'READY_FOR_PICKUP'; 
+    let orderStatus = orderDTO.orderStatus || 'PENDING';
+    let deliveryStatus = orderDTO.deliveryStatus || 'PENDING';
+    
+    if (isOnline && isPickup) {
+      if (deliveryStatus === 'OUT_FOR_DELIVERY') {
+        deliveryStatus = 'READY_FOR_PICKUP';
+        //  Cannot show as PENDING if ready for pickup
+        if (orderStatus === 'PENDING') {
+          orderStatus = 'PROCESSING';
         }
-      } else {
-        deliveryStatus = backendStatus;
+      } else if (deliveryStatus === 'DELIVERED') {
+        deliveryStatus = 'PICKED_UP';
+        // STRICT RULE: Must be PAID when picked up
+        orderStatus = 'PAID';
       }
+    } else if (isOnline) {
+      deliveryStatus = orderDTO.deliveryStatus || 'PENDING';
+    } else {
+      deliveryStatus = 'N/A';
+    }
+
+    // Payment Status Consistency
+    let payment = orderDTO.payment;
+    if (orderStatus === 'PAID') {
+        if (!payment || !payment.id || payment.id === 0) {
+            // Create virtual payment object
+            payment = {
+                id: (orderDTO as any).paymentId || 0,
+                totalAmount: totalAmountNum,
+                transactionDate: orderDTO.updatedAt || new Date().toISOString(),
+                status: 'PAID',
+                paymentBreakdown: []
+            };
+        } else {
+            payment = { ...payment, status: 'PAID' };
+        }
+    }
+
+    // UpdatedBy persistence and priority
+    let updatedBy = 'System';
+    
+    // Priority 1: updatedBy field (most recent update)
+    if (orderDTO.updatedBy && orderDTO.updatedBy.trim() !== '' && orderDTO.updatedBy !== 'System') {
+        updatedBy = orderDTO.updatedBy;
+    } 
+    // Priority 2: salesperson (original creator/processor)
+    else if (orderDTO.salesperson?.name && orderDTO.salesperson.name !== 'System') {
+        updatedBy = orderDTO.salesperson.name;
     }
 
     return {
       id: (orderDTO.id) ? orderDTO.id.toString() : orderDTO.orderNumber,
       orderNumber: orderDTO.orderNumber, 
-      orderStatus: orderDTO.orderStatus || 'PENDING',
+      orderStatus: orderStatus,
       updatedAt: orderDTO.updatedAt,
       createdDate: createdDateArray,
       totalAmount: totalAmountNum,
@@ -798,9 +910,9 @@ export class StoreOrderService {
       orderItem: orderDTO.orderItem || [],
       customer: orderDTO.customer || null,
       isOnline: isOnline,
-      payment: orderDTO.payment || null,
+      payment: payment || null,
       amountTendered: totalAmountNum,
-      status: orderDTO.orderStatus || 'PENDING',
+      status: orderStatus,
       deliveryStatus: deliveryStatus,
       deliveryInfo: orderDTO.deliveryInfo || null,
       amount: totalAmountNum, 
@@ -811,12 +923,12 @@ export class StoreOrderService {
       total: totalAmountNum,
       cart: [], 
       deliveryMethod: isPickup ? 'PICKUP' : 'DELIVERY',
-      updatedBy: orderDTO.updatedBy || 'System',
+      updatedBy: updatedBy,
       deliveryFee: orderDTO.deliveryFee
     };
   }
 
-  private createPaymentRecord(totalAmount: string, orderNumber: string, status: string, method: string, reference: string): Observable<any> {
+  public createPaymentRecord(totalAmount: string, orderNumber: string, status: string, method: string, reference: string): Observable<any> {
     const amount = parseFloat(totalAmount);
     const paymentData = { 
       status, 
@@ -863,28 +975,7 @@ export class StoreOrderService {
     );
   }
 
-  private finalizeOrderCreation(orderData: StoreOrderPOST, cartItems?: Map<string, any>): Observable<any> {
-    console.log('🔍 Validating order data before finalization...');
-    
-    // Calculate taxes if cartItems are provided (from Code A)
-    let taxCalculation: TaxCalculation | undefined;
-    if (cartItems) {
-      const orderItemsForTax = orderData.orderItem.map(item => ({
-        ...item,
-        totalPrice: item.totalPrice
-      }));
-      taxCalculation = this.calculateTaxes(orderItemsForTax, cartItems);
-      
-      // Update order totals with tax
-      orderData.totalAmount = (taxCalculation.total + orderData.deliveryFee).toFixed(2);
-    }
-    
-    console.log('📊 Tax calculation:', taxCalculation);
-    
-    if (!orderData.paymentId || orderData.paymentId === 0) {
-      return throwError(() => 'Payment record must be created before order');
-    }
-
+  private finalizeOrderCreation(orderData: StoreOrderPOST): Observable<any> {
     const sanitizedOrderData = this.sanitizeOrderData(orderData);
     if (sanitizedOrderData.deliveryFee > 0 || sanitizedOrderData.deliveryInfoId) {
       sanitizedOrderData.isOnline = true;
@@ -913,7 +1004,7 @@ export class StoreOrderService {
       totalAmount: orderData.totalAmount,
       isOnline: orderData.isOnline,
       quantity: orderData.quantity,
-      customerId: orderData.customerId || 1,
+      customerId: orderData.customerId,
       branchId: orderData.branchId || 1,
       discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
       paymentId: orderData.paymentId,
@@ -932,7 +1023,7 @@ export class StoreOrderService {
       estimatedDeliveryTime: orderData.estimatedDeliveryTime,
       customerEmail: orderData.customerEmail,
       deliveryInfoId: orderData.deliveryInfoId && orderData.deliveryInfoId > 0 ? orderData.deliveryInfoId : null,
-      deliveryTypeId: orderData.deliveryTypeId && orderData.deliveryTypeId > 0 ? orderData.deliveryTypeId : null,
+      deliveryTypeId: (orderData.deliveryTypeId || orderData.deliverTypeId || (orderData.deliveryFee > 0 ? 1 : null)),
       deliveryStatus: status 
     };
   }
@@ -942,20 +1033,6 @@ export class StoreOrderService {
     if (response && typeof response.id === 'number') return response.id;
     if (response) return Number(response) || 0;
     return 0;
-  }
-
-  private debugPaymentResponse(response: any): void {
-    console.log('🔍 DEBUG - Payment Response Analysis:');
-    console.log('Response:', response);
-    console.log('Type:', typeof response);
-    console.log('Is number:', typeof response === 'number');
-    console.log('Is object:', typeof response === 'object');
-    
-    if (typeof response === 'object') {
-      console.log('Keys:', Object.keys(response));
-      console.log('Has id property:', 'id' in response);
-      console.log('Has paymentId property:', 'paymentId' in response);
-    }
   }
 
   private mapPaymentMethod(storeMethod: string): string {
@@ -986,8 +1063,14 @@ export class StoreOrderService {
     } else {
       if (error.status === 400 && error.error?.message) {
         errorMessage = error.error.message;
-      } else if (error.status === 500 && error.error?.message && error.error.message.includes('JSON parse error')) {
-        errorMessage = 'System Error: Invalid status value sent to server.';
+      } else if (error.status === 500) {
+        if (error.error?.message && error.error.message.includes('NullPointerException')) {
+          errorMessage = 'System Error: Missing required data (payment record may be missing).';
+        } else if (error.error?.message && error.error.message.includes('JSON parse error')) {
+          errorMessage = 'System Error: Invalid status value sent to server.';
+        } else {
+          errorMessage = error.error?.message || 'Internal Server Error';
+        }
       } else {
         errorMessage = error.error?.message || error.message || 'Server Error';
       }

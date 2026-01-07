@@ -10,6 +10,7 @@ export interface User {
   username?: string;
   preferences?: any;
   requiresVerification?: boolean;
+  posCustomerId?: number; // Sticky ID for POS operations
 }
 
 @Injectable({
@@ -36,7 +37,8 @@ export class AuthStateService {
           isGuest: false,
           username: authUser.username,
           email: authUser.email,
-          requiresVerification: !authUser.verified
+          requiresVerification: !authUser.verified,
+          posCustomerId: authUser.posCustomerId // Load sticky ID if exists
         };
         
         console.log('Loaded authenticated user from AuthService:', userData);

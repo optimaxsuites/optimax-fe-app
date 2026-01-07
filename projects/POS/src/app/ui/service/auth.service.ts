@@ -2,8 +2,9 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
-import { catchError, tap, map } from 'rxjs/operators';
+import { catchError, tap, map, switchMap } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
+import { StoreCustomerService } from './store-customer.service';
 
 export interface SignupData {
   fullname: string;
@@ -30,6 +31,7 @@ export interface AuthResponse {
   tokenType: string;
   accessToken: string;
   verified?: boolean; // Optional since it's not in the response
+  posCustomerId?: number; // Added for sticky POS identification
 }
 
 export interface SignupResponse {
@@ -54,7 +56,10 @@ export interface PendingVerification {
   providedIn: 'root',
 })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private storeCustomerService: StoreCustomerService
+  ) {}
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
@@ -114,6 +119,31 @@ export class AuthService {
         validatedPayload
       )
       .pipe(
+        switchMap((response: any) => {
+          // Create POS Customer record immediately
+          const customerData = {
+            name: userData.fullname,
+            email: userData.email,
+            phoneNumber: userData.phonenumber
+              .replace(/\D/g, '')
+              .substring(0, 15),
+            loyaltyPoints: 0
+          };
+          
+          console.log('Creating POS customer record for new user...');
+          
+          return this.storeCustomerService.createCustomer(customerData).pipe(
+            map((customerResponse) => {
+              console.log('POS Customer created on signup:', customerResponse);
+              return response; // Return original auth response
+            }),
+            catchError(err => {
+              console.warn('Failed to create POS customer on signup (non-blocking):', err);
+              // Return original response anyway
+              return of(response);
+            })
+          );
+        }),
         map((response: any) => {
           return {
             success: true,
@@ -183,9 +213,30 @@ login(loginData: LoginData): Observable<AuthResponse> {
     tap(response => {
       console.log('Login response:', response);
       
-      // Store the accessToken (not 'token')
+      // Store the accessToken
       if (response.accessToken) {
-        localStorage.setItem('auth_token', response.accessToken);
+        let token = response.accessToken;
+        
+        // Robust Extraction: Handle various prefixes (optimaxcookie, Token, etc.)
+        if (token.includes('=')) {
+          // Extract everything after the first '=' up to the first ';' (if present)
+          const start = token.indexOf('=') + 1;
+          const end = token.indexOf(';', start);
+          token = end > -1 ? token.substring(start, end) : token.substring(start);
+        }
+
+        // Final trim to be safe
+        token = token.trim();
+
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('token', token); // Store as 'token' for compatibility
+        sessionStorage.setItem('Token', token); // Store for interceptor compatibility
+      }
+
+      if (response.ecode && response.ecode !== 'null') {
+        localStorage.setItem('tenantId', response.ecode);
+      } else {
+        localStorage.removeItem('tenantId'); // Clear if null/invalid
       }
       
       // Store user data
@@ -200,6 +251,37 @@ login(loginData: LoginData): Observable<AuthResponse> {
         ecode: response.ecode
       };
       localStorage.setItem('user_data', JSON.stringify(userData));
+    }),
+    switchMap(response => {
+      // PROACTIVE FIX: Look up POS customer once at login to stabilize identity
+      if (response.accessToken && response.email) {
+        return this.storeCustomerService.getCustomerByEmail(response.email).pipe(
+          map(customerResponse => {
+            let posId = 0;
+            if (customerResponse) {
+              if (typeof customerResponse.id === 'number') posId = customerResponse.id;
+              else if (Array.isArray(customerResponse) && customerResponse.length > 0 && customerResponse[0].id) posId = customerResponse[0].id;
+              else if (customerResponse.data && customerResponse.data.id) posId = customerResponse.data.id;
+            }
+            
+            if (posId > 0) {
+              console.log('✅ Resolved sticky POS customer ID during login:', posId);
+              response.posCustomerId = posId;
+              
+              // Update user_data in storage with the resolved ID
+              const userDataStashed = localStorage.getItem('user_data');
+              if (userDataStashed) {
+                const parsed = JSON.parse(userDataStashed);
+                parsed.posCustomerId = posId;
+                localStorage.setItem('user_data', JSON.stringify(parsed));
+              }
+            }
+            return response;
+          }),
+          catchError(() => of(response)) // Fallback to original response
+        );
+      }
+      return of(response);
     }),
     catchError(this.handleError)
   );
@@ -269,7 +351,7 @@ login(loginData: LoginData): Observable<AuthResponse> {
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('authToken');
     const user = this.getCurrentUser();
     return !!token && !!user && user.verified;
   }
