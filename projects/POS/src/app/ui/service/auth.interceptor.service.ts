@@ -25,6 +25,7 @@ export class AuthInterceptor implements HttpInterceptor {
         // }
 
 
+        if (!accessToken) {
 
         const _request = request.clone({
             headers: request.headers.set(
@@ -33,12 +34,16 @@ export class AuthInterceptor implements HttpInterceptor {
             ),
 
         });
-        // console.log("na request", _request)
+        console.log("na request", _request)
 
 
 
 
         return next.handle(_request);
+    }else {
+        return next.handle(request);    
     }
+
+}
 }
 

@@ -92,7 +92,18 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.checkEligibility();
     this.checkOnboardingStatus();
-  
+   const originalNavigate = this.router.navigate.bind(this.router);
+    const originalNavigateByUrl = this.router.navigateByUrl.bind(this.router);
+
+    this.router.navigate = (commands: any[], extras?: any) => {
+      console.trace('🚨 router.navigate called with:', commands, extras);
+      return originalNavigate(commands, extras);
+    };
+
+    this.router.navigateByUrl = (url: any, extras?: any) => {
+      console.trace('🚨 router.navigateByUrl called with:', url, extras);
+      return originalNavigateByUrl(url, extras);
+    };
     // this.tenantService.loadFullTenants(); 
 
   }

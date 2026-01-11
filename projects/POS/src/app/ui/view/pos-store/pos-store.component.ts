@@ -197,10 +197,10 @@ authModalMode: 'login' | 'signup' = 'login';
 private hasSeenAuthModal = false;
 
   ngOnInit(): void {
-  // this.initializeComponent();
+  this.initializeComponent();
   this.loadUserFromStorage();
   this.showAuthModalOnFirstVisit();
-  // this.debugFirstProductTax(); 
+  this.debugFirstProductTax(); 
   }
 
 //   private showAuthModalOnFirstVisit(): void {
@@ -249,8 +249,8 @@ private loadUserFromStorage(): void {
       }
     });
 
-    // this.subscribeToEnrichedProducts();
-    // this.startImageFading();
+    this.subscribeToEnrichedProducts();
+    this.startImageFading();
   }
 
   private initializeUserState(): void {
@@ -784,7 +784,7 @@ navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     // Use the correct route path based on your routing configuration
-    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
+    this.router.navigate(['optimerce', currentUuid, 'checkout']);
   } else {
     console.error('Store UUID not found');
     this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');

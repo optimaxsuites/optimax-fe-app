@@ -13,10 +13,11 @@ import { NavigationLinksService } from '../../shared/service/navigation-links/na
 export class AuthInterceptor implements HttpInterceptor {
   constructor(
     private router: Router,
-    private navigationLink: NavigationLinksService
+    // private navigationLink: NavigationLinksService
   ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // console.log("intercepted")
      const locationIqUrl = 'https://us1.locationiq.com/';
 
         // If the request is going to LocationIQ, don't attach auth≈
