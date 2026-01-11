@@ -36,6 +36,7 @@ export class QrcodeComponent implements OnInit {
   eStoreLink: string = this.generateNewLink();
   qrCodeDataUrl: string | null = null;
   error: string | null = null;
+  showShareMenu: boolean = false;
 
   
   designs: QrDesign[] = [
@@ -208,6 +209,8 @@ export class QrcodeComponent implements OnInit {
   }
 
   async shareQRCode() {
+    this.showShareMenu = false; 
+
     const canvas = await this.createFinalCanvas();
     if (!canvas) return;
 
@@ -230,4 +233,26 @@ export class QrcodeComponent implements OnInit {
       }
     });
   }
+
+  toggleShareMenu() {
+  this.showShareMenu = !this.showShareMenu;
+}
+
+async shareTextLink() {
+  this.showShareMenu = false; 
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Check out our Store!',
+        text: 'You can view our products and shop online here:',
+        url: this.eStoreLink,
+      });
+    } catch (err) {
+      console.log('Share cancelled');
+    }
+  } else {
+    navigator.clipboard.writeText(this.eStoreLink);
+    alert('Link copied to clipboard!');
+  }
+}
 }
