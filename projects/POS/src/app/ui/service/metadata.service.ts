@@ -198,6 +198,8 @@ export class MetadataService {
 
     this.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
       if (branchId != null) {
+        this.enrichedProductSubject.next([]);
+        this.productSubject.next([]);
         this.loadingSubject.next(true);
         this.posService
           .getFilteredProductsWithDetails(branchId)
@@ -211,15 +213,20 @@ export class MetadataService {
           )
           .subscribe(async (filteredProducts) => {
             this.enrichedProductSubject.next(filteredProducts);
-            this.loadingSubject.next(false);
-            console.log("✅ [MetadataService] Enriched products loaded");
+            await this.offlineService.clearProducts();
 
-              if (filteredProducts && filteredProducts.length > 0) {
-                console.log(filteredProducts.length)
-              await this.offlineService.clearProducts(); 
+            if (filteredProducts.length > 0) {
               await this.offlineService.addProduct(filteredProducts);
-              console.log("📦 Enriched products cached locally in IndexedDB");
             }
+            this.loadingSubject.next(false);
+            // console.log("✅ [MetadataService] Enriched products loaded");
+
+            //   if (filteredProducts && filteredProducts.length > 0) {
+            //     console.log(filteredProducts.length)
+            //   await this.offlineService.clearProducts(); 
+            //   await this.offlineService.addProduct(filteredProducts);
+            //   console.log("📦 Enriched products cached locally in IndexedDB");
+            // }
           });
 
         this.posService

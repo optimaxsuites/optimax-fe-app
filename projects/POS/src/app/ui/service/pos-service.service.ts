@@ -242,7 +242,9 @@ deleteTax(id: any): Observable<any> {
   getFilteredProductsWithDetails(currentBranchId: number = 1) {
     return this.getProductsByBranchId(currentBranchId).pipe(
       switchMap((products: any[]) => {
-        console.log(products);
+          if (!products || products.length === 0) {
+            return of([]); 
+          }
         const enrichedProducts$ = products.map((product) => {
           const imageNo = product.productImages[0]?.name === "default_product.jpg" && product.productImages.length > 1 ? product.productImages[1]?.imgNo : product.productImages[0]?.imgNo
           const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${imageNo}`;
