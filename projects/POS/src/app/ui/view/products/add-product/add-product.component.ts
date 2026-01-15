@@ -9,6 +9,7 @@ import {
   FormGroup,
   Validators,
   ValidationErrors,
+  ValidatorFn,
 } from "@angular/forms";
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
@@ -367,16 +368,16 @@ discountTypes: any[] = [
       isAvailableInStore: [true],
       code: [
         '',
-        [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)],
+        [Validators.pattern(/^[A-Z0-9-]{3,20}$/)],
       ],
       description: ['', [Validators.required]],
       sku: [''],
       weight: [null, [Validators.min(0), Validators.max(9999)]],
-      costPrice: [null, [Validators.required, Validators.min(0.01)]],
-      sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
-      selectedTaxes: [[], Validators.required],
+      costPrice: [null, [ Validators.min(0.01)]],
+      sellingPrice: [null, [ Validators.min(0.01)]],
+      selectedTaxes: [[]],
       discount: [null],
-      quantity: [null, [Validators.required, Validators.min(0)]],
+      quantity: [null, [ Validators.min(0)]],
       supplier: [null],
       partNumber: [''],
       selectedBranch: [[], Validators.required],
@@ -425,8 +426,33 @@ discountTypes: any[] = [
       .subscribe(upc => this.onBarcodeChange(upc));
 
 
-      this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
-			this.console.log(this.selecteddBranch);
+      this.productForm.get("selectedBranch")?.valueChanges.subscribe((branches) => {
+      const BASE_VALIDATORS: Record<string, ValidatorFn[]> = {
+        code: [Validators.pattern(/^[A-Z0-9-]{3,20}$/)],
+        costPrice: [Validators.min(0.01)],
+        sellingPrice: [Validators.min(0.01)],
+        quantity: [Validators.min(0)],
+        reorderThreshold: [Validators.min(1)],
+        selectedTaxes: [],
+      };
+
+
+
+      const isSingleBranch = branches?.length === 1;
+
+      Object.entries(BASE_VALIDATORS).forEach(([field, baseValidators]) => {
+        const control = this.productForm.get(field);
+        if (!control) return;
+
+        control.setValidators(
+          isSingleBranch
+            ? [Validators.required, ...baseValidators]
+            : baseValidators
+        );
+
+        control.updateValueAndValidity({ emitEvent: false });
+      });
+
 			this.updateBranches();
 		});
 
@@ -2259,6 +2285,7 @@ private createDefaultImage(name?: string): Promise<Blob> {
     try {
       for (const branch of branches) {
         const productPayload = {
+          id: 0,
           name: formValues.name,
           code: branch.code,
           partNumber: branch.partNumber,
@@ -2275,21 +2302,33 @@ private createDefaultImage(name?: string): Promise<Blob> {
           quantity: branch.quantity,
           weight: formValues.weight,
           reorderThreshold: formValues.reorderThreshold,
-          tax: branch.tax || [], // Use the array of tax IDs from branch form
+          // tax: branch.tax || [], // Use the array of tax IDs from branch form
           discountId: branch.discount?.id,
           supplierId: branch.supplier?.id,
           branchId: branch.branchName.id, // if needed on the backend
           createdBy: userName,
           createdDate: new Date().toISOString(),
+          tax: branch.tax || [],
 
           productImages: formValues.productImages || [],
           expiryDate: formValues.expiryDate,
+          active: true
         };
         console.log(productPayload);
         const formData = new FormData();
         formData.append('product', JSON.stringify(productPayload));
-        if (formValues.image instanceof File) {
-          formData.append('files', formValues.image);
+        // if (formValues.image instanceof File) {
+        //   formData.append('files', formValues.image);
+        // }
+        if(this.productImages.length > 0) {
+            this.productImages.forEach((image, index) => {
+              if (image.file) {
+                formData.append('files', image.file);
+              }
+            });
+          } else {
+            const defaultImage = await this.createDefaultImage(formValues.name);
+            formData.append("files", defaultImage, 'default_product.jpg');
         }
         console.log(formData);
         const created: any = await this.posService
