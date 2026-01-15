@@ -423,6 +423,13 @@ discountTypes: any[] = [
       this.productForm.get('code')?.valueChanges
       .pipe(debounceTime(500), distinctUntilChanged())
       .subscribe(upc => this.onBarcodeChange(upc));
+
+
+      this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
+			this.console.log(this.selecteddBranch);
+			this.updateBranches();
+		});
+
   }
 
     private initializeEditMode() {
