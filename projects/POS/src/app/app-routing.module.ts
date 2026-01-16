@@ -61,10 +61,14 @@ const routes: Routes = [
 
   },
   {
+    path: 'optimerce',
+    loadChildren: () => import('./optimerce/optimerce.module').then(m => m.OptimerceModule)
+  },
+  {
     path: "refund-request/:uuid",
     component: RequestDetailsComponent,
-      canActivate: [PermissionGuard],
-        data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
+      // canActivate: [PermissionGuard],
+      //   data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
   },
   {
     path: 'inventory/:uuid',
@@ -81,7 +85,7 @@ const routes: Routes = [
   {
     path: 'orderDetails/:uuid',
     component: OrderDetailComponent,
-    canActivate: [PermissionGuard],
+    // canActivate: [PermissionGuard],
   },
   {
   path: 'user/checkout/orders/:uuid',

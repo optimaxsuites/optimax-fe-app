@@ -37,6 +37,9 @@ interface User {
   styleUrls: ['./store-checkout.component.scss']
 })
 export class StoreCheckoutComponent implements OnInit, OnDestroy {
+  // Debug Data
+  debugCustomerData: any = null;
+
   // Cart data
   cartItems: Map<any, any> = new Map();
   subtotal: number = 0;
@@ -61,6 +64,9 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   customerEmail: string = '';
   customerPhone: string = '';
   
+  // Authenticated User Customer ID
+  authenticatedCustomerId: number | null = null;
+  
   // Delivery info
   deliveryInfo = {
     fullName: '',
@@ -73,6 +79,9 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   // Validation states
   phoneTouched: boolean = false;
   phoneError: string = '';
+  
+  // Phone change debounce
+  private phoneChangeTimeout: any;
 
   // Payment methods
   paymentMethods = [
@@ -148,6 +157,10 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  get isLoggedIn(): boolean {
+    return this.authStateService.isAuthenticated();
+  }
+
   private loadCustomerInfo(): void {
     try {
       // Try session storage first
@@ -156,7 +169,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
         const userData = JSON.parse(storedUser);
         this.customerName = userData.name || 'Guest';
         this.customerEmail = userData.email || 'guest@example.com';
-        this.customerPhone = userData.phone || '';
+        this.customerPhone = userData.phone || userData.phoneNumber || '';
         console.log('👤 Loaded customer from session:', userData);
       }
       
@@ -166,8 +179,30 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
         // Fixed: Use safe navigation for upi property
         this.customerName = authUser.upi?.fullname || authUser.username || this.customerName;
         this.customerEmail = authUser.email || this.customerEmail;
-        this.customerPhone = authUser.phone || this.customerPhone;
+        this.customerPhone = authUser.phone || authUser.upi?.phoneNumber || this.customerPhone || '';
         console.log('👤 Loaded customer from auth:', authUser);
+
+        // Debug: Fetch customer data by phone to resolve ID
+        if (this.customerPhone) {
+            this.storeCustomerService.getCustomerByPhone(this.customerPhone).subscribe({
+                next: (data) => {
+                    console.log('🐞 Debug Customer Data:', data);
+                    const customer = Array.isArray(data) ? data[0] : data;
+                    this.debugCustomerData = customer;
+                    
+                    // CRITICAL FIX: Set the authenticated ID if found
+                    if (customer && customer.id) {
+                        this.authenticatedCustomerId = customer.id;
+                        console.log('✅ Resolved Authenticated Customer ID:', this.authenticatedCustomerId);
+                    }
+                },
+                error: (err) => {
+                    console.error('🐞 Debug Customer Data Error:', err);
+                    // On error (404), we leave it as null, so placeOrder sends 0 and service handles creation
+                    this.authenticatedCustomerId = null;
+                }
+            });
+        }
       }
       
       // Set delivery info with customer data
@@ -198,7 +233,6 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       totalItems: this.totalItems
     });
   }
-
 
   calculateDiscounts(): void {
     console.log('🎁 Populating discounts...');
@@ -376,6 +410,62 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     return this.validateForm();
   }
 
+  // Validation states
+  isCheckingPhone: boolean = false; // Added state
+
+  // ... (rest of the file until onPhoneChange)
+
+  onPhoneChange(): void {
+    this.validateForm();
+
+    if (this.phoneChangeTimeout) {
+      clearTimeout(this.phoneChangeTimeout);
+    }
+
+    this.phoneChangeTimeout = setTimeout(() => {
+      this.lookupCustomerByPhone();
+    }, 1000);
+  }
+
+  lookupCustomerByPhone(): void {
+    const phone = this.deliveryInfo.phoneNumber?.trim();
+    if (!phone || phone.length < 10) return;
+
+    this.isCheckingPhone = true;
+    console.log('🔍 Looking up customer by phone:', phone);
+
+    this.storeCustomerService.getCustomerByPhone(phone).subscribe({
+      next: (data) => {
+        this.isCheckingPhone = false;
+        console.log('✅ Customer lookup result:', data);
+
+        const customer = Array.isArray(data) ? data[0] : data;
+
+        if (customer && customer.id) {
+          this.authenticatedCustomerId = customer.id;
+          
+          // Populate form fields
+          if (customer.name) this.deliveryInfo.fullName = customer.name;
+          if (customer.email) this.deliveryInfo.email = customer.email;
+          if (customer.address && this.isDelivery) this.deliveryInfo.address = customer.address;
+
+          // Re-validate to clear any potential errors
+          this.validateForm();
+        } else {
+          this.authenticatedCustomerId = null;
+        }
+      },
+      error: (err) => {
+        this.isCheckingPhone = false;
+        console.log('⚠️ Customer lookup failed/not found:', err);
+        this.authenticatedCustomerId = null;
+      }
+    });
+  }
+
+  // Removed resolution logic as requested
+
+
   async placeOrder(): Promise<void> {
     this.phoneTouched = true;
     if (!this.canPlaceOrder()) return;
@@ -394,25 +484,28 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     const currentUser = this.authStateService.getCurrentUser() as any;
     const isGuest = !currentUser || currentUser.isGuest;
     
-    // If logged in, we strictly use their profile details for the Payer record
+    // If logged in, we largely use their profile, BUT for identity resolution (phone), 
+    // we MUST use what is in the form (recipientInfo) because they might have edited it.
     const payerInfo = isGuest ? recipientInfo : {
-      name: currentUser.upi?.fullname || currentUser.username || recipientInfo.name,
+      name: recipientInfo.name,
       email: currentUser.email || recipientInfo.email,
-      phoneNumber: currentUser.phone || recipientInfo.phoneNumber
+      phoneNumber: recipientInfo.phoneNumber // STRICTLY use form phone
     };
 
-    // Use the specific POS ID if available, otherwise pass 0 to force resolution/creation
-    const customerId = (!isGuest && currentUser.posCustomerId) ? currentUser.posCustomerId : 0;
+    // CRITICAL FIX: Use the resolved ID if available, otherwise 0
+    let customerId = this.authenticatedCustomerId || 0;
 
     console.log('📦 Ordering initiated:', { 
       isGuest, 
       payer: payerInfo, 
-      recipient: recipientInfo 
+      recipient: recipientInfo,
+      resolvedCustomerId: customerId
     });
 
     try {
       const orderData = this.prepareOrderData(customerId);
       
+      // Pass payerInfo (which now has the correct form phone number) to creation methods
       if (this.paymentMethod === 'card') {
         await this.handlePaystackPayment(orderData, payerInfo);
       } else {

@@ -1,5 +1,3 @@
-// user.module.ts - COMPLETE FIX
-
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
@@ -68,6 +66,7 @@ import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/wh
 import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
 import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
+import { CustomerCleanupComponent } from '../ui/view/pos-store/customer-cleanup/customer-cleanup.component';
 
 @NgModule({
   declarations: [
@@ -94,7 +93,8 @@ import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/
     CategoryProductsComponent,
     WhatsappWidgetComponent,
     OrderConfirmationComponent, 
-    LocationPickingComponent
+    LocationPickingComponent,
+    CustomerCleanupComponent
   ],
   imports: [
     CommonModule,

@@ -36,6 +36,18 @@ export class StoreCustomerService {
           .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/get/by/email?email=${email}`, { headers: this.getHeaders() })
           .pipe(catchError(this.handleError));
       }
+
+      getCustomers() {
+        return this.http
+          .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/customers', { headers: this.getHeaders() })
+          .pipe(catchError(this.handleError));
+      }
+
+      deleteCustomer(id: number) {
+        return this.http
+          .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/${id}`, { headers: this.getHeaders() })
+          .pipe(catchError(this.handleError));
+      }
     
    private getBaseApiUrl(): string {
         return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

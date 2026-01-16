@@ -8,6 +8,7 @@ export interface User {
   isGuest: boolean;
   email?: string;
   username?: string;
+  phone?: string; // Added phone field
   preferences?: any;
   requiresVerification?: boolean;
   posCustomerId?: number; // Sticky ID for POS operations
@@ -37,6 +38,7 @@ export class AuthStateService {
           isGuest: false,
           username: authUser.username,
           email: authUser.email,
+          phone: authUser.phoneNumber, // Map phoneNumber from AuthUser
           requiresVerification: !authUser.verified,
           posCustomerId: authUser.posCustomerId // Load sticky ID if exists
         };

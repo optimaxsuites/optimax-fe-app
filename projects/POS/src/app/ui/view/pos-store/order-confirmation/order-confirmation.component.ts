@@ -339,11 +339,14 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   goToStore(): void {
-    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    // Try to get UUID from current route or parent route (since this is a child route)
+    const currentUuid = this.route.snapshot.paramMap.get('uuid') || 
+                       this.route.parent?.snapshot.paramMap.get('uuid');
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid]);
+      this.router.navigate(['/user/checkout/store', currentUuid]);
     } else {
-      this.router.navigate(['/store']);
+      // console.warn('⚠️ No UUID found, nvigating to root');
+      this.router.navigate(['/']);
     }
   }
 

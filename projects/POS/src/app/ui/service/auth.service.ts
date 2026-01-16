@@ -252,37 +252,6 @@ login(loginData: LoginData): Observable<AuthResponse> {
       };
       localStorage.setItem('user_data', JSON.stringify(userData));
     }),
-    switchMap(response => {
-      // PROACTIVE FIX: Look up POS customer once at login to stabilize identity
-      if (response.accessToken && response.email) {
-        return this.storeCustomerService.getCustomerByEmail(response.email).pipe(
-          map(customerResponse => {
-            let posId = 0;
-            if (customerResponse) {
-              if (typeof customerResponse.id === 'number') posId = customerResponse.id;
-              else if (Array.isArray(customerResponse) && customerResponse.length > 0 && customerResponse[0].id) posId = customerResponse[0].id;
-              else if (customerResponse.data && customerResponse.data.id) posId = customerResponse.data.id;
-            }
-            
-            if (posId > 0) {
-              console.log('✅ Resolved sticky POS customer ID during login:', posId);
-              response.posCustomerId = posId;
-              
-              // Update user_data in storage with the resolved ID
-              const userDataStashed = localStorage.getItem('user_data');
-              if (userDataStashed) {
-                const parsed = JSON.parse(userDataStashed);
-                parsed.posCustomerId = posId;
-                localStorage.setItem('user_data', JSON.stringify(parsed));
-              }
-            }
-            return response;
-          }),
-          catchError(() => of(response)) // Fallback to original response
-        );
-      }
-      return of(response);
-    }),
     catchError(this.handleError)
   );
 }

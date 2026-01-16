@@ -22,9 +22,14 @@ import { EmailVerificationComponent } from '../ui/view/pos-store/email-verificat
 import { ReturnsRefundsComponent } from '../ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { OrderHistoryComponent } from '../ui/view/pos-store/order-history/order-history.component';
 import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
+import { CustomerCleanupComponent } from '../ui/view/pos-store/customer-cleanup/customer-cleanup.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
+  {
+    path: 'customer-cleanup',
+    component: CustomerCleanupComponent
+  },
 {
   path: ':uuid',
   children: [
@@ -53,10 +58,11 @@ const routes: Routes = [
       path: 'category/:categoryName',
       component: CategoryProductsComponent,
     },
-  { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
+    { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
     { path: 'verify-required', component: VerificationRequiredComponent },
-  { path: 'verify-email', component: EmailVerificationComponent },
-  { path: 'return-refund', component: ReturnsRefundsComponent}
+    { path: 'verify-email', component: EmailVerificationComponent },
+    { path: 'return-refund', component: ReturnsRefundsComponent},
+
   ]
 }
 ];

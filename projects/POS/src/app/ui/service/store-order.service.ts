@@ -541,47 +541,27 @@ export class StoreOrderService {
     console.log('🔍 Resolving order identity for:', { name, email, phone });
 
     // 1. Try finding by phone
-    return (phone ? this.storeCustomerService.getCustomerByPhone(phone) : of(null)).pipe(
-      catchError(() => of(null)),
-      switchMap(existingByPhone => {
-        const customerByPhone = Array.isArray(existingByPhone) ? existingByPhone[0] : existingByPhone;
-        if (customerByPhone && customerByPhone.id) {
-          console.log('✅ Identity resolved by phone:', customerByPhone.id);
-          return of(customerByPhone.id);
-        }
+    // DIRECT CREATE STRATEGY (As requested)
+    // We skip lookups (get/by/phone, get/by/email) and directly attempt to create/map the customer.
+    // This assumes the backend 'create' endpoint handles checking or is the primary path.
+    
+    const finalPhone = phone || '0000000000';
+    console.log('🆕 Creating/Mapping POS identity record (Direct)...', { name, email, phone: finalPhone });
 
-        // 2. Try finding by email
-        const isPlaceholderEmail = !email || email === 'customer@example.com' || email === 'guest@example.com';
-        return (email && !isPlaceholderEmail ? this.storeCustomerService.getCustomerByEmail(email) : of(null)).pipe(
-          catchError(() => of(null)),
-          switchMap(existingByEmail => {
-            const customerByEmail = Array.isArray(existingByEmail) ? existingByEmail[0] : existingByEmail;
-            if (customerByEmail && customerByEmail.id) {
-              console.log('✅ Identity resolved by email:', customerByEmail.id);
-              return of(customerByEmail.id);
-            }
-
-            // 3. Create new record (Strict identity)
-            console.log('🆕 Creating new POS identity record...', { name, email, phone });
-            return this.storeCustomerService.createCustomer({
-              name: name,
-              email: email || '',
-              phoneNumber: phone || '',
-              loyaltyPoints: 0
-            }).pipe(
-              map(res => {
-                const newId = this.extractIdFromResponse(res);
-                console.log('✅ New POS identity record created with ID:', newId);
-                return newId;
-              }),
-              catchError(err => {
-                console.error('❌ Failed to create POS identity (Raw API Error):', err);
-                // Re-throw the actual error to preserve backend details
-                return throwError(() => err);
-              })
-            );
-          })
-        );
+    return this.storeCustomerService.createCustomer({
+      name: name,
+      email: email || '',
+      phoneNumber: finalPhone,
+      loyaltyPoints: 0
+    }).pipe(
+      map(res => {
+        const newId = this.extractIdFromResponse(res);
+        console.log('✅ POS identity record created/mapped with ID:', newId);
+        return newId;
+      }),
+      catchError(err => {
+        console.error('❌ Failed to create POS identity (Raw API Error):', err);
+        return throwError(() => err);
       })
     );
   }
