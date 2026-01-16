@@ -100,6 +100,7 @@ export class TaxComponent {
           // this.getDiscounts();
           // TODO: Check whether this piece of code is worth it...
           this.taxes.push(data)
+          this.metadataService.addTaxToState(data)
           this.taxData = {
             name: '',
             rate: 0,
@@ -172,14 +173,15 @@ export class TaxComponent {
     const taxPayload: any = {
       id: this.editingTax!.id,
       name: this.taxData.name,
-      rate: this.taxData.rate
+      rate: this.taxData.rate,
+      description: this.taxData.description
     };
     
     if (this.taxData.description && this.taxData.description.trim() !== '') {
       taxPayload.description = this.taxData.description;
     }
 
-    this.posService.updateTax(taxPayload).subscribe({
+    this.posService.addTax(taxPayload).subscribe({
       next: (data) => {
         this.messageService.add({
           severity: 'success',
@@ -188,7 +190,7 @@ export class TaxComponent {
           key: 'tl',
           life: 3000,
         });
-        this.refreshTaxes();
+        // this.refreshTaxes();
         this.cancelEdit();
         this.savingTax = false;
       },
@@ -226,7 +228,7 @@ export class TaxComponent {
           key: 'tl',
           life: 3000,
         });
-        this.refreshTaxes();
+        // this.refreshTaxes();
         this.showDeleteModal = false;
         this.taxToDelete = null;
         this.deletingTax = false;

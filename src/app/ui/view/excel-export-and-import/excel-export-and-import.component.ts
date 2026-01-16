@@ -18,7 +18,7 @@ import {
 import { formatDate } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { MetadataService } from '../../service/metadata.service';
-import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 interface ProductRow {
@@ -47,6 +47,13 @@ export class ExcelExportAndImportComponent implements OnInit {
   departments: any[] = []
   measurementUnits = Object.keys(MeasurementUnit)
   loading = false; 
+  stagingForm!: FormGroup;
+  isDataLoaded = false; 
+  currentStep: 'upload' | 'staging' = 'upload';
+  private readonly _defaultExpiryDate = new Date(
+    Date.now() + 100 * 365.25 * 24 * 60 * 60 * 1000
+  );
+  submitting = false;
 
   @Output() fileUploaded = new EventEmitter<File>();
   @Output() close = new EventEmitter<boolean>();
@@ -91,6 +98,10 @@ export class ExcelExportAndImportComponent implements OnInit {
     });
     this.initRows(20);
 
+    this.stagingForm = this.fb.group({
+      products: this.fb.array([])
+    });
+
   }
 
 existingCodes = new Set<string>();
@@ -131,20 +142,32 @@ initRows(count: number) {
   }
 
 }
+
+get productRows() {
+  return this.stagingForm.get('products') as FormArray;
+}
 addRow(): FormGroup {
   return this.fb.group({
-    name: [''],
     description: [''],
-    branches: [[]],
-    partNumber: [''],
-    sku: [''],
-    code: [''],
-    category: [''],
-    weight: [null],
-    unit: [''],
-    reorderThreshold: [null],
-    isCombo: [false],
-    comboItems: ['']
+    imageFile: [null],
+      previewUrl: [''],
+      name: [ '', Validators.required],
+      branchId: [null, Validators.required],
+      categoryId: [null, Validators.required],
+      purchasePrice: [ 0, Validators.required],
+      sellingPrice: [0, Validators.required],
+      quantity: [ 0],
+      expiryDate: [this._defaultExpiryDate.toISOString()],
+      discountId:[0],
+      tax: [0],
+      supplierId: [0],
+      partNumber: [ ''],
+      code: [ ''], // If empty, we'll auto-gen on submit
+      unit: ['UNIT'],
+      reorderThreshold: [ 0],
+      weight: [ 0],
+      isBundle: [false],
+      bundleItems: [null]
   });
 }
 
@@ -634,62 +657,276 @@ private resolveSupplierId(row: any, suppliers: Array<{id:number; name:string}>):
   }
 
 
+// readExcelFile(): void {
+//   if (!this.file) {
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Error',
+//       detail: 'Please select a file first',
+//       key: 'tl',
+//       life: 3000
+//     });
+//     return;
+//   }
+
+//   this.buttonText = "Processing...";
+//   const reader = new FileReader();
+
+//   reader.onload = async (event) => {
+//     try {
+//       const data = new Uint8Array(event.target?.result as ArrayBuffer);
+//       const workbook = XLSX.read(data, { type: 'array' });
+//       const sheetName = workbook.SheetNames[0];
+//       const worksheet = workbook.Sheets[sheetName];
+//       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+//       await this.processProductImport(jsonData);
+
+//     } catch (error) {
+//       console.error('Error processing file:', error);
+//       this.messageService.add({
+//         severity: 'error',
+//         summary: 'Error',
+//         detail: 'Failed to process the Excel file',
+//         key: 'tl',
+//         life: 3000
+//       });
+
+//     } finally {
+     
+//       this.buttonText = "Submit";
+//     }
+//   };
+
+//   reader.onerror = () => {
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Error',
+//       detail: 'Failed to read the file',
+//       key: 'tl',
+//       life: 3000
+//     });
+//     this.buttonText = "Submit"; // also reset here
+//   };
+
+//   reader.readAsArrayBuffer(this.file);
+// }
+
 readExcelFile(): void {
   if (!this.file) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Please select a file first',
-      key: 'tl',
-      life: 3000
-    });
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Select a file', key: 'tl' });
     return;
   }
 
-  this.buttonText = "Processing...";
   const reader = new FileReader();
-
   reader.onload = async (event) => {
-    try {
-      const data = new Uint8Array(event.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
-      await this.processProductImport(jsonData);
-
-    } catch (error) {
-      console.error('Error processing file:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to process the Excel file',
-        key: 'tl',
-        life: 3000
-      });
-
-    } finally {
-     
-      this.buttonText = "Submit";
-    }
+    const data = new Uint8Array(event.target?.result as ArrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+    
+    this.populateStagingForm(jsonData);
+    this.currentStep = 'staging';
   };
-
-  reader.onerror = () => {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to read the file',
-      key: 'tl',
-      life: 3000
-    });
-    this.buttonText = "Submit"; // also reset here
-  };
-
   reader.readAsArrayBuffer(this.file);
 }
 
+  async populateStagingForm(data: any[]) {
+  const productsArray = this.stagingForm.get('products') as FormArray;
+  productsArray.clear();
 
+  const getIdByName = (list: any[], name: string): number | null => {
+  const cleanName = (name || '').toString().trim().toLowerCase();
+  const item = list.find((x) => (x?.name || '').toString().trim().toLowerCase() === cleanName);
+  return item ? item.id : null;
+  };
+  const getItemByName = (list: any[], name: string): any => {
+    const cleanName = (name || '').toString().trim().toLowerCase();
+    const item = list.find((x) => (x?.name || '').toString().trim().toLowerCase() === cleanName);
+
+    return item ? [item] : [];
+  };
+
+const [branches, categories, taxes, discounts, suppliers] = await Promise.all([
+    this.posService.getBranches().toPromise(),
+    this.posService.getCategories().toPromise(),
+    this.posService.getTax().toPromise(),
+    this.posService.getDiscount().toPromise(),
+    this.posService.getSupplier().toPromise()
+  ]);
+
+  data.forEach(row => {
+    const branchId = getIdByName(branches, row['Branch*']);
+    const categoryId =  categories ? getIdByName(categories, row['Category*']) : null;
+    productsArray.push(this.fb.group({
+      imageFile: [null],
+      previewUrl: [''],
+      name: [row['Name*'] || '', Validators.required],
+      description: [row['Description*'] || ''],
+      branchId: [branchId, Validators.required],
+      categoryId: [categoryId, Validators.required],
+      purchasePrice: [Number(row['Cost Price*']) || 0, Validators.required],
+      sellingPrice: [Number(row['Selling Price*']) || 0, Validators.required],
+      quantity: [Number(row['Quantity*']) || 0],
+      expiryDate: [row['Expiry Date (YYYY-MM-DD)'] || this._defaultExpiryDate.toISOString()],
+      discountId: getIdByName(discounts, row['Discount']),
+      tax: getItemByName(taxes, row['Tax']),
+      supplierId: getIdByName(suppliers, row['Supplier']),
+      partNumber: [row['Part Number'] || ''],
+      code: [row['Code'] || ''], // If empty, we'll auto-gen on submit
+      unit: [row['Measurement Unit'] || 'UNIT'],
+      reorderThreshold: [Number(row['Reorder Threshold']) || 0],
+      weight: [Number(row['Weight (KG)']) || 0],
+      isBundle: String(row['Is Combo? (TRUE/FALSE)']).toLowerCase() === 'true',
+      bundleItems: row['Combo Items (comma separated names)'] 
+          ? this.parseComboItems(String(row['Combo Items (comma separated names)']))
+          : [],
+    }));
+  });
+}
+
+async submitStagingData() {
+  this.submitting = true;
+  const products = this.productRows.value;
+  let successCount = 0;
+  let errorCount = 0;
+  this.loading = true;
+  this.buttonText = "Importing...";
+
+  const userName = sessionStorage.getItem("username") || 'system';
+
+  for (const [index, data] of products.entries()) {
+    try {
+      // 1. Handle Image: Use uploaded file or generate the default avatar
+      let imageBlob: Blob;
+      let fileName: string;
+
+      if (data.imageFile) {
+        imageBlob = data.imageFile;
+        fileName = data.imageFile.name;
+      } else {
+        imageBlob = await this.createDefaultImage(data.name);
+        fileName = 'default_product.jpg';
+      }
+
+      // 2. Prepare the product payload matching your backend structure
+      const productPayload = {
+        id: 0,
+        name: data.name,
+        description: data.description,
+        code: data.code || this.generateUniqueCode('AUTO', this.existingCodes),
+        partNumber: data.partNumber || '',
+        measurementUnit: data.unit || 'UNIT',
+        sku: data.sku || this.generateSKU(data.name),
+        purchasePrice: Number(data.purchasePrice),
+        sellingPrice: Number(data.sellingPrice),
+        quantity: Number(data.quantity),
+        productCategoryId: data.categoryId,
+        supplierId: data.supplierId,
+        taxes: data.tax || [],
+        discountId: data.discountId,
+        branchId: data.branchId,
+        createdBy: userName,
+        createdDate: new Date().toISOString(),
+        variants: [],
+        isBundle: data.isCombo,
+        bundleItems: data.isCombo ? data.comboItems.split(',').map((name: string) => ({ name: name.trim() })) : [],
+        expiryDate: data.expiryDate,
+        active: true
+      };
+
+      const formData = new FormData();
+      formData.append("product", JSON.stringify(productPayload));
+      formData.append("files", imageBlob, fileName);
+
+      // 3. Post to API
+      const response: any = await firstValueFrom(this.posService.addProduct(formData));
+
+      if (response?.id) {
+        // 4. Create Inventory record immediately after product creation
+        await this.createInventoryForNewProduct(
+          response.id,
+          Number(data.branchId),
+          Number(data.quantity),
+          Number(data.purchasePrice),
+          Number(data.sellingPrice),
+          null // Supplier ID
+        );
+        successCount++;
+      }
+    } catch (error) {
+      errorCount++;
+  this.submitting = false;
+
+      console.error(`Error importing row ${index + 1}:`, error);
+      this.messageService.add({
+        severity: 'error',
+        summary: `Row ${index + 1} Failed`,
+        detail: 'Check data and try again',
+        key: 'tl'
+      });
+    }
+  }
+
+  this.loading = false;
+  this.buttonText = "Submit";
+  
+  if (successCount > 0) {
+  this.submitting = false;
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Import Complete',
+      detail: `${successCount} products added successfully.`,
+      key: 'tl'
+    });
+    this.close.emit(true);
+  }
+}
+
+onRowImageUpload(event: any, index: number) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.productRows.at(index).patchValue({
+        imageFile: file,
+        previewUrl: e.target.result
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+removeRow(index: number) {
+  this.productRows.removeAt(index);
+}
+
+addNewRow() {
+  const newRow = this.fb.group({
+    description: [''],
+    imageFile: [null],
+      previewUrl: [''],
+      name: [ '', Validators.required],
+      branchId: [null, Validators.required],
+      categoryId: [null, Validators.required],
+      purchasePrice: [ 0, Validators.required],
+      sellingPrice: [0, Validators.required],
+      quantity: [ 0],
+      expiryDate: [this._defaultExpiryDate.toISOString()],
+      discountId:[0],
+      tax: [0],
+      supplierId: [0],
+      partNumber: [ ''],
+      code: [ ''], // If empty, we'll auto-gen on submit
+      unit: ['UNIT'],
+      reorderThreshold: [ 0],
+      weight: [ 0],
+      isBundle: [false],
+      bundleItems: [null]
+  });
+  
+  this.productRows.push(newRow);
+}
 async processProductImport(data: any[]): Promise<void> {
   const userName = sessionStorage.getItem("username") || 'system';
   let successCount = 0;
@@ -964,98 +1201,13 @@ private createDefaultImage(name?: string): Promise<Blob> {
 }
 
 
-  // Validate the extracted data
-  async validateData(data: any[]): Promise<void> {
-    const requiredFields = [
-      'First Name', 'Last Name', 'Email', 'Work Email',
-      'Job Title', 'Department', 'Employment Type', 'Level', 'Supervisor',
-      'Status', 'Employment Start Date', 'Appraisal Due Date'
-    ];
-
-    let skippedCount = 0;
-    let successfullyAddedCount = 0;
-  console.log(data)
-    for (const row of data) {
-      const isMissingFields = requiredFields.some(field => !row[field]);
-
-      if (isMissingFields) {
-        skippedCount++;
-        console.warn(`Skipped row due to missing fields:`, row);
-      } else if (!(await this.addNewEmployee(data))) {
-        skippedCount++;
-      } else {
-        successfullyAddedCount++;
-      }
-    }
-
-    this.fileName = "";
-
-    // Display appropriate message
-    if (successfullyAddedCount > 0) {
-      const message = skippedCount > 0
-        ? `${successfullyAddedCount} employees added successfully. ${skippedCount} rows were skipped due to errors or duplicates.`
-        : 'Employees added successfully!';
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: message, key: 'tl', life: 3000 });
-    } else {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No employees were added due to errors or duplicates. Please check your file.', key: 'tl', life: 3000 });
-    }
-
-    this.buttonText = "Submit";
-    setTimeout(() => { this.close.emit() }, 2000);
-  }
-
 
   toLocalDateTime(date: Date | string | null): string {
     if (!date) return '';
     const parsedDate = new Date(date);
     return formatDate(parsedDate, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
   }
-  addNewEmployee(data: any): Promise<boolean> {
-    console.log(this.levels)
-    console.log(data[0]['Department'])
 
-    const newEmployees = data.map((item: any) => ({
-      ...(item['Employee ID'] && !isNaN(Number(item['Employee ID'])) && Number(item['Employee ID']) > 0
-        ? { id: Number(item['Employee ID']) }
-        : {}),
-      firstName: item['First Name'],
-      lastName: item['Last Name'],
-      email: item['Email'],
-      workEmail: item['Work Email'],
-      jobTitle: item['Job Title'],
-      departmentId: this.departments.find(dept => dept.name === item['Department'])?.id,
-      levelId: this.levels.find(level => level.name === item['Level'])?.id,
-      jobTypeId: this.employmentTypes.find(type => type.name === item['Employment Type'])?.id,
-      supervisor: item['Supervisor'],
-      status: item['Status'].toUpperCase() || 'ACTIVE',
-      startDate: this.toLocalDateTime(this.validateDate(item['Employment Start Date'])),
-      endDate: this.toLocalDateTime(this.validateDate(item['Employment End Date'])),
-      onProbation: item['On Probation']?.toLowerCase() === 'yes' ? true : false,
-      probationStartDate: this.toLocalDateTime(this.validateDate(item['Probation Start Date'])),
-      probationEndDate: this.toLocalDateTime(this.validateDate(item['Probation End Date'])),
-      appraisalDueDate: this.toLocalDateTime(this.validateDate(item['Appraisal Due Date'])),
-    }));
-
-    console.log(newEmployees);
-
-
-    return new Promise<boolean>((resolve) => {
-      // this.employeeService.addBulkEmployee(newEmployees).subscribe(
-      //   {
-      //     next: () => {
-      //       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000 });
-      //       resolve(true);
-      //     },
-      //     error: (err: any) => {
-      //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add employee. Please check your input.', key: 'tl', life: 3000 });
-      //       console.error('Failed to add employee:', err);
-      //       resolve(false);
-      //     }
-      //   }
-      // );
-
-    });
-  }
 
 
 

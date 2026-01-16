@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -140,6 +140,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   constructor(
     private posService: PosServiceService,
     private checkoutService: CheckoutService,
+    private cdr: ChangeDetectorRef,
     private userService: UserService,
     private imageCacheService: ImageCacheService,
     private router: Router

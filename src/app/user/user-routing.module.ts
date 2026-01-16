@@ -21,6 +21,7 @@ import { VerificationRequiredComponent } from '../ui/view/verification-required/
 import { EmailVerificationComponent } from '../ui/view/pos-store/email-verification/email-verification.component';
 import { ReturnsRefundsComponent } from '../ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { OrderHistoryComponent } from '../ui/view/pos-store/order-history/order-history.component';
+import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
@@ -54,7 +55,6 @@ const routes: Routes = [
     component: OrderRefundComponent,
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
-
   },
   {
     path: 'refund-request/:uuid',
@@ -62,14 +62,12 @@ const routes: Routes = [
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
 
-
   },
   {
     path: 'openRegister/:uuid',
     component: OpenRegisterComponent,
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_CHKOUT'] }
-
  
   },
   {
@@ -78,7 +76,6 @@ const routes: Routes = [
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_CHKOUT'] }
 
-
   },
   {
     path: 'kitchen/orders/:uuid',
@@ -86,14 +83,19 @@ const routes: Routes = [
 
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
-
   },
   {
     path: 'kitchen/:uuid',
     component: CheckoutKitchenComponent,
     // canActivate: [PermissionGuard],
     //   data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
-
+ 
+  },
+   {
+    path: 'kitchen/history/:uuid',
+    component: CheckoutKitchenHistoryComponent,
+    // canActivate: [PermissionGuard],
+    //   data: { appCode: ['POS_KITCHEN_ORDER', 'POS_KITCHEN_WAITER', 'POS_KITCHEN_CASHIER'] }
  
   },
   {
@@ -124,40 +126,40 @@ const routes: Routes = [
   //   ],
   // },
 
-{
-  path: 'user/checkout/store/:uuid',
-  children: [
-    {
-      path: '',
-      component: PosStoreComponent,
-    },
-    {
-      path: 'checkout',
-      component: StoreCheckoutComponent,
-    },
-    {
-      path: 'order-confirmation/:id',
-      component: OrderConfirmationComponent,
-    },
-    {
-      path: 'product-details/:id',
-      component: ProductDetailsComponent,
-      runGuardsAndResolvers: 'paramsChange' 
-    },
-    {
-      path: 'order-history',
-      component: OrderHistoryComponent
-    },
-    {
-      path: 'category/:categoryName',
-      component: CategoryProductsComponent,
-    },
-  { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
-    { path: 'verify-required', component: VerificationRequiredComponent },
-  { path: 'verify-email', component: EmailVerificationComponent },
-  { path: 'return-refund', component: ReturnsRefundsComponent}
-  ]
-}
+// {
+//   path: 'optimmerce/:uuid',
+//   children: [
+//     {
+//       path: '',
+//       component: PosStoreComponent,
+//     },
+//     {
+//       path: 'checkout',
+//       component: StoreCheckoutComponent,
+//     },
+//     {
+//       path: 'order-confirmation/:id',
+//       component: OrderConfirmationComponent,
+//     },
+//     {
+//       path: 'product-details/:id',
+//       component: ProductDetailsComponent,
+//       runGuardsAndResolvers: 'paramsChange' 
+//     },
+//     {
+//       path: 'order-history',
+//       component: OrderHistoryComponent
+//     },
+//     {
+//       path: 'category/:categoryName',
+//       component: CategoryProductsComponent,
+//     },
+//   { path: 'store/:uuid/order-confirmation/:orderId', component: OrderConfirmationComponent },
+//     { path: 'verify-required', component: VerificationRequiredComponent },
+//   { path: 'verify-email', component: EmailVerificationComponent },
+//   { path: 'return-refund', component: ReturnsRefundsComponent}
+//   ]
+// }
 ];
 
 @NgModule({

@@ -67,7 +67,7 @@ export class NavigationLinksService {
 		this.links["kitchenOrder"] = "/user/checkout/kitchen/orders/" + uuidV4();
 
 		this.links["hotel"] = "/user/checkout/hotel/" + uuidV4();
-		this.links["store"] = "/user/checkout/store/" + uuidV4();
+		this.links["store"] = "/optimerce/" + uuidV4();
 
 		// settings links ============================================================================================================
 		this.links["settingsLink"] = "/admin/settings/general-settings/" + uuidV4();

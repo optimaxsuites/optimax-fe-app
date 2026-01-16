@@ -25,7 +25,6 @@ import { PermissionGuard } from './ui/permission/permission.guard';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 import { EStoreSalesComponent } from './ui/view/sales/e-store-sales/e-store-sales.component';
 import { CheckoutKitchenHistoryComponent } from './ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
-import { CheckoutKitchenHeaderComponent } from './ui/view/checkout-kitchen-header/checkout-header.component';
 
 const routes: Routes = [
   {
@@ -62,10 +61,14 @@ const routes: Routes = [
 
   },
   {
+    path: 'optimerce',
+    loadChildren: () => import('./optimerce/optimerce.module').then(m => m.OptimerceModule)
+  },
+  {
     path: "refund-request/:uuid",
     component: RequestDetailsComponent,
-      canActivate: [PermissionGuard],
-        data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
+      // canActivate: [PermissionGuard],
+      //   data: { appCode: ['POS_CHKOUT', 'POS_KITCHEN_ORDER', 'POS_KITCHEN_CASHIER', 'POS_KITCHEN_WAITER'] }
   },
   {
     path: 'inventory/:uuid',
@@ -82,7 +85,7 @@ const routes: Routes = [
   {
     path: 'orderDetails/:uuid',
     component: OrderDetailComponent,
-    canActivate: [PermissionGuard],
+    // canActivate: [PermissionGuard],
   },
   {
   path: 'user/checkout/orders/:uuid',
@@ -118,10 +121,8 @@ const routes: Routes = [
   {
     path: 'view',
     component: ViewInventoryComponent,
-
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_INV'] }
-
   },
   {
     path: 'supplier-details',
@@ -132,9 +133,8 @@ const routes: Routes = [
   {
     path: 'add-ingredient/:uuid',
     component: AddIngredientComponent,
-      // canActivate: [PermissionGuard],
-      // data: { appCode: ['POS_ING'] }
-
+    // canActivate: [PermissionGuard],
+    // data: { appCode: ['POS_ING'] }
   },
   {
     path: 'view-ingredient/:uuid',
@@ -147,18 +147,6 @@ const routes: Routes = [
     component: EditIngredientsComponent,
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_ING'] }
-  },
-  {
-    path: 'checkout-kitchen-history/:uuid',
-    component: CheckoutKitchenHistoryComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
-  },
-  {
-    path: 'checkout-kitchen-header',
-    component: CheckoutKitchenHeaderComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
   },
 ];
 

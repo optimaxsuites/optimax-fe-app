@@ -13,7 +13,7 @@ import {
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
 import { MessageService } from "primeng/api";
-import { debounceTime, skipUntil } from "rxjs";
+import { debounceTime, distinctUntilChanged, skipUntil } from "rxjs";
 import {
   BranchDTO,
   DiscountDTO,
@@ -32,6 +32,7 @@ import { MetadataService } from "../../../service/metadata.service";
 import { PosServiceService } from "../../../service/pos-service.service";
 import { firstValueFrom } from 'rxjs';
 import { of, Observable } from 'rxjs'; 
+import { UpcLookupService, UpcProduct } from "../../../service/upc-lookup.service";
 
 interface SelectedIngredientDTO {
   ingredient: IngredientDTO;
@@ -257,10 +258,10 @@ discount: {
 		size: [
 			"XXS",
 			"XS",
-			"Small",
-			"Medium",
-			"Regular",
-			"Large",
+			"SMALL",
+			"MEDIUM",
+			"REGULAR",
+			"LARGE",
 			"XL",
 			"XXL",
 		] as VariantDTO["size"][],
@@ -296,6 +297,7 @@ discountTypes: any[] = [
 	openAddDiscount: boolean = false;
 	openAddSupplier: boolean = false;
 	openAddTax: boolean = false;
+  upcLoading: boolean = false;
 
 	openBranchData = false;
 	categories: any[] = [];
@@ -314,6 +316,7 @@ discountTypes: any[] = [
 		{ label: "Codabar", value: "Codabar" },
 		{ label: "CODE39", value: "CODE39" },
 	] as const;
+
 	/**
 	 * This is the branch name that is used to determine what branch data to be edited
 	 *
@@ -338,7 +341,7 @@ discountTypes: any[] = [
 
   // Image properties
   mainProductImage: string = '';
-  productImages: { file: File | null; url: string }[] = [];
+  productImages: { id: number, file: File | null; url: string }[] = [];
 
   constructor(
     private messageService: MessageService,
@@ -347,7 +350,8 @@ discountTypes: any[] = [
     private fb: FormBuilder,
     private industryData: IndustryDataService,
     private metadataService: MetadataService,
-    private imageCacheService: ImageCacheService
+    private imageCacheService: ImageCacheService,
+    private upcLookupService: UpcLookupService
   ) {}
 
   ngOnInit(): void {
@@ -377,7 +381,7 @@ discountTypes: any[] = [
       partNumber: [''],
       selectedBranch: [[], Validators.required],
       branches: this.fb.array([]),
-      category: [''],
+      category: ['', Validators.required],
       image: [null],
       startDate: [''],
       endDate: [''],
@@ -415,7 +419,120 @@ discountTypes: any[] = [
         this.debugImageFlow();
       }, 100);
     }
+
+      this.productForm.get('code')?.valueChanges
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe(upc => this.onBarcodeChange(upc));
   }
+
+    private initializeEditMode() {
+    console.log('Initializing edit mode with activeItem:', this.activeItem);
+
+    // Set basic form values with proper fallbacks
+    this.productForm.patchValue({
+      name: this.activeItem.name || '',
+      code: this.activeItem.code || '',
+      description: this.activeItem.description || '',
+      isAvailableInStore: this.activeItem.isAvailableInStore ?? true,
+      sku: this.activeItem.sku || '',
+      weight: this.activeItem.weight || 0,
+      costPrice:
+        this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
+      sellingPrice: this.activeItem.sellingPrice || 0,
+      quantity: this.activeItem.quantity || 0,
+      partNumber: this.activeItem.partNumber || '',
+      reorderThreshold: this.activeItem.reorderThreshold || 12,
+      expiryDate:
+        this.activeItem.expiryDate || this._defaultExpiryDate.toISOString(),
+      isBundle: this.activeItem.isBundle || false,
+      bundleItems: this.activeItem.bundleItems || [],
+      measurementUnit: this.activeItem.measurementUnit || '',
+      supplier: this.activeItem.supplier,
+      discount: this.activeItem.discount,
+      selectedTaxes: this.activeItem.tax
+      .map((t: { id: number | undefined; }) => this.taxes.find(x => x.id === t.id))
+      .filter(Boolean)
+    });
+
+    this.setRelatedObjects();
+    if (this.activeItem.isBundle && this.activeItem.bundleItems) {
+      this.selectedBundleItems = this.activeItem.bundleItems.map(
+        (item: any) => ({
+          product:
+            this.availableProducts.find((p) => p.id === item.productId) || item,
+          quantity: item.quantity || 1,
+          priceAdjustment: item.priceAdjustment || 0,
+        })
+      );
+    }
+    // Set variants
+    if (this.activeItem.variants && this.activeItem.variants.length > 0) {
+      this.variants = [...this.activeItem.variants];
+    }
+
+    
+
+    // Set branch information
+    this.setBranchInformation();
+
+    // Initialize product images
+    // this.initializeProductImages();
+
+    console.log('Form after initialization:', this.productForm.value);
+  }
+
+    async onBarcodeChange(upc: string) {
+        if (!/^\d{12,13}$/.test(upc)) return;
+        // this.loading = true;
+         this.upcLoading = true;
+
+
+        const product: UpcProduct | null = await this.upcLookupService.lookup(upc);
+        if (product) {
+          this.productForm.patchValue({
+            name: product.title,
+            // brand: product.brand,
+            // category: product.category,
+            description: product.description,
+            // image: product.images?.[0] || '',       
+             
+          });
+
+          if (product.images?.[0]) {
+            await this.addImageFromUrl(product.images[0]);
+          }
+        }
+        else {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'UPC Lookup',
+            detail: 'No record found for this UPC code.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+
+          this.upcLoading = false;
+      }
+
+ async addImageFromUrl(url: string, fileName = 'product.jpg') {
+  try {
+    const link = "https://sheba-n8n.duckdns.org/webhook/85a5b1fa-48ab-4516-911e-4eb7129aa62c?url=" + encodeURIComponent(url);
+    const res = await fetch(link);
+    
+    if (!res.ok) throw new Error('Failed to fetch binary from n8n');
+
+    const blob = await res.blob();
+    const file = new File([blob], 'product.jpg', { type: blob.type || 'image/jpeg' });
+
+    // Create a fake event to reuse your existing handler
+    const fakeEvent = { target: { files: [file] } };
+    this.onImageUpload(fakeEvent);
+  } catch (err) {
+    console.error('Failed to load image from URL', err);
+    // 049000050103
+  }
+}
 
   // Helper method to get tax control for a branch
   getBranchTaxControl(branch: AbstractControl): FormControl {
@@ -425,7 +542,7 @@ discountTypes: any[] = [
   // Get selected tax objects
   getSelectedTaxes(): any[] {
     const selectedTaxIds = this.productForm.get('selectedTaxes')?.value || [];
-    return this.taxes.filter(tax => selectedTaxIds.includes(tax.id));
+    return this.taxes.filter(tax => selectedTaxIds.includes(tax));
   }
 
   // Get selected taxes for a specific branch
@@ -437,7 +554,9 @@ discountTypes: any[] = [
   // Calculate total tax rate
   calculateTotalTaxRate(): number {
     const selectedTaxes = this.getSelectedTaxes();
-    return selectedTaxes.reduce((total, tax) => total + (tax.rate || 0), 0);
+    console.log(selectedTaxes)
+    if(selectedTaxes.length > 0)  return selectedTaxes.reduce((total, tax) => total + (tax.rate || 0), 0)
+    return 0
   }
 
   // Remove a tax from selection
@@ -569,7 +688,7 @@ updateTax() {
     description: this.taxData.description || ''
   };
 
-  this.posService.updateTax(taxPayload).subscribe(
+  this.posService.addTax(taxPayload).subscribe(
     (data) => {
       if (data) {
         this.messageService.add({
@@ -1050,54 +1169,6 @@ checkPriceValidation(): void {
     return Math.abs(value);
   }
 
-  private initializeEditMode() {
-    console.log('Initializing edit mode with activeItem:', this.activeItem);
-
-    // Set basic form values with proper fallbacks
-    this.productForm.patchValue({
-      name: this.activeItem.name || '',
-      code: this.activeItem.code || '',
-      description: this.activeItem.description || '',
-      isAvailableInStore: this.activeItem.isAvailableInStore ?? true,
-      sku: this.activeItem.sku || '',
-      weight: this.activeItem.weight || 0,
-      costPrice:
-        this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
-      sellingPrice: this.activeItem.sellingPrice || 0,
-      quantity: this.activeItem.quantity || 0,
-      partNumber: this.activeItem.partNumber || '',
-      reorderThreshold: this.activeItem.reorderThreshold || 12,
-      expiryDate:
-        this.activeItem.expiryDate || this._defaultExpiryDate.toISOString(),
-      isBundle: this.activeItem.isBundle || false,
-      bundleItems: this.activeItem.bundleItems || [],
-      measurementUnit: this.activeItem.measurementUnit || '',
-    });
-
-    this.setRelatedObjects();
-    if (this.activeItem.isBundle && this.activeItem.bundleItems) {
-      this.selectedBundleItems = this.activeItem.bundleItems.map(
-        (item: any) => ({
-          product:
-            this.availableProducts.find((p) => p.id === item.productId) || item,
-          quantity: item.quantity || 1,
-          priceAdjustment: item.priceAdjustment || 0,
-        })
-      );
-    }
-    // Set variants
-    if (this.activeItem.variants && this.activeItem.variants.length > 0) {
-      this.variants = [...this.activeItem.variants];
-    }
-
-    // Set branch information
-    this.setBranchInformation();
-
-    // Initialize product images
-    this.initializeProductImages();
-
-    console.log('Form after initialization:', this.productForm.value);
-  }
 
   private setRelatedObjects() {
     // Set category
@@ -1110,34 +1181,34 @@ checkPriceValidation(): void {
       }
     }
 
-    // Set taxes (multiple)
-    if (this.activeItem.taxes && Array.isArray(this.activeItem.taxes)) {
-      const taxIds = this.activeItem.taxes.map((tax: any) => tax.id);
-      this.productForm.patchValue({ selectedTaxes: taxIds });
-    } else if (this.activeItem.tax) {
-      // Fallback for single tax (backward compatibility)
-      this.productForm.patchValue({ selectedTaxes: [this.activeItem.tax.id] });
-    }
+    // // Set taxes (multiple)
+    // if (this.activeItem.taxes && Array.isArray(this.activeItem.taxes)) {
+    //   const taxIds = this.activeItem.taxes
+    //   this.productForm.patchValue({ selectedTaxes: taxIds });
+    // } else if (this.activeItem.tax) {
+    //   // Fallback for single tax (backward compatibility)
+    //   this.productForm.patchValue({ selectedTaxes: [this.activeItem.tax.id] });
+    // }
 
-    // Set discount
-    if (this.activeItem.discount) {
-      const discount = this.discounts.find(
-        (d) => d.id === this.activeItem.discount.id
-      );
-      if (discount) {
-        this.productForm.patchValue({ discount: discount });
-      }
-    }
+    // // Set discount
+    // if (this.activeItem.discount) {
+    //   const discount = this.discounts.find(
+    //     (d) => d.id === this.activeItem.discount.id
+    //   );
+    //   if (discount) {
+    //     this.productForm.patchValue({ discount: discount });
+    //   }
+    // }
 
-    // Set supplier
-    if (this.activeItem.supplier) {
-      const supplier = this.suppliers.find(
-        (s) => s.id === this.activeItem.supplier.id
-      );
-      if (supplier) {
-        this.productForm.patchValue({ supplier: supplier });
-      }
-    }
+    // // Set supplier
+    // if (this.activeItem.supplier) {
+    //   const supplier = this.suppliers.find(
+    //     (s) => s.id === this.activeItem.supplier.id
+    //   );
+    //   if (supplier) {
+    //     this.productForm.patchValue({ supplier: supplier });
+    //   }
+    // }
   }
 
   private setBranchInformation() {
@@ -1174,6 +1245,7 @@ private initializeProductImages() {
         
         if (imageUrl && imageUrl !== this.imageCacheService.getImageUrlFromDTO({} as any)) {
           const imageData = {
+            id: imageItem.id,
             file: null,
             url: imageUrl
           };
@@ -1199,6 +1271,7 @@ private initializeProductImages() {
     if (this.activeItem?.imageUrl) {
       console.log('🔄 Trying imageUrl property:', this.activeItem.imageUrl);
       const imageData = {
+        id: 0,
         file: null,
         url: this.activeItem.imageUrl
       };
@@ -1213,6 +1286,7 @@ private initializeProductImages() {
     const placeholderUrl = this.getPlaceholderImage();
     this.mainProductImage = placeholderUrl;
     this.productImages.push({
+      id: 0,
       file: null,
       url: placeholderUrl
     });
@@ -1226,23 +1300,57 @@ private initializeProductImages() {
   
   this.updateImageFormValidation();
 }
-  removeImage(index: number) {
-    const removedImage = this.productImages[index];
 
-    // If removing the main image, set a new main image
-    if (this.mainProductImage === removedImage.url) {
-      if (this.productImages.length > 1) {
-        // Set the next image as main, or the previous if it's the last
-        const newMainIndex =
-          index === this.productImages.length - 1 ? index - 1 : index + 1;
-        this.mainProductImage = this.productImages[newMainIndex].url;
-      } else {
-        this.mainProductImage = '';
-      }
+ 
+
+
+
+removeImage(image: any, index: number) {
+    const removedImage = this.productImages[index];
+    console.log(image, removedImage)
+
+    if(removedImage.id === 0){
+      this.productImages.splice(index, 1);
+      this.updateImageFormValidation();
+      return;
     }
 
-    this.productImages.splice(index, 1);
-    this.updateImageFormValidation();
+    this.posService.deleteProductImage(removedImage.id).subscribe({
+      next: () => {
+        // if (this.mainProductImage === removedImage.url) {
+        //       if (this.productImages.length > 1) {
+        //         // Set the next image as main, or the previous if it's the last
+        //         const newMainIndex =
+        //           index === this.productImages.length - 1 ? index - 1 : index + 1;
+        //         this.mainProductImage = this.productImages[newMainIndex].url;
+        //       } else {
+        //         this.mainProductImage = '';
+        //       }
+        //     }
+
+            this.productImages.splice(index, 1);
+            this.updateImageFormValidation();
+            this.metadataService.fetchMetaData()
+             this.messageService.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: `Image deleted successfully.`,
+            key: 'tl',
+            life: 3000,
+          });
+      },
+      error: (err) => {
+         this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Could not delete image. Try again.`,
+            key: 'tl',
+            life: 3000,
+          });
+      },
+    })
+
+   
   }
 
   clearAllImages() {
@@ -1383,7 +1491,7 @@ getMainImage(): string {
         // Update our local state with this constructed URL
         this.mainProductImage = constructedUrl;
         if (this.productImages.length === 0) {
-          this.productImages.push({ file: null, url: constructedUrl });
+          this.productImages.push({id: firstImageItem.id, file: null, url: constructedUrl });
         }
         return constructedUrl;
       }
@@ -1816,6 +1924,7 @@ getMainImage(): string {
         const reader = new FileReader();
         reader.onload = (e: any) => {
           const imageData = {
+            id: 0,
             file: file,
             url: e.target.result,
           };
@@ -1893,17 +2002,17 @@ async addToProduct() {
   const sellingPrice = this.productForm.get('sellingPrice')?.value;
   
   // Validate that cost price is not greater than selling price
-  if (costPrice && sellingPrice && costPrice > sellingPrice) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Price Validation Failed',
-      detail: 'Cannot proceed: Cost price is higher than selling price. Please adjust prices or add a discount.',
-      key: 'tl',
-      life: 5000,
-    });
-    this.loading = false;
-    return;
-  }
+  // if (costPrice && sellingPrice && costPrice > sellingPrice) {
+  //   this.messageService.add({
+  //     severity: 'error',
+  //     summary: 'Price Validation Failed',
+  //     detail: 'Cannot proceed: Cost price is higher than selling price. Please adjust prices or add a discount.',
+  //     key: 'tl',
+  //     life: 5000,
+  //   });
+  //   this.loading = false;
+  //   return;
+  // }
 
   if (this.productForm.invalid) {
     this.markFormGroupTouched(this.productForm);
@@ -1979,7 +2088,7 @@ async addToProduct() {
       quantity: formValues.quantity,
       weight: formValues.weight,
       reorderThreshold: formValues.reorderThreshold,
-      taxIds: formValues.selectedTaxes || [],
+      tax: formValues.selectedTaxes || [],
       discountId: formValues.discount?.id,
       supplierId: formValues.supplier?.id,
       branchId:
@@ -1987,6 +2096,7 @@ async addToProduct() {
       createdBy: userName,
       createdDate: new Date().toISOString(),
       expiryDate: formValues.expiryDate,
+      active: true
     };
 
     console.log('Final product payload:', JSON.stringify(product, null, 2));
@@ -1995,21 +2105,17 @@ async addToProduct() {
     formData.append('product', JSON.stringify(product));
 
     // Append all product images
+    if(this.productImages.length > 0) {
     this.productImages.forEach((image, index) => {
       if (image.file) {
         formData.append('files', image.file);
       }
     });
-
-    // Mark the first image as main if specified
-    if (this.mainProductImage && this.productImages.length > 0) {
-      const mainImageIndex = this.productImages.findIndex(
-        (img) => img.url === this.mainProductImage
-      );
-      if (mainImageIndex !== -1) {
-        formData.append('mainImageIndex', mainImageIndex.toString());
-      }
-    }
+  } else {
+    const defaultImage = await this.createDefaultImage(product.name);
+    formData.append("files", defaultImage, 'default_product.jpg');
+  }
+    
 
     if (formValues.image instanceof File) {
       formData.append('files', formValues.image);
@@ -2030,21 +2136,22 @@ async addToProduct() {
           );
           
           // Show success message with price info if applicable
-          let successMessage = 'Product added successfully.';
-          if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
-            successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
-          }
+          // let successMessage = 'Product added successfully.';
+          // if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+          //   successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+          // }
+
+          this.metadataService.fetchMetaData()
           
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Product Added',
-            detail: successMessage,
-            key: 'tl',
-            life: 5000,
-          });
+          // this.messageService.add({
+          //   severity: 'success',
+          //   summary: 'Product Added',
+          //   detail: successMessage,
+          //   key: 'tl',
+          //   life: 5000,
+          // });
           this.loading = false;
           this.addSuccessfull = true;
-          this.resetFormAfterSuccess();
         } else {
           this.messageService.add({
             severity: 'error',
@@ -2069,6 +2176,60 @@ async addToProduct() {
       }
     );
   }
+}
+
+private createDefaultImage(name?: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const baseSize = 200;
+    const scale = 2; // crisp on retina
+    const canvas = document.createElement('canvas');
+    canvas.width = baseSize * scale;
+    canvas.height = baseSize * scale;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      // fallback to empty blob
+      return resolve(new Blob());
+    }
+
+    // stable color palette
+    const palette = [
+      '#3B82F6', // blue
+      '#10B981', // emerald
+      '#F59E0B', // amber
+      '#EF4444', // red
+      '#8B5CF6', // violet
+      '#06B6D4', // cyan
+      '#F97316', // orange
+      '#14B8A6', // teal
+      '#EC4899', // pink
+      '#84CC16', // lime
+    ];
+
+    const initial = (name?.trim()?.[0] ?? 'P').toUpperCase();
+    const color = palette[initial.charCodeAt(0) % palette.length];
+
+    // background
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // letter
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // responsive font size
+    const fontPx = Math.floor(baseSize * 0.6);
+    ctx.font = `bold ${fontPx * scale}px Inter, Segoe UI, Arial, sans-serif`;
+
+    ctx.fillText(initial, (baseSize * scale) / 2, (baseSize * scale) / 2);
+
+    canvas.toBlob(
+      (blob) => resolve(blob ?? new Blob()),
+      'image/jpeg',
+      0.9
+    );
+  });
 }
 
   private markFormGroupTouched(formGroup: FormGroup) {
@@ -2107,7 +2268,7 @@ async addToProduct() {
           quantity: branch.quantity,
           weight: formValues.weight,
           reorderThreshold: formValues.reorderThreshold,
-          taxIds: branch.tax || [], // Use the array of tax IDs from branch form
+          tax: branch.tax || [], // Use the array of tax IDs from branch form
           discountId: branch.discount?.id,
           supplierId: branch.supplier?.id,
           branchId: branch.branchName.id, // if needed on the backend
@@ -2138,6 +2299,9 @@ async addToProduct() {
           );
         }
       }
+
+          this.metadataService.fetchMetaData()
+
 
       this.messageService.add({
         severity: 'success',
@@ -2266,23 +2430,23 @@ async updateProduct() {
   const userName = sessionStorage.getItem('username');
 
   // Check price validation before proceeding
-  this.checkPriceValidation();
+  // this.checkPriceValidation();
   
-  const costPrice = this.productForm.get('costPrice')?.value;
-  const sellingPrice = this.productForm.get('sellingPrice')?.value;
+  // const costPrice = this.productForm.get('costPrice')?.value;
+  // const sellingPrice = this.productForm.get('sellingPrice')?.value;
   
   // Validate that cost price is not greater than selling price
-  if (costPrice && sellingPrice && costPrice > sellingPrice) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Price Validation Failed',
-      detail: 'Cannot update: Cost price is higher than selling price. Please adjust prices or add a discount.',
-      key: 'tl',
-      life: 5000,
-    });
-    this.loading = false;
-    return;
-  }
+  // if (costPrice && sellingPrice && costPrice > sellingPrice) {
+  //   this.messageService.add({
+  //     severity: 'error',
+  //     summary: 'Price Validation Failed',
+  //     detail: 'Cannot update: Cost price is higher than selling price. Please adjust prices or add a discount.',
+  //     key: 'tl',
+  //     life: 5000,
+  //   });
+  //   this.loading = false;
+  //   return;
+  // }
 
   // Only validate if required fields are missing
   if (this.productForm.invalid) {
@@ -2306,10 +2470,10 @@ async updateProduct() {
   }
 
   const formValues = this.productForm.value;
-  const hasNewImage = formValues.image instanceof File;
+  const hasNewImage = this.productImages.length > this.activeItem.productImages.length
 
   console.log('Form values:', formValues);
-  console.log('Has new image:', hasNewImage);
+  console.log('Has new image:', hasNewImage, this.productImages);
 
   // Build the product object with proper fallbacks
   const product = {
@@ -2334,7 +2498,7 @@ async updateProduct() {
     quantity: formValues.quantity,
     weight: formValues.weight,
     reorderThreshold: formValues.reorderThreshold,
-    taxIds: formValues.selectedTaxes || [],
+    tax: formValues.selectedTaxes || [],
     discountId: formValues.discount?.id,
     supplierId: formValues.supplier?.id,
     branchId: this.activeItem.branch?.id || this.activeItem.branchId,
@@ -2343,6 +2507,7 @@ async updateProduct() {
     expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
     // Clear existing images if new image is provided
     clearExistingImages: hasNewImage,
+    active: true
   };
 
   console.log('Product data to update:', product);
@@ -2350,21 +2515,17 @@ async updateProduct() {
   const formData = new FormData();
   formData.append('product', JSON.stringify(product));
 
-  // If there's a new image, add it and set replacement flags
   if (hasNewImage) {
-    formData.append('files', formValues.image);
-    formData.append('replaceImages', 'true');
-    formData.append('clearExistingImages', 'true');
-  } else if (
-    this.activeItem.productImages &&
-    this.activeItem.productImages.length > 0
-  ) {
-    // Keep the existing images if no new image is provided
-    const existingImages = this.activeItem.productImages.map(
-      (img: any) => img.id
-    );
-    formData.append('existingImageIds', JSON.stringify(existingImages));
-  }
+		this.productImages.forEach((image, index) => {
+			if (image.file) {
+			  formData.append("files", image.file);
+			}
+		  });
+    } else if (this.activeItem.productImages && this.activeItem.productImages.length > 0) {
+        const existingImages = this.activeItem.productImages.map((img: any) => img.id);
+      
+    }
+
 
   try {
     const response = await this.posService
@@ -2375,22 +2536,24 @@ async updateProduct() {
 
     if (response) {
       // Show success message with price info if applicable
-      let successMessage = 'Product updated successfully.';
-      if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
-        successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
-      } else if (costPrice && sellingPrice && costPrice === sellingPrice) {
-        successMessage += ' Note: You are selling at cost price. Consider adding a margin.';
-      }
+      // let successMessage = 'Product updated successfully.';
+      // if (costPrice && sellingPrice && costPrice > sellingPrice * 0.9) {
+      //   successMessage += ' Note: Your profit margin is low. Consider optimizing pricing.';
+      // } else if (costPrice && sellingPrice && costPrice === sellingPrice) {
+      //   successMessage += ' Note: You are selling at cost price. Consider adding a margin.';
+      // }
       
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: successMessage,
-        key: 'tl',
-        life: 5000,
-      });
+      // this.messageService.add({
+      //   severity: 'success',
+      //   summary: 'Success',
+      //   detail: successMessage,
+      //   key: 'tl',
+      //   life: 5000,
+      // });
 
       // Close the modal and refresh data
+          this.metadataService.fetchMetaData()
+
       this.triggerClose();
     } else {
       this.messageService.add({
@@ -2831,30 +2994,66 @@ async updateProduct() {
   }
 
   generateBarcode(variantSKU?: string, shouldPrint?: boolean) {
-    const sku = this.productForm.get('sku')?.value;
+  const sku = this.productForm.get('sku')?.value;
 
-    if (typeof sku === 'string') {
-      const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
+  if (typeof sku === 'string') {
+    const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
 
-      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        const barcodeSvg = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'svg'
-        );
-        JsBarcode(barcodeSvg, productCode, {
-          format: this.barcodeConfig.barcodeType,
-          lineColor: '#000',
-          width: 2,
-          height: 125,
-          displayValue: true,
-        });
+    const barcodeImages: string[] = [];
 
-        this.convertSvgToPng(barcodeSvg, shouldPrint);
-      }
-    } else {
-      alert('Please fill in the SKU with valid data.');
+    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+      const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      JsBarcode(barcodeSvg, productCode, {
+        format: this.barcodeConfig.barcodeType,
+        lineColor: '#000',
+        width: 2,
+        height: 125,
+        displayValue: true,
+      });
+
+      const svgString = new XMLSerializer().serializeToString(barcodeSvg);
+      const encodedSvg = encodeURIComponent(svgString);
+      const imgData = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+      barcodeImages.push(imgData);
     }
+
+    if (shouldPrint) {
+      this.printBarcodesAsPages(barcodeImages);
+    } else {
+      barcodeImages.forEach(img => this.generatePDF(img));
+    }
+
+    this.resetFormAfterSuccess();
   }
+}
+
+printBarcodesAsPages(barcodeImages: string[]) {
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) return;
+
+  doc.open();
+  doc.write('<html><body>');
+  
+  barcodeImages.forEach((imgData, index) => {
+    doc.write(`<div style="page-break-after: always; text-align:center;">
+                <img src="${imgData}" />
+               </div>`);
+  });
+
+  doc.write('</body></html>');
+  doc.close();
+
+  // Trigger print
+  iframe.contentWindow?.print();
+
+  // Cleanup
+  setTimeout(() => document.body.removeChild(iframe), 5000);
+}
+
 
   convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
     const svgString = new XMLSerializer().serializeToString(svgElement);
@@ -3116,4 +3315,9 @@ getErrorMessage(controlName: string, displayName?: string): string {
     
     return this.getPlaceholderImage();
   }
+
+  compareTax(t1: any, t2: any): boolean {
+  return t1 && t2 ? t1.id === t2.id : false;
+}
+
 }

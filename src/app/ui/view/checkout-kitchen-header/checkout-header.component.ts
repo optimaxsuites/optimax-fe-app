@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper';
+import { v4 as uuidV4 } from "uuid";
+
 
 @Component({
   selector: 'app-checkout-kitchen-header',
@@ -16,6 +18,7 @@ export class CheckoutKitchenHeaderComponent {
   @Output() closeRegisterEvent = new EventEmitter<void>();
   @Input() closingAmount: number = 0; // Add this property
   @Input() total: number = 0; // Already exists
+  uuid = ""
   @Output() changeMode = new EventEmitter<"waiter" | "chef" | "cashier"| "history">();
   @Input() mode: "waiter" | "chef" | "cashier" | "history" = "chef";
   @Input() modefromHistory: boolean = false;
@@ -82,6 +85,8 @@ export class CheckoutKitchenHeaderComponent {
         this.paymentPermissions = getUserPermissionsFor('kitchen_payment');
     
         }
+
+        this.uuid = uuidV4()
 
       console.log(Object(this.orderPermissions));
       console.log(Object(this.paymentPermissions)); 

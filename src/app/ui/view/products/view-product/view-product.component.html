@@ -147,20 +147,20 @@
             </label>
 
             <p class="name editInput" id="name">
-              {{ activeItem.discount?.name }}
+              {{ activeItem.discount?.name || "N/A" }}
             </p>
           </div>
 
           <!-- tax -->
-          <div>
-            <label
-              for="tax"
-              class="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Tax
-            </label>
-            <p class="name editInput" id="name">{{ activeItem.tax?.name }}</p>
-          </div>
+            <div>
+              <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
+                Tax(es)
+              </label>
+              <p class="name editInput" id="name">
+                 {{ taxDisplay }}
+              </p>
+            </div>
+
 
           <!-- Supplier -->
           <div>
@@ -171,7 +171,7 @@
               Supplier
             </label>
             <p class="name editInput" id="name">
-              {{ activeItem.supplier?.name }}
+              {{ activeItem.supplier?.name || "N/A"}}
             </p>
           </div>
         </div>
@@ -292,7 +292,7 @@
             >
               Combo Items
             </label>
-            <ng-select [items]="activeItem.bundleItems ?? []" bindLabel="name">
+            <ng-select [items]="activeItem?.bundleItems || []" bindLabel="name">
             </ng-select>
           </div>
         </div>
@@ -337,8 +337,8 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   {{ variant.quantity }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color || 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size || 'N/A'}}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
               </tr>
             </tbody>

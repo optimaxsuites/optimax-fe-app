@@ -200,7 +200,7 @@ private hasSeenAuthModal = false;
   this.initializeComponent();
   this.loadUserFromStorage();
   this.showAuthModalOnFirstVisit();
-  this.debugFirstProductTax();
+  this.debugFirstProductTax(); 
   }
 
 //   private showAuthModalOnFirstVisit(): void {
@@ -237,12 +237,13 @@ private loadUserFromStorage(): void {
 
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
-      const persistedBranchId = this.metadataService.getSelectedBranchId();
+      // console.log(branches)
+      // const persistedBranchId = this.metadataService.selectedBranchId$;
       
       if (branches.length > 0 && !this.selectedBranch()) {
-        const branchToSelect = branches.find((b: any) => b.id === persistedBranchId) || branches[0];
+        const branchToSelect = branches[0];
         this.selectedBranch.set(branchToSelect);
-        this.metadataService.setSelectedBranch(branchToSelect.id);
+        // this.metadataService.setSelectedBranch(branchToSelect.id);
         this.updateWhatsAppNumber(branchToSelect);
         console.log('🏛️ Store initialized with Branch ID:', branchToSelect.id);
       }
@@ -783,7 +784,7 @@ navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     // Use the correct route path based on your routing configuration
-    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
+    this.router.navigate(['optimerce', currentUuid, 'checkout']);
   } else {
     console.error('Store UUID not found');
     this.showToast('Error', 'Unable to navigate to checkout. Store not found.', 'error');

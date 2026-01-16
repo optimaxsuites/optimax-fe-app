@@ -86,7 +86,7 @@
           text="Add New"
           *ngIf="productPermissions.canCreate"
           class="btn-navigate"
-          (btnClick)="openAddProdut()"
+          (btnClick)="openAddProduct()"
         ></app-button>
         <app-button
           *ngIf="productPermissions.canCreate"
@@ -114,22 +114,46 @@
     </p-toolbar>
 
     <!-- No Products Available Message -->
-    <div *ngIf="products.length === 0 && !(isLoading | async) && !categoryLoading" 
-         class="flex flex-col items-center justify-center py-16 bg-white rounded-lg shadow-sm border border-gray-100">
+   <div
+      *ngIf="products.length === 0 && !(isLoading | async) && !categoryLoading"
+      class="flex flex-col items-center justify-center py-16 bg-white rounded-lg shadow-sm border border-gray-100"
+    >
       <div class="text-center max-w-md">
         <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Products Available</h3>
+
+        <!-- Conditional Title -->
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">
+          No Products Available
+        </h3>
+
+        <!-- Conditional Message -->
         <p class="text-gray-500 mb-6">
-          There are no products in your inventory yet. Start by adding your first product to manage your stock.
+          <ng-container *ngIf="branches.length === 0">
+            You don’t have any branches yet. To create a product, you must first add at least one branch.
+          </ng-container>
+          <ng-container *ngIf="branches.length > 0">
+            There are no products in your inventory yet. Start by adding your first product to manage your stock.
+          </ng-container>
         </p>
+
+        <!-- Conditional Button -->
         <app-button
-          *ngIf="productPermissions.canCreate"
+          *ngIf="branches.length === 0 && productPermissions.canCreate"
+          text="Add Your First Branch"
+          class="btn-navigate mt-3"
+          (btnClick)="openAddBranch()"
+        ></app-button>
+
+        <app-button
+          *ngIf="branches.length > 0 && productPermissions.canCreate"
           text="Add Your First Product"
-          class="btn-navigate"
-          (btnClick)="openAddProdut()"
+          class="btn-navigate mt-3"
+          (btnClick)="openAddProduct()"
         ></app-button>
       </div>
     </div>
+
+
 
     <!-- Products Table View -->
     <p-table
@@ -208,7 +232,7 @@
                 class="font-extrabold text-sm"
                 [ngClass]="
                   item?.quantity > 0 
-                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800')
+                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
                     : 'text-gray-500'
                 "
               >{{ item?.quantity }}</span>
@@ -216,11 +240,11 @@
                 class="text-xs font-extrabold ml-2"
                 [ngClass]="
                   item?.quantity > 0
-                    ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800') 
+                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800') 
                     : 'text-gray-500'
                 "
               >
-                {{ item?.quantity === 0 ? "Not in Stock" : (item?.quantity >= 11 ? "In Stock" : "Low Stock") }}
+                {{ item?.quantity === 0 ? "Not in Stock" : item?.quantity >= (item.reorderThreshold ?? 10) ? "In Stock" : "Low Stock" }}
               </span>
             </div>
           </td>
@@ -268,7 +292,6 @@
                     *ngIf="productPermissions.canDelete"
                     (click)="openDeleteModalWithValidation(item)"
                     style="column-gap: 0.5rem"
-                    [title]="!canDeleteProduct(item) ? 'Warning: ' + getDeleteRestrictionMessage(item) : ''"
                     [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
                   >
                     <i class="pi pi-times-circle table-item me-2"></i>
@@ -372,17 +395,21 @@
                 <ng-container *ngIf="product.quantity !== undefined">
                   <span
                     [ngClass]="
-                      product.quantity === 0 ? 'text-gray-500' : 'text-gray-800'
-                    "
+                  product.quantity > 0 
+                    ? (product.quantity >= (product.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
+                    : 'text-gray-500'
+                "
                     class="font-extrabold"
                   >
                     {{ product.quantity }}
                     <span
-                      *ngIf="product.quantity === 0"
-                      class="ml-2 text-sm font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full"
+               
+                      class="ml-2 text-sm font-bold bg-gray-100 px-2 py-1 rounded-full"
                     >
-                      Not in Stock
+                                         {{ getStockStatus(product)}}
+
                     </span>
+
                   </span>
                 </ng-container>
               </div>

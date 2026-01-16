@@ -141,7 +141,7 @@ import { WhatsappWidgetComponent } from './ui/view/pos-store/whatsapp-widget/wha
 import { LocationPickingComponent } from './ui/view/pos-store/location-picking/location-picking.component';
 // import { CheckoutKitchenHeaderComponent } from './ui/view/checkout-kitchen-header/checkout-header.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
-// import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
+import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -297,7 +297,7 @@ const dbConfig: DBConfig = {
   ],
   imports: [
     BrowserModule,  
-    UserModule,
+    // UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,

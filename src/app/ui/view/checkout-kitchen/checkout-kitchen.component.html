@@ -4,21 +4,18 @@
 
 <div class="mainn-container">
 
-  <!-- ===================== WAITER PAGE ===================== -->
+ 
   <div *ngIf="activePage === 'waiter'" class="waiter-page">
 
-    <!-- ======== ACCORDION OVERVIEW ======== -->
     <div *ngIf="waiterView === 'overview'" class="waiter-overview">
 
       <div class="waiter-container">
-        <!-- Order Cards (Clickable Accordion) -->
         <div class="order-list">
           <div *ngFor="let o of activeWaiterOrders" 
                class="order-card" 
                [class.expanded]="expandedOrder === o"
                (click)="toggleOrderExpansion(o)">
             
-            <!-- Card Header (Always Visible) -->
             <div class="card-header">
               <div class="header-left">
                 <h3 class="table-waiter-info">
@@ -42,7 +39,6 @@
               </div>
             </div>
 
-            <!-- Expanded Details (Only shown when expanded) -->
             <div *ngIf="expandedOrder === o" class="order-details-expanded">
               <div class="order-items-section">
                 <h4>Order Items:</h4>
@@ -113,18 +109,14 @@
         </div>
       </div>
 
-      <!-- Floating Take Order Button -->
       <button class="take-btn-floating" (click)="takeOrder()">➕ Take New Order</button>
 
     </div>
 
-    <!-- ======== TAKE ORDER VIEW ======== -->
     <div *ngIf="waiterView === 'take-order'" class="take-order">
 
       <div class="take-order-content">
-        <!-- Menu Section -->
         <div class="menu-section">
-          <!-- Back Button in Menu Section -->
           <div class="menu-header">
             <button class="back-button" (click)="goToOverview()">
               <span class="back-icon">←</span>
@@ -191,7 +183,6 @@
           </div>
         </div>
 
-       <!-- Summary Section -->
 <div class="summary-section">
   <!-- Edit Mode Header -->
   <div class="summary-header">
@@ -285,7 +276,6 @@
 
   </div>
 
-  <!-- ===================== CHEF PAGE ===================== -->
   <div *ngIf="activePage === 'chef'" class="chef-page">
     <h2>Kitchen Orders</h2>
 

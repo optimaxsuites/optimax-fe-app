@@ -58,16 +58,16 @@ import { UserRoutingModule } from './user-routing.module';
 import { PaginatorModule } from 'primeng/paginator';
 import { CheckoutKitchenHeaderComponent } from '../ui/view/checkout-kitchen-header/checkout-header.component';
 import { KitchenOrderComponent } from '../ui/view/kitchen-order/kitchen-order.component';
-import { StoreHeaderComponent } from '../ui/view/pos-store/store-header/store-header.component';
-import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.component';
+// import { StoreHeaderComponent } from '../ui/view/pos-store/store-header/store-header.component';
+// import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.component';
 import { DecimalPipe, TitleCasePipe, DatePipe } from '@angular/common';
-import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
-import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
-import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
-import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
+// import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
+// import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
+// import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
+// import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
 import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
-import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
-import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
+// import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
+// import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
 
 @NgModule({
   declarations: [
@@ -87,18 +87,18 @@ import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/
     CheckoutKitchenComponent,
     CheckoutHeaderComponent,
     AppResizeDirective,
-    PosStoreComponent,
+    // PosStoreComponent,
     CheckoutKitchenHeaderComponent,
     KitchenOrderComponent,
-    StoreHeaderComponent,
-    AuthModalComponent,
-    StoreCheckoutComponent,
-    ProductDetailsComponent,
-    CategoryProductsComponent,
-    WhatsappWidgetComponent,
+    // StoreHeaderComponent,
+    // AuthModalComponent,
+    // StoreCheckoutComponent,
+    // ProductDetailsComponent,
+    // CategoryProductsComponent,
+    // WhatsappWidgetComponent,
     CheckoutKitchenHistoryComponent,
-    OrderConfirmationComponent, 
-    LocationPickingComponent
+    // OrderConfirmationComponent, 
+    // LocationPickingComponent
   ],
   imports: [
     CommonModule,
@@ -147,7 +147,7 @@ import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/
     CheckoutKitchenComponent, 
     CheckoutHeaderComponent, 
     CheckoutKitchenHeaderComponent,
-    LocationPickingComponent
+    // LocationPickingComponent
     // OrderConfirmationComponent 
   ],
   providers: [PosCheckoutPageComponent, DecimalPipe, TitleCasePipe, DatePipe],
