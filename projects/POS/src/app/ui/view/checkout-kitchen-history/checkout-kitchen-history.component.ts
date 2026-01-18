@@ -22,10 +22,10 @@ interface OrderItem {
 }
 
 interface Order {
+  id: number | undefined;
   table: number;
   orderNo: string;
   items: OrderItem[];
-  status: string;
   payment?: string;
   date?: string;
   createdAt?: string;
@@ -45,7 +45,19 @@ interface Order {
   paidBy?: string;
   paidById?: string | number;
   staffInvolved?: StaffInvolved[];
+  status: 'PENDING' | 'PREPARING' | 'READY' | 'CONFIRMED' | 'CANCELLED' | 'AWAITING_CONFIRMATION' | 'UNPAID' | 'PAID' | 'DELIVERED';
+  paymentId?: number;
+  orderStatus: 'UNPAID' | 'PAID',
+  orderedOn: any,
+  grandTotal: number,
+  total: number,
+  tax: number,
+  waiterId: any,
+  chefId: any,
+  cashierId: any
+  order: any
 }
+
 
 interface StaffInvolved {
   staffId: string | number;
@@ -211,19 +223,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   }
 
   private checkForNewOrders() {
-    console.log('🔄 Checking for new orders from cashier...');
-    const cashierOrders = this.getCashierLocalStorageOrders();
-    const currentOrderNos = this.orders.map(order => order.orderNo);
-    const newOrders = cashierOrders.filter(order => 
-      !currentOrderNos.includes(order.orderNo)
-    );
-    
-    if (newOrders.length > 0) {
-      console.log(`📥 Found ${newOrders.length} new orders from cashier`);
-      this.orders = [...newOrders, ...this.orders];
-      this.updateStatistics();
-      this.applyFilters();
-    }
+    this.loadPaidOrders()
   }
 
   private initializeUserData(): void {
@@ -382,13 +382,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  private saveStaffToLocalStorage() {
-    try {
-      localStorage.setItem(this.STAFF_STORAGE_KEY, JSON.stringify(this.availableStaff));
-    } catch (error) {
-      console.error('Error saving staff data:', error);
-    }
-  }
+
 
   getStaffById(staffId: string | number): StaffMember | undefined {
     return this.availableStaff.find(staff => 
@@ -402,258 +396,41 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     
     // Load from cashier localStorage FIRST (this is where new orders are saved)
-    const cashierOrders = this.getCashierLocalStorageOrders();
-    console.log('💰 Found orders in cashier localStorage:', cashierOrders.length);
-    
-    const startTime = performance.now();
-    console.log('📡 Fetching paid orders from backend...');
     
     this.ordersSubscription = this.posService.getTableOrderStatuses().subscribe({
-      next: (tableOrders: TableOrderStatusGET[]) => {
-        console.log('📋 Raw API orders from backend:', tableOrders);
-        console.log(`📊 Total orders from backend: ${tableOrders.length}`);
+      next: (tableOrders: any[]) => {
+
         
         const backendOrders = this.filterAndConvertPaidOrders(tableOrders);
-        console.log(`💰 Paid orders from backend: ${backendOrders.length}`);
         
-        // Merge cashier orders with backend orders
-        const allOrders = this.mergeAllOrders(backendOrders, cashierOrders);
+        this.orders = backendOrders
+
+        console.log(this.orders)
         
-        this.orders = allOrders.map(order => ({
-          ...order,
-          status: 'PAID',
-          paymentStatus: 'PAID'
-        }));
-        
-        this.enrichOrdersWithStaffData();
-        
-        console.log('✅ Combined paid orders:', this.orders);
-        console.log(`✅ Final paid orders count: ${this.orders.length}`);
-        
-        // DEBUG: Log today's orders
         this.debugTodayOrders();
         
         this.updateStatistics();
         this.applyFilters();
         this.isLoading = false;
-        this.trackPerformance('Load paid orders', startTime);
-        
-        this.saveHistoryBackup();
+
       },
       error: (error) => {
         console.error('❌ Error loading orders from backend:', error);
         this.errorMessage = 'Failed to load orders from server. Using local data.';
         
-        // Use cashier orders when backend fails
-        this.orders = cashierOrders.map(order => ({
-          ...order,
-          status: 'PAID',
-          paymentStatus: 'PAID'
-        }));
+        
         
         this.enrichOrdersWithStaffData();
         this.debugTodayOrders();
         this.updateStatistics();
         this.applyFilters();
         this.isLoading = false;
-        this.trackPerformance('Load paid orders (with error)', startTime);
       }
     });
   }
 
-  // NEW METHOD: Get orders from cashier localStorage - FIXED VERSION
-  private getCashierLocalStorageOrders(): Order[] {
-    try {
-      const savedData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
-      if (!savedData) {
-        console.log('ℹ️ No cashier localStorage data found');
-        return [];
-      }
-      
-      const parsedData = JSON.parse(savedData);
-      console.log('📂 Parsed cashier localStorage data structure:', {
-        hasHistoryOrders: parsedData.historyOrders ? `Array(${parsedData.historyOrders.length})` : 'No',
-        hasAllOrders: parsedData.allOrders ? `Array(${parsedData.allOrders.length})` : 'No',
-        hasOrders: parsedData.orders ? `Array(${parsedData.orders.length})` : 'No',
-        lastUpdated: parsedData.lastUpdated || 'Unknown'
-      });
-      
-      let allPaidOrders: Order[] = [];
-      
-      // 1. First check historyOrders (this is where cashier moves paid orders)
-      if (parsedData.historyOrders && Array.isArray(parsedData.historyOrders)) {
-        console.log(`📚 Found ${parsedData.historyOrders.length} orders in historyOrders`);
-        const historyPaidOrders = parsedData.historyOrders
-          .filter((order: any) => this.isOrderPaid(order))
-          .map((order: any) => this.convertLocalStorageOrder(order));
-        
-        console.log(`✅ ${historyPaidOrders.length} paid orders from historyOrders`);
-        allPaidOrders = [...allPaidOrders, ...historyPaidOrders];
-      }
-      
-      // 2. Check allOrders for any paid orders that might not be in historyOrders yet
-      if (parsedData.allOrders && Array.isArray(parsedData.allOrders)) {
-        const paidAllOrders = parsedData.allOrders
-          .filter((order: any) => this.isOrderPaid(order))
-          .map((order: any) => this.convertLocalStorageOrder(order));
-        
-        console.log(`📝 Found ${paidAllOrders.length} paid orders in allOrders`);
-        
-        // Only add orders that aren't already in our list
-        const existingOrderNos = allPaidOrders.map(o => o.orderNo);
-        const newOrders = paidAllOrders.filter((order: any) => 
-  !existingOrderNos.includes(order.orderNo)
-);
-        
-        console.log(`➕ Adding ${newOrders.length} new orders from allOrders`);
-        allPaidOrders = [...allPaidOrders, ...newOrders];
-      }
-      
-      // 3. Check orders array (active unpaid orders) - should be empty for paid
-      if (parsedData.orders && Array.isArray(parsedData.orders)) {
-        const paidOrders = parsedData.orders
-          .filter((order: any) => this.isOrderPaid(order))
-          .map((order: any) => this.convertLocalStorageOrder(order));
-        
-        console.log(`⚡ Found ${paidOrders.length} paid orders in orders array`);
-        
-        const existingOrderNos = allPaidOrders.map(o => o.orderNo);
-        const newOrders = paidOrders.filter((order: any) => 
-  !existingOrderNos.includes(order.orderNo)
-);
-        
-        console.log(`➕ Adding ${newOrders.length} new orders from orders array`);
-        allPaidOrders = [...allPaidOrders, ...newOrders];
-      }
-      
-      console.log(`💰 Total cashier paid orders found: ${allPaidOrders.length}`);
-      
-      // Log some sample orders for debugging
-      if (allPaidOrders.length > 0) {
-        console.log('📋 Sample cashier orders:', allPaidOrders.slice(0, 3).map(order => ({
-          orderNo: order.orderNo,
-          table: order.table,
-          isPaid: order.isPaid,
-          paymentMethod: order.paymentMethod,
-          date: order.date,
-          items: order.items?.length || 0
-        })));
-      }
-      
-      return allPaidOrders;
-      
-    } catch (error) {
-      console.error('❌ Error reading cashier localStorage:', error);
-      return [];
-    }
-  }
 
-  private isOrderPaid(order: any): boolean {
-    // Check multiple indicators of a paid order
-    const isPaid = 
-      order.isPaid === true || 
-      order.paymentStatus === 'PAID' ||
-      order.status === 'CONFIRMED' ||
-      order.status === 'PAID' ||
-      (order.paidAt && order.paidAt !== '') ||
-      (order.paymentMethod && order.paymentMethod !== '') ||
-      (order.transactionReference && order.transactionReference !== '');
-    
-    // Debug log for questionable orders
-    if (!isPaid && (order.status || order.paymentMethod)) {
-      console.log('❓ Order not considered paid:', {
-        orderNo: order.orderNo,
-        isPaid: order.isPaid,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        paymentMethod: order.paymentMethod
-      });
-    }
-    
-    return isPaid;
-  }
 
-  private convertLocalStorageOrder(localOrder: any): Order {
-    // Extract date from various possible fields
-    let orderDate = localOrder.paidAt || localOrder.date || localOrder.createdAt || new Date().toISOString();
-    
-    // Ensure proper date format
-    if (orderDate && typeof orderDate === 'string' && orderDate.includes('-')) {
-      // Already in string format
-    } else if (localOrder.paidAt) {
-      orderDate = localOrder.paidAt;
-    }
-    
-    // Extract payment method
-    let paymentMethod = localOrder.paymentMethod || 'Cash';
-    if (!paymentMethod && localOrder.isPaid) {
-      paymentMethod = 'Cash';
-    }
-    
-    // Convert items
-    const items: OrderItem[] = localOrder.items ? localOrder.items.map((item: any) => ({
-      id: item.id || 0,
-      name: item.name || 'Unknown Item',
-      price: item.price || 0,
-      qty: item.qty || 1,
-      total: item.total || (item.price * (item.qty || 1)),
-      image: item.image || '',
-      category: item.category || '',
-      product: item.product || null
-    })) : [];
-    
-    // Get staff information
-    const staffInvolved: StaffInvolved[] = localOrder.staffInvolved || [];
-    
-    // Extract individual staff from staffInvolved array
-    let createdBy = localOrder.createdBy;
-    let preparedBy = localOrder.preparedBy;
-    let paidBy = localOrder.paidBy;
-    let servedBy = localOrder.servedBy;
-    
-    if (staffInvolved.length > 0) {
-      staffInvolved.forEach(staff => {
-        if (staff.action.includes('created') && !createdBy) {
-          createdBy = staff.staffName;
-        }
-        if (staff.action.includes('prepared') && !preparedBy) {
-          preparedBy = staff.staffName;
-        }
-        if (staff.action.includes('paid') && !paidBy) {
-          paidBy = staff.staffName;
-        }
-        if (staff.action.includes('served') && !servedBy) {
-          servedBy = staff.staffName;
-        }
-      });
-    }
-    
-    return {
-      table: localOrder.table || 1,
-      orderNo: localOrder.orderNo || `CASHIER-${Date.now()}`,
-      items: items,
-      status: 'PAID',
-      payment: paymentMethod,
-      date: orderDate,
-      createdAt: orderDate,
-      note: localOrder.note || '',
-      backendId: localOrder.backendId,
-      orderId: localOrder.orderId,
-      paymentMethod: paymentMethod,
-      isPaid: true,
-      paymentStatus: 'PAID',
-      paidAt: localOrder.paidAt || orderDate,
-      createdBy: createdBy,
-      createdById: localOrder.createdById,
-      preparedBy: preparedBy,
-      preparedById: localOrder.preparedById,
-      servedBy: servedBy,
-      servedById: localOrder.servedById,
-      paidBy: paidBy,
-      paidById: localOrder.paidById,
-      staffInvolved: staffInvolved
-    };
-  }
 
   private enrichOrdersWithStaffData() {
     this.orders.forEach(order => {
@@ -761,21 +538,6 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     return mergedOrders;
   }
 
-  private saveHistoryBackup() {
-    try {
-      const backupData = {
-        orders: this.orders,
-        lastUpdated: new Date().toISOString(),
-        todayRevenue: this._todayRevenue,
-        totalRevenue: this._totalRevenue
-      };
-      
-      localStorage.setItem(this.HISTORY_BACKUP_KEY, JSON.stringify(backupData));
-      console.log('💾 Saved history backup to localStorage');
-    } catch (error) {
-      console.error('❌ Error saving history backup:', error);
-    }
-  }
 
   private debugTodayOrders() {
     const today = new Date();
@@ -799,7 +561,8 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  private filterAndConvertPaidOrders(tableOrders: TableOrderStatusGET[]): Order[] {
+  private filterAndConvertPaidOrders(tableOrders: Order[]): Order[] {
+    
     if (!tableOrders || !Array.isArray(tableOrders)) {
       console.warn('⚠️ No table orders found or invalid data format');
       return [];
@@ -807,23 +570,14 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
 
     console.log('🔍 Filtering for PAID orders from backend...');
     
-    const paidOrders = tableOrders.filter(tableOrder => {
-      const status = tableOrder.status?.toUpperCase();
-      const orderStatus = tableOrder.order?.orderStatus?.toUpperCase();
-      
-      const isPaid = status === 'PAID' || orderStatus === 'PAID' || orderStatus === 'CONFIRMED';
-      const hasPayment = tableOrder.order?.payment || 
-                         (tableOrder.order as any)?.['paymentMethod'];
-      
-      return isPaid || hasPayment;
-    });
-
-    console.log(`✅ Found ${paidOrders.length} paid orders from ${tableOrders.length} total backend orders`);
     
-    return paidOrders.map(tableOrder => this.convertToLocalOrder(tableOrder));
+
+    // console.log(`✅ Found ${paidOrders.length} paid orders from ${tableOrders.length} total backend orders`);
+    
+    return tableOrders.map(tableOrder => this.convertToLocalOrder(tableOrder));
   }
 
-  private convertToLocalOrder(tableOrder: TableOrderStatusGET): Order {
+  private convertToLocalOrder(tableOrder: any) {
     const order = tableOrder.order || {};
     
     let formattedDate = '';
@@ -837,11 +591,11 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     }
     
     const localOrder: Order = {
-      table: this.convertTableNumber(tableOrder.tableNumber),
-      orderNo: order.orderNumber || `T${tableOrder.tableNumber}-${tableOrder.id}`,
+      table: tableOrder.tableNumber,
+      orderNo: order.orderNumber,
       items: this.convertOrderItems(order.orderItem || []),
-      status: 'PAID',
-      payment: this.getPaymentMethod(order),
+      status: tableOrder.status,
+      payment: order.orderStatus,
       date: formattedDate,
       createdAt: formattedDate,
       note: tableOrder.note || '',
@@ -849,8 +603,12 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       orderId: order.id,
       paymentMethod: this.getPaymentMethod(order),
       isPaid: true,
-      paymentStatus: 'PAID'
-    };
+      total: order.total,
+      grandTotal: order.grandTotal,
+      tax: order.tax
+      // paymentStatus: 'PAID'
+      
+    }as Order;
     
     return localOrder;
   }
@@ -864,7 +622,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     return orderItems.map(item => {
       const product = item.product || {};
       const quantity = item.quantity || 1;
-      const unitPrice = item.unitPrice || 0;
+      const unitPrice = product.sellingPrice || 0;
       const totalPrice = item.totalPrice || (quantity * unitPrice);
 
       return {
@@ -951,11 +709,26 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     console.log(`⏱️ ${operation} completed in ${duration.toFixed(2)}ms`);
   }
 
+  get paidOrders (){
+    const paidOrders = this.orders.filter(tableOrder => {
+      const status = tableOrder.status?.toUpperCase();
+      const orderStatus = tableOrder.payment;
+      
+      const isPaid =  orderStatus === 'PAID' 
+      
+      return isPaid;
+    });
+
+    console.log(paidOrders)
+
+    return paidOrders
+  }
+
   private updateStatistics() {
     console.log('📊 Updating statistics...');
     
-    this._totalRevenue = this.orders.reduce((sum, order) => 
-      sum + this.getOrderTotal(order), 0
+    this._totalRevenue = this.paidOrders.reduce((sum, order) => 
+      sum + order.total, 0
     );
     
     const today = new Date();
@@ -1191,22 +964,22 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     return Array.from(methods);
   }
 
-  getDetailedOrderHistory(): TimelineEvent[] {
-    try {
-      const history = localStorage.getItem('orderHistory');
-      return history ? JSON.parse(history) : [];
-    } catch (error) {
-      console.error('❌ Error reading detailed order history:', error);
-      return [];
-    }
-  }
+  // getDetailedOrderHistory(): TimelineEvent[] {
+  //   try {
+  //     const history = localStorage.getItem('orderHistory');
+  //     return history ? JSON.parse(history) : [];
+  //   } catch (error) {
+  //     console.error('❌ Error reading detailed order history:', error);
+  //     return [];
+  //   }
+  // }
 
-  getOrderTimeline(orderNo: string): TimelineEvent[] {
-    const fullHistory = this.getDetailedOrderHistory();
-    return fullHistory
-      .filter(entry => entry.orderNo === orderNo)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
+  // getOrderTimeline(orderNo: string): TimelineEvent[] {
+  //   const fullHistory = this.getDetailedOrderHistory();
+  //   return fullHistory
+  //     .filter(entry => entry.orderNo === orderNo)
+  //     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  // }
 
   showOrderTimeline(order: Order) {
     this.selectedOrderForTimeline = this.selectedOrderForTimeline === order ? null : order;
@@ -1397,10 +1170,18 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
 
   getStatusIcon(status: string): string {
     switch (status.toLowerCase()) {
-      case 'paid': return 'fa-check-circle';
+      case 'ready': return 'fa-check-circle';
       case 'confirmed': return 'fa-check-circle';
-      case 'completed': return 'fa-check-double';
+      case 'delivered': return 'fa-check-double';
       case 'pending': return 'fa-clock';
+      default: return 'fa-circle';
+    }
+  }
+
+   getPaymentStatusIcon(status: string): string {
+    switch (status.toLowerCase()) {
+      case 'paid': return 'fa-check-circle';
+      case 'unpaid': return 'fa-clock';
       default: return 'fa-circle';
     }
   }
@@ -1481,46 +1262,12 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     console.log('🔄 Force syncing with cashier page data...');
     
     // Clear any cached data
-    localStorage.removeItem(this.HISTORY_BACKUP_KEY);
+    // localStorage.removeItem(this.HISTORY_BACKUP_KEY);
     
     // Reload from cashier localStorage
     this.loadPaidOrders();
     
     console.log('✅ Successfully synced with cashier page data!');
-  }
-
-  debugDataSources() {
-    console.log('🔍 Debugging data sources...');
-    
-    const cashierData = localStorage.getItem(this.CASHIER_STORAGE_KEY);
-    const historyBackup = localStorage.getItem(this.HISTORY_BACKUP_KEY);
-    
-    const cashierParsed = cashierData ? JSON.parse(cashierData) : null;
-    
-    const debugInfo = `Data Sources Debug:
-      - Cashier localStorage: ${cashierData ? 'Found' : 'Not found'}
-      - History backup: ${historyBackup ? 'Found' : 'Not found'}
-      - Current orders: ${this.orders.length}
-      - Today's orders: ${this._todayOrders.length}
-      - Today's revenue: ₦${this.formatAmount(this._todayRevenue)}
-      - Cashier historyOrders: ${cashierParsed?.historyOrders?.length || 0}
-      - Cashier allOrders: ${cashierParsed?.allOrders?.length || 0}
-      - Cashier orders: ${cashierParsed?.orders?.length || 0}
-      - Current user: ${this.currentUser?.name || 'Not set'}
-      - Available staff: ${this.availableStaff.length}
-    `;
-    
-    console.log(debugInfo);
-  }
-
-  // NEW: Check if cashier localStorage has new orders
-  hasNewCashierOrders(): boolean {
-    const cashierOrders = this.getCashierLocalStorageOrders();
-    const currentOrderNos = this.orders.map(order => order.orderNo);
-    const newOrders = cashierOrders.filter(order => 
-      !currentOrderNos.includes(order.orderNo)
-    );
-    return newOrders.length > 0;
   }
 
   ngOnDestroy() {

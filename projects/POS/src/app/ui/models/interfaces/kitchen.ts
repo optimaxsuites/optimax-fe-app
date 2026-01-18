@@ -41,7 +41,7 @@ interface TableOrderStatusShared<TDateType> {
   /**
    * Timestamp when the order was placed.
    */
-  orderedOn: TDateType | null;
+  orderedOn: TDateType;
 
   /**
    * Timestamp when the order began processing.
@@ -117,6 +117,7 @@ export interface OrderPOST extends OrderShared<string> {
 }
 
 export interface OrderGET extends OrderShared<number> {
+  id: number,
   totalAmount: number;
   // TODO: Create the full customer interface
   customer: Record<string, any>;
@@ -130,6 +131,7 @@ export interface OrderGET extends OrderShared<number> {
   payment: Record<string, any>;
   cashierId: number;
   orderItem: OrderItemGET[];
+  grandTotal: number
 }
 
 interface OrderItemShared {

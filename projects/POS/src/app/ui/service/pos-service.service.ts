@@ -439,6 +439,12 @@ deleteTax(id: any): Observable<any> {
       .pipe(catchError(this.handleError));
   }
 
+  createOrder( data: any){
+    return this.http
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/pos/orders`, data)
+      .pipe(catchError(this.handleError));
+  }
+
   getOrderById(id: number) {
     return this.http
       .get<OrderGET[]>(this.getBaseApiUrl() + `/x/api/v2/pos/orders/${id}`)
@@ -494,7 +500,7 @@ deleteTax(id: any): Observable<any> {
     return throwError(() => errorMessage);
   }
 
-  addTableOrderStatus(data: TableOrderStatusPOST) {
+  addTableOrderStatus(data: any) {
     return this.http
       .post<TableOrderStatusPOST>(
         this.getBaseApiUrl() + '/x/api/v2/pos/tableOrderStatuses',

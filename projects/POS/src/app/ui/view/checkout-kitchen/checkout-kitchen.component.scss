@@ -847,7 +847,8 @@
 
 /* PENDING and AWAITING CONFIRMATION - SAME BACKGROUND COLOR */
 .badge.pending, 
-.badge.awaiting-confirmation { 
+.badge.awaiting-confirmation,
+.badge.unpaid { 
   background: #2E6276; 
   color: white; 
   border: none;
@@ -866,7 +867,7 @@
   font-weight: 700;
 }
 
-.badge.ready { 
+.badge.ready, .badge.delivered { 
   background: #2EB270; 
   color: white; 
   border: none;
@@ -2239,7 +2240,7 @@
   
   @media (min-width: 768px) {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     padding: 1.2rem;
   }
 }
@@ -3920,3 +3921,9 @@ img {
   color: #1a202c !important;
 }
 
+.discount-input {
+    @apply text-end   outline-none placeholder:text-sm text-5xl text-gray-600 placeholder:text-gray-400 pb-2 flex-grow 
+ }
+ .paymentBtn > button {
+    @apply bg-customBlue text-white font-bold text-2xl  py-4  w-[50%]
+}

@@ -455,7 +455,7 @@
   gap: 5px;
 }
 
-.status-paid, .status-completed {
+.status-paid, .status-completed, .status-ready, .status-delivered {
   background: #d4edda;
   color: #155724;
 }
@@ -465,9 +465,9 @@
   color: #856404;
 }
 
-.status-ready {
-  background: #cce7ff;
-  color: #004085;
+.status-cancelled {
+  background: rgb(120, 3, 3);
+  color: white;
 }
 
 .capitalize {
@@ -482,8 +482,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #f8f9fa;
-  color: #2c3e50;
+  // background: #f8f9fa;
+  // color: #2c3e50;
 }
 
 .order-total {

@@ -195,7 +195,7 @@
             <th>Items</th>
             <th>Staff Involved</th>
             <th>Status</th>
-            <th>Payment</th>
+            <th>Payment Status</th>
             <th>Total</th>
             <th>Actions</th>
           </tr>
@@ -221,42 +221,42 @@
               </div>
               <div *ngIf="order.note" class="order-note">
                 <i class="fas fa-sticky-note"></i>
-                <small>{{ order.note }}</small>
+                <small style="white-space: pre-wrap;">{{ order.note }}</small>
               </div>
               <div class="items-count">
-                {{ order.items.length }} item{{ order.items.length !== 1 ? 's' : '' }}
+                <!-- {{ order.items.length }} item{{ order.items.length !== 1 ? 's' : '' }} -->
               </div>
             </td>
             
             <!-- Staff Involved Column -->
             <td class="staff-involved">
               <div class="order-staff-info">
-                <div *ngIf="order.createdBy" class="staff-badge waiter">
+                <div  class="staff-badge waiter">
                   <i class="fas fa-user-tie"></i>
-                  {{ order.createdBy }}
+                  {{ order.waiterId || "Not specified" }}
                 </div>
-                <div *ngIf="order.preparedBy" class="staff-badge chef">
+                <div  class="staff-badge chef">
                   <i class="fas fa-utensils"></i>
-                  {{ order.preparedBy }}
+                  {{ order.chefId || "Not specified"}}
                 </div>
-                <div *ngIf="order.paidBy" class="staff-badge cashier">
+                <div class="staff-badge cashier">
                   <i class="fas fa-cash-register"></i>
-                  {{ order.paidBy }}
+                  {{ order.cashierId || "Not specified" }}
                 </div>
-                <div *ngIf="!order.createdBy && !order.preparedBy && !order.paidBy" class="no-staff-info">
+                <!-- <div *ngIf="!order.waiterId && !order.chefId && !order.cashierId" class="no-staff-info">
                   <span class="text-muted">No staff info</span>
-                </div>
+                </div> -->
               </div>
             </td>
             
             <td class="order-status">
               <span [class]="'status-badge status-' + order.status.toLowerCase()" class="capitalize">
                 <i class="fas" [ngClass]="getStatusIcon(order.status)"></i>
-                PAID
+                {{order.status}}
               </span>
             </td>
             <td class="payment-method">
-              <span [class]="'payment-badge payment-' + (order.payment || 'unknown').toLowerCase()">
+              <span [class]="'payment-badge status-' + order.payment?.toLowerCase()">
                 <i class="fas" [ngClass]="getPaymentIcon(order.payment)"></i>
                 {{ order.payment || 'Unknown' }}
               </span>
@@ -301,7 +301,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="timeline">
+      <!-- <div class="timeline">
         <div *ngFor="let event of getOrderTimeline(selectedOrderForTimeline.orderNo); let i = index" 
              class="timeline-event" [class.current]="i === 0">
           <div class="timeline-marker">
@@ -321,7 +321,7 @@
           <i class="fas fa-info-circle"></i>
           No timeline events recorded for this order
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Pagination -->
@@ -413,7 +413,7 @@
             <i class="fas fa-money-bill-wave"></i>
           </div>
           <div class="summary-content">
-            <div class="summary-label">Payment Method</div>
+            <div class="summary-label">Payment Status</div>
             <div class="summary-value">{{ selectedOrderForDetails.payment || 'Cash' }}</div>
           </div>
         </div>
@@ -424,7 +424,7 @@
           </div>
           <div class="summary-content">
             <div class="summary-label">Status</div>
-            <div class="summary-value status-value paid">PAID</div>
+            <div class="summary-value status-value paid">{{selectedOrderForDetails.status}}</div>
           </div>
         </div>
       </div>
@@ -469,41 +469,41 @@
               <h4>Staff Information</h4>
             </div>
             <div class="staff-list-details">
-              <div *ngIf="selectedOrderForDetails.createdBy" class="staff-item-details">
+              <div  class="staff-item-details">
                 <div class="staff-icon waiter-icon">
                   <i class="fas fa-user-tie"></i>
                 </div>
                 <div class="staff-info">
                   <div class="staff-role">Waiter</div>
-                  <div class="staff-name">{{ selectedOrderForDetails.createdBy }}</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.waiterId || "Not Specified"}}</div>
                 </div>
               </div>
               
-              <div *ngIf="selectedOrderForDetails.preparedBy" class="staff-item-details">
+              <div  class="staff-item-details">
                 <div class="staff-icon chef-icon">
                   <i class="fas fa-utensils"></i>
                 </div>
                 <div class="staff-info">
                   <div class="staff-role">Chef</div>
-                  <div class="staff-name">{{ selectedOrderForDetails.preparedBy }}</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.chefId || "Not Specified"}}</div>
                 </div>
               </div>
               
-              <div *ngIf="selectedOrderForDetails.paidBy" class="staff-item-details">
+              <div  class="staff-item-details">
                 <div class="staff-icon cashier-icon">
                   <i class="fas fa-cash-register"></i>
                 </div>
                 <div class="staff-info">
                   <div class="staff-role">Cashier</div>
-                  <div class="staff-name">{{ selectedOrderForDetails.paidBy }}</div>
+                  <div class="staff-name">{{ selectedOrderForDetails.cashierId || "Not Specified"}}</div>
                 </div>
               </div>
               
-              <div *ngIf="!selectedOrderForDetails.createdBy && !selectedOrderForDetails.preparedBy && !selectedOrderForDetails.paidBy" 
+              <!-- <div *ngIf="!selectedOrderForDetails.createdBy && !selectedOrderForDetails.preparedBy && !selectedOrderForDetails.paidBy" 
                    class="no-staff-details">
                 <i class="fas fa-info-circle"></i>
                 <span>No staff information available</span>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
@@ -518,15 +518,15 @@
             <div class="summary-details">
               <div class="summary-row">
                 <span>Subtotal:</span>
-                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails)) }}</span>
+                <span>₦{{ selectedOrderForDetails.total }}</span>
               </div>
               <div class="summary-row">
-                <span>Tax (5%):</span>
-                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails) * 0.05) }}</span>
+                <span>Tax(s):</span>
+                <span>₦{{ selectedOrderForDetails.tax }}</span>
               </div>
               <div class="summary-row grand-total-row">
                 <span>GRAND TOTAL:</span>
-                <span>₦{{ formatAmount(getOrderTotal(selectedOrderForDetails) * 1.05) }}</span>
+                <span>₦{{ selectedOrderForDetails.grandTotal }}</span>
               </div>
             </div>
           </div>
@@ -545,7 +545,7 @@
       </div>
 
       <!-- Payment & System Information -->
-      <div class="section-container">
+      <!-- <div class="section-container">
         <div class="section-header">
           <i class="fas fa-info-circle"></i>
           <h4>Additional Information</h4>
@@ -568,7 +568,7 @@
             <div class="info-value">{{ selectedOrderForDetails.backendId }}</div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
     
     <div class="modal-footer-details">
