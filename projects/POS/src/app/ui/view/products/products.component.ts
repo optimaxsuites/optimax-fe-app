@@ -172,12 +172,13 @@ export class ProductsComponent implements OnInit {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    this.fetchUserBranchId();
     this.metadataService.branches$.subscribe((data) => (this.branches = data));
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
     }
     this.setRowsPerPageBasedOnScreenSize();
+    this.fetchUserBranchId();
+
 
     window.addEventListener(
       "resize",
@@ -205,7 +206,8 @@ export class ProductsComponent implements OnInit {
 
   fetchUserBranchId(){
     const userBranch= sessionStorage.getItem('userBranchInfoRegData');
-    this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : 1;
+    console.log(userBranch)
+    this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : this.superUser ? this.branches[0].id : 0
   }
 
   setRowsPerPageBasedOnScreenSize() {

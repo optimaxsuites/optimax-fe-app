@@ -79,7 +79,7 @@ export class MetadataService {
     "Gift Card",
   ];
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(0);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -195,6 +195,12 @@ export class MetadataService {
     this.returnSubject.next(data.returnRequests);
 
     console.log("✅ [MetadataService] Base metadata loaded");
+
+    const branch = await firstValueFrom(this.selectedBranchId$)
+    if( branch === 0) {
+        const newSelectedBranch = data.branches[0].id
+        this.setSelectedBranch(newSelectedBranch)
+    }
 
     this.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
       if (branchId != null) {
