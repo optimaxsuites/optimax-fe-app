@@ -266,6 +266,7 @@ companyInfo = {
     try {
       const sessionUserDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
       let userData: any = null;
+      let userId = sessionStorage.getItem('userid') || 0
       
       if (sessionUserDataStr) {
         userData = JSON.parse(sessionUserDataStr);
@@ -305,7 +306,7 @@ companyInfo = {
         }
         
         this.currentUser = {
-          id: userData.id || userData.userId || userData.username || 'current-user',
+          id: +userId,
           name: userName,
           role: userRole,
           username: userData.username,
