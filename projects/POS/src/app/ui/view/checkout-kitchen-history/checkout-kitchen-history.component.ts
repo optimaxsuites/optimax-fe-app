@@ -56,6 +56,10 @@ interface Order {
   chefId: any,
   cashierId: any
   order: any
+  waiter: any
+  cashier: any
+  chef: any
+
 }
 
 
@@ -605,7 +609,13 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       isPaid: true,
       total: order.total,
       grandTotal: order.grandTotal,
-      tax: order.tax
+      tax: order.tax,
+      waiter: order.water,
+      chef: order.chef,
+      cashier: order.cashier,
+      waiterId: order.water?.id,
+      cashierId: order.cashier?.id,
+      chefId: order.chef?.id
       // paymentStatus: 'PAID'
       
     }as Order;

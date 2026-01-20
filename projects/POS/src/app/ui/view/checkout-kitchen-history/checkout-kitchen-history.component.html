@@ -233,15 +233,15 @@
               <div class="order-staff-info">
                 <div  class="staff-badge waiter">
                   <i class="fas fa-user-tie"></i>
-                  {{ order.waiterId || "Not specified" }}
+                  {{ order.waiter?.username || "Not specified" }}
                 </div>
                 <div  class="staff-badge chef">
                   <i class="fas fa-utensils"></i>
-                  {{ order.chefId || "Not specified"}}
+                  {{ order.chef?.username || "Not specified"}}
                 </div>
                 <div class="staff-badge cashier">
                   <i class="fas fa-cash-register"></i>
-                  {{ order.cashierId || "Not specified" }}
+                  {{ order.cashier?.username || "Not specified" }}
                 </div>
                 <!-- <div *ngIf="!order.waiterId && !order.chefId && !order.cashierId" class="no-staff-info">
                   <span class="text-muted">No staff info</span>
