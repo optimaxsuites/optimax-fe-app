@@ -674,6 +674,8 @@ companyInfo = {
       grandTotal: this.getGrandTotal(),
       quantity: 0,
       deliveryStatus: "CONFIRMED",
+      createdDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       paymentId: createdPayment
     };
 
