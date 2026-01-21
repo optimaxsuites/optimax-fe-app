@@ -101,22 +101,35 @@ export class DelveryComponent implements OnInit {
           next: (data: any) => {
             console.log(data)
             this.dataService.getDeliveryNote().subscribe((key) => {
+
+              console.log(key)
               // next: (key: any) => {
-                const formattedData = data.map((branch: BranchDTO) => ({
-              ...branch,
-              isEditing: false,
-              deliveryNoteId: key.find((k: any) => k.branchId === branch.id)?.id || 0,
-              perKmRate: key.find((k: any) => k.branchId === branch.id)?.perKmRate || 0,
-              maxFee: key.find((k: any) => k.branchId === branch.id)?.maxFee || 0,
-              baseFee: key.find((k: any) => k.branchId === branch.id)?.baseFee || 0,
-              minFee: key.find((k: any) => k.branchId === branch.id)?.minFee || 0,
-              expressFee: key.find((k: any) => k.branchId === branch.id)?.expressFee || 0,
-              estimatedDays: key.find((k: any) => k.branchId === branch.id)?.estimatedDays || 0,
-              sameDayDeliveryCutoffTime: key.find((k: any) => k.branchId === branch.id)?.sameDayDeliveryCutoffTime || 'N/A',
-              logisticsPartner: key.find((k: any) => k.branchId === branch.id)?.logisticsPartner || 'N/A',
-              isActive: key.find((k: any) => k.branchId === branch.id)?.isActive || 0,
-            }));
-            this.branches = formattedData;
+               // 1. Pre-process the 'key' array into a Map for instant lookups
+              const branchConfigMap = new Map(key.map((k: any) => [k.branchId, k]));
+
+              const formattedData = data.map((branch: BranchDTO) => {
+                // 2. Look up the config once per branch
+                const config: any = branchConfigMap.get(branch.id);
+
+                return {
+                  ...branch,
+                  isEditing: false,
+                  // 3. Assign values using the single config object
+                  deliveryNoteId: config?.id || 0,
+                  perKmRate: config?.perKmRate || 0,
+                  maxFee: config?.maxFee || 0,
+                  baseFee: config?.baseFee || 0,
+                  minFee: config?.minFee || 0,
+                  expressFee: config?.expressFee || 0,
+                  estimatedDays: config?.estimatedDays || 0,
+                  sameDayDeliveryCutoffTime: config?.sameDayDeliveryCutoffTime || 'N/A',
+                  logisticsPartner: config?.logisticsPartner || 'N/A',
+                  isActive: config?.isActive || 0,
+                };
+              });
+
+              this.branches = formattedData;
+              console.log(this.branches);
               
               // }
     
@@ -209,6 +222,19 @@ export class DelveryComponent implements OnInit {
           //     detail: 'Branch updated successfully!',
           //   });
           // }
+            
+          // console.log("key: ", data)
+          const unitMultipliers: Record<string, number> = {
+            minutes: 1,
+            hours: 60,
+            days: 1440 
+          };
+
+          // 2. Perform the conversion
+          const unit = this.newBranch.estimatedUnit?.toLowerCase() || 'minutes';
+          const value: any = +this.newBranch.estimatedValue;
+          const totalValue = value * (unitMultipliers[unit] || 1)
+
           const data: any = {
             id: branch.deliveryNoteId,
             branchId: branch.id,
@@ -217,13 +243,12 @@ export class DelveryComponent implements OnInit {
             maxFee: this.newBranch.maxFee,
             minFee: this.newBranch.minFee,
             expressFee: this.newBranch.expressFee,
-            estimatedDays: this.newBranch.estimatedDays,
+            estimatedDays: totalValue,
             sameDayDeliveryCutoffTime: this.newBranch.sameDayDeliveryCutoffTime,
             logisticsPartner: this.newBranch.logisticsPartner,
             isActive: this.newBranch.isActive,
           }
-      
-          console.log("key: ", data)
+    
           this.dataService.addDeliveryNote(data).subscribe({
             next: (data: any) => {
               // this.branches.push(data);
@@ -281,6 +306,15 @@ export class DelveryComponent implements OnInit {
       
       applyKeyToAll() {
         this.loading = true
+         const unitMultipliers: Record<string, number> = {
+            minutes: 1,
+            hours: 60,
+            days: 1440 
+          };
+
+          const unit = this.allBranch.estimatedUnit?.toLowerCase() || 'minutes';
+          const value: any = +this.allBranch.estimatedValue;
+          const totalValue = value * (unitMultipliers[unit] || 1)
         const requests = this.branches.map(branch => {
           const data = {
             id: branch.deliveryNoteId,
@@ -290,8 +324,8 @@ export class DelveryComponent implements OnInit {
             maxFee: this.allBranch.maxFee,
             minFee: this.allBranch.minFee,
             expressFee: this.allBranch.expressFee,
-            estimatedDays: this.allBranch.estimatedDays,
-            sameDayDeliveryCutoffTime: this.allBranch.sameDayDeliveryCutoffTime,
+            estimatedDays: totalValue,
+            // sameDayDeliveryCutoffTime: this.allBranch.sameDayDeliveryCutoffTime.toISOdate(),
             logisticsPartner: this.allBranch.logisticsPartner,
             isActive: this.allBranch.isActive,
           };

@@ -9,7 +9,7 @@
             <input
               type="text"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.baseFee"
+              [(ngModel)]="allBranch.baseFee"
             />
           
           </div>
@@ -19,7 +19,7 @@
             <input
               type="text"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.perKmRate"
+              [(ngModel)]="allBranch.perKmRate"
             />
           </div>
  
@@ -31,7 +31,7 @@
             <input
               type="text"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.maxFee"
+              [(ngModel)]="allBranch.maxFee"
             />
           
           </div>
@@ -41,7 +41,7 @@
             <input
               type="text"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.minFee"
+              [(ngModel)]="allBranch.minFee"
             />
 
           </div>
@@ -54,7 +54,7 @@
             <input
               type="text"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.expressFee"
+              [(ngModel)]="allBranch.expressFee"
             />
           
           </div>
@@ -68,16 +68,16 @@
                 min="0"
                 step="0.01"
                 class="border border-gray-300 rounded-md p-2 w-28"
-                [(ngModel)]="newBranch.estimatedValue"
+                [(ngModel)]="allBranch.estimatedValue"
               />
-              <select class="border border-gray-300 rounded-md p-2" [(ngModel)]="newBranch.estimatedUnit">
+              <select class="border border-gray-300 rounded-md p-2" [(ngModel)]="allBranch.estimatedUnit">
                 <option value="days">Days</option>
                 <option value="hours">Hours</option>
                 <option value="minutes">Minutes</option>
               </select>
 
               <small class="text-gray-500 ml-3">
-                Preview: {{ newBranch.estimatedValue | estimatedDelivery:newBranch.estimatedUnit }}
+                Preview: {{ allBranch.estimatedValue | estimatedDelivery:allBranch.estimatedUnit }}
               </small>
             </div>
           
@@ -91,7 +91,7 @@
             <input
               type="time"
               class="w-full border border-gray-300 rounded-md p-2"
-              [(ngModel)]="newBranch.sameDayDeliveryCutoffTime"
+              [(ngModel)]="allBranch.sameDayDeliveryCutoffTime"
             />
            
           </div>
@@ -143,7 +143,7 @@
     <button
       class="px-4 py-2 bg-customBlue text-white rounded-md disabled:bg-customBlueHover disabled:cursor-not-allowed"
       (click)="applyKeyToAll()"
-      [disabled]="loading || newBranch.baseFee === 0"
+      [disabled]="loading || allBranch.baseFee === 0"
     >
       Apply to All
     </button>
