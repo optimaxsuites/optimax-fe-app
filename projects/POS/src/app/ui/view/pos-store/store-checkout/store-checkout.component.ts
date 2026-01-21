@@ -9,7 +9,7 @@ import { StoreCustomerService } from '../../../service/store-customer.service';
 import { TaxDTO, DiscountDTO } from '../../../models/interface';
 import { AuthStateService } from '../../../service/auth-state.service';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, lastValueFrom, throwError, Observable, catchError, map } from 'rxjs';
+import { forkJoin, lastValueFrom, throwError, Observable, catchError, map, take } from 'rxjs';
 import { isDevMode } from '@angular/core';
 import { environment } from '../../../sharedComponent/service/environments/environment';
 
@@ -110,7 +110,7 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
 
   // API configuration
   private apiBaseUrl: string;
-  private currentBranchId: number = 1;
+  private currentBranchId: number = 0; // Will be set from selected branch
 
   constructor(
     private router: Router,
@@ -143,9 +143,19 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   private async initializeCheckout(): Promise<void> {
     this.isLoading = true;
     try {
+      // Get current branch ID synchronously first
+      this.metadataService.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
+        this.currentBranchId = branchId ?? 0;
+        console.log('🏛️ Checkout initialized with Branch ID:', this.currentBranchId);
+      });
+      
+      // Also subscribe to branch changes
       this.metadataService.selectedBranchId$.subscribe((branchId) => {
-        this.currentBranchId = branchId || 0
-      console.log('🏛️ Checkout using Branch ID:', this.currentBranchId);})
+        if (branchId && branchId !== this.currentBranchId) {
+          this.currentBranchId = branchId;
+          console.log('🏛️ Branch ID updated to:', this.currentBranchId);
+        }
+      });
       
       this.loadCartData();
       this.loadCustomerInfo();

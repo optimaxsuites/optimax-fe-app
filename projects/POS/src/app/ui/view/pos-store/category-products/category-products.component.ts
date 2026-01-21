@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ProductData } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
-import { ImageCacheService } from '../../../service/image-cache.service';
+import { OptimizedImageService } from '../../../service/optimized-image.service';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { ProductHelperService } from '../../../service/product-helper.service';
 import { AuthStateService } from '../../../service/auth-state.service';
@@ -82,7 +82,7 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private posService: PosServiceService,
-    private imageCacheService: ImageCacheService,
+    private imageService: OptimizedImageService,
     private cartService: StoreCartService,
     private productHelper: ProductHelperService,
     private authStateService: AuthStateService
@@ -536,8 +536,8 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
 
   // ============ PRODUCT METHODS ============
 
-  getProductImage(product: ProductData) {
-    return this.imageCacheService.getProductImage(product);
+  getProductImage(product: ProductData): string {
+    return this.imageService.getProductImage(product);
   }
 
   handleImageError(event: Event): void {
@@ -605,8 +605,6 @@ export class CategoryProductsComponent implements OnInit, OnDestroy {
   private autoOpenCart(): void {
     if (window.innerWidth >= 768) {
       this.isCartSidebarVisible = true;
-    } else {
-      this.isCartOpen = true;
     }
   }
 
