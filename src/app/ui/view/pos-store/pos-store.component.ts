@@ -2,7 +2,7 @@ import { Component, computed, OnInit, signal, OnDestroy, ViewChild, ElementRef, 
 import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
 import { ActivatedRoute } from '@angular/router'; 
-import { ImageCacheService } from '../../service/image-cache.service';
+import { OptimizedImageService } from '../../service/optimized-image.service';
 // import { PaymentServiceService } from '../../service/payment-service.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { ProductHelperService } from '../../service/product-helper.service';
@@ -175,7 +175,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   constructor(
     private _posService: PosServiceService,
     private router: Router,
-    private _imgCacheService: ImageCacheService,
+    private _imgCacheService: OptimizedImageService,
     private _productHelper: ProductHelperService,
     // private _paymentService: PaymentServiceService,
     private cartService: StoreCartService,
@@ -243,7 +243,7 @@ private loadUserFromStorage(): void {
       if (branches.length > 0 && !this.selectedBranch()) {
         const branchToSelect = branches[0];
         this.selectedBranch.set(branchToSelect);
-        // this.metadataService.setSelectedBranch(branchToSelect.id);
+        this.metadataService.setSelectedBranch(branchToSelect.id);
         this.updateWhatsAppNumber(branchToSelect);
         console.log('🏛️ Store initialized with Branch ID:', branchToSelect.id);
       }
@@ -632,7 +632,7 @@ navigateToCategoryPage(category: string): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   if (currentUuid) {
     this.router.navigate(
-      ['/store', currentUuid, 'category', category.toLowerCase()],
+      ['optimerce', currentUuid, 'category', category.toLowerCase()],
       {
         queryParams: {
           branch: this.selectedBranch()?.id || '',
@@ -657,7 +657,7 @@ navigateToCategoryPage(category: string): void {
     return this.productData().get(category) || [];
   }
 
-  getProductImage(product: ProductData) {
+  getProductImage(product: ProductData): string {
     return this._imgCacheService.getProductImage(product);
   }
 

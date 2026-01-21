@@ -473,7 +473,7 @@ placeOrder(orderData: any): Observable<any> {
         deliveryInfo: orderData.deliveryInfo,
         orderDate: new Date().toISOString(),
         status: 'confirmed',
-        branchId: orderData.branchId || 1
+        branchId: orderData.branchId || 0
       };
 
       this.saveOrderToStorage(guestOrder);
@@ -578,7 +578,7 @@ private getOrCreateGuestCustomer(deliveryInfo: any): Observable<number> {
       
       // For now, use a fallback customer ID or skip customer creation
       console.warn('⚠️ Using fallback customer ID 1');
-      return of(1); // Use a fallback customer ID
+      return of(0); // Use 0 instead of 1 as fallback
     })
   );
 }

@@ -280,7 +280,7 @@ export class StoreOrderService {
   }
 
   getEStoreOrders(filters?: any): Observable<ComponentOrder[]> {
-    const branchId = filters?.branchId || 1;
+    const branchId = filters?.branchId;
     
     let params = new HttpParams()
       .set('isOnline', 'true')
@@ -757,7 +757,7 @@ export class StoreOrderService {
       totalAmount: updates.totalAmount || order.totalAmount,
       quantity: this.calculateQuantity(order),
       customerId: order.customer?.id || 1,
-      branchId: order.branch?.id || 1,
+      branchId: order.branch?.id || (order as any).branchId,
       paymentId: paymentId, 
       deliveryInfoId: deliveryInfoId,
       isOnline: order.isOnline,
@@ -960,6 +960,7 @@ export class StoreOrderService {
     if (sanitizedOrderData.deliveryFee > 0 || sanitizedOrderData.deliveryInfoId) {
       sanitizedOrderData.isOnline = true;
     }
+    console.log('🚀 [StoreOrderService] Sending Order Payload to Backend:', JSON.stringify(sanitizedOrderData, null, 2));
     
     return this.http.post<any>(
       this.getBaseApiUrl() + '/x/api/v2/pos/orders',
@@ -985,7 +986,7 @@ export class StoreOrderService {
       isOnline: orderData.isOnline,
       quantity: orderData.quantity,
       customerId: orderData.customerId,
-      branchId: orderData.branchId || 1,
+      branchId: orderData.branchId,
       discountId: orderData.discountId && orderData.discountId > 0 ? orderData.discountId : null,
       paymentId: orderData.paymentId,
       cashierId: orderData.cashierId && orderData.cashierId > 0 ? orderData.cashierId : null,

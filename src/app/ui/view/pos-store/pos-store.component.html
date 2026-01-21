@@ -359,8 +359,8 @@
                   }
 
                   <div class="h-44 w-full rounded-xl bg-gray-100 overflow-hidden">
-                    <img [src]="getProductImage(product) | async" [alt]="product.name"
-                      class="w-full h-full object-cover" (error)="handleImageError($event)" />
+                    <img [src]="getProductImage(product)" [alt]="product.name" class="w-full h-full object-cover"
+                      (error)="handleImageError($event)" />
                   </div>
 
                   <div class="p-2 flex flex-col justify-between items-start">
@@ -488,7 +488,7 @@
 
         <!-- Product Image -->
         <div class="h-44 w-full rounded-t-xl bg-gray-100 overflow-hidden flex-shrink-0">
-          <img [src]="getProductImage(product) | async" [alt]="product.name" class="w-full h-full object-cover"
+          <img [src]="getProductImage(product)" [alt]="product.name" class="w-full h-full object-cover"
             (error)="handleImageError($event)" />
         </div>
 
@@ -613,7 +613,7 @@
             class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
             <!-- Product Image -->
             <div class="w-16 h-16 flex-shrink-0 rounded-lg">
-              <img [src]="getProductImage(data.value.product) | async" [alt]="data.value.product.name"
+              <img [src]="getProductImage(data.value.product)" [alt]="data.value.product.name"
                 class="w-full h-full object-cover rounded-xl border" (error)="handleImageError($event)" />
             </div>
 
@@ -728,7 +728,7 @@
           class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
           <!-- Product Image -->
           <div class="w-16 h-16 flex-shrink-0">
-            <img [src]="getProductImage(data.value.product) | async" [alt]="data.value.product.name"
+            <img [src]="getProductImage(data.value.product)" [alt]="data.value.product.name"
               class="w-full h-full object-cover rounded-md border" (error)="handleImageError($event)" />
           </div>
 
@@ -738,16 +738,16 @@
               {{ data.value.product.name }}
             </h4>
             <div class="flex flex-col">
-  <p class="text-lg text-gray-800 font-medium">
-    {{ formatPrice(data.value.unitPrice) }} each
-  </p>
-  
-  @if (hasDiscount(data.value.product)) {
-    <p class="text-sm text-gray-500 line-through">
-      {{ formatPrice(getCostPrice(data.value.product)) }}
-    </p>
-  }
-</div>
+              <p class="text-lg text-gray-800 font-medium">
+                {{ formatPrice(data.value.unitPrice) }} each
+              </p>
+
+              @if (hasDiscount(data.value.product)) {
+              <p class="text-sm text-gray-500 line-through">
+                {{ formatPrice(getCostPrice(data.value.product)) }}
+              </p>
+              }
+            </div>
           </div>
 
           <!-- Quantity Controls -->

@@ -239,7 +239,7 @@ deleteTax(id: any): Observable<any> {
       .pipe(catchError(this.handleError));
   }
 
-  getFilteredProductsWithDetails(currentBranchId: number = 1) {
+  getFilteredProductsWithDetails(currentBranchId: number) {
     return this.getProductsByBranchId(currentBranchId).pipe(
       switchMap((products: any[]) => {
         console.log(products);

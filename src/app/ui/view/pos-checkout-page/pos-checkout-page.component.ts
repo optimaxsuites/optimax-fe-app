@@ -557,7 +557,7 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
       amountTendered: 0,
       quantity: 0,
       customerId: 1,
-      branchId: 1,
+      branchId: branchId || 0,
       cashier: 67,
       deliveryStatus: 'PENDING', 
       orderItem: this.cartItems
