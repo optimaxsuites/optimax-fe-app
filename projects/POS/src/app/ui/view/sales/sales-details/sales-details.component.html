@@ -188,10 +188,36 @@
                 </span>
               </p>
               <p><span class="text-gray-500">Date:</span> {{ formatDate(order.payment.transactionDate) }}</p>
+              
+              <!-- Payment Breakdown Table -->
+              <div *ngIf="getPaymentBreakdown().length > 0" class="mt-3 ml-2 pl-2 border-l-2 border-blue-300">
+                <p class="text-sm font-semibold text-gray-700 mb-2">Payment Methods:</p>
+                <div *ngFor="let payment of getPaymentBreakdown()" class="flex justify-between py-1 text-sm text-gray-600">
+                  <span>{{ payment.paymentMethod || 'N/A' }}</span>
+                  <span class="font-medium">₦{{ (payment.amountPaid || 0).toLocaleString() }}</span>
+                </div>
+              </div>
             </div>
             <ng-template #noPaymentTemplate>
               <p class="text-yellow-600 font-semibold">Unpaid</p>
               <p *ngIf="!order.deliveryInfo" class="text-xs text-gray-500">Payment expected on pickup.</p>
+            </ng-template>
+        </div>
+        
+        <div class="bg-gray-50 p-4 rounded-md">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">Tax Summary</h3>
+            <div *ngIf="getTaxSummary().length > 0; else noTaxTemplate">
+              <div *ngFor="let tax of getTaxSummary()" class="flex justify-between py-2 border-b border-gray-200">
+                <span class="text-gray-600">{{ tax.name }}</span>
+                <span class="font-medium">₦{{ (tax.value || 0).toLocaleString() }}</span>
+              </div>
+              <div class="flex justify-between py-3 font-semibold text-lg border-t-2 border-orange-300 mt-2">
+                <span>Total Tax</span>
+                <span>₦{{ calculateTax().toLocaleString() }}</span>
+              </div>
+            </div>
+            <ng-template #noTaxTemplate>
+              <p class="text-gray-600">No tax information available</p>
             </ng-template>
         </div>
       </div>

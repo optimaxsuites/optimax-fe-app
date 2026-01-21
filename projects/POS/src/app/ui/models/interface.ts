@@ -362,6 +362,25 @@ export interface InventoryProductDTO {
   sku: string;
   price: number;
   id: number | string;
+  
+  code?: string;
+  description?: string;
+  weight?: number;
+  createdDate?: string;
+  createdBy?: string | null;
+  partNumber?: string;
+  tax?: number;
+  branches?: ProductBranchDTO[];
+  discount?: DiscountDTO | null;
+  productCategory?: ProductCategoryPOST | null;
+  productImage?: ProductImageDTO | null;
+  variants?: VariantDTO[];
+  supplier?: supplierData;
+  isBundle?: boolean;
+  bundleItems?: BundleItemDTO[] | any[];
+  category?: any;
+  discountedUnits?: number;
+  totalDiscountAmount?: number;
 }
 
 export interface HistoryDTO {
@@ -971,7 +990,7 @@ export interface CashierPerformanceDTO {
 }
 
 export interface InventoryItemDTO {
-  product: InventoryProductDTO;
+  product: InventoryProductDTO | ProductDTO | any; 
   category: CategoryDTO;
   currentStock: number;
   soldQuantity: number;
@@ -1003,6 +1022,8 @@ export type ChartOptions = {
 };
 
 export interface CategoryDTO {
+  code: string;
+  endDate: null;
   id: number;
   name: string;
   description?: string;

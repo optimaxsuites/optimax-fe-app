@@ -67,7 +67,14 @@
     <div class="bg-white rounded-xl shadow-sm p-8 mt-4">
       <div class="flex justify-between items-center">
         <h2 class="text-2xl  text-gray-800">Product Inventory</h2>
-        <div class="flex gap-3">
+        <div class="flex gap-3 items-center">
+          <input type="date" [(ngModel)]="reportDate" class="border rounded px-2 py-1" />
+          <app-button
+            text="Export Inventory"
+            icon="pi pi-file-excel"
+            class="btn-navigate text-2xl font-extrabold"
+            (click)="exportInventoryReport()"
+          ></app-button>
           <app-button
             text="Add Inventory"
             icon="pi pi-plus"
@@ -81,9 +88,9 @@
 
     <div class="max-w-8xl space-y-8 px-6">
       <div
-        *ngIf="tableSections && (!(isLoading | async) && !isBranchSwitching); else tableLoadingState"
-        class="bg-white rounded-xl shadow-sm overflow-hidden"
-      >
+          *ngIf="tableSections && (!(isLoading | async) && !isBranchSwitching); else tableLoadingState"
+          class="bg-white rounded-xl shadow-sm overflow-visible"
+        >
         <p-table
           [value]="products"
           [paginator]="true"
@@ -162,7 +169,7 @@
                   </button>
                   <ul
                     *ngIf="item.showMenu"
-                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
                   >
                     <li
                       (click)="
@@ -265,7 +272,7 @@
     <i class="pi pi-ellipsis-v text-gray-700"></i>
   </button>
 
-  <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
+  <p-overlayPanel #op appendTo="body" [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
     <ul>
       <li
         class="table-item-panel"
@@ -387,7 +394,7 @@
   ></div>
 
   <div
-    class="modal-content bg-white rounded-lg shadow-2xl relative w-full max-w-4xl max-h-[90vh] overflow-hidden"
+    class="modal-content bg-white rounded-lg shadow-2xl relative w-full max-w-4xl max-h-[90vh] overflow-visible"
     (click)="$event.stopPropagation()"
     role="dialog"
     aria-modal="true"

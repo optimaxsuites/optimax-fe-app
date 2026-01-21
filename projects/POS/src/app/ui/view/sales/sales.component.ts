@@ -110,20 +110,16 @@ export class SalesComponent implements OnInit {
   }
   
   calculateOrderTax(order: Order): number {
-    if (!order.orderItem || !order.orderItem.length) return 0;
+    // Use totalTax provided by backend
+    // Calculate from taxSummary if totalTax is null
+    const totalTax = (order as any).totalTax;
+    if (totalTax !== null && totalTax !== undefined) {
+      return totalTax;
+    }
     
-    return order.orderItem.reduce((totalTax: number, item: any) => {
-      const quantity = item.quantity || 0;
-      const variantPrice = item.productVariant?.price;
-      const productPrice = parseFloat(item.product?.sellingPrice || '0');
-      const unitPrice = variantPrice || productPrice;
-      
-      const subtotal = unitPrice * quantity;
-      const taxRate = item.product?.tax?.rate || 5;
-      const itemTax = (taxRate / 100) * subtotal;
-      
-      return totalTax + itemTax;
-    }, 0);
+    // Fallback: sum up taxSummary array
+    const taxSummary = (order as any).taxSummary || [];
+    return taxSummary.reduce((sum: number, tax: any) => sum + (tax.value || 0), 0);
   }
 
   calculateOrderTotalWithTax(order: Order): number {
@@ -187,7 +183,8 @@ export class SalesComponent implements OnInit {
       cutoffDate.setHours(0, 0, 0, 0); // Start of that day
       
       filtered = filtered.filter(order => {
-        if (!order.createdDate || order.createdDate.length < 3) return false;
+        // Include orders with null createdDate
+        if (!order.createdDate || order.createdDate.length < 3) return true;
         
         // Month is 0-indexed in JS Date, but stored as 1-based in Array
         const orderDate = new Date(

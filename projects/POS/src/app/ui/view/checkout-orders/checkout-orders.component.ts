@@ -110,20 +110,16 @@ export class CheckoutOrdersComponent implements OnInit {
   }
 
   calculateOrderTax(order: Order): number {
-    if (!order.orderItem || !order.orderItem.length) return 0;
-
-    return order.orderItem.reduce((totalTax: number, item: any) => {
-      const quantity = item.quantity || 0;
-      const variantPrice = item.productVariant?.price;
-      const productPrice = parseFloat(item.product?.sellingPrice || '0');
-      const unitPrice = variantPrice || productPrice;
-
-      const subtotal = unitPrice * quantity;
-      const taxRate = item.product?.tax?.rate || 5;
-      const itemTax = (taxRate / 100) * subtotal;
-      
-      return totalTax + itemTax;
-    }, 0);
+    // Use totalTax provided by backend
+    // Calculate from taxSummary if totalTax is null
+    const totalTax = (order as any).totalTax;
+    if (totalTax !== null && totalTax !== undefined) {
+      return totalTax;
+    }
+    
+    // Fallback: sum up taxSummary array
+    const taxSummary = (order as any).taxSummary || [];
+    return taxSummary.reduce((sum: number, tax: any) => sum + (tax.value || 0), 0);
   }
 
   calculateOrderTotalWithTax(order: Order): number {

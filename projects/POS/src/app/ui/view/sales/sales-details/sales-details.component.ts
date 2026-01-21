@@ -145,10 +145,10 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     this.back.emit(); 
   }
   
-  // Disable Updates if Ready for Pickup, Picked Up, or Delivered
+  // Disable Updates if Delivered
   toggleStatusDropdown(): void {
     if (this.isUpdateDisabled()) {
-        this.errorMessage = "Status cannot be updated after order is Ready for Pickup/Delivered.";
+        this.errorMessage = "Status cannot be updated after order is Delivered.";
         setTimeout(() => this.errorMessage = '', 3000);
         return;
     }
@@ -160,8 +160,8 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   isUpdateDisabled(): boolean {
       if (!this.order?.deliveryStatus) return false;
       const s = this.order.deliveryStatus;
-      // Block if Ready for Pickup, Picked Up, or Delivered
-      return s === 'READY_FOR_PICKUP' || s === 'PICKED_UP' || s === 'DELIVERED';
+      // Block only if Delivered
+      return s === 'DELIVERED';
   }
 
   togglePrintDropdown(): void {
@@ -417,12 +417,9 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   }
 
   calculateSubtotal(): number {
-    if (!this.order?.orderItem) return this.order?.totalAmount || 0;
-    return this.order.orderItem.reduce((total: number, item: any) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = this.getItemUnitPrice(item);
-      return total + (unitPrice * quantity);
-    }, 0);
+    // Use the totalAmount stored with the order during checkout
+    // This is the actual subtotal paid, not recalculated from items
+    return this.order?.totalAmount || 0;
   }
 
   calculateDiscount(): number {
@@ -430,15 +427,16 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
   }
 
   calculateTax(): number {
-    if (!this.order?.orderItem) return 0;
-    return this.order.orderItem.reduce((totalTax: number, item: any) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = this.getItemUnitPrice(item);
-      const subtotal = unitPrice * quantity;
-      const taxRate = this.getItemTaxRate(item);
-      const itemTax = (taxRate / 100) * subtotal;
-      return totalTax + itemTax;
-    }, 0);
+    // Use totalTax provided by backend
+    // Calculate from taxSummary if totalTax is null
+    const totalTax = (this.order as any)?.totalTax;
+    if (totalTax !== null && totalTax !== undefined) {
+      return totalTax;
+    }
+    
+    // Fallback: sum up taxSummary array
+    const taxSummary = (this.order as any)?.taxSummary || [];
+    return taxSummary.reduce((sum: number, tax: any) => sum + (tax.value || 0), 0);
   }
 
   calculateTotal(): number {
@@ -477,5 +475,15 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   getOrderTypeLabel(): string {
     return this.isPickupOrder() ? 'Pickup Order' : 'Delivery Order';
+  }
+
+  getTaxSummary(): any[] {
+    // Return taxSummary array from backend
+    return (this.order as any)?.taxSummary || [];
+  }
+
+  getPaymentBreakdown(): any[] {
+    // Return payment breakdown array from backend
+    return (this.order as any)?.payment?.paymentBreakdown || [];
   }
 }

@@ -447,7 +447,7 @@ export class CashPaymentComponent implements OnInit {
       orderStatus: "PAID",
       updatedAt: now,
       createdDate: now,
-      totalAmount: this.totalPaid,
+      totalAmount: this.cart.total,
       tax: this.cart.tax,
       isOnline: false,
       amountTendered: this.totalPaid,
