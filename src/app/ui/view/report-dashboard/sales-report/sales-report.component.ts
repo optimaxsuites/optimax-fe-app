@@ -205,7 +205,7 @@ export class SalesReportComponent implements OnInit {
 
   isFilterFormOpen = false;
   selectedDateRange: string = 'today';
-  paymentMethods: string[] = [];
+  paymentMethods: Array<{ id: string; name: string }> = [];
   categories: CategoryDTO[] = [];
   isExportDropdownOpen = false;
 
@@ -287,16 +287,43 @@ export class SalesReportComponent implements OnInit {
   }
 
   loadPaymentMethods(): void {
-    this.paymentMethods = [
-      'CASH',
-      'CARD',
-      'BANK_TRANSFER',
-      'MOBILE_MONEY',
-      'LOYALTY_POINTS',
-      'VOUCHER',
-      'GIFT_CARD',
-      'CRYPTOCURRENCY',
-    ];
+    // Payment methods will be loaded dynamically from orders data
+    // This is initialized empty and populated after loading sales data
+    this.paymentMethods = [];
+  }
+
+  private extractPaymentMethodsFromOrders(): void {
+    // Extract unique payment methods from orders' payment breakdowns
+    const paymentMethodSet = new Set<string>();
+    
+    if (this.salesReport?.breakdown && Array.isArray(this.salesReport.breakdown)) {
+      this.salesReport.breakdown.forEach((item: any) => {
+        if (item.paymentBreakdown && Array.isArray(item.paymentBreakdown)) {
+          item.paymentBreakdown.forEach((payment: any) => {
+            if (payment.paymentMethod) {
+              paymentMethodSet.add(payment.paymentMethod);
+            }
+          });
+        }
+      });
+    }
+    
+    // Convert Set to array of objects for ng-select
+    this.paymentMethods = Array.from(paymentMethodSet).map(method => ({
+      id: method,
+      name: this.formatPaymentMethodName(method)
+    }));
+    
+    // Sort alphabetically
+    this.paymentMethods.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private formatPaymentMethodName(method: string): string {
+    // Convert CASH to Cash, MOBILE_MONEY to Mobile Money, etc.
+    return method
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
   }
 
   loadCategories(): void {
@@ -385,6 +412,9 @@ export class SalesReportComponent implements OnInit {
 
         // Populate Grouped Sales (New Requirement)
         this.processGroupedSales();
+        
+        // Extract payment methods from the loaded data
+        this.extractPaymentMethodsFromOrders();
         
         this.loading = false;
         this.calculateGrowth();

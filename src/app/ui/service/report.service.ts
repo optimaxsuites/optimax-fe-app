@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { forkJoin } from 'rxjs';
-import { catchError, map, tap, shareReplay } from 'rxjs/operators';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, map, tap, shareReplay, switchMap } from 'rxjs/operators';
 import {
   BranchDTO,
   SalesReportDTO,
@@ -22,7 +21,8 @@ import {
   StockMovementReportDTO,
   StockMovementReportItemDTO,
   StockMovementReportRequestDTO,
-  StockMovementResponsePayload
+  StockMovementResponsePayload,
+  InventoryResponsePayload
 } from '../models/interface';
 
 @Injectable({
@@ -353,17 +353,229 @@ export class ReportService {
       );
   }
 
-  getInventoryReport(
-    payload: InventoryReportRequestDTO
-  ): Observable<InventoryReportDTO> {
+  getInventoryReportForExport(
+    reportDate: string,
+    branchId: number,
+    categoryIds: number[] = []
+  ): Observable<any[]> {
+    console.log('🔵 [ReportService] getInventoryReportForExport called');
+    console.log('Parameters:', { reportDate, branchId, categoryIds });
+
+    // Step 1: Get all inventories
+    console.log('📡 Fetching inventories from API...');
+    
+    return this.http.get<any[]>(`${this.baseUrl}/inventories`).pipe(
+      tap((inventories: any[]) => {
+        console.log(`✅ Received ${inventories.length} total inventories from API`);
+        if (inventories.length > 0) {
+          console.log('Sample inventory:', inventories[0]);
+        }
+      }),
+      map((inventories: any[]) => {
+        console.log('🔍 Filtering inventories...');
+        
+        // Filter out null products and filter by branch
+        const filtered = inventories.filter((inv: any) => {
+          if (!inv.product || inv.product === null) {
+            console.log(`⚠️ Skipping inventory ${inv.id} - product is null`);
+            return false;
+          }
+          
+          const invBranchId = inv.branch?.id || inv.branchId;
+          const branchMatch = invBranchId === branchId;
+          
+          if (!branchMatch) {
+            return false;
+          }
+          
+          return true;
+        });
+        
+        console.log(`✅ After filtering nulls and branch: ${filtered.length} inventories`);
+        
+        // Filter by categories if specified
+        let finalFiltered = filtered;
+        if (categoryIds.length > 0) {
+          console.log('🔍 Filtering by categories:', categoryIds);
+          const beforeCategoryFilter = filtered.length;
+          
+          finalFiltered = filtered.filter((inv: any) => {
+            const product = inv.product;
+            const categoryId = product?.productCategory?.id;
+            return categoryId && categoryIds.includes(categoryId);
+          });
+          
+          console.log(`✅ After category filter: ${finalFiltered.length} inventories (removed ${beforeCategoryFilter - finalFiltered.length})`);
+        }
+        
+        console.log('📊 Final filtered inventories:', finalFiltered.length);
+        return finalFiltered;
+      }),
+      switchMap((inventories: any[]) => {
+        if (inventories.length === 0) {
+          console.warn('⚠️ No inventories after filtering, returning empty array');
+          return of({ inventories: [], movements: [] });
+        }
+
+        // Step 2: Get stock movements FROM selected date TO NOW
+        const startDate = new Date(reportDate);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(); // NOW - current date/time
+        endDate.setHours(23, 59, 59, 999);
+        
+        console.log('📡 Fetching stock movements FROM selected date TO NOW...');
+        console.log('Date range:', {
+          from: startDate.toISOString(),
+          to: endDate.toISOString(),
+          note: 'This covers all movements from the selected date until now'
+        });
+        
+        let movementParams = new HttpParams()
+          .set('startDate', startDate.toISOString())
+          .set('endDate', endDate.toISOString());
+        
+        if (branchId) {
+          movementParams = movementParams.set('branchIds', branchId.toString());
+        }
+        
+        return forkJoin({
+          inventories: of(inventories),
+          movements: this.http.get<any[]>(`${this.baseUrl}/stockMovements`, { 
+            params: movementParams 
+          }).pipe(
+            tap((movements: any[]) => {
+              console.log(`✅ Received ${movements.length} stock movements`);
+              if (movements.length > 0) {
+                console.log('Sample movement:', movements[0]);
+                
+                // Analyze movements
+                const positive = movements.filter(m => m.quantity > 0);
+                const negative = movements.filter(m => m.quantity < 0);
+                console.log(`📊 Movement breakdown: ${positive.length} additions, ${negative.length} reductions`);
+              }
+            }),
+            catchError((err: any) => {
+              console.error('❌ Error fetching stock movements:', err);
+              console.log('📊 Continuing without movement data...');
+              return of([]);
+            })
+          )
+        });
+      }),
+      map((data: { inventories: any[], movements: any[] }) => {
+        const { inventories, movements } = data;
+        
+        console.log('🔄 Processing inventory data...');
+        console.log(`Processing ${inventories.length} inventories with ${movements.length} movements`);
+        
+        // Step 3: Combine data and calculate values
+        const reportData = inventories.map((inv: any, index: number) => {
+          const product = inv.product;
+          const productId = product?.id;
+          const inventoryId = inv.id;
+          
+          if (index < 3) {
+            console.log(`Processing inventory ${index + 1}:`, {
+              inventoryId,
+              productId,
+              productName: product?.name,
+              currentStock: inv.availableQuantity
+            });
+          }
+          
+          // Find all movements for this product
+          const productMovements = movements.filter((m: any) => {
+            const matchByInventoryId = m.inventoryId === inventoryId;
+            const matchByProductId = m.inventory?.productId === productId || 
+                                     m.productId === productId;
+            return matchByInventoryId || matchByProductId;
+          });
+          
+          if (index < 3 && productMovements.length > 0) {
+            console.log(`  Found ${productMovements.length} movements for this product`);
+          }
+          
+          // SEPARATE positive (additions) and negative (sales) movements
+          // Positive quantity = stock ADDED (purchases, restocking)
+          const qtyAdded = productMovements
+            .filter((m: any) => m.quantity > 0)
+            .reduce((sum: number, m: any) => sum + m.quantity, 0);
+          
+          // Negative quantity = stock SOLD/USED (sales, consumption)
+          const qtySold = productMovements
+            .filter((m: any) => m.quantity < 0)
+            .reduce((sum: number, m: any) => sum + Math.abs(m.quantity), 0);
+          
+          // Current stock
+          const qtyAtHand = inv.availableQuantity || 0;
+          
+          // Calculate stock at start of selected date
+          // Formula: Current stock - Added + Sold = Starting stock
+          const qtyAtStart = qtyAtHand - qtyAdded + qtySold;
+          
+          if (index < 3) {
+            console.log(`  Calculations:`, {
+              qtyAtStart,
+              qtyAdded,
+              qtySold,
+              qtyAtHand,
+              formula: `${qtyAtHand} - ${qtyAdded} + ${qtySold} = ${qtyAtStart}`
+            });
+          }
+          
+          return {
+            productName: product?.name || `Product #${productId}`,
+            qtyAtStart,        // Stock at beginning of selected date
+            qtyAdded,          // Stock ADDED (purchases) since selected date
+            qtySold,           // Stock SOLD (sales) since selected date
+            qtyAtHand,         // Current stock now
+            netChange: qtyAdded - qtySold, // Net change (positive = more added than sold)
+            date: reportDate,
+            supervisorPhysicalCheck: '', // Empty for manual entry
+            categoryName: product?.productCategory?.name || 'N/A',
+            sku: product?.sku || 'N/A'
+          };
+        });
+        
+        console.log('✅ Processing complete!');
+        console.log(`Generated ${reportData.length} report rows`);
+        if (reportData.length > 0) {
+          console.log('Sample report data:', reportData.slice(0, 2));
+          
+          // Summary statistics
+          const totalAdded = reportData.reduce((sum: number, item: any) => sum + item.qtyAdded, 0);
+          const totalSold = reportData.reduce((sum: number, item: any) => sum + item.qtySold, 0);
+          console.log('📊 Summary:', {
+            totalItemsAdded: totalAdded,
+            totalItemsSold: totalSold,
+            netChange: totalAdded - totalSold
+          });
+        }
+        
+        return reportData;
+      }),
+      catchError((err: any) => {
+        console.error('❌ Error in getInventoryReportForExport:', err);
+        console.error('Error details:', {
+          status: err.status,
+          statusText: err.statusText,
+          message: err.message,
+          url: err.url
+        });
+        return throwError(() => err);
+      })
+    );
+  }
+
+  getInventoryReport(payload: InventoryReportRequestDTO): Observable<InventoryReportDTO> {
     const formattedPayload = {
       branchIds: payload.branchIds || [], 
       categoryIds: payload.categoryIds || [],
-      includeLowStock: payload.includeLowStock || false,
+      includeLowStock: payload.includeLowStock || true,
       startDate: payload.startDate,
       endDate: payload.endDate,
     };
-    console.log('Service: Sending inventory report request:', formattedPayload);
+
     return this.http
       .post<InventoryReportDTO>(
         `${this.baseUrl}/salesreport/inventoryperformancereport`,
@@ -371,40 +583,20 @@ export class ReportService {
       )
       .pipe(
         map((response) => {
-          console.log('Service: Raw inventory response received:', response);
-          const normalizedResponse: InventoryReportDTO = {
-            inventory: Array.isArray(response?.inventory)
-              ? response.inventory.map((item: InventoryItemDTO) => ({
+          return {
+            inventory: Array.isArray(response?.inventory) 
+              ? response.inventory.map((item: any) => ({
                   ...item,
-                  product: {
-                    ...item.product,
-                    id:
-                      typeof item.product.id === 'string'
-                        ? parseInt(item.product.id)
-                        : item.product.id,
-                  },
-                  category: {
-                    ...item.category,
-                    id:
-                      typeof item.category.id === 'string'
-                        ? parseInt(item.category.id)
-                        : item.category.id,
-                  },
-                  branch: {
-                    ...item.branch,
-                    id:
-                      typeof item.branch.id === 'string'
-                        ? parseInt(item.branch.id)
-                        : item.branch.id,
-                  },
+                  product: { ...item.product, id: Number(item.product?.id) },
+                  category: { ...item.category, id: Number(item.category?.id) },
+                  branch: { ...item.branch, id: Number(item.branch?.id) },
                 }))
-              : [],
+              : []
           };
-          return normalizedResponse;
         }),
         catchError((err) => {
           console.error('Service: Error fetching inventory report:', err);
-          return of({ inventory: [] });
+          return throwError(() => err);
         })
       );
   }
@@ -434,7 +626,7 @@ export class ReportService {
     console.log('Service: Sending GET stock movements request with params:', params.toString());
     
     return this.http
-      .get<any[]>( // Changed to any[] to allow flexible inspection
+      .get<any[]>(
         `${this.baseUrl}/stockMovements`, 
         { params }
       )
@@ -445,7 +637,6 @@ export class ReportService {
           const movements: StockMovementReportItemDTO[] = Array.isArray(response)
             ? response.map((item: any) => {
                 
-                // --- FIX: Robust extraction of Product ID ---
                 let extractedProductId: number;
                 
                 if (item.ingredientId) {
@@ -455,11 +646,11 @@ export class ReportService {
                 } else if (item.productId) {
                     extractedProductId = item.productId;
                 } else if (item.product && item.product.id) {
-                    extractedProductId = item.product.id; // Check nested product object
+                    extractedProductId = item.product.id;
                 } else if (item.inventory && item.inventory.product && item.inventory.product.id) {
-                    extractedProductId = item.inventory.product.id; // Check deeply nested
+                    extractedProductId = item.inventory.product.id;
                 } else {
-                    extractedProductId = 0; // Default to 0 to prevent undefined
+                    extractedProductId = 0;
                 }
 
                 return {
@@ -479,8 +670,6 @@ export class ReportService {
                     supplierName: 'N/A',
                     
                     productId: extractedProductId,
-                    // IMPORTANT: Pass inventoryId through for fallback lookup in component
-                    // We cast to 'any' here if DTO interface is strict, to ensure data flows
                     inventoryId: item.inventoryId, 
                     branchId: item.inventory?.branchId || item.branchId || payload.branchIds?.[0], 
                 } as any;

@@ -821,12 +821,16 @@ export class EditInventoryComponent implements OnInit {
     const qtyAbs = Number(this.stockMovementForm.value.quantity) || 0;
     
     const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+    // Prefer explicit sellingPrice entered in the stockMovementForm, otherwise fall back to base price
+    const formSelling = this.stockMovementForm.get('sellingPrice')?.value;
     const sellingPrice = Number(
-      this.priceDetails?.effectivePrice ?? this.activeItem?.sellingPrice ?? 0
+      formSelling !== null && formSelling !== undefined && formSelling !== ''
+        ? formSelling
+        : (this.priceDetails?.basePrice ?? this.activeItem?.sellingPrice ?? 0)
     );
 
     const supplier = this.stockMovementForm.value.supplier;
-    // FIX: The supplier value is already the ID (or null) because of bindValue="id"
+    //  The supplier value is already the ID (or null) because of bindValue="id"
     const supplierId = supplier ? Number(supplier) : null; 
 
     // Assume IN movement based on component context

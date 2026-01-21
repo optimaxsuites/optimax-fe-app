@@ -34,6 +34,9 @@ import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 import { BehaviorSubject } from 'rxjs';
 import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper';
+import { ReportService } from '../../service/report.service';
+import * as XLSX from 'xlsx';
+import * as FileSaver from 'file-saver';
 
 @Component({
   selector: 'app-inventory',
@@ -44,10 +47,30 @@ export class InventoryComponent implements OnInit, OnDestroy {
   @ViewChildren('op') overlayPanels!: QueryList<any>;
   @ViewChild('op') op!: OverlayPanel;
   @ViewChild('editInventoryComponent')
+  editInventoryComponent!: EditInventoryComponent;
+  
   @HostListener('document:click', ['$event'])
+  onDocumentClick(event: any) {
+    // Close all product dropdown menus
+    if (this.products && Array.isArray(this.products)) {
+      this.products.forEach((p: any) => (p.showMenu = false));
+    }
+    if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
+      this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
+    }
+
+    // Close all overlay panels if clicking outside
+    if (this.overlayPanels) {
+      this.overlayPanels.forEach(overlay => {
+        if (overlay.overlayVisible && !overlay.el.nativeElement.contains(event.target)) {
+          overlay.hide();
+        }
+      });
+    }
+  }
+
   mode: 'create' | 'edit' = 'create';
   isStockMovement: boolean = false; // New flag for stock movement mode
-  editInventoryComponent!: EditInventoryComponent;
   isLoading = this.metadataService.loading$;
   isBranchSwitching: boolean = false; 
   selectedProduct: any = null;
@@ -101,25 +124,33 @@ export class InventoryComponent implements OnInit, OnDestroy {
   isImportDialogOpen = false;
   showInformation = false;
   selectedProductId: number | null = null;
+  
+  // Export report date
+  reportDate: string = new Date().toISOString().split('T')[0];
+  
   private originalBodyOverflow: string = '';
+  
   inventoryPermission = {
-  canView: false,
-  canEdit: false,
-  canDelete: false,
-  canCreate: false,
+    canView: false,
+    canEdit: false,
+    canDelete: false,
+    canCreate: false,
   };  
   superUser = isSuperUser();
-   productPermissions = {
-  canView: false,
-  canEdit: false,
-  canDelete: false,
-  canCreate: false,
+  
+  productPermissions = {
+    canView: false,
+    canEdit: false,
+    canDelete: false,
+    canCreate: false,
   };  
- private destroy$ = new Subject<void>();
+ 
+  private destroy$ = new Subject<void>();
 
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
+    private reportService: ReportService,
     private http: HttpClient,
     private cdRef: ChangeDetectorRef,
     private imageCacheService: ImageCacheService,
@@ -139,26 +170,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  onDocumentClick(event: any) {
-   
-    if (this.products && Array.isArray(this.products)) {
-      this.products.forEach((p: any) => (p.showMenu = false));
-    }
-    if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
-      this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
-    }
-
-    
-    if (this.overlayPanels) {
-      this.overlayPanels.forEach(overlay => {
-        if (overlay.overlayVisible && !overlay.el.nativeElement.contains(event.target)) {
-          overlay.hide();
-        }
-      });
-    }
-  }
-
-
   onPageChange(event: any) {
     this.currentPage = event.page;
     this.rowsPerPage = event.rows;
@@ -169,7 +180,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     // Load supporting data
     this.getDiscountTypes();
-    this.fetchUserBranchId()
+    this.fetchUserBranchId();
     
     // Subscribe to branches
     this.metadataService.branches$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
@@ -184,7 +195,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     this.metadataService.enrichedInventory$.pipe(takeUntil(this.destroy$)).subscribe(async (data) => {
       this.products = data;
-      this.originalProducts = data
+      this.originalProducts = data;
       console.log('inventories loaded:', this.products); 
     });
     
@@ -193,24 +204,23 @@ export class InventoryComponent implements OnInit, OnDestroy {
     }
     
     if (isSuperUser()) {
-          this.productPermissions = {
-            canView: true,
-            canEdit: true,
-            canDelete: true,
-            canCreate: true,
-          };
-        } else {
-        this.productPermissions = getUserPermissionsFor('POS_PDT');
+      this.productPermissions = {
+        canView: true,
+        canEdit: true,
+        canDelete: true,
+        canCreate: true,
+      };
+    } else {
+      this.productPermissions = getUserPermissionsFor('POS_PDT');
     }
-
   }
 
-  fetchUserBranchId(){
-    const userBranch= sessionStorage.getItem('userBranchInfoRegData');
+  fetchUserBranchId() {
+    const userBranch = sessionStorage.getItem('userBranchInfoRegData');
     this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : 1;
   }
 
-  // FIXED: Handle branch filter change with proper loading states
+  // Handle branch filter change with proper loading states
   onBranchChange(branchId: number): void {
     console.log('Branch changed to:', branchId);
     this.selectedBranch = branchId;
@@ -255,40 +265,39 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   get paginatedProducts() {
     const startIndex = this.currentPage * this.rowsPerPage;
-    console.log(this.products.slice(startIndex, startIndex + this.rowsPerPage))
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
   
- private mapInventoryToProductRow(inv: any): any {
-  console.log('Mapping inventory item:', inv);
-  
-  // Use type assertion to access the properties that might exist
-  const inventory = inv as any;
-  
-  return {
-    id: inventory.product?.id || inventory.productId || inventory.id,
-    code: inventory.product?.code || '',
-    sku: inventory.product?.sku || '',
-    name: inventory.product?.name || `Product #${inventory.productId || inventory.id}`,
-    sellingPrice: Number(inventory.product?.sellingPrice || 0),
-    quantity: inventory.availableQuantity !== undefined && inventory.availableQuantity !== null
-      ? Number(inventory.availableQuantity)
-      : Number(inventory.quantity || 0),
+  private mapInventoryToProductRow(inv: any): any {
+    console.log('Mapping inventory item:', inv);
     
-    productCategory: inventory.product?.productCategory || null,
-    imageUrl$: inventory.product?.imageUrl || 
-              (inventory.product?.productImages && inventory.product.productImages[0]?.url) || 
-              null,
+    // Use type assertion to access the properties that might exist
+    const inventory = inv as any;
     
-    variants: inventory.product?.variants || [],
-    inventoryId: inventory.id,
-    branch: inventory.branch || { id: inventory.branchId },
-    createdDateMs: new Date(inventory.createdDate || Date.now()).getTime(),
-    
-    __inventory: inventory,
-    __originalProduct: inventory.product
-  };
-}
+    return {
+      id: inventory.product?.id || inventory.productId || inventory.id,
+      code: inventory.product?.code || '',
+      sku: inventory.product?.sku || '',
+      name: inventory.product?.name || `Product #${inventory.productId || inventory.id}`,
+      sellingPrice: Number(inventory.product?.sellingPrice || 0),
+      quantity: inventory.availableQuantity !== undefined && inventory.availableQuantity !== null
+        ? Number(inventory.availableQuantity)
+        : Number(inventory.quantity || 0),
+      
+      productCategory: inventory.product?.productCategory || null,
+      imageUrl$: inventory.product?.imageUrl || 
+                (inventory.product?.productImages && inventory.product.productImages[0]?.url) || 
+                null,
+      
+      variants: inventory.product?.variants || [],
+      inventoryId: inventory.id,
+      branch: inventory.branch || { id: inventory.branchId },
+      createdDateMs: new Date(inventory.createdDate || Date.now()).getTime(),
+      
+      __inventory: inventory,
+      __originalProduct: inventory.product
+    };
+  }
 
   toggleDropdown2(item: any, event?: Event) {
     if (event) {
@@ -309,7 +318,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
     item.showMenu = true;
   }
 
-  @HostListener('document:click')
   closeAllDropdowns() {
     if (this.products && Array.isArray(this.products)) {
       this.products.forEach((p: any) => (p.showMenu = false));
@@ -318,7 +326,6 @@ export class InventoryComponent implements OnInit, OnDestroy {
       this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
     }
     
-   
     this.closeAllOverlays();
   }
 
@@ -368,6 +375,11 @@ export class InventoryComponent implements OnInit, OnDestroy {
         label: 'Edit',
         icon: 'pi pi-pencil',
         command: () => this.openEditInventory(item, 'edit'),
+      },
+      {
+        label: 'Stock Movement',
+        icon: 'pi pi-exchange',
+        command: () => this.openStockMovement(item, 'child'),
       },
       {
         label: 'Delete',
@@ -713,6 +725,197 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.generatePDF('product-table', 'products-inventory.pdf');
   }
 
+  exportInventoryReport(): void {
+    console.log('🔵 Starting inventory report export...');
+    console.log('Selected Date:', this.reportDate);
+    console.log('Selected Branch:', this.selectedBranch);
+    console.log('Selected Categories:', this.selectedCategories);
+
+    // Show loading message
+    this.messageService.add({ 
+      severity: 'info', 
+      summary: 'Generating Report', 
+      detail: `Analyzing stock movements from ${this.reportDate} to now...`, 
+      life: 3000 
+    });
+
+    // Call the service
+    this.reportService.getInventoryReportForExport(
+      this.reportDate,
+      this.selectedBranch || 1,
+      this.selectedCategories
+    ).subscribe({
+      next: (reportData: any[]) => {
+        console.log('✅ Report data received:', reportData);
+        console.log('Report data length:', reportData.length);
+        
+        if (!reportData || reportData.length === 0) {
+          console.warn('⚠️ No data to export');
+          this.messageService.add({ 
+            severity: 'warn', 
+            summary: 'No Data', 
+            detail: 'No inventory records found for this selection.' 
+          });
+          return;
+        }
+
+        // Calculate summary statistics
+        const totalAdded = reportData.reduce((sum, item) => sum + (item.qtyAdded || 0), 0);
+        const totalSold = reportData.reduce((sum, item) => sum + (item.qtySold || 0), 0);
+        const itemsWithActivity = reportData.filter(item => 
+          (item.qtyAdded > 0 || item.qtySold > 0)
+        ).length;
+        
+        console.log(`📊 Summary: ${totalAdded} added, ${totalSold} sold, ${itemsWithActivity} items with activity`);
+
+        console.log(`📊 Generating Excel with ${reportData.length} items...`);
+
+        // Create Excel data array with NEW COLUMNS
+        const excelData: any[][] = [];
+        
+        // Header row with all columns
+        excelData.push([
+          'Product Name',
+          'SKU', 
+          'Qty at Start Date',
+          'Stock Added',
+          'Stock Sold', 
+          'Qty at Hand (Now)',
+          'Net Change',
+          'Start Date',
+          'Report Generated',
+          'Supervisor Physical Check'
+        ]);
+
+        console.log('Adding data rows...');
+
+        const reportGeneratedDate = new Date().toISOString().split('T')[0];
+
+        // Data rows
+        reportData.forEach((item: any, index: number) => {
+          excelData.push([
+            item.productName || 'N/A',
+            item.sku || 'N/A',
+            item.qtyAtStart || 0,
+            item.qtyAdded || 0,
+            item.qtySold || 0,
+            item.qtyAtHand || 0,
+            item.netChange || 0,
+            this.reportDate,
+            reportGeneratedDate,
+            '' // Empty for supervisor to fill
+          ]);
+          
+          if (index < 3) {
+            console.log(`Row ${index + 1}:`, excelData[excelData.length - 1]);
+          }
+        });
+
+        console.log(`📋 Excel data prepared: ${excelData.length} rows (including header)`);
+
+        try {
+          // Create worksheet from array
+          console.log('Creating worksheet...');
+          const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(excelData);
+          
+          // Set column widths for better readability
+          ws['!cols'] = [
+            { wch: 35 }, // Product Name
+            { wch: 15 }, // SKU
+            { wch: 18 }, // Qty at Start Date
+            { wch: 15 }, // Stock Added
+            { wch: 15 }, // Stock Sold
+            { wch: 18 }, // Qty at Hand (Now)
+            { wch: 12 }, // Net Change
+            { wch: 12 }, // Start Date
+            { wch: 15 }, // Report Generated
+            { wch: 25 }  // Supervisor Physical Check
+          ];
+
+          console.log('Creating workbook...');
+          // Create workbook and add worksheet
+          const wb: XLSX.WorkBook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Inventory Report');
+
+          console.log('📁 Writing Excel file...');
+          // Generate Excel file buffer
+          const excelBuffer: any = XLSX.write(wb, { 
+            bookType: 'xlsx', 
+            type: 'array'
+          });
+
+          console.log('Creating blob...');
+          // Create blob
+          const dataBlob: Blob = new Blob([excelBuffer], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' 
+          });
+          
+          // Generate filename
+          const fileName = `Inventory_Report_${this.reportDate}_to_${reportGeneratedDate}.xlsx`;
+          console.log('💾 Saving file:', fileName);
+          console.log('Blob size:', dataBlob.size, 'bytes');
+          
+          // Trigger download
+          FileSaver.saveAs(dataBlob, fileName);
+          
+          console.log('✅ Export completed successfully!');
+          
+          // Show detailed success message
+          let successDetail = `Report with ${reportData.length} items downloaded. `;
+          if (itemsWithActivity > 0) {
+            successDetail += `${itemsWithActivity} items had stock movements. `;
+            successDetail += `Total added: ${totalAdded}, Total sold: ${totalSold}.`;
+          } else {
+            successDetail += `No stock movements found from ${this.reportDate} to today.`;
+          }
+          
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Export Success', 
+            detail: successDetail,
+            life: 7000
+          });
+          
+        } catch (excelError) {
+          console.error('❌ Error during Excel generation:', excelError);
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Excel Generation Failed', 
+            detail: 'Failed to create Excel file. Check console for details.' 
+          });
+        }
+      },
+      error: (err) => {
+        console.error('❌ Export failed:', err);
+        console.error('Error details:', {
+          status: err.status,
+          statusText: err.statusText,
+          message: err.message,
+          error: err.error
+        });
+        
+        let errorDetail = 'Could not generate report.';
+        
+        if (err.status === 524) {
+          errorDetail = 'Server Timeout: Try filtering by a specific category to reduce data size.';
+        } else if (err.status === 404) {
+          errorDetail = 'Endpoint not found. Please check API configuration.';
+        } else if (err.status === 403) {
+          errorDetail = 'Access denied. Please check your permissions.';
+        } else if (err.message) {
+          errorDetail = err.message;
+        }
+        
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Export Failed', 
+          detail: errorDetail,
+          life: 5000
+        });
+      }
+    });
+  }
+
   resetFormFields(): void {
     this.activeItem = {
       id: 0,
@@ -754,13 +957,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     this.tableSection = false;
     this.viewProduct = false;
-    this.viewInventory = false; // FIX: Ensure view modal is closed
+    this.viewInventory = false; 
     this.addProduct = false;
     this.editInventory = true;
     this.tableSections = false;
   }
 
-  // NEW METHOD: Open Stock Movement - reuses the same edit inventory component
   openStockMovement(item: any = {}, mode: string) {
     this.isStockMovement = true; // Set to true for stock movement mode
     
@@ -777,7 +979,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
     this.tableSection = false;
     this.viewProduct = false;
-    this.viewInventory = false; // FIX: Ensure view modal is closed
+    this.viewInventory = false; 
     this.addProduct = false;
     this.editInventory = true;
     this.tableSections = false;
@@ -799,30 +1001,26 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   onImageError(event: Event): void {
-  const target = event.target as HTMLImageElement;
-  if (target) {
-    target.src = 'assets/placeholder-product.jpg';
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = 'assets/placeholder-product.jpg';
+    }
   }
-}
 
-  // FIXED: Image URL handling with proper error handling and correct API path
+  // Image URL handling with proper error handling and correct API path
   getImageUrl(item: any): Observable<string> {
     const productImages = item.productImages || 
                          item.__originalProduct?.productImages || 
                          item.__inventory?.product?.productImages;
                          
     if (productImages && productImages.length > 0 && productImages[0].imgNo) {
-      // FIXED: Using correct API path from your file structure
       const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${productImages[0].imgNo}`;
       return this.imageCacheService.getImage(remoteImageUrl).pipe(
         catchError((error) => {
-          // Don't log error to console to avoid spam
           return of('assets/images/placeholder-product.jpg');
         })
       );
     }
-    
-    // Return placeholder without logging error
     return of('assets/images/placeholder-product.jpg');
   }
 }
