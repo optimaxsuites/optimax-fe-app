@@ -5,6 +5,7 @@ import { NavigationLinksService } from '../../sharedComponent/service/navigation
 import { CustomerService } from '../../service/customer.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { forkJoin, of } from 'rxjs';
+import { Location } from '@angular/common';
 import { catchError, map } from 'rxjs/operators';
 
 @Component({
@@ -22,7 +23,8 @@ export class RequestDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     public navigationLink: NavigationLinksService,
     private customerService: CustomerService,
-    private posService: PosServiceService
+    private posService: PosServiceService,
+    private location: Location
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras.state as any;
@@ -39,10 +41,8 @@ export class RequestDetailsComponent implements OnInit {
   }
 
   goBack() {
-    const currentUuid = this.route.snapshot.params['uuid'];
-    this.router.navigate(['orderRefund', currentUuid], {
-      relativeTo: this.route.parent
-    });
+     this.location.back();
+
   }
 
   loadCustomerData() {

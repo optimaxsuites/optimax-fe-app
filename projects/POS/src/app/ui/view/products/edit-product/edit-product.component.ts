@@ -71,6 +71,7 @@ export class EditProductComponent {
 		id: 0,
 		color: "",
 		size: "Regular",
+		code: ""
 	};
 	newVariant = structuredClone(this.defaultVariant);
 	branches: any[] = [

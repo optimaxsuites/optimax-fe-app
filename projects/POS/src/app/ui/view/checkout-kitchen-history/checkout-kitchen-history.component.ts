@@ -221,9 +221,9 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
     this.loadPaidOrders();
     
     // Set up interval to check for new orders every 10 seconds
-    setInterval(() => {
-      this.checkForNewOrders();
-    }, 10000);
+    // setInterval(() => {
+    //   this.checkForNewOrders();
+    // }, 10000);
   }
 
   private checkForNewOrders() {

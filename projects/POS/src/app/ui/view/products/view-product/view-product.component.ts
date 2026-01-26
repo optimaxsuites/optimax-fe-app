@@ -42,6 +42,7 @@ export class ViewProductComponent {
 		size: "Regular",
 		sku: "",
 		branches: [],
+		code: ""
 	};
 	constructor(
 		private metadataservice: MetadataService,

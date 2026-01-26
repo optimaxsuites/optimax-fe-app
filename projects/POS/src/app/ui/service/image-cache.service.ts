@@ -9,7 +9,7 @@ import { ProductData, ProductImageDTO } from '../models/interface';
 })
 export class ImageCacheService {
   private _cache = new Map<string, string>();
-  private readonly placeholderImage = 'assets/placeholder-product.jpg';
+  private readonly placeholderImage = 'assets/placeholder-product.jpg'; 
   private readonly baseUrl = 'https://be.optimaxsuites.com/x/api/v2/pos/products/images/';
 
   constructor(private http: HttpClient) {}

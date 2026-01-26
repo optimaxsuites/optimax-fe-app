@@ -254,6 +254,7 @@ discount: {
 		size: "Regular",
 		sku: "",
 		branches: [],
+    code: ""
 	};
 	protected readonly variantValues = {
 		size: [
@@ -400,11 +401,11 @@ discountTypes: any[] = [
     this.fetchMetaData();
     this.loadAvailableProducts();
 
-    if (this.isEditMode && this.activeItem) {
-      setTimeout(() => {
-        this.initializeEditMode();
-      }, 100);
-    }
+    // if (this.isEditMode && this.activeItem) {
+    //   setTimeout(() => {
+    //     this.initializeEditMode();
+    //   }, 100);
+    // }
     // Fixed subscription for selectedProductIds
     this.productForm
       .get('selectedProductIds')
@@ -509,7 +510,7 @@ discountTypes: any[] = [
     this.setBranchInformation();
 
     // Initialize product images
-    // this.initializeProductImages();
+    this.initializeProductImages();
 
     console.log('Form after initialization:', this.productForm.value);
   }
@@ -995,7 +996,7 @@ checkPriceValidation(): void {
   }
 
   loadAvailableProducts() {
-    this.metadataService.products$.subscribe((products) => {
+    this.metadataService.enrichedProduct$.subscribe((products) => {
       this.availableProducts = products.filter((product) => {
         if (this.isEditMode && this.activeItem) {
           return product.id !== this.activeItem.id;
@@ -2664,6 +2665,7 @@ async updateProduct() {
                   quantity: variant.quantity,
                   size: variant.size,
                   color: variant.color,
+                  code: variant.code
                 });
               }
 
@@ -2683,6 +2685,8 @@ async updateProduct() {
                   quantity: [variant.quantity],
                   size: [variant.size],
                   color: [variant.color],
+                  code: [variant.code]
+
                 })
               );
             }
@@ -3258,6 +3262,7 @@ getErrorMessage(controlName: string, displayName?: string): string {
       size: this.defaultVariant.size,
       sku: this.defaultVariant.sku,
       branches: this.defaultVariant.branches,
+      code: this.defaultVariant.code
     };
   }
 

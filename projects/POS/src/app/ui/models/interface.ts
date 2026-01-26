@@ -143,6 +143,7 @@ export interface VariantDTO {
   branches?: BranchDTO[];
   color: string;
   size: "XXS" | "XS" | "Small" | "Medium" | "Regular" | "Large" | "XL" | "XXL";
+  code: string
 }
 
 export interface DiscountOption {

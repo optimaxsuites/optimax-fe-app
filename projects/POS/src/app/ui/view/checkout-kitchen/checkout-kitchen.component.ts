@@ -70,7 +70,10 @@ interface Order {
   tax: number,
   waiterId: any,
   chefId: any,
-  cashierId: any
+  cashierId: any,
+  processedOn: string,
+  readyOn: string, 
+  completedOn: string
 
 }
 
@@ -691,7 +694,9 @@ companyInfo = {
       waterId: this.currentUser?.id || 0,
       orderedOn: new Date().toISOString(),
       note: this.formatNoteEntry(this.orderNote),
-      orderId: createdOrder.id // This is the link between the two
+      orderId: createdOrder.id,
+      chefId: 0,
+      cashierId:  0,
     };
 
     // 4. Call Table Order Status Endpoint
@@ -736,6 +741,7 @@ companyInfo = {
       console.log(`👨‍🍳 Chef updating order ${order.orderNo} from ${order.status} to: ${newStatus}`);
       
       // Update local status - chef can process UNPAID orders
+      
 
       console.log(`✅ Order ${order.orderNo} status updated to: ${newStatus}`);
       
@@ -747,7 +753,10 @@ companyInfo = {
           tableNumber: String(order.table),
           waterId: order.waiterId || 0,
           orderedOn: arrayToDate(order.orderedOn).toISOString(),
-          orderId: order.orderId 
+          orderId: order.orderId,
+          processedOn: newStatus == "PREPARING" ? new Date().toISOString() : order.processedOn ? order.processedOn : null,
+          readyOn: newStatus == "READY" ? new Date().toISOString() : order.readyOn ? order.readyOn : null,
+          completedOn: newStatus == "CONFIRMED" ? new Date().toISOString() : order.completedOn ? order.completedOn : null,
       };
 
       await lastValueFrom(this._posService.addTableOrderStatus(payload));
@@ -909,7 +918,8 @@ companyInfo = {
       orderedOn: tableStatus.orderedOn,
       grandTotal: tableStatus.order?.grandTotal,
       tax: tableStatus.order.tax,
-      total: tableStatus.order.totalAmount
+      total: tableStatus.order.totalAmount,
+      
     };
   }
 
