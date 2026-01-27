@@ -510,7 +510,7 @@ discountTypes: any[] = [
     this.setBranchInformation();
 
     // Initialize product images
-    this.initializeProductImages();
+    // this.initializeProductImages();
 
     console.log('Form after initialization:', this.productForm.value);
   }
@@ -1402,41 +1402,41 @@ removeImage(image: any, index: number) {
     }
   }
 
-  getLastImage(): string {
-    console.log('getLastImage called - productImages:', this.productImages);
+  // getLastImage(): string {
+  //   console.log('getLastImage called - productImages:', this.productImages);
     
-    // First priority: mainProductImage
-    if (this.mainProductImage) {
-      return this.mainProductImage;
-    }
+  //   // First priority: mainProductImage
+  //   if (this.mainProductImage) {
+  //     return this.mainProductImage;
+  //   }
     
-    // Second priority: last image in productImages array
-    if (this.productImages.length > 0) {
-      const lastImage = this.productImages[this.productImages.length - 1].url;
-      console.log('Using last image from productImages:', lastImage);
-      return lastImage;
-    }
+  //   // Second priority: last image in productImages array
+  //   if (this.productImages.length > 0) {
+  //     const lastImage = this.productImages[this.productImages.length - 1].url;
+  //     console.log('Using last image from productImages:', lastImage);
+  //     return lastImage;
+  //   }
     
-    // Third priority: try to get from activeItem
-    if (this.isEditMode && this.activeItem) {
-      // Try productImages array first
-      if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-        const lastImageItem = this.activeItem.productImages[this.activeItem.productImages.length - 1];
-        const imageUrl = this.imageCacheService.getImageUrlFromDTO(lastImageItem);
-        console.log('Using last image from activeItem.productImages:', imageUrl);
-        return imageUrl;
-      }
-      // Try direct image property
-      else if (this.activeItem.imageUrl) {
-        console.log('Using activeItem.imageUrl:', this.activeItem.imageUrl);
-        return this.activeItem.imageUrl;
-      }
-    }
+  //   // Third priority: try to get from activeItem
+  //   if (this.isEditMode && this.activeItem) {
+  //     // Try productImages array first
+  //     if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+  //       const lastImageItem = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+  //       const imageUrl = this.imageCacheService.getImageUrlFromDTO(lastImageItem);
+  //       console.log('Using last image from activeItem.productImages:', imageUrl);
+  //       return imageUrl;
+  //     }
+  //     // Try direct image property
+  //     else if (this.activeItem.imageUrl) {
+  //       console.log('Using activeItem.imageUrl:', this.activeItem.imageUrl);
+  //       return this.activeItem.imageUrl;
+  //     }
+  //   }
     
-    // Final fallback
-    console.log('Using placeholder image');
-    return this.getPlaceholderImage();
-  }
+  //   // Final fallback
+  //   console.log('Using placeholder image');
+  //   return this.getPlaceholderImage();
+  // }
 
   setAsMainImage(imageUrl: string) {
     console.log('Setting main image to:', imageUrl);
@@ -1516,20 +1516,20 @@ getMainImage(): string {
     console.log('🔄 Trying to construct image from activeItem in edit mode...');
     
     // Try productImages array first
-    if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
-      const firstImageItem = this.activeItem.productImages[0];
-      const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
-      console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
+    // if (this.activeItem.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+    //   const firstImageItem = this.activeItem.productImages[0];
+    //   const constructedUrl = this.imageCacheService.getImageUrlFromDTO(firstImageItem);
+    //   console.log('✅ Constructed URL from activeItem.productImages:', constructedUrl);
       
-      if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
-        // Update our local state with this constructed URL
-        this.mainProductImage = constructedUrl;
-        if (this.productImages.length === 0) {
-          this.productImages.push({id: firstImageItem.id, file: null, url: constructedUrl });
-        }
-        return constructedUrl;
-      }
-    }
+    //   if (constructedUrl && constructedUrl !== this.getPlaceholderImage()) {
+    //     // Update our local state with this constructed URL
+    //     this.mainProductImage = constructedUrl;
+    //     if (this.productImages.length === 0) {
+    //       this.productImages.push({id: firstImageItem.id, file: null, url: constructedUrl });
+    //     }
+    //     return constructedUrl;
+    //   }
+    // }
     
     // Try direct imageUrl property
     if (this.activeItem.imageUrl) {
@@ -2517,7 +2517,7 @@ async updateProduct() {
   }
 
   const formValues = this.productForm.value;
-  const hasNewImage = this.productImages.length > this.activeItem.productImages.length
+  const hasNewImage = this.productImages.length > 0
 
   console.log('Form values:', formValues);
   console.log('Has new image:', hasNewImage, this.productImages);
@@ -3269,14 +3269,16 @@ getErrorMessage(controlName: string, displayName?: string): string {
   getEditImage(imageData: {
     file: File | null;
     url: string;
+    imgNo: string;
   }): Observable<string> {
     // If it's a newly uploaded file, use the data URL directly
+    console.log(imageData, "imagedata")
     if (imageData.file) {
-      return of(imageData.url);
+      return of(this.getImageUrl(imageData.imgNo));
     }
-
+    const url = this.getImageUrl(imageData.imgNo)
     // If it's an existing image, use the cache service
-    return this.imageCacheService.getImage(imageData.url);
+    return this.imageCacheService.getImage(url);
   }
 
   get businessType() {
@@ -3339,7 +3341,7 @@ getErrorMessage(controlName: string, displayName?: string): string {
   console.log('2. activeItem.productImages:', this.activeItem?.productImages);
   console.log('3. mainProductImage:', this.mainProductImage);
   console.log('4. productImages array:', this.productImages);
-  console.log('5. getMainImage() result:', this.getMainImage());
+  // console.log('5. getMainImage() result:', this.getMainImage());
   console.log('6. isEditMode:', this.isEditMode);
   
   if (this.activeItem?.productImages) {
