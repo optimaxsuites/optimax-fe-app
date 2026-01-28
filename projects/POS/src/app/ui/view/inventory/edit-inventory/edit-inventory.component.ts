@@ -920,6 +920,26 @@ export class EditInventoryComponent implements OnInit {
 
       await firstValueFrom(this.posService.createStockMovement(finalPayload));
 
+      // Update product with new selling price if it was changed
+      if (this.activeItem) {
+        const newSellingPrice = Number(sellingPrice) || Number(this.activeItem.sellingPrice);
+        const currentPrice = Number(this.activeItem.sellingPrice) || 0;
+        if (newSellingPrice && newSellingPrice !== currentPrice) {
+          const updatedProduct: ProductData = {
+            ...this.activeItem,
+            sellingPrice: newSellingPrice.toString()
+          };
+          try {
+            await firstValueFrom(this.posService.updateProduct(updatedProduct));
+            this.activeItem.sellingPrice = newSellingPrice.toString();
+            this.updateProductInList(updatedProduct);
+          } catch (updateError) {
+            console.warn('Failed to update product selling price:', updateError);
+            // Don't fail the entire operation if product update fails
+          }
+        }
+      }
+
       this.messageService.add({
         severity: 'success',
         summary: 'Success',

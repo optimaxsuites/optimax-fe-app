@@ -311,6 +311,19 @@ export class EStoreSalesComponent implements OnInit, OnDestroy {
   }
 
   calculateOrderTax(order: ComponentOrder): number {
+    // Use totalTax provided by backend if available
+    const totalTax = (order as any).totalTax;
+    if (totalTax !== null && totalTax !== undefined) {
+      return totalTax;
+    }
+    
+    // Fallback: sum up taxSummary array if totalTax is not available
+    const taxSummary = (order as any).taxSummary || [];
+    const taxFromSummary = taxSummary.reduce((sum: number, tax: any) => sum + (tax.value || 0), 0);
+    if (taxFromSummary > 0) {
+      return taxFromSummary;
+    }
+
     if (!order.orderItem || !order.orderItem.length) return 0;
     return order.orderItem.reduce((totalTax: number, item: any) => {
       const quantity = item.quantity || 0;

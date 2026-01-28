@@ -430,6 +430,16 @@ export class StoreOrderService {
     );
   }
 
+  isPaystackAvailable(branchId: number = 1): Observable<boolean> {
+    return this.getPaymentKeys().pipe(
+      map((keys: PaymentKey[]) => {
+        const key = keys.find(k => k.branchId === branchId) || keys[0];
+        return !!key && !!key.publicKey;
+      }),
+      catchError(() => of(false))
+    );
+  }
+
   processPaystackPayment(email: string, amount: number, orderNumber: string, branchId: number = 1): Observable<any> {
     return this.getPublicKeyForBranch(branchId).pipe(
       switchMap((publicKey: string) => {
@@ -904,7 +914,9 @@ export class StoreOrderService {
       cart: [], 
       deliveryMethod: isPickup ? 'PICKUP' : 'DELIVERY',
       updatedBy: updatedBy,
-      deliveryFee: orderDTO.deliveryFee
+      deliveryFee: orderDTO.deliveryFee,
+      taxSummary: (orderDTO as any).taxSummary || [],
+      totalTax: (orderDTO as any).totalTax || 0
     };
   }
 

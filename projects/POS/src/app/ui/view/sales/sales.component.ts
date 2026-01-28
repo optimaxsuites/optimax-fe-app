@@ -108,6 +108,11 @@ export class SalesComponent implements OnInit {
       return { text: 'In-store', class: 'bg-blue-100 text-blue-800' };
     }
   }
+
+  hasSalespersonData(): boolean {
+    // Show salesperson column only if we have in-store sales
+    return this.filteredOrders.some(order => order.salesType === 'IN-STORE');
+  }
   
   calculateOrderTax(order: Order): number {
     // Use totalTax provided by backend

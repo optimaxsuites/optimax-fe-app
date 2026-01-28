@@ -141,9 +141,11 @@ export class EmailVerificationComponent implements OnInit, OnDestroy {
   error = '';
   isLoading = true;
   token: string | null = null;
+  storeUuid: string = '';
   redirectCountdown = 5;
   private redirectInterval: any;
   private querySubscription?: Subscription;
+  private paramSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -152,6 +154,10 @@ export class EmailVerificationComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Get store UUID from parent route
+    this.paramSubscription = this.route.parent?.paramMap.subscribe(params => {
+      this.storeUuid = params.get('uuid') || '';
+    });
     this.verifyEmail();
   }
 
@@ -161,6 +167,9 @@ export class EmailVerificationComponent implements OnInit, OnDestroy {
     }
     if (this.querySubscription) {
       this.querySubscription.unsubscribe();
+    }
+    if (this.paramSubscription) {
+      this.paramSubscription.unsubscribe();
     }
   }
 
@@ -228,20 +237,35 @@ export class EmailVerificationComponent implements OnInit, OnDestroy {
     if (this.redirectInterval) {
       clearInterval(this.redirectInterval);
     }
-    this.router.navigate(['/'], { queryParams: { verified: 'true' } });
+    const uuid = this.storeUuid;
+    if (uuid) {
+      this.router.navigate(['/optimerce', uuid], { queryParams: { verified: 'true' } });
+    } else {
+      this.router.navigate(['/'], { queryParams: { verified: 'true' } });
+    }
   }
 
   goToVerificationRequired(): void {
     if (this.redirectInterval) {
       clearInterval(this.redirectInterval);
     }
-    this.router.navigate(['/verify-required']);
+    const uuid = this.storeUuid;
+    if (uuid) {
+      this.router.navigate(['/optimerce', uuid, 'verify-required']);
+    } else {
+      this.router.navigate(['/verify-required']);
+    }
   }
 
   goToHome(): void {
     if (this.redirectInterval) {
       clearInterval(this.redirectInterval);
     }
-    this.router.navigate(['/']);
+    const uuid = this.storeUuid;
+    if (uuid) {
+      this.router.navigate(['/optimerce', uuid]);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 }

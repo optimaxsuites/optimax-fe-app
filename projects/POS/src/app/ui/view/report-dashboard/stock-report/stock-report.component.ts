@@ -592,10 +592,14 @@ export class StockReportComponent implements OnInit {
     this.reportService.getStockMovementReport(movementFilters).pipe(
       catchError(error => {
         console.error('Error loading movement report:', error);
+        this.isMovementLoading = false;
         return of({ movements: [], totalInflow: 0, totalOutflow: 0, netChange: 0 } as StockMovementReportDTO);
       }),
       finalize(() => {
-        this.isMovementLoading = false;
+        // Only set to false if not already false
+        if (this.isMovementLoading) {
+          this.isMovementLoading = false;
+        }
       })
     ).subscribe((movementReport: StockMovementReportDTO) => {
       // --- STRICT CLIENT-SIDE DATE FILTERING (Fix for broken backend filters) ---
@@ -1109,7 +1113,8 @@ export class StockReportComponent implements OnInit {
       month: 'short', 
       year: 'numeric', 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 

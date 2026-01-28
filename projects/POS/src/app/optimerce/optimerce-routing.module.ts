@@ -17,7 +17,7 @@ import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/stor
 import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
-import { VerificationRequiredComponent } from '../ui/view/verification-required/verification-required.component';
+import { VerificationRequiredComponent } from '../ui/view/pos-store/verification-required/verification-required.component';
 import { EmailVerificationComponent } from '../ui/view/pos-store/email-verification/email-verification.component';
 import { ReturnsRefundsComponent } from '../ui/view/pos-store/returns-refunds/returns-refunds.component';
 import { OrderHistoryComponent } from '../ui/view/pos-store/order-history/order-history.component';

@@ -70,16 +70,23 @@ export class AuthService {
       .replace(/\D/g, '')
       .substring(0, 15);
     const username = userData.username.substring(0, 20);
-    const clientType = 'Individual'.substring(0, 10);
+    const clientType = 'Group';
     const currentDate = new Date().toISOString();
 
-    const apiKey = environment.apiKey || 'default-store-api-key';
-    const project = environment.project || 'store';
+    const apiKey = environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071';
+    const project = environment.project || 'ERP';
+
+    // Dynamic domain extraction
+    let domain = 'optimax';
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      domain = hostname.split('.')[0];
+    }
 
     return {
       username: username,
       email: userData.email,
-      role: ['user'],
+      role: ['ROLE_USER'],
       password: userData.password,
       project: project,
       apiKey: apiKey,
@@ -96,6 +103,7 @@ export class AuthService {
         country: '',
         profileImage: '',
         address: '',
+        domain: domain,
         clientType: clientType,
         companyName: '',
         industry: '',
@@ -118,6 +126,7 @@ export class AuthService {
         this.getBaseApiUrl() + '/x/api/v2/auth/signup',
         validatedPayload
       )
+      
       .pipe(
         switchMap((response: any) => {
           // Create POS Customer record immediately
@@ -272,13 +281,13 @@ login(loginData: LoginData): Observable<AuthResponse> {
   resendVerificationEmail(username: string): Observable<any> {
     const payload = {
       username: username,
-      project: environment.project || 'store',
-      apiKey: environment.apiKey || 'default-store-api-key',
+      project: environment.project || 'ERP',
+      apiKey: environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
     };
 
     return this.http
       .post<any>(
-        this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink',
+        this.getBaseApiUrl() + '/x/api/v2/us/register/resend',
         payload
       )
       .pipe(

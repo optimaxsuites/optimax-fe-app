@@ -89,8 +89,14 @@ export class LocationPickingComponent implements OnInit, AfterViewInit, OnDestro
         this.initMap();
         if (this.map) {
           this.map.invalidateSize();
+          // Additional invalidateSize after a delay to ensure proper rendering
+          setTimeout(() => {
+            if (this.map) {
+              this.map.invalidateSize();
+            }
+          }, 200);
         }
-      }, 100);
+      }, 150);
     });
   }
 

@@ -247,13 +247,27 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
     
     if(!this.order || !this.order.id) return;
 
+    // Prevent status changes if already picked up/delivered
+    if (this.order.deliveryStatus === 'PICKED_UP') {
+      this.errorMessage = 'Order has been picked up. Status cannot be changed.';
+      setTimeout(() => this.errorMessage = '', 3000);
+      return;
+    }
+
     const isPickup = this.isPickupOrder();
     const statusMap = isPickup ? this.pickupStatusMap : this.deliveryStatusMap;
     const statusToSend = statusMap[statusLabel] || statusLabel.toUpperCase();
     
-    // Check if status update implies payment (Completion)
-    // For Pickup: 'PICKED_UP' implies PAID
-    // For Delivery: 'DELIVERED' implies PAID
+    //  Only allow valid transitions from READY_FOR_PICKUP
+    if (this.order.deliveryStatus === 'OUT_FOR_DELIVERY' && isPickup) {
+      // Order is ready for pickup - only allow PICKED_UP status
+      if (statusToSend !== 'PICKED_UP') {
+        this.errorMessage = 'Ready for Pickup orders can only be marked as Picked Up';
+        setTimeout(() => this.errorMessage = '', 3000);
+        return;
+      }
+    }
+    
     const triggersPaymentConfirmation = 
         (isPickup && statusToSend === 'PICKED_UP') ||
         (!isPickup && statusToSend === 'DELIVERED');
@@ -479,7 +493,20 @@ export class SalesDetailsComponent implements OnInit, OnChanges {
 
   getTaxSummary(): any[] {
     // Return taxSummary array from backend
-    return (this.order as any)?.taxSummary || [];
+    const taxSummary = (this.order as any)?.taxSummary;
+    if (Array.isArray(taxSummary) && taxSummary.length > 0) {
+      return taxSummary;
+    }
+    
+    const totalTax = (this.order as any)?.totalTax;
+    if (totalTax && totalTax > 0) {
+      return [{
+        name: 'VAT',
+        value: totalTax
+      }];
+    }
+    
+    return [];
   }
 
   getPaymentBreakdown(): any[] {

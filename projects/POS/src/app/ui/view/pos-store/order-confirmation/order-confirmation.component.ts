@@ -343,7 +343,7 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
     const currentUuid = this.route.snapshot.paramMap.get('uuid') || 
                        this.route.parent?.snapshot.paramMap.get('uuid');
     if (currentUuid) {
-      this.router.navigate(['/user/checkout/store', currentUuid]);
+      this.router.navigate(['/optimerce', currentUuid]);
     } else {
       // console.warn('⚠️ No UUID found, nvigating to root');
       this.router.navigate(['/']);
