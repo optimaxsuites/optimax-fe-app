@@ -75,6 +75,8 @@ import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
 import { VendorQuoteFormComponent } from './ui/view/vendor/vendor-quote-form/vendor-quote-form.component';
 import { VendorQuoteListComponent } from './ui/view/vendor/vendor-quote-list/vendor-quote-list.component';
 import { VendorRfqListComponent } from './ui/view/vendor/vendor-rfq-list/vendor-rfq-list.component';
+import { PurchaseReqManagementComponent } from './ui/view/purchase-req-management/purchase-req-management.component';
+import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/pr-create.component';
 
 
 @NgModule({
@@ -98,7 +100,9 @@ import { VendorRfqListComponent } from './ui/view/vendor/vendor-rfq-list/vendor-
     VendorPageComponent,
     VendorQuoteFormComponent,
     VendorQuoteListComponent,
-    VendorRfqListComponent
+    VendorRfqListComponent,
+    PurchaseReqManagementComponent,
+    PrCreateComponent
   ],
   imports: [
     // BrowserModule,
