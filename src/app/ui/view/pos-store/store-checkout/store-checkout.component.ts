@@ -57,6 +57,17 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   // Tax & totals
   taxBreakdown: any[] = [];
   taxAmount: number = 0;
+
+  // Location Picking & Distance Calculation
+  showLocationPicker: boolean = false;
+  branchLocation: { lat: number; lng: number } | null = null;
+  customerLocation: { lat: number; lng: number } | null = null;
+  distance: number | null = null;
+
+  // Delivery Configuration (Placeholders)
+  readonly BASE_DELIVERY_FEE = 1000;
+  readonly PER_KM_RATE = 200;
+  readonly MIN_DELIVERY_FEE = 500;
   
   // Branch & customer info
   branchInfo: any = null;
@@ -131,6 +142,25 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     console.log('🔄 Checkout Component Initialized');
     this.initializeCheckout();
   }
+  
+  // Paystack Check
+  isPaystackAvailable: boolean = true;
+
+  checkPaystackAvailability(): void {
+    this.storeOrderService.isPaystackAvailable(this.currentBranchId).subscribe((isAvailable) => {
+      this.isPaystackAvailable = isAvailable;
+      console.log('💳 Paystack availability checked:', isAvailable);
+      
+      // Update payment methods status
+      const cardMethod = this.paymentMethods.find(m => m.value === 'card');
+      if (cardMethod) {
+        cardMethod.disabled = !isAvailable;
+        if (!isAvailable && this.paymentMethod === 'card') {
+           this.paymentMethod = ''; // Deselect if currently selected
+        }
+      }
+    });
+  }
 
   ngOnDestroy(): void {
     // Cleanup if needed
@@ -147,6 +177,8 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       this.metadataService.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
         this.currentBranchId = branchId ?? 0;
         console.log('🏛️ Checkout initialized with Branch ID:', this.currentBranchId);
+        this.loadBranchLocation();
+        this.checkPaystackAvailability();
       });
       
       // Also subscribe to branch changes
@@ -154,17 +186,46 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
         if (branchId && branchId !== this.currentBranchId) {
           this.currentBranchId = branchId;
           console.log('🏛️ Branch ID updated to:', this.currentBranchId);
+          this.loadBranchLocation();
+          this.checkPaystackAvailability();
         }
       });
       
       this.loadCartData();
       this.loadCustomerInfo();
+      // Ensure calculateAllCharges is called after isDelivery is potentially set
       this.calculateAllCharges();
     } catch (error) {
       console.error('Error initializing checkout:', error);
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private loadBranchLocation(): void {
+    if (!this.currentBranchId) return;
+
+    this.metadataService.branchSubject.pipe(take(1)).subscribe(branches => {
+      const branch = branches.find(b => b.id === this.currentBranchId);
+      if (branch) {
+        // Try common coordinate field names
+        const lat = branch.latitude || branch.lat;
+        const lng = branch.longitude || branch.lng || branch.long;
+
+        if (lat && lng) {
+          this.branchLocation = {
+            lat: parseFloat(lat),
+            lng: parseFloat(lng)
+          };
+          console.log('📍 Branch Location Loaded:', this.branchLocation);
+        } else {
+          console.warn('⚠️ Branch found but missing coordinates:', branch);
+          // Fallback coordinates for testing if needed (Minna coordinates)
+          // this.branchLocation = { lat: 9.6139, lng: 6.5569 }; 
+        }
+        this.branchInfo = branch;
+      }
+    });
   }
 
   get isLoggedIn(): boolean {
@@ -339,13 +400,72 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
   private calculateAllCharges(): void {
     this.calculateTaxes();
     this.calculateDiscounts();
+    this.updateDeliveryFee();
     
     console.log('💰 All calculations complete:', {
       subtotal: this.subtotal,
       totalDiscount: this.totalDiscount,
       taxAmount: this.taxAmount,
-      deliveryFee: this.deliveryFee
+      deliveryFee: this.deliveryFee,
+      distance: this.distance
     });
+  }
+
+  private updateDeliveryFee(): void {
+    if (!this.isDelivery) {
+      this.deliveryFee = 0;
+      return;
+    }
+
+    if (this.distance !== null) {
+      // Distance-based calculation
+      const calculatedFee = this.BASE_DELIVERY_FEE + (this.distance * this.PER_KM_RATE);
+      this.deliveryFee = Math.max(this.MIN_DELIVERY_FEE, Math.round(calculatedFee));
+      console.log(`🚚 Calculated distance delivery fee: ₦${this.deliveryFee} for ${this.distance.toFixed(2)} km`);
+    } else {
+      // Default fee if location not picked yet
+      this.deliveryFee = this.BASE_DELIVERY_FEE;
+    }
+  }
+
+  onPickLocationClick(): void {
+    this.showLocationPicker = true;
+  }
+
+  onLocationSelected(event: { lat: number; lng: number; address?: string }): void {
+    this.customerLocation = { lat: event.lat, lng: event.lng };
+    if (event.address) {
+      this.deliveryInfo.address = event.address;
+    }
+
+    if (this.branchLocation) {
+      this.distance = this.calculateDistance(
+        this.branchLocation.lat,
+        this.branchLocation.lng,
+        this.customerLocation.lat,
+        this.customerLocation.lng
+      );
+      this.updateDeliveryFee();
+    }
+
+    this.showLocationPicker = false;
+    this.validateForm();
+  }
+
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 
   get total(): number {
@@ -361,10 +481,20 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
     if (!isDelivery) {
       this.deliveryInfo.address = '';
     }
+    
+    // Recalculate charges when delivery method changes
+    this.calculateAllCharges();
   }
 
   validateForm(): boolean {
     this.formErrors = [];
+
+    // CRITICAL: Check if a valid branch is selected
+    if (!this.currentBranchId || this.currentBranchId === 0) {
+      this.formErrors.push('No store branch selected. Please refresh the page and ensure a branch is selected.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return false;
+    }
 
     if (this.cartItems.size === 0) {
       this.formErrors.push('Your cart is empty. Please add items before placing an order.');
@@ -509,8 +639,17 @@ export class StoreCheckoutComponent implements OnInit, OnDestroy {
       isGuest, 
       payer: payerInfo, 
       recipient: recipientInfo,
-      resolvedCustomerId: customerId
+      resolvedCustomerId: customerId,
+      branchId: this.currentBranchId
     });
+
+    // Additional safety check for branch ID
+    if (!this.currentBranchId || this.currentBranchId === 0) {
+      this.isLoading = false;
+      this.formErrors = ['No store branch selected. Please refresh the page and ensure a branch is selected.'];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     try {
       const orderData = this.prepareOrderData(customerId);

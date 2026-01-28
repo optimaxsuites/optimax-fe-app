@@ -25,6 +25,11 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  
+  // Password visibility flags
+  showLoginPassword = false;
+  showSignupPassword = false;
+  showSignupConfirmPassword = false;
 
   constructor(
     private fb: FormBuilder,
@@ -187,7 +192,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
             setTimeout(() => {
               this.closeModal();
               const uuid = this.storeUuid || this.getCurrentStoreUuid();
-              this.router.navigate(['optimerce', uuid, 'verify-required']);
+              this.router.navigate(['/optimerce', uuid, 'verify-required']);
             }, 2000);
             return;
           }
@@ -272,19 +277,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           
           if (response.success) {
-            this.successMessage = response.message || 'Account created successfully!';
-            
-            // Update auth state immediately (user will need to verify)
-            const userData = {
-              name: formValue.fullname,
-              isGuest: false,
-              username: formValue.username,
-              email: formValue.email,
-              requiresVerification: true
-            };
-            
-            this.authStateService.setUser(userData);
-            
             // Store rememberMe preference
             if (rememberMe) {
               localStorage.setItem('rememberMe', 'true');
@@ -292,18 +284,10 @@ export class AuthModalComponent implements OnInit, OnDestroy {
               localStorage.setItem('rememberedEmail', formValue.email);
             }
             
-            // Store pending verification
+            // Store pending verification info for possible resend
             this.authService.storePendingVerification({
               username: formValue.username,
               email: formValue.email
-            });
-            
-            // Show success toast
-            const greeting = this.getTimeBasedGreeting();
-            this.showToast.emit({
-              title: 'Account Created Successfully! 🎉',
-              message: `${greeting}, ${formValue.username}! Welcome to our store. Please check your email to verify your account.`,
-              type: 'success'
             });
             
             // Emit signup event with rememberMe
@@ -315,13 +299,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
               password: formValue.password,
               rememberMe: rememberMe
             });
-            
-            // Redirect to verification page
-            setTimeout(() => {
-              this.closeModal();
-              const uuid = this.storeUuid || this.getCurrentStoreUuid();
-              this.router.navigate(['/store', uuid, 'verify-required']);
-            }, 2000);
           } else {
             this.errorMessage = response.message || 'Signup failed. Please try again.';
             
@@ -352,6 +329,18 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  toggleLoginPassword(): void {
+    this.showLoginPassword = !this.showLoginPassword;
+  }
+
+  toggleSignupPassword(): void {
+    this.showSignupPassword = !this.showSignupPassword;
+  }
+
+  toggleSignupConfirmPassword(): void {
+    this.showSignupConfirmPassword = !this.showSignupConfirmPassword;
   }
 
   onGuest(): void {

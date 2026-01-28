@@ -33,7 +33,7 @@
     </div>
 
     <!-- Error Messages -->
-    <!-- <div *ngIf="formErrors.length > 0" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+    <div *ngIf="formErrors.length > 0" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
       <div class="flex items-center mb-2">
         <i class="fa-solid fa-exclamation-circle text-red-500 mr-2"></i>
         <h3 class="text-red-800 font-semibold">Please fix the following errors:</h3>
@@ -41,7 +41,7 @@
       <ul class="list-disc list-inside text-red-700 text-sm">
         <li *ngFor="let error of formErrors">{{ error }}</li>
       </ul>
-    </div> -->
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- Right Column - Order Summary -->
@@ -146,7 +146,10 @@
             <!-- Delivery Fee -->
             <div class="flex justify-between text-sm" *ngIf="isDelivery">
               <span class="text-gray-600">Delivery Fee:</span>
-              <span class="font-medium text-green-600">Free</span>
+              <span class="font-medium" [class.text-green-600]="deliveryFee === 0"
+                [class.text-gray-800]="deliveryFee > 0">
+                {{ deliveryFee === 0 ? 'Free' : '₦' + (deliveryFee | number:'1.2-2') }}
+              </span>
             </div>
 
             <!-- Grand Total -->
@@ -228,7 +231,7 @@
               <div class="text-left">
                 <div class="font-semibold">Home Delivery</div>
                 <div class="text-xs opacity-75">
-                  Free • 30-45 min
+                  {{ deliveryFee > 0 ? '₦' + (deliveryFee | number:'1.0-0') : 'Free' }} • 30-45 min
                 </div>
               </div>
             </button>
@@ -290,11 +293,22 @@
           <div class="grid grid-cols-1 gap-4">
             <!-- Delivery Address with Location Picker -->
             <div>
-              <div class="relative">
-                <textarea [(ngModel)]="deliveryInfo.address" rows="3"
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">Delivery Address *</label>
+                <button type="button" (click)="onPickLocationClick()"
+                  class="text-customGreen hover:text-green-700 text-sm font-medium flex items-center transition-colors">
+                  <i class="fa-solid fa-map-location-dot mr-1"></i>
+                  Pick Location on Map
+                </button>
+              </div>
+              <div class="relative mb-4">
+                <textarea [(ngModel)]="deliveryInfo.address" rows="3" (input)="validateForm()"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customGreen focus:border-transparent transition-all resize-none shadow-sm"
                   placeholder="Enter your delivery address..." required>
                 </textarea>
+                <div *ngIf="distance" class="absolute bottom-2 right-2 text-[10px] text-gray-400">
+                  Estimated distance: {{ distance | number:'1.1-1' }} km
+                </div>
               </div>
 
               <div>
@@ -304,6 +318,11 @@
                   placeholder="Any special delivery instructions, gate codes, etc."></textarea>
               </div>
             </div>
+
+            <!-- Location Picker Modal -->
+            <app-location-picking *ngIf="showLocationPicker" [initialLocation]="branchLocation"
+              (locationSelected)="onLocationSelected($event)" (close)="showLocationPicker = false">
+            </app-location-picking>
           </div>
         </div>
 
@@ -328,6 +347,11 @@
                 </span>
                 <p class="text-sm mt-1" [class]="method.disabled ? 'text-gray-400' : 'text-gray-500'">
                   {{ method.description }}
+                </p>
+                <p *ngIf="method.value === 'card' && !isPaystackAvailable"
+                  class="text-xs text-red-500 mt-2 font-medium">
+                  <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                  This store is unable to take card payments at the moment.
                 </p>
               </div>
               <i

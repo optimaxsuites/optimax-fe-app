@@ -28,29 +28,57 @@
     }
 
     /* Make the print area visible */
-    #print-area, #print-area * {
+    #print-area, #printable-report, #print-area *, #printable-report * {
         visibility: visible;
     }
 
-    #print-area {
+    #print-area, #printable-report {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
         margin: 0;
-        padding: 0;
+        padding: 20px;
         box-shadow: none;
         border: none;
         background-color: white;
     }
 
-    /* Reset grid for print to simple block or flex */
-    .grid { display: block !important; }
-    .md\:grid-cols-4, .md\:grid-cols-2 { display: flex !important; flex-wrap: wrap; gap: 10px; }
+    /* Fix grid layout for printing */
+    .grid { 
+        display: block !important; 
+        width: 100% !important;
+    }
+    .md\:grid-cols-4, .md\:grid-cols-2 { 
+        display: block !important; 
+        width: 100% !important;
+    }
+    
+    /* Ensure tables print properly */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: avoid;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+    }
+    
+    /* Print view specific alignment */
+    .print-view {
+        display: block !important;
+    }
     
     /* Remove colored backgrounds for cleaner print */
-    .bg-gray-50, .bg-blue-50 {
+    .bg-gray-50, .bg-blue-50, .bg-green-50, .bg-red-50 {
         background-color: transparent !important;
         border: 1px solid #eee;
+    }
+    
+    /* Fix spacing for print */
+    .print-content, .print-area {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
     }
 }

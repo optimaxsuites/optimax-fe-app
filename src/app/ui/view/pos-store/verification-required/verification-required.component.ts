@@ -19,6 +19,7 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
   username = '';
   email = '';
   resendCooldown = 0;
+  isSignupSuccess = false;
   private cooldownInterval: any;
   private storeUuid: string = '';
 
@@ -31,6 +32,14 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get store UUID from route
     this.storeUuid = this.route.snapshot.paramMap.get('uuid') || '';
+
+    // Check for signup success query parameter
+    this.route.queryParams.subscribe(params => {
+      this.isSignupSuccess = params['signupSuccess'] === 'true';
+      if (this.isSignupSuccess) {
+        this.message = 'Signup Successful! 🎉 Please check your email to verify your account.';
+      }
+    });
 
     // Get user data from localStorage
     const userData = this.authService.getPendingVerification();
@@ -130,7 +139,7 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
 
   private redirectToLogin(): void {
     if (this.storeUuid) {
-      this.router.navigate(['optimerce', this.storeUuid]);
+      this.router.navigate(['/optimerce', this.storeUuid]);
     } else {
       this.router.navigate(['/']);
     }
@@ -138,7 +147,7 @@ export class VerificationRequiredComponent implements OnInit, OnDestroy {
 
   private redirectToHome(): void {
     if (this.storeUuid) {
-      this.router.navigate(['optimerce', this.storeUuid]);
+      this.router.navigate(['/optimerce', this.storeUuid]);
     } else {
       this.router.navigate(['/']);
     }

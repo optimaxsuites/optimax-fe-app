@@ -218,6 +218,8 @@ export interface Order {
   deliveryInfo?: DeliveryInfoDTO | null; 
   updatedBy?: string; 
   deliveryFee?: number;
+  taxSummary?: any[];
+  totalTax?: number;
 }
 
 export type ValidOrderStatus = 
@@ -1051,7 +1053,9 @@ export interface OrderDTO {
   deliveryInfoId: number;
   deliveryMethod?: 'DELIVERY' | 'PICKUP';
   deliveryInfo?: DeliveryInfoDTO;
-  updatedBy?: string; 
+  updatedBy?: string;
+  taxSummary?: any[];
+  totalTax?: number;
 }
 
 export interface DeliveryInfoDTO {

@@ -472,23 +472,14 @@ handleLogin(credentials: {username: string, password: string}): void {
 }
 
 // Update your handleSignup method
-handleSignup(userData: {name: string, username: string, email: string, phone: string, password: string}): void {
-  const userInfo = { name: userData.username, isGuest: false };
-  
-  // Store in localStorage
-  localStorage.setItem('currentUser', JSON.stringify(userInfo));
-  
-  // Update signal
-  this.user.set(userInfo);
-  
-  const greeting = this.getTimeBasedGreeting();
-  this.showToast(
-    'Account Created! 🎉',
-    `${greeting}, ${userData.username}! Welcome to our store. Start shopping now.`,
-    'success'
-  );
-  
+handleSignup(userData: any): void {
   this.closeAuthModal();
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  if (currentUuid) {
+    this.router.navigate(['/optimerce', currentUuid, 'verify-required'], {
+      queryParams: { signupSuccess: 'true' }
+    });
+  }
 }
 
 closeAuthModal(): void {
