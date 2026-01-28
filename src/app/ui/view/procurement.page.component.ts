@@ -7,6 +7,7 @@ import { InvoiceComponent } from './invoice/invoice.component';
 import { DispatchNoteComponent } from './dispatch-note/dispatch-note.component';
 import { IncomingComponent } from './lpo/incoming/incoming.component';
 import { OutgoingComponent } from './lpo/outgoing/outgoing.component';
+import { PurchaseReqManagementComponent } from './purchase-req-management/purchase-req-management.component';
 
 @Component({
   selector: 'app-procurement.page',
@@ -15,6 +16,14 @@ import { OutgoingComponent } from './lpo/outgoing/outgoing.component';
 })
 export class ProcurementPageComponent {
   tabsConfig: TabConfig[] = [
+    { name: 'PRM', component: PurchaseReqManagementComponent },
+
+
+
+
+
+
+    
     { name: 'RFQ', component: RfqComponent },
     { name: 'Quotation', component: QuotationComponent },
     { 
