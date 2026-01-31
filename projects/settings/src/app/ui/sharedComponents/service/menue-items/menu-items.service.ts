@@ -51,7 +51,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Procurement',
-      code: 'PROCUREMENT',
+      code: 'optimaXProcurement',
       route: this.navigationLink.getLink('procurementLink'),
       icon: 'fas fa-shopping-cart',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -372,7 +372,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Expense',
-      code: 'EXPENSE',
+      code: 'optimaXExpense',
       icon: 'fas fa-money-bill-wave',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The Expense module of OptimaXSuites enables businesses to track and manage all types of financial outflows including reimbursements, cash advances, and expense reporting.',
@@ -406,7 +406,7 @@ export class MenuItemsService {
           description: 'Manage advance payment requests and track their utilization.'
         },
         {
-          label: 'Reports',
+          label: 'Report',
           code: 'EXP_RPT',
           route: this.navigationLink.getLink('expenseReportLink'),
           roles: ['ROLE_USER'],
@@ -495,7 +495,7 @@ export class MenuItemsService {
     },
     {
       label: 'Procurement',
-      code: 'Procurement',
+      code: 'optimaXProcurement',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('vendorSettings'),
 
@@ -594,7 +594,7 @@ export class MenuItemsService {
     },
     {
       label: 'Expense',
-      code: 'Expense',
+      code: 'optimaXExpense',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('expenseSettings'),
 
