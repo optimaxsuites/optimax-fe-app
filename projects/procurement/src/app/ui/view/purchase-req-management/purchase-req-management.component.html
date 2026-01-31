@@ -21,7 +21,7 @@
 
       <ng-template pTemplate="right">
         <app-button
-          text="Create PR"
+          text="Create Purchase Requisition"
           class="btn-navigate"
           (click)="openForm()"
         ></app-button>
@@ -32,18 +32,18 @@
     <p-table
       [value]="purchaseReqList"
       [paginator]="true"
-      styleClass="p-datatable-striped"
+      styleClass="p-striped"
       [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
       [rows]="15"
     >
       <ng-template pTemplate="header">
-        <!-- Table header here -->
         <tr class="">
           <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-          <th class="table-item" pSortableColumn="title">Project Title</th>
-          <th class="table-item" pSortableColumn="location">RFQ No</th>
-          <th class="table-item" pSortableColumn="postedDate">Date</th>
-          <th class="table-item" pSortableColumn="expiryDate">Due Date</th>
+          <th class="table-item" pSortableColumn="title">Title</th>
+          <th class="table-item" pSortableColumn="prmNo">PRM No</th>
+          <th class="table-item" pSortableColumn="department">Department</th>
+          <th class="table-item" pSortableColumn="department">Budget Cap Amount</th>
+          <th class="table-item" pSortableColumn="requiredDate">Required By Date</th>
           <th class="table-item" pSortableColumn="expiryDate">Status</th>
           <th class=""></th>
         </tr>
@@ -51,15 +51,16 @@
       <ng-template pTemplate="body" let-item>
         <tr class="p-table-row">
           <td><p-tableCheckbox [value]="item" /></td>
-          <!-- <td class="table-item">{{ item.projectTitle }}</td>
-                    <td class="table-item">{{ item.rfqNo }}</td>
-                    <td class="table-item">{{ item.date }}</td>
-                    <td class="table-item">{{ item.dueDate }}</td> -->
-          <!-- <td class="table-item">
+          <td class="table-item">{{ item.title }}</td>
+                    <td class="table-item">{{ item.prmNo }}</td>
+                    <td class="table-item">{{ item.department }}</td>
+                    <td class="table-item">{{ item.budgetCapAmount }}</td>
+                    <td class="table-item">{{ item.requiredByDate }}</td>
+          <td class="table-item">
                         <span [ngClass]="getStatusClass(item.status)">
                           {{ item.status }} 
                         </span>
-                    </td> -->
+                    </td>
           <td class="actions">
             <i
               class="pi pi-ellipsis-v table-item"
@@ -67,21 +68,14 @@
             ></i>
             <p-overlayPanel #op ngClass="padding: 0;">
               <div>
-                <!-- <li class="table-item-panel" (click)="viewRfq(item)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                                <li class="table-item-panel" (click)="editRfq(item)"> <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
-                                <li class="table-item-panel" (click)="deleteRfq(item.id)"> <i class="pi pi-trash table-item me-2"></i>Delete</li> -->
+                <li class="table-item-panel" > <i class="pi pi-eye table-item me-2"></i> View</li>
+                <li class="table-item-panel" > <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
+                <li class="table-item-panel" > <i class="pi pi-trash table-item me-2"></i>Delete</li>
               </div>
             </p-overlayPanel>
           </td>
         </tr>
       </ng-template>
-      <!-- <ng-template pTemplate="emptymessage">
-                <tr>
-                    <td colspan="8" class="text-center table-item py-4"> 
-                        No Request for Quotation
-                    </td>
-                  </tr>
-            </ng-template> -->
       <ng-template pTemplate="emptymessage">
         <tr>
           <td colspan="8" class="text-center py-5">
@@ -118,5 +112,5 @@
 </div>
 
 <div class="rfq-form-container" *ngIf="purchaseReqForm">
-    <app-pr-create [purchaseReqData]="activeItem" (back)="close()" [isView]="isView" [isCreate]="isCreate" [isEdit]="isEdit" [isRfq]="true" [isQuote]="false"></app-pr-create>
+    <app-pr-create (submitForm)="onPrSaved($event)" [purchaseReqData]="activeItem" (back)="close()" [isView]="isView" [isCreate]="isCreate" [isEdit]="isEdit" [isRfq]="true" [isQuote]="false"></app-pr-create>
 </div>

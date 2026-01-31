@@ -77,6 +77,11 @@ import { VendorQuoteListComponent } from './ui/view/vendor/vendor-quote-list/ven
 import { VendorRfqListComponent } from './ui/view/vendor/vendor-rfq-list/vendor-rfq-list.component';
 import { PurchaseReqManagementComponent } from './ui/view/purchase-req-management/purchase-req-management.component';
 import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/pr-create.component';
+import { PrApprovalInboxComponent } from './ui/view/purchase-req-management/pr-approval-inbox/pr-approval-inbox.component';
+
+import { MessageService } from 'primeng/api';
+
+
 
 
 @NgModule({
@@ -102,7 +107,8 @@ import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/p
     VendorQuoteListComponent,
     VendorRfqListComponent,
     PurchaseReqManagementComponent,
-    PrCreateComponent
+    PrCreateComponent,
+    PrApprovalInboxComponent
   ],
   imports: [
     // BrowserModule,
@@ -159,7 +165,9 @@ import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/p
     LargeSideModalComponent,
 
   ],
-  providers: [],
+  providers: [
+    MessageService,
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -8,6 +8,7 @@ import { DispatchNoteComponent } from './dispatch-note/dispatch-note.component';
 import { IncomingComponent } from './lpo/incoming/incoming.component';
 import { OutgoingComponent } from './lpo/outgoing/outgoing.component';
 import { PurchaseReqManagementComponent } from './purchase-req-management/purchase-req-management.component';
+import { PrApprovalInboxComponent } from './purchase-req-management/pr-approval-inbox/pr-approval-inbox.component';
 
 @Component({
   selector: 'app-procurement.page',
@@ -17,6 +18,7 @@ import { PurchaseReqManagementComponent } from './purchase-req-management/purcha
 export class ProcurementPageComponent {
   tabsConfig: TabConfig[] = [
     { name: 'PRM', component: PurchaseReqManagementComponent },
+    { name: 'Approvals', component: PrApprovalInboxComponent },
 
 
 

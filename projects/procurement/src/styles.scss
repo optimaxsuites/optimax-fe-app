@@ -4,20 +4,22 @@
 @import "../node_modules/primeng/resources/primeng.css";
 @import "../node_modules/primeicons/primeicons.css";
 
-@import "assets/theme/theme.scss";
+
 
 
 
 @import "@ng-select/ng-select/themes/default.theme.css";
 
+
 @import "../node_modules/quill/dist/quill.core.css";
 @import "../node_modules/quill/dist/quill.snow.css";
+
+@import "./assets/theme/theme.scss";
 
 
 html{
   font-size: 10px;
 }
-
 
 .card{
 border: 1px solid rgb(224, 224, 224);
