@@ -1,12 +1,14 @@
 <div
-  class="font-sans antialiased text-gray-800 bg-gray-50 min-h-screen p-6 text-2xl font-extrabold"
+  class="font-sans antialiased text-gray-800 bg-gray-50 min-h-screen p-6 text-2xl"
   [attr.aria-hidden]="showInformation ? 'true' : null"
   [class.pointer-events-none]="showInformation"
   [class.overflow-hidden]="showInformation"
 >
   <div *ngIf="tableSection" class=" mt-8 space-y-8">
-    <div class="gap-3 w-full flex justify-between items-center">
+      <div class="gap-3 w-full flex justify-between items-center">
       <div class="flex gap-3">
+        <div>
+        <p class="text-sm">Category:</p>
         <ng-select
           [items]="categories"
           bindLabel="name"
@@ -17,7 +19,10 @@
           (ngModelChange)="applyFilters()"
         >
         </ng-select>
+        </div>
 
+        <div>
+        <p class="text-sm">Branch:</p>
         <ng-select
         *ngIf="superUser"
           [items]="branches"
@@ -28,6 +33,21 @@
           (ngModelChange)="onBranchChange($event)"
         >
         </ng-select>
+           </div>
+
+        <div>
+        <p class="text-sm">Status:</p>
+        <ng-select
+          [items]="status"
+          bindLabel="name"
+          bindValue="id"
+          placeholder="Branches"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onStatusChange($event)"
+        >
+        </ng-select>
+        </div>
+       
       </div>
 
       <div class="w-1/2 flex gap-2">
@@ -62,6 +82,7 @@
           </div>
         </div>
       </div>
+    
     </div>
 
     <div class="bg-white rounded-xl shadow-sm p-8 mt-4">
