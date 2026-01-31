@@ -51,11 +51,11 @@
                     <td class="table-item">{{ item.rfqNo }}</td>
                     <td class="table-item">{{ item.date }}</td>
                     <td class="table-item">{{ item.dueDate }}</td>
-                    <!-- <td class="table-item">
+                    <td class="table-item">
                         <span [ngClass]="getStatusClass(item.status)">
                           {{ item.status }} 
                         </span>
-                    </td> -->
+                    </td>
                     <td class="actions">
                         <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                         <p-overlayPanel #op ngClass="padding: 0;">

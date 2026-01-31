@@ -1,5 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { PrStorageService } from '../../../service/pr-storage.service';
+import { PrApprovalWorkflowService } from '../../../service/pr-approval-workflow.service';
+import { PurchaseRequisitionLS } from '../../../domain/procurement.dto';
+
 
 type PRStatus = 'Draft' | 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected' | 'Cancelled' | 'Converted';
 
@@ -7,18 +12,19 @@ type PRStatus = 'Draft' | 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected' 
   selector: 'app-pr-create',
   templateUrl: './pr-create.component.html',
   styleUrls: ['./pr-create.component.scss'],
+  providers: [MessageService, ConfirmationService]
 })
 export class PrCreateComponent {
    @Input() isCreate? : boolean;
     @Input() isRfq? : boolean;
     @Input() isQuote? : boolean;
-    @Output() submitFrom = new EventEmitter<any>();
+    @Output() submitForm = new EventEmitter<any>();
     @Input() purchaseReqData: any = {};
     @Input() isEdit!: boolean; 
     @Input() isView!: boolean; 
   status: PRStatus = 'Draft';
 
-  // Replace with real data from API later
+
   departments = [
     { id: 'd1', name: 'Operations' },
     { id: 'd2', name: 'Finance' },
@@ -41,19 +47,21 @@ export class PrCreateComponent {
 
   form: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private store: PrStorageService,
+    private workflow: PrApprovalWorkflowService,
+    private messageService: MessageService
+  ) {
     this.form = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(120)]],
       departmentId: ['', Validators.required],
       costCenterId: ['', Validators.required],
       budgetCodeId: ['', Validators.required],
-
       requiredByDate: ['', Validators.required],
       justification: ['', [Validators.required, Validators.maxLength(2000)]],
-
       currency: ['NGN', Validators.required],
       budgetCapAmount: [0, [Validators.required, Validators.min(1)]],
-
       items: this.fb.array([this.createItem()]),
     });
   }
@@ -63,14 +71,14 @@ export class PrCreateComponent {
   }
 
   createItem(): FormGroup {
-    console.log(this.fb.group.name)
     return this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(200)]],
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unitOfMeasure: ['pcs', Validators.required],
-      category: [''], // optional (can become categoryId later)
+      category: [''], 
     });
+    console.log(this.fb.group);
   }
 
   addItem() {
@@ -88,7 +96,6 @@ export class PrCreateComponent {
     return this.budgetCodes.filter(x => x.costCenterId === ccId);
   }
 
-  // UI helpers
   itemCount(): number {
     return this.items.length;
   }
@@ -109,21 +116,229 @@ export class PrCreateComponent {
     return selected >= today;
   }
 
-  saveDraft() {
-    this.status = 'Draft';
-    this.form.markAllAsTouched();
-    if (this.form.invalid || !this.requiredDateValid()) return;
 
-    // frontend-only: later call API
-    alert('Saved as Draft (frontend-only).');
+  // submit() {
+  //   this.status = 'Submitted';
+  //   this.form.markAllAsTouched();
+  //   if (this.form.invalid || !this.requiredDateValid()) return;
+  //   alert('Submitted for approval.');
+  // }
+
+//   submit() {
+//   this.status = 'Submitted';
+
+//   // mark all fields so validation shows
+//   this.form.markAllAsTouched();
+
+//   if (this.form.invalid || !this.requiredDateValid()) {
+//     console.warn('Form is invalid. Fix errors before submitting.');
+//     return;
+//   }
+
+//   // ✅ full raw form value (includes items array)
+//   const formData = this.form.getRawValue();
+
+//   console.group('📦 Purchase Requisition Submit Payload');
+//   console.log('PR Header:', {
+//     title: formData.title,
+//     departmentId: formData.departmentId,
+//     costCenterId: formData.costCenterId,
+//     budgetCodeId: formData.budgetCodeId,
+//     requiredByDate: formData.requiredByDate,
+//     justification: formData.justification,
+//     currency: formData.currency,
+//     budgetCapAmount: formData.budgetCapAmount,
+//     status: this.status,
+//   });
+
+//   console.log('PR Items:', formData.items);
+
+//   console.log('Full Payload:', formData);
+//   console.groupEnd();
+
+//   // later this is where API call will go
+//   // this.procurementService.submitPR(formData).subscribe(...)
+// }
+// submit() {
+//   this.status = 'Submitted';
+
+//   this.form.markAllAsTouched();
+
+//   if (this.form.invalid || !this.requiredDateValid()) {
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Invalid Form',
+//       detail: 'Please fix validation errors before submitting.',
+//       life: 4000
+//     });
+//     return;
+//   }
+
+//   const formData = this.form.getRawValue();
+//   const STORAGE_KEY = 'erp.purchaseRequisitions';
+
+//   const prmNo = `PR-${Date.now()}`;
+
+//   const prPayload = {
+//     id: crypto.randomUUID(),
+//     prmNo,
+//     title: formData.title,
+//     department: formData.departmentId,
+//     costCenterId: formData.costCenterId,
+//     budgetCodeId: formData.budgetCodeId,
+//     requiredByDate: formData.requiredByDate,
+//     justification: formData.justification,
+//     currency: formData.currency,
+//     budgetCapAmount: formData.budgetCapAmount,
+//     status: this.status = 'Submitted',
+//     createdAt: new Date().toISOString(),
+//     items: formData.items
+//   };
+
+//   const existingRaw = localStorage.getItem(STORAGE_KEY);
+//   const existingPRs = existingRaw ? JSON.parse(existingRaw) : [];
+
+//   existingPRs.push(prPayload);
+//   localStorage.setItem(STORAGE_KEY, JSON.stringify(existingPRs));
+
+//   console.group('💾 Purchase Requisition Saved');
+//   console.log(prPayload);
+//   console.groupEnd();
+
+//   // ✅ SUCCESS TOAST
+//   this.messageService.add({
+//     severity: 'success',
+//     summary: 'Purchase Requisition Saved',
+//     detail: `PR ${prmNo} has been saved successfully.`,
+//     life: 4000
+//   });
+
+//   this.submitForm.emit(prPayload)
+
+//   this.resetForm()
+
+// }
+
+submit() {
+  this.status = 'Submitted';
+  this.form.markAllAsTouched();
+
+  if (this.form.invalid || !this.requiredDateValid()) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Form',
+      detail: 'Please fix validation errors before submitting.',
+      life: 4000
+    });
+    return;
   }
 
-  submit() {
-    this.status = 'Submitted';
-    this.form.markAllAsTouched();
-    if (this.form.invalid || !this.requiredDateValid()) return;
+  const formData = this.form.getRawValue();
 
-    // frontend-only: later call API
-    alert('Submitted for approval (frontend-only).');
-  }
+  // Mock userId for now (replace later with auth)
+  const requesterUserId = 'u-requester-1';
+
+  const prmNo = `PR-${Date.now()}`;
+
+  const pr: PurchaseRequisitionLS = {
+    id: crypto.randomUUID(),
+    prmNo,
+    title: formData.title,
+
+    department: formData.departmentId,
+    costCenterId: formData.costCenterId,
+    budgetCodeId: formData.budgetCodeId,
+
+    requiredByDate: formData.requiredByDate,
+    justification: formData.justification,
+
+    currency: formData.currency,
+    budgetCapAmount: formData.budgetCapAmount,
+
+    status: 'Submitted',
+    createdAt: new Date().toISOString(),
+
+    items: formData.items,
+
+    auditTrail: [
+      { action: 'CREATED', by: requesterUserId, at: new Date().toISOString() }
+    ]
+  };
+
+  // 1) Save PR to storage
+  this.store.add(pr);
+
+  // 2) Start workflow (adds approval steps, moves to UnderReview, adds SUBMITTED audit)
+  this.workflow.submitForApproval(pr.id, requesterUserId);
+
+  this.messageService.add({
+    severity: 'success',
+    summary: 'PR Created',
+    detail: `PR ${prmNo} submitted for approval.`,
+    life: 4000
+  });
+
+  // 3) Notify parent table to refresh (without closing)
+  this.submitForm.emit(pr);
+
+  // 4) Clear the form
+  this.resetForm();
+}
+
+
+saveDraft() {
+  this.status = 'Draft';
+
+  const STORAGE_KEY = 'erp.purchaseRequisitions';
+  const formData = this.form.getRawValue();
+
+  const prPayload = {
+    id: crypto.randomUUID(),
+    prmNo: `PR-${Date.now()}`,
+    title: formData.title || '(Draft)',
+    department: formData.departmentId,
+    budgetCapAmount: formData.budgetCapAmount,
+    status: this.status,
+    createdAt: new Date().toISOString(),
+    items: formData.items
+  };
+
+  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  existing.push(prPayload);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+
+  this.messageService.add({
+    severity: 'info',
+    summary: 'Draft Saved',
+    detail: 'Purchase Requisition draft saved locally.',
+    life: 3000
+  });
+
+  this.submitForm.emit(prPayload)
+
+  this.resetForm()
+
+}
+
+resetForm() {
+  // Reset status
+  this.status = 'Draft';
+
+  // Reset the whole form (except defaults)
+  this.form.reset({
+    currency: 'NGN',
+    budgetCapAmount: 0
+  });
+
+  // Clear items FormArray completely
+  this.items.clear();
+
+  // Add one fresh empty item row
+  this.items.push(this.createItem());
+
+  // Optional: mark form as pristine
+  this.form.markAsPristine();
+  this.form.markAsUntouched();
+}
+
 }
