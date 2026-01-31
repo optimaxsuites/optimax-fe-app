@@ -8,6 +8,10 @@ export interface UpcProduct {
   images?: string[];
 }
 
+// 012345678905
+// 123456789012
+// 000000000000
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,7 +19,7 @@ export interface UpcProduct {
 
 export class UpcLookupService {
 
-   private API_URL = 'https://sheba-n8n.duckdns.org/webhook/e3c31105-48c4-4b27-aa34-078dabd85936';
+   private API_URL = 'https://n8n.royalvilletechnologies.com/webhook/e3c31105-48c4-4b27-aa34-078dabd85936';
 
   constructor() {}
 

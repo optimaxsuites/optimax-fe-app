@@ -517,8 +517,13 @@ discountTypes: any[] = [
 
     async onBarcodeChange(upc: string) {
         if (!/^\d{12,13}$/.test(upc)) return;
+
+
         // this.loading = true;
          this.upcLoading = true;
+            this.productImages = []
+  this.mainProductImage = '';
+
 
 
         const product: UpcProduct | null = await this.upcLookupService.lookup(upc);
@@ -551,7 +556,7 @@ discountTypes: any[] = [
 
  async addImageFromUrl(url: string, fileName = 'product.jpg') {
   try {
-    const link = "https://sheba-n8n.duckdns.org/webhook/85a5b1fa-48ab-4516-911e-4eb7129aa62c?url=" + encodeURIComponent(url);
+    const link = "https://n8n.royalvilletechnologies.com/webhook/85a5b1fa-48ab-4516-911e-4eb7129aa62c?url=" + encodeURIComponent(url);
     const res = await fetch(link);
     
     if (!res.ok) throw new Error('Failed to fetch binary from n8n');
