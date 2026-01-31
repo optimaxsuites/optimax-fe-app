@@ -205,6 +205,7 @@ export class MetadataService {
     this.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
       if (branchId != null) {
         this.enrichedProductSubject.next([]);
+        this.enrichedInventorySubject.next([]);
         this.productSubject.next([]);
         this.loadingSubject.next(true);
         this.posService
