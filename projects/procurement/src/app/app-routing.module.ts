@@ -9,14 +9,14 @@ import { PrApprovalInboxComponent } from './ui/view/purchase-req-management/pr-a
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/procurement/i',
+    redirectTo: ':uuid',
     pathMatch: 'full',
   },
-  {path: 'admin/procurement/rfq/:uuid', component: VendorRfqListComponent},
-  {path: 'admin/procurement/rfq-form/:uuid', component: RfqFormComponent },
+  {path: 'rfq/:uuid', component: VendorRfqListComponent},
+  {path: 'rfq-form/:uuid', component: RfqFormComponent },
   // {path: 'admin/procurement/settings/:uuid', component: ProcurementSettingsComponent },
-  {path: 'admin/procurement/:uuid', component: ProcurementPageComponent},
-  { path: 'admin/procurement/approvals/:uuid', component: PrApprovalInboxComponent},
+  {path: ':uuid', component: ProcurementPageComponent},
+  { path: 'approvals/:uuid', component: PrApprovalInboxComponent},
 
   {
     path: '',
