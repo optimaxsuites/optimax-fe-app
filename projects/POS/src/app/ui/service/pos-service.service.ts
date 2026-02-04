@@ -511,7 +511,7 @@ deleteTax(id: any): Observable<any> {
   getTableOrderStatuses() {
     return this.http
       .get<TableOrderStatusGET[]>(
-        this.getBaseApiUrl() + '/x/api/v2/pos/tableOrderStatuses'
+        this.getBaseApiUrl() + '/x/api/v2/pos/tableOrderStatuses?page=1&size=80'
       )
       .pipe(
         catchError(this.handleError),
