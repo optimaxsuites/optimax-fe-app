@@ -8,10 +8,12 @@ import { IncomeStatementComponent } from './ui/view/reports/income-statement/inc
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
-import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
-import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/general-reconcilation.component';
-
+import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-reconciliation.component';
+import { GeneralReconciliationComponent } from './ui/view/general-reconciliation/general-reconciliation.component';
+import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconciliation-tab.component';
+import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/reconciliation-kanban.component';
+import { GeneralTransactionsComponent } from './ui/view/general-transactions/general-transactions.component';
 
 const routes: Routes = [
   {
@@ -20,36 +22,48 @@ const routes: Routes = [
     pathMatch: 'full',
   },
   {
-      path: 'transaction/:uuid',
-      component: AccountingPageComponent,
-    },
-    {
-      path: 'reconcillation/:uuid',
-      component: GeneralReconcilationComponent,
-    },
-    {
-      path: 'admin/quotation-form/:id',
-      component: QuotationModalComponent,
-    },
-    // {
-    //   path: 'general-reconcilation/:uuid',
-    //   component: GeneralReconcilationComponent
-    // },
+    path: 'transaction/:uuid',
+    component: AccountingPageComponent,
+  },
+  {
+    path: 'reconciliation/:uuid',
+    component: GeneralReconciliationComponent,
+  },
+  {
+    path: 'admin/quotation-form/:id',
+    component: QuotationModalComponent,
+  },
+  {
+    path: 'admin/bankreconciliation/:id',
+    component: BankReconciliationComponent,
+  },
+  {
+    path:'admin/reconciliation-tab',
+    component: ReconciliationTabComponent
+  },
+  {
+    path: 'reconciliation-kanban',
+    component: ReconciliationKanbanComponent
+  },
+  {
+    path: 'general-transactions',
+    component: GeneralTransactionsComponent
+  },
 
   { path: 'reports', component: AccountingReportsComponent },
   { path: 'reports/balance-sheet', component: BalanceSheetComponent },
   { path: 'reports/income-statement', component: IncomeStatementComponent },
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
-   { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
+  { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
   // ...other routes
-     { 
-      path: 'reports/:uuid',
-       component: ReportTabsComponent 
-      },
-  // { 
+  {
+    path: 'reports/:uuid',
+    component: ReportTabsComponent,
+  },
+  // {
   //   path: 'reports/balance-sheet',
-  //    component: BalanceSheetComponent 
+  //    component: BalanceSheetComponent
   //   },
   // {
   //    path: 'reports/income-statement',
@@ -57,19 +71,17 @@ const routes: Routes = [
   //    },
   // {
   //    path: 'reports/cash-flow',
-  //     component: CashFlowComponent 
+  //     component: CashFlowComponent
   //   },
-  // { 
-  //   path: 'reports/tax-summary', 
+  // {
+  //   path: 'reports/tax-summary',
   //   component: TaxSummaryComponent
   //  },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
-
-    
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

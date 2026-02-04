@@ -1,12 +1,12 @@
 <div class="min-h-screen bg-gray-50 p-6">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-4xl font-bold text-customBlue">🏦 Sales Reconciliation</h1>
+    <h1 class="text-4xl font-bold text-customBlue"><i class="pi pi-database" style="font-size: 2rem"></i> Sales Reconciliation</h1>
   </div>
 
   <!-- Filters Section -->
   <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <h2 class="text-2xl font-semibold text-customBlue mb-4">🔍 Filters</h2>
+    <h2 class="text-2xl font-semibold text-customBlue mb-4"><i class="pi pi-search"></i> Filters</h2>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
       <!-- Bank Selector -->
       <div>
@@ -73,16 +73,122 @@
 
     <!-- Active Bank Info -->
     <div class="mt-6 p-5 bg-blue-50 rounded-xl border">
-      <p class="text-lg font-medium text-customBlue">
+
+      <!-- importing statements goes here -->
+        <div class="mb-4">
+        <div class="relative inline-block text-left">
+          <button 
+            type="button" 
+            (click)="toggleImportDropdown()"
+            class="inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue"
+            id="import-menu-button" 
+            aria-expanded="true" 
+            aria-haspopup="true">
+            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Import Statements
+            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <!-- Dropdown menu -->
+          <div 
+            *ngIf="showImportDropdown"
+            class="origin-top-right absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10"
+            role="menu" 
+            aria-orientation="vertical" 
+            aria-labelledby="import-menu-button" 
+            tabindex="-1">
+            <div class="py-1" role="none">
+              <button 
+                (click)="importFile('excel')"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem" 
+                tabindex="-1">
+                <svg class="mr-3 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </button>
+              <button 
+                (click)="importFile('pdf')"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem" 
+                tabindex="-1">
+                <svg class="mr-3 h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                PDF
+              </button>
+              <button 
+                (click)="importFile('csv')"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                role="menuitem" 
+                tabindex="-1">
+                <svg class="mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Imported PDFs Section -->
+      <div *ngIf="importedFiles.length > 0" class="mt-4">
+        <h3 class="text-lg font-medium text-customBlue mb-2">Imported Statements</h3>
+        <div class="space-y-3">
+          <div *ngFor="let file of importedFiles" class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div class="flex items-center">
+              <svg class="h-6 w-6 text-red-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <div>
+                <p class="text-sm font-medium text-gray-900">{{file.name}}</p>
+                <p class="text-xs text-gray-500">Uploaded: {{file.uploadDate}}</p>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button 
+                (click)="viewFile(file)"
+                class="text-customBlue hover:text-customBlueHover">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+              <button 
+                (click)="removeFile(file)"
+                class="text-red-500 hover:text-red-700">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- <p class="text-lg font-medium text-customBlue">
         <span class="font-bold">Active Bank:</span> {{selectedBank.name}} • 
         <span class="font-bold">Account:</span> {{selectedAccount}} • 
         <span class="font-bold">Reconciling:</span> 15 Jan 2024 → 15 Jan 2024
-      </p>
+      </p> -->
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+      <!-- <p class="text-lg font-medium text-customBlue">
+        <span class="font-bold">Active Bank:</span> {{selectedBank.name}} • 
+        <span class="font-bold">Account:</span> {{selectedAccount}} • 
+        <span class="font-bold">Reconciling:</span> 15 Jan 2024 → 15 Jan 2024
+      </p> -->
+
+  <!-- Summary Cards (5 cards) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
     <!-- Matched -->
     <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-customGreen">
       <h3 class="text-base font-medium text-gray-500 mb-2">Total Matched</h3>
@@ -99,6 +205,18 @@
     <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-red-500">
       <h3 class="text-base font-medium text-gray-500 mb-2">Unmatched Transactions</h3>
       <p class="text-3xl font-bold text-red-600">{{formatCurrency(summary.unmatched)}}</p>
+    </div>
+
+    <!-- Partial Payments -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-orange-500">
+      <h3 class="text-base font-medium text-gray-500 mb-2">Partial Payments</h3>
+      <p class="text-3xl font-bold text-orange-600">{{formatCurrency(summary.partial)}}</p>
+    </div>
+
+    <!-- Overpayments -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-purple-500">
+      <h3 class="text-base font-medium text-gray-500 mb-2">Overpayments</h3>
+      <p class="text-3xl font-bold text-purple-600">{{formatCurrency(summary.overpaid)}}</p>
     </div>
   </div>
 
@@ -150,8 +268,14 @@
                   <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.type}}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{formatCurrency(transaction.amount)}}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" [class]="getStatusClass(transaction.status)">
+                    <span 
+                      class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" 
+                      [class]="getStatusClass(transaction.status)"
+                      [title]="transaction.status === 'Partial' && transaction.expectedAmount ? 'Paid: ' + formatCurrency(transaction.amount) + ' | Expected: ' + formatCurrency(transaction.expectedAmount) : 
+                               transaction.status === 'Overpaid' && transaction.expectedAmount ? 'Paid: ' + formatCurrency(transaction.amount) + ' | Expected: ' + formatCurrency(transaction.expectedAmount) : ''">
                       {{getStatusIcon(transaction.status)}} {{transaction.delay || transaction.status}}
+                      <span *ngIf="transaction.status === 'Partial' && transaction.expectedAmount"> ({{formatCurrency(transaction.amount)}}/{{formatCurrency(transaction.expectedAmount)}})</span>
+                      <span *ngIf="transaction.status === 'Overpaid' && transaction.expectedAmount"> (+{{formatCurrency(transaction.amount - transaction.expectedAmount)}})</span>
                     </span>
                   </td>
                 </tr>
@@ -195,8 +319,14 @@
                   <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{transaction.type}}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-base text-gray-700">{{formatCurrency(transaction.amount)}}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" [class]="getStatusClass(transaction.status)">
+                    <span 
+                      class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full" 
+                      [class]="getStatusClass(transaction.status)"
+                      [title]="transaction.status === 'Partial' && transaction.expectedAmount ? 'Paid: ' + formatCurrency(transaction.amount) + ' | Expected: ' + formatCurrency(transaction.expectedAmount) : 
+                               transaction.status === 'Overpaid' && transaction.expectedAmount ? 'Paid: ' + formatCurrency(transaction.amount) + ' | Expected: ' + formatCurrency(transaction.expectedAmount) : ''">
                       {{getStatusIcon(transaction.status)}} {{transaction.status}}
+                      <span *ngIf="transaction.status === 'Partial' && transaction.expectedAmount"> ({{formatCurrency(transaction.amount)}}/{{formatCurrency(transaction.expectedAmount)}})</span>
+                      <span *ngIf="transaction.status === 'Overpaid' && transaction.expectedAmount"> (+{{formatCurrency(transaction.amount - transaction.expectedAmount)}})</span>
                     </span>
                   </td>
                 </tr>
@@ -245,4 +375,3 @@
       </button>
     </div>
   </div>
-</div>
