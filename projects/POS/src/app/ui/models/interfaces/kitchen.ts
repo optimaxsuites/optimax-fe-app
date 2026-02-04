@@ -65,6 +65,9 @@ interface TableOrderStatusShared<TDateType> {
    * @maxLength 255
    */
   note: string;
+  water: any;
+  chef: any;
+  cashier: any;
 }
 
 /**

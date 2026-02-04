@@ -21,10 +21,10 @@
                 <h3 class="table-waiter-info">
                   <span class="table-number">Table {{ o.table }}</span>
                   <span class="waiter-separator">/</span>
-                  <span class="waiter-name current-user" *ngIf="currentUser">
-                    {{ currentUser.name }}
+                  <span class="waiter-name current-user" *ngIf="o.waiterName">
+                    {{ o.waiterName }}
                   </span>
-                  <span class="waiter-name not-specified" *ngIf="!currentUser">
+                  <span class="waiter-name not-specified" *ngIf="!o.waiterName">
                     Not specified
                   </span>
                 </h3>
@@ -300,10 +300,10 @@
             <h3 class="table-waiter-info">
               <span class="table-number">Table {{ o.table }}</span>
               <span class="waiter-separator">/</span>
-              <span class="waiter-name" *ngIf="o.waiterId">
-                {{ o.waiterId }}
+              <span class="waiter-name" *ngIf="o.waiterName">
+                {{ o.waiterName }}
               </span>
-              <span class="waiter-name not-specified" *ngIf="!o.waiterId">
+              <span class="waiter-name not-specified" *ngIf="!o.waiterName">
                 Not specified
               </span>
             </h3>
@@ -317,10 +317,10 @@
             <span class="note-icon">💬</span>
             <span class="note-text">Chef left a note</span>
           </div> -->
-          <div class="staff-info-mini" *ngIf="o.waiterId">
+          <div class="staff-info-mini" *ngIf="o.chefId">
             <span class="staff-icon">👤</span>
-            <span class="staff-role">Waiter:</span>
-            <span class="staff-name">{{ o.waiterId }}</span>
+            <span class="staff-role">chef:</span>
+            <span class="staff-name">{{ o.chefName }}</span>
           </div>
         </div>
 
@@ -332,7 +332,7 @@
       <div class="order-details" *ngIf="selectedOrder">
         <div class="order-details-header">
           <h3>
-            Table {{ selectedOrder.table }}/{{ selectedOrder.waiterId || 'No waiter' }} - 
+            Table {{ selectedOrder.table }}/{{ selectedOrder.waiterName || 'No waiter' }} - 
             Order {{ selectedOrder.orderNo }}
           </h3>
           <span class="badge" [ngClass]="selectedOrder.status.toLowerCase()">{{ selectedOrder.status }}</span>
@@ -493,7 +493,7 @@
                 <div class="table-waiter-combined">
                   <span class="table-number">Table {{ o.table }}</span>
                   <span class="waiter-separator">/</span>
-                  <span class="waiter-name" *ngIf="o.waiterId">{{ o.waiterId }}</span>
+                  <span class="waiter-name" *ngIf="o.waiterId">{{ o.waiterName }}</span>
                   <span class="waiter-name not-specified" *ngIf="!o.waiterId">No waiter</span>
                 </div>
               </td>
@@ -590,8 +590,8 @@
              <div class="customer-info">
               <h4>Staff Details</h4>
                <p><strong>Cashier:</strong> {{ getCashierName() || 'Not specified'}}</p>
-              <p><strong>Prepared By:</strong> {{ selectedOrder.chefId || 'Not specified' }}</p>
-              <p><strong>Waited By:</strong> {{ selectedOrder.waiterId || 'Not specified'}}</p>
+              <p><strong>Prepared By:</strong> {{ selectedOrder.chefName || 'Not specified' }}</p>
+              <p><strong>Waited By:</strong> {{ selectedOrder.waiterName || 'Not specified'}}</p>
 
             </div>
           </div>

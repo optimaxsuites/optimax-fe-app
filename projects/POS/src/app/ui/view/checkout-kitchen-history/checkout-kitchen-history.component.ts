@@ -610,12 +610,12 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
       total: order.total,
       grandTotal: order.grandTotal,
       tax: order.tax,
-      waiter: order.water,
-      chef: order.chef,
-      cashier: order.cashier,
-      waiterId: order.water?.id,
-      cashierId: order.cashier?.id,
-      chefId: order.chef?.id
+      waiter: tableOrder.water,
+      chef: tableOrder.chef,
+      cashier: tableOrder.cashier,
+      waiterId: tableOrder.water?.id,
+      cashierId: tableOrder.cashier?.id,
+      chefId: tableOrder.chef?.id
       // paymentStatus: 'PAID'
       
     }as Order;

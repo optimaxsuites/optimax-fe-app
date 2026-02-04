@@ -71,6 +71,9 @@ interface Order {
   waiterId: any,
   chefId: any,
   cashierId: any,
+  waiterName: string,
+  chefName: string,
+  cashierName: string,
   processedOn: string,
   readyOn: string, 
   completedOn: string
@@ -740,12 +743,14 @@ companyInfo = {
   // ===== CHEF ORDER PROCESSING =====
   async updateOrderByChef(order: Order, newStatus: 'PREPARING' | 'READY' | 'CONFIRMED') {
     try {
-      console.log(`👨‍🍳 Chef updating order ${order.orderNo} from ${order.status} to: ${newStatus}`);
+      console.log(`👨‍🍳 Chef updating order ${order.waiterId} from ${order.status} to: ${newStatus}`);
       
       // Update local status - chef can process UNPAID orders
+
+      
       
 
-      console.log(`✅ Order ${order.orderNo} status updated to: ${newStatus}`);
+      console.log(`✅ Order ${order} status updated to: ${newStatus}`);
       
       const payload = {
           id: order.backendId,
@@ -914,8 +919,12 @@ companyInfo = {
       paymentMethod: paymentMethod,
       backendId: tableStatus.id, // TableOrderStatus ID
       orderId: tableStatus.order?.id, // Order ID
-      waiterId: tableStatus.waterId,
-      chefId: tableStatus.chefId,
+      waiterId: tableStatus.water?.id,
+      chefId: tableStatus.chef?.id,
+      waiterName: tableStatus.water?.username,
+      chefName: tableStatus.chef?.username,
+      cashierId: tableStatus.cashier?.id,
+      cashierName: tableStatus.cashier?.username,
       orderStatus: tableStatus.order.orderStatus,
       orderedOn: tableStatus.orderedOn,
       grandTotal: tableStatus.order?.grandTotal,
