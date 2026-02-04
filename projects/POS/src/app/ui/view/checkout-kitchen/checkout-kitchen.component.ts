@@ -673,6 +673,8 @@ companyInfo = {
         totalPrice: item.total,
         // productVariantId: 0,
       })),
+      cashierId: this.currentUser?.id || 0,
+      isOnline: false,
       totalTax: this.getTax(),
       grandTotal: this.getGrandTotal(),
       quantity: 0,
@@ -845,7 +847,7 @@ companyInfo = {
     return this.orders.filter(o => 
       o.status === 'PENDING' || 
       o.status === 'PREPARING' || 
-      o.status === 'READY'
+      o.status === 'READY' || o.status === 'AWAITING_CONFIRMATION'
     );
   }
 
@@ -1700,7 +1702,7 @@ findCustomer() {
             next: () => {
               breakdownCount++; 
               if (breakdownCount === paymentBreakdownPayloads.length) { 
-                this.updateOrder(); 
+                this.updateOrder(paymentId); 
               } 
               }, 
             error: () => this.messageService.add({
@@ -1726,7 +1728,7 @@ findCustomer() {
   }
 
 
-  async updateOrder(){
+  async updateOrder(paymentId?: number) {
     const branchId = await firstValueFrom(this.metadataServices.selectedBranchId$);
     
     const orderPayload: any = {
@@ -1742,11 +1744,13 @@ findCustomer() {
             totalPrice: item.total,
             // productVariantId: 0,
           })),
+          isOnline: false,
           totalTax: this.selectedOrder?.tax,
           grandTotal: this.selectedOrder?.grandTotal,
           quantity: 0,
           deliveryStatus: "CONFIRMED",
-          paymentId: this.selectedOrder?.paymentId
+          cashierId: this.currentUser?.id || 0,
+          paymentId: paymentId ? paymentId : this.selectedOrder?.paymentId
         };
 
       try{

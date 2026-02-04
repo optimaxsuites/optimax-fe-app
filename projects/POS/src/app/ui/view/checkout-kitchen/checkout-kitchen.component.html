@@ -11,7 +11,7 @@
 
       <div class="waiter-container">
         <div class="order-list">
-          <div *ngFor="let o of orders" 
+          <div *ngFor="let o of activeChefOrders" 
                class="order-card" 
                [class.expanded]="expandedOrder === o"
                (click)="toggleOrderExpansion(o)">

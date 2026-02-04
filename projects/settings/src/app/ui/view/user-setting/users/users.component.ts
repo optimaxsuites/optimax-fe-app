@@ -141,6 +141,12 @@ fetchUsers(){
       ...user,
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.name ?? ''))
+      ),
+      userBranchName$: this.authenticationService.getUserBranch(user.id).pipe(
+        map(((roleObj: any) => roleObj?.branch.name ?? ''))
+      ),
+      userBranchId$: this.authenticationService.getUserBranch(user.id).pipe(
+        map(((roleObj: any) => roleObj?.branch.id ?? ''))
       )
     }));
 
@@ -432,93 +438,93 @@ assignRole(user: any, event: any){
 }
 
 assignBranch(user: any, event: any) {
-  // user.userBranchId$.pipe(
-  //   catchError(() => of(0))
-  // ).subscribe(branchId => {
-  //   const roleRequest = {
-  //     id: branchId || 0,
-  //     userId: user.id,
-  //     branchId: this.selectedBranch?.id
-  //   };
-
-  //   this.authenticationService.userBranchRole(roleRequest).subscribe({
-  //     next: () => {
-  //       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Branch assigned!' });
-  //       this.editCompensation(user, event);
-  //     },
-  //     error: () => {
-  //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign branch!' });
-  //     }
-  //   });
-  // });
-
-
-   this.authenticationService.getUserBranch(user.id).subscribe({
-    next: (response) => {
-      console.log("User application role:", response);
-      // this.selectedRole = response?.appRole || {};
-           const roleRequest = {
-      id: response.id || 0,
+  user.userBranchId$.pipe(
+    catchError(() => of(0))
+  ).subscribe((branchId: any) => {
+    const roleRequest = {
+      id: branchId || 0,
       userId: user.id,
       branchId: this.selectedBranch?.id
     };
 
-      this.authenticationService.userBranchRole(roleRequest).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Branch assigned successfully!',
-              key: 'tl',
-              life: 3000,
-            });
-            // this.editCompensation(user, event)
-            this.fetchUsers()
-          },
-          error: (err) => {
-            console.error(err);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Failed to assign branch, try again later!',
-              key: 'tl',
-              life: 3000,
-            });
-          }
-        })
-    },
-    error: (error) => {
-      console.error("Error fetching user branch:", error);
-      const roleRequest = {
-        userId: user.id,
-        branchId: this.selectedBranch?.id
-  }
-
-  this.authenticationService.userBranchRole(roleRequest).subscribe({
+    this.authenticationService.userBranchRole(roleRequest).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Branch assigned successfully!',
-          key: 'tl',
-          life: 3000,
-        });
-        // this.editCompensation(user, event)
-        this.fetchUsers()
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Branch assigned!' });
+        this.editCompensation(user, event);
       },
-      error: (err) => {
-        console.error(err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to assign branch, try again later!',
-          key: 'tl',
-          life: 3000,
-        });
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign branch!' });
       }
-    })
-    }
-  })
+    });
+  });
+
+
+  //  this.authenticationService.getUserBranch(user.id).subscribe({
+  //   next: (response) => {
+  //     console.log("User application role:", response);
+  //     // this.selectedRole = response?.appRole || {};
+  //          const roleRequest = {
+  //     id: response.id || 0,
+  //     userId: user.id,
+  //     branchId: this.selectedBranch?.id
+  //   };
+
+  //     this.authenticationService.userBranchRole(roleRequest).subscribe({
+  //         next: () => {
+  //           this.messageService.add({
+  //             severity: 'success',
+  //             summary: 'Success',
+  //             detail: 'Branch assigned successfully!',
+  //             key: 'tl',
+  //             life: 3000,
+  //           });
+  //           // this.editCompensation(user, event)
+  //           this.fetchUsers()
+  //         },
+  //         error: (err) => {
+  //           console.error(err);
+  //           this.messageService.add({
+  //             severity: 'error',
+  //             summary: 'Error',
+  //             detail: 'Failed to assign branch, try again later!',
+  //             key: 'tl',
+  //             life: 3000,
+  //           });
+  //         }
+  //       })
+  //   },
+  //   error: (error) => {
+  //     console.error("Error fetching user branch:", error);
+  //     const roleRequest = {
+  //       userId: user.id,
+  //       branchId: this.selectedBranch?.id
+  // }
+
+  // this.authenticationService.userBranchRole(roleRequest).subscribe({
+  //     next: () => {
+  //       this.messageService.add({
+  //         severity: 'success',
+  //         summary: 'Success',
+  //         detail: 'Branch assigned successfully!',
+  //         key: 'tl',
+  //         life: 3000,
+  //       });
+  //       // this.editCompensation(user, event)
+  //       this.fetchUsers()
+  //     },
+  //     error: (err) => {
+  //       console.error(err);
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: 'Failed to assign branch, try again later!',
+  //         key: 'tl',
+  //         life: 3000,
+  //       });
+  //     }
+  //   })
+  //   }
+  // })
 }
 
 
