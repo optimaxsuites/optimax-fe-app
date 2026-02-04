@@ -1,31 +1,77 @@
-/* Search input styling */
-.p-input-icon-left > i {
-  top: 50%;
-  transform: translateY(-50%);
-  left: 1rem;
+// Minimal custom styles for Chart of Accounts - most styling handled by TailwindCSS
+
+// Smooth animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.p-inputtext {
-  border-radius: 6px;
-  transition: border-color 0.3s, box-shadow 0.3s;
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.p-inputtext:enabled:hover {
-  border-color: #6366f1;
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
 }
 
-.p-inputtext:enabled:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.2);
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
 }
 
-/* Paginator styling */
-.p-paginator {
-  background: transparent;
-  border: none;
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
-  background: #6366f1;
-  border-color: #6366f1;
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #94a3b8;
+  }
+}
+
+// Smooth transitions
+button, input, select {
+  transition: all 0.2s ease-in-out;
+}
+
+// Focus states for accessibility
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid #2E6276;
+  outline-offset: 2px;
+}
+
+// Print styles
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+}
+
+// Table row transitions
+table tbody tr {
+  transition: background-color 0.15s ease;
 }

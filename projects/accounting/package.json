@@ -28,6 +28,7 @@
     "apexcharts": "^3.36.0",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "lucide-angular": "^0.528.0",
     "ng-apexcharts": "^1.7.4",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.11",

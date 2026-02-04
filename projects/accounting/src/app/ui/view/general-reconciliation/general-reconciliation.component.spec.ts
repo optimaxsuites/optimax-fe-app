@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { GeneralReconcilationComponent } from './general-reconcilation.component';
+import { GeneralReconciliationComponent } from './general-reconciliation.component';
 
 describe('GeneralReconcilationComponent', () => {
-  let component: GeneralReconcilationComponent;
-  let fixture: ComponentFixture<GeneralReconcilationComponent>;
+  let component: GeneralReconciliationComponent;
+  let fixture: ComponentFixture<GeneralReconciliationComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [GeneralReconcilationComponent]
+      declarations: [GeneralReconciliationComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(GeneralReconcilationComponent);
+    fixture = TestBed.createComponent(GeneralReconciliationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

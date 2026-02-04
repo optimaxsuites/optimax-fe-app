@@ -33,6 +33,7 @@ export interface City {
 export interface TabConfig {
   name: string;
   component: any;
+  icon?: string; // PrimeIcons class or Font Awesome class
   hasDropdown?: boolean;
   dropdownOptions?: DropdownOption[]; 
   role?: string

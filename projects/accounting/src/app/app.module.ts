@@ -16,7 +16,6 @@ import { SalesOrderComponent } from './ui/view/sales-order/sales-order.component
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-
 /////////////mat
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -37,7 +36,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
-
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 ///////primeng
 import { ButtonModule } from 'primeng/button';
@@ -63,10 +62,6 @@ import { RippleModule } from 'primeng/ripple';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
 
-
-
-
-
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularEditorModule } from '@kolkov/angular-editor';
@@ -81,7 +76,7 @@ import { AddShippingDetailsComponent } from './ui/view/add-shipping-details/add-
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
 import { HttpClientModule } from '@angular/common/http';
 import { TransactionsComponent } from './ui/view/transactions/transactions.component';
-import { NavTabComponent } from "./ui/sharedComponent/view/nav-tab/nav-tab.component";
+import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
 import { AccountingReportsComponent } from './ui/view/accounting-reports/accounting-reports.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-sheet.component';
@@ -97,17 +92,25 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { IncomeStatementChartsComponent } from './ui/view/reports/income-statement/income-statement-charts/income-statement-charts.component';
 import { IncomeStatementFilterComponent } from './ui/view/reports/income-statement/income-statement-filter/income-statement-filter.component';
 import { CalendarModule } from 'primeng/calendar';
-import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 import { AccordionModule } from 'primeng/accordion';
-import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component'
+import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
 import { Component, OnInit } from '@angular/core';
 import { DropdownModule } from 'primeng/dropdown';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { SalesReconcilationComponent } from './ui/view/sales-reconcilation/sales-reconcilation.component';
-import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/general-reconcilation.component'
+import { MessageService } from 'primeng/api';
+import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-reconciliation.component';
+import { SalesReconciliationComponent } from './ui/view/sales-reconciliation/sales-reconciliation.component';
+import { ReconciliationComponent } from './ui/view/reconcillation/reconciliation.component';
+import { GeneralReconciliationComponent } from './ui/view/general-reconciliation/general-reconciliation.component';
+import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconciliation-tab.component';
+import { ReconcileSalesComponent } from './ui/view/reconcile-sales/reconcile-sales.component';
+import { GeneralTransactionsComponent } from './ui/view/general-transactions/general-transactions.component';
+import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/reconciliation-kanban.component';
+import { TransferFundsComponent } from './ui/view/transfer-funds/transfer-funds.component';
+import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-accountant-ai.component';
 
 
 @NgModule({
@@ -140,10 +143,17 @@ import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/g
     TransactionSideModalComponent,
     IncomeStatementChartsComponent,
     IncomeStatementFilterComponent,
-    ReconcillationComponent,
+    BankReconciliationComponent,
+    ReconciliationComponent,
+    SalesReconciliationComponent,
+    GeneralReconciliationComponent,
     BankAccountOverviewComponent,
-    SalesReconcilationComponent,
-    GeneralReconcilationComponent
+    ReconciliationTabComponent,
+    ReconcileSalesComponent,
+    ReconciliationKanbanComponent,
+    GeneralTransactionsComponent,
+    TransferFundsComponent,
+    SmartAccountantAiComponent
   ],
   imports: [
     // BrowserModule,
@@ -221,9 +231,10 @@ import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/g
     DialogModule,
     TooltipModule,
     FileUploadModule,
-    ToggleButtonModule
-],
-  providers: [],
-  bootstrap: [AppComponent]
+    ToggleButtonModule,
+    DragDropModule,
+  ],
+  providers: [MessageService],
+  bootstrap: [AppComponent],
 })
-export class AppAccountingModule { }
+export class AppAccountingModule {}

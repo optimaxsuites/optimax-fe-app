@@ -1,12 +1,93 @@
-/* General styles */
+/* Tabs Section (Using reconciliation-kanban styling) */
+.tabs-section {
+  display: flex;
+  gap: 8px;
+  padding: 16px 32px;
+  background-color: #ffffff;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  border: none;
+  background-color: transparent;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 600; /* Bold text */
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+.tab-btn:hover {
+  background-color: #edf2f7;
+  color: #2d3748;
+}
+
+.tab-btn.active {
+  background-color: #2EB270;
+  color: #ffffff;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background-color: #2EB270;
+  border-radius: 3px 3px 0 0;
+}
+
+/* Dropdown menu positioning */
+.relative {
+  position: relative;
+}
+
+/* Dropdown styling */
+.dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  background-color: white;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+/* Tab content */
+.tab-content {
+  padding: 10px 16px;
+}
+
+/* OLD STYLES (commented for reference) */
+/* 
 .link-wrapper {
     display: flex;
-   
     padding: 0 16px;
- 
-  }
-  
-  .tab-btn {
+}
+
+.tab-btn {
     color: white;
     border: none;
     cursor: pointer;
@@ -14,47 +95,20 @@
     padding: 12px 24px;
     border-radius: 4px;
     @apply text-gray-600
-  }
-  
-  .tab-btn:hover {
-    @apply bg-gray-50 text-gray-700
-  }
+}
 
-  .active{
+.tab-btn:hover {
+    @apply bg-gray-50 text-gray-700
+}
+
+.active{
     border-bottom: 2px solid #008000;
     border-radius: 0px;
     @apply text-[#008000] 
-  }
-  
-  .settings-tab-menu {
+}
+
+.settings-tab-menu {
     position: relative;
     display: inline-block;
-  }
-  
-
-  
-  .dropdown-item {
-    display: block;
-    padding: 8px 16px;
-    background-color: white;
-    border: none;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    font-size: 14px;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  .dropdown-item:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .dropdown-item:last-child {
-    border-bottom: none;
-  }
-  
-  .tab-content {
-
-    padding: 10px 16px;
-  }
-  
+}
+*/

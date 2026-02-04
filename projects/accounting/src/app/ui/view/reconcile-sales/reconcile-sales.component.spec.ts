@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ReconcillationComponent } from './reconcillation.component';
+import { ReconcileSalesComponent } from './reconcile-sales.component';
 
-describe('ReconcillationComponent', () => {
-  let component: ReconcillationComponent;
-  let fixture: ComponentFixture<ReconcillationComponent>;
+describe('ReconcileSalesComponent', () => {
+  let component: ReconcileSalesComponent;
+  let fixture: ComponentFixture<ReconcileSalesComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ReconcillationComponent]
+      declarations: [ReconcileSalesComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(ReconcillationComponent);
+    fixture = TestBed.createComponent(ReconcileSalesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
