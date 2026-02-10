@@ -1,6 +1,6 @@
 /* General styles */
 :host {
-  --tab-bg: #f7f9fc;
+   --tab-bg: #f7f9fc;
   --tab-border: #e5e7eb;
   --tab-text: #475467;
   --tab-text-active: #4291b1;
@@ -53,11 +53,10 @@
   background: #f3f4f6;
   color: #1f2937;
   transform: translateY(-1px);
-  
 }
 
 .active {
-  border-color: #278e8e;
+  border-color: rgba(20, 184, 166, 0.35);
   background: #ecfeff;
   color: var(--tab-text-active);
   @apply text-[#0f766e];

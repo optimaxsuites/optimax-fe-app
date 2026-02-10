@@ -4,19 +4,19 @@
   <div class="balance-summary">
     <div class="balance-item">
       <span class="label">Original Amount:</span>
-      <span class="value">{{ loan?.loanAmount | currency:'₦':'symbol':'1.2-2' }}</span>
+      <span class="value">{{ loan.loanAmount | currency:'₦':'symbol':'1.2-2' }}</span>
     </div>
     
     <div class="balance-item">
       <span class="label">Current Balance:</span>
       <span class="value" [ngClass]="{'overdue': isOverdue}">
-        {{ loan?.currentBalance | currency:'₦':'symbol':'1.2-2' }}
+        {{ loan.currentBalance | currency:'₦':'symbol':'1.2-2' }}
       </span>
     </div>
     
     <div class="balance-item">
       <span class="label">Total Paid:</span>
-      <span class="value">{{ loan?.totalPaid | currency:'₦':'symbol':'1.2-2' }}</span>
+      <span class="value">{{ loan.totalPaid | currency:'₦':'symbol':'1.2-2' }}</span>
     </div>
     
     <div class="balance-item" *ngIf="nextPaymentDate && !isOverdue">
@@ -49,14 +49,14 @@
     
     <div class="progress-labels">
       <span>₦0</span>
-      <span>{{ loan?.loanAmount / 2 | currency:'₦':'symbol':'1.0-0' }}</span>
-      <span>{{ loan?.loanAmount | currency:'₦':'symbol':'1.0-0' }}</span>
+      <span>{{ loan.loanAmount / 2 | currency:'₦':'symbol':'1.0-0' }}</span>
+      <span>{{ loan.loanAmount | currency:'₦':'symbol':'1.0-0' }}</span>
     </div>
   </div>
   
   <!-- Status Indicators -->
   <div class="status-indicators">
-    <div class="indicator" [ngClass]="{'active': loan?.status === 'ACTIVE' && !isOverdue}">
+    <div class="indicator" [ngClass]="{'active': loan.status === 'ACTIVE' && !isOverdue}">
       <div class="indicator-dot active"></div>
       <span>Active</span>
     </div>
@@ -64,7 +64,7 @@
       <div class="indicator-dot overdue"></div>
       <span>Overdue</span>
     </div>
-    <div class="indicator" [ngClass]="{'active': loan?.status === 'COMPLETED'}">
+    <div class="indicator" [ngClass]="{'active': loan.status === 'COMPLETED'}">
       <div class="indicator-dot completed"></div>
       <span>Completed</span>
     </div>

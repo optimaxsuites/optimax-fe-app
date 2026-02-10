@@ -4,8 +4,8 @@
     
     <!-- Current Status Badge -->
     <div class="current-status">
-      <span class="status-badge" [style.background-color]="getStatusColor(loan?.status || '')">
-        {{ getStatusLabel(loan?.status || '') }}
+      <span class="status-badge" [style.background-color]="getStatusColor(loan.status || '')">
+        {{ getStatusLabel(loan.status || '') }}
       </span>
     </div>
   </div>
@@ -15,7 +15,7 @@
     <label>Change Status:</label>
     <div class="status-buttons">
       <button *ngFor="let status of statusOptions" 
-              [class.active]="loan?.status === status.value"
+              [class.active]="loan.status === status.value"
               [style.background-color]="status.color"
               (click)="changeStatus(status.value)">
         {{ status.label }}
@@ -54,15 +54,15 @@
         <span class="label">Submitted:</span>
         <!-- <span class="value">{{ loan?.dateSubmitted }}</span> | date: 'mediumDate' -->
       </div>
-      <div *ngIf="loan?.approvedDate" class="summary-item">
+      <div *ngIf="loan.approvedDate" class="summary-item">
         <span class="label">Approved:</span>
         <span class="value">{{ loan.approvedDate }}</span>
       </div>
-      <div *ngIf="loan?.startDate" class="summary-item">
+      <div *ngIf="loan.startDate" class="summary-item">
         <span class="label">Started:</span>
         <span class="value">{{ loan.startDate }}</span>
       </div>
-      <div *ngIf="loan?.endDate" class="summary-item">
+      <div *ngIf="loan.endDate" class="summary-item">
         <span class="label">Completed:</span>
         <span class="value">{{ loan.endDate }}</span>
       </div>

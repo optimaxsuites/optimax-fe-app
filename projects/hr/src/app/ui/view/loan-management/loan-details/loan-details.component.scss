@@ -1,0 +1,46 @@
+/* loan-details.component.scss */
+.approval-actions {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.approval-actions h3 {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-approve {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    
+    &:hover {
+        background-color: #218838;
+    }
+}
+
+.btn-reject {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    
+    &:hover {
+        background-color: #c82333;
+    }
+}

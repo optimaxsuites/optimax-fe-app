@@ -5,19 +5,56 @@
   <div class="summary-cards">
     <div class="summary-card">
       <h3>Total Loan</h3>
-      <p class="amount"><span>₦</span>{{ loan?.loanAmount }}</p>
-    </div>
+      <p class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</p>    </div>
     <div class="summary-card">
       <h3>Monthly Payment</h3>
-      <p class="amount"><span>₦</span>{{ loan?.monthlyRepayment }}</p>
+      <p class="amount">₦{{ loan.monthlyRepayment | number:'1.2-2' }}</p>
     </div>
     <div class="summary-card">
       <h3>Total Interest</h3>
-      <p class="amount"><span>₦</span>{{ getTotalInterest() }}</p>
+      <p class="amount">₦{{ getTotalInterest() | number:'1.2-2' }}</p>
     </div>
     <div class="summary-card">
       <h3>Total Payable</h3>
-      <p class="amount"><span>₦</span>{{ getTotalPayment() }}</p>
+      <p class="amount">₦{{ getTotalPayment() | number:'1.2-2' }}</p>
+    </div>
+  </div>
+  
+  <!-- Simple Visualization - Payment Breakdown Bars -->
+  <div class="visualization-container" *ngIf="paymentBreakdown.length > 0">
+    <h3>Payment Breakdown (Principal vs Interest)</h3>
+    <div class="visualization-legend">
+      <div class="legend-item">
+        <span class="legend-color principal"></span>
+        <span>Principal</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color interest"></span>
+        <span>Interest</span>
+      </div>
+    </div>
+    
+    <div class="bars-container">
+      <div *ngFor="let payment of paymentBreakdown.slice(0, 12)" class="month-bar">
+        <div class="bar-label">Month {{ payment.month }}</div>
+        <div class="bar-wrapper">
+          <div class="bar-segment principal" 
+               [style.height.%]="calculateBarHeight(payment.principal)"
+               [title]="'Principal: ₦' + payment.principal">
+          </div>
+          <div class="bar-segment interest" 
+               [style.height.%]="calculateBarHeight(payment.interest)"
+               [title]="'Interest: ₦' + payment.interest">
+          </div>
+        </div>
+        <div class="bar-total">
+          ₦{{ (payment.principal + payment.interest) | number:'1.0-0' }}
+        </div>
+      </div>
+    </div>
+    
+    <div class="visualization-note" *ngIf="paymentBreakdown.length > 12">
+      Showing first 12 months. Total period: {{ loan.repaymentPeriod }} months
     </div>
   </div>
   
@@ -25,29 +62,15 @@
   <div class="timeline-visual">
     <h3>Payment Timeline</h3>
     <div class="timeline">
-      <div *ngFor="let month of loan?.repaymentSchedule; let i = index" class="timeline-item">
+      <div *ngFor="let month of loan.repaymentSchedule; let i = index" class="timeline-item">
         <div class="timeline-dot" [ngClass]="getStatusClass(month.status)"></div>
         <div class="timeline-content">
           <span>Month {{ month.monthNumber }}</span>
           <small>{{ month.dueDate | date:'MMM yyyy' }}</small>
-          <div class="timeline-amount"><span>₦</span>{{ month.totalPayment }}</div>
+          <div class="timeline-amount">₦{{ month.totalPayment | number:'1.2-2' }}</div>
         </div>
         <div class="timeline-line" *ngIf="i < loan!.repaymentSchedule.length - 1"></div>
       </div>
-    </div>
-  </div>
-  
-  <!-- Chart (using Chart.js - you'll need to install it) -->
-  <div class="chart-container" *ngIf="chartData.length > 0">
-    <h3>Payment Breakdown</h3>
-    <div style="height: 300px;">
-      <canvas baseChart
-              [data]="chartData"
-              [labels]="chartLabels"
-              [options]="chartOptions"
-              [legend]="true"
-              [type]="'bar'">
-      </canvas>
     </div>
   </div>
   
@@ -68,13 +91,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of loan?.repaymentSchedule">
+          <tr *ngFor="let item of loan.repaymentSchedule">
             <td>{{ item.monthNumber }}</td>
             <td>{{ item.dueDate | date:'mediumDate' }}</td>
-            <td><span>₦</span>{{ item.principal }}</td>
-            <td><span>₦</span>{{ item.interest }}</td>
-            <td><span>₦</span>{{ item.totalPayment }}</td>
-            <td><span>₦</span>{{ item.remainingBalance }}</td>
+            <td>₦{{ item.principal | number:'1.2-2' }}</td>
+            <td>₦{{ item.interest | number:'1.2-2' }}</td>
+            <td>₦{{ item.totalPayment | number:'1.2-2' }}</td>
+            <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
             <td>
               <span class="payment-status" [ngClass]="getStatusClass(item.status)">
                 {{ item.status }}
@@ -88,9 +111,9 @@
         <tfoot>
           <tr>
             <td colspan="2"><strong>Totals</strong></td>
-            <td><strong><span>₦</span>{{ getTotalPrincipal() }}</strong></td>
-            <td><strong><span>₦</span>{{ getTotalInterest() }}</strong></td>
-            <td><strong><span>₦</span>{{ getTotalPayment() }}</strong></td>
+            <td><strong>₦{{ getTotalPrincipal() | number:'1.2-2' }}</strong></td>
+            <td><strong>₦{{ getTotalInterest() | number:'1.2-2' }}</strong></td>
+            <td><strong>₦{{ getTotalPayment() | number:'1.2-2' }}</strong></td>
             <td>-</td>
             <td>-</td>
           </tr>

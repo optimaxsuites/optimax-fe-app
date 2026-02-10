@@ -149,6 +149,16 @@ import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/sc
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { LoanBalanceIndicatorsComponent } from './ui/view/loan-management/loan-balance-indicators/loan-balance-indicators.component';
+import { RepaymentScheduleViewComponent } from './ui/view/loan-management/repayment-schedule-view/repayment-schedule-view.component';
+import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
+import { LoanDashboardComponent } from './ui/view/loan-management/loan-dashboard/loan-dashboard.component';
+import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
+import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
+import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval-ui/loan-approval-ui.component';
+import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
+import { StatusTrackingComponent } from './ui/view/loan-management/status-tracking/status-tracking.component';
+import { LoanComponent } from './ui/view/loan-management/loan.component';
 
 
 @NgModule({
@@ -240,7 +250,18 @@ import { MultiSelectModule } from 'primeng/multiselect';
     MySchedulesComponent,
     CreateProjectComponent,
     SchedulesComponent,
-    SchedulingComponent
+    SchedulingComponent,
+    LoanBalanceIndicatorsComponent,
+    RepaymentScheduleViewComponent,
+    LoanRequestFormComponent,
+    LoanDashboardComponent,
+    EmployeeLoanHistoryComponent,
+    EmployeeDashboardComponent,
+    LoanApprovalUiComponent,
+    LoanBalanceIndicatorsComponent,
+    LoanDetailsComponent,
+    StatusTrackingComponent,
+    LoanComponent,
   ],
   imports: [
     // BrowserModule,

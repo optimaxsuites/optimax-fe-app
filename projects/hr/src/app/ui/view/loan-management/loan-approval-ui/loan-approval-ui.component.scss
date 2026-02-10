@@ -260,6 +260,24 @@
     color: white;
 }
 
+// .btn-view {
+//     padding: 8px 16px;
+//     background-color: rgb(101, 199, 231);
+//     color: white;
+//     border: none;
+//     border-radius: 4px;
+//     cursor: pointer;
+//     font-size: 12px;
+//     font-weight: 600;
+//     transition: all 0.3s ease;
+//     white-space: nowrap;
+// }
+
+// .btn-view:hover {
+//     background-color: rgb(66, 145, 177);
+//     transform: translateY(-1px);
+//     box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
+// }
 .btn-view:hover {
     background-color: rgb(66, 145, 177);
     transform: translateY(-1px);
@@ -289,12 +307,12 @@
 }
 
 .btn-history {
-    background-color: rgb(158, 138, 231); /* Purple for history */
-    color: white;
+   background-color: rgb(101, 199, 231); /* Light blue */
+   color: white;
 }
 
 .btn-history:hover {
-    background-color: rgb(128, 108, 201);
+    background-color: rgb(101, 199, 231); /* Light blue */
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(158, 138, 231, 0.3);
 }

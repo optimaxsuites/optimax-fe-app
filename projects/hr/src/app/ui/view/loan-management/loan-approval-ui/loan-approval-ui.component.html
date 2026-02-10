@@ -106,26 +106,19 @@
                             </span>
                         </td>
                         <td>{{ application.dateSubmitted | date:'mediumDate' }}</td>
+                        <!-- loan-approval-ui.component.html (updated action buttons) -->
                         <td>
                             <div class="action-buttons">
+                                <!-- View Details Button -->
                                 <button class="btn-view" 
-                                        (click)="viewLoanDetails(application.id)">
-                                    View
+                                        (click)="viewLoanDetails(application.id, application.employeeId)">
+                                    View Details
                                 </button>
                                 
-                                <!-- Show Approve/Reject buttons only for PENDING applications -->
-                                <button *ngIf="application.status === 'PENDING'" 
-                                        class="btn-approve" 
-                                        (click)="approveLoan(application.id)">
-                                    Approve
-                                </button>
+                                <!-- REMOVED: Approve and Reject buttons from here -->
+                                <!-- They will be in LoanDetailsComponent instead -->
                                 
-                                <button *ngIf="application.status === 'PENDING'" 
-                                        class="btn-reject" 
-                                        (click)="rejectLoan(application.id)">
-                                    Reject
-                                </button>
-                                
+                                <!-- History Button -->
                                 <button class="btn-history" 
                                         (click)="seeLoanHistory(application.employeeId)">
                                     History

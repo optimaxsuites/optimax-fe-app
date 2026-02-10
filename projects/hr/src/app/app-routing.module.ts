@@ -1,3 +1,4 @@
+import { Loan } from './ui/view/loan-management/loan.model';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AppHrComponent } from './app.component';
@@ -14,6 +15,7 @@ import { MasterComponent } from './master.component';
 import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
 import { ProjectComponent } from './ui/view/project/project.component';
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
+import { LoanComponent } from './ui/view/loan-management/loan.component';
 
 const routes: Routes = [
   {
@@ -23,12 +25,12 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'recruitment/uu',
+    redirectTo: 'admin/hr/loan/uu',
     pathMatch: 'full',
   },
   {
-    path: 'recruitment/:uuid',
-    component: RecruitmentComponent,
+    path: 'admin/hr/loan/:uuid',
+    component: LoanComponent,
   },
   {
     path: 'leave/:uuid',

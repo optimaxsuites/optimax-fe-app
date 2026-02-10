@@ -2,11 +2,11 @@ import { Component, Input, OnInit } from '@angular/core';
 import { LoanApplication } from '../../../service/loan/loan.service';
 
 @Component({
-  selector: 'app-loan-balance-indicator',
-  templateUrl: '../loan-balance-indicator/loan-balance-indicator.component.html',
-  styleUrls: ['../loan-balance-indicator/loan-balance-indicator.component.scss']
+  selector: 'app-loan-balance-indicators',
+  templateUrl: '../loan-balance-indicators/loan-balance-indicators.component.html',
+  styleUrls: ['../loan-balance-indicators/loan-balance-indicators.component.scss']
 })
-export class LoanBalanceIndicatorComponent implements OnInit {
+export class LoanBalanceIndicatorsComponent implements OnInit {
   @Input() loan!: LoanApplication;
   
   progressPercentage: number = 0;
