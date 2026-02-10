@@ -1,4 +1,8 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { ConfirmationService } from 'primeng/api';
+import { AuthenticationService } from '../../sharedComponent/service/auth-service/authentication.service';
+import { DeletedRecordsService } from '../../sharedComponent/service/deleted-records/deleted-records.service';
 
 interface Account {
   code: string;
@@ -56,6 +60,13 @@ export class ChartOfAccountsComponent {
   showRegisterSidebar = false;
   selectedAccount: any = null;
   accountTransactions: any[] = [];
+
+  constructor(
+    private router: Router,
+    private confirmationService: ConfirmationService,
+    private deletedRecordsService: DeletedRecordsService,
+    private authService: AuthenticationService
+  ) {}
 
   ngOnInit() {
     this.filteredAccounts = [...this.accounts];
@@ -145,12 +156,53 @@ export class ChartOfAccountsComponent {
   deleteSelected() {
     if (this.getSelectedCount() === 0) return;
     
-    if (confirm(`Are you sure you want to delete ${this.getSelectedCount()} selected account(s)?`)) {
-      this.accounts = this.accounts.filter(a => !a.selected);
-      this.filteredAccounts = [...this.accounts];
-      this.first = 0;
-      this.updatePaginatedAccounts();
-    }
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${this.getSelectedCount()} selected account(s)?`,
+      header: 'Delete Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        // Get current user
+        let username = 'Unknown User';
+        // Try getting from sessionStorage first as per auth service logic
+        const storedUser = sessionStorage.getItem('username');
+        if (storedUser) {
+             username = storedUser;
+        } else {
+            // Fallback to checking reg data if needed, or just keep 'Unknown User'
+            const regData = sessionStorage.getItem('userInfoRegData');
+            if(regData) {
+                try {
+                    const parsed = JSON.parse(regData);
+                    username = parsed.username || parsed.email || 'Unknown User';
+                } catch(e) {}
+            }
+        }
+
+        // Process deletion
+        const accountsToDelete = this.accounts.filter(a => a.selected);
+        
+        accountsToDelete.forEach(account => {
+            this.deletedRecordsService.addRecord({
+                originalData: account,
+                deletedBy: username,
+                recordType: 'ChartOfAccounts',
+                reason: 'User deletion'
+            });
+        });
+
+        this.accounts = this.accounts.filter(a => !a.selected);
+        this.filteredAccounts = [...this.accounts];
+        this.first = 0;
+        this.updatePaginatedAccounts();
+      },
+      reject: () => {
+        // Optional: handle rejection
+      }
+    });
+  }
+
+  viewDeletedRecords() {
+    this.router.navigate(['/deleted-records']);
   }
 
   addAccount() {

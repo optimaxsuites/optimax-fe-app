@@ -13,6 +13,7 @@ import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-
 import { GeneralReconciliationComponent } from './ui/view/general-reconciliation/general-reconciliation.component';
 import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconciliation-tab.component';
 import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/reconciliation-kanban.component';
+import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
 import { GeneralTransactionsComponent } from './ui/view/general-transactions/general-transactions.component';
 
 const routes: Routes = [
@@ -40,6 +41,10 @@ const routes: Routes = [
   {
     path:'admin/reconciliation-tab',
     component: ReconciliationTabComponent
+  },
+  {
+    path: 'deleted-records',
+    component: DeletedRecordsComponent
   },
   {
     path: 'reconciliation-kanban',
