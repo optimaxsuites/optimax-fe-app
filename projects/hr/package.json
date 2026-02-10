@@ -53,6 +53,7 @@
     "currency-codes": "^2.1.0",
     "exceljs": "^4.4.0",
     "fullcalendar": "^6.1.15",
+    "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",
     "jsbarcode": "^3.11.0",
     "jspdf": "^2.5.2",
