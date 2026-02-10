@@ -1,18 +1,23 @@
-<div class="master-container d-flex" >
-    <div class="sidebar-container" [ngClass]="{ 'show': !sidebarHidden, 'hidden': sidebarHidden }" >
-        <app-sidebar></app-sidebar>
-    </div>
-    
-    <div class="main-container">
-        <div class="navbar-container">
-            <app-navbar [sidebarHidden]="sidebarHidden" (toggleSidebar)="toggleSidebar()"></app-navbar>
-        </div>
-        <div class="main">
-            <router-outlet></router-outlet>
-        </div>
-        <app-dashboard-footer></app-dashboard-footer>
-    </div>
-</div>
+<div class="master-container d-flex">
+  <div
+    class="sidebar-container"
+    [ngClass]="{ show: !sidebarHidden, hidden: sidebarHidden }"
+  >
+    <app-sidebar></app-sidebar>
+  </div>
 
+  <div class="main-container">
+    <div class="navbar-container">
+      <app-navbar
+        [sidebarHidden]="sidebarHidden"
+        (toggleSidebar)="toggleSidebar()"
+      ></app-navbar>
+    </div>
+    <div class="main">
+      <router-outlet></router-outlet>
+    </div>
+    <app-dashboard-footer></app-dashboard-footer>
+  </div>
+</div>
 
 <!-- <router-outlet></router-outlet> -->
