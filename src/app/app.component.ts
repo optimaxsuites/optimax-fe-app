@@ -11,69 +11,78 @@ import { MetadataService } from './ui/service/metadata.service';
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  providers: [MessageService, ]
+  providers: [MessageService],
 })
 export class AppHrComponent {
   messageService: any;
   navigationLink: any;
   router: any;
   sidebarHidden: boolean = true;
-constructor(
-  private authenticationService: AuthenticationService, private metadataService: MetadataService
-){
-this.userLoginAction()
+  constructor(
+    private authenticationService: AuthenticationService,
+    private metadataService: MetadataService,
+  ) {
+    this.userLoginAction();
+  }
 
-}
-
-
-
-ngOnInit(): void {
-  this.userLoginAction()
-  this.metadataService.fetchMetaData();
-
-}
+  ngOnInit(): void {
+    this.userLoginAction();
+    this.metadataService.fetchMetaData();
+  }
   async userLoginAction(): Promise<void> {
-  
     const loginDetails = {
-      username: "Ayaobasheba",
+      // username: 'Ayaobasheba',
+      username: 'Damilola',
       password: 123456,
       project: 'ERP',
-      apiKey: 'ApiKey 8e2da356563ef460e52d56e83d73b8ee'
+      // apiKey: 'ApiKey 8e2da356563ef460e52d56e83d73b8ee',
+      apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071'
     };
-  
+
     if (!loginDetails.username || !loginDetails.password) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Username and password are required',
+      });
       return;
     }
-  
+
     try {
-      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      const data = await this.authenticationService
+        .userLogin(loginDetails)
+        .toPromise();
       this.loadInitParam(data);
-  
+
       if (!data) {
-        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-      } 
-    } catch (error) {
-      
-      } 
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Authentication Failed',
+          detail:
+            'Invalid username or password. Please check credentials and try again.',
+        });
+      }
+    } catch (error) {}
   }
   loadInitParam(data: any) {
-    sessionStorage.setItem("role", data.roles)
-    sessionStorage.setItem("username", data.username);
-    sessionStorage.setItem("fullname", data.fullname);
-    sessionStorage.setItem("email", data.email);
-    sessionStorage.setItem("userid", data.id);
+    sessionStorage.setItem('role', data.roles);
+    sessionStorage.setItem('username', data.username);
+    sessionStorage.setItem('fullname', data.fullname);
+    sessionStorage.setItem('email', data.email);
+    sessionStorage.setItem('userid', data.id);
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
-    sessionStorage.setItem("Token", token);
-    localStorage.setItem("Token2", token);
-    sessionStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("accessToken2", data.accessToken);
-    sessionStorage["userRegData"] = JSON.stringify(data);
+    const token = data.accessToken.substring(
+      tokenStartIndex,
+      data.accessToken.indexOf(';'),
+    );
+    sessionStorage.setItem('Token', token);
+    localStorage.setItem('Token2', token);
+    sessionStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('accessToken2', data.accessToken);
+    sessionStorage['userRegData'] = JSON.stringify(data);
   }
-  
+
   toggleSidebar() {
-    this.sidebarHidden = !this.sidebarHidden;  // Toggle sidebar visibility
+    this.sidebarHidden = !this.sidebarHidden; // Toggle sidebar visibility
   }
 }
-

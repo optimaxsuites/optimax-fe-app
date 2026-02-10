@@ -118,6 +118,7 @@ import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
 import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.component';
+import { LeavePolicyComponent } from './ui/view/leave/leave-policy/leave-policy.component';
 import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
 import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
@@ -197,6 +198,7 @@ import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corr
     DropdownComponent,
     MasterComponent,
     AppraisalComponent,
+    LeavePolicyComponent,
     AttendashboardComponent,
     StatsCardsComponent,
     HeatmapComponent,
