@@ -243,8 +243,8 @@ import { MultiSelectModule } from 'primeng/multiselect';
     SchedulingComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
