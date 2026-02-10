@@ -82,7 +82,6 @@ import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.c
 import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-sheet.component';
 import { IncomeStatementComponent } from './ui/view/reports/income-statement/income-statement.component';
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
-import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
 import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/transaction-side-modal.component';
@@ -139,7 +138,6 @@ import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-
     BalanceSheetComponent,
     IncomeStatementComponent,
     CashFlowComponent,
-    TaxSummaryComponent,
     TransactionSideModalComponent,
     IncomeStatementChartsComponent,
     IncomeStatementFilterComponent,
