@@ -1,0 +1,139 @@
+<div class="loan-details-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading loan details...</p>
+  </div>
+  
+  <div *ngIf="!isLoading && loan" class="loan-content">
+    <!-- Header -->
+    <header class="loan-header">
+      <div class="header-left">
+        <h1>Loan #{{ loan?.id }}</h1>
+        <p class="employee-info">
+          {{ loan?.fullName }} • {{ loan?.employeeId }} • {{ loan?.department }}
+        </p>
+      </div>
+      <div class="header-right">
+        <div class="loan-amount-display">
+          <h2><span>₦</span>{{ loan?.loanAmount }}</h2>
+          <p class="loan-purpose">{{ loan?.purpose }}</p>
+        </div>
+        <div class="loan-status">
+          <span class="status-badge" [ngClass]="'status-' + loan?.status?.toLowerCase()">
+            {{ loan?.status }}
+          </span>
+          <p class="submitted-date">Submitted: {{ loan?.dateSubmitted | date:'mediumDate' }}</p>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Navigation Tabs -->
+    <nav class="details-tabs">
+      <button [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
+        <i class="tab-icon">📊</i> Overview
+      </button>
+      <button [class.active]="activeTab === 'repayment'" (click)="setActiveTab('repayment')">
+        <i class="tab-icon">📅</i> Repayment Schedule
+      </button>
+      <button [class.active]="activeTab === 'status'" (click)="setActiveTab('status')">
+        <i class="tab-icon">🔄</i> Status Tracking
+      </button>
+      <button [class.active]="activeTab === 'payments'" (click)="setActiveTab('payments')">
+        <i class="tab-icon">💰</i> Payment History
+      </button>
+    </nav>
+    
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Overview Tab -->
+      <div *ngIf="activeTab === 'overview'" class="overview-tab">
+        <div class="overview-grid">
+          <div class="overview-left">
+            <!-- Balance Indicator -->
+            <app-loan-balance-indicator [loan]="loan"></app-loan-balance-indicator>
+            
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+              <h3>Loan Details</h3>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Interest Rate</span>
+                  <span class="stat-value">{{ loan.interestRate }}%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Repayment Period</span>
+                  <span class="stat-value">{{ loan.repaymentPeriod }} months</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Monthly Payment</span>
+                  <span class="stat-value">{{ loan.monthlyRepayment | currency:'₦':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Total Interest</span>
+                  <span class="stat-value">
+                    {{ loan.repaymentSchedule.reduce((sum, item) => sum + item.interest, 0) | currency:'₦':'symbol':'1.2-2' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="overview-right">
+            <!-- Status Tracking -->
+            <app-status-tracking [loan]="loan" [canChangeStatus]="true"></app-status-tracking>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Repayment Schedule Tab -->
+      <div *ngIf="activeTab === 'repayment'" class="repayment-tab">
+        <app-repayment-schedule [loan]="loan"></app-repayment-schedule>
+      </div>
+      
+      <!-- Status Tracking Tab -->
+      <div *ngIf="activeTab === 'status'" class="status-tab">
+        <app-status-tracking [loan]="loan" [canChangeStatus]="true"></app-status-tracking>
+      </div>
+      
+      <!-- Payment History Tab -->
+      <div *ngIf="activeTab === 'payments'" class="payments-tab">
+        <h2>Payment History</h2>
+        <div *ngIf="loan.paymentHistory.length === 0" class="no-payments">
+          <p>No payments recorded yet.</p>
+        </div>
+        
+        <div *ngIf="loan.paymentHistory.length > 0" class="payments-list">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Received By</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let payment of loan.paymentHistory">
+                <td>{{ payment.date | date:'mediumDate' }}</td>
+                <td>{{ payment.amount | currency:'₦':'symbol':'1.2-2' }}</td>
+                <td>{{ payment.paymentMethod }}</td>
+                <td>{{ payment.referenceNumber || '-' }}</td>
+                <td>{{ payment.receivedBy || '-' }}</td>
+                <td>{{ payment.notes || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div *ngIf="!isLoading && !loan" class="not-found">
+    <h2>Loan Not Found</h2>
+    <p>The requested loan could not be found.</p>
+    <a routerLink="/admin/hr/loan-management" class="back-link">← Back to Loans</a>
+  </div>
+</div>

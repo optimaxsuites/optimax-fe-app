@@ -20,7 +20,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'admin/hr/recruitment/uu',
+    redirectTo: 'admin/hr/attendance/uu',
     pathMatch: 'full',
   },
   {
@@ -67,7 +67,7 @@ const routes: Routes = [
   },
 ];
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

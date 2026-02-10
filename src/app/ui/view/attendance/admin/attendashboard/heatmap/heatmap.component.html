@@ -1,0 +1,12 @@
+<!--<p>heatmap works!</p>-->
+<div class="heatmap">
+  <div
+    class="heatmap-row"
+    *ngFor="let dept of departments"
+    [style.background]="getHeatColor(dept.attendance)"
+  >
+    <span>{{ dept.department }}</span>
+    <span>{{ dept.attendance }}%</span>
+  </div>
+</div>
+

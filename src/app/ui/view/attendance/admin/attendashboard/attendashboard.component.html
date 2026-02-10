@@ -1,0 +1,19 @@
+<!--<p>attendashboard works!</p>-->
+<div class="dashboard-grid">
+    <app-office-hours></app-office-hours>
+<div class="stats-section">
+    <app-stats-cards [stats]="stats$ | async"></app-stats-cards>
+</div>
+<div class="dashboard-middle">
+    <app-heatmap [departments]="(heatmap$ | async) || []"></app-heatmap>
+    <app-late-arrivals [lateArrivals]="(lateArrivals$ | async) || []"></app-late-arrivals>
+</div>
+<div>
+    <app-attendancetable></app-attendancetable>
+</div>
+<div>
+    <app-attendancesummary></app-attendancesummary>
+</div>
+</div>
+
+<!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->

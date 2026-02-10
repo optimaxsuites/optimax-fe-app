@@ -1,0 +1,119 @@
+<div class="loan-dashboard-container">
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-container">
+        <p>Loading dashboard...</p>
+    </div>
+
+    <div *ngIf="!isLoading">
+        <header class="dashboard-header">
+            <h1>Loan Dashboard</h1>
+            <div class="search-box">
+                <input type="text"
+                placeholder="Search loans..."
+                (keyup)="searchLoans($event)"
+                [(ngModel)]="searchTerm">
+            </div>
+        </header>
+
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="action-buttons">
+                <button class="btn-primary" (click)="applyForLoan()">
+                    Apply for Loan
+                </button>
+                <button class="btn-primary" (click)="approveLoan()">
+                    See Loan Requests
+                </button>
+                <button class="btn-primary" (click)="navigateTo('reports')">
+                    Generate Reports
+                </button>
+            </div>
+        </section>
+
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <h3>Active Loans</h3> 
+                <p class="stat-value">{{ dashboardStats.activeLoans }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Applications</h3>  
+                <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Balance</h3>  
+                <p class="stat-value"><span>₦</span>{{ dashboardStats.totalBalance | number:'1.2-2' }}</p>
+            </div>
+        </section>
+
+        <div class="dashboard-content">
+            <!-- Recent Loans Table -->
+            <section class="card recent-loans">
+                <h2>Recent Loan Applications</h2>
+
+                <div *ngIf="recentLoans.length == 0" class="empty-state">
+                    <p>No loan applications found.</p>
+                    <button class="btn-primary" (click)="applyForLoan()">Apply for your first loan</button>
+                </div>
+
+                <table *ngIf="recentLoans.length > 0" class="loan-table"> 
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>EMPLOYEE</th>
+                            <th>AMOUNT</th>
+                            <th>STATUS</th>
+                            <th>DATE</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let loan of recentLoans"
+                            (click)="viewLoanDetails(loan.id)"
+                            class="clickable-row">
+                            <td>{{ loan.id }}</td>
+                            <td>{{ loan.employee }}</td>
+                            <td><span>₦</span>{{ loan.amount | number:'1.2-2' }}</td>
+                            <td>                    
+                                <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
+                                    {{ loan.status }}
+                                </span>
+                            </td>
+                            <td>{{ loan.date }}</td>
+                            <td>
+                        <div class="action-buttons">
+                            <button class="btn-view" 
+                                    (click)="viewLoanDetails(loan.id)">
+                                View Details
+                            </button>
+
+                            <button class="btn-view" 
+                                    (click)="seeLoanHistory(loan.id)">
+                                Loan History
+                            </button>
+
+                        </div>
+                    </td>
+                        </tr> 
+                    </tbody>           
+                </table>
+            </section>
+
+            <!-- Upcoming Payments -->
+            <section class="card upcoming-events">
+                <h2>Upcoming Events</h2>
+                <div *ngIf="upcomingRepayments.length === 0" class="empty-state">
+                    <p>No upcoming events</p>
+                </div>
+                <ul *ngIf="upcomingRepayments.length > 0" class="repayment-list">
+                    <li *ngFor="let repayment of upcomingRepayments" class="repayment-item">
+                        <div class="repayment-date">{{ repayment.date }}</div>
+                        <div class="repayment-amount"><span>₦</span>{{ repayment.amount | number:'1.2-2' }}</div>
+                        <div class="repayment-type">{{ repayment.loanType }}</div>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</div>

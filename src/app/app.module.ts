@@ -118,6 +118,23 @@ import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
 import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.component';
+import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
+import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
+import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
+import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
+import { AttendancetableComponent } from './ui/view/attendance/admin/attendancetable/attendancetable.component';
+import { AttendancefilterComponent } from './ui/view/attendance/admin/attendancetable/attendancefilter/attendancefilter.component';
+import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendancesummary/attendancesummary.component';
+import { OfficeHoursComponent } from './ui/view/attendance/admin/attendashboard/office-hours/office-hours.component';
+import { EmployeedashboardComponent } from './ui/view/attendance/employee/employeedashboard/employeedashboard.component';
+import { TodaySummaryComponent } from './ui/view/attendance/employee/employeedashboard/today-summary/today-summary.component';
+import { CheckinCheckoutComponent } from './ui/view/attendance/employee/employeedashboard/checkin-checkout/checkin-checkout.component';
+import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeesummary/employeesummary.component';
+import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeesummary/monthlysummary/monthlysummary.component';
+import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
+import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
+import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
+import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 
 @NgModule({
   declarations: [
@@ -180,10 +197,27 @@ import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.co
     DropdownComponent,
     MasterComponent,
     AppraisalComponent,
+    AttendashboardComponent,
+    StatsCardsComponent,
+    HeatmapComponent,
+    LateArrivalsComponent,
+    AttendancetableComponent,
+    AttendancefilterComponent,
+    AttendancesummaryComponent,
+    OfficeHoursComponent,
+    EmployeedashboardComponent,
+    TodaySummaryComponent,
+    CheckinCheckoutComponent,
+    EmployeesummaryComponent,
+    MonthlysummaryComponent,
+    CorrectionrequestComponent,
+    CorrectionrequestformComponent,
+    MonthlyattendancelistComponent,
+    AdminCorrectionsComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,

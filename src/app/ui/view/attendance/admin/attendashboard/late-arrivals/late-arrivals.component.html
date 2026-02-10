@@ -1,0 +1,9 @@
+<!--<p>late-arrivals works!</p>-->
+<div class="late-list">
+  <h3>Late Arrivals Today</h3>
+
+  <div class="late-item" *ngFor="let user of lateArrivals">
+    <span>{{ user.name }}</span>
+    <span>{{ user.time }}</span>
+  </div>
+</div>

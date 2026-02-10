@@ -1,0 +1,40 @@
+<div class="admin-corrections-card">
+  <h2>Correction Requests (Admin)</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Date</th>
+        <th>Issue</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let req of requests">
+        <td>{{ req.employeeName || 'Employee' }}</td>
+        <td>{{ req.date }}</td>
+        <td>{{ req.issueType }}</td>
+        <td>{{ req.status }}</td>
+
+        <td>
+          <button 
+            *ngIf="req.status === 'PENDING'" 
+            (click)="approve(req)">
+            Approve
+          </button>
+
+          <div *ngIf="req.status === 'PENDING'" class="reject-box">
+            <input 
+              type="text" 
+              placeholder="Reason for rejection"
+              [(ngModel)]="rejectReason[req.id]" />
+            <button (click)="reject(req)">Reject</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
