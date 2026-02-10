@@ -33,6 +33,7 @@ export interface City {
 export interface TabConfig {
   name: string;
   component: any;
+  icon?: string;
   hasDropdown?: boolean;
   dropdownOptions?: DropdownOption[]; 
   role?: string
