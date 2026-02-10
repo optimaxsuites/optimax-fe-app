@@ -158,6 +158,14 @@ export class MenuItemsService {
           description: 'Process employee salaries, bonuses, deductions, and payslips.'
         },
         {
+          label: 'Advance',
+          code: 'HR_ADVANCE',
+          route: this.navigationLink.getLink('advance'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-dollar-sign',
+          description: 'Process employee advances and manage advance requests.'
+        },
+        {
           label: 'Attendance',
           code: 'HR_ATTEND',
           route: this.navigationLink.getLink('attendanceLink'),
