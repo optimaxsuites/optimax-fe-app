@@ -11,6 +11,9 @@ import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { MasterComponent } from './master.component';
+import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
+import { ProjectComponent } from './ui/view/project/project.component';
+import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 
 const routes: Routes = [
   {
@@ -20,35 +23,35 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'admin/hr/attendance/uu',
+    redirectTo: 'recruitment/uu',
     pathMatch: 'full',
   },
   {
-    path: 'admin/hr/recruitment/:uuid',
+    path: 'recruitment/:uuid',
     component: RecruitmentComponent,
   },
   {
-    path: 'admin/hr/leave/:uuid',
+    path: 'leave/:uuid',
     component: LeaveComponent,
   },
   {
-    path: 'admin/hr/attendance/:uuid',
+    path: 'attendance/:uuid',
     component: AttendanceComponent,
   },
   // {
-  //   path: 'admin/hr/employee-management/:uuid',
+  //   path: 'employee-management/:uuid',
   //   component: EmployeeManagementComponent,
   // },
   {
-    path: 'admin/hr/performance/:uuid',
+    path: 'performance/:uuid',
     component: PerformanceComponent,
   },
   {
-    path: 'admin/hr/employee-management/:uuid',
+    path: 'employee-management/:uuid',
     component: EmployeeManagementComponent,
   },
   {
-    path: 'admin/hr/payroll/:uuid',
+    path: 'payroll/:uuid',
     component: EmployeePayrollComponent,
   },
   {
@@ -56,7 +59,7 @@ const routes: Routes = [
     component: EmployeePayslipListComponent,
   },
   // {
-  //   path: 'admin/hr/attendance/:uuid',
+  //   path: 'attendance/:uuid',
   //   component: AttendanceComponent,
   // },
   { path: 'mygoal', component: MygoalComponent },
@@ -65,9 +68,17 @@ const routes: Routes = [
     path: 'user/onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
   },
+  {
+    path: 'project/:uuid',
+    component: ProjectComponent,
+  },
+   {
+    path: 'work-schedule/:uuid',
+    component: SchedulingComponent,
+  },
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

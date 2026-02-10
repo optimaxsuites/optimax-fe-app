@@ -1,0 +1,74 @@
+<div *ngIf="project" class="space-y-6 px-2">
+    <div class="flex justify-between items-center p-3 border-b-2">
+      <h2 class="text-2xl font-semibold">{{ project.name }}</h2>
+      <span
+        class="px-3 py-1 rounded-full text-sm"
+        [ngClass]="{
+          'bg-green-100 text-green-700': project.status === 'Ongoing',
+          'bg-blue-100 text-blue-700': project.status === 'Completed',
+          'bg-yellow-100 text-yellow-700': project.status === 'Pending'
+        }"
+      >
+        {{ project.status }}
+      </span>
+    </div>
+  
+    <p class="text-2xl font-bold text-gray-700">Objective</p>
+    <p class="text-gray-600">{{ project.description }}</p>
+    <p class="text-sm text-gray-500">📅 {{ project.startDate }} → {{ project.endDate }}</p>
+  
+    <div class="bg-white rounded-xl px-5 py-3 border">
+      <h3 class="font-semibold mb-2 text-lg">Tasks</h3>
+      <ul>
+        <li
+          *ngFor="let task of project.tasks"
+          class="flex justify-between items-center border-b py-2"
+        >
+          <div>
+            <input
+              type="checkbox"
+              [checked]="task.completed"
+              (change)="toggleTask(task.id)"
+              class="mr-2"
+            />
+            <span [class.line-through]="task.completed">{{ task.title }}</span>
+          </div>
+        </li>
+      </ul>
+  
+      <div class="flex mt-6 pt-5">
+        <input
+          type="text"
+          [(ngModel)]="newTask"
+          placeholder="Add new task..."
+          class="flex-grow border rounded-l-lg p-2"
+        />
+        <button (click)="addTask()" class="bg-customGreen text-white px-4 rounded-r-lg">
+          Add
+        </button>
+      </div>
+    </div>
+  
+    <div class="bg-white rounded-xl px-5 py-3 border">
+      <h3 class="font-semibold mb-2 text-lg">Daily Notes</h3>
+      <ul>
+        <li *ngFor="let note of project.notes" class="border-b py-2 text-sm">
+          <strong>{{ note.user }}</strong> — {{ note.message }}
+          <span class="text-gray-400 text-xs ml-2">({{ note.date }})</span>
+        </li>
+      </ul>
+  
+      <div class="flex mt-3 pt-5">
+        <input
+          type="text"
+          [(ngModel)]="newNote"
+          placeholder="Drop your daily review..."
+          class="flex-grow border rounded-l-lg p-2"
+        />
+        <button (click)="addNote()" class="bg-customGreen text-white px-4 rounded-r-lg">
+          Add
+        </button>
+      </div>
+    </div>
+  </div>
+  
