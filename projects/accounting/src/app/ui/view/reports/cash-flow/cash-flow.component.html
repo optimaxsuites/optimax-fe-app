@@ -1,2 +1,710 @@
+<div #reportContent id="contentToExport" class="min-h-screen bg-gray-50 font-sans text-gray-900 relative">
+  
+  <!-- Header Section (Excluded from PDF) -->
+  <div class="container mx-auto px-4 py-8" data-html2canvas-ignore="true">
+    <!-- Report Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="p-2 bg-green-100 rounded-lg text-green-700">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Cash Flow Statement</h1>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+            <span class="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {{filterForm.get('startDate')?.value | date:'mediumDate'}} - {{filterForm.get('endDate')?.value | date:'mediumDate'}}
+            </span>
+            <span class="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              {{filterForm.get('department')?.value | titlecase}} Dept
+            </span>
+            <span class="flex items-center">
+              <span [ngClass]="{
+                'bg-green-100 text-green-800 border border-green-200': nigerianCompliance.taxCompliant,
+                'bg-yellow-100 text-yellow-800 border border-yellow-200': !nigerianCompliance.taxCompliant
+              }" class="px-2.5 py-1 rounded-full text-xs font-medium">
+                {{nigerianCompliance.taxCompliant ? 'Tax Compliant' : 'Pending Submission'}}
+              </span>
+            </span>
+          </div>
+        </div>
 
-<p>cash-flow works!</p>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div class="bg-gray-100/80 p-1 rounded-lg flex shadow-inner">
+            <button 
+              (click)="toggleViewMode('direct')"
+              [class.bg-white]="viewMode === 'direct'"
+              [class.text-green-700]="viewMode === 'direct'"
+              [class.shadow-sm]="viewMode === 'direct'"
+              [class.text-gray-500]="viewMode !== 'direct'"
+              class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Direct Method
+            </button>
+            
+            <button 
+              (click)="toggleViewMode('indirect')"
+              [class.bg-white]="viewMode === 'indirect'"
+              [class.text-green-700]="viewMode === 'indirect'"
+              [class.shadow-sm]="viewMode === 'indirect'"
+              [class.text-gray-500]="viewMode !== 'indirect'"
+              class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Indirect Method
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button (click)="exportToPDF()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm text-sm font-medium">
+              <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              PDF
+            </button>
+            
+            <button (click)="exportToExcel()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm text-sm font-medium">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Excel
+            </button>
+
+            <button (click)="shareReport()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm text-sm font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content (Included in PDF) -->
+  <div class="container mx-auto px-4 pb-8" data-html2canvas-ignore="false">
+    <!-- Interactive Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- Net Cash Flow Card -->
+      <div (click)="openMetricDetails('net')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer group relative">
+        <div class="flex justify-between items-start mb-2">
+          <div class="text-sm font-medium text-gray-700">Net Cash Flow</div>
+          <button (click)="showDefinition($event, 'net')" class="text-gray-400 hover:text-gray-600 z-10 p-1 rounded-full hover:bg-gray-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+        <div class="text-2xl font-bold mb-1" [ngClass]="getAmountClass(metrics.netCashFlow)">
+          {{formatCurrency(metrics.netCashFlow)}}
+        </div>
+        <div class="text-green-600 text-xs flex items-center">
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+          {{comparisons['netCashFlow'].percentage}}% vs last period
+        </div>
+        <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-600 font-medium">
+          Click for details
+        </div>
+      </div>
+
+      <!-- Operating Cash Flow Card -->
+      <div (click)="openMetricDetails('operating')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer group relative">
+        <div class="flex justify-between items-start mb-2">
+          <div class="text-sm font-medium text-gray-700">Operating Cash Flow</div>
+          <button (click)="showDefinition($event, 'operating')" class="text-gray-400 hover:text-gray-600 z-10 p-1 rounded-full hover:bg-gray-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+        <div class="text-2xl font-bold text-green-600 mb-1">{{formatCurrency(metrics.operatingCashFlow)}}</div>
+        <div class="text-xs text-gray-500">Cash Conversion: <span class="text-gray-900 font-medium">{{metrics.cashConversionCycle}} days</span></div>
+      </div>
+
+      <!-- Free Cash Flow Card -->
+      <div (click)="openMetricDetails('free')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer group relative">
+        <div class="flex justify-between items-start mb-2">
+          <div class="text-sm font-medium text-gray-700">Free Cash Flow</div>
+          <button (click)="showDefinition($event, 'free')" class="text-gray-400 hover:text-gray-600 z-10 p-1 rounded-full hover:bg-gray-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+        <div class="text-2xl font-bold text-green-600 mb-1">{{formatCurrency(metrics.freeCashFlow)}}</div>
+        <div class="text-xs text-gray-500">FCF Yield: <span class="text-gray-900 font-medium">12.5%</span></div>
+      </div>
+      
+      <!-- Tax Compliance Card -->
+      <div class="bg-yellow-50 rounded-xl shadow-sm border border-yellow-200 p-4">
+        <div class="flex justify-between items-start mb-2">
+          <div class="text-sm font-medium text-yellow-800">Tax Compliance</div>
+          <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">Compliant</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-800 mb-1">{{formatCurrency(taxBreakdown.total)}}</div>
+        <div class="text-xs text-gray-600">Next Filing: {{nigerianCompliance.nextDeadline | date:'MMM d'}}</div>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-4" data-html2canvas-ignore="true">
+      <div class="relative">
+        <input (keyup)="applyFilter($event)" type="text" placeholder="Search cash flow activities..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+        <svg class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Reconciliation Section (Indirect Method) -->
+    <div *ngIf="viewMode === 'indirect'" class="mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+          <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 class="text-lg font-semibold text-gray-900">Reconciliation to Operating Cash Flow</h2>
+          <span class="ml-2 text-sm text-gray-500">(Indirect Method)</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-6">Net Income to Operating Cash Flow Reconciliation</p>
+        
+        <div class="max-w-2xl mx-auto">
+          <div class="space-y-4">
+            <div class="flex justify-between items-center py-2">
+              <span class="text-gray-700">Net Income</span>
+              <span class="font-medium">{{formatCurrency(reconciliation.netIncome)}}</span>
+            </div>
+            
+            <div class="flex justify-between items-center py-2 text-green-600">
+              <span>Add: Depreciation & Amortization</span>
+              <span class="font-medium">+{{formatCurrency(reconciliation.depreciation)}}</span>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-4">
+              <div class="text-sm font-medium text-gray-700 mb-3">Changes in Working Capital</div>
+              <div class="space-y-2">
+                <div *ngFor="let item of workingCapitalChanges" 
+                     class="flex justify-between items-center py-1"
+                     [class.text-green-600]="item.effect === 'source'"
+                     [class.text-red-600]="item.effect === 'use'">
+                  <span class="pl-4">{{item.account}}</span>
+                  <span class="font-medium">{{item.effect === 'source' ? '+' : ''}}{{formatCurrency(item.change)}}</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <span class="text-gray-700">Total Changes in Working Capital</span>
+                <span class="font-medium">{{formatCurrency(reconciliation.changesInWorkingCapital)}}</span>
+              </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-4">
+              <div class="flex justify-between items-center text-lg font-semibold">
+                <span>Net Cash from Operating Activities</span>
+                <span class="text-green-600">{{formatCurrency(reconciliation.calculatedOperatingCash)}}</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-center mt-4">
+              <div [ngClass]="{
+                'bg-green-100 text-green-800': validateReconciliation(),
+                'bg-yellow-100 text-yellow-800': !validateReconciliation()
+              }" class="flex items-center px-3 py-2 rounded-lg">
+                <svg *ngIf="validateReconciliation()" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg *ngIf="!validateReconciliation()" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                {{validateReconciliation() ? 'Reconciliation Valid' : 'Check Reconciliation'}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cash Flow Details Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center mb-4 lg:mb-0">
+            <svg class="w-5 h-5 text-gray-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h2 class="text-lg font-semibold text-gray-900">Cash Flow Statement Details</h2>
+            <span class="ml-3 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
+              {{viewMode === 'direct' ? 'Direct Method' : 'Indirect Method'}}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button (click)="generateFIRSReport()" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              </svg>
+              Generate FIRS Report
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash Flow Activities</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₦)</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+            </tr>
+          </thead>
+          
+          <!-- Operating Activities -->
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <tr class="bg-green-50 border-t border-green-100">
+              <td colspan="4" class="px-6 py-4">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <strong class="text-gray-900">Operating Activities</strong>
+                  <span class="ml-auto font-bold text-green-600">{{formatCurrency(getSectionTotal(operatingActivities))}}</span>
+                </div>
+              </td>
+            </tr>
+            
+            <tr *ngFor="let item of operatingActivities" class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center" [style.padding-left]="item.indentLevel * 24 + 'px'">
+                  <span [class.font-bold]="isBoldRow(item)" [class.text-lg]="item.isTotal" 
+                        class="text-gray-900 flex items-center gap-2">
+                    <span *ngIf="!item.isTotal">
+                      <svg *ngIf="item.type === 'inflow'" class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <svg *ngIf="item.type === 'outflow'" class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                      </svg>
+                    </span>
+                    {{item.description}}
+                  </span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="getAmountClass(item.amount)" class="font-medium">
+                  {{formatCurrency(item.amount)}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="{
+                  'bg-green-100 text-green-800 border border-green-200': item.category === 'operating',
+                  'bg-blue-100 text-blue-800 border border-blue-200': item.category === 'investing',
+                  'bg-purple-100 text-purple-800 border border-purple-200': item.category === 'financing',
+                  'bg-red-100 text-red-800 border border-red-200': item.category === 'tax',
+                  'bg-yellow-100 text-yellow-800 border border-yellow-200': item.category === 'forex'
+                }" class="px-2.5 py-1 rounded-full text-xs font-medium">
+                  {{item.category | titlecase}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div [ngClass]="{
+                    'bg-green-500': item.amount > 0,
+                    'bg-red-500': item.amount < 0
+                  }" [style.width.%]="getTrendWidth(item.amount)" class="h-full transition-all duration-300"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          
+          <!-- Investing Activities -->
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <tr class="bg-blue-50 border-t border-blue-100">
+              <td colspan="4" class="px-6 py-4">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <strong class="text-gray-900">Investing Activities</strong>
+                  <span class="ml-auto font-bold text-red-600">{{formatCurrency(getSectionTotal(investingActivities))}}</span>
+                </div>
+              </td>
+            </tr>
+            
+            <tr *ngFor="let item of investingActivities" class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center" [style.padding-left]="item.indentLevel * 24 + 'px'">
+                  <span [class.font-bold]="isBoldRow(item)" [class.text-lg]="item.isTotal" 
+                        class="text-gray-900 flex items-center gap-2">
+                    <span *ngIf="!item.isTotal">
+                      <svg *ngIf="item.type === 'inflow'" class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <svg *ngIf="item.type === 'outflow'" class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                      </svg>
+                    </span>
+                    {{item.description}}
+                  </span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="getAmountClass(item.amount)" class="font-medium">
+                  {{formatCurrency(item.amount)}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium border border-blue-200">
+                  {{item.category | titlecase}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div [ngClass]="{
+                    'bg-green-500': item.amount > 0,
+                    'bg-red-500': item.amount < 0
+                  }" [style.width.%]="getTrendWidth(item.amount)" class="h-full transition-all duration-300"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          
+          <!-- Financing Activities -->
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <tr class="bg-purple-50 border-t border-purple-100">
+              <td colspan="4" class="px-6 py-4">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  <strong class="text-gray-900">Financing Activities</strong>
+                  <span class="ml-auto font-bold text-red-600">{{formatCurrency(getSectionTotal(financingActivities))}}</span>
+                </div>
+              </td>
+            </tr>
+            
+            <tr *ngFor="let item of financingActivities" class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center" [style.padding-left]="item.indentLevel * 24 + 'px'">
+                  <span [class.font-bold]="isBoldRow(item)" [class.text-lg]="item.isTotal" 
+                        class="text-gray-900 flex items-center gap-2">
+                    <span *ngIf="!item.isTotal">
+                      <svg *ngIf="item.type === 'inflow'" class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <svg *ngIf="item.type === 'outflow'" class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                      </svg>
+                    </span>
+                    {{item.description}}
+                  </span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="getAmountClass(item.amount)" class="font-medium">
+                  {{formatCurrency(item.amount)}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium border border-purple-200">
+                  {{item.category | titlecase}}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div [ngClass]="{
+                    'bg-green-500': item.amount > 0,
+                    'bg-red-500': item.amount < 0
+                  }" [style.width.%]="getTrendWidth(item.amount)" class="h-full transition-all duration-300"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          
+          <!-- Summary Section -->
+          <tbody class="bg-gray-50">
+            <tr class="border-t-2 border-gray-300">
+              <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-900">Net Increase/Decrease in Cash</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="font-bold text-green-600">{{formatCurrency(metrics.netCashFlow)}}</span>
+              </td>
+              <td colspan="2"></td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-700">Opening Cash Balance</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">{{formatCurrency(5000000)}}</td>
+              <td colspan="2"></td>
+            </tr>
+            <tr class="border-t-2 border-gray-300">
+              <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-900">Closing Cash Balance</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="font-bold text-green-600">{{formatCurrency(7450000)}}</span>
+              </td>
+              <td colspan="2"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Table Footer -->
+      <div class="p-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex flex-wrap items-center justify-between text-sm text-gray-600">
+          <div class="flex items-center space-x-4">
+            <span class="flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Figures in Naira (₦)
+            </span>
+            <span class="flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Period: {{filterForm.get('startDate')?.value | date:'mediumDate'}} - {{filterForm.get('endDate')?.value | date:'mediumDate'}}
+            </span>
+          </div>
+          <div *ngIf="forexImpact" class="flex items-center text-sm text-gray-600">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span>Forex Impact: {{formatCurrency(forexImpact.gainLoss)}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax Breakdown Section -->
+    <div *ngIf="filterForm.get('includeTaxDetails')?.value" class="mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-red-100 rounded-lg text-red-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Nigerian Tax Breakdown</h2>
+              <p class="text-sm text-gray-500">FIRS Compliance Summary</p>
+            </div>
+          </div>
+          <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200">FIRS Compliant</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors hover:shadow-sm">
+            <div class="text-sm font-medium text-gray-700 mb-2">Company Income Tax (CIT)</div>
+            <div class="text-xl font-bold text-gray-900 mb-1">{{formatCurrency(taxBreakdown.cit)}}</div>
+            <div class="text-sm text-green-600 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Paid Q4 2023
+            </div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors hover:shadow-sm">
+            <div class="text-sm font-medium text-gray-700 mb-2">Value Added Tax (VAT)</div>
+            <div class="text-xl font-bold text-gray-900 mb-1">{{formatCurrency(taxBreakdown.vat)}}</div>
+            <div class="text-sm text-green-600 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Monthly Returns Filed
+            </div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors hover:shadow-sm">
+            <div class="text-sm font-medium text-gray-700 mb-2">Withholding Tax (WHT)</div>
+            <div class="text-xl font-bold text-gray-900 mb-1">{{formatCurrency(taxBreakdown.wht)}}</div>
+            <div class="text-sm text-green-600 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Deducted at Source
+            </div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors hover:shadow-sm">
+            <div class="text-sm font-medium text-gray-700 mb-2">Education Tax</div>
+            <div class="text-xl font-bold text-gray-900 mb-1">{{formatCurrency(taxBreakdown.educationTax)}}</div>
+            <div class="text-sm text-green-600 flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Annual Payment
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+          <div>
+            <span class="text-lg font-semibold text-gray-900">Total Tax Payments</span>
+            <p class="text-sm text-gray-500">Net amount after all deductions</p>
+          </div>
+          <span class="text-xl font-bold text-red-600">{{formatCurrency(taxBreakdown.total)}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+          <div class="p-2 bg-green-100 rounded-lg text-green-700 mr-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Period Summary</h3>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Total Cash Inflows</span>
+            <span class="font-medium text-green-600">₦17,650,000</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Total Cash Outflows</span>
+            <span class="font-medium text-red-600">₦15,200,000</span>
+          </div>
+          <div class="border-t border-gray-200 my-3"></div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium">Net Cash Flow</span>
+            <span class="font-bold text-green-600">₦2,450,000</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Free Cash Flow</span>
+            <span class="font-medium text-green-600">₦2,550,000</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+          <div class="p-2 bg-blue-100 rounded-lg text-blue-700 mr-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Financial Health</h3>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Cash Conversion Cycle</span>
+            <span class="font-medium text-green-600">{{metrics.cashConversionCycle}} days</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Operating Cash Flow Ratio</span>
+            <span class="font-medium text-green-600">1.42</span>
+          </div>
+          <div class="border-t border-gray-200 my-3"></div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium">Cash Coverage Ratio</span>
+            <span class="font-bold text-green-600">8.4x</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+          <div class="p-2 bg-red-100 rounded-lg text-red-700 mr-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Nigerian Compliance</h3>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Tax Compliance Status</span>
+            <span [ngClass]="{
+              'text-green-600': nigerianCompliance.taxCompliant,
+              'text-red-600': !nigerianCompliance.taxCompliant
+            }" class="font-medium">
+              {{nigerianCompliance.taxCompliant ? 'Compliant' : 'Non-Compliant'}}
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700">Last FIRS Submission</span>
+            <span class="font-medium">{{nigerianCompliance.lastSubmission | date:'MMM yyyy'}}</span>
+          </div>
+          <div class="border-t border-gray-200 my-3"></div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium">Next Tax Deadline</span>
+            <span class="font-bold text-yellow-600">{{nigerianCompliance.nextDeadline | date:'MMM d, yyyy'}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Details Modal -->
+  <div *ngIf="activeModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      
+      <div (click)="closeModal()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+        
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="sm:flex sm:items-start">
+            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+              <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                {{selectedMetric?.title}}
+              </h3>
+              
+              <div class="mt-2">
+                <p class="text-sm text-gray-500 mb-4 bg-gray-50 p-2 rounded">
+                  {{selectedMetric?.definition}}
+                </p>
+
+                <div *ngIf="activeModal === 'details'">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">How this was calculated</h4>
+                    <div class="space-y-2 border-t border-gray-100 pt-2">
+                        <div *ngFor="let item of selectedMetric?.breakdown" class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 flex items-center">
+                                <span *ngIf="item.type === 'add'" class="text-green-500 mr-1">+</span>
+                                <span *ngIf="item.type === 'subtract'" class="text-red-500 mr-1">-</span>
+                                <span *ngIf="item.type === 'equals'" class="font-bold mr-1">=</span>
+                                {{item.label}}
+                            </span>
+                            <span [class.font-bold]="item.type === 'equals'">{{formatCurrency(item.value)}}</span>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button (click)="closeModal()" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,2 +1,598 @@
+<div class="tax-summary-wrapper">
+  
+  <div class="tax-header">
+    <div class="header-content">
+      <h2 class="tax-title">💰 Tax & Compliance Management</h2>
+      <p class="tax-subtitle">Manage VAT, Withholding Tax, Tax Reporting, and Compliance</p>
+    </div>
+  </div>
 
-<p>tax-summary works!</p>
+  <div class="tax-controls-container">
+    
+    <div class="filters-group">
+      <div class="control-item">
+        <label for="period-select">Period</label>
+        <div class="input-with-hint">
+          <input 
+            type="month" 
+            id="period-select"
+            [value]="currentPeriod"
+            (change)="changePeriod($any($event.target).value)"
+            class="form-control"
+          />
+          <span class="period-hint">{{ getPeriodDateRange(currentPeriod) }}</span>
+        </div>
+      </div>
+
+      <div class="control-item">
+        <label for="tax-type-select">Tax Type</label>
+        <select 
+          id="tax-type-select"
+          [(ngModel)]="selectedTaxType"
+          (change)="changeTaxType(selectedTaxType)"
+          class="form-control"
+        >
+          <option *ngFor="let type of taxTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions-group">
+      <button class="btn btn-outline" (click)="validateTaxCalculations()" title="Validate calculations">
+        ✓ Validate
+      </button>
+      <button class="btn btn-outline" (click)="reconcileTaxes()" title="Reconcile taxes">
+        ⚖ Reconcile
+      </button>
+      <button class="btn btn-outline" (click)="checkComplianceStatus()" title="Check compliance">
+        📋 Compliance
+      </button>
+      <button class="btn btn-primary" (click)="exportTaxReport()" title="Export report">
+        ⬇ Export JSON
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs-container">
+    <button 
+      class="tab-btn" 
+      [class.active]="selectedReportType === 'summary'"
+      (click)="selectedReportType = 'summary'">
+      📋 Overview
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="selectedReportType === 'vat'"
+      (click)="selectedReportType = 'vat'"
+      [disabled]="!vatSummary">
+      💰 VAT Return
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="selectedReportType === 'wht'"
+      (click)="selectedReportType = 'wht'"
+      [disabled]="!whtSummary">
+      💵 WHT Report
+    </button>
+  </div>
+
+  <div class="dashboard-content">
+
+    <!-- Summary/Overview View -->
+    <div *ngIf="selectedReportType === 'summary'" class="summary-view">
+      
+      <div class="dashboard-grid">
+        
+        <!-- Compliance Status Card -->
+        <div class="dashboard-card compliance-card" *ngIf="complianceStatus">
+          <div class="card-header">
+            <h3>Compliance Status</h3>
+            <div class="score-badge" [ngClass]="getComplianceScoreClass(complianceStatus.complianceScore)">
+              {{ complianceStatus.complianceScore }}%
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="status-row">
+              <span>Filing:</span>
+              <span class="badge" [ngClass]="complianceStatus.filed ? 'badge-success' : 'badge-warning'">
+                {{ complianceStatus.filed ? 'Filed' : 'Pending' }}
+              </span>
+            </div>
+            <div class="status-row">
+              <span>Payment:</span>
+              <span class="badge" [ngClass]="complianceStatus.paid ? 'badge-success' : 'badge-danger'">
+                {{ complianceStatus.paid ? 'Paid' : 'Outstanding' }}
+              </span>
+            </div>
+            <div class="status-row highlight">
+              <span>Due:</span>
+              <span class="amount">{{ formatTaxAmount(complianceStatus.paymentDue || 0) }}</span>
+            </div>
+            <div class="status-row small-text">
+              <span>Deadline:</span>
+              <span>{{ complianceStatus.filingDeadline | date: 'mediumDate' }}</span>
+            </div>
+            
+            <!-- Flagged Issues -->
+            <div class="issues-list" *ngIf="(complianceStatus.flaggedIssues?.length || 0) > 0">
+              <div *ngFor="let issue of complianceStatus.flaggedIssues" class="issue-item" [ngClass]="'severity-' + issue.severity">
+                ⚠ {{ issue.message }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Tax Summary Card -->
+        <div class="dashboard-card summary-card" *ngIf="currentTaxSummary">
+          <div class="card-header">
+            <h3>{{ selectedTaxType }} Summary</h3>
+            <span class="period-badge">{{ currentPeriod }}</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <label>Gross Input (Recoverable)</label>
+              <span class="value">{{ currentTaxSummary.grossInputTax }}</span>
+            </div>
+            <div class="metric-row">
+              <label>Gross Output (Payable)</label>
+              <span class="value">{{ currentTaxSummary.grossOutputTax }}</span>
+            </div>
+            <div class="metric-row total-row">
+              <label>Net Liability</label>
+              <span class="value">{{ currentTaxSummary.netLiability }}</span>
+            </div>
+            <button class="btn-link" (click)="showTaxBreakdown = !showTaxBreakdown">
+              {{ showTaxBreakdown ? 'Hide' : 'Show' }} Breakdown
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Entry Form Card -->
+        <div class="dashboard-card form-card">
+          <div class="card-header">
+            <h3>Quick Entry: {{ selectedTaxType }}</h3>
+          </div>
+          <div class="card-body">
+            
+            <!-- VAT Entry Form -->
+            <form *ngIf="selectedTaxType === TaxType.VAT" [formGroup]="taxEntryForm" (ngSubmit)="submitVATEntry()">
+              <div class="form-grid">
+                <div class="form-group">
+                  <select formControlName="direction" class="form-control-sm">
+                    <option *ngFor="let dir of vatDirections" [value]="dir.value">{{ dir.label }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <input type="number" formControlName="amount" placeholder="Amount" class="form-control-sm" min="0">
+                </div>
+                <div class="form-group full-width">
+                  <input type="text" formControlName="description" placeholder="Description" class="form-control-sm">
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary full-width" [disabled]="!taxEntryForm.valid">Add VAT</button>
+              </div>
+            </form>
+
+            <!-- WHT Entry Form -->
+            <form *ngIf="selectedTaxType === TaxType.WHT" [formGroup]="taxEntryForm" (ngSubmit)="submitWHTEntry()">
+              <div class="form-grid">
+                <div class="form-group">
+                   <select formControlName="rateCode" class="form-control-sm">
+                    <option *ngFor="let rate of whtRateCodes" [value]="rate.value">{{ rate.label }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <input type="number" formControlName="amount" placeholder="Amount" class="form-control-sm" min="0">
+                </div>
+                <div class="form-group full-width">
+                  <input type="text" formControlName="vendorName" placeholder="Vendor Name" class="form-control-sm">
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary full-width" [disabled]="!taxEntryForm.valid">Add WHT</button>
+              </div>
+            </form>
+
+            <!-- Tax Calculation Preview -->
+            <div *ngIf="taxEntryForm.get('amount')?.value" class="calculation-preview">
+              <span>Calculated Tax:</span>
+              <span class="amount">
+                {{ 
+                  formatTaxAmount(
+                    taxEntryForm.get('amount')?.value * 
+                    (selectedTaxType === TaxType.VAT ? 0.075 : 0.05)
+                  ) 
+                }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VAT Summary Card -->
+        <div class="dashboard-card vat-card" *ngIf="vatSummary">
+          <div class="card-header">
+            <h3>VAT Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <label>Output VAT</label>
+              <span class="value">{{ formatCurrency(vatSummary.grossOutputTax) }}</span>
+            </div>
+            <div class="metric-row">
+              <label>Input VAT</label>
+              <span class="value recoverable">{{ formatCurrency(vatSummary.grossInputTax) }}</span>
+            </div>
+            <div class="metric-row total-row">
+              <label>Net Payable</label>
+              <span class="value highlight">{{ formatCurrency(vatSummary.netTaxLiability) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WHT Summary Card -->
+        <div class="dashboard-card wht-card" *ngIf="whtSummary">
+          <div class="card-header">
+            <h3>WHT Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <label>Total Withheld</label>
+              <span class="value">{{ formatCurrency(whtSummary.netTaxLiability) }}</span>
+            </div>
+            <div class="metric-row">
+              <label>Transactions</label>
+              <span class="value">{{ whtSummary.taxLines.length }}</span>
+            </div>
+            <div class="metric-row">
+              <label>Status</label>
+              <span class="badge badge-info">To Be Filed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Corporate Tax Summary Card -->
+        <div class="dashboard-card corporate-card" *ngIf="corporateTaxSummary">
+          <div class="card-header">
+            <h3>Corporate Tax</h3>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <label>Status</label>
+              <span class="badge badge-warning">Annual Filing</span>
+            </div>
+            <div class="metric-row">
+              <label>Next Due</label>
+              <span>Q4 {{ currentYear }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tax Entries Table -->
+      <div class="dashboard-card table-card" *ngIf="taxLines.length > 0">
+        <div class="card-header">
+          <h3>Recent Tax Entries</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th class="text-right">Base Amount</th>
+                <th class="text-right">Tax Amount</th>
+                <th>GL Account</th>
+                <th>Classification</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let line of taxLines">
+                <tr>
+                  <td>{{ line.timestamp | date:'shortDate' }}</td>
+                  <td><span class="badge" [ngClass]="'badge-' + line.type.toLowerCase()">{{ line.type }}</span></td>
+                  <td>{{ line.description }}</td>
+                  <td class="text-right">{{ formatTaxAmount(line.baseAmount) }}</td>
+                  <td class="text-right font-bold">{{ formatTaxAmount(line.taxAmount) }}</td>
+                  <td>{{ getGLAccountLabel(line.glAccount) }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="getTaxClassificationBadge(line).class">
+                      {{ getTaxClassificationBadge(line).text }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn-icon" (click)="expandTaxLine(line.id)">
+                      {{ expandedTaxLines.has(line.id) ? '▲' : '▼' }}
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="expandedTaxLines.has(line.id)" class="detail-row">
+                  <td colspan="8">
+                    <div class="detail-content">
+                      <div class="detail-grid">
+                        <div class="detail-item">
+                          <strong>ID:</strong> {{ line.id }}
+                        </div>
+                        <div class="detail-item">
+                          <strong>Source:</strong> {{ line.source }}
+                        </div>
+                        <div class="detail-item">
+                          <strong>Rate:</strong> {{ (line.rate * 100).toFixed(1) }}%
+                        </div>
+                        <div class="detail-item">
+                          <strong>Recorded:</strong> {{ line.timestamp | date:'medium' }}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+            <tfoot *ngIf="taxLines.length > 5">
+              <tr>
+                <td colspan="8" class="table-footer">
+                  Showing {{ taxLines.length }} tax entries for {{ currentPeriod }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- No Data State for Summary View -->
+      <div class="dashboard-card empty-state" *ngIf="taxLines.length === 0 && !vatSummary && !whtSummary">
+        <div class="empty-content">
+          <div class="empty-icon">📭</div>
+          <h4>No Tax Data for {{ currentPeriod }}</h4>
+          <p>Start by adding your first tax entry using the form above.</p>
+          <div class="empty-hints">
+            <p><strong>Tip:</strong> For VAT, specify whether it's for Sales (Output) or Purchases (Input).</p>
+            <p><strong>Tip:</strong> For WHT, include vendor name and appropriate rate (5% or 10%).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAT Report View -->
+    <div *ngIf="selectedReportType === 'vat' && vatReturnData" class="report-view">
+      <div class="paper-sheet">
+        <div class="sheet-header">
+          <div class="sheet-title">
+            <h2>VAT Return Statement</h2>
+            <p class="sheet-period">Period: {{ getPeriodDisplay() }}</p>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn btn-outline" (click)="exportVATReport()">
+              ⬇ Download JSON
+            </button>
+            <button class="btn btn-link" (click)="validateTaxCalculations()">
+              ✓ Validate
+            </button>
+          </div>
+        </div>
+        
+        <!-- VAT Summary Grid -->
+        <div class="vat-sections-grid">
+          <div class="vat-box output">
+            <div class="vat-box-header">
+              <h4>Sales (Output VAT)</h4>
+              <span class="vat-box-subtitle">VAT Collected on Sales</span>
+            </div>
+            <div class="vat-box-content">
+              <div class="row">
+                <span class="label">Total Sales Value:</span>
+                <span class="value">{{ vatReturnData.totalSales }}</span>
+              </div>
+              <div class="row highlight">
+                <span class="label">VAT Collected (7.5%):</span>
+                <span class="value">{{ vatReturnData.salesVAT }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="vat-box input">
+            <div class="vat-box-header">
+              <h4>Purchases (Input VAT)</h4>
+              <span class="vat-box-subtitle">VAT Paid on Purchases</span>
+            </div>
+            <div class="vat-box-content">
+              <div class="row">
+                <span class="label">Total Purchase Value:</span>
+                <span class="value">{{ vatReturnData.totalPurchases }}</span>
+              </div>
+              <div class="row highlight">
+                <span class="label">VAT Paid (Recoverable):</span>
+                <span class="value">{{ vatReturnData.purchasesVAT }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="vat-box total">
+            <div class="vat-box-header">
+              <h4>Net VAT Position</h4>
+              <span class="vat-box-subtitle">Amount Due to Government</span>
+            </div>
+            <div class="vat-box-content">
+              <div class="row">
+                <span class="label">VAT Payable (Output):</span>
+                <span class="value">{{ vatReturnData.payable }}</span>
+              </div>
+              <div class="row">
+                <span class="label">Less: VAT Recoverable (Input):</span>
+                <span class="value">- {{ vatReturnData.recoverable }}</span>
+              </div>
+              <div class="row huge">
+                <span class="label">Net VAT Payable:</span>
+                <span class="value">{{ vatReturnData.netVATPayable }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VAT Breakdown Table -->
+        <div class="breakdown-section" *ngIf="vatSummary && vatSummary.byRate.length > 0">
+          <h4>VAT Breakdown by Rate</h4>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>VAT Rate</th>
+                <th class="text-right">Input VAT</th>
+                <th class="text-right">Output VAT</th>
+                <th class="text-right">Net VAT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rate of vatSummary.byRate">
+                <td>{{ (rate.rate * 100).toFixed(1) }}%</td>
+                <td class="text-right">{{ formatCurrency(rate.input) }}</td>
+                <td class="text-right">{{ formatCurrency(rate.output) }}</td>
+                <td class="text-right highlight">{{ formatCurrency(rate.net) }}</td>
+              </tr>
+              <tr class="total-row">
+                <td><strong>Total</strong></td>
+                <td class="text-right"><strong>{{ formatCurrency(vatSummary.grossInputTax) }}</strong></td>
+                <td class="text-right"><strong>{{ formatCurrency(vatSummary.grossOutputTax) }}</strong></td>
+                <td class="text-right"><strong>{{ formatCurrency(vatSummary.netTaxLiability) }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Statutory Information -->
+        <div class="statutory-section">
+          <h4>📌 Important Information</h4>
+          <div class="statutory-grid">
+            <div class="statutory-item">
+              <strong>Filing Deadline:</strong> 15th of the following month
+            </div>
+            <div class="statutory-item">
+              <strong>Remittance:</strong> Federal Inland Revenue Service (FIRS)
+            </div>
+            <div class="statutory-item">
+              <strong>Currency:</strong> All amounts in NGN (Nigerian Naira)
+            </div>
+            <div class="statutory-item">
+              <strong>Input VAT Recovery:</strong> Business-related purchases only
+            </div>
+            <div class="statutory-item">
+              <strong>Penalties:</strong> Late filing attracts 5% penalty + interest
+            </div>
+            <div class="statutory-item">
+              <strong>Generated:</strong> {{ currentDate | date:'medium' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHT Report View -->
+    <div *ngIf="selectedReportType === 'wht' && whtReportData" class="report-view">
+      <div class="paper-sheet">
+        <div class="sheet-header">
+          <div class="sheet-title">
+            <h2>Withholding Tax Schedule</h2>
+            <p class="sheet-period">Period: {{ getPeriodDisplay() }}</p>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn btn-outline" (click)="exportWHTReport()">
+              ⬇ Download JSON
+            </button>
+            <button class="btn btn-link" (click)="validateTaxCalculations()">
+              ✓ Validate
+            </button>
+          </div>
+        </div>
+
+        <!-- WHT Summary -->
+        <div class="wht-summary-box">
+          <h3>Total Withholding Tax Withheld</h3>
+          <div class="wht-total-amount">{{ whtReportData.totalWHTWithheld }}</div>
+          <p class="wht-summary-note">
+            Amount withheld on behalf of employees, vendors, and contractors during the period.
+            This represents a liability to be remitted to the tax authorities.
+          </p>
+        </div>
+
+        <!-- WHT Breakdown by Rate -->
+        <div class="wht-breakdown-section">
+          <h4>Breakdown by Withholding Tax Rate</h4>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>WHT Rate</th>
+                <th>Description</th>
+                <th class="text-center"># of Transactions</th>
+                <th class="text-right">Amount Withheld</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rate of whtReportData.breakdownByRate">
+                <td><strong>{{ rate.rate }}</strong></td>
+                <td>{{ rate.rate === 'WHT-050' ? 'Services (Standard)' : 'Contractors & Professionals' }}</td>
+                <td class="text-center">{{ rate.count }}</td>
+                <td class="text-right">{{ rate.amount }}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="3"><strong>Total Withheld</strong></td>
+                <td class="text-right"><strong>{{ whtReportData.totalWHTWithheld }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- WHT Transaction Details -->
+        <div class="wht-details-section" *ngIf="whtSummary && whtSummary.taxLines.length > 0">
+          <h4>Withholding Tax Transaction Details</h4>
+          <table class="details-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Vendor/Recipient</th>
+                <th class="text-right">Gross Amount</th>
+                <th class="text-center">WHT Rate</th>
+                <th class="text-right">WHT Amount</th>
+                <th class="text-right">Net Payment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of whtSummary.taxLines">
+                <td>{{ line.timestamp | date: 'shortDate' }}</td>
+                <td>{{ line.description }}</td>
+                <td>{{ line.vendorName || 'N/A' }}</td>
+                <td class="text-right">{{ formatCurrency(line.baseAmount) }}</td>
+                <td class="text-center">{{ (line.rate * 100).toFixed(0) }}%</td>
+                <td class="text-right highlight">{{ formatCurrency(line.taxAmount) }}</td>
+                <td class="text-right">{{ formatCurrency(line.baseAmount - line.taxAmount) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- WHT Statutory Information -->
+        <div class="statutory-section">
+          <h4>📌 Withholding Tax Information</h4>
+          <div class="statutory-grid">
+            <div class="statutory-item">
+              <strong>Standard Rates:</strong> 5% (Services), 10% (Contractors)
+            </div>
+            <div class="statutory-item">
+              <strong>Remittance Period:</strong> Monthly or Quarterly
+            </div>
+            <div class="statutory-item">
+              <strong>Employee WHT:</strong> Remitted via PAYE system
+            </div>
+            <div class="statutory-item">
+              <strong>Vendor WHT:</strong> Remitted directly to tax authorities
+            </div>
+            <div class="statutory-item">
+              <strong>Purpose:</strong> Advance payment of income tax
+            </div>
+            <div class="statutory-item">
+              <strong>Generated:</strong> {{ currentDate | date:'medium' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
