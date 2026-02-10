@@ -79,7 +79,19 @@ import { PurchaseReqManagementComponent } from './ui/view/purchase-req-managemen
 import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/pr-create.component';
 import { PrApprovalInboxComponent } from './ui/view/purchase-req-management/pr-approval-inbox/pr-approval-inbox.component';
 
+import { MultiSelectModule } from 'primeng/multiselect';
+import { FileUploadModule } from 'primeng/fileupload';
+import { DropdownModule } from 'primeng/dropdown';
+
 import { MessageService } from 'primeng/api';
+import { VendorStatusBadgeComponent } from './ui/sharedComponent/view/vendor-status-badge/vendor-status-badge.component';
+import { VendorCategorySelectComponent } from './ui/sharedComponent/view/vendor-category-select/vendor-category-select.component';
+import { ComplianceDocumentUploadComponent } from './ui/sharedComponent/view/compliance-document-upload/compliance-document-upload.component';
+import { VendorListComponent } from './ui/view/vendor-management/vendor-list/vendor-list.component';
+import { VendorDetailsComponent } from './ui/view/vendor-management/vendor-details/vendor-details.component';
+import { VendorRegistrationComponent } from './ui/view/vendor-management/vendor-registration/vendor-registration.component';
+import { VendorApprovalComponent } from './ui/view/vendor-management/vendor-approval/vendor-approval.component';
+import { PaginatorModule } from 'primeng/paginator';
 
 
 
@@ -108,7 +120,14 @@ import { MessageService } from 'primeng/api';
     VendorRfqListComponent,
     PurchaseReqManagementComponent,
     PrCreateComponent,
-    PrApprovalInboxComponent
+    PrApprovalInboxComponent,
+    VendorStatusBadgeComponent,
+    VendorCategorySelectComponent,
+    ComplianceDocumentUploadComponent,
+    VendorListComponent,
+    VendorDetailsComponent,
+    VendorRegistrationComponent,
+    VendorApprovalComponent,
   ],
   imports: [
     BrowserModule,
@@ -163,11 +182,13 @@ import { MessageService } from 'primeng/api';
     ToastModule,
     ButtonModule,
     LargeSideModalComponent,
-
+    MultiSelectModule,
+    FileUploadModule,
+    DropdownModule,
+    PaginatorModule,
+    DialogModule
   ],
-  providers: [
-    MessageService,
-  ],
-  bootstrap: [AppComponent]
+  providers: [MessageService],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
