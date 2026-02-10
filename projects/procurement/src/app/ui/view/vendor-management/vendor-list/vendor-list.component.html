@@ -1,0 +1,95 @@
+<div class="p-4 md:p-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+    <div>
+      <div class="text-xl font-bold text-slate-900">Vendors</div>
+      <div class="text-sm text-slate-500">Manage supplier master data, compliance, and approvals.</div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a class="text-sm text-slate-600 hover:text-slate-900 underline" routerLink="/vendor/approval">
+        Approval Queue
+      </a>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-xs font-medium text-slate-600">Search</label>
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-search"></i>
+          <input pInputText class="w-full" [(ngModel)]="query.q" placeholder="Name, email, code..." (keyup.enter)="fetch()"/>
+        </span>
+      </div>
+
+      <div>
+        <label class="text-xs font-medium text-slate-600">Status</label>
+        <p-dropdown class="w-full"
+                    [options]="statusOptions"
+                    [(ngModel)]="query.status"
+                    (onChange)="fetch()">
+        </p-dropdown>
+      </div>
+
+      <div class="flex items-end justify-end">
+        <button pButton type="button" icon="pi pi-filter" label="Apply" class="p-button-sm" (click)="fetch()"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <p-table [value]="vendors" [loading]="loading" [paginator]="false" dataKey="id" responsiveLayout="scroll">
+      <ng-template pTemplate="header">
+        <tr class="text-xs text-slate-600">
+          <th>Name</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Categories</th>
+          <th>Created</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-v>
+        <tr class="text-sm">
+          <td class="font-medium text-slate-900">
+            <div class="flex flex-col">
+              <span>{{ v.legalName }}</span>
+              <span class="text-xs text-slate-500" *ngIf="v.vendorCode">#{{ v.vendorCode }}</span>
+            </div>
+          </td>
+          <td class="text-slate-700">{{ v.email }}</td>
+          <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
+          <td class="text-slate-600">
+            <span *ngIf="v.categoryIds?.length; else none">{{ v.categoryIds.length }} selected</span>
+            <ng-template #none><span class="text-slate-400">—</span></ng-template>
+          </td>
+          <td class="text-slate-600">{{ v.createdAt | date:'mediumDate' }}</td>
+          <td class="text-right">
+            <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-arrow-right"
+                    label="Open" (click)="open(v)"></button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="p-6 text-center text-slate-500">
+              No vendors found. Try adjusting your filters.
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="border-t border-slate-100 p-3">
+      <p-paginator
+        [rows]="query.pageSize ?? 10"
+        [totalRecords]="total"
+        [first]="((query.page ?? 1) - 1) * (query.pageSize ?? 10)"
+        (onPageChange)="onPage($event)">
+      </p-paginator>
+    </div>
+  </div>
+</div>

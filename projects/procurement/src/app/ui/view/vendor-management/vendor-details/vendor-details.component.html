@@ -1,0 +1,95 @@
+<div class="p-4 md:p-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <div class="text-xl font-bold text-slate-900">Vendor Details</div>
+      <div class="text-sm text-slate-500">Supplier master data and compliance documentation.</div>
+    </div>
+
+    <a routerLink="/vendor" class="text-sm text-slate-600 hover:text-slate-900 underline">Back to Vendors</a>
+  </div>
+
+  <div *ngIf="vendor" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Left: Vendor card -->
+    <div class="lg:col-span-1 rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-lg font-semibold text-slate-900">{{ vendor.legalName }}</div>
+          <div class="text-sm text-slate-500" *ngIf="vendor.tradingName">{{ vendor.tradingName }}</div>
+        </div>
+        <app-vendor-status-badge [status]="vendor.status"></app-vendor-status-badge>
+      </div>
+
+      <div class="mt-4 space-y-2 text-sm">
+        <div class="flex justify-between gap-4">
+          <span class="text-slate-500">Email</span>
+          <span class="text-slate-900 font-medium">{{ vendor.email }}</span>
+        </div>
+        <div class="flex justify-between gap-4" *ngIf="vendor.phone">
+          <span class="text-slate-500">Phone</span>
+          <span class="text-slate-900 font-medium">{{ vendor.phone }}</span>
+        </div>
+        <div class="flex justify-between gap-4" *ngIf="vendor.country">
+          <span class="text-slate-500">Country</span>
+          <span class="text-slate-900 font-medium">{{ vendor.country }}</span>
+        </div>
+        <div class="flex justify-between gap-4" *ngIf="vendor.state">
+          <span class="text-slate-500">State</span>
+          <span class="text-slate-900 font-medium">{{ vendor.state }}</span>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100">
+          <div class="text-xs text-slate-500 mb-1">Primary Contact</div>
+          <div class="text-sm font-medium text-slate-900">{{ vendor.primaryContact?.name }}</div>
+          <div class="text-sm text-slate-600">{{ vendor.primaryContact?.email }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Compliance -->
+    <div class="lg:col-span-2 space-y-4">
+      <app-compliance-document-upload (upload)="uploadDoc($event)"></app-compliance-document-upload>
+
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="font-semibold text-slate-900">Compliance Documents</div>
+          <div class="text-xs text-slate-500">{{ documents.length }} document(s)</div>
+        </div>
+
+        <p-table [value]="documents" [loading]="docsLoading" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr class="text-xs text-slate-600">
+              <th>Type</th>
+              <th>Status</th>
+              <th>File</th>
+              <th>Expiry</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-d>
+            <tr class="text-sm">
+              <td class="font-medium text-slate-900">{{ d.documentType }}</td>
+              <td class="text-slate-700">{{ d.status }}</td>
+              <td class="text-slate-600">{{ d.fileName }}</td>
+              <td class="text-slate-600">{{ d.expiryDate ? (d.expiryDate | date:'mediumDate') : '—' }}</td>
+              <td class="text-right">
+                <button pButton class="p-button-text p-button-sm" icon="pi pi-check"
+                        (click)="approveDoc(d.id)" label="Approve"></button>
+                <button pButton class="p-button-text p-button-sm p-button-danger" icon="pi pi-times"
+                        (click)="rejectDoc(d.id)" label="Reject"></button>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5">
+                <div class="p-6 text-center text-slate-500">No documents uploaded yet.</div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</div>

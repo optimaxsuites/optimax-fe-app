@@ -304,8 +304,6 @@ table{
 
 }
 th{
-    padding: 1rem;
-    box-sizing: border-box;
     background-color: var(--celadon-green);
     color: var(--white) ;
 }
@@ -314,8 +312,8 @@ th{
 }
 
 td {
-    // padding: 0.6rem;
-    box-sizing: border-box;
+    padding: 0.8rem 0.8;
+    // box-sizing: border-box;
     /* background-color: #f1f1f1; */
     /* color: #25925B ; */
     
@@ -323,8 +321,8 @@ td {
 
 .table-item-panel{
   cursor: pointer;
-  font-size: var(--l-font);
-  padding: .8rem 1rem;
+  // font-size: var(--l-font);
+  padding: 0.4rem;
   display: flex;
   align-items: center;
 }
@@ -336,7 +334,7 @@ td {
 
 
 .table-item {
-  font-size: 1.3em; /* Adjust the font size as needed */
+  // font-size: 1.3em; /* Adjust the font size as needed */
 }
 
 
@@ -400,15 +398,15 @@ td {
   .btn-delete{
     background-color: red;
     color: var(--white);
-    font-size: 1.15em;
-    padding: 0.8rem 1rem;
+    // font-size: 1.15em;
+    padding: 0.5rem;
   }
   
   .btn-export{
     background-color: var(--celadon-green);
     color: var(--white);
-    font-size: 1.15em;
-    padding: 0.8rem 1rem;
+    // font-size: 1.15em;
+    padding: 0.5rem;
   }
   .btn-export:hover{
     background-color: var(--celadon-green-hover);
@@ -417,8 +415,8 @@ td {
   .btn-navigate{
     background-color: var(--blue-green);
     color: var(--white);
-    font-size: 1.15em;
-    padding: 0.8rem 1rem;
+    // font-size: 1.15em;
+    padding: 0.5rem;
   }
   .btn-navigate:hover{
     background-color: var(--blue-green-hover);
