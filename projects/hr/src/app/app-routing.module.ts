@@ -45,6 +45,11 @@ const routes: Routes = [
   //   component: EmployeeManagementComponent,
   // },
   {
+ path: 'recruitment/:uuid',
+    component: RecruitmentComponent,
+  },
+
+  {
     path: 'performance/:uuid',
     component: PerformanceComponent,
   },
