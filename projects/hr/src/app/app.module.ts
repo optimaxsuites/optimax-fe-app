@@ -136,6 +136,19 @@ import { CorrectionrequestformComponent } from './ui/view/attendance/employee/co
 import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
 import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { CalendarModule } from 'primeng/calendar';
+import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
+import { ProjectComponent } from './ui/view/project/project.component';
+import { ProjectDetailComponent } from './ui/view/project/project-list/project-detail/project-detail.component';
+import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
+import { MyProjectComponent } from './ui/view/project/my-project/my-project.component';
+import { MyProjectDetailComponent } from './ui/view/project/my-project/my-project-detail/my-project-detail.component';
+import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
+import { CreateProjectComponent } from './ui/view/project/project-list/create-project/create-project.component';
+import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
+import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { MultiSelectModule } from 'primeng/multiselect';
+
 
 @NgModule({
   declarations: [
@@ -205,6 +218,8 @@ import { CalendarModule } from 'primeng/calendar';
     AttendancetableComponent,
     AttendancefilterComponent,
     AttendancesummaryComponent,
+    AttendanceDetailsComponent,
+    AttendanceSheetsComponent,
     OfficeHoursComponent,
     EmployeedashboardComponent,
     TodaySummaryComponent,
@@ -214,11 +229,20 @@ import { CalendarModule } from 'primeng/calendar';
     CorrectionrequestComponent,
     CorrectionrequestformComponent,
     MonthlyattendancelistComponent,
-    AdminCorrectionsComponent
+    AdminCorrectionsComponent,
+    ProjectComponent,
+    ProjectDetailComponent,
+    ProjectListComponent,
+    MyProjectComponent,
+    MyProjectDetailComponent,
+    MySchedulesComponent,
+    CreateProjectComponent,
+    SchedulesComponent,
+    SchedulingComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
@@ -242,8 +266,8 @@ import { CalendarModule } from 'primeng/calendar';
     StepperModule,
     InputTextModule,
     FloatLabelModule,
-    // RadioButtonModule,
-    // MultiSelectModule,
+    RadioButtonModule,
+    MultiSelectModule,
     EditorModule,
     MessagesModule,
     MessageModule,
