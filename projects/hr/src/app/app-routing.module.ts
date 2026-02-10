@@ -25,11 +25,11 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'hr/loan/uu',
+    redirectTo: 'loan/uu',
     pathMatch: 'full',
   },
   {
-    path: 'hr/loan/:uuid',
+    path: 'loan/:uuid',
     component: LoanComponent,
   },
   {
