@@ -1,0 +1,400 @@
+/* Loan Approval UI Component Styles */
+.loan-approval-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f8feff; /* skyBlue */
+    min-height: 100vh;
+}
+
+/* Loading State */
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+    color: #2E6276; /* customBlue */
+    background-color: white;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #e2e2e2; /* grayDark */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Header */
+.approval-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #2E6276; /* customBlue */
+}
+
+.approval-header h1 {
+    font-size: 2.2rem;
+    color: #2E6276; /* customBlue */
+    font-weight: bold;
+    margin: 0;
+}
+
+.search-box input {
+    padding: 10px 15px;
+    border: 1px solid #e2e2e2; /* grayDark */
+    border-radius: 4px;
+    font-size: 14px;
+    width: 300px;
+    background-color: white;
+    color: #495057; /* textGray */
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #2E6276; /* customBlue */
+    box-shadow: 0 0 0 2px rgba(46, 98, 118, 0.2);
+}
+
+/* Filters Section - ABOVE the table */
+.loan-filters {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e2e2; /* grayDark */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2E6276; /* customBlue */
+    font-size: 14px;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px 12px;
+    border: 1px solid #e2e2e2; /* grayDark */
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    color: #495057; /* textGray */
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #2E6276; /* customBlue */
+    box-shadow: 0 0 0 2px rgba(46, 98, 118, 0.2);
+}
+
+/* Button Styles */
+.reset-btn,
+.refresh-btn {
+    padding: 10px 20px;
+    background-color: #2E6276; /* customBlue */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    height: 38px; /* Match input height */
+    align-self: end;
+}
+
+.reset-btn:hover,
+.refresh-btn:hover {
+    background-color: #4291b1; /* customBlueHover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(66, 145, 177, 0.3);
+}
+
+.reset-btn:active,
+.refresh-btn:active {
+    transform: translateY(0);
+}
+
+.refresh-btn {
+    background-color: #2EB270; /* customGreen */
+}
+
+.refresh-btn:hover {
+    background-color: #47e797; /* customGreenHover */
+}
+
+/* Results Count */
+.results-count {
+    margin: 15px 0;
+    padding: 10px 15px;
+    background-color: white;
+    border-radius: 4px;
+    border-left: 4px solid #2E6276; /* customBlue */
+    font-size: 14px;
+    color: #495057; /* textGray */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Table Container */
+.approval-table-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 0;
+    border: 1px solid #e2e2e2; /* grayDark */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+/* Table Styling - Like the dashboard */
+.approval-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.approval-table thead {
+    background-color: #2E6276; /* customBlue */
+}
+
+.approval-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: none;
+}
+
+.approval-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0; /* grayLight */
+    color: #495057; /* textGray */
+    vertical-align: middle;
+}
+
+.approval-table tr:nth-child(even) {
+    background-color: #f8feff; /* skyBlue */
+}
+
+.approval-table tr:nth-child(odd) {
+    background-color: white;
+}
+
+.approval-table .clickable-row {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.approval-table .clickable-row:hover {
+    background-color: #e3eef0; /* skyBlue2 */
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.status-approved {
+    background-color: rgba(46, 178, 112, 0.1);
+    color: #2EB270;
+    border: 1px solid rgba(46, 178, 112, 0.3);
+}
+
+.status-pending {
+    background-color: rgba(231, 222, 101, 0.1);
+    color: #d4b400;
+    border: 1px solid rgba(231, 222, 101, 0.3);
+}
+
+.status-rejected {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #FF0000;
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.action-buttons button {
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.btn-view {
+    background-color: rgb(101, 199, 231); /* Light blue */
+    color: white;
+}
+
+.btn-view:hover {
+    background-color: rgb(66, 145, 177);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
+}
+
+.btn-approve {
+    background-color: #2EB270; /* Green for approve */
+    color: white;
+}
+
+.btn-approve:hover {
+    background-color: #47e797; /* customGreenHover */
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(46, 178, 112, 0.3);
+}
+
+.btn-reject {
+    background-color: #FF0000; /* Red for reject */
+    color: white;
+}
+
+.btn-reject:hover {
+    background-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(255, 0, 0, 0.3);
+}
+
+.btn-history {
+    background-color: rgb(158, 138, 231); /* Purple for history */
+    color: white;
+}
+
+.btn-history:hover {
+    background-color: rgb(128, 108, 201);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(158, 138, 231, 0.3);
+}
+
+/* No Results Message */
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: #495057;
+    font-style: italic;
+    background-color: white;
+}
+
+.no-results td {
+    border-bottom: none;
+    padding: 40px !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .loan-filters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .approval-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .search-box input {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .loan-filters {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons button {
+        width: 100%;
+    }
+    
+    .approval-table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .approval-table th,
+    .approval-table td {
+        padding: 10px;
+        font-size: 13px;
+    }
+    
+    .status-badge {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+    
+    .reset-btn,
+    .refresh-btn {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loan-approval-container {
+        padding: 10px;
+    }
+    
+    .approval-header {
+        padding: 15px;
+    }
+    
+    .approval-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .loan-filters {
+        padding: 15px;
+    }
+    
+    .action-buttons button {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+}
+
+/* Button active states */
+.btn-view:active,
+.btn-approve:active,
+.btn-reject:active,
+.btn-history:active,
+.reset-btn:active,
+.refresh-btn:active {
+    transform: translateY(0);
+}

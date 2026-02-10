@@ -1,0 +1,17 @@
+<!--<p>stats-cards works!</p>-->
+<div class="stats-grid" *ngIf="stats">
+  <div class="stat-card present">
+    <h3>Present</h3>
+    <p>{{ stats.present }}</p>
+  </div>
+
+  <div class="stat-card absent">
+    <h3>Absent</h3>
+    <p>{{ stats.absent }}</p>
+  </div>
+
+  <div class="stat-card late">
+    <h3>Late</h3>
+    <p>{{ stats.late }}</p>
+  </div>
+</div>

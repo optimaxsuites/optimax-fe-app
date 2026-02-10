@@ -1,0 +1,43 @@
+<div class="office-hours-card">
+  <div class="header">
+    <div class="title">
+      <span class="icon">🕒</span>
+      <h3>Office Hours</h3>
+    </div>
+
+    <button class="edit-btn" (click)="editMode = !editMode">
+      {{ editMode ? 'Cancel' : 'Edit' }}
+    </button>
+  </div>
+
+  <div class="hours-display" *ngIf="!editMode">
+    <div class="hour-item">
+      <span class="label">Opening Time</span>
+      <span class="value">{{ form.value.openingTime }}</span>
+    </div>
+
+    <div class="hour-item">
+      <span class="label">Closing Time</span>
+      <span class="value">{{ form.value.closingTime }}</span>
+    </div>
+  </div>
+
+  <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
+    <div class="input-group">
+      <label>Opening Time</label>
+      <input type="time" formControlName="openingTime" />
+    </div>
+
+    <div class="input-group">
+      <label>Closing Time</label>
+      <input type="time" formControlName="closingTime" />
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Save Changes</button>
+      <button type="button" class="secondary" (click)="resetDefault()">Reset Default</button>
+    </div>
+  </form>
+
+  <p class="hint">Default office hours: 09:00 AM – 05:00 PM</p>
+</div>

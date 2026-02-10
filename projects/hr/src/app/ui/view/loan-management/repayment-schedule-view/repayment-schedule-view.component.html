@@ -1,0 +1,101 @@
+<div class="repayment-schedule-container">
+  <h2>Repayment Schedule</h2>
+  
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <h3>Total Loan</h3>
+      <p class="amount"><span>₦</span>{{ loan?.loanAmount }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Monthly Payment</h3>
+      <p class="amount"><span>₦</span>{{ loan?.monthlyRepayment }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Interest</h3>
+      <p class="amount"><span>₦</span>{{ getTotalInterest() }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Payable</h3>
+      <p class="amount"><span>₦</span>{{ getTotalPayment() }}</p>
+    </div>
+  </div>
+  
+  <!-- Timeline Visualization -->
+  <div class="timeline-visual">
+    <h3>Payment Timeline</h3>
+    <div class="timeline">
+      <div *ngFor="let month of loan?.repaymentSchedule; let i = index" class="timeline-item">
+        <div class="timeline-dot" [ngClass]="getStatusClass(month.status)"></div>
+        <div class="timeline-content">
+          <span>Month {{ month.monthNumber }}</span>
+          <small>{{ month.dueDate | date:'MMM yyyy' }}</small>
+          <div class="timeline-amount"><span>₦</span>{{ month.totalPayment }}</div>
+        </div>
+        <div class="timeline-line" *ngIf="i < loan!.repaymentSchedule.length - 1"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Chart (using Chart.js - you'll need to install it) -->
+  <div class="chart-container" *ngIf="chartData.length > 0">
+    <h3>Payment Breakdown</h3>
+    <div style="height: 300px;">
+      <canvas baseChart
+              [data]="chartData"
+              [labels]="chartLabels"
+              [options]="chartOptions"
+              [legend]="true"
+              [type]="'bar'">
+      </canvas>
+    </div>
+  </div>
+  
+  <!-- Detailed Table -->
+  <div class="schedule-table">
+    <h3>Monthly Breakdown</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Due Date</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Total Payment</th>
+            <th>Remaining Balance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of loan?.repaymentSchedule">
+            <td>{{ item.monthNumber }}</td>
+            <td>{{ item.dueDate | date:'mediumDate' }}</td>
+            <td><span>₦</span>{{ item.principal }}</td>
+            <td><span>₦</span>{{ item.interest }}</td>
+            <td><span>₦</span>{{ item.totalPayment }}</td>
+            <td><span>₦</span>{{ item.remainingBalance }}</td>
+            <td>
+              <span class="payment-status" [ngClass]="getStatusClass(item.status)">
+                {{ item.status }}
+              </span>
+              <span *ngIf="item.paymentDate" class="payment-date">
+                Paid: {{ item.paymentDate | date:'shortDate' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2"><strong>Totals</strong></td>
+            <td><strong><span>₦</span>{{ getTotalPrincipal() }}</strong></td>
+            <td><strong><span>₦</span>{{ getTotalInterest() }}</strong></td>
+            <td><strong><span>₦</span>{{ getTotalPayment() }}</strong></td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

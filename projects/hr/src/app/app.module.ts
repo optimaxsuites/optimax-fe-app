@@ -118,19 +118,24 @@ import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
 import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.component';
-import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
-import { ProjectComponent } from './ui/view/project/project.component';
-import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
-import { MyProjectComponent } from './ui/view/project/my-project/my-project.component';
-import { MyProjectDetailComponent } from './ui/view/project/my-project/my-project-detail/my-project-detail.component';
-import { ProjectDetailComponent } from './ui/view/project/project-list/project-detail/project-detail.component';
-import { CreateProjectComponent } from './ui/view/project/project-list/create-project/create-project.component';
-import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
-import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
-import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
+import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboard/attendashboard.component';
+import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
+import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
+import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
+import { AttendancetableComponent } from './ui/view/attendance/admin/attendancetable/attendancetable.component';
+import { AttendancefilterComponent } from './ui/view/attendance/admin/attendancetable/attendancefilter/attendancefilter.component';
+import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendancesummary/attendancesummary.component';
+import { OfficeHoursComponent } from './ui/view/attendance/admin/attendashboard/office-hours/office-hours.component';
+import { EmployeedashboardComponent } from './ui/view/attendance/employee/employeedashboard/employeedashboard.component';
+import { TodaySummaryComponent } from './ui/view/attendance/employee/employeedashboard/today-summary/today-summary.component';
+import { CheckinCheckoutComponent } from './ui/view/attendance/employee/employeedashboard/checkin-checkout/checkin-checkout.component';
+import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeesummary/employeesummary.component';
+import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeesummary/monthlysummary/monthlysummary.component';
+import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
+import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
+import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
+import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { CalendarModule } from 'primeng/calendar';
-import { RadioButtonModule } from 'primeng/radiobutton';
-import { MultiSelectModule } from 'primeng/multiselect';
 
 @NgModule({
   declarations: [
@@ -193,20 +198,27 @@ import { MultiSelectModule } from 'primeng/multiselect';
     DropdownComponent,
     MasterComponent,
     AppraisalComponent,
-    AttendanceDetailsComponent,
-    ProjectComponent,
-    ProjectListComponent,
-    MyProjectComponent,
-    MyProjectDetailComponent,
-    ProjectDetailComponent,
-    CreateProjectComponent,
-    SchedulingComponent,
-    MySchedulesComponent,
-    SchedulesComponent,
+    AttendashboardComponent,
+    StatsCardsComponent,
+    HeatmapComponent,
+    LateArrivalsComponent,
+    AttendancetableComponent,
+    AttendancefilterComponent,
+    AttendancesummaryComponent,
+    OfficeHoursComponent,
+    EmployeedashboardComponent,
+    TodaySummaryComponent,
+    CheckinCheckoutComponent,
+    EmployeesummaryComponent,
+    MonthlysummaryComponent,
+    CorrectionrequestComponent,
+    CorrectionrequestformComponent,
+    MonthlyattendancelistComponent,
+    AdminCorrectionsComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
@@ -230,8 +242,8 @@ import { MultiSelectModule } from 'primeng/multiselect';
     StepperModule,
     InputTextModule,
     FloatLabelModule,
-     RadioButtonModule,
-      MultiSelectModule,
+    // RadioButtonModule,
+    // MultiSelectModule,
     EditorModule,
     MessagesModule,
     MessageModule,
