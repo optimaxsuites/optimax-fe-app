@@ -1,3 +1,4 @@
+import { employeeDTO } from './../../../domain/employee.dto';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { LoanService, LoanApplication } from '../../../service/loan/loan.service'; // Add this import
@@ -197,41 +198,13 @@ export class LoanApprovalUiComponent implements OnInit {
     }
   }
 
-  viewLoanDetails(applicationId: string) {
-    // Get application details from service
-    this.loanService.getApplicationById(applicationId).subscribe(app => {
-      if (app) {
-        // Show details in modal or alert
-        const details = `
-          Application ID: ${app.id}
-          Employee: ${app.fullName} (${app.employeeId})
-          Department: ${app.department}
-          Loan Amount: ₦${app.loanAmount.toLocaleString()}
-          Purpose: ${app.purpose}
-          Repayment Period: ${app.repaymentPeriod} months
-          Monthly Repayment: ₦${app.monthlyRepayment.toLocaleString()}
-          Status: ${app.status}
-          Date Submitted: ${app.dateSubmitted}
-        `;
-        alert(details);
-      }
-    });
-  }
+viewLoanDetails(applicationId: string, employeeId: string) {
+  // Navigate with both employeeId and optional UUID if needed
+  this.router.navigate(['/admin/hr/loan-management/loan-details', employeeId]);
+}
 
-  seeLoanHistory(employeeId: string) {
-    // Filter applications by this employee
-    const employeeLoans = this.loanApplications.filter(app => 
-      app.employeeId === employeeId
-    );
-    
-    if (employeeLoans.length > 0) {
-      let history = `Loan History for Employee ${employeeId}:\n\n`;
-      employeeLoans.forEach((loan, index) => {
-        history += `${index + 1}. ${loan.dateSubmitted} - ₦${loan.loanAmount} - ${loan.status}\n`;
-      });
-      alert(history);
-    } else {
-      alert('No loan history found for this employee');
-    }
-  }
+seeLoanHistory(employeeId: string) {
+  // Navigate to employee history page
+  this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
+}
 }

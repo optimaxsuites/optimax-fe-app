@@ -6,134 +6,199 @@
   </div>
   
   <div *ngIf="!isLoading && loan" class="loan-content">
-    <!-- Header -->
+    <!-- Back Button -->
+    <div class="back-button">
+      <button>
+        ← Back to Loan Applications
+      </button>
+    </div>
+    
+    <!-- Header Section -->
     <header class="loan-header">
       <div class="header-left">
-        <h1>Loan #{{ loan?.id }}</h1>
-        <p class="employee-info">
-          {{ loan?.fullName }} • {{ loan?.employeeId }} • {{ loan?.department }}
-        </p>
-      </div>
-      <div class="header-right">
-        <div class="loan-amount-display">
-          <h2><span>₦</span>{{ loan?.loanAmount }}</h2>
-          <p class="loan-purpose">{{ loan?.purpose }}</p>
-        </div>
+        <h1>Loan Application #{{ loan.id }}</h1>
         <div class="loan-status">
-          <span class="status-badge" [ngClass]="'status-' + loan?.status?.toLowerCase()">
-            {{ loan?.status }}
+          <span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
+            {{ loan.status }}
           </span>
-          <p class="submitted-date">Submitted: {{ loan?.dateSubmitted | date:'mediumDate' }}</p>
+          <span class="submitted-date">Submitted: {{ loan.dateSubmitted | date:'fullDate' }}</span>
         </div>
+      </div>
+      
+      <!-- Action Buttons (Only for PENDING loans) -->
+      <div class="header-actions" *ngIf="loan.status === 'PENDING'">
+        <button (click)="approveLoan()" class="btn-approve-large">
+          APPROVE LOAN
+        </button>
+        <button (click)="rejectLoan()" class="btn-reject-large">
+          REJECT LOAN
+        </button>
       </div>
     </header>
     
-    <!-- Navigation Tabs -->
-    <nav class="details-tabs">
-      <button [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
-        <i class="tab-icon">📊</i> Overview
-      </button>
-      <button [class.active]="activeTab === 'repayment'" (click)="setActiveTab('repayment')">
-        <i class="tab-icon">📅</i> Repayment Schedule
-      </button>
-      <button [class.active]="activeTab === 'status'" (click)="setActiveTab('status')">
-        <i class="tab-icon">🔄</i> Status Tracking
-      </button>
-      <button [class.active]="activeTab === 'payments'" (click)="setActiveTab('payments')">
-        <i class="tab-icon">💰</i> Payment History
-      </button>
-    </nav>
-    
-    <!-- Tab Content -->
-    <div class="tab-content">
-      <!-- Overview Tab -->
-      <div *ngIf="activeTab === 'overview'" class="overview-tab">
-        <div class="overview-grid">
-          <div class="overview-left">
-            <!-- Balance Indicator -->
-            <app-loan-balance-indicator [loan]="loan"></app-loan-balance-indicator>
-            
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-              <h3>Loan Details</h3>
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="stat-label">Interest Rate</span>
-                  <span class="stat-value">{{ loan.interestRate }}%</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Repayment Period</span>
-                  <span class="stat-value">{{ loan.repaymentPeriod }} months</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Monthly Payment</span>
-                  <span class="stat-value">{{ loan.monthlyRepayment | currency:'₦':'symbol':'1.2-2' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Total Interest</span>
-                  <span class="stat-value">
-                    {{ loan.repaymentSchedule.reduce((sum, item) => sum + item.interest, 0) | currency:'₦':'symbol':'1.2-2' }}
-                  </span>
-                </div>
-              </div>
-            </div>
+    <!-- Employee Information Card -->
+    <section class="employee-card">
+      <h2>Employee Information</h2>
+      <div class="employee-details">
+        <div class="detail-row">
+          <div class="detail-item">
+            <span class="label">Full Name:</span>
+            <span class="value">{{ loan.fullName }}</span>
           </div>
-          
-          <div class="overview-right">
-            <!-- Status Tracking -->
-            <app-status-tracking [loan]="loan" [canChangeStatus]="true"></app-status-tracking>
+          <div class="detail-item">
+            <span class="label">Employee ID:</span>
+            <span class="value">{{ loan.employeeId }}</span>
           </div>
-        </div>
-      </div>
-      
-      <!-- Repayment Schedule Tab -->
-      <div *ngIf="activeTab === 'repayment'" class="repayment-tab">
-        <app-repayment-schedule [loan]="loan"></app-repayment-schedule>
-      </div>
-      
-      <!-- Status Tracking Tab -->
-      <div *ngIf="activeTab === 'status'" class="status-tab">
-        <app-status-tracking [loan]="loan" [canChangeStatus]="true"></app-status-tracking>
-      </div>
-      
-      <!-- Payment History Tab -->
-      <div *ngIf="activeTab === 'payments'" class="payments-tab">
-        <h2>Payment History</h2>
-        <div *ngIf="loan.paymentHistory.length === 0" class="no-payments">
-          <p>No payments recorded yet.</p>
+          <div class="detail-item">
+            <span class="label">Department:</span>
+            <span class="value">{{ loan.department }}</span>
+          </div>
         </div>
         
-        <div *ngIf="loan.paymentHistory.length > 0" class="payments-list">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Reference</th>
-                <th>Received By</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let payment of loan.paymentHistory">
-                <td>{{ payment.date | date:'mediumDate' }}</td>
-                <td>{{ payment.amount | currency:'₦':'symbol':'1.2-2' }}</td>
-                <td>{{ payment.paymentMethod }}</td>
-                <td>{{ payment.referenceNumber || '-' }}</td>
-                <td>{{ payment.receivedBy || '-' }}</td>
-                <td>{{ payment.notes || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- View Employee History Button -->
+        <div class="employee-history">
+          <button (click)="viewEmployeeHistory()" class="btn-history">
+            📋 View All Loans for {{ loan.fullName }}
+          </button>
         </div>
       </div>
-    </div>
+    </section>
+    
+    <!-- Loan Details Card -->
+    <section class="loan-details-card">
+      <h2>Loan Request Details</h2>
+      <div class="loan-details-grid">
+        <div class="loan-detail">
+          <span class="label">Loan Amount:</span>
+          <span class="value amount">{{ formatCurrency(loan.loanAmount) }}</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Loan Purpose:</span>
+          <span class="value">{{ loan.purpose }}</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Repayment Period:</span>
+          <span class="value">{{ loan.repaymentPeriod }} months</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Monthly Repayment:</span>
+          <span class="value amount">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Interest Rate:</span>
+          <span class="value">{{ loan.interestRate }}%</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Current Balance:</span>
+          <span class="value amount">{{ formatCurrency(loan.currentBalance) }}</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Total Paid:</span>
+          <span class="value amount">{{ formatCurrency(loan.totalPaid) }}</span>
+        </div>
+        <div class="loan-detail">
+          <span class="label">Acknowledgment:</span>
+          <span class="value" [ngClass]="{'acknowledged': loan.acknowledgment}">
+            {{ loan.acknowledgment ? '✅ Acknowledged' : '❌ Not Acknowledged' }}
+          </span>
+        </div>
+
+        <!-- Approve/Reject Section - Only show for PENDING loans -->
+        <div *ngIf="loan.status === 'PENDING'" class="approval-actions">
+            <h3>Loan Decision</h3>
+            <div class="action-buttons">
+                <button class="btn-approve" (click)="approveLoan()">
+                    Approve Loan
+                </button>
+                <button class="btn-reject" (click)="rejectLoan()">
+                    Reject Loan
+                </button>
+            </div>
+        </div>
+    
+      </div>
+    </section>
+    
+    <!-- Repayment Schedule (Shows when approved) -->
+    <section *ngIf="showRepaymentSchedule" class="repayment-schedule-section">
+      <h2>Repayment Schedule</h2>
+      <div class="progress-indicator">
+        <div class="progress-header">
+          <span>Repayment Progress</span>
+          <span>{{ getProgressPercentage().toFixed(1) }}% Complete</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width]="getProgressPercentage() + '%'">
+            <span class="progress-text">{{ getProgressPercentage().toFixed(0) }}%</span>
+          </div>
+        </div>
+        <div class="progress-labels">
+          <span>₦0</span>
+          <span>{{ formatCurrency(loan.loanAmount / 2) }}</span>
+          <span>{{ formatCurrency(loan.loanAmount) }}</span>
+        </div>
+      </div>
+      
+      <!-- Detailed Repayment Table -->
+      <div class="repayment-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Due Date</th>
+              <th>Principal</th>
+              <th>Interest</th>
+              <th>Total Payment</th>
+              <th>Remaining Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of loan.repaymentSchedule">
+              <td>{{ item.monthNumber }}</td>
+              <td>{{ item.dueDate | date:'MMM yyyy' }}</td>
+              <td>{{ formatCurrency(item.principal) }}</td>
+              <td>{{ formatCurrency(item.interest) }}</td>
+              <td>{{ formatCurrency(item.totalPayment) }}</td>
+              <td>{{ formatCurrency(item.remainingBalance) }}</td>
+              <td>
+                <span class="payment-status" [ngClass]="'status-' + item.status.toLowerCase()">
+                  {{ item.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    
+    <!-- Status History -->
+    <section class="status-history-section">
+      <h2>Status History</h2>
+      <div class="timeline">
+        <div *ngFor="let history of loan.statusHistory; let i = index" class="timeline-item">
+          <div class="timeline-dot" [ngClass]="'status-' + history.status.toLowerCase()"></div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="status">{{ history.status }}</span>
+              <span class="date">{{ history.date | date:'medium' }}</span>
+            </div>
+            <div *ngIf="history.changedBy" class="changed-by">
+              Changed by: {{ history.changedBy }}
+            </div>
+            <div *ngIf="history.notes" class="notes">
+              {{ history.notes }}
+            </div>
+          </div>
+          <div class="timeline-line" *ngIf="i < loan.statusHistory.length - 1"></div>
+        </div>
+      </div>
+    </section>
   </div>
   
   <div *ngIf="!isLoading && !loan" class="not-found">
     <h2>Loan Not Found</h2>
     <p>The requested loan could not be found.</p>
-    <a routerLink="/admin/hr/loan-management" class="back-link">← Back to Loans</a>
+    <button (click)="goBack()" class="btn-back">← Back to Loan Applications</button>
   </div>
 </div>

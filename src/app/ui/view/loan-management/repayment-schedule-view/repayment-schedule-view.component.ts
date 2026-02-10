@@ -1,50 +1,49 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { LoanService, LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.service';
-import { CurrencyPipe } from '@angular/common';
+import { LoanApplication } from '../../../service/loan/loan.service';
 
 @Component({
-  selector: 'app-repayment-schedule',
+  selector: 'app-repayment-schedule-view',
   templateUrl: './repayment-schedule-view.component.html',
   styleUrls: ['./repayment-schedule-view.component.scss']
 })
-export class RepaymentScheduleComponent implements OnInit {
+export class RepaymentScheduleViewComponent implements OnInit {
   @Input() loan!: LoanApplication;
   
   displayedColumns: string[] = ['month', 'dueDate', 'principal', 'interest', 'total', 'balance', 'status'];
-  chartData: any[] = [];
-  chartLabels: string[] = [];
+  
+  // Visualization data
+  paymentBreakdown: { month: number, principal: number, interest: number }[] = [];
+  maxPaymentAmount: number = 0;
   
   ngOnInit() {
-    this.prepareChartData();
+    this.prepareVisualizationData();
   }
   
-  prepareChartData(): void {
+  prepareVisualizationData(): void {
     if (!this.loan?.repaymentSchedule) return;
     
-    // Prepare data for the chart
-    this.chartLabels = this.loan.repaymentSchedule.map((item: { monthNumber: any; }) => `Month ${item.monthNumber}`);
+    this.paymentBreakdown = this.loan.repaymentSchedule.map(item => ({
+      month: item.monthNumber,
+      principal: item.principal,
+      interest: item.interest
+    }));
     
-    const principalData = this.loan.repaymentSchedule.map((item: { principal: any; }) => item.principal);
-    const interestData = this.loan.repaymentSchedule.map((item: { interest: any; }) => item.interest);
-    const balanceData = this.loan.repaymentSchedule.map((item: { remainingBalance: any; }) => item.remainingBalance);
-    
-    this.chartData = [
-      { data: principalData, label: 'Principal', type: 'bar', order: 1 },
-      { data: interestData, label: 'Interest', type: 'bar', order: 2 },
-      { data: balanceData, label: 'Remaining Balance', type: 'line', order: 3, yAxisID: 'y1' }
-    ];
+    // Find maximum total payment for scaling
+    this.maxPaymentAmount = Math.max(...this.loan.repaymentSchedule.map(item => 
+      item.principal + item.interest
+    ));
   }
   
   getTotalPrincipal(): number {
-    return this.loan.repaymentSchedule.reduce((sum: any, item: { principal: any; }) => sum + item.principal, 0);
+    return this.loan.repaymentSchedule.reduce((sum, item) => sum + item.principal, 0);
   }
   
   getTotalInterest(): number {
-    return this.loan.repaymentSchedule.reduce((sum: any, item: { interest: any; }) => sum + item.interest, 0);
+    return this.loan.repaymentSchedule.reduce((sum, item) => sum + item.interest, 0);
   }
   
   getTotalPayment(): number {
-    return this.loan.repaymentSchedule.reduce((sum: any, item: { totalPayment: any; }) => sum + item.totalPayment, 0);
+    return this.loan.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
   }
   
   getStatusClass(status: string): string {
@@ -55,5 +54,11 @@ export class RepaymentScheduleComponent implements OnInit {
       case 'skipped': return 'status-skipped';
       default: return '';
     }
+  }
+  
+  // Calculate bar height for visualization (0-100%)
+  calculateBarHeight(amount: number): number {
+    if (this.maxPaymentAmount === 0) return 0;
+    return (amount / this.maxPaymentAmount) * 100;
   }
 }
