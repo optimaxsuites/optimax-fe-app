@@ -11,7 +11,7 @@ import { ScheduledInterviewComponent } from './scheduled-interview/scheduled-int
 })
 export class RecruitmentComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Job Vacancy', component: RecruitmentListComponent },
+    { name: 'Job Vacancy', component: RecruitmentListComponent, icon:"fa fa-briefcase" },
     { name: 'Job Applications', component: CandidateComponent },
     { name: 'Interview', component: ScheduledInterviewComponent },
   ];
