@@ -110,7 +110,9 @@ import { GeneralTransactionsComponent } from './ui/view/general-transactions/gen
 import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/reconciliation-kanban.component';
 import { TransferFundsComponent } from './ui/view/transfer-funds/transfer-funds.component';
 import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-accountant-ai.component';
-
+import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { ConfirmationService } from 'primeng/api';
 
 @NgModule({
   declarations: [
@@ -151,7 +153,8 @@ import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-
     ReconciliationKanbanComponent,
     GeneralTransactionsComponent,
     TransferFundsComponent,
-    SmartAccountantAiComponent
+    SmartAccountantAiComponent,
+    DeletedRecordsComponent
   ],
   imports: [
     // BrowserModule,
@@ -232,7 +235,12 @@ import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-
     ToggleButtonModule,
     DragDropModule,
   ],
-  providers: [MessageService],
+  providers: [
+    MessageService,
+    ConfirmationService,
+    { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
+    JwtHelperService
+  ],
   bootstrap: [AppComponent],
 })
 export class AppAccountingModule {}
