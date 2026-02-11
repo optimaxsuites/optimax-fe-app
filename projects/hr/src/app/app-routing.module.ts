@@ -105,10 +105,10 @@ const routes: Routes = [
   // },
   { path: 'mygoal', component: MygoalComponent },
 
-  {
-    path: 'user/onboarding/:id/:uuid',
-    component: AddEmployeeFormComponent,
-  },
+  // {
+  //   path: 'onboarding/:id/:uuid',
+  //   component: AddEmployeeFormComponent,
+  // },
   {
     path: 'project/:uuid',
     component: ProjectComponent,

@@ -35,6 +35,7 @@ import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
+import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
 
 const routes: Routes = [
   {
@@ -76,7 +77,10 @@ const routes: Routes = [
     redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
     pathMatch: 'full',
   },
-  
+   {
+    path: 'onboarding/:id/:uuid',
+    component: AddEmployeeFormComponent,
+  },
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
@@ -87,10 +91,7 @@ const routes: Routes = [
     component: BusinessRegComponent,
     canActivate: [AuthGuard],
   },
-  {
-    path: 'user/onboarding/:id/:uuid',
-    component: EmployeeOnboardingFormComponent,
-  },
+ 
   {
     path: 'user',
     component: UserComponent,

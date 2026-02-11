@@ -442,7 +442,7 @@ private setProbationValidators(): void {
         name: `${data.firstName} ${data.lastName}`,
         email: data.email,
         employeeId: data.id,
-        url: `${window.location.origin}/user/onboarding/${data.id}/wer23456fghi367ghj`
+        url: `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj`
       }).subscribe({
         next: (res) => {console.log('Welcome email sent successfully:', res);},
         error: (err) => {
