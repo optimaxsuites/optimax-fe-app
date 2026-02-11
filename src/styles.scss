@@ -59,6 +59,13 @@ $ERP-FE-theme: mat.define-light-theme(
   outline: 2px solid rgb(28, 0, 128);
 }
 
+*{
+  font-size: 12px !important;
+  font-family: "Roboto Slab", serif !important;
+  list-style: none;
+  outline: none;
+  text-decoration: none;
+}
 
 
 .my-outlined-dialog {
@@ -99,15 +106,7 @@ $ERP-FE-theme: mat.define-light-theme(
 // *, h1,h2,h3,h4,h5,h6{
 //   font-family: "Roboto Slab", serif;
 // }
-* {
-  // padding: 0;
-  // margin: 0;
-  list-style: none;
-  outline: none;
-  text-decoration: none;
-  font-family: "Roboto Slab", serif;
-  
-}
+
 html,
 body {
   height: 100%;

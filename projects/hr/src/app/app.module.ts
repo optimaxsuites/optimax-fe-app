@@ -69,6 +69,7 @@ import { BackButtonComponent } from './ui/shared-component/view/back-button/back
 import { ButtonComponent } from './ui/shared-component/view/button/button.component';
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
+import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
@@ -210,6 +211,7 @@ import { LoanComponent } from './ui/view/loan-management/loan.component';
     CareerJobPostingComponent,
     DashboardFooterComponent,
     ButtonComponent,
+    TableComponent,
     NavTabComponent,
     Navbar2Component,
     NavbarComponent,

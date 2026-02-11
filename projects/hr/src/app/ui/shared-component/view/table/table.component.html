@@ -1,0 +1,5 @@
+<div [ngClass]="['table-shell', wrapperClass]">
+  <table [ngClass]="['app-table', tableClass, compact ? 'is-compact' : '', striped ? 'is-striped' : '']">
+    <ng-content></ng-content>
+  </table>
+</div>
