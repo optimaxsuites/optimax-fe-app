@@ -317,7 +317,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Hospitality',
-      code: 'HOP',
+      code: 'optimaXHospitality',
       icon: 'fas fa-users',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The Hospitality module of OptimaXSuites provides tools to manage room bookings, shortlet accommodations, and additional service offerings, including their checkout processes.',
