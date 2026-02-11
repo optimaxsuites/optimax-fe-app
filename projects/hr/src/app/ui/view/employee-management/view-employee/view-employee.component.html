@@ -51,14 +51,17 @@
           <p class="block-title">Basic</p>
           <div class="info-row">
             <span class="info-label">Full name</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.lastName }} {{ employeeInView?.firstName }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Gender</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.gender?.name || employeeInView?.gender || '-' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Date of birth</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.dob || '-' }}</span>
           </div>
         </div>
@@ -67,14 +70,17 @@
           <p class="block-title">Contact</p>
           <div class="info-row">
             <span class="info-label">Work email</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Phone</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.phone || '-' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Location</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.address || '-' }}</span>
           </div>
         </div>
@@ -83,14 +89,17 @@
           <p class="block-title">Job</p>
           <div class="info-row">
             <span class="info-label">Department</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.department?.name || employeeInView?.department || '-' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Level</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.level?.name || employeeInView?.level || '-' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Supervisor</span>
+            <span class="row-leader"></span>
             <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
           </div>
         </div>

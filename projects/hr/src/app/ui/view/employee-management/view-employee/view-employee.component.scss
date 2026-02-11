@@ -43,11 +43,11 @@ p {
 }
 
 .hero-name {
-  @apply text-xl md:text-2xl font-semibold text-slate-800;
+  @apply text-xl md:text-2xl font-semibold text-slate-800 break-words;
 }
 
 .hero-title {
-  @apply text-sm text-slate-500;
+  @apply text-sm text-slate-500 break-words;
 }
 
 .chip-row {
@@ -67,7 +67,7 @@ p {
 }
 
 .hero-details {
-  @apply grid grid-cols-2 md:grid-cols-4 gap-3;
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
 }
 
 .detail-item {
@@ -79,7 +79,7 @@ p {
 }
 
 .detail-value {
-  @apply text-slate-700 font-medium;
+  @apply text-slate-700 font-medium break-words;
 }
 
 .info-card {
@@ -95,7 +95,7 @@ p {
 }
 
 .card-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-4;
 }
 
 .info-block {
@@ -107,7 +107,7 @@ p {
 }
 
 .info-row {
-  @apply flex justify-between gap-3 text-sm;
+  @apply flex flex-col gap-1 text-sm;
 }
 
 .info-label {
@@ -115,11 +115,15 @@ p {
 }
 
 .info-value {
-  @apply text-slate-700 font-medium text-right;
+  @apply text-slate-700 font-medium break-words;
+}
+
+.row-leader {
+  @apply hidden;
 }
 
 .metric-grid {
-  @apply grid grid-cols-2 gap-3;
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
 }
 
 .metric-card {
@@ -167,5 +171,16 @@ p {
 }
 
 .calendar-wrap {
-  @apply min-h-[320px];
+  @apply min-h-[260px] overflow-hidden;
+}
+
+.list-stack p,
+.info-value,
+.detail-value {
+  word-break: break-word;
+}
+
+.employee-hero,
+.info-card {
+  @apply overflow-hidden;
 }
