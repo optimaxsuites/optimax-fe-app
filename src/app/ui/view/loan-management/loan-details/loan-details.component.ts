@@ -1,7 +1,6 @@
-// loan-details.component.ts (add these methods)
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LoanService, LoanApplication } from '../../../service/loan/loan.service';
+import { LoanService, LoanApplication, StatusChange } from '../../../service/loan/loan.service';
 
 @Component({
   selector: 'app-loan-details',
@@ -9,11 +8,19 @@ import { LoanService, LoanApplication } from '../../../service/loan/loan.service
   styleUrls: ['./loan-details.component.scss']
 })
 export class LoanDetailsComponent implements OnInit {
-  employeeId: string = ''; // Changed from loanId to employeeId
+  employeeId: string = '';
   loan: LoanApplication | null = null;
   isLoading: boolean = true;
-  showRepaymentSchedule: boolean = false;
+  canChangeStatus: boolean = true; // Set based on user role
   
+  statusOptions = [
+    { value: 'PENDING', label: 'Pending', color: '#ffc107' },
+    { value: 'APPROVED', label: 'Approved', color: '#28a745' },
+    { value: 'REJECTED', label: 'Rejected', color: '#dc3545' },
+    { value: 'ACTIVE', label: 'Active', color: '#17a2b8' },
+    { value: 'COMPLETED', label: 'Completed', color: '#6c757d' }
+  ];
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -29,10 +36,9 @@ export class LoanDetailsComponent implements OnInit {
   
   loadLoanDetails(): void {
     this.isLoading = true;
-    // Get all applications and find the one for this employee
     this.loanService.getAllApplications().subscribe({
       next: (applications) => {
-        // Find the most recent pending/active loan for this employee
+        // Find the loan for this employee
         const employeeLoans = applications.filter(app => 
           app.employeeId === this.employeeId
         ).sort((a, b) => 
@@ -41,13 +47,6 @@ export class LoanDetailsComponent implements OnInit {
         
         this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
         this.isLoading = false;
-        
-        // Show repayment schedule if loan is APPROVED or ACTIVE
-        if (this.loan) {
-          this.showRepaymentSchedule = this.loan.status === 'APPROVED' || 
-                                       this.loan.status === 'ACTIVE' || 
-                                       this.loan.status === 'COMPLETED';
-        }
       },
       error: (error) => {
         console.error('Error loading loan details:', error);
@@ -56,62 +55,71 @@ export class LoanDetailsComponent implements OnInit {
     });
   }
   
-  // Approve loan
+  // Status tracking methods
+  getStatusColor(status: string): string {
+    const statusOption = this.statusOptions.find(option => option.value === status);
+    return statusOption ? statusOption.color : '#6c757d';
+  }
+
+  getStatusLabel(status: string): string {
+    const statusOption = this.statusOptions.find(option => option.value === status);
+    return statusOption ? statusOption.label : 'Unknown';
+  }
+
+  formatDate(date: string): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  changeStatus(newStatus: string): void {
+    if (!this.loan) return;
+    
+    if (confirm(`Are you sure you want to change status to ${this.getStatusLabel(newStatus)}?`)) {
+      this.loanService.updateApplicationStatus(this.loan.id, newStatus as any).subscribe({
+        next: () => {
+          alert('Status updated successfully!');
+          this.loadLoanDetails(); // Reload to get updated data
+        },
+        error: (error) => {
+          console.error('Error updating status:', error);
+          alert('Failed to update status');
+        }
+      });
+    }
+  }
+
+  // Existing methods
   approveLoan(): void {
     if (!this.loan) return;
-    
-    if (confirm('Are you sure you want to APPROVE this loan?')) {
-      this.loanService.updateApplicationStatus(this.loan.id, 'APPROVED').subscribe({
-        next: () => {
-          alert('Loan approved successfully!');
-          this.showRepaymentSchedule = true; // Show repayment schedule
-          this.loadLoanDetails(); // Reload loan data
-        },
-        error: (error) => {
-          console.error('Error approving loan:', error);
-          alert('Failed to approve loan');
-        }
-      });
-    }
+    this.changeStatus('APPROVED');
   }
   
-  // Reject loan
   rejectLoan(): void {
     if (!this.loan) return;
-    
-    if (confirm('Are you sure you want to REJECT this loan?')) {
-      this.loanService.updateApplicationStatus(this.loan.id, 'REJECTED').subscribe({
-        next: () => {
-          alert('Loan rejected successfully!');
-          this.router.navigate(['/admin/hr/loan-management/loan-approval']);
-        },
-        error: (error) => {
-          console.error('Error rejecting loan:', error);
-          alert('Failed to reject loan');
-        }
-      });
-    }
+    this.changeStatus('REJECTED');
   }
   
-  // Go back to approval UI
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval']);
+    this.router.navigate(['/admin/hr/loan-management/loan-approval', 'uuid']);
   }
   
-  // View employee loan history
   viewEmployeeHistory(): void {
     if (this.loan) {
-      this.router.navigate(['/admin/hr/loan-management/employee-history', this.loan.employeeId]);
+      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.loan.employeeId, 'uuid']);
     }
   }
   
-  // Calculate progress percentage
   getProgressPercentage(): number {
     if (!this.loan) return 0;
     return ((this.loan.loanAmount - this.loan.currentBalance) / this.loan.loanAmount) * 100;
   }
   
-  // Format currency
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',

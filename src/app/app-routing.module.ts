@@ -16,6 +16,12 @@ import { ProjectListComponent } from './ui/view/project/project-list/project-lis
 import { ProjectComponent } from './ui/view/project/project.component';
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 import { LoanComponent } from './ui/view/loan-management/loan.component';
+import { LoanDashboardComponent } from './ui/view/loan-management/loan-dashboard/loan-dashboard.component';
+import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
+import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval-ui/loan-approval-ui.component';
+import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
+import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
+import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 
 const routes: Routes = [
   {
@@ -31,6 +37,34 @@ const routes: Routes = [
   {
     path: 'admin/hr/loan/:uuid',
     component: LoanComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/loan-dashboard/:uuid',
+    component: LoanDashboardComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/request-for-loan/:uuid',
+    component: LoanRequestFormComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/loan-approval/:uuid',
+    component: LoanApprovalUiComponent,
+  },
+   {
+    path: 'admin/hr/loan-management/loan-details/:employeeId',
+    component: LoanDetailsComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
+    component: LoanDetailsComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/employee-loan-history/:employeeId',
+    component: EmployeeLoanHistoryComponent
+  },
+  {
+    path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
+    component: EmployeeLoanHistoryComponent
   },
   {
     path: 'leave/:uuid',

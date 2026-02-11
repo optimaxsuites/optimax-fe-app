@@ -1,8 +1,11 @@
-// loan.service.ts
+// loan.service.ts - UPDATED
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, BehaviorSubject, of } from 'rxjs';
 
 export interface LoanApplication {
+  approvedDate?: string;
+  startDate?: string;
+  endDate?: string;
   id: string;
   employeeId: string;
   fullName: string;
@@ -14,23 +17,11 @@ export interface LoanApplication {
   repaymentPeriod: number;
   monthlyRepayment: number;
   acknowledgment: boolean;
-  
-  // New fields for enhanced features
   interestRate: number;
-  approvedDate?: string;
-  startDate?: string;
-  endDate?: string;
   currentBalance: number;
   totalPaid: number;
-  overdueDays?: number;
-  
-  // Status history
   statusHistory: StatusChange[];
-  
-  // Repayment schedule
   repaymentSchedule: RepaymentScheduleItem[];
-  
-  // Payment history
   paymentHistory: PaymentRecord[];
 }
 
@@ -71,18 +62,56 @@ export interface PaymentRecord {
 export class LoanService {
   private storageKey = 'loanApplications';
   private applications: LoanApplication[] = [];
+  private applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
   
   constructor() {
     this.loadFromStorage();
+    // Initialize with some sample data if empty
+    if (this.applications.length === 0) {
+      this.initializeSampleData();
+    }
+    this.applicationsSubject.next(this.applications);
+  }
+
+  // Initialize with sample data
+  private initializeSampleData(): void {
+    const sampleData: LoanApplication[] = [
+      {
+        id: 'LN-001',
+        employeeId: 'EMP-123',
+        fullName: 'John Doe',
+        department: 'IT',
+        loanAmount: 50000,
+        status: 'PENDING',
+        dateSubmitted: new Date().toISOString().split('T')[0],
+        purpose: 'Medical Emergency',
+        repaymentPeriod: 12,
+        monthlyRepayment: 4166.67,
+        acknowledgment: true,
+        interestRate: 5.5,
+        currentBalance: 50000,
+        totalPaid: 0,
+        statusHistory: [{
+          status: 'PENDING',
+          date: new Date().toISOString().split('T')[0],
+          notes: 'Loan application submitted'
+        }],
+        repaymentSchedule: this.generateRepaymentSchedule(50000, 12, 5.5),
+        paymentHistory: []
+      }
+    ];
+    
+    this.applications = sampleData;
+    this.saveToStorage();
   }
 
   // Submit a new loan application
   submitLoanApplication(formData: any): Observable<LoanApplication> {
     const newApplication: LoanApplication = {
       id: this.generateId(),
-      employeeId: this.generateEmployeeId(),
-      fullName: 'Current User',
-      department: 'Unknown',
+      employeeId: 'EMP-123', // This should come from auth service in real app
+      fullName: 'John Doe', // This should come from auth service
+      department: 'IT', // This should come from auth service
       loanAmount: formData.loanAmount,
       status: 'PENDING',
       dateSubmitted: new Date().toISOString().split('T')[0],
@@ -90,7 +119,7 @@ export class LoanService {
       repaymentPeriod: formData.repaymentPeriod,
       monthlyRepayment: formData.monthlyRepaymentAmount,
       acknowledgment: formData.acknowledgment,
-      interestRate: 5.5, // Default interest rate
+      interestRate: 5.5,
       currentBalance: formData.loanAmount,
       totalPaid: 0,
       statusHistory: [{
@@ -104,47 +133,17 @@ export class LoanService {
     
     this.applications.push(newApplication);
     this.saveToStorage();
+    this.applicationsSubject.next([...this.applications]);
     
     return of(newApplication);
   }
 
-  // Generate repayment schedule
-  private generateRepaymentSchedule(loanAmount: number, months: number, interestRate: number): RepaymentScheduleItem[] {
-    const schedule: RepaymentScheduleItem[] = [];
-    const monthlyInterestRate = interestRate / 100 / 12;
-    const today = new Date();
-    
-    // Calculate monthly payment using amortization formula
-    const monthlyPayment = loanAmount * 
-      (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / 
-      (Math.pow(1 + monthlyInterestRate, months) - 1);
-    
-    let remainingBalance = loanAmount;
-    
-    for (let i = 1; i <= months; i++) {
-      const interest = remainingBalance * monthlyInterestRate;
-      const principal = monthlyPayment - interest;
-      remainingBalance -= principal;
-      
-      // Calculate due date
-      const dueDate = new Date(today);
-      dueDate.setMonth(dueDate.getMonth() + i);
-      
-      schedule.push({
-        monthNumber: i,
-        dueDate: dueDate.toISOString().split('T')[0],
-        principal: parseFloat(principal.toFixed(2)),
-        interest: parseFloat(interest.toFixed(2)),
-        totalPayment: parseFloat(monthlyPayment.toFixed(2)),
-        remainingBalance: parseFloat(remainingBalance.toFixed(2)),
-        status: 'PENDING'
-      });
-    }
-    
-    return schedule;
+  // Get applications as observable for live updates
+  getApplicationsObservable(): Observable<LoanApplication[]> {
+    return this.applicationsSubject.asObservable();
   }
 
-  // SINGLE UPDATED METHOD: Update application status (all statuses)
+  // Update application status
   updateApplicationStatus(loanId: string, status: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING'): Observable<LoanApplication> {
     const application = this.applications.find(app => app.id === loanId);
     if (application) {
@@ -159,7 +158,7 @@ export class LoanService {
         notes: `Status changed from ${oldStatus} to ${status}`
       });
       
-      // Handle special cases for different statuses
+      // Handle special cases
       switch(status) {
         case 'APPROVED':
           application.approvedDate = new Date().toISOString().split('T')[0];
@@ -180,108 +179,64 @@ export class LoanService {
       }
       
       this.saveToStorage();
+      this.applicationsSubject.next([...this.applications]);
       return of({...application});
     }
     throw new Error('Application not found');
   }
 
-  // Record a payment
-  recordPayment(loanId: string, paymentData: any): Observable<LoanApplication> {
-    const application = this.applications.find(app => app.id === loanId);
-    if (application) {
-      // Add payment to history
-      const paymentRecord: PaymentRecord = {
-        date: new Date().toISOString().split('T')[0],
-        amount: paymentData.amount,
-        paymentMethod: paymentData.paymentMethod,
-        referenceNumber: paymentData.referenceNumber,
-        receivedBy: paymentData.receivedBy,
-        notes: paymentData.notes
-      };
-      
-      application.paymentHistory.push(paymentRecord);
-      
-      // Update current balance and total paid
-      application.totalPaid += paymentData.amount;
-      application.currentBalance -= paymentData.amount;
-      
-      // Update repayment schedule
-      this.updateRepaymentSchedule(application, paymentData.amount);
-      
-      // Update status if fully paid
-      if (application.currentBalance <= 0) {
-        this.updateApplicationStatus(loanId, 'COMPLETED');
-      } else if (application.status === 'PENDING' || application.status === 'APPROVED') {
-        // Change to ACTIVE when first payment is made
-        this.updateApplicationStatus(loanId, 'ACTIVE');
-      }
-      
-      this.saveToStorage();
-      return of({...application});
-    }
-    throw new Error('Application not found');
-  }
-
-  private updateRepaymentSchedule(application: LoanApplication, paymentAmount: number): void {
-    let remainingPayment = paymentAmount;
-    
-    for (const scheduleItem of application.repaymentSchedule) {
-      if (scheduleItem.status === 'PENDING' || scheduleItem.status === 'OVERDUE') {
-        if (remainingPayment >= scheduleItem.totalPayment) {
-          scheduleItem.status = 'PAID';
-          scheduleItem.paymentDate = new Date().toISOString().split('T')[0];
-          scheduleItem.paidAmount = scheduleItem.totalPayment;
-          remainingPayment -= scheduleItem.totalPayment;
-        } else {
-          scheduleItem.paidAmount = remainingPayment;
-          remainingPayment = 0;
-        }
-        
-        if (remainingPayment <= 0) break;
-      }
-    }
-  }
-
-  // Get all applications for admin
+  // Get all applications
   getAllApplications(): Observable<LoanApplication[]> {
     return of([...this.applications]);
   }
 
-  // Get applications with filters
-  getApplications(filters?: any): Observable<LoanApplication[]> {
-    let filtered = [...this.applications];
-    
-    if (filters) {
-      if (filters.status) {
-        filtered = filtered.filter(app => app.status === filters.status);
-      }
-      if (filters.department) {
-        filtered = filtered.filter(app => app.department === filters.department);
-      }
-      if (filters.searchTerm) {
-        const term = filters.searchTerm.toLowerCase();
-        filtered = filtered.filter(app => 
-          app.fullName.toLowerCase().includes(term) ||
-          app.employeeId.toLowerCase().includes(term)
-        );
-      }
-    }
-    
-    return of(filtered);
-  }
-
-  // Get single application by ID
+  // Get application by ID
   getApplicationById(id: string): Observable<LoanApplication | undefined> {
     return of(this.applications.find(app => app.id === id));
   }
 
-  // Private helper methods
-  private generateId(): string {
-    return 'LN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  // Get applications by employee ID
+  getApplicationsByEmployeeId(employeeId: string): Observable<LoanApplication[]> {
+    const employeeLoans = this.applications.filter(app => app.employeeId === employeeId);
+    return of([...employeeLoans]);
   }
 
-  private generateEmployeeId(): string {
-    return 'EMP-' + Math.floor(100 + Math.random() * 900);
+  // Private helper methods
+  private generateRepaymentSchedule(loanAmount: number, months: number, interestRate: number): RepaymentScheduleItem[] {
+    const schedule: RepaymentScheduleItem[] = [];
+    const monthlyInterestRate = interestRate / 100 / 12;
+    const today = new Date();
+    
+    const monthlyPayment = loanAmount * 
+      (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / 
+      (Math.pow(1 + monthlyInterestRate, months) - 1);
+    
+    let remainingBalance = loanAmount;
+    
+    for (let i = 1; i <= months; i++) {
+      const interest = remainingBalance * monthlyInterestRate;
+      const principal = monthlyPayment - interest;
+      remainingBalance -= principal;
+      
+      const dueDate = new Date(today);
+      dueDate.setMonth(dueDate.getMonth() + i);
+      
+      schedule.push({
+        monthNumber: i,
+        dueDate: dueDate.toISOString().split('T')[0],
+        principal: parseFloat(principal.toFixed(2)),
+        interest: parseFloat(interest.toFixed(2)),
+        totalPayment: parseFloat(monthlyPayment.toFixed(2)),
+        remainingBalance: parseFloat(remainingBalance.toFixed(2)),
+        status: 'PENDING'
+      });
+    }
+    
+    return schedule;
+  }
+
+  private generateId(): string {
+    return 'LN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
   }
 
   private loadFromStorage(): void {

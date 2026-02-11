@@ -6,199 +6,204 @@
   </div>
   
   <div *ngIf="!isLoading && loan" class="loan-content">
-    <!-- Back Button -->
-    <div class="back-button">
-      <button>
-        ← Back to Loan Applications
+    <!-- Header -->
+    <div class="loan-header">
+      <button class="back-button" (click)="goBack()">
+        ← Back to Applications
       </button>
+      <h1>Loan Application Details</h1>
     </div>
     
-    <!-- Header Section -->
-    <header class="loan-header">
-      <div class="header-left">
-        <h1>Loan Application #{{ loan.id }}</h1>
-        <div class="loan-status">
-          <span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
-            {{ loan.status }}
-          </span>
-          <span class="submitted-date">Submitted: {{ loan.dateSubmitted | date:'fullDate' }}</span>
-        </div>
-      </div>
-      
-      <!-- Action Buttons (Only for PENDING loans) -->
-      <div class="header-actions" *ngIf="loan.status === 'PENDING'">
-        <button (click)="approveLoan()" class="btn-approve-large">
-          APPROVE LOAN
-        </button>
-        <button (click)="rejectLoan()" class="btn-reject-large">
-          REJECT LOAN
-        </button>
-      </div>
-    </header>
-    
-    <!-- Employee Information Card -->
-    <section class="employee-card">
-      <h2>Employee Information</h2>
-      <div class="employee-details">
-        <div class="detail-row">
-          <div class="detail-item">
-            <span class="label">Full Name:</span>
-            <span class="value">{{ loan.fullName }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Employee ID:</span>
-            <span class="value">{{ loan.employeeId }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Department:</span>
-            <span class="value">{{ loan.department }}</span>
+    <!-- Main Content -->
+    <div class="loan-main-content">
+      <!-- Left Column - Loan Info -->
+      <div class="loan-info-section">
+        <!-- Employee Info -->
+        <div class="info-card">
+          <h3>Employee Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Employee Name:</label>
+              <span>{{ loan.fullName }}</span>
+            </div>
+            <div class="info-item">
+              <label>Employee ID:</label>
+              <span>{{ loan.employeeId }}</span>
+            </div>
+            <div class="info-item">
+              <label>Department:</label>
+              <span>{{ loan.department }}</span>
+            </div>
+            <div class="info-item">
+              <label>Date Submitted:</label>
+              <span>{{ formatDate(loan.dateSubmitted) }}</span>
+            </div>
           </div>
         </div>
         
-        <!-- View Employee History Button -->
-        <div class="employee-history">
-          <button (click)="viewEmployeeHistory()" class="btn-history">
-            📋 View All Loans for {{ loan.fullName }}
-          </button>
-        </div>
-      </div>
-    </section>
-    
-    <!-- Loan Details Card -->
-    <section class="loan-details-card">
-      <h2>Loan Request Details</h2>
-      <div class="loan-details-grid">
-        <div class="loan-detail">
-          <span class="label">Loan Amount:</span>
-          <span class="value amount">{{ formatCurrency(loan.loanAmount) }}</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Loan Purpose:</span>
-          <span class="value">{{ loan.purpose }}</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Repayment Period:</span>
-          <span class="value">{{ loan.repaymentPeriod }} months</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Monthly Repayment:</span>
-          <span class="value amount">{{ formatCurrency(loan.monthlyRepayment) }}</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Interest Rate:</span>
-          <span class="value">{{ loan.interestRate }}%</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Current Balance:</span>
-          <span class="value amount">{{ formatCurrency(loan.currentBalance) }}</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Total Paid:</span>
-          <span class="value amount">{{ formatCurrency(loan.totalPaid) }}</span>
-        </div>
-        <div class="loan-detail">
-          <span class="label">Acknowledgment:</span>
-          <span class="value" [ngClass]="{'acknowledged': loan.acknowledgment}">
-            {{ loan.acknowledgment ? '✅ Acknowledged' : '❌ Not Acknowledged' }}
-          </span>
-        </div>
-
-        <!-- Approve/Reject Section - Only show for PENDING loans -->
-        <div *ngIf="loan.status === 'PENDING'" class="approval-actions">
-            <h3>Loan Decision</h3>
-            <div class="action-buttons">
-                <button class="btn-approve" (click)="approveLoan()">
-                    Approve Loan
-                </button>
-                <button class="btn-reject" (click)="rejectLoan()">
-                    Reject Loan
-                </button>
+        <!-- Loan Details -->
+        <div class="info-card">
+          <h3>Loan Request Details</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Loan Amount:</label>
+              <span class="amount">{{ formatCurrency(loan.loanAmount) }}</span>
             </div>
-        </div>
-    
-      </div>
-    </section>
-    
-    <!-- Repayment Schedule (Shows when approved) -->
-    <section *ngIf="showRepaymentSchedule" class="repayment-schedule-section">
-      <h2>Repayment Schedule</h2>
-      <div class="progress-indicator">
-        <div class="progress-header">
-          <span>Repayment Progress</span>
-          <span>{{ getProgressPercentage().toFixed(1) }}% Complete</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width]="getProgressPercentage() + '%'">
-            <span class="progress-text">{{ getProgressPercentage().toFixed(0) }}%</span>
+            <div class="info-item">
+              <label>Purpose:</label>
+              <span>{{ loan.purpose }}</span>
+            </div>
+            <div class="info-item">
+              <label>Repayment Period:</label>
+              <span>{{ loan.repaymentPeriod }} months</span>
+            </div>
+            <div class="info-item">
+              <label>Monthly Repayment:</label>
+              <span class="amount">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Interest Rate:</label>
+              <span>{{ loan.interestRate }}%</span>
+            </div>
+            <div class="info-item">
+              <label>Current Balance:</label>
+              <span class="amount">{{ formatCurrency(loan.currentBalance) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Total Paid:</label>
+              <span class="amount">{{ formatCurrency(loan.totalPaid) }}</span>
+            </div>
           </div>
         </div>
-        <div class="progress-labels">
-          <span>₦0</span>
-          <span>{{ formatCurrency(loan.loanAmount / 2) }}</span>
-          <span>{{ formatCurrency(loan.loanAmount) }}</span>
+        
+        <!-- Status Tracking Section -->
+        <div class="info-card status-tracking-card">
+          <h3>Status Tracking</h3>
+          
+          <!-- Current Status -->
+          <div class="current-status-section">
+            <label>Current Status:</label>
+            <span class="current-status-badge" [style.background-color]="getStatusColor(loan.status)">
+              {{ getStatusLabel(loan.status) }}
+            </span>
+          </div>
+          
+          <!-- Status Change Controls -->
+          <div *ngIf="canChangeStatus" class="status-controls">
+            <label>Change Status:</label>
+            <div class="status-buttons">
+              <button *ngFor="let status of statusOptions" 
+                      [class.active]="loan.status === status.value"
+                      [style.background-color]="status.color"
+                      (click)="changeStatus(status.value)">
+                {{ status.label }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Status History -->
+          <div class="status-history">
+            <h4>Status History</h4>
+            <div class="status-timeline">
+              <div *ngFor="let history of loan.statusHistory; let i = index" class="timeline-item">
+                <div class="timeline-dot" [style.background-color]="getStatusColor(history.status)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="status-label">{{ getStatusLabel(history.status) }}</span>
+                    <span class="timeline-date">{{ formatDate(history.date) }}</span>
+                  </div>
+                  <div *ngIf="history.changedBy" class="changed-by">
+                    Changed by: {{ history.changedBy }}
+                  </div>
+                  <div *ngIf="history.notes" class="timeline-notes">
+                    {{ history.notes }}
+                  </div>
+                </div>
+                <div class="timeline-line" *ngIf="i < loan.statusHistory.length - 1"></div>
+              </div>
+              <div *ngIf="loan.statusHistory.length === 0" class="no-history">
+                No status history available.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
-      <!-- Detailed Repayment Table -->
-      <div class="repayment-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Due Date</th>
-              <th>Principal</th>
-              <th>Interest</th>
-              <th>Total Payment</th>
-              <th>Remaining Balance</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of loan.repaymentSchedule">
-              <td>{{ item.monthNumber }}</td>
-              <td>{{ item.dueDate | date:'MMM yyyy' }}</td>
-              <td>{{ formatCurrency(item.principal) }}</td>
-              <td>{{ formatCurrency(item.interest) }}</td>
-              <td>{{ formatCurrency(item.totalPayment) }}</td>
-              <td>{{ formatCurrency(item.remainingBalance) }}</td>
-              <td>
-                <span class="payment-status" [ngClass]="'status-' + item.status.toLowerCase()">
-                  {{ item.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-    
-    <!-- Status History -->
-    <section class="status-history-section">
-      <h2>Status History</h2>
-      <div class="timeline">
-        <div *ngFor="let history of loan.statusHistory; let i = index" class="timeline-item">
-          <div class="timeline-dot" [ngClass]="'status-' + history.status.toLowerCase()"></div>
-          <div class="timeline-content">
-            <div class="timeline-header">
-              <span class="status">{{ history.status }}</span>
-              <span class="date">{{ history.date | date:'medium' }}</span>
+      <!-- Right Column - Actions & Summary -->
+      <div class="loan-actions-section">
+        <!-- Quick Actions -->
+        <div class="action-card">
+          <h3>Quick Actions</h3>
+          <div class="action-buttons-vertical">
+            <button class="view-history-btn" (click)="viewEmployeeHistory()">
+              View Full Loan History
+            </button>
+            <button *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
+              Approve Loan
+            </button>
+            <button *ngIf="loan.status === 'PENDING'" class="reject-btn" (click)="rejectLoan()">
+              Reject Loan
+            </button>
+          </div>
+        </div>
+        
+        <!-- Status Summary -->
+        <div class="summary-card">
+          <h3>Status Summary</h3>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="label">Submitted:</span>
+              <span class="value">{{ formatDate(loan.dateSubmitted) }}</span>
             </div>
-            <div *ngIf="history.changedBy" class="changed-by">
-              Changed by: {{ history.changedBy }}
+            <div *ngIf="loan.approvedDate" class="summary-item">
+              <span class="label">Approved:</span>
+              <span class="value">{{ formatDate(loan.approvedDate) }}</span>
             </div>
-            <div *ngIf="history.notes" class="notes">
-              {{ history.notes }}
+            <div *ngIf="loan.startDate" class="summary-item">
+              <span class="label">Started:</span>
+              <span class="value">{{ formatDate(loan.startDate) }}</span>
+            </div>
+            <div *ngIf="loan.endDate" class="summary-item">
+              <span class="label">Completed:</span>
+              <span class="value">{{ formatDate(loan.endDate) }}</span>
             </div>
           </div>
-          <div class="timeline-line" *ngIf="i < loan.statusHistory.length - 1"></div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-card">
+          <h3>Repayment Progress</h3>
+          <div class="progress-section">
+            <div class="progress-header">
+              <span>Amount Paid</span>
+              <span>{{ getProgressPercentage().toFixed(1) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width]="getProgressPercentage() + '%'"></div>
+            </div>
+            <div class="progress-details">
+              <div class="progress-item">
+                <span class="label">Loan Amount:</span>
+                <span class="value">{{ formatCurrency(loan.loanAmount) }}</span>
+              </div>
+              <div class="progress-item">
+                <span class="label">Amount Paid:</span>
+                <span class="value">{{ formatCurrency(loan.totalPaid) }}</span>
+              </div>
+              <div class="progress-item">
+                <span class="label">Balance:</span>
+                <span class="value">{{ formatCurrency(loan.currentBalance) }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
   
   <div *ngIf="!isLoading && !loan" class="not-found">
     <h2>Loan Not Found</h2>
     <p>The requested loan could not be found.</p>
-    <button (click)="goBack()" class="btn-back">← Back to Loan Applications</button>
+    <button (click)="goBack()" class="back-btn">← Back to Applications</button>
   </div>
 </div>

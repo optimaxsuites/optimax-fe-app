@@ -1,11 +1,12 @@
-<div class="status-tracking-container">
+<!-- status-tracking.component.html -->
+<div class="status-tracking-container" *ngIf="loan">
   <div class="status-header">
     <h3>Status Tracking</h3>
     
     <!-- Current Status Badge -->
     <div class="current-status">
-      <span class="status-badge" [style.background-color]="getStatusColor(loan.status || '')">
-        {{ getStatusLabel(loan.status || '') }}
+      <span class="status-badge" [style.background-color]="getStatusColor(loan.status)">
+        {{ getStatusLabel(loan.status) }}
       </span>
     </div>
   </div>
@@ -43,6 +44,9 @@
         </div>
         <div class="timeline-line" *ngIf="i < statusHistory.length - 1"></div>
       </div>
+      <div *ngIf="statusHistory.length === 0" class="no-history">
+        No status history available.
+      </div>
     </div>
   </div>
   
@@ -52,19 +56,19 @@
     <div class="summary-grid">
       <div class="summary-item">
         <span class="label">Submitted:</span>
-        <!-- <span class="value">{{ loan?.dateSubmitted }}</span> | date: 'mediumDate' -->
+        <span class="value">{{ formatDate(loan.dateSubmitted) }}</span>
       </div>
       <div *ngIf="loan.approvedDate" class="summary-item">
         <span class="label">Approved:</span>
-        <span class="value">{{ loan.approvedDate }}</span>
+        <span class="value">{{ formatDate(loan.approvedDate) }}</span>
       </div>
       <div *ngIf="loan.startDate" class="summary-item">
         <span class="label">Started:</span>
-        <span class="value">{{ loan.startDate }}</span>
+        <span class="value">{{ formatDate(loan.startDate) }}</span>
       </div>
       <div *ngIf="loan.endDate" class="summary-item">
         <span class="label">Completed:</span>
-        <span class="value">{{ loan.endDate }}</span>
+        <span class="value">{{ formatDate(loan.endDate) }}</span>
       </div>
     </div>
   </div>
