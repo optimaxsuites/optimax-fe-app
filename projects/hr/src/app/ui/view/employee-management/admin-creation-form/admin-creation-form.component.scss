@@ -2,18 +2,129 @@ p{
     margin-bottom: 0;
 }
 
+:host {
+  display: block;
+}
+
+.employee-form {
+  @apply bg-white/70 border border-slate-100 rounded-2xl shadow-sm;
+}
+
+.form-header {
+  @apply flex flex-wrap items-center justify-between gap-4 px-4 md:px-6 py-4;
+}
+
+.form-steps {
+  @apply grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-6 py-4;
+}
+
+.step-item {
+  @apply relative flex flex-col items-center text-center gap-2;
+}
+
+.step-line {
+  @apply hidden md:block absolute top-4 left-1/2 h-[2px] w-full;
+}
+
+.step-circle {
+  @apply flex items-center justify-center h-8 w-8 rounded-full text-xs font-semibold;
+}
+
+.step-label {
+  @apply text-xs md:text-sm;
+}
+
+.form-section {
+  @apply px-4 md:px-6 pb-6;
+}
+
+.form-card {
+  @apply bg-white/80 border border-slate-100 rounded-2xl p-5 md:p-6 shadow-sm text-slate-600;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.form-field {
+  @apply flex flex-col gap-1;
+}
+
+.form-label {
+  @apply text-[13px] font-medium text-slate-600;
+}
+
+.required {
+  @apply ml-1 font-bold text-red-600;
+}
+
+.form-error {
+  @apply text-red-600 text-xs;
+}
+
+.section-title {
+  @apply text-sm font-semibold text-slate-700;
+}
+
+.summary-grid {
+  @apply grid grid-cols-1 gap-4;
+}
+
+.summary-card {
+  @apply bg-white/80 border border-slate-100 rounded-2xl p-4 shadow-sm text-slate-600;
+}
+
+.summary-title {
+  @apply text-sm font-semibold text-customBlue mb-2;
+}
+
+.btn-primary {
+  @apply bg-customBlue hover:bg-customBlueHover text-white px-4 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply bg-customBlue/10 text-customBlue px-4 py-2 rounded-xl text-sm font-semibold hover:bg-customBlue/20 transition;
+}
+
+.btn-ghost {
+  @apply bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-200 transition;
+}
+
+.btn-success {
+  @apply bg-customGreen text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-customGreen/90 transition disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.input-modern {
+  @apply w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm outline-none transition focus:border-customBlue focus:ring-2 focus:ring-customBlue/20;
+}
+
+.select-modern {
+  @apply w-full;
+}
+
+.select-with-action {
+  @apply flex items-center gap-1
+}
+
+.icon-button {
+  @apply h-full w-10 rounded-r-xl border border-slate-200 bg-white text-customBlue hover:bg-slate-50 transition flex items-center justify-center;
+}
+
+.meta-form {
+  @apply min-w-[320px] max-w-[520px] flex flex-col gap-4;
+}
 
 :host ::ng-deep .ng-select {
     // background-color: lightgray;
-    @apply bg-gray-50
+    @apply bg-transparent
 }
 
 :host ::ng-deep .ng-select .ng-select-container {
-    @apply bg-gray-50
+    @apply bg-white/80 border border-slate-200 rounded-lg min-h-[42px]
 }
 
 :host ::ng-deep .ng-select .ng-option {
-    @apply bg-gray-50 text-gray-600
+    @apply bg-white text-gray-600
 }
 
 :host ::ng-deep .ng-select .ng-option:hover {

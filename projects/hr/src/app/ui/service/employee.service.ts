@@ -32,7 +32,7 @@ export class EmployeeService {
     return this.http
         .get<any>(
             this.baseurl +
-                `/x/api/v2/hr/employees?page=1&size=40`)
+                `/x/api/v2/hr/employees?page=1&size=1200`)
         .pipe(catchError(this.handleError));
   }
 

@@ -64,11 +64,28 @@ export class DataService {
                 `/x/api/v2/hr/departments`)
         .pipe(catchError(this.handleError));
   }
+
+  addDepartment(data: { id?: number; name: string; description?: string; code?: string }): Observable<any> {
+    return this.http
+        .post<any>(
+            this.baseurl +
+                `/x/api/v2/hr/departments`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   getJobType(): Observable<any>{
     return this.http
         .get<any>(
             this.baseurl +
                 `/x/api/v2/hr/jobTypes`)
+        .pipe(catchError(this.handleError));
+  }
+
+  addJobType(data: { id?: number; name: string; description?: string; code?: string }): Observable<any> {
+    return this.http
+        .post<any>(
+            this.baseurl +
+                `/x/api/v2/hr/jobTypes`, data)
         .pipe(catchError(this.handleError));
   }
 

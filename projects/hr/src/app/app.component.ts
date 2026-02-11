@@ -27,7 +27,7 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.userLoginAction();
-    this.metadataService.fetchMetaData();
+    this.metadataService.fetchMetaData(true);
   }
   async userLoginAction(): Promise<void> {
     const loginDetails = {

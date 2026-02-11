@@ -37,6 +37,7 @@ export class AdminCreationFormComponent {
   imageURL: string =''
   salaryStructure: any = [];
   departments: any[] = [];
+  employees: any[] = [];
 
   levels: any[] = []
   leaves: any[] = []
@@ -78,8 +79,12 @@ export class AdminCreationFormComponent {
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
-totalLeaveDays: number = 0;
+  totalLeaveDays: number = 0;
   errorMessage: string = "";
+  showMetaModal: boolean = false;
+  activeMetaType: 'department' | 'employment' | 'level' | null = null;
+  savingMeta: boolean = false;
+  metaForm!: FormGroup;
   constructor(
     private fb: FormBuilder,  
     private metadataService: MetadataService,
@@ -93,10 +98,12 @@ totalLeaveDays: number = 0;
   ngOnInit(): void {
    
 
+    this.metadataService.ensureMetaLoaded();
     this.metadataService.departments$.subscribe(data => (this.departments = data));
     this.metadataService.levels$.subscribe(data => (this.levels = data))
     this.metadataService.leaves$.subscribe(data => (this.leaves = data));
    this.metadataService.employment$.subscribe(data => this.employments = data);
+   this.loadEmployees();
    
     this.basicForm = this.fb.group({
       firstName: ['',Validators.required ],
@@ -106,7 +113,7 @@ totalLeaveDays: number = 0;
       title: ["", [Validators.required]],
       department: ["", [Validators.required]],
       level: [0, [Validators.required]],
-      employmentType: [0, [Validators.required]],
+      jobType: [0, [Validators.required]],
       supervisor: ["", [Validators.required]],
     });
 
@@ -137,6 +144,12 @@ totalLeaveDays: number = 0;
       adminAccess: [false]
     });
 
+    this.metaForm = this.fb.group({
+      name: ['', Validators.required],
+      code: [''],
+      description: ['']
+    });
+
     this.registerInfo = this.fb.group( {
       username: ['', [Validators.required]],
       password: ['', [Validators.required]],
@@ -158,6 +171,126 @@ totalLeaveDays: number = 0;
     });
 
     this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
+  }
+
+  get metaTitle(): string {
+    switch (this.activeMetaType) {
+      case 'department':
+        return 'Create Department';
+      case 'employment':
+        return 'Create Employment Type';
+      case 'level':
+        return 'Create Level';
+      default:
+        return 'Create';
+    }
+  }
+
+  openMetaModal(type: 'department' | 'employment' | 'level') {
+    this.activeMetaType = type;
+    this.showMetaModal = true;
+    this.metaForm.reset();
+
+    const codeControl = this.metaForm.get('code');
+    const descriptionControl = this.metaForm.get('description');
+
+    if (type === 'level') {
+      codeControl?.setValidators([Validators.required]);
+      descriptionControl?.setValidators([Validators.required]);
+    } else {
+      codeControl?.clearValidators();
+      descriptionControl?.clearValidators();
+    }
+
+    codeControl?.updateValueAndValidity();
+    descriptionControl?.updateValueAndValidity();
+  }
+
+  closeMetaModal() {
+    this.showMetaModal = false;
+    this.activeMetaType = null;
+    this.metaForm.reset();
+  }
+
+  saveMeta() {
+    if (!this.activeMetaType) return;
+    this.metaForm.markAllAsTouched();
+    if (this.metaForm.invalid) return;
+
+    const payload = {
+      id: 0,
+      name: this.metaForm.get('name')?.value ?? '',
+      code: this.metaForm.get('code')?.value ?? '',
+      description: this.metaForm.get('description')?.value ?? '',
+    };
+
+    this.savingMeta = true;
+
+    const request =
+      this.activeMetaType === 'department'
+        ? this.dataService.addDepartment({ id: payload.id, name: payload.name, code: payload.code, description: payload.description })
+        : this.activeMetaType === 'employment'
+        ? this.dataService.addJobType({ id: payload.id, name: payload.name, code: payload.code, description: payload.description })
+        : this.dataService.addLevel({ name: payload.name, code: payload.code, description: payload.description });
+
+    request.subscribe({
+      next: (data: any) => {
+        this.savingMeta = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `${this.metaTitle} saved`,
+          key: 'tl',
+          life: 3000
+        });
+        this.metadataService.refreshMetaData();
+        if (this.activeMetaType === 'department' && data?.id) {
+          this.basicForm.get('department')?.setValue(data.id);
+        }
+        if (this.activeMetaType === 'employment' && data?.id) {
+          this.basicForm.get('jobType')?.setValue(data.id);
+        }
+        if (this.activeMetaType === 'level' && data?.id) {
+          this.basicForm.get('level')?.setValue(data.id);
+        }
+        this.closeMetaModal();
+      },
+      error: () => {
+        this.savingMeta = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Unable to save ${this.activeMetaType}`,
+          key: 'tl',
+          life: 3000
+        });
+      }
+    });
+  }
+
+  private loadEmployees() {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        const employees = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        this.employees = employees
+          .map((employee: any) => ({
+            ...employee,
+            fullName: `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim()
+          }))
+          .filter((employee: any) => employee.fullName.length > 0)
+          .sort((a: any, b: any) => a.fullName.localeCompare(b.fullName));
+      },
+      error: () => {
+        this.employees = [];
+      }
+    });
   }
 
   calculateTotalLeaveDays(): void {
@@ -267,7 +400,7 @@ private setProbationValidators(): void {
     jobTitle: this.basicForm.get('title')?.value,
     departmentId: this.basicForm.get('department')?.value,
     levelId: this.basicForm.get('level')?.value,
-    employmentType: this.basicForm.get('employmentType')?.value,
+    jobType: this.basicForm.get('jobType')?.value,
     supervisor: this.basicForm.get('supervisor')?.value,
 
     // Employment Information

@@ -32,6 +32,7 @@ export class BulkEmployeeInstructionComponent {
     private token: RandomTokenService, private metadataService: MetadataService, private employeeService: EmployeeService ) {}
 
     ngOnInit() {
+    this.metadataService.ensureMetaLoaded();
     this.metadataService.departments$.subscribe(data => (this.departments = data));
       this.metadataService.levels$.subscribe(data => (this.levels = data))
       this.metadataService.leaves$.subscribe(data => (this.leaves = data));

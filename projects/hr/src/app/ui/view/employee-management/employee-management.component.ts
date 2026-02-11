@@ -242,6 +242,9 @@ employees: any = []
 filteredEmployees: any[] = [];
 selectedEmployeeType: any;
 calendarOptions: CalendarOptions = {}
+currentPage = 1;
+pageSize = 12;
+pageSizeOptions = [8, 12, 16, 24];
 
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
@@ -270,7 +273,14 @@ handleDateClick(arg: DateClickArg) {
   fetchEmployees(){
     this.employeeService.getAllEmployee().subscribe({
       next: data => {
-        this.employees = data
+        const employees = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+        this.employees = this.sortEmployeesLatest(employees);
         this.uniqueLevels = [
           ...new Set(
             this.employees
@@ -294,6 +304,7 @@ handleDateClick(arg: DateClickArg) {
           }
           return employee;
         });
+        this.resetPagination();
     console.log(this.filteredEmployees)
     
 
@@ -302,6 +313,36 @@ handleDateClick(arg: DateClickArg) {
     })
 
 
+  }
+
+  private sortEmployeesLatest(employees: any[]): any[] {
+    return employees
+      .slice()
+      .sort((a, b) => this.getEmployeeSortValue(b) - this.getEmployeeSortValue(a));
+  }
+
+  private getEmployeeSortValue(employee: any): number {
+    const dateValue =
+      employee?.createdAt ??
+      employee?.hireDate ??
+      employee?.employementStartDate ??
+      employee?.employmentStartDate ??
+      employee?.employmentDate ??
+      employee?.dateOfHire;
+
+    if (dateValue) {
+      const time = new Date(dateValue).getTime();
+      if (!Number.isNaN(time)) return time;
+    }
+
+    const id = employee?.id;
+    if (typeof id === 'number') return id;
+    if (typeof id === 'string' && id.trim() !== '') {
+      const parsed = Number(id);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+
+    return 0;
   }
 
   fetchProfilePhoto(employee: any): void {
@@ -383,6 +424,7 @@ handleDateClick(arg: DateClickArg) {
   
       return matchesLevelType && matchesPosition && matchesSearchTerm;
     });
+    this.resetPagination();
   
   }
   
@@ -391,6 +433,7 @@ handleDateClick(arg: DateClickArg) {
       (employee: { level: { name: string }; }) => 
         {return this.selectedEmployeeType.length === 0 || this.selectedEmployeeType.includes(employee?.level?.name)}
     );
+    this.resetPagination();
     }
 
 
@@ -398,7 +441,91 @@ handleDateClick(arg: DateClickArg) {
      this.filteredEmployees = this.employees.filter((employee: { level: any; jobTitle: string; firstName: string; lastName: string; }) => {
       return this.selectedPosition.length === 0 || this.selectedPosition.includes(employee.jobTitle);
     })
+    this.resetPagination();
       }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredEmployees.length / this.pageSize));
+  }
+
+  get startItem(): number {
+    if (this.filteredEmployees.length === 0) return 0;
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get endItem(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredEmployees.length);
+  }
+
+  get pagedEmployees(): any[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredEmployees.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  get displayPages(): Array<number | '...'> {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages: Array<number | '...'> = [1];
+    let start = Math.max(2, current - 1);
+    let end = Math.min(total - 1, current + 1);
+
+    if (current <= 4) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 3) {
+      start = total - 3;
+      end = total - 1;
+    }
+
+    if (start > 2) {
+      pages.push('...');
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (end < total - 1) {
+      pages.push('...');
+    }
+
+    pages.push(total);
+    return pages;
+  }
+
+  changePage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  onPageClick(page: number | '...') {
+    if (page === '...') return;
+    this.changePage(page);
+  }
+
+  nextPage() {
+    this.changePage(this.currentPage + 1);
+  }
+
+  previousPage() {
+    this.changePage(this.currentPage - 1);
+  }
+
+  onPageSizeChange() {
+    this.resetPagination();
+  }
+
+  private resetPagination() {
+    this.currentPage = 1;
+  }
 
       // getEmployeesProfilePhotoUrl(filename: string){
       //   this.employeeService.getEmployeeImage(filename).subscribe({

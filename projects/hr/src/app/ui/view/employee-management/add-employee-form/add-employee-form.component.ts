@@ -211,6 +211,7 @@ export class AddEmployeeFormComponent {
   }
 
   fetchMetaData(){
+    this.metadataService.ensureMetaLoaded();
     this.metadataService.gender$.subscribe(data => (this.gender = data));
     this.metadataService.maritalStatuses$.subscribe(data => (this.maritalStatuses = data));
     this.metadataService.religions$.subscribe(data => (this.religions = data));
