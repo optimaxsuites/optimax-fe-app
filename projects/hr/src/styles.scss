@@ -118,3 +118,38 @@ input[type="radio"]{
   @apply accent-customBlue
 
 }
+
+:root {
+  --table-bg: #ffffff;
+  --table-border: #e6edf2;
+  --table-header-bg: #f4f7f9;
+  --table-header-text: #224957;
+  --table-row-hover: #f7fafc;
+  --table-text: #2a3a43;
+}
+
+.p-datatable .p-datatable-table {
+  border: 1px solid var(--table-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--table-bg);
+  color: var(--table-text);
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--table-header-bg);
+  color: var(--table-header-text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--table-border);
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-bottom: 1px solid var(--table-border);
+}
+
+.p-datatable .p-datatable-tbody > tr:hover > td {
+  background: var(--table-row-hover);
+}

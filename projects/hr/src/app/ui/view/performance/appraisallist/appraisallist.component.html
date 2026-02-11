@@ -55,81 +55,51 @@
     </ng-template>
   </p-toolbar>
 
-  <p-table
-    [value]="filteredAppraisals"
+  <app-table
+    [columns]="appraisalColumns"
+    [rows]="filteredAppraisals"
     [paginator]="true"
-    [(selection)]="selectedTemplate"
-    styleClass=""
+    [rowsPerPage]="10"
     [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
-    [rows]="10"
+    [emptyMessage]="'No request made yet'"
   >
-    <ng-template pTemplate="header">
-      <tr>
-        <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-        <th class="table-item" pSortableColumn="Employee">Employee Name</th>
-        <th class="table-item" pSortableColumn="Date">Start Date</th>
-        <!-- <th class="table-item" pSortableColumn="LeaveType">End Date</th> -->
-        <th class="table-item" pSortableColumn="NetLeaveBalance">Due Date</th>
-        <th class="table-item" pSortableColumn="RequestedDuration">
-          Department
-        </th>
-        <th class="table-item" pSortableColumn="Status">Period</th>
-        <th class="table-item" pSortableColumn="Status">Review Status</th>
+    <ng-template appTableBody let-appraisals>
+      <td class="table-item">{{ appraisals.employeeName }}</td>
+      <td class="table-item">{{ appraisals.startDate }}</td>
+      <td class="table-item">{{ appraisals.dueDate }}</td>
+      <td class="table-item">{{ appraisals.department }}</td>
+      <td class="table-item">{{ appraisals.period }}</td>
+      <td class="table-item">
+        <button (click)="updateAppraisalStatus(appraisals.id, 'Initiated ')">
+          Initiated
+        </button>
+      </td>
 
-        <th class="table-item">Action</th>
-      </tr>
+      <td>
+        <div class="flex text-lg gap-2">
+          <button
+            pButton
+            icon="pi pi-eye"
+            class="p-button-rounded p-button-text"
+            (click)="viewAppraisalDetails(appraisals)"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-text p-button-success"
+            (click)="editAppraisal(appraisals)"
+          ></button>
+          <button
+            pButton
+            *ngIf="userRole === 'ROLE_ADMIN'"
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-text p-button-danger"
+            (click)="deleteAppraisal(appraisals.id)"
+          ></button>
+        </div>
+      </td>
     </ng-template>
-
-    <ng-template pTemplate="body" let-appraisals let-i="rowIndex">
-      <tr class="p-table-row">
-        <td><p-tableCheckbox [value]="appraisals" /></td>
-        <td class="table-item">{{ appraisals.employeeName }}</td>
-        <td class="table-item">{{ appraisals.startDate }}</td>
-        <!-- <td class="table-item">{{ appraisals.endDate }}</td> -->
-        <td class="table-item">{{ appraisals.dueDate }}</td>
-        <td class="table-item">{{ appraisals.department }}</td>
-        <td class="table-item">{{ appraisals.period }}</td>
-        <td class="table-item">
-          <!-- Replace with actual actions as needed -->
-          <button (click)="updateAppraisalStatus(appraisals.id, 'Initiated ')">
-            Initiated
-          </button>
-        </td>
-
-        <td>
-          <div class="flex text-lg gap-2">
-            <button
-              pButton
-              icon="pi pi-eye"
-              class="p-button-rounded p-button-text"
-              (click)="viewAppraisalDetails(appraisals)"
-            ></button>
-            <button
-              pButton
-              icon="pi pi-pencil"
-              class="p-button-rounded p-button-text p-button-success"
-              (click)="editAppraisal(appraisals)"
-            ></button>
-            <button
-              pButton
-              *ngIf="userRole === 'ROLE_ADMIN'"
-              icon="pi pi-trash"
-              class="p-button-rounded p-button-text p-button-danger"
-              (click)="deleteAppraisal(appraisals.id)"
-            ></button>
-          </div>
-        </td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="8" class="text-center text-[14px] py-4">
-          No request made yet
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+  </app-table>
 </div>
 
 <!-- View Goal Modal -->

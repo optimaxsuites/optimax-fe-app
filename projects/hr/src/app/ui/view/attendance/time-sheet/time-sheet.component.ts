@@ -15,6 +15,16 @@ export class TimeSheetComponent {
   employeeSignature: string = '';
   supervisorSignature: string = '';
   status: string = '';
+  timeSheetColumns = [
+    { header: 'Day', field: 'day' },
+    { header: 'Project', field: 'project' },
+    { header: 'Task', field: 'task' },
+    { header: 'Resumption Time', field: 'resumptionTime' },
+    { header: 'Closing Time', field: 'closingTime' },
+    { header: 'Actual Clock-In', field: 'clockIn' },
+    { header: 'Actual Clock-Out', field: 'clockOut' },
+    { header: 'Hours Worked', field: 'hoursWorked' }
+  ];
 
   calculateHoursWorked(day: string): number {
     const clockIn = this.actualClockInTimes[day];
@@ -45,4 +55,3 @@ export class TimeSheetComponent {
     }
   }
 }
-

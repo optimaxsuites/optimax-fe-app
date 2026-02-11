@@ -25,6 +25,32 @@ export class LoanApprovalUiComponent implements OnInit {
   filteredLoans: LoanApplication[] = [];
   isLoading = true; // Add loading state
 
+  loanColumns = [
+    { header: 'Application ID', field: 'id' },
+    { header: 'Employee', field: 'fullName' },
+    { header: 'Employee ID', field: 'employeeId' },
+    { header: 'Department', field: 'department' },
+    {
+      header: 'Loan Amount',
+      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+    },
+    { header: 'Purpose', field: 'purpose' },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: LoanApplication) => `status-badge ${this.getStatusClass(row.status)}`
+    },
+    {
+      header: 'Date Submitted',
+      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+    }
+  ];
+
+  loanActions = [
+    { id: 'view', label: 'View Details', className: 'btn-view' },
+    { id: 'history', label: 'History', className: 'btn-history' }
+  ];
+
   constructor(
     private router: Router,
     private loanService: LoanService // Inject LoanService
@@ -32,6 +58,24 @@ export class LoanApprovalUiComponent implements OnInit {
 
   ngOnInit() {
     this.loadApplications();
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 2
+    }).format(amount);
+  }
+
+  handleLoanAction(event: { actionId: string; row: LoanApplication }) {
+    if (event.actionId === 'view') {
+      this.viewLoanDetails(event.row.id, event.row.employeeId);
+      return;
+    }
+    if (event.actionId === 'history') {
+      this.seeLoanHistory(event.row.employeeId);
+    }
   }
 
   // Load applications from service

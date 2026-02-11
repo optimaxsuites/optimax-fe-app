@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DataService } from '../../../service/data.service';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 interface Section {
   id: string;
@@ -57,6 +58,14 @@ export class GoalComponent implements OnInit {
 
   selectedDepartment: string | null = null;
   selectedLevel: string | null = null;
+  goalColumns: TableColumn[] = [
+    { header: 'Employee Name', field: 'employeeName', sortable: true, className: 'table-item' },
+    { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
+    { header: 'Level', field: 'level', sortable: true, className: 'table-item' },
+    { header: 'Due Date', field: 'dueDate', sortable: true, className: 'table-item' },
+    { header: 'Review Status', field: 'progressStatus', sortable: true, className: 'table-item' },
+    { header: 'Action', className: 'table-item' },
+  ];
 
   selectedAppraisal: Appraisal | null = null;
   comment: string = '';

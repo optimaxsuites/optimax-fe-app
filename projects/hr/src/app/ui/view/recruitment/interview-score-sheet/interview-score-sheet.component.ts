@@ -17,6 +17,15 @@ export class InterviewScoreSheetComponent implements OnInit {
   criteriaScore: QuestionDTO= {};
   selectedCriterias: QuestionItemDTO[] = [];
   userId: any;
+  interviewColumns = [
+    { header: '#', field: 'index' },
+    { header: 'Criteria', field: 'text' },
+    { header: '1', field: 'score1', align: 'center' as const },
+    { header: '2', field: 'score2', align: 'center' as const },
+    { header: '3', field: 'score3', align: 'center' as const },
+    { header: '4', field: 'score4', align: 'center' as const },
+    { header: '5', field: 'score5', align: 'center' as const }
+  ];
   allCriteria: QuestionDTO[] = [
     {
       id: 'ertyu',

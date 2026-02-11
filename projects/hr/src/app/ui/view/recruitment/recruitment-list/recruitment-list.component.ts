@@ -5,6 +5,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
 import { RecruitmentService } from '../../../service/recruitment.service';
 import { RecruitmentFormComponent } from '../recruitment-form/recruitment-form.component';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-recruitment-list',
@@ -23,6 +24,18 @@ export class RecruitmentListComponent implements OnInit {
   filteredJobPostings: JobPostingDTO[] = [];
   showListView: boolean = true;
   viewModal?: boolean;
+  jobColumns: TableColumn[] = [
+    { header: 'Title', field: 'title', sortable: true, className: 'table-item' },
+    { header: 'Location', field: 'location', sortable: true, className: 'table-item' },
+    { header: 'Job Type', field: 'employmentType', sortable: true, className: 'table-item' },
+    { header: 'Posted Date', field: 'postedDate', sortable: true, className: 'table-item' },
+    { header: 'Expiry Date', field: 'expiryDate', sortable: true, className: 'table-item' },
+  ];
+  jobActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' },
+    { id: 'edit', label: 'Edit', icon: 'pi pi-pen-to-square' },
+    { id: 'delete', label: 'Delete', icon: 'pi pi-trash' }
+  ];
 
 
   constructor(
@@ -183,6 +196,18 @@ export class RecruitmentListComponent implements OnInit {
     this.showRecruitmentForm = true;
   }
 
+  handleJobAction(event: { actionId: string; row: JobPostingDTO }) {
+    if (event.actionId === 'view') {
+      this.viewJob(event.row);
+    }
+    if (event.actionId === 'edit') {
+      this.editJob(event.row);
+    }
+    if (event.actionId === 'delete') {
+      this.confirmJobDelete(event.row);
+    }
+  }
+
   close() {
     this.showRecruitmentList = true;
     this.showRecruitmentForm = false;
@@ -205,4 +230,3 @@ export class RecruitmentListComponent implements OnInit {
 
 
 }
-

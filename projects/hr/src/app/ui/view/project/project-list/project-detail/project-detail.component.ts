@@ -11,6 +11,18 @@ export class ProjectDetailComponent implements OnInit{
   @Input() selectedProjectId: number = 0
   project?: Project;
   taskCompletionRate = 0;
+  taskColumns = [
+    { header: 'Title', field: 'title' },
+    {
+      header: 'Description',
+      formatter: (row: any) => row.description || '-'
+    },
+    {
+      header: 'Status',
+      formatter: (row: any) => (row.completed ? 'Done' : 'Pending'),
+      badgeClass: (row: any) => (row.completed ? 'text-green-600' : 'text-gray-500')
+    }
+  ];
 
   constructor(private route: ActivatedRoute, private projectService: ProjectService) {}
 

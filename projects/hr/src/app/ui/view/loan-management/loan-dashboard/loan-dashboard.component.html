@@ -58,50 +58,13 @@
                     <button class="btn-primary" (click)="applyForLoan()">Apply for your first loan</button>
                 </div>
 
-                <table *ngIf="recentLoans.length > 0" class="loan-table"> 
-                    <thead>
-                        <tr>
-                            <th>Loan ID</th>
-                            <th>Employee</th>
-                            <th>Department</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let loan of recentLoans"
-                            class="clickable-row">
-                            <td>{{ loan.id }}</td>
-                            <td>
-                                {{ loan.fullName }}<br>
-                                <small>{{ loan.employeeId }}</small>
-                            </td>
-                            <td>{{ loan.department }}</td>
-                            <td><span>₦</span>{{ loan.loanAmount | number:'1.2-2' }}</td>
-                            <td>                    
-                                <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
-                                    {{ loan.status }}
-                                </span>
-                            </td>
-                            <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-view" 
-                                            (click)="viewLoanDetails(loan.id)">
-                                        View Details
-                                    </button>
-
-                                    <button class="btn-history" 
-                                            (click)="seeLoanHistory(loan.id)">
-                                        History
-                                    </button>
-                                </div>
-                            </td>
-                        </tr> 
-                    </tbody>           
-                </table>
+                <app-table
+                    *ngIf="recentLoans.length > 0"
+                    [columns]="recentLoanColumns"
+                    [rows]="recentLoans"
+                    [actions]="recentLoanActions"
+                    (actionClick)="handleRecentLoanAction($event)"
+                ></app-table>
             </section>
 
             <!-- Status Tracking (Right Sidebar) -->

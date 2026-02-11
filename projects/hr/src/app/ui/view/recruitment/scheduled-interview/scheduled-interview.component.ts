@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 import {jsPDF} from 'jspdf';
 import 'jspdf-autotable';
 // import autoTable from "jspdf-autotable";
@@ -25,6 +26,16 @@ export class ScheduledInterviewComponent {
   selectedPositions: string[] = [];
   filteredCandidates: ApplicantDTO[] = [];
   candidateData: any = {};
+  interviewColumns: TableColumn[] = [
+    { header: 'Name', field: 'candidateName', sortable: true, className: 'table-item' },
+    { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
+    { header: 'Position', field: 'position', sortable: true, className: 'table-item' },
+    { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
+    { header: 'Interview Type', field: 'interviewType', sortable: true, className: 'table-item' },
+    { header: 'Interview Stage', field: 'interviewStage', sortable: true, className: 'table-item' },
+    { header: 'Stage', field: 'stage', sortable: true, className: 'table-item' },
+    { header: 'Actions', className: 'table-item' },
+  ];
 
 
   constructor(
@@ -128,7 +139,7 @@ export class ScheduledInterviewComponent {
 // ============================================================
 
 // ====================================================view modal
-  openViewModal(candidate: any, op: any) {
+  openViewModal(candidate: any, op?: any) {
     this.activeItem = candidate
     this.showInterviewList = true;
     this.showInterviewInvite = false;
@@ -136,7 +147,7 @@ export class ScheduledInterviewComponent {
     this.showScoreSheet = false;
     this.showOfferLetter = false;
     this.showAppointment = false;
-    op.hide();
+    op?.hide?.();
   }
   closeViewModal() {
     this.viewModal = false;

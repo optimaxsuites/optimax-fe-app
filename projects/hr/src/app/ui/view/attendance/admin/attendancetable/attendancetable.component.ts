@@ -17,6 +17,41 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
+  attendanceColumns = [
+    { header: 'ID', field: 'id' },
+    {
+      header: 'Employee',
+      formatter: (row: AttendanceTableRecord) => (row as any).employee || (row as any).employeeName || ''
+    },
+    { header: 'Department', field: 'department' },
+    {
+      header: 'Date',
+      formatter: (row: AttendanceTableRecord) => row.date || '-'
+    },
+    {
+      header: 'In',
+      formatter: (row: AttendanceTableRecord) => (row as any).checkIn || '-'
+    },
+    {
+      header: 'Out',
+      formatter: (row: AttendanceTableRecord) => (row as any).checkOut || '-'
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: AttendanceTableRecord) => {
+        if (row.status === 'PRESENT') return 'status present';
+        if (row.status === 'LATE') return 'status late';
+        if (row.status === 'ABSENT') return 'status absent';
+        return 'status';
+      }
+    },
+    { header: 'Hours', field: 'hours' }
+  ];
+
+  attendanceActions = [
+    { id: 'correct', label: 'Correct', className: 'correct-btn' }
+  ];
  
 
   ngOnInit(): void {
@@ -54,6 +89,12 @@ manualCorrection(record: any) {
     alert('Invalid status. Use PRESENT, LATE, or ABSENT.');
   }
 }
+
+  handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
+    if (event.actionId === 'correct') {
+      this.manualCorrection(event.row);
+    }
+  }
 
 filters: any = {};
 

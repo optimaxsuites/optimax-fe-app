@@ -136,110 +136,74 @@
         </ng-template>
       </p-toolbar>
 
-      <p-table
-        [value]="filteredGoals"
+      <app-table
+        [columns]="targetColumns"
+        [rows]="filteredGoals"
         [paginator]="true"
-        [rows]="10"
-        styleClass="p-datatable-gridlines"
+        [rowsPerPage]="10"
         [tableStyle]="{ 'min-width': '50rem' }"
+        [emptyMessage]="'No Target found'"
       >
-        <ng-template pTemplate="header">
-          <tr>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Target Name
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Employee Name
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Assigned To
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Start Date
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Due Date
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Priority
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Progress Status
-            </th>
-            <th class="table-item" pSortableColumn="RequestedDuration">
-              Actions
-            </th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-goal>
-          <tr class="text-xl">
-            <td>
-              {{ goal.goalName }}
-            </td>
-            <td>
-              {{ goal.user_id }}
-            </td>
-            <td>
-              {{ goal.assignedTo }}
-            </td>
-            <td>
-              {{ goal.startDate | date }}
-            </td>
-            <td>
-              {{ goal.endDate | date }}
-            </td>
-            <td>
-              <span [class]="getPriorityBadgeClass(goal.priority)">
-                {{ goal.priority }}
-              </span>
-            </td>
-            <!-- Table Cell with Dropdown for Progress Status -->
-            <td>
-              <select
-                class="w-[75%] px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
-                [ngModel]="goal.progressStatus"
-                (ngModelChange)="onStatusChange(goal, $event)"
-              >
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Not Completed">Not Completed</option>
-                <option value="On Hold">On Hold</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </td>
+        <ng-template appTableBody let-goal>
+          <td>
+            {{ goal.goalName }}
+          </td>
+          <td>
+            {{ goal.user_id }}
+          </td>
+          <td>
+            {{ goal.assignedTo }}
+          </td>
+          <td>
+            {{ goal.startDate | date }}
+          </td>
+          <td>
+            {{ goal.endDate | date }}
+          </td>
+          <td>
+            <span [class]="getPriorityBadgeClass(goal.priority)">
+              {{ goal.priority }}
+            </span>
+          </td>
+          <!-- Table Cell with Dropdown for Progress Status -->
+          <td>
+            <select
+              class="w-[75%] px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+              [ngModel]="goal.progressStatus"
+              (ngModelChange)="onStatusChange(goal, $event)"
+            >
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Not Completed">Not Completed</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </td>
 
-            <td>
-              <div class="flex text-lg gap-2">
-                <button
-                  pButton
-                  icon="pi pi-eye"
-                  class="p-button-rounded p-button-text"
-                  (click)="viewGoal(goal)"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  class="p-button-rounded p-button-text p-button-success"
-                  (click)="editGoal(goal)"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  class="p-button-rounded p-button-text p-button-danger"
-                  (click)="deleteGoal(goal)"
-                ></button>
-              </div>
-            </td>
-          </tr>
+          <td>
+            <div class="flex text-lg gap-2">
+              <button
+                pButton
+                icon="pi pi-eye"
+                class="p-button-rounded p-button-text"
+                (click)="viewGoal(goal)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-pencil"
+                class="p-button-rounded p-button-text p-button-success"
+                (click)="editGoal(goal)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-trash"
+                class="p-button-rounded p-button-text p-button-danger"
+                (click)="deleteGoal(goal)"
+              ></button>
+            </div>
+          </td>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="7" class="text-center text-[12px] p-4">
-              No Target found
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      </app-table>
     </div>
 
     <!-- View Goal Modal -->

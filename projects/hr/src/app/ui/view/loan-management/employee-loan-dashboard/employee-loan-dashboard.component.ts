@@ -28,6 +28,24 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   allLoans: LoanApplication[] = [];
   private loanSubscription!: Subscription;
 
+  historyColumns = [
+    { header: 'Loan ID', field: 'id' },
+    {
+      header: 'Date',
+      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+    },
+    { header: 'Purpose', field: 'purpose' },
+    {
+      header: 'Amount',
+      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+    },
+    {
+      header: 'Status',
+      formatter: (row: LoanApplication) => this.getStatusDisplay(row.status),
+      badgeClass: (row: LoanApplication) => `status-badge status-${this.getStatusClass(row.status)}`
+    }
+  ];
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,

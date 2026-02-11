@@ -116,42 +116,12 @@
     />
   </div>
 
-  <table class="min-w-full border border-gray-200 rounded-lg">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="text-left p-3">Name</th>
-        <th class="text-left p-3">Department</th>
-        <th class="text-left p-3">Status</th>
-        <th class="text-left p-3">Clock In</th>
-        <th class="text-left p-3">Clock Out</th>
-        <th class="text-center p-3">Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr
-        *ngFor="let emp of filteredEmployees"
-        class="border-t hover:bg-gray-50 cursor-pointer"
-        (click)="viewDetails(emp)"
-      >
-        <td class="p-3">{{ emp.name }}</td>
-        <td class="p-3">{{ emp.department }}</td>
-        <td class="p-3">
-          <span
-            class="px-3 py-1 rounded-full text-xs font-medium"
-            [ngClass]="{
-              'bg-green-100 text-green-700': emp.status === 'Present',
-              'bg-red-100 text-red-700': emp.status === 'Absent'
-            }"
-          >
-            {{ emp.status }}
-          </span>
-        </td>
-        <td class="p-3">{{ emp.clockIn }}</td>
-        <td class="p-3">{{ emp.clockOut }}</td>
-        <td class="text-center p-3 text-blue-600">View</td>
-      </tr>
-    </tbody>
-  </table>
+  <app-table
+    [columns]="attendanceColumns"
+    [rows]="filteredEmployees"
+    [rowClickable]="true"
+    (rowClick)="viewDetails($event)"
+  ></app-table>
 </div>
 
 <app-large-side-modal *ngIf="viewDetail" (close)="toggleSidebar()">

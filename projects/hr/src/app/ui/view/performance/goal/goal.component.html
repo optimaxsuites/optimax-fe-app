@@ -92,108 +92,80 @@
     <!-- Main Content -->
     <div class="flex-1">
       <div class="card">
-        <p-table
-          [value]="filteredAppraisals"
+        <app-table
+          [columns]="goalColumns"
+          [rows]="filteredAppraisals"
           [paginator]="true"
-          styleClass=""
+          [rowsPerPage]="10"
           [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
-          [rows]="10"
+          [emptyMessage]="'No appraisals created yet'"
         >
-          <ng-template pTemplate="header">
-            <tr>
-              <th class="table-item" pSortableColumn="Employee">
-                Employee Name
-              </th>
-              <th class="table-item" pSortableColumn="Department">
-                Department
-              </th>
-              <th class="table-item" pSortableColumn="Level">Level</th>
-
-              <th class="table-item" pSortableColumn="NetLeaveBalance">
-                Due Date
-              </th>
-              <th class="table-item" pSortableColumn="Status">Review Status</th>
-              <th class="table-item">Action</th>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="body" let-appraisal>
-            <tr class="p-table-row">
-              <td class="table-item">{{ appraisal.employeeName }}</td>
-              <td class="table-item">{{ appraisal.department }}</td>
-              <td class="table-item">{{ appraisal.level }}</td>
-
-              <td class="table-item">{{ appraisal.dueDate }}</td>
-              <td class="table-item">
-                <button
-                  (click)="updateAppraisalStatus(appraisal.id, 'Initiated')"
-                >
-                  {{ appraisal.progressStatus }}
-                </button>
-              </td>
-              <td>
-                <div class="flex text-lg gap-2">
-                  <button
-                    pButton
-                    icon="pi pi-eye"
-                    class="p-button-rounded p-button-text"
-                    (click)="viewAppraisalDetails(appraisal)"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-pencil"
-                    class="p-button-rounded p-button-text p-button-success"
-                    (click)="editAppraisal(appraisal)"
-                  ></button>
-                  <button
-                    pButton
-                    *ngIf="userRole === 'ROLE_ADMIN'"
-                    icon="pi pi-trash"
-                    class="p-button-rounded p-button-text p-button-danger"
-                    (click)="deleteAppraisal(appraisal.id)"
-                  ></button>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-
-          <p-dialog header="filteredAppraisals" [(visible)]="openAppraisal">
-            <div *ngIf="selectedAppraisal">
-              <p><strong>Name:</strong> {{ selectedAppraisal.employeeName }}</p>
-              <p>
-                <strong>Department:</strong> {{ selectedAppraisal.department }}
-              </p>
-              <p><strong>Level:</strong> {{ selectedAppraisal.level }}</p>
-              <p>
-                <strong>Status:</strong> {{ selectedAppraisal.progressStatus }}
-              </p>
-
-              <textarea
-                [(ngModel)]="comment"
-                placeholder="Add your comments here..."
-              ></textarea>
-
-              <p>
-                <strong>Comment:</strong>
-                {{ selectedAppraisal.comment || "No comments added yet" }}
-              </p>
-
+          <ng-template appTableBody let-appraisal>
+            <td class="table-item">{{ appraisal.employeeName }}</td>
+            <td class="table-item">{{ appraisal.department }}</td>
+            <td class="table-item">{{ appraisal.level }}</td>
+            <td class="table-item">{{ appraisal.dueDate }}</td>
+            <td class="table-item">
               <button
-                pButton
-                label="Submit for Approval"
-                (click)="submitAppraisalForApproval(selectedAppraisal)"
-              ></button>
-            </div>
-          </p-dialog>
-
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="7" class="text-center text-[14px] py-4">
-                No appraisals created yet
-              </td>
-            </tr>
+                (click)="updateAppraisalStatus(appraisal.id, 'Initiated')"
+              >
+                {{ appraisal.progressStatus }}
+              </button>
+            </td>
+            <td>
+              <div class="flex text-lg gap-2">
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  class="p-button-rounded p-button-text"
+                  (click)="viewAppraisalDetails(appraisal)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-rounded p-button-text p-button-success"
+                  (click)="editAppraisal(appraisal)"
+                ></button>
+                <button
+                  pButton
+                  *ngIf="userRole === 'ROLE_ADMIN'"
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger"
+                  (click)="deleteAppraisal(appraisal.id)"
+                ></button>
+              </div>
+            </td>
           </ng-template>
-        </p-table>
+        </app-table>
+
+        <p-dialog header="filteredAppraisals" [(visible)]="openAppraisal">
+          <div *ngIf="selectedAppraisal">
+            <p><strong>Name:</strong> {{ selectedAppraisal.employeeName }}</p>
+            <p>
+              <strong>Department:</strong> {{ selectedAppraisal.department }}
+            </p>
+            <p><strong>Level:</strong> {{ selectedAppraisal.level }}</p>
+            <p>
+              <strong>Status:</strong> {{ selectedAppraisal.progressStatus }}
+            </p>
+
+            <textarea
+              [(ngModel)]="comment"
+              placeholder="Add your comments here..."
+            ></textarea>
+
+            <p>
+              <strong>Comment:</strong>
+              {{ selectedAppraisal.comment || "No comments added yet" }}
+            </p>
+
+            <button
+              pButton
+              label="Submit for Approval"
+              (click)="submitAppraisalForApproval(selectedAppraisal)"
+            ></button>
+          </div>
+        </p-dialog>
       </div>
     </div>
   </div>

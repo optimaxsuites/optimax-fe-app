@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 interface TargetGoal {
   goalName: string;
@@ -52,6 +53,16 @@ export class TargetComponent implements OnInit {
   onHoldCount: number = 0;
   completedCount: number = 0;
   opengoal: boolean = false;
+  targetColumns: TableColumn[] = [
+    { header: 'Target Name', field: 'goalName', sortable: true, className: 'table-item' },
+    { header: 'Employee Name', field: 'user_id', sortable: true, className: 'table-item' },
+    { header: 'Assigned To', field: 'assignedTo', sortable: true, className: 'table-item' },
+    { header: 'Start Date', field: 'startDate', sortable: true, className: 'table-item' },
+    { header: 'Due Date', field: 'endDate', sortable: true, className: 'table-item' },
+    { header: 'Priority', field: 'priority', sortable: true, className: 'table-item' },
+    { header: 'Progress Status', field: 'progressStatus', sortable: true, className: 'table-item' },
+    { header: 'Actions', className: 'table-item' },
+  ];
 
   constructor(
     private router: Router,

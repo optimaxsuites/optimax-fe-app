@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { FormGroup } from '@angular/forms';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-appraisallist',
@@ -20,6 +21,15 @@ export class AppraisallistComponent implements OnInit {
   selectedTemplate: string[] = [];
   selectedAppraisal: any; // Appraisal object for modal
   viewModalVisible: boolean = false;
+  appraisalColumns: TableColumn[] = [
+    { header: 'Employee Name', field: 'employeeName', sortable: true, className: 'table-item' },
+    { header: 'Start Date', field: 'startDate', sortable: true, className: 'table-item' },
+    { header: 'Due Date', field: 'dueDate', sortable: true, className: 'table-item' },
+    { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
+    { header: 'Period', field: 'period', sortable: true, className: 'table-item' },
+    { header: 'Review Status', field: 'progressStatus', sortable: true, className: 'table-item' },
+    { header: 'Action', className: 'table-item' }
+  ];
 
   statuses: string[] = ['Pending', 'In Progress', 'Completed'];
   templates: string[] = [

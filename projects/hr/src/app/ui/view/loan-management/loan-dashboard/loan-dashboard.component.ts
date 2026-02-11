@@ -21,6 +21,31 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   recentLoans: LoanApplication[] = [];
   allLoans: LoanApplication[] = [];
   selectedLoan: LoanApplication | null = null;
+
+  recentLoanColumns = [
+    { header: 'Loan ID', field: 'id' },
+    { header: 'Employee', field: 'fullName' },
+    { header: 'Employee ID', field: 'employeeId' },
+    { header: 'Department', field: 'department' },
+    {
+      header: 'Amount',
+      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: LoanApplication) => `status-badge ${this.getStatusClass(row.status)}`
+    },
+    {
+      header: 'Date',
+      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+    }
+  ];
+
+  recentLoanActions = [
+    { id: 'view', label: 'View Details', className: 'btn-view' },
+    { id: 'history', label: 'History', className: 'btn-history' }
+  ];
   
   private loanSubscription!: Subscription;
 
@@ -98,6 +123,24 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       case 'ACTIVE': return 'status-active';
       case 'COMPLETED': return 'status-completed';
       default: return 'status-default';
+    }
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 2
+    }).format(amount);
+  }
+
+  handleRecentLoanAction(event: { actionId: string; row: LoanApplication }) {
+    if (event.actionId === 'view') {
+      this.viewLoanDetails(event.row.id);
+      return;
+    }
+    if (event.actionId === 'history') {
+      this.seeLoanHistory(event.row.id);
     }
   }
 

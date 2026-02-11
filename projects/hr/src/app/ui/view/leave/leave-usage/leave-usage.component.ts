@@ -7,6 +7,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import { Employee, LeaveSettings } from '../../../domain/leave.dto';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-leave-usage',
@@ -37,6 +38,23 @@ export class LeaveUsageComponent implements OnInit {
   docUploadStatus: string = 'Upload file';
   selectedLeave: string = ''; // Added this too
   openApplyLeave = false;
+  requestColumns: TableColumn[] = [
+    { header: 'Date', field: 'AppliedOn', sortable: true, className: 'table-item' },
+    { header: 'Date Applied for', field: 'Date', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'LeaveType', sortable: true, className: 'table-item' },
+    {
+      header: 'Net Leave Balance',
+      field: 'NetLeaveBalance',
+      sortable: true,
+      className: 'table-item',
+      formatter: (row) => `${row.NetLeaveBalance ?? 0} day(s)`
+    },
+    { header: 'Requested Duration', field: 'RequestedDuration', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'Status', sortable: true, className: 'table-item' }
+  ];
+  requestActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+  ];
 
   calendarEvents: EventInput[] = [];
   calendarOptions: CalendarOptions = {
@@ -169,10 +187,16 @@ export class LeaveUsageComponent implements OnInit {
     this.sortByStatus();
   }
 
-  viewLRequest(request: any, op: OverlayPanel) {
+  viewLRequest(request: any, op?: OverlayPanel) {
     this.requestInView = request;
     this.openViewRequest = true;
-    op.hide();
+    op?.hide();
+  }
+
+  handleRequestAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewLRequest(event.row);
+    }
   }
   ////kd added this function
   parseDateRange(dateRange: string) {

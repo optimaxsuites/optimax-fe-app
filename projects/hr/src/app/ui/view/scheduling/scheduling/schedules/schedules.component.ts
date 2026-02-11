@@ -67,6 +67,35 @@ export class SchedulesComponent implements OnInit {
     { label: 'Weekly', value: 'Weekly' },
     { label: 'Custom', value: 'Custom' }
   ];
+
+  scheduleColumns = [
+    { header: 'Shift Name', field: 'shiftName' },
+    { header: 'Project', field: 'projectName' },
+    { header: 'Employee', field: 'employeeName' },
+    { header: 'Time', field: 'time' },
+    { header: 'Actual In/Out', field: 'actualTime' },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: any) => this.getStatusClass(row.status)
+    },
+    { header: 'Details', field: 'details' }
+  ];
+
+  get scheduleRows() {
+    return this.selectedDateShifts.flatMap((shift) =>
+      shift.attendance.map((employee) => ({
+        shiftName: shift.name,
+        projectName: shift.projectName || '—',
+        employeeName: employee.employeeName,
+        time: `${shift.startTime} - ${shift.endTime}`,
+        actualTime: this.formatActualTime(employee.record),
+        status: employee.status,
+        details: 'View',
+        employee
+      }))
+    );
+  }
   
   constructor(private shiftService: ShiftService) {}
 
@@ -177,6 +206,13 @@ this.openForm = true
       case 'Missed': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
+  }
+
+  private formatActualTime(record?: ShiftRecord): string {
+    if (!record?.actualClockIn) return '—';
+    const clockOut = record.actualClockOut ? ` - ${record.actualClockOut}` : '';
+    const working = !record.actualClockOut ? ' (Working)' : '';
+    return `${record.actualClockIn}${clockOut}${working}`;
   }
 
 

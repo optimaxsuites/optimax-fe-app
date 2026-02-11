@@ -3,6 +3,7 @@ import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { LeaveServiceService } from '../../../service/leave-service.service';
 import { LeaveRequest } from '../../../domain/leave.dto';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-leave-request',
@@ -32,6 +33,23 @@ export class LeaveRequestComponent {
   savedEmployees: any[] = [];
   allLeaveRequest: LeaveRequest[] = [];
   filteredCandidates: LeaveRequest[] = [];
+  leaveRequestColumns: TableColumn[] = [
+    { header: 'Employee', field: 'Employee', sortable: true, className: 'table-item' },
+    { header: 'Date Applied for', field: 'Date', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'LeaveType', sortable: true, className: 'table-item' },
+    { header: 'Net Leave Balance', field: 'NetLeaveBalance', sortable: true, className: 'table-item' },
+    { header: 'Requested Duration', field: 'RequestedDuration', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'Status', sortable: true, className: 'table-item' },
+  ];
+  leaveRequestActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' },
+    {
+      id: 'approveReject',
+      label: 'Approve/Reject',
+      icon: 'pi pi-download',
+      visible: (row) => row?.Status?.includes('Pending Approval'),
+    }
+  ];
 
   constructor(
     private messageService: MessageService,
@@ -330,11 +348,20 @@ export class LeaveRequestComponent {
     );
   }
 
-  viewEmployee(employee: any, op: any) {
+  viewEmployee(employee: any, op?: any) {
     this.employeeInView = employee;
     console.log(employee);
     this.openViewEmployee = true;
-    op.hide();
+    op?.hide?.();
+  }
+
+  handleLeaveRequestAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewEmployee(event.row);
+    }
+    if (event.actionId === 'approveReject') {
+      this.openAcceptRejectModal(event.row);
+    }
   }
 
   downloadAttachment(leaveRequest: any) {

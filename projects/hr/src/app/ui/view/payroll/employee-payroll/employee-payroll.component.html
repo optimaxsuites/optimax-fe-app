@@ -74,58 +74,22 @@
     </div>
    
 
-    <p-table 
-        [value]="filteredEmployeePayroll" 
-        [paginator]="true" 
+    <app-table 
+        [columns]="payrollColumns"
+        [rows]="filteredEmployeePayroll"
+        [actions]="payrollActions"
+        [selectable]="true"
+        selectionMode="multiple"
         [(selection)]="selectedEmployees"
-        styleClass="" 
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [rowClickable]="true"
         [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
-        [rows]="10"
-    
+        [emptyMessage]="'No request made yet'"
+        (rowClick)="viewEmployeePaySLip($event)"
+        (actionClick)="handlePayrollAction($event)"
         >
-        
-        <ng-template pTemplate="header">
-        <tr>
-            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-            <th class="table-item" pSortableColumn="Employee">Employee</th>
-            <th class="table-item" pSortableColumn="Level">Level</th>
-            <th class="table-item" pSortableColumn="Department">Department</th>
-            <th class="table-item" pSortableColumn="Type">Salary Structure</th>
-            <th class="table-item" pSortableColumn="Pay">Amount Payable</th>
-            <th class="table-item"></th>
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        <tr class="p-table-row bg-gray-50 cursor-pointer" (click)="viewEmployeePaySLip(employee, op)"> 
-            <td><p-tableCheckbox [value]="employee" /></td>
-            <td class="table-item capitalize" >{{ employee.name }}</td>
-            <td class="table-item capitalize">{{ employee.level }}</td>
-            <td class="table-item capitalize">{{ employee.department }}</td>
-            <td class="table-item capitalize">{{ employee.type }}</td>
-            <td class="table-item capitalize"><span class="text-2xl">₦</span>{{ employee.netPayable }}</td>
-
-            <td class="actions table-item">
-            <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event); $event.stopPropagation()" ></i>
-            <p-overlayPanel #op ngClass="padding: 0;">
-                    <div>
-                      <li class="table-item-panel" (click)="viewEmployeePaySLip(employee, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                      <li class="table-item-panel" > <i class="pi pi-download table-item me-2"></i> Send Payslip</li>
-                        <!-- <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Reject</li> -->
-                    </div>
-                  </p-overlayPanel>
-                </td>
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="8" class="text-center text-[14px] py-4"> 
-              No request made yet
-            </td>
-          </tr>
-        </ng-template>
-    </p-table>
+    </app-table>
   
 </div>
 

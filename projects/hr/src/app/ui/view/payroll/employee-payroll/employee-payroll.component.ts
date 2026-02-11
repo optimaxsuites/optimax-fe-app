@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -27,6 +28,22 @@ openSummary: boolean = false
 showDropdown = false;
   selectedEmployees: any = [];
   currentEmployeeInView: any = {}
+  payrollColumns: TableColumn[] = [
+    { header: 'Employee', field: 'name', sortable: true, className: 'table-item' },
+    { header: 'Level', field: 'level', sortable: true, className: 'table-item' },
+    { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
+    { header: 'Salary Structure', field: 'type', sortable: true, className: 'table-item' },
+    {
+      header: 'Amount Payable',
+      field: 'netPayable',
+      sortable: true,
+      className: 'table-item',
+      formatter: (row) => `₦${row?.netPayable ?? 0}`
+    }
+  ];
+  payrollActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+  ];
 
   payrollRecords =[ 
     {
@@ -1599,10 +1616,16 @@ ngOnInit(){
     document.body.removeChild(link);
   }
 
-  viewEmployeePaySLip(employee: any, op:any){
-    op.hide()
+  viewEmployeePaySLip(employee: any, op?: any){
+    op?.hide?.()
     this.viewEmployee = true
     this.currentEmployeeInView = employee
+  }
+
+  handlePayrollAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewEmployeePaySLip(event.row);
+    }
   }
 
   viewSummary(){
@@ -1738,4 +1761,3 @@ download(format: string) {
 }
 
 }
-

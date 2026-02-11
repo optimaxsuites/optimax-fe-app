@@ -70,64 +70,13 @@
 
         <!-- Table Section -->
         <div class="approval-table-container">
-            <table class="approval-table">
-                <thead>
-                    <tr>
-                        <th>APPLICATION ID</th>
-                        <th>EMPLOYEE</th>
-                        <th>DEPARTMENT</th>
-                        <th>LOAN AMOUNT</th>
-                        <th>PURPOSE</th>
-                        <th>STATUS</th>
-                        <th>DATE SUBMITTED</th>
-                        <th>ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- No results message -->
-                    <tr *ngIf="filteredLoans.length === 0" class="no-results">
-                        <td colspan="8">No loan applications found matching your filters</td>
-                    </tr>
-                    
-                    <!-- Loan applications -->
-                    <tr *ngFor="let application of filteredLoans" 
-                        class="clickable-row">
-                        <td>{{ application.id }}</td>
-                        <td>{{ application.fullName }}<br>
-                            <small>{{ application.employeeId }}</small>
-                        </td>
-                        <td>{{ application.department }}</td>
-                        <td><span>₦</span>{{ application.loanAmount | number:'1.2-2' }}</td>
-                        <td>{{ application.purpose }}</td>
-                        <td>
-                            <span [ngClass]="getStatusClass(application.status)" 
-                                  class="status-badge">
-                                {{ application.status }}
-                            </span>
-                        </td>
-                        <td>{{ application.dateSubmitted | date:'mediumDate' }}</td>
-                        <!-- loan-approval-ui.component.html (updated action buttons) -->
-                        <td>
-                            <div class="action-buttons">
-                                <!-- View Details Button -->
-                                <button class="btn-view" 
-                                        (click)="viewLoanDetails(application.id, application.employeeId)">
-                                    View Details
-                                </button>
-                                
-                                <!-- REMOVED: Approve and Reject buttons from here -->
-                                <!-- They will be in LoanDetailsComponent instead -->
-                                
-                                <!-- History Button -->
-                                <button class="btn-history" 
-                                        (click)="seeLoanHistory(application.employeeId)">
-                                    History
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <app-table
+                [columns]="loanColumns"
+                [rows]="filteredLoans"
+                [actions]="loanActions"
+                [emptyMessage]="'No loan applications found matching your filters'"
+                (actionClick)="handleLoanAction($event)"
+            ></app-table>
         </div>
     </div>
 </div>

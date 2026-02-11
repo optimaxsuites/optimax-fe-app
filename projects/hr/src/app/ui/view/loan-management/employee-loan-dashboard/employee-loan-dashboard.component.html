@@ -107,30 +107,10 @@
       </div>
       
       <div class="history-content" *ngIf="allLoans.length > 0">
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th>Loan ID</th>
-              <th>Date</th>
-              <th>Purpose</th>
-              <th>Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let loan of allLoans.slice(0, 5)">
-              <td class="loan-id">{{ loan.id }}</td>
-              <td class="loan-date">{{ loan.dateSubmitted | date:'shortDate' }}</td>
-              <td class="loan-purpose">{{ loan.purpose }}</td>
-              <td class="loan-amount">{{ formatCurrency(loan.loanAmount) }}</td>
-              <td class="loan-status">
-                <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
-                  {{ getStatusDisplay(loan.status) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <app-table
+          [columns]="historyColumns"
+          [rows]="allLoans.slice(0, 5)"
+        ></app-table>
       </div>
       
       <div class="no-loans" *ngIf="allLoans.length === 0">
