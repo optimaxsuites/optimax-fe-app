@@ -438,10 +438,22 @@ private setProbationValidators(): void {
     this.leaveForm.reset()
     this.employeeForm.reset()
     this.currentTab = 1
+     this.employeeService.sendWelcomeEmail({
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        employeeId: data.id,
+        url: `${window.location.origin}/user/onboarding/${data.id}/wer23456fghi367ghj`
+      }).subscribe({
+        next: (res) => {console.log('Welcome email sent successfully:', res);},
+        error: (err) => {
+          console.log('Error sending welcome email:', err);
+        }
+      })
 
     if (shouldRedirect) {
       this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-      }
+      
+    }
    },
    error: (err) => {
     this.loading = false;

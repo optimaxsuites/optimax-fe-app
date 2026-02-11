@@ -28,6 +28,14 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+   sendWelcomeEmail(data: any): Observable<any>{
+    return this.http
+        .post<any>(
+             "https://n8n.royalvilletechnologies.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
+        .pipe(catchError(this.handleError));
+  }
+
+
   getAllEmployee(): Observable<any>{
     return this.http
         .get<any>(
