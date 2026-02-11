@@ -1,24 +1,24 @@
-<nav class="rounded-r-2xl" [ngClass]="sidebarClass">
+<nav class="sidebar rounded-r-3xl" [ngClass]="sidebarClass">
   <div class="side-bar-header" *ngIf="!sidebarHidden">
-    <img src="assets/logo.png" alt="Logo" />
+    <img src="assets/logo.png" alt="Logo" class="logo" />
   </div>
-  <div class=""    [ngClass]="{
+  <div class="toggle-wrapper" [ngClass]="{
     'max-w-full mx-auto  pl-8 my-3': sidebarHidden,
     'absolute -right-4 top-14 z-50': !sidebarHidden
   }">
-    <button class=" text-xl h-9 w-9 bg-customGreen rounded-full text-white" (click)="onToggleSidebar()">
+    <button class="toggle-btn text-xl h-9 w-9 rounded-full text-white" (click)="onToggleSidebar()">
       <i *ngIf="sidebarHidden" class="pi pi-angle-right text-xl"></i>
       <i *ngIf="!sidebarHidden" class="pi pi-angle-left text-xl"></i> 
       <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
     </button>
   </div>
-  <ul id="dashboard-header" >
+  <ul id="dashboard-header" class="menu-list">
     <li *ngFor="let item of menuItems | async as menuItems">
       <div class="menu-item w-full" (click)="toggleSubMenu(item)">
         <a *ngIf="!item.submenu"
            [routerLink]="item.route"
            routerLinkActive="active"
-           class="flex gap-6 items-center w-full"
+           class="menu-link flex gap-6 items-center w-full cursor-pointer"
            [pTooltip]="item.label"
    tooltipPosition="right"
    [tooltipDisabled]="!sidebarHidden"
@@ -28,7 +28,7 @@
         </a>
 
         <a 
-          class="flex gap-4 "
+          class="menu-link flex gap-6 items-center cursor-pointer"
           [pTooltip]="item.label"
           tooltipPosition="right"
           [tooltipDisabled]="!sidebarHidden"
@@ -42,7 +42,7 @@
         </a>
       </div>
 
-      <ul [ngClass]="{'open': item.open}" *ngIf="item.submenu">
+      <ul class="submenu-list" [ngClass]="{'open': item.open}" *ngIf="item.submenu">
         <ng-container *ngFor="let subItem of item.submenu">
           <li *ngIf="!subItem.isNotSidebarItem">
       
@@ -52,7 +52,7 @@
                [pTooltip]="subItem.label"
                tooltipPosition="right"
                [tooltipDisabled]="!sidebarHidden"
-               class="flex gap-4 items-center">
+               class="submenu-link flex gap-4 items-center">
               <i *ngIf="subItem.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}" [class]="subItem.icon"></i> 
               <span *ngIf="!sidebarHidden">{{ subItem.label }}</span>
             </a>
@@ -70,7 +70,7 @@
           [pTooltip]="marketplace.label"
           tooltipPosition="right"
           [tooltipDisabled]="!sidebarHidden"
-          class="flex gap-4 items-center">
+          class="menu-link flex gap-4 items-center">
           <i *ngIf="marketplace.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="marketplace.icon"></i>
           <span *ngIf="!sidebarHidden">{{ marketplace.label }}</span>
         </a>
@@ -87,7 +87,7 @@
           [pTooltip]="tenant.label"
           tooltipPosition="right"
           [tooltipDisabled]="!sidebarHidden"
-          class="flex gap-4 items-center">
+          class="menu-link flex gap-4 items-center">
           <i *ngIf="tenant.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="tenant.icon"></i>
           <span *ngIf="!sidebarHidden">{{ tenant.label }}</span>
         </a>

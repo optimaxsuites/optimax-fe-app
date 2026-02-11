@@ -1,10 +1,12 @@
 
 nav {
   height: 100%;
-  background-color: var(--blue-green);
+  background: linear-gradient(180deg, var(--blue-green) 100%, var(--celadon-green) 0%);
   overflow-x: hidden;
   overflow-y: auto;
   box-sizing: border-box;
+  padding: 12px 10px 16px;
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.18);
 }
 
 nav::-webkit-scrollbar {
@@ -31,7 +33,17 @@ nav::-webkit-scrollbar-thumb:hover {
     align-items: center;
     justify-content: center;
     display: flex;
-    // background-color: #fff;
+    // margin-bottom: 6px;
+  }
+
+  .logo {
+    // width: 56px;
+    // height: 56px;
+    border-radius: 16px;
+    // padding: 6px;
+    // background: rgba(255, 255, 255, 0.054);
+    // box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    object-fit: cover;
   }
   
   ul {
@@ -40,13 +52,15 @@ nav::-webkit-scrollbar-thumb:hover {
     margin: 0;
     // font-size: 0.9em;
   }
+
+  .menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
   
   .menu-item {
-    // padding: .4rem;
-    // box-sizing: border-box;
-    // cursor: pointer;
-
-    @apply flex flex-col justify-center  w-full px-5
+    @apply flex flex-col justify-center w-full px-2;
   }
   
   .menu-item:hover {
@@ -56,33 +70,51 @@ nav::-webkit-scrollbar-thumb:hover {
  
 
   ul li ul li a{
-    font-size: 1.1em;
+    font-size: 1.05em;
   }
 
   a {
     text-decoration: none;
     color: #fff;
     // display: block;
-    font-size: 1.1em;
-
-    padding:14px;
+    font-size: 1.05em;
+    padding: 12px 14px;
     // box-sizing: border-box;
+    border-radius: 14px;
+    transition: all 0.2s ease;
     i{
       @apply w-5
     }
     span{
-    font-size: 1.1em;
+    font-size: 1.05em;
 
       @apply text-nowrap w-32
     }
   }
- 
+
+  .menu-link {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .submenu-link {
+    background: rgba(255, 255, 255, 0.04);
+  }
   
   ul ul {
     display: none;
     // background-color: #eee;
-    padding-left: 20px;
+    padding-left: 18px;
     box-sizing: border-box;
+  }
+
+  .submenu-list {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  .submenu-link {
+    padding-left: 18px;
   }
   
   ul ul li {
@@ -98,13 +130,16 @@ nav::-webkit-scrollbar-thumb:hover {
   }
 
   a.active {
-    background-color: var(--celadon-green);
-    color: white;
+    background-color: var(--mint-green);
+    color: var(--celadon-green);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
   }
   
   a:hover {
     background-color: var(--mint-green);
     color: var(--celadon-green);
+    transform: translateX(4px);
   }
   span:hover{
     background-color: var(--mint-green);
@@ -125,3 +160,12 @@ nav {
   transition: width 0.3s ease;
 }
 
+.toggle-btn {
+  background: var(--blue-green);
+  border: 2px solid var(--blue-green-hover);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+}
+
+.toggle-btn:hover {
+  background: var(--blue-green-hover);
+}
