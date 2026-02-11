@@ -1,134 +1,195 @@
 <div class="employee-dashboard-container">
-    <!-- Loading State -->
-    <div class="loading-container" *ngIf="isLoading">
-        <div class="loading-spinner"></div>
-        <p>Loading your loan dashboard...</p>
-    </div>
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading your loan dashboard...</p>
+  </div>
 
-    <div *ngIf="!isLoading">
-        <!-- Dashboard Header -->
-        <header class="dashboard-header">
-            <h1><i class="fas fa-hand-holding-usd"></i>My Loans</h1>
-            <div class="user-info">
-                <div class="user-welcome">
-                    <span>Welcome back</span>
-                    <strong>{{ employeeName }}</strong>
-                    <small>Employee ID: {{ employeeId }}</small>
-                </div>
-                <div class="user-avatar">{{ getInitials(employeeName) }}</div>
-            </div>
-        </header>
+  <div *ngIf="!isLoading" class="dashboard-content">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1><i class="fas fa-hand-holding-usd"></i> My Loans</h1>
+      </div>
+      <div class="header-right">
+        <div class="user-info">
+          <div class="user-welcome">
+            <span>Welcome back, {{ employeeName }}</span>
+            <small>Employee ID: {{ employeeId }}</small>
+          </div>
+          <div class="user-avatar">{{ getInitials(employeeName) }}</div>
+        </div>
+      </div>
+    </header>
 
-        <!-- Quick Actions -->
-        <section class="quick-actions">
-            <h2>Quick Actions</h2>
-            <div class="action-buttons">
-                <button class="action-btn" (click)="applyForLoan()">
-                    <i class="fas fa-plus-circle"></i> New Loan Request
-                </button>
-                <button class="action-btn secondary" (click)="toggleHistory()">
-                    <i class="fas fa-history"></i> {{ showHistory ? 'Hide' : 'My' }} Loan Requests
-                </button>
-            </div>
-        </section>
+    <!-- Quick Actions -->
+    <section class="quick-actions-section">
+      <div class="action-buttons">
+        <button class="action-btn primary" (click)="toggleLoanForm()">
+          <i class="fas" [class.fa-plus]="!showLoanForm" [class.fa-times]="showLoanForm"></i>
+          {{ showLoanForm ? 'Close Form' : 'New Loan Request' }}
+        </button>
+        <button class="action-btn secondary" (click)="toggleHistory()">
+          <i class="fas fa-history"></i>
+          {{ showHistory ? 'Hide' : 'Show' }} Loan History
+        </button>
+        <button class="action-btn tertiary" (click)="viewDetailedHistory()">
+          <i class="fas fa-list-alt"></i>
+          View Full History
+        </button>
+      </div>
+    </section>
 
-        <!-- Loan Overview -->
-        <section class="loan-overview-section">
-            <h2 class="section-title"><i class="fas fa-chart-pie"></i> Loan Overview</h2>
-            <div class="stats-section">
-                <div class="overview-card pending">
-                    <div class="card-header">
-                        <span class="card-icon">⏳</span>
-                        <h3>Pending</h3>
-                    </div>
-                    <p class="card-value">{{ loanCounts.pending }}</p>
-                </div>
-                
-                <div class="overview-card active">
-                    <div class="card-header">
-                        <span class="card-icon">✅</span>
-                        <h3>Active</h3>
-                    </div>
-                    <p class="card-value">{{ loanCounts.active }}</p>
-                </div>
-                
-                <div class="overview-card requested">
-                    <div class="card-header">
-                        <span class="card-icon">📝</span>
-                        <h3>Requested</h3>
-                    </div>
-                    <p class="card-value">{{ loanCounts.requested }}</p>
-                </div>
-                
-                <div class="overview-card rejected">
-                    <div class="card-header">
-                        <span class="card-icon">❌</span>
-                        <h3>Rejected</h3>
-                    </div>
-                    <p class="card-value">{{ loanCounts.rejected }}</p>
-                </div>
-                
-                <div class="overview-card completed">
-                    <div class="card-header">
-                        <span class="card-icon">🏁</span>
-                        <h3>Completed</h3>
-                    </div>
-                    <p class="card-value">{{ loanCounts.completed }}</p>
-                </div>
-            </div>
-        </section>
+    <!-- Loan Overview Section -->
+    <section class="loan-overview-section">
+      <h2 class="section-title">Loan Overview</h2>
+      
+      <div class="overview-grid">
+        <div class="overview-item">
+          <div class="overview-label">Pending</div>
+          <div class="overview-value pending">{{ loanCounts.pending }}</div>
+          <div class="overview-desc">Awaiting approval</div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="overview-label">Active</div>
+          <div class="overview-value active">{{ loanCounts.active }}</div>
+          <div class="overview-desc">Currently active</div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="overview-label">Requested</div>
+          <div class="overview-value requested">{{ loanCounts.requested }}</div>
+          <div class="overview-desc">Total requests</div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="overview-label">Rejected</div>
+          <div class="overview-value rejected">{{ loanCounts.rejected }}</div>
+          <div class="overview-desc">Not approved</div>
+        </div>
+        
+        <div class="overview-item">
+          <div class="overview-label">Completed</div>
+          <div class="overview-value completed">{{ loanCounts.completed }}</div>
+          <div class="overview-desc">Fully repaid</div>
+        </div>
 
-        <!-- Loan History -->
-        <section class="loan-history-section" *ngIf="showHistory">
-            <div class="history-header">
-                <h2><i class="fas fa-file-invoice-dollar"></i> Loan Request History</h2>
-                <div class="filter-controls">
-                    <label for="statusFilter">Filter by status:</label>
-                    <select id="statusFilter" 
-                            [(ngModel)]="selectedFilter" 
-                            (change)="filterLoans()">
-                        <option value="all">All Requests</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="REQUESTED">Requested</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="COMPLETED">Completed</option>
-                    </select>
-                </div>
-            </div>
+        <div class="overview-item total">
+          <div class="overview-label">Total Requests</div>
+          <div class="overview-value">{{ getTotalRequests() }}</div>
+          <div class="overview-desc">All loan requests</div>
+        </div>
+      </div>
+    </section>
 
-            <div class="history-content">
-                <table class="loan-table">
-                    <thead>
-                        <tr>
-                            <th>Loan ID</th>
-                            <th>Date Requested</th>
-                            <th>Purpose</th>
-                            <th>Amount (₦)</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let loan of filteredLoans" class="clickable-row">
-                            <td>{{ loan.id }}</td>
-                            <td>{{ loan.dateSubmitted | date:'mediumDate' }}</td>
-                            <td>{{ getPurposeDisplay(loan.purpose) }}</td>
-                            <td><span>₦</span>{{ loan.loanAmount }}</td>
-                            <td>
-                                <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
-                                    {{ getStatusDisplay(loan.status) }}
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <div class="no-loans" *ngIf="filteredLoans.length === 0">
-                    <i class="fas fa-inbox"></i>
-                    <p *ngIf="selectedFilter === 'all'">No loan requests found</p>
-                    <p *ngIf="selectedFilter !== 'all'">No {{ selectedFilter.toLowerCase() }} loan requests found</p>
-                </div>
-            </div>
-        </section>
-    </div>
+    <!-- Loan Form Section (Appears Below Overview) -->
+    <section class="loan-form-section" *ngIf="showLoanForm">
+      <div class="form-header">
+        <h3><i class="fas fa-file-alt"></i> New Loan Application</h3>
+        <p class="form-subtitle">Employee Loan Application Form</p>
+      </div>
+      
+      <div class="form-container">
+        <!-- Load the Loan Request Form Component -->
+        <app-loan-request-form 
+          (loanSubmitted)="onLoanSubmitted()"
+          (cancel)="toggleLoanForm()">
+        </app-loan-request-form>
+      </div>
+    </section>
+
+    <!-- Loan History Section -->
+    <section class="loan-history-section" *ngIf="showHistory">
+      <div class="history-header">
+        <h2 class="section-title">Recent Loan Requests</h2>
+        <span class="history-subtitle">Showing last 5 requests</span>
+      </div>
+      
+      <div class="history-content" *ngIf="allLoans.length > 0">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Date</th>
+              <th>Purpose</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let loan of allLoans.slice(0, 5)">
+              <td class="loan-id">{{ loan.id }}</td>
+              <td class="loan-date">{{ loan.dateSubmitted | date:'shortDate' }}</td>
+              <td class="loan-purpose">{{ loan.purpose }}</td>
+              <td class="loan-amount">{{ formatCurrency(loan.loanAmount) }}</td>
+              <td class="loan-status">
+                <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
+                  {{ getStatusDisplay(loan.status) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="no-loans" *ngIf="allLoans.length === 0">
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <h3>No Loan Requests Found</h3>
+          <p>You haven't submitted any loan requests yet.</p>
+          <button class="primary-btn" (click)="toggleLoanForm()">
+            <i class="fas fa-plus"></i> Submit Your First Request
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loan Guidelines Section -->
+    <section class="guidelines-section">
+      <h2 class="section-title">Loan Guidelines</h2>
+      
+      <div class="guidelines-grid">
+        <div class="guideline-item">
+          <div class="guideline-icon">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div class="guideline-content">
+            <h4>Eligibility</h4>
+            <p>Must be employed for at least 6 months with good standing</p>
+          </div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="guideline-content">
+            <h4>Processing Time</h4>
+            <p>Approval within 3-5 business days</p>
+          </div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="guideline-content">
+            <h4>Interest Rate</h4>
+            <p>Low interest rates starting from 9% per annum</p>
+          </div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-icon">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="guideline-content">
+            <h4>Documentation</h4>
+            <p>Valid ID and employment verification required</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
