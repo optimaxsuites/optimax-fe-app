@@ -116,6 +116,7 @@ export class LeaveStrctureComponent {
     //     this.levels.forEach((level) => {
     //       if (level.id !== undefined) {
     //         this.leaveDataByLevel[level.id] = [];
+    
     //       }
     //     });
     //   },
