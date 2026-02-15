@@ -94,6 +94,14 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+  userRegistrationByAdmin(data: any): Observable<any> {
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+
+    return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/signup/by/admin", data)
+      .pipe(catchError(this.handleError));
+  }
+
   userApplicationRole(data: any): Observable<any> {
     return this.http
       .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/appuserrolepermission`, data)

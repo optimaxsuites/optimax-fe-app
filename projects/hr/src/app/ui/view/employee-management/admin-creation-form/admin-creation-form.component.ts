@@ -473,7 +473,7 @@ private setProbationValidators(): void {
       const username = this.basicForm.get('firstName')?.value 
       const password = this.generateRandomPassword();
       const signupDetails = this.buildSignupDetails(username, password, username);
-      this.authenticationService.userRegistration(signupDetails).subscribe({
+      this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
         next: (userData) => {
           const roleRequest = {
             userId: userData.id,
