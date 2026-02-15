@@ -1,10 +1,10 @@
 export interface JobPostingDTO {
     id?: number;
     jobTitle?: string;
-    jobCategory?: number;
+    jobCategory?: number | any;
     companyOverview?: string;
     location?: string;
-    jobType?: number;
+    jobType?: number | any;
     jobPostedDate?: string;
     jobExpiryDate?: string;
     jobVacancySpecification?: number;

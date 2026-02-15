@@ -32,9 +32,9 @@ export class RecruitmentListComponent implements OnInit {
     { header: 'Expiry Date', field: 'expiryDate', sortable: true, className: 'table-item' },
   ];
   jobActions: TableAction[] = [
-    { id: 'view', label: 'View', icon: 'pi pi-eye' },
-    { id: 'edit', label: 'Edit', icon: 'pi pi-pen-to-square' },
-    { id: 'delete', label: 'Delete', icon: 'pi pi-trash' }
+    { id: 'view', label: 'View', icon: 'fas fa-eye' },
+    { id: 'edit', label: 'Edit', icon: 'fas fa-pen-to-square' },
+    { id: 'delete', label: 'Delete', icon: 'fas fa-trash-can' }
   ];
 
 
