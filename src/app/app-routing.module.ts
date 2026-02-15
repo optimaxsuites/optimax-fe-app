@@ -77,9 +77,10 @@ const routes: Routes = [
     redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
     pathMatch: 'full',
   },
-   {
+  {
     path: 'onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
+    canActivate: [AuthGuard],
   },
   {
     path: 'admin/settings/user-reg/:uuid',

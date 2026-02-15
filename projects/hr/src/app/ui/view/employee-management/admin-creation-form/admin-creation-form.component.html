@@ -308,40 +308,41 @@
 
   <form [formGroup]="guarantorForm" *ngIf="currentTab === 3" class="form-section" >
     <div class="form-card">
-      <p class="section-title">Grant Access</p>
-      <div class="form-grid text-sm text-slate-600">
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="employeePortalAccess" class="accent-customBlue"/>
-          <span>Employee Portal Access</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="emailAccess" class="accent-customBlue"/>
-          <span>Email Access</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="hrSystemAccess" class="accent-customBlue"/>
-          <span>HR Management System</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="projectManagementAccess" class="accent-customBlue"/>
-          <span>Project Management Tools</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="buildingAccess" class="accent-customBlue"/>
-          <span>Facility Access</span>
+      <div class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-1">
+          <p class="text-sm font-semibold text-slate-700">Has access to OptiMax</p>
+          <p class="text-xs text-slate-500">
+            A user account will be created for this employee. Their username and password will be included in their onboarding email.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" formControlName="optimaxAccess" aria-label="Has access to OptiMax"/>
+          <span class="slider round"></span>
         </label>
       </div>
 
-      <p class="section-title mt-6">Grant Role-based Access</p>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-600">
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="managerialAccess" class="accent-customBlue"/>
-          <span>Managerial Access</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" formControlName="adminAccess" class="accent-customBlue"/>
-          <span>Administrative Access</span>
-        </label>
+      <p class="section-title mt-6">Role & Permissions</p>
+      <p class="text-xs text-slate-500 mt-1" *ngIf="!guarantorForm.get('optimaxAccess')?.value">
+        Enable OptiMax access to assign a role and permissions.
+      </p>
+      <div class="form-field mt-4" *ngIf="guarantorForm.get('optimaxAccess')?.value">
+        <label class="form-label">Role-based Access <span class="required">*</span></label>
+        <div class="select-with-action">
+          <ng-select 
+            [items]="roles" 
+            bindLabel="name"
+            bindValue="id"
+            placeholder="Select role"
+            formControlName="roleId"
+            class="select-modern flex-1"></ng-select>
+          <button type="button" class="icon-button" [routerLink]="navigationLink.getLink('userRoles')" title="Manage roles and permissions">
+            <span class="fa-solid fa-gear"></span>
+          </button>
+        </div>
+        <small *ngIf="guarantorForm.get('roleId')?.touched && guarantorForm.get('roleId')?.invalid" class="form-error">
+          Role is required.
+        </small>
+        <p class="text-xs text-slate-500">Need a new role or permission? Manage roles in Settings.</p>
       </div>
 
       <div class="mt-6 flex justify-end gap-2">
@@ -378,9 +379,13 @@
 
         <div class="summary-card">
           <p class="summary-title">Access Information</p>
-          <div *ngFor="let control of getFormControls('guarantorForm')">
-            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
-          </div>
+          <p class="capitalize"><strong>Has access to OptiMax:</strong>
+            <span class="ml-1">{{ guarantorForm.get('optimaxAccess')?.value ? 'Yes' : 'No' }}</span>
+          </p>
+          <p class="capitalize" *ngIf="guarantorForm.get('optimaxAccess')?.value">
+            <strong>Role:</strong>
+            <span class="ml-1">{{ getRoleNameById(guarantorForm.get('roleId')?.value) || '—' }}</span>
+          </p>
         </div>
       </div>
     

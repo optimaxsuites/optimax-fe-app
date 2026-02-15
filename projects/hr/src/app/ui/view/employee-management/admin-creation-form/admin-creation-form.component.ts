@@ -3,18 +3,19 @@ import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Val
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { environment } from '../../../shared-component/service/environments/environment';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { DataService } from '../../../service/data.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
+import { RolesService } from '../../../service/roles.service';
+import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 
 @Component({
   selector: 'app-admin-creation-form',
   templateUrl: './admin-creation-form.component.html',
-  styleUrl: './admin-creation-form.component.scss',
+  styleUrls: ['./admin-creation-form.component.scss'],
   providers: [MessageService]
 })
 export class AdminCreationFormComponent {
@@ -79,6 +80,7 @@ export class AdminCreationFormComponent {
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
+  roles: any[] = [];
   totalLeaveDays: number = 0;
   errorMessage: string = "";
   showMetaModal: boolean = false;
@@ -90,9 +92,11 @@ export class AdminCreationFormComponent {
     private metadataService: MetadataService,
     private messageService: MessageService,
     private router: Router, 
-    private token: RandomTokenService, 
     private employeeService: EmployeeService,
-    private dataService: DataService
+    private dataService: DataService,
+    private authenticationService: AuthenticationService,
+    private rolesService: RolesService,
+    public navigationLink: NavigationLinksService
   ) {  }
 
   ngOnInit(): void {
@@ -135,13 +139,8 @@ export class AdminCreationFormComponent {
     });
 
     this.guarantorForm = this.fb.group({
-      employeePortalAccess: [false],
-      emailAccess: [false],
-      hrSystemAccess: [false],
-      projectManagementAccess: [false],
-      buildingAccess: [false],
-      managerialAccess: [false],
-      adminAccess: [false]
+      optimaxAccess: [false],
+      roleId: [null]
     });
 
     this.metaForm = this.fb.group({
@@ -157,6 +156,7 @@ export class AdminCreationFormComponent {
     })
 
     this.setProbationValidators();
+    this.setOptimaxAccessValidators();
 
     this.employeeForm.get('isProbation')?.valueChanges.subscribe(isProbation => {
       if (isProbation) {
@@ -171,6 +171,7 @@ export class AdminCreationFormComponent {
     });
 
     this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
+    this.fetchRoles();
   }
 
   get metaTitle(): string {
@@ -184,6 +185,46 @@ export class AdminCreationFormComponent {
       default:
         return 'Create';
     }
+  }
+
+  fetchRoles() {
+    this.rolesService.getRoles().subscribe({
+      next: (roles) => {
+        const roleList = Array.isArray(roles) ? roles : [];
+        this.roles = roleList.map(role => ({
+          ...role,
+          name: role.name ?? role.roleName
+        }));
+      },
+      error: (err) => {
+        console.log('Error fetching roles:', err);
+        this.roles = [];
+      }
+    });
+  }
+
+  setOptimaxAccessValidators() {
+    const optimaxAccessControl = this.guarantorForm.get('optimaxAccess');
+    const roleControl = this.guarantorForm.get('roleId');
+    optimaxAccessControl?.valueChanges.subscribe((hasAccess) => {
+      if (hasAccess) {
+        roleControl?.setValidators([Validators.required]);
+      } else {
+        roleControl?.clearValidators();
+        roleControl?.setValue(null);
+      }
+      roleControl?.updateValueAndValidity();
+    });
+    if (optimaxAccessControl?.value) {
+      roleControl?.setValidators([Validators.required]);
+      roleControl?.updateValueAndValidity();
+    }
+  }
+
+  getRoleNameById(roleId: number | null): string {
+    if (!roleId) return '';
+    const role = this.roles.find(r => r.id === roleId);
+    return role?.name || '';
   }
 
   openMetaModal(type: 'department' | 'employment' | 'level') {
@@ -416,13 +457,8 @@ private setProbationValidators(): void {
     // leaveDays: this.leaveForm.get('leaveDays')?.value,
 
     // Access Information
-    // employeePortalAccess: this.guarantorForm.get('employeePortalAccess')?.value,
-    // emailAccess: this.guarantorForm.get('emailAccess')?.value,
-    // hrSystemAccess: this.guarantorForm.get('hrSystemAccess')?.value,
-    // projectManagementAccess: this.guarantorForm.get('projectManagementAccess')?.value,
-    // buildingAccess: this.guarantorForm.get('buildingAccess')?.value,
-    // managerialAccess: this.guarantorForm.get('managerialAccess')?.value,
-    // adminAccess: this.guarantorForm.get('adminAccess')?.value,
+    // optimaxAccess: this.guarantorForm.get('optimaxAccess')?.value,
+    // roleId: this.guarantorForm.get('roleId')?.value,
    
   }
   const formData = new FormData();
@@ -431,28 +467,50 @@ private setProbationValidators(): void {
   this.employeeService.addEmployee(formData).subscribe(
    { next: (data: any) => {
     console.log(data)
-    this.loading = false;
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000  }); 
-    this.basicForm.reset()
-    this.guarantorForm.reset()
-    this.leaveForm.reset()
-    this.employeeForm.reset()
-    this.currentTab = 1
-     this.employeeService.sendWelcomeEmail({
-        name: `${data.firstName} ${data.lastName}`,
-        email: data.email,
-        employeeId: data.id,
-        url: `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj`
-      }).subscribe({
-        next: (res) => {console.log('Welcome email sent successfully:', res);},
-        error: (err) => {
-          console.log('Error sending welcome email:', err);
-        }
-      })
+    const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
 
-    if (shouldRedirect) {
-      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-      
+    if (hasOptiMaxAccess) {
+      const username = this.basicForm.get('firstName')?.value 
+      const password = this.generateRandomPassword();
+      const signupDetails = this.buildSignupDetails(username, password, username);
+      this.authenticationService.userRegistration(signupDetails).subscribe({
+        next: (userData) => {
+          const roleRequest = {
+            userId: userData.id,
+            appRoleId: this.guarantorForm.get('roleId')?.value
+          };
+
+          this.authenticationService.userApplicationRole(roleRequest).subscribe({
+            next: () => {
+              this.finalizeEmployeeCreation(data, shouldRedirect, {
+                username,
+                password,
+                message: 'Employee added and user access created successfully!'
+              });
+            },
+            error: (err) => {
+              console.log(err);
+              this.finalizeEmployeeCreation(data, shouldRedirect, {
+                username,
+                password,
+                severity: 'warn',
+                message: 'Employee created, but role assignment failed. Please assign role in settings.'
+              });
+            }
+          });
+        },
+        error: (error) => {
+          console.log(error);
+          this.finalizeEmployeeCreation(data, shouldRedirect, {
+            severity: 'warn',
+            message: 'Employee created, but user account creation failed. Please create user in settings.'
+          });
+        }
+      });
+    } else {
+      this.finalizeEmployeeCreation(data, shouldRedirect, {
+        message: 'Employee added successfully!'
+      });
     }
    },
    error: (err) => {
@@ -470,6 +528,115 @@ private setProbationValidators(): void {
   }
  
 }
+
+  private finalizeEmployeeCreation(
+    data: any,
+    shouldRedirect: boolean,
+    options?: {
+      username?: string;
+      password?: string;
+      message?: string;
+      severity?: 'success' | 'warn' | 'error';
+    }
+  ) {
+    this.loading = false;
+    const severity = options?.severity || 'success';
+    const summary = severity === 'success' ? 'Success' : 'Notice';
+
+    this.messageService.add({
+      severity,
+      summary,
+      detail: options?.message || 'Employee added successfully!',
+      key: 'tl',
+      life: 3000
+    });
+
+    this.basicForm.reset();
+    this.guarantorForm.reset();
+    this.leaveForm.reset();
+    this.employeeForm.reset();
+    this.currentTab = 1;
+
+    const emailPayload: any = {
+      name: `${data.firstName} ${data.lastName}`,
+      email: data.email,
+      employeeId: data.id,
+      url: `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj?onboarding=1`
+    };
+
+    if (options?.username && options?.password) {
+      emailPayload.username = options.username;
+      emailPayload.password = options.password;
+    }
+
+    this.employeeService.sendWelcomeEmail(emailPayload).subscribe({
+      next: (res) => { console.log('Welcome email sent successfully:', res); },
+      error: (err) => {
+        console.log('Error sending welcome email:', err);
+      }
+    });
+
+    if (shouldRedirect) {
+      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+    }
+  }
+
+  private buildSignupDetails(username: string, password: string, email: string) {
+    const business = sessionStorage.getItem('userPrimaryInfoRegData')
+      ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}')
+      : null;
+
+    const businessInfo = {
+      fullname: business?.fullname || '',
+      username: username || '',
+      profileImage: business?.profileImage || '',
+      email: email || '',
+      phoneNumber: business?.phoneNumber,
+      address: business?.address,
+      country: business?.country,
+      state: business?.state,
+      city: business?.city,
+      postalCode: business?.postalCode,
+      industry: business?.industry,
+      companyName: business?.companyName,
+      clientType: business?.clientType,
+      bio: business?.bio,
+      currency: business?.currency,
+      language: business?.language,
+      timeZone: business?.timeZone,
+    };
+
+    return {
+      username,
+      password,
+      email,
+      project: `${environment.project}`,
+      apiKey: `${environment.apiKey}`,
+      upi: businessInfo
+    };
+  }
+
+  private generateRandomPassword(length = 12): string {
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const symbols = '!@#$%*?';
+    const all = lowercase + uppercase + numbers + symbols;
+
+    const pick = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+    const passwordChars = [
+      pick(lowercase),
+      pick(uppercase),
+      pick(numbers),
+      pick(symbols)
+    ];
+
+    for (let i = passwordChars.length; i < length; i += 1) {
+      passwordChars.push(pick(all));
+    }
+
+    return passwordChars.sort(() => Math.random() - 0.5).join('');
+  }
 
 
 

@@ -26,6 +26,9 @@ export class AuthGuard implements CanActivate {
     if (this.authService.isAuthenticated()) {
       return true;
     } else {
+      if (state.url?.includes('onboarding=1')) {
+        sessionStorage.setItem('postLoginRedirect', state.url);
+      }
       const loginLink = this.navigationLink.getLink('signinLink');
       return this.router.parseUrl(loginLink);
       

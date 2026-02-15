@@ -94,6 +94,12 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+  userApplicationRole(data: any): Observable<any> {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/appuserrolepermission`, data)
+      .pipe(catchError(this.handleError));
+  }
+
   userVerification(token: string): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 

@@ -291,6 +291,15 @@ async posLoginAction(): Promise<void> {
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);
 
+    let redirectUrl: string | null = sessionStorage.getItem('postLoginRedirect');
+    const consumeRedirect = () => {
+      if (!redirectUrl) return false;
+      sessionStorage.removeItem('postLoginRedirect');
+      this.router.navigateByUrl(redirectUrl);
+      redirectUrl = null;
+      return true;
+    };
+
     this.checkUserReg();
     this.getUserBranchInfo();
     this.loadPlanLimits()
@@ -301,6 +310,9 @@ async posLoginAction(): Promise<void> {
 
 
      if(isSuperUser()){
+        if (consumeRedirect()) {
+          return;
+        }
         const dashboardLink = this.navigationLink.getLink('dashboardLink');
         this.router.navigate([dashboardLink]);
         return;
@@ -327,6 +339,9 @@ async posLoginAction(): Promise<void> {
       // console.log((hasOnlyKitchenPermissions()))
 
      
+      if (consumeRedirect()) {
+        return;
+      }
       if (hasOnlyCheckoutPermission()) {
         const checkoutLink = this.navigationLink.getLink('checkoutLink');
         this.router.navigate([checkoutLink]); 
@@ -346,6 +361,9 @@ async posLoginAction(): Promise<void> {
           if (storedRole) {
             console.log("Removing invalid userApplicationRole from sessionStorage");
             sessionStorage.removeItem("userApplicationRole");
+          }
+          if (consumeRedirect()) {
+            return;
           }
       }
     })
