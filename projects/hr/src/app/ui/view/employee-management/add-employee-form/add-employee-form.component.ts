@@ -94,7 +94,7 @@ export class AddEmployeeFormComponent {
     "Training & Development"
   ];
   gender: any[] = []
-  currentTab = 3;
+  currentTab = 1;
   tabs = ["Basic Information", "Employment Information", "Next Of Kin", "Guarantor Information", "Summary"]
    maritalStatuses: any[] = [
 
