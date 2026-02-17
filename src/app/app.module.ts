@@ -159,6 +159,8 @@ import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval
 import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
 import { StatusTrackingComponent } from './ui/view/loan-management/status-tracking/status-tracking.component';
 import { LoanComponent } from './ui/view/loan-management/loan.component';
+import { EmployeeRepaymentScheduleComponent } from './ui/view/loan-management/employee-repayment-schedule/employee-repayment-schedule.component';
+import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
 
 
 @NgModule({
@@ -262,6 +264,8 @@ import { LoanComponent } from './ui/view/loan-management/loan.component';
     LoanDetailsComponent,
     StatusTrackingComponent,
     LoanComponent,
+    EmployeeRepaymentScheduleComponent,
+    LoanReportsComponent,
   ],
   imports: [
     BrowserModule,
