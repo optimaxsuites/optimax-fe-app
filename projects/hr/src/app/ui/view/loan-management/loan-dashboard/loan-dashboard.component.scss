@@ -21,7 +21,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
-    padding-bottom: 20px;
+    padding: 0 0 20px 0;
     border-bottom: 2px solid #B6D6E2;
 
     h1 {
@@ -67,6 +67,7 @@
     .action-buttons {
       display: flex;
       gap: 16px;
+      flex-wrap: wrap;
 
       button {
         padding: 14px 28px;
@@ -80,6 +81,11 @@
         align-items: center;
         justify-content: center;
         min-width: 180px;
+
+        i {
+          margin-right: 8px;
+          font-size: 1.1rem;
+        }
 
         &:first-child {
           background-color: #2E6276;
@@ -143,51 +149,53 @@
         margin: 0 0 12px 0;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-align: center;
       }
 
       .stat-value {
-        color: #2E6276;
+        color: #2EB270;
         font-size: 2.8rem;
         font-weight: 700;
         margin: 0;
-        
-        span {
-          font-size: 2rem;
-          margin-right: 4px;
-        }
-      }
-
-      &:nth-child(2) .stat-value {
-        color: #2EB270;
-      }
-
-      &:last-child .stat-value {
-        color: #FF0000;
+        text-align: center;
       }
     }
   }
 
-  .dashboard-content {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 32px;
-    align-items: start;
-  }
-
-  .card {
+  .recent-loans {
     background: white;
     border-radius: 12px;
     padding: 28px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid #e3eef0;
-  }
+    width: 100%;
 
-  .recent-loans {
-    h2 {
-      color: #2E6276;
-      font-size: 1.5rem;
-      margin: 0 0 24px 0;
-      font-weight: 600;
+    &.full-width {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+
+      h2 {
+        color: #2E6276;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .loan-count {
+        color: #8a8a8a;
+        font-size: 0.95rem;
+        background: #f8feff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid #e3eef0;
+      }
     }
 
     .empty-state {
@@ -199,167 +207,171 @@
         font-size: 1.1rem;
         margin-bottom: 24px;
       }
+    }
 
-      .btn-primary {
+    .table-wrapper {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .loan-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      min-width: 1000px;
+
+      thead {
         background-color: #2E6276;
-        color: white;
-        padding: 12px 28px;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &:hover {
-          background-color: #4291b1;
-          transform: translateY(-2px);
-        }
-      }
-    }
-  }
-
-  .loan-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 1rem;
-
-    thead {
-      background-color: #2E6276;
-      
-      th {
-        color: white;
-        font-weight: 600;
-        text-align: left;
-        padding: 18px 16px;
-        font-size: 1.05rem;
-        border-bottom: 3px solid #4291b1;
-
-        &:first-child {
-          border-radius: 8px 0 0 0;
-        }
-
-        &:last-child {
-          border-radius: 0 8px 0 0;
-        }
-      }
-    }
-
-    tbody {
-      tr {
-        border-bottom: 1px solid #e3eef0;
-        transition: background-color 0.2s ease;
-
-        &:nth-child(even) {
-          background-color: #f8feff;
-        }
-
-        &:hover {
-          background-color: #e3eef0;
-        }
-
-        &.clickable-row {
-          cursor: pointer;
-        }
-
-        td {
-          padding: 18px 16px;
-          color: #495057;
-          vertical-align: middle;
-
-          small {
-            color: #8a8a8a;
-            font-size: 0.9rem;
-          }
-
-          span {
-            font-weight: 600;
-          }
-        }
-      }
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-
-      &.status-pending {
-        background-color: rgb(231, 222, 101);
-        color: #5a5a00;
-      }
-
-      &.status-approved {
-        background-color: rgb(112, 231, 101);
-        color: #005a00;
-      }
-
-      &.status-rejected {
-        background-color: rgb(233, 55, 55);
-        color: white;
-      }
-
-      &.status-active {
-        background-color: rgb(101, 199, 231);
-        color: #004a6d;
-      }
-
-      &.status-completed {
-        background-color: rgb(182, 182, 182);
-        color: #333;
-      }
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-
-      button {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &.btn-view {
-          background-color: rgb(101, 199, 231);
+        
+        th {
           color: white;
+          font-weight: 600;
+          text-align: left;
+          padding: 16px 12px;
+          font-size: 0.95rem;
+          border-bottom: 3px solid #4291b1;
+          white-space: nowrap;
 
-          &:hover {
-            background-color: #5ab8dd;
-            transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(101, 199, 231, 0.3);
+          &:first-child {
+            border-radius: 8px 0 0 0;
           }
-        }
 
-        &.btn-history {
-          background-color: #B6D6E2;
-          color: #2E6276;
-
-          &:hover {
-            background-color: #9cc6d6;
-            transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(182, 214, 226, 0.3);
+          &:last-child {
+            border-radius: 0 8px 0 0;
           }
         }
       }
-    }
-  }
 
-  .status-sidebar {
-    position: sticky;
-    top: 24px;
-    
-    h3 {
-      color: #2E6276;
-      font-size: 1.3rem;
-      margin: 0 0 20px 0;
-      font-weight: 600;
+      tbody {
+        tr {
+          border-bottom: 1px solid #e3eef0;
+          transition: background-color 0.2s ease;
+
+          &:nth-child(even) {
+            background-color: #f8feff;
+          }
+
+          &:hover {
+            background-color: #e3eef0;
+          }
+
+          td {
+            padding: 16px 12px;
+            color: #495057;
+            vertical-align: middle;
+
+            &.loan-id {
+              font-family: 'Courier New', monospace;
+              font-weight: 600;
+              color: #2E6276;
+            }
+
+            &.amount {
+              font-weight: 600;
+              color: #2EB270;
+            }
+
+            .employee-info {
+              display: flex;
+              flex-direction: column;
+
+              .name {
+                font-weight: 600;
+                color: #2E6276;
+              }
+
+              .emp-id {
+                font-size: 0.85rem;
+                color: #8a8a8a;
+              }
+            }
+          }
+        }
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+
+        &.status-pending {
+          background-color: rgba(231, 222, 101, 0.2);
+          color: #8f8500;
+          border: 1px solid rgba(231, 222, 101, 0.3);
+        }
+
+        &.status-approved {
+          background-color: rgba(46, 178, 112, 0.1);
+          color: #1e7e4a;
+          border: 1px solid rgba(46, 178, 112, 0.3);
+        }
+
+        &.status-rejected {
+          background-color: rgba(233, 55, 55, 0.1);
+          color: #b30000;
+          border: 1px solid rgba(233, 55, 55, 0.3);
+        }
+
+        &.status-active {
+          background-color: rgba(46, 98, 118, 0.1);
+          color: #1e4a5a;
+          border: 1px solid rgba(46, 98, 118, 0.3);
+        }
+
+        &.status-completed {
+          background-color: rgba(128, 128, 128, 0.1);
+          color: #4d4d4d;
+          border: 1px solid rgba(128, 128, 128, 0.3);
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+        white-space: nowrap;
+
+        button {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+
+          i {
+            font-size: 0.85rem;
+          }
+
+          &.btn-view {
+            background-color: rgb(101, 199, 231);
+            color: white;
+
+            &:hover {
+              background-color: #5ab8dd;
+              transform: translateY(-1px);
+            }
+          }
+
+          &.btn-history {
+            background-color: #B6D6E2;
+            color: #2E6276;
+
+            &:hover {
+              background-color: #9cc6d6;
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -367,12 +379,16 @@
 // Responsive adjustments
 @media (max-width: 1200px) {
   .loan-dashboard-container {
-    .dashboard-content {
-      grid-template-columns: 1fr;
-    }
-
-    .status-sidebar {
-      position: static;
+    .stats-section {
+      gap: 16px;
+      
+      .stat-card {
+        padding: 20px;
+        
+        .stat-value {
+          font-size: 2.2rem;
+        }
+      }
     }
   }
 }
@@ -403,47 +419,13 @@
       grid-template-columns: 1fr;
     }
 
-    .loan-table {
-      display: block;
-      overflow-x: auto;
-      
-      thead, tbody, th, td, tr {
-        display: block;
-      }
+    .recent-loans {
+      padding: 16px;
 
-      thead {
-        display: none;
-      }
-
-      tr {
-        margin-bottom: 16px;
-        border: 1px solid #e3eef0;
-        border-radius: 8px;
-        padding: 16px;
-      }
-
-      td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid #f0f0f0;
-
-        &:last-child {
-          border-bottom: none;
-        }
-
-        &::before {
-          content: attr(data-label);
-          font-weight: 600;
-          color: #2E6276;
-          margin-right: 16px;
-          flex: 1;
-        }
-
-        .action-buttons {
-          justify-content: flex-end;
-        }
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
       }
     }
   }

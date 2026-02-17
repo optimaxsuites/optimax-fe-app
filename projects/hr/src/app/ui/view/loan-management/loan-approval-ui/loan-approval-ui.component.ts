@@ -1,7 +1,8 @@
-import { employeeDTO } from './../../../domain/employee.dto';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { LoanService, LoanApplication } from '../../../service/loan/loan.service'; // Add this import
+import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 
 @Component({
   selector: 'app-loan-approval-ui',
@@ -10,6 +11,10 @@ import { LoanService, LoanApplication } from '../../../service/loan/loan.service
 })
 export class LoanApprovalUiComponent implements OnInit {
   searchTerm: string = '';
+  
+  // Add sorting properties only
+  sortField: string = 'dateSubmitted';
+  sortDirection: 'asc' | 'desc' = 'desc';
   
   // Add filter properties
   filters = {
@@ -20,10 +25,10 @@ export class LoanApprovalUiComponent implements OnInit {
     maxAmount: null as number | null
   }
 
-  // Remove mock data and use service data
-  loanApplications: LoanApplication[] = []; // Changed from mock to empty
+  // Use service data
+  loanApplications: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
-  isLoading = true; // Add loading state
+  isLoading = true;
 
   loanColumns = [
     { header: 'Application ID', field: 'id' },
@@ -53,7 +58,8 @@ export class LoanApprovalUiComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private loanService: LoanService // Inject LoanService
+    private loanApplicationService: LoanApplicationService,
+    private loanApprovalService: LoanApprovalService
   ) {}
 
   ngOnInit() {
@@ -81,40 +87,17 @@ export class LoanApprovalUiComponent implements OnInit {
   // Load applications from service
   loadApplications(): void {
     this.isLoading = true;
-    this.loanService.getAllApplications().subscribe({
+    this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
         this.loanApplications = applications;
-        this.filteredLoans = [...applications];
+        this.applyFilters(); // This will now also sort
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading applications:', error);
-        // Fallback to mock data if service fails (for demo)
-        this.loadMockData();
         this.isLoading = false;
       }
     });
-  }
-
-  // Fallback method if service fails
-  loadMockData(): void {
-    // You can keep your mock data as fallback
-    const mockData: LoanApplication[] = [
-      {
-        id: 'LN-001', employeeId: 'EMP-001', fullName: 'Ayasa', department: 'Finance',
-        loanAmount: 50000, status: 'PENDING', dateSubmitted: '2024-01-15',
-        purpose: 'Medical Emergency', repaymentPeriod: 12, monthlyRepayment: 4166.67, acknowledgment: true,
-        interestRate: 0,
-        currentBalance: 0,
-        totalPaid: 0,
-        statusHistory: [],
-        repaymentSchedule: [],
-        paymentHistory: []
-      },
-      // ... keep your other mock data but format it as LoanApplication
-    ];
-    this.loanApplications = mockData;
-    this.filteredLoans = [...mockData];
   }
 
   // Apply all filters
@@ -164,6 +147,8 @@ export class LoanApprovalUiComponent implements OnInit {
       );
     }
 
+    // Apply sorting
+    results = this.sortData(results);
     this.filteredLoans = results;
   }
 
@@ -198,7 +183,67 @@ export class LoanApprovalUiComponent implements OnInit {
       minAmount: null,
       maxAmount: null
     };
-    this.filteredLoans = [...this.loanApplications];
+    // Reset sorting to default
+    this.sortField = 'dateSubmitted';
+    this.sortDirection = 'desc';
+    this.applyFilters();
+  }
+
+  // NEW: Sorting method
+  sortData(data: LoanApplication[]): LoanApplication[] {
+    return [...data].sort((a, b) => {
+      let valueA, valueB;
+
+      // Get values based on sort field
+      switch(this.sortField) {
+        case 'dateSubmitted':
+          valueA = new Date(a.dateSubmitted).getTime();
+          valueB = new Date(b.dateSubmitted).getTime();
+          break;
+        case 'loanAmount':
+          valueA = a.loanAmount;
+          valueB = b.loanAmount;
+          break;
+        case 'employeeId':
+          valueA = a.employeeId.toLowerCase();
+          valueB = b.employeeId.toLowerCase();
+          break;
+        case 'fullName':
+          valueA = a.fullName.toLowerCase();
+          valueB = b.fullName.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      // Compare values
+      if (valueA < valueB) {
+        return this.sortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }
+
+  // NEW: Set sort field and direction
+  setSort(field: string): void {
+    if (this.sortField === field) {
+      // Toggle direction if same field
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      // New field, default to descending for dates, ascending for others
+      this.sortField = field;
+      this.sortDirection = field === 'dateSubmitted' ? 'desc' : 'asc';
+    }
+    this.applyFilters();
+  }
+
+  // NEW: Get sort indicator
+  getSortIndicator(field: string): string {
+    if (this.sortField !== field) return '';
+    return this.sortDirection === 'asc' ? ' ↑' : ' ↓';
   }
 
   // Add status class method
@@ -211,13 +256,21 @@ export class LoanApprovalUiComponent implements OnInit {
     }
   }
 
-  // ADD THESE METHODS FOR APPROVE/REJECT
+  // Get sort icon class
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) {
+      return 'fa-sort'; // Default unsorted icon
+    }
+    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  // Approve/Reject methods
   approveLoan(applicationId: string): void {
     if (confirm('Are you sure you want to approve this loan?')) {
-      this.loanService.updateApplicationStatus(applicationId, 'APPROVED').subscribe({
+      this.loanApprovalService.approveLoan(applicationId).subscribe({
         next: () => {
           alert('Loan approved successfully!');
-          this.loadApplications(); // Refresh the list
+          this.loadApplications();
         },
         error: (error) => {
           console.error('Error approving loan:', error);
@@ -228,11 +281,17 @@ export class LoanApprovalUiComponent implements OnInit {
   }
 
   rejectLoan(applicationId: string): void {
-    if (confirm('Are you sure you want to reject this loan?')) {
-      this.loanService.updateApplicationStatus(applicationId, 'REJECTED').subscribe({
+    const reason = prompt('Please provide a reason for rejection:');
+    if (reason !== null) {
+      if (reason.trim() === '') {
+        alert('A rejection reason is required.');
+        return;
+      }
+      
+      this.loanApprovalService.rejectLoan(applicationId, reason).subscribe({
         next: () => {
           alert('Loan rejected successfully!');
-          this.loadApplications(); // Refresh the list
+          this.loadApplications();
         },
         error: (error) => {
           console.error('Error rejecting loan:', error);
@@ -242,13 +301,11 @@ export class LoanApprovalUiComponent implements OnInit {
     }
   }
 
-viewLoanDetails(applicationId: string, employeeId: string) {
-  // Navigate with both employeeId and optional UUID if needed
-  this.router.navigate(['/admin/hr/loan-management/loan-details', employeeId]);
-}
+  viewLoanDetails(applicationId: string, uuid: string) {
+    this.router.navigate(['/admin/hr/loan-management/loan-details', applicationId, uuid]);
+  }
 
-seeLoanHistory(employeeId: string) {
-  // Navigate to employee history page
-  this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
-}
+  seeLoanHistory(employeeId: string) {
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
+  }
 }

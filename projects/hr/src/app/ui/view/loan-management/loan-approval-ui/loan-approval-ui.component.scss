@@ -160,16 +160,16 @@
 }
 
 /* Table Styling - Like the dashboard */
-.approval-table {
+.loans-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.approval-table thead {
+.loans-table thead {
     background-color: #2E6276; /* customBlue */
 }
 
-.approval-table th {
+.loans-table th {
     padding: 15px;
     text-align: left;
     font-weight: 600;
@@ -180,27 +180,27 @@
     border-bottom: none;
 }
 
-.approval-table td {
+.loans-table td {
     padding: 15px;
     border-bottom: 1px solid #f0f0f0; /* grayLight */
     color: #495057; /* textGray */
     vertical-align: middle;
 }
 
-.approval-table tr:nth-child(even) {
+.loans-table tr:nth-child(even) {
     background-color: #f8feff; /* skyBlue */
 }
 
-.approval-table tr:nth-child(odd) {
+.loans-table tr:nth-child(odd) {
     background-color: white;
 }
 
-.approval-table .clickable-row {
+.loans-table .clickable-row {
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.approval-table .clickable-row:hover {
+.loans-table .clickable-row:hover {
     background-color: #e3eef0; /* skyBlue2 */
 }
 
@@ -235,15 +235,17 @@
     border: 1px solid rgba(255, 0, 0, 0.3);
 }
 
-/* Action Buttons */
-.action-buttons {
+/* Action Buttons Container - FIXED */
+td.actions {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
 }
 
-.action-buttons button {
-    width: 100%;
+/* Individual button styling */
+td.actions button {
     padding: 8px 12px;
     border: none;
     border-radius: 4px;
@@ -252,69 +254,38 @@
     font-weight: 600;
     transition: all 0.3s ease;
     white-space: nowrap;
-    text-align: center;
+    min-width: 70px;
+    margin: 0; /* Remove any default margins */
 }
 
-.btn-view {
-    background-color: rgb(101, 199, 231); /* Light blue */
+/* View button */
+td.actions .btn-view {
+    background-color: rgb(101, 199, 231);
     color: white;
 }
 
-// .btn-view {
-//     padding: 8px 16px;
-//     background-color: rgb(101, 199, 231);
-//     color: white;
-//     border: none;
-//     border-radius: 4px;
-//     cursor: pointer;
-//     font-size: 12px;
-//     font-weight: 600;
-//     transition: all 0.3s ease;
-//     white-space: nowrap;
-// }
-
-// .btn-view:hover {
-//     background-color: rgb(66, 145, 177);
-//     transform: translateY(-1px);
-//     box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
-// }
-.btn-view:hover {
+td.actions .btn-view:hover {
     background-color: rgb(66, 145, 177);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
 }
 
-.btn-approve {
-    background-color: #2EB270; /* Green for approve */
+/* History button */
+td.actions .btn-history {
+    background-color: rgb(101, 199, 231);
     color: white;
 }
 
-.btn-approve:hover {
-    background-color: #47e797; /* customGreenHover */
+td.actions .btn-history:hover {
+    background-color: rgb(66, 145, 177);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(46, 178, 112, 0.3);
+    box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
 }
 
+/* Remove any leftover approve/reject button styles */
+.btn-approve,
 .btn-reject {
-    background-color: #FF0000; /* Red for reject */
-    color: white;
-}
-
-.btn-reject:hover {
-    background-color: #cc0000;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(255, 0, 0, 0.3);
-}
-
-.btn-history {
-   background-color: rgb(101, 199, 231); /* Light blue */
-   color: white;
-}
-
-.btn-history:hover {
-    background-color: rgb(101, 199, 231); /* Light blue */
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(158, 138, 231, 0.3);
+    display: none;
 }
 
 /* No Results Message */
@@ -329,6 +300,51 @@
 .no-results td {
     border-bottom: none;
     padding: 40px !important;
+}
+
+/* Sortable Column Headers */
+/* Sortable Column Headers - Clean Version */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 25px !important; /* Make space for the icon */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.sortable:hover {
+    background-color: #4291b1;
+}
+
+/* Sort icons - positioned neatly to the right */
+.sortable i {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    transition: color 0.2s ease;
+    width: 16px;
+    text-align: center;
+}
+
+/* Active sort icons */
+.sortable i.fa-sort-up,
+.sortable i.fa-sort-down {
+    color: white;
+    font-weight: bold;
+}
+
+/* Default unsorted icon - more subtle */
+.sortable i.fa-sort {
+    opacity: 0.5;
+    font-size: 12px;
+}
+
+.sortable:hover i.fa-sort {
+    opacity: 1;
+    color: white;
 }
 
 /* Responsive Design */
@@ -353,21 +369,13 @@
         grid-template-columns: 1fr;
     }
     
-    .action-buttons {
-        flex-direction: column;
-    }
-    
-    .action-buttons button {
-        width: 100%;
-    }
-    
-    .approval-table {
+    .loans-table {
         display: block;
         overflow-x: auto;
     }
     
-    .approval-table th,
-    .approval-table td {
+    .loans-table th,
+    .loans-table td {
         padding: 10px;
         font-size: 13px;
     }
@@ -381,6 +389,15 @@
     .refresh-btn {
         width: 100%;
         margin-top: 10px;
+    }
+    
+    td.actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    td.actions button {
+        width: 100%;
     }
 }
 
@@ -400,17 +417,10 @@
     .loan-filters {
         padding: 15px;
     }
-    
-    .action-buttons button {
-        font-size: 11px;
-        padding: 6px 8px;
-    }
 }
 
 /* Button active states */
 .btn-view:active,
-.btn-approve:active,
-.btn-reject:active,
 .btn-history:active,
 .reset-btn:active,
 .refresh-btn:active {

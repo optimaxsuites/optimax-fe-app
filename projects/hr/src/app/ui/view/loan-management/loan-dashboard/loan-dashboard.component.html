@@ -1,4 +1,3 @@
-<!-- loan-dashboard.component.html -->
 <div class="loan-dashboard-container">
     <!-- Loading state -->
     <div *ngIf="isLoading" class="loading-container">
@@ -20,13 +19,18 @@
         <section class="quick-actions">
             <h2>Quick Actions</h2>
             <div class="action-buttons">
-                <button class="btn-primary" (click)="applyForLoan()">
-                    Apply for Loan
+                <button class="btn-primary" (click)="viewPendingApprovals()">
+                    <i class="fas fa-clock"></i>
+                    Pending Approvals
                 </button>
-                <button class="btn-primary" (click)="approveLoan()">
-                    See Loan Requests
+                
+                <button class="btn-primary" (click)="viewActiveLoans()">
+                    <i class="fas fa-check-circle"></i>
+                    Active Loans
                 </button>
-                <button class="btn-primary" (click)="navigateTo('reports')">
+                
+                <button class="btn-primary" (click)="generateReports()">
+                    <i class="fas fa-chart-bar"></i>
                     Generate Reports
                 </button>
             </div>
@@ -42,21 +46,24 @@
                 <h3>Pending Applications</h3>  
                 <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
             </div>
-            <div class="stat-card">
-                <h3>Total Balance</h3>  
-                <p class="stat-value"><span>₦</span>{{ dashboardStats.totalBalance | number:'1.2-2' }}</p>
+            <div class="stat-card"> 
+                <h3>Total Balance</h3> 
+                <p class="stat-value">
+                    ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
+                </p> 
             </div>
         </section>
 
-        <div class="dashboard-content">
-            <!-- Recent Loans Table -->
-            <section class="card recent-loans">
+        <!-- Recent Loans Table - Full Width -->
+        <section class="recent-loans full-width">
+            <div class="section-header">
                 <h2>Recent Loan Applications</h2>
+                <span class="loan-count">Showing {{ recentLoans.length }} of {{ allLoans.length }} loans</span>
+            </div>
 
-                <div *ngIf="recentLoans.length === 0" class="empty-state">
-                    <p>No loan applications found.</p>
-                    <button class="btn-primary" (click)="applyForLoan()">Apply for your first loan</button>
-                </div>
+            <div *ngIf="recentLoans.length === 0" class="empty-state">
+                <p>No loan applications found.</p>
+            </div>
 
                 <app-table
                     *ngIf="recentLoans.length > 0"
@@ -76,5 +83,4 @@
                 </app-status-tracking>
             </section>
         </div>
-    </div>
 </div>

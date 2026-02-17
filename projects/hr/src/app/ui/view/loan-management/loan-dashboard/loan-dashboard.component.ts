@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { LoanService, LoanApplication } from '../../../service/loan/loan.service';
 import { Subscription } from 'rxjs';
+import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
 @Component({
   selector: 'app-loan-dashboard',
@@ -51,7 +52,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private loanService: LoanService
+    private loanApplicationService: LoanApplicationService
   ) {}
 
   ngOnInit() {
@@ -66,7 +67,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   setupLoanSubscription(): void {
-    this.loanSubscription = this.loanService.getApplicationsObservable().subscribe({
+    this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
         this.allLoans = applications;
         this.updateDashboardStats();
@@ -80,7 +81,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   loadDashboardData(): void {
     this.isLoading = true;
-    this.loanService.getAllApplications().subscribe({
+    this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
         this.allLoans = applications;
         this.updateDashboardStats();
@@ -104,7 +105,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ).length;
     
     this.dashboardStats.totalBalance = this.allLoans.reduce((total, loan) => {
-      return total + loan.currentBalance;
+      return total + (loan.currentBalance || 0);
     }, 0);
   }
 
@@ -148,28 +149,31 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.selectedLoan = loan;
   }
 
-  applyForLoan() {
-    this.router.navigate(['/admin/hr/loan-management/request-for-loan', 'uuid']);
-  }
+  // Navigation methods for HR admin
+  // viewPendingApprovals() {
+  //   this.router.navigate(['/admin/hr/loan-management/loan-approval']);
+  // }
 
-  approveLoan() {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval', 'uuid']);
-  }
+  // viewActiveLoans() {
+  //   this.router.navigate(['/admin/hr/loan-management/loans'], { 
+  //     queryParams: { status: 'ACTIVE' } 
+  //   });
+  // }
+
+  // generateReports() {
+  //   this.router.navigate(['/admin/hr/loan-management/reports']);
+  // }
 
   viewLoanDetails(loanId: string) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
-      this.selectLoan(loan);
-      // Optionally navigate to details page
-      // this.router.navigate(['/admin/hr/loan-management/loan-details', loan.employeeId, 'uuid']);
+      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId]);
     }
   }
 
-  seeLoanHistory(loanId: string) {
-    const loan = this.allLoans.find(l => l.id === loanId);
-    if (loan) {
-      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', loan.employeeId, 'uuid']);
-    }
+  // FIXED: Navigate to employee loan history with just the employee ID
+  seeLoanHistory(employeeId: string) {
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
   }
 
   searchLoans(event: any) {
@@ -180,7 +184,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         .filter(loan => 
           loan.fullName.toLowerCase().includes(term) ||
           loan.employeeId.toLowerCase().includes(term) ||
-          loan.purpose.toLowerCase().includes(term) ||
+          (loan.purpose && loan.purpose.toLowerCase().includes(term)) ||
           loan.department.toLowerCase().includes(term)
         )
         .slice(0, 5);
@@ -189,12 +193,17 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  navigateTo(destination: string) {
-    switch(destination) {
-      case 'reports':
-        // Add reports navigation later
-        console.log('Navigate to reports');
-        break;
-    }
+  viewPendingApprovals() {
+    this.router.navigate(['/admin/hr/loan-management/loan-approval']);
   }
+
+  viewActiveLoans() {
+  this.router.navigate(['/admin/hr/loan-management/loans'], { 
+    queryParams: { status: 'ACTIVE' } 
+  });
+}
+
+  generateReports() {
+  this.router.navigate(['/admin/hr/loan-management/reports']);
+}
 }

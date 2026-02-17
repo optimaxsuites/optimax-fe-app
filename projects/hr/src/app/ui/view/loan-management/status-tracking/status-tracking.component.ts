@@ -1,6 +1,5 @@
-// status-tracking.component.ts
 import { Component, Input } from '@angular/core';
-import { StatusChange } from '../../../service/loan/loan.service';
+import { StatusChange } from '../../../service/loan/loan.types';
 
 @Component({
   selector: 'app-status-tracking',
@@ -39,12 +38,5 @@ export class StatusTrackingComponent {
       hour: '2-digit',
       minute: '2-digit'
     });
-  }
-
-  changeStatus(newStatus: string): void {
-    console.log('Status change requested:', newStatus);
-    // This should emit an event to parent component
-    // @Output() statusChange = new EventEmitter<string>();
-    // this.statusChange.emit(newStatus);
   }
 }

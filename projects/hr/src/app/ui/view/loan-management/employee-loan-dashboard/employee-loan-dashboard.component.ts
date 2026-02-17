@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router'; 
-import { LoanService, LoanApplication } from '../../../service/loan/loan.service';
 import { Subscription } from 'rxjs';
+import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -10,7 +11,7 @@ import { Subscription } from 'rxjs';
 })
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   employeeName: string = 'Employee Name';
-  employeeId: string = 'EMP-123'; // Fixed employee ID
+  employeeId: string = 'EMP-123';
   isLoading: boolean = false;
   uuid: string = '';
   
@@ -27,6 +28,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   
   allLoans: LoanApplication[] = [];
   private loanSubscription!: Subscription;
+  selectedLoanForSchedule: LoanApplication | null = null;
 
   historyColumns = [
     { header: 'Loan ID', field: 'id' },
@@ -49,7 +51,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private loanService: LoanService
+    private loanApplicationService: LoanApplicationService
   ) {}
 
   ngOnInit(): void {
@@ -65,7 +67,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   setupLoanSubscription(): void {
     // Subscribe to loan updates for real-time data
-    this.loanSubscription = this.loanService.getApplicationsObservable().subscribe({
+    this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
         this.allLoans = applications.filter(loan => 
           loan.employeeId === this.employeeId
@@ -86,7 +88,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       
       // In real app, get from auth service
       this.employeeName = 'John Doe';
-      this.employeeId = 'EMP-123'; // Fixed ID for testing
+      this.employeeId = 'EMP-123';
       
       this.loadLoanData();
     });
@@ -94,11 +96,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   loadLoanData(): void {
     this.isLoading = true;
-    this.loanService.getAllApplications().subscribe({
+    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
-        this.allLoans = applications.filter(loan => 
-          loan.employeeId === this.employeeId
-        );
+        this.allLoans = applications;
         this.calculateLoanCounts();
         this.isLoading = false;
       },
@@ -150,7 +150,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   onLoanSubmitted(): void {
     this.showLoanForm = false;
-    // Data will automatically update via subscription
     alert('Loan request submitted successfully!');
   }
 
@@ -198,5 +197,13 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       case 'COMPLETED': return 'completed';
       default: return status.toLowerCase();
     }
+  }
+
+  viewRepaymentSchedule(loan: LoanApplication): void {
+    this.selectedLoanForSchedule = loan;
+  }
+
+  closeRepaymentSchedule(): void {
+    this.selectedLoanForSchedule = null;
   }
 }

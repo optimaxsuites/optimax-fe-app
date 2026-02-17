@@ -1,0 +1,418 @@
+.employee-repayment-schedule {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e3eef0;
+
+  .loan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e3eef0;
+
+    .loan-title {
+      h3 {
+        color: #2E6276;
+        font-size: 1.4rem;
+        margin: 0 0 4px 0;
+      }
+
+      .loan-purpose {
+        color: #8a8a8a;
+        font-size: 0.95rem;
+      }
+    }
+
+    .loan-status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+
+      &.status-pending {
+        background: rgba(255, 165, 0, 0.1);
+        color: #b87c00;
+        border: 1px solid rgba(255, 165, 0, 0.3);
+      }
+
+      &.status-approved, &.status-active {
+        background: rgba(46, 178, 112, 0.1);
+        color: #1e7e4a;
+        border: 1px solid rgba(46, 178, 112, 0.3);
+      }
+
+      &.status-rejected {
+        background: rgba(255, 0, 0, 0.1);
+        color: #b30000;
+        border: 1px solid rgba(255, 0, 0, 0.3);
+      }
+
+      &.status-completed {
+        background: rgba(128, 128, 128, 0.1);
+        color: #4d4d4d;
+        border: 1px solid rgba(128, 128, 128, 0.3);
+      }
+    }
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .summary-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #f8feff;
+      border-radius: 10px;
+      border: 1px solid #e3eef0;
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .card-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          color: white;
+          font-size: 1.3rem;
+        }
+      }
+
+      .card-content {
+        display: flex;
+        flex-direction: column;
+
+        .label {
+          color: #8a8a8a;
+          font-size: 0.85rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .value {
+          color: #2E6276;
+          font-size: 1.4rem;
+          font-weight: 700;
+        }
+
+        .date {
+          color: #8a8a8a;
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  .progress-section {
+    margin-bottom: 32px;
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .progress-title {
+        color: #2E6276;
+        font-weight: 600;
+      }
+
+      .progress-percentage {
+        color: #2EB270;
+        font-weight: 600;
+      }
+    }
+
+    .progress-bar-container {
+      margin-bottom: 12px;
+
+      .progress-bar {
+        height: 24px;
+        background: #e3eef0;
+        border-radius: 12px;
+        overflow: hidden;
+
+        .progress-fill {
+          height: 100%;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 12px;
+          transition: width 0.3s ease;
+
+          .progress-text {
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+
+    .status-indicators {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+
+      .indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #495057;
+
+        .dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+
+          &.paid { background: #2EB270; }
+          &.pending { background: #FFA500; }
+          &.overdue { background: #FF0000; }
+        }
+      }
+    }
+  }
+
+  .timeline-section {
+    h4 {
+      color: #2E6276;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+
+      .timeline-item {
+        background: #f8feff;
+        border-radius: 10px;
+        padding: 16px;
+        border-left: 4px solid;
+        transition: transform 0.3s ease;
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        &.status-paid { border-left-color: #2EB270; }
+        &.status-pending { border-left-color: #FFA500; }
+        &.status-overdue { border-left-color: #FF0000; }
+        &.status-skipped { border-left-color: #8a8a8a; }
+
+        .item-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+
+          i {
+            font-size: 1.1rem;
+
+            &.fa-check-circle { color: #2EB270; }
+            &.fa-clock { color: #FFA500; }
+            &.fa-exclamation-triangle { color: #FF0000; }
+          }
+
+          .month {
+            font-weight: 600;
+            color: #2E6276;
+          }
+        }
+
+        .item-content {
+          .amount-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+
+            span:first-child {
+              color: #8a8a8a;
+            }
+
+            span:last-child {
+              color: #495057;
+            }
+          }
+
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e3eef0;
+            font-weight: 600;
+
+            span:last-child {
+              color: #2E6276;
+            }
+          }
+
+          .due-date {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #8a8a8a;
+
+            i {
+              margin-right: 4px;
+              font-size: 0.8rem;
+            }
+          }
+
+          .status-badge {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+
+            &.status-paid {
+              background: rgba(46, 178, 112, 0.1);
+              color: #2EB270;
+            }
+
+            &.status-pending {
+              background: rgba(255, 165, 0, 0.1);
+              color: #FFA500;
+            }
+
+            &.status-overdue {
+              background: rgba(255, 0, 0, 0.1);
+              color: #FF0000;
+            }
+
+            &.status-skipped {
+              background: rgba(128, 128, 128, 0.1);
+              color: #8a8a8a;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .detailed-table {
+    margin-top: 16px;
+
+    summary {
+      cursor: pointer;
+      color: #2E6276;
+      font-weight: 600;
+      padding: 8px;
+      background: #f8feff;
+      border-radius: 6px;
+
+      i {
+        margin-right: 8px;
+      }
+    }
+
+    .table-container {
+      margin-top: 16px;
+      overflow-x: auto;
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+
+        thead {
+          background: #2E6276;
+
+          th {
+            padding: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+          }
+        }
+
+        tbody {
+          tr {
+            border-bottom: 1px solid #e3eef0;
+
+            &:nth-child(even) {
+              background: #f8feff;
+            }
+
+            td {
+              padding: 10px 12px;
+              color: #495057;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .status-badge-small {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    &.status-paid {
+      background: rgba(46, 178, 112, 0.1);
+      color: #2EB270;
+    }
+
+    &.status-pending {
+      background: rgba(255, 165, 0, 0.1);
+      color: #FFA500;
+    }
+
+    &.status-overdue {
+      background: rgba(255, 0, 0, 0.1);
+      color: #FF0000;
+    }
+
+    &.status-skipped {
+      background: rgba(128, 128, 128, 0.1);
+      color: #8a8a8a;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-repayment-schedule {
+    padding: 16px;
+
+    .loan-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .timeline-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

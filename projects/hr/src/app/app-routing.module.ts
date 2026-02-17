@@ -22,6 +22,7 @@ import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval
 import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
+import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
 
 const routes: Routes = [
   {
@@ -54,6 +55,10 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
+  // {
+//   path: 'admin/hr/loan-management.loan-details/:loanId',
+//   component: LoanDetailsComponent
+//  },
   {
     path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
     component: LoanDetailsComponent,
@@ -65,6 +70,10 @@ const routes: Routes = [
   {
     path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
     component: EmployeeLoanHistoryComponent
+  },
+  {
+  path: 'admin/hr/loan-management/reports',
+  component: LoanReportsComponent
   },
   {
     path: 'leave/:uuid',

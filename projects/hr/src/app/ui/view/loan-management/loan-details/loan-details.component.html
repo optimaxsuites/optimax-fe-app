@@ -41,7 +41,7 @@
           </div>
         </div>
         
-        <!-- Loan Details -->
+        <!-- Loan Request Details -->
         <div class="info-card">
           <h3>Loan Request Details</h3>
           <div class="info-grid">
@@ -75,6 +75,50 @@
             </div>
           </div>
         </div>
+
+        <!-- NEW: Mode of Payment Section -->
+        <div class="info-card payment-mode-card">
+          <h3>Mode of Payment</h3>
+          <div class="payment-mode-details">
+            <div class="payment-mode-badge" [ngClass]="{'monthly': loan.paymentMode === 'monthly', 'one-off': loan.paymentMode === 'one_off'}">
+              <span class="payment-mode-icon">
+                <i *ngIf="loan.paymentMode === 'monthly'" class="fas fa-calendar-alt"></i>
+                <i *ngIf="loan.paymentMode === 'one_off'" class="fas fa-money-bill-wave"></i>
+              </span>
+              <span class="payment-mode-text">{{ getPaymentModeDisplay(loan.paymentMode) }}</span>
+            </div>
+            
+            <div class="payment-mode-info" *ngIf="loan.paymentMode === 'monthly'">
+              <div class="info-row">
+                <span class="info-label">Monthly Installment:</span>
+                <span class="info-value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Number of Payments:</span>
+                <span class="info-value">{{ loan.repaymentPeriod }} months</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Due:</span>
+                <span class="info-value">1st of each month</span>
+              </div>
+            </div>
+            
+            <div class="payment-mode-info" *ngIf="loan.paymentMode === 'one_off'">
+              <div class="info-row">
+                <span class="info-label">Total Amount Due:</span>
+                <span class="info-value">{{ formatCurrency(loan.loanAmount) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Type:</span>
+                <span class="info-value">Single lump sum</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Due Date:</span>
+                <span class="info-value">Within 30 days of approval</span>
+              </div>
+            </div>
+          </div>
+        </div>
         
         <!-- Status Tracking Section -->
         <div class="info-card status-tracking-card">
@@ -86,19 +130,6 @@
             <span class="current-status-badge" [style.background-color]="getStatusColor(loan.status)">
               {{ getStatusLabel(loan.status) }}
             </span>
-          </div>
-          
-          <!-- Status Change Controls -->
-          <div *ngIf="canChangeStatus" class="status-controls">
-            <label>Change Status:</label>
-            <div class="status-buttons">
-              <button *ngFor="let status of statusOptions" 
-                      [class.active]="loan.status === status.value"
-                      [style.background-color]="status.color"
-                      (click)="changeStatus(status.value)">
-                {{ status.label }}
-              </button>
-            </div>
           </div>
           
           <!-- Status History -->
@@ -116,6 +147,7 @@
                     Changed by: {{ history.changedBy }}
                   </div>
                   <div *ngIf="history.notes" class="timeline-notes">
+                    <span class="notes-label">Comment:</span>
                     {{ history.notes }}
                   </div>
                 </div>
@@ -136,13 +168,13 @@
           <h3>Quick Actions</h3>
           <div class="action-buttons-vertical">
             <button class="view-history-btn" (click)="viewEmployeeHistory()">
-              View Full Loan History
+              <i class="fas fa-history"></i> View Full Loan History
             </button>
             <button *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
-              Approve Loan
+              <i class="fas fa-check-circle"></i> Approve Loan
             </button>
             <button *ngIf="loan.status === 'PENDING'" class="reject-btn" (click)="rejectLoan()">
-              Reject Loan
+              <i class="fas fa-times-circle"></i> Reject Loan
             </button>
           </div>
         </div>
@@ -197,6 +229,72 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Comment Modal for Approval/Rejection -->
+  <div class="modal-overlay" *ngIf="showCommentModal" (click)="closeCommentModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }} Loan Application</h2>
+        <button class="close-btn" (click)="closeCommentModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="loan-summary">
+          <div class="summary-row">
+            <span>Employee:</span>
+            <strong>{{ loan?.fullName }} ({{ loan?.employeeId }})</strong>
+          </div>
+          <div class="summary-row">
+            <span>Loan Amount:</span>
+            <strong class="amount">{{ formatCurrency(loan?.loanAmount || 0) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Purpose:</span>
+            <strong>{{ loan?.purpose }}</strong>
+          </div>
+        </div>
+
+        <div class="comment-section">
+          <label for="comment" class="comment-label">
+            {{ selectedAction === 'REJECTED' ? 'Reason for Rejection' : 'Additional Comments (Optional)' }}
+            <span class="required" *ngIf="selectedAction === 'REJECTED'">*</span>
+          </label>
+          
+          <textarea
+            id="comment"
+            [formControl]="commentControl"
+            rows="4"
+            placeholder="{{ selectedAction === 'REJECTED' ? 'Please provide a reason for rejecting this application...' : 'Any additional notes or comments (optional)...' }}"
+            [class.error]="commentControl.invalid && commentControl.touched"
+          ></textarea>
+          
+          <div class="error-message" *ngIf="commentControl.invalid && commentControl.touched && selectedAction === 'REJECTED'">
+            <small>Please provide a reason for rejection</small>
+          </div>
+          
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> Comments are optional for approval but recommended for record keeping
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeCommentModal()">
+          Cancel
+        </button>
+        <button 
+          class="submit-btn" 
+          [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
+          (click)="submitStatusChange()"
+          [disabled]="selectedAction === 'REJECTED' && commentForm.invalid">
+          <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-times-circle': selectedAction === 'REJECTED'}"></i>
+          {{ selectedAction === 'APPROVED' ? 'Approve Loan' : 'Reject Loan' }}
+        </button>
       </div>
     </div>
   </div>

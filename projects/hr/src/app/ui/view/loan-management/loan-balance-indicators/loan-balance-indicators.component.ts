@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { LoanApplication } from '../../../service/loan/loan.service';
+import { LoanApplication } from '../../../service/loan/loan.types';
 
 @Component({
   selector: 'app-loan-balance-indicators',
@@ -42,11 +42,11 @@ export class LoanBalanceIndicatorsComponent implements OnInit {
   }
   
   getProgressColor(): string {
-    if (this.isOverdue) return '#FF0000'; // Red
-    if (this.progressPercentage >= 100) return '#2EB270'; // Green - completed
-    if (this.progressPercentage >= 75) return '#2EB270'; // Green - good progress
-    if (this.progressPercentage >= 50) return '#FFA500'; // Orange - halfway
-    return '#2E6276'; // Blue - early stages
+    if (this.isOverdue) return '#FF0000';
+    if (this.progressPercentage >= 100) return '#2EB270';
+    if (this.progressPercentage >= 75) return '#2EB270';
+    if (this.progressPercentage >= 50) return '#FFA500';
+    return '#2E6276';
   }
   
   getStatusText(): string {

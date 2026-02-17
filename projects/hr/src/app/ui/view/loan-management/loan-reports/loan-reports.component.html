@@ -1,0 +1,217 @@
+<div class="reports-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading reports...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="reports-content">
+    <!-- Header -->
+    <div class="reports-header">
+      <button class="back-btn" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </button>
+      <h1>Loan Reports</h1>
+      <div class="header-actions">
+        <button class="export-btn excel" (click)="exportToExcel()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
+        <button class="export-btn csv" (click)="exportToCSV()">
+          <i class="fas fa-file-csv"></i> CSV
+        </button>
+        <button class="export-btn print" (click)="printReport()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="card-icon total">
+          <i class="fas fa-calculator"></i>
+        </div>
+        <div class="card-content">
+          <span class="label">Total Loans</span>
+          <span class="value">{{ summaryStats.totalLoans }}</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon amount">
+          <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="card-content">
+          <span class="label">Total Amount</span>
+          <span class="value">₦{{ summaryStats.totalAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon paid">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="card-content">
+          <span class="label">Total Paid</span>
+          <span class="value">₦{{ summaryStats.totalPaid | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon balance">
+          <i class="fas fa-hourglass-half"></i>
+        </div>
+        <div class="card-content">
+          <span class="label">Total Balance</span>
+          <span class="value">₦{{ summaryStats.totalBalance | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="status-breakdown">
+      <div class="status-chip pending" (click)="filters.status='PENDING'; applyFilters()">
+        <span class="count">{{ summaryStats.pendingCount }}</span>
+        <span class="label">Pending</span>
+      </div>
+      <div class="status-chip active" (click)="filters.status='ACTIVE'; applyFilters()">
+        <span class="count">{{ summaryStats.activeCount }}</span>
+        <span class="label">Active</span>
+      </div>
+      <div class="status-chip completed" (click)="filters.status='COMPLETED'; applyFilters()">
+        <span class="count">{{ summaryStats.completedCount }}</span>
+        <span class="label">Completed</span>
+      </div>
+      <div class="status-chip approved" (click)="filters.status='APPROVED'; applyFilters()">
+        <span class="count">{{ getStatusCount('APPROVED') }}</span>
+        <span class="label">Approved</span>
+      </div>
+      <div class="status-chip rejected" (click)="filters.status='REJECTED'; applyFilters()">
+        <span class="count">{{ getStatusCount('REJECTED') }}</span>
+        <span class="label">Rejected</span>
+      </div>
+      <button class="clear-chip" (click)="filters.status=''; applyFilters()" *ngIf="filters.status">
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <h3>Filter Reports</h3>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Loan ID</label>
+          <input type="text" [(ngModel)]="filters.loanId" (ngModelChange)="applyFilters()" placeholder="Search by Loan ID">
+        </div>
+        <div class="filter-group">
+          <label>Employee Name</label>
+          <input type="text" [(ngModel)]="filters.employeeName" (ngModelChange)="applyFilters()" placeholder="Search by name">
+        </div>
+        <div class="filter-group">
+          <label>Employee ID</label>
+          <input type="text" [(ngModel)]="filters.employeeId" (ngModelChange)="applyFilters()" placeholder="EMP-001">
+        </div>
+        <div class="filter-group">
+          <label>Department</label>
+          <select [(ngModel)]="filters.department" (ngModelChange)="applyFilters()">
+            <option value="">All Departments</option>
+            <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
+            <option value="">All Statuses</option>
+            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Date From</label>
+          <input type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="applyFilters()">
+        </div>
+        <div class="filter-group">
+          <label>Date To</label>
+          <input type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="applyFilters()">
+        </div>
+        <div class="filter-actions">
+          <button class="reset-btn" (click)="resetFilters()">
+            <i class="fas fa-undo"></i> Reset Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="results-info">
+      <span>Showing {{ filteredLoans.length }} of {{ allLoans.length }} loans</span>
+      <span class="total-amount">Total: ₦{{ getFilteredTotal() | number:'1.2-2' }}</span>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="table-container">
+      <table class="reports-table">
+        <thead>
+          <tr>
+            <th (click)="setSort('loanId')" class="sortable">
+              Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
+            </th>
+            <th (click)="setSort('employeeName')" class="sortable">
+              Employee <i class="fas" [ngClass]="getSortIcon('employeeName')"></i>
+            </th>
+            <th (click)="setSort('employeeId')" class="sortable">
+              Emp ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i>
+            </th>
+            <th (click)="setSort('department')" class="sortable">
+              Dept <i class="fas" [ngClass]="getSortIcon('department')"></i>
+            </th>
+            <th>Purpose</th>
+            <th (click)="setSort('loanAmount')" class="sortable amount">
+              Amount <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
+            </th>
+            <th>Monthly</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th (click)="setSort('status')" class="sortable">
+              Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
+            </th>
+            <th (click)="setSort('dateSubmitted')" class="sortable">
+              Date <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
+            </th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let loan of filteredLoans">
+            <td class="loan-id">{{ loan.id }}</td>
+            <td>
+              <div class="employee-info">
+                <span class="name">{{ loan.fullName }}</span>
+              </div>
+            </td>
+            <td>{{ loan.employeeId }}</td>
+            <td>{{ loan.department }}</td>
+            <td class="purpose" [title]="loan.purpose">{{ loan.purpose | slice:0:30 }}{{ loan.purpose.length > 30 ? '...' : '' }}</td>            <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
+            <td>₦{{ loan.monthlyRepayment | number:'1.2-2' }}</td>
+            <td class="paid">₦{{ (loan.totalPaid || 0) | number:'1.2-2' }}</td>
+            <td class="balance">₦{{ (loan.currentBalance || 0) | number:'1.2-2' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+                {{ loan.status }}
+              </span>
+            </td>
+            <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
+            <td>
+              <button class="view-btn" (click)="viewLoanDetails(loan.id)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredLoans.length === 0">
+            <td colspan="12" class="no-data">
+              <i class="fas fa-search"></i>
+              <p>No loans match your filters</p>
+              <button class="reset-btn" (click)="resetFilters()">Clear Filters</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

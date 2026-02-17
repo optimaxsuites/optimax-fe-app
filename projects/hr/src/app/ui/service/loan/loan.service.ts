@@ -11,6 +11,7 @@ export interface LoanApplication {
   fullName: string;
   department: string;
   loanAmount: number;
+  paymentMode?: 'monthly' | 'one_off';
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
   dateSubmitted: string;
   purpose: string;
@@ -27,7 +28,7 @@ export interface LoanApplication {
 
 export interface StatusChange {
   id?: string;
-  status: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
   date: string;
   changedBy?: string;
   notes?: string;
@@ -79,9 +80,10 @@ export class LoanService {
       {
         id: 'LN-001',
         employeeId: 'EMP-123',
-        fullName: 'John Doe',
+        fullName: 'Jane Doe',
         department: 'IT',
         loanAmount: 50000,
+        paymentMode: 'monthly',
         status: 'PENDING',
         dateSubmitted: new Date().toISOString().split('T')[0],
         purpose: 'Medical Emergency',
@@ -110,9 +112,10 @@ export class LoanService {
     const newApplication: LoanApplication = {
       id: this.generateId(),
       employeeId: 'EMP-123', // This should come from auth service in real app
-      fullName: 'John Doe', // This should come from auth service
+      fullName: 'Jane Doe', // This should come from auth service
       department: 'IT', // This should come from auth service
       loanAmount: formData.loanAmount,
+      paymentMode: formData.paymentMode,
       status: 'PENDING',
       dateSubmitted: new Date().toISOString().split('T')[0],
       purpose: formData.loanPurpose,
@@ -144,18 +147,26 @@ export class LoanService {
   }
 
   // Update application status
-  updateApplicationStatus(loanId: string, status: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING'): Observable<LoanApplication> {
+  updateApplicationStatus(
+    loanId: string,
+    statusOrUpdate: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING' | StatusChange
+  ): Observable<LoanApplication> {
     const application = this.applications.find(app => app.id === loanId);
     if (application) {
       const oldStatus = application.status;
+      const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
+      const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
+      const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy;
+      const date = typeof statusOrUpdate === 'string' ? new Date().toISOString().split('T')[0] : statusOrUpdate.date;
+
       application.status = status;
       
       // Add to status history
       application.statusHistory.push({
         status: status,
-        date: new Date().toISOString().split('T')[0],
-        changedBy: 'Admin',
-        notes: `Status changed from ${oldStatus} to ${status}`
+        date: date,
+        changedBy: changedBy,
+        notes: notes ?? `Status changed from ${oldStatus} to ${status}`
       });
       
       // Handle special cases

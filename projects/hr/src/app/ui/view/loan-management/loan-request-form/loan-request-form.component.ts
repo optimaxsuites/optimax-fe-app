@@ -2,7 +2,8 @@ import { formatDate } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Router } from '@angular/router';
-import { LoanService } from '../../../service/loan/loan.service';
+import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { LoanApplicationFormData } from '../../../service/loan/loan.types';
 
 @Component({
   selector: 'app-loan-request-form',
@@ -14,9 +15,10 @@ export class LoanRequestFormComponent implements OnInit {
   showOtherPurpose: boolean = false;
   isLoading = false;
 
-  constructor(private fb: FormBuilder,
-    private loanService: LoanService, // Inject service
-    private router: Router // Inject router for navigation after submission
+  constructor(
+    private fb: FormBuilder,
+    private loanApplicationService: LoanApplicationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -26,12 +28,15 @@ export class LoanRequestFormComponent implements OnInit {
 
   initializeForm(): void {
     this.loanRequestForm = this.fb.group({
-      // Only Section 2: Loan Details
+      // Loan Details
       loanPurpose: ['', Validators.required],
       otherPurpose: [''],
       loanAmount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
       repaymentPeriod: ['', Validators.required],
-      monthlyRepaymentAmount: [{value: '', disabled: true}, [Validators.required, Validators.min(5000)]],
+      monthlyRepaymentAmount: [{value: '', disabled: true}, [Validators.required]],
+      // Payment Mode Field
+      paymentMode: ['', Validators.required],
+      // Acknowledgement
       acknowledgment: [false, Validators.requiredTrue]
     });
 
@@ -58,21 +63,40 @@ export class LoanRequestFormComponent implements OnInit {
     this.loanRequestForm.get('repaymentPeriod')?.valueChanges.subscribe(() => {
       this.calculateMonthlyRepayment();
     });
+
+    // Reset monthly repayment when one-off is selected
+    this.loanRequestForm.get('paymentMode')?.valueChanges.subscribe(mode => {
+      if (mode === 'one_off') {
+        // For one-off payment, monthly repayment = total loan amount
+        const loanAmount = this.loanRequestForm.get('loanAmount')?.value;
+        if (loanAmount) {
+          this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(loanAmount);
+        }
+      } else {
+        this.calculateMonthlyRepayment();
+      }
+    });
   }
 
   // Calculation method
   calculateMonthlyRepayment(): void {
     const loanAmount = this.loanRequestForm.get('loanAmount')?.value;
     const repaymentPeriod = this.loanRequestForm.get('repaymentPeriod')?.value;
+    const paymentMode = this.loanRequestForm.get('paymentMode')?.value;
     
     if (loanAmount && repaymentPeriod) {
-      // Simple calculation: total amount ÷ number of months
-      const monthlyRepayment = loanAmount / repaymentPeriod;
-      this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(monthlyRepayment.toFixed(2));
+      if (paymentMode === 'one_off') {
+        // For one-off payment, show full amount
+        this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(loanAmount);
+      } else {
+        // Standard monthly calculation
+        const monthlyRepayment = loanAmount / repaymentPeriod;
+        this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(Number(monthlyRepayment.toFixed(2)));
+      }
     }
   }
 
-  // Getters for easy access to form controls in the template
+  // Getters for form controls
   get loanPurpose(): AbstractControl | null { 
     return this.loanRequestForm.get('loanPurpose'); 
   }
@@ -93,6 +117,10 @@ export class LoanRequestFormComponent implements OnInit {
     return this.loanRequestForm.get('monthlyRepaymentAmount'); 
   }
   
+  get paymentMode(): AbstractControl | null {
+    return this.loanRequestForm.get('paymentMode');
+  }
+
   get acknowledgment(): AbstractControl | null { 
     return this.loanRequestForm.get('acknowledgment'); 
   }
@@ -102,24 +130,28 @@ export class LoanRequestFormComponent implements OnInit {
       this.isLoading = true;
 
       // Prepare form data for submission
-      const formData = {
-        ...this.loanRequestForm.getRawValue(),
+      const formData: LoanApplicationFormData = {
+        loanPurpose: this.loanRequestForm.get('loanPurpose')?.value,
+        otherPurpose: this.loanRequestForm.get('otherPurpose')?.value,
+        loanAmount: parseFloat(this.loanRequestForm.get('loanAmount')?.value),
+        repaymentPeriod: parseInt(this.loanRequestForm.get('repaymentPeriod')?.value),
         monthlyRepaymentAmount: parseFloat(this.loanRequestForm.get('monthlyRepaymentAmount')?.value),
-        submissionDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US') // Add submission date
+        paymentMode: this.loanRequestForm.get('paymentMode')?.value,
+        acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
+        submissionDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
       };
 
       // Submit to service
-      this.loanService.submitLoanApplication(formData).subscribe({
+      this.loanApplicationService.submitLoanApplication(formData).subscribe({
         next: (response) => {
           console.log('Loan application submitted successfully:', response);
           alert('Application submitted successfully! Your application ID: ' + response.id);
-
 
           // Reset form
           this.loanRequestForm.reset();
           this.showOtherPurpose = false;
 
-          // Navigate to dashboard or confirmation page
+          // Navigate to dashboard
           this.router.navigate(['/loan-dashboard']);
         },
         error: (error) => {
@@ -130,9 +162,15 @@ export class LoanRequestFormComponent implements OnInit {
           this.isLoading = false; 
         }
       });
-  }else {
-    this.loanRequestForm.markAllAsTouched(); // Highlight validation errors
-    alert('Please fill out all required fields correctly before submitting.');
-  }
+    } else {
+      this.loanRequestForm.markAllAsTouched();
+      
+      // Show specific error message for payment mode
+      if (this.paymentMode?.invalid) {
+        alert('Please select a mode of payment (Monthly or One-off).');
+      } else {
+        alert('Please fill out all required fields correctly before submitting.');
+      }
+    }
   }
 }

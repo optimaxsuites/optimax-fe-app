@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LoanService, LoanApplication, StatusChange } from '../../../service/loan/loan.service';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { LoanApplication, StatusChange } from '../../../service/loan/loan.service';
+import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 
 @Component({
   selector: 'app-loan-details',
@@ -11,7 +14,12 @@ export class LoanDetailsComponent implements OnInit {
   employeeId: string = '';
   loan: LoanApplication | null = null;
   isLoading: boolean = true;
-  canChangeStatus: boolean = true; // Set based on user role
+  canChangeStatus: boolean = true;
+  
+  // Comment form for approval/rejection
+  commentForm: FormGroup;
+  showCommentModal: boolean = false;
+  selectedAction: LoanApplication['status'] | '' = '';
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#ffc107' },
@@ -24,8 +32,14 @@ export class LoanDetailsComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private loanService: LoanService
-  ) {}
+    private fb: FormBuilder,
+    private loanApplicationService: LoanApplicationService,
+    private loanApprovalService: LoanApprovalService
+  ) {
+    this.commentForm = this.fb.group({
+      comment: ['', Validators.required]
+    });
+  }
   
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -36,17 +50,31 @@ export class LoanDetailsComponent implements OnInit {
   
   loadLoanDetails(): void {
     this.isLoading = true;
-    this.loanService.getAllApplications().subscribe({
-      next: (applications) => {
-        // Find the loan for this employee
-        const employeeLoans = applications.filter(app => 
-          app.employeeId === this.employeeId
-        ).sort((a, b) => 
-          new Date(b.dateSubmitted).getTime() - new Date(a.dateSubmitted).getTime()
-        );
-        
-        this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
-        this.isLoading = false;
+
+    // First try treating the route param as a loan/application ID.
+    this.loanApplicationService.getApplicationById(this.employeeId).subscribe({
+      next: (loan) => {
+        if (loan) {
+          this.loan = loan;
+          this.isLoading = false;
+          return;
+        }
+
+        // Fallback: treat the route param as an employee ID.
+        this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
+          next: (applications) => {
+            const employeeLoans = applications.sort((a, b) =>
+              new Date(b.dateSubmitted).getTime() - new Date(a.dateSubmitted).getTime()
+            );
+
+            this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error('Error loading loan details:', error);
+            this.isLoading = false;
+          }
+        });
       },
       error: (error) => {
         console.error('Error loading loan details:', error);
@@ -77,32 +105,61 @@ export class LoanDetailsComponent implements OnInit {
     });
   }
 
-  changeStatus(newStatus: string): void {
-    if (!this.loan) return;
-    
-    if (confirm(`Are you sure you want to change status to ${this.getStatusLabel(newStatus)}?`)) {
-      this.loanService.updateApplicationStatus(this.loan.id, newStatus as any).subscribe({
-        next: () => {
-          alert('Status updated successfully!');
-          this.loadLoanDetails(); // Reload to get updated data
-        },
-        error: (error) => {
-          console.error('Error updating status:', error);
-          alert('Failed to update status');
-        }
-      });
-    }
+  // Open comment modal for approval/rejection
+  openCommentModal(action: LoanApplication['status']): void {
+    this.selectedAction = action;
+    this.commentForm.reset();
+    this.showCommentModal = true;
   }
 
-  // Existing methods
-  approveLoan(): void {
+  // Close comment modal
+  closeCommentModal(): void {
+    this.showCommentModal = false;
+    this.selectedAction = '';
+    this.commentForm.reset();
+  }
+
+  // Submit status change with comment
+  submitStatusChange(): void {
     if (!this.loan) return;
-    this.changeStatus('APPROVED');
+    if (!this.selectedAction) return;
+    
+    // For reject, comment is mandatory
+    if (this.selectedAction === 'REJECTED' && this.commentForm.invalid) {
+      this.commentForm.markAllAsTouched();
+      return;
+    }
+
+    const statusUpdate: StatusChange = {
+      status: this.selectedAction,
+      notes: this.commentForm.value.comment || '',
+      changedBy: sessionStorage.getItem('username') || 'Admin',
+      date: new Date().toISOString()
+    };
+
+    this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
+      next: () => {
+        alert(`Loan ${this.selectedAction.toLowerCase()} successfully!`);
+        this.closeCommentModal();
+        this.loadLoanDetails();
+      },
+      error: (error) => {
+        console.error('Error updating status:', error);
+        alert(`Failed to ${this.selectedAction.toLowerCase()} loan`);
+      }
+    });
+  }
+
+  get commentControl(): FormControl {
+    return this.commentForm.get('comment') as FormControl;
+  }
+
+  approveLoan(): void {
+    this.openCommentModal('APPROVED');
   }
   
   rejectLoan(): void {
-    if (!this.loan) return;
-    this.changeStatus('REJECTED');
+    this.openCommentModal('REJECTED');
   }
   
   goBack(): void {
@@ -126,5 +183,14 @@ export class LoanDetailsComponent implements OnInit {
       currency: 'NGN',
       minimumFractionDigits: 2
     }).format(amount);
+  }
+
+  // Get payment mode display text
+  getPaymentModeDisplay(mode?: string): string {
+    switch(mode) {
+      case 'monthly': return 'Monthly Installments';
+      case 'one_off': return 'One-off Payment';
+      default: return mode || 'Not specified';
+    }
   }
 }
