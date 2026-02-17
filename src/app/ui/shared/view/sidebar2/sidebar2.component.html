@@ -14,7 +14,7 @@
   </div>
   <ul id="dashboard-header" class="menu-list">
     <li *ngFor="let item of menuItems | async as menuItems">
-      <div class="menu-item w-full" (click)="toggleSubMenu(item)">
+      <div class="menu-item w-full" (click)="toggleSubMenu(item, menuItems)">
         <a *ngIf="!item.submenu"
            [routerLink]="item.route"
            routerLinkActive="active"
