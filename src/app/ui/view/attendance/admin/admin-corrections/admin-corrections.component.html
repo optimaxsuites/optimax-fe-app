@@ -1,5 +1,5 @@
 <div class="admin-corrections-card">
-  <h2>Correction Requests (Admin)</h2>
+  <h2>Correction Requests</h2>
 
   <table>
     <thead>
@@ -8,6 +8,7 @@
         <th>Date</th>
         <th>Issue</th>
         <th>Status</th>
+        <th>Details</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -18,6 +19,7 @@
         <td>{{ req.date }}</td>
         <td>{{ req.issueType }}</td>
         <td>{{ req.status }}</td>
+        <td>Details: {{ req.description }}</td>
 
         <td>
           <button 
@@ -25,6 +27,8 @@
             (click)="approve(req)">
             Approve
           </button>
+
+
 
           <div *ngIf="req.status === 'PENDING'" class="reject-box">
             <input 
@@ -35,6 +39,13 @@
           </div>
         </td>
       </tr>
+                <!-- Empty State -->
+  <div class="empty-state" *ngIf="requests.length === 0">
+    <span>Such empty 🥲</span>
+    <p>No correction requests here.</p>
+  </div>
     </tbody>
   </table>
 </div>
+
+

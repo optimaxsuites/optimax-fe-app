@@ -132,32 +132,65 @@
     .stat-card {
       background: white;
       border-radius: 12px;
-      padding: 28px;
+      padding: 24px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid #e3eef0;
       transition: transform 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 16px;
 
       &:hover {
         transform: translateY(-4px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
       }
 
-      h3 {
-        color: #495057;
-        font-size: 1rem;
-        font-weight: 500;
-        margin: 0 0 12px 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-align: center;
+      .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        i {
+          color: white;
+          font-size: 1.8rem;
+        }
+
+        &.active-icon {
+          background: linear-gradient(135deg, #2E6276, #4291b1);
+        }
+
+        &.pending-icon {
+          background: linear-gradient(135deg, #FFA500, #ffb52e);
+        }
+
+        &.balance-icon {
+          background: linear-gradient(135deg, #2EB270, #47e797);
+        }
       }
 
-      .stat-value {
-        color: #2EB270;
-        font-size: 2.8rem;
-        font-weight: 700;
-        margin: 0;
-        text-align: center;
+      .card-content {
+        flex: 1;
+
+        h3 {
+          color: #495057;
+          font-size: 0.95rem;
+          font-weight: 500;
+          margin: 0 0 8px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+          color: #2E6276;
+          font-size: 2.2rem;
+          font-weight: 700;
+          margin: 0;
+          line-height: 1.2;
+        }
       }
     }
   }
@@ -386,7 +419,16 @@
         padding: 20px;
         
         .stat-value {
-          font-size: 2.2rem;
+          font-size: 1.8rem;
+        }
+
+        .card-icon {
+          width: 50px;
+          height: 50px;
+
+          i {
+            font-size: 1.5rem;
+          }
         }
       }
     }

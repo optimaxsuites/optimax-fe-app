@@ -18,10 +18,18 @@ import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corre
 })
 export class AttendanceComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Admin Dashboard', component: AttendashboardComponent },
-    { name: 'Corrections', component: AdminCorrectionsComponent},
-    { name: 'Employee Dashboard', component: EmployeedashboardComponent},
-    { name: 'Correction Requests', component: CorrectionrequestComponent},
+    { name: 'Admin Dashboard', 
+    component: AttendashboardComponent,
+    icon: 'fa-solid fa-chart-line'},
+    { name: 'Corrections', 
+      component: AdminCorrectionsComponent,
+    icon: 'fa-solid fa-pen-to-square'},
+    { name: 'Employee Dashboard', 
+      component: EmployeedashboardComponent,
+    icon: 'fa-solid fa-user'},
+    { name: 'Correction Requests', 
+      component: CorrectionrequestComponent,
+    icon: 'fa-solid fa-file-circle-check'},
     //{ name: 'My attendance', component: MyAttendanceComponent },
     //{ name: 'Attendance Sheet', component: AttendanceSheetsComponent },
     //{ name: 'Time Sheet', component: TimeSheetComponent }

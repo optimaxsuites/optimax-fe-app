@@ -77,6 +77,8 @@ import { AddEmployeeFormComponent } from './ui/view/employee-management/add-empl
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 import { LeaveUsageComponent } from './ui/view/leave/leave-usage/leave-usage.component';
 import { LeaveRequestComponent } from './ui/view/leave/leave-request/leave-request.component';
+import { LeavePlanComponent } from './ui/view/leave/leave-plan/leave-plan.component';
+import { LeavePlanningDashboardComponent } from './ui/view/leave/leave-planning-dashboard/leave-planning-dashboard.component';
 import { ApplyComponent } from './ui/view/leave/apply/apply.component';
 import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.component';
 import { PerformanceComponent } from './ui/view/performance/performance.component';
@@ -183,6 +185,8 @@ import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loa
     EmployeeOnboardingFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
+    LeavePlanComponent,
+    LeavePlanningDashboardComponent,
     AssignLeaveComponent,
     ApplyComponent,
     PerformanceComponent,

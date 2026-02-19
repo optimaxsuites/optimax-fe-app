@@ -80,8 +80,5 @@ export class CorrectionrequestComponent  implements OnInit{
     this.closeForm();
   }
 
-  sendReminder(request: CorrectionRequest) {
-    alert('Reminder sent to admin ');
-  }
 
 }

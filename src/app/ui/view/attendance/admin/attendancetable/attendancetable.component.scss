@@ -83,8 +83,8 @@ button {
   background: #e5e7eb;
 }
 
-/* Correct button (admin action) */
-.correct-btn {
+/* view button (admin action) */
+.view-btn {
   background: #2563eb;
   color: white;
   border: none;
@@ -96,7 +96,7 @@ button {
   transition: 0.15s ease;
 }
 
-.correct-btn:hover {
+.view-btn:hover {
   background: #1d4ed8;
   transform: translateY(-1px);
 }

@@ -42,8 +42,9 @@
     <td>{{ record.hours }}</td>
 
     <td class="actions">
-      <button class="correct-btn" (click)="manualCorrection(record)">Correct</button>
+        <button class="view-btn">View</button> <!--(click)=""-->
     </td>
+
   </tr>
 
     <!--<tr *ngFor="let record of attendance$ | async">
@@ -60,10 +61,10 @@
 
       <td>{{ record.hours }}</td>
 
-      <td class="actions">
-        <button>View</button>
-        <button>Correct</button>
-      </td>
+      
+    <td class="actions">
+      <button class="correct-btn" (click)="manualCorrection(record)">Correct</button>
+    </td>
     </tr>-->
   </tbody>
 </table>

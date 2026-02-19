@@ -36,21 +36,36 @@
             </div>
         </section>
 
-        <!-- Stats Cards -->
+        <!-- Stats Cards with Icons -->
         <section class="stats-section">
             <div class="stat-card">
-                <h3>Active Loans</h3> 
-                <p class="stat-value">{{ dashboardStats.activeLoans }}</p>
+                <div class="card-icon active-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Active Loans</h3> 
+                    <p class="stat-value">{{ dashboardStats.activeLoans }}</p>
+                </div>
             </div>
             <div class="stat-card">
-                <h3>Pending Applications</h3>  
-                <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
+                <div class="card-icon pending-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Pending Applications</h3>  
+                    <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
+                </div>
             </div>
             <div class="stat-card"> 
-                <h3>Total Balance</h3> 
-                <p class="stat-value">
-                    ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
-                </p> 
+                <div class="card-icon balance-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="card-content">
+                    <h3>Total Balance</h3> 
+                    <p class="stat-value">
+                        ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
+                    </p> 
+                </div>
             </div>
         </section>
 
@@ -101,7 +116,6 @@
                                             (click)="viewLoanDetails(loan.id)">
                                         <i class="fas fa-eye"></i> View
                                     </button>
-                                    <!-- FIXED: Pass employeeId to seeLoanHistory -->
                                     <button class="btn-history" 
                                             (click)="seeLoanHistory(loan.employeeId)">
                                         <i class="fas fa-history"></i> History

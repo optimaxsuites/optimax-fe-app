@@ -18,7 +18,7 @@
         <th>Date</th>
         <th>Issue Type</th>
         <th>Status</th>
-        <th>Action</th>
+        <th>Details</th>
       </tr>
     </thead>
 
@@ -32,12 +32,8 @@
           </span>
         </td>
         <td>
-          <button 
-            class="remind-btn"
-            *ngIf="req.status === 'PENDING'"
-            (click)="sendReminder(req)">
-            Remind Admin
-          </button>
+          {{ req.description }}
+          
         </td>
       </tr>
     </tbody>

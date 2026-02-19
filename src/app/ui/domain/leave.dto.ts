@@ -42,3 +42,45 @@ export interface LeaveRequest {
   Status: string;
 }
 export type LeaveRequests = LeaveRequest[];
+// export interface PlannedLeave {
+//   id: string;
+//   employeeId: string;
+//   startDate: string;
+//   endDate: string;
+//   leaveType: string;
+//   workingDays: number;
+//   notes: string;
+//   status: 'Planned' | 'Pending' | 'Approved';
+//   createdOn: string;
+// }
+export interface LeavePlanningPolicy {
+  maxDaysPerMonth: number;
+  maxPlanningMonths: number;
+  totalAllowedPlannedDays: number;
+  emergencyLeaveDaysAllowed: number;
+  planningWindowDays: number;
+  allowPlanEditing: boolean;
+}
+
+export interface PlannedLeave {
+  id: string;
+  employeeId: string;
+  employeeName?: string;
+  department?: string;
+  startDate: string;
+  endDate: string;
+  leaveType: string;
+  workingDays: number;
+  notes: string;
+  status: 'Planned' | 'Pending' | 'Approved' | 'Rejected';
+  createdOn: string;
+  approvedOn?: string;
+  month: string; // Format: 'YYYY-MM'
+}
+
+export interface MonthlyPlanSummary {
+  month: string;
+  daysPlanned: number;
+  maxDays: number;
+  remaining: number;
+}
