@@ -7,6 +7,7 @@ import {
   LeaveSettings,
   LeaveRequest,
   LeaveTypeWithAllocation,
+  PlannedLeave, LeavePlanningPolicy, MonthlyPlanSummary
 } from '../domain/leave.dto';
 
 @Injectable({
@@ -181,4 +182,135 @@ export class LeaveServiceService {
       localStorage.setItem('leaveRequest', JSON.stringify(allRequests));
     }
   }
+
+  loadPlannedLeaves(employeeId: string): PlannedLeave[] {
+    const stored = localStorage.getItem('plannedLeaves');
+    if (stored) {
+      const allPlans = JSON.parse(stored) as PlannedLeave[];
+      return allPlans.filter((plan) => plan.employeeId === employeeId);
+    } else {
+      return [];
+    }
+  }
+  savePlannedLeaves(plannedLeaves: PlannedLeave[], employeeId: string) {
+    const stored = localStorage.getItem('plannedLeaves');
+    let allPlans: PlannedLeave[] = stored ? JSON.parse(stored) : [];
+    
+    // Remove current employee's plans
+    allPlans = allPlans.filter(plan => plan.employeeId !== employeeId);
+    
+    // Add updated plans
+    allPlans = [...allPlans, ...plannedLeaves];
+    
+    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+  }
+
+
+  // testing planned leaves
+  // Add to LeaveServiceService class
+
+private PLANNING_POLICY_KEY = 'leavePlanningPolicy';
+
+getLeavePlanningPolicy(): LeavePlanningPolicy {
+  const stored = localStorage.getItem(this.PLANNING_POLICY_KEY);
+  if (stored) {
+    return JSON.parse(stored);
+  }
+
+  // Default policy
+  const defaultPolicy: LeavePlanningPolicy = {
+    maxDaysPerMonth: 10,
+    maxPlanningMonths: 3,
+    totalAllowedPlannedDays: 30,
+    emergencyLeaveDaysAllowed: 5,
+    planningWindowDays: 90,
+    allowPlanEditing: false,
+  };
+
+  localStorage.setItem(this.PLANNING_POLICY_KEY, JSON.stringify(defaultPolicy));
+  return defaultPolicy;
+}
+
+updateLeavePlanningPolicy(policy: LeavePlanningPolicy): void {
+  localStorage.setItem(this.PLANNING_POLICY_KEY, JSON.stringify(policy));
+}
+
+// Get monthly planning summary for an employee
+getMonthlyPlanSummary(employeeId: string): MonthlyPlanSummary[] {
+  const plannedLeaves = this.loadPlannedLeaves(employeeId);
+  const policy = this.getLeavePlanningPolicy();
+  const monthMap = new Map<string, number>();
+
+  // Calculate days per month
+  plannedLeaves
+    .filter(p => p.status === 'Planned' || p.status === 'Pending')
+    .forEach(plan => {
+      if (!monthMap.has(plan.month)) {
+        monthMap.set(plan.month, 0);
+      }
+      monthMap.set(plan.month, monthMap.get(plan.month)! + plan.workingDays);
+    });
+
+  // Convert to array
+  return Array.from(monthMap.entries()).map(([month, daysPlanned]) => ({
+    month,
+    daysPlanned,
+    maxDays: policy.maxDaysPerMonth,
+    remaining: policy.maxDaysPerMonth - daysPlanned,
+  }));
+}
+
+// Check if employee can plan for a specific month
+canPlanForMonth(employeeId: string, month: string): boolean {
+  const summary = this.getMonthlyPlanSummary(employeeId);
+  const policy = this.getLeavePlanningPolicy();
+
+  // Check if already planning for max months
+  if (summary.length >= policy.maxPlanningMonths) {
+    // Only allow if planning for existing month
+    return summary.some(s => s.month === month);
+  }
+
+  return true;
+}
+
+// Get remaining days for a specific month
+getRemainingDaysForMonth(employeeId: string, month: string): number {
+  const summary = this.getMonthlyPlanSummary(employeeId);
+  const policy = this.getLeavePlanningPolicy();
+  
+  const monthSummary = summary.find(s => s.month === month);
+  return monthSummary 
+    ? monthSummary.remaining 
+    : policy.maxDaysPerMonth;
+}
+
+// Approve planned leave
+approvePlannedLeave(planId: string): void {
+  const stored = localStorage.getItem('plannedLeaves');
+  if (!stored) return;
+
+  const allPlans: PlannedLeave[] = JSON.parse(stored);
+  const planIndex = allPlans.findIndex(p => p.id === planId);
+
+  if (planIndex !== -1) {
+    allPlans[planIndex].status = 'Approved';
+    allPlans[planIndex].approvedOn = new Date().toISOString();
+    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+  }
+}
+
+// Reject planned leave
+rejectPlannedLeave(planId: string): void {
+  const stored = localStorage.getItem('plannedLeaves');
+  if (!stored) return;
+
+  const allPlans: PlannedLeave[] = JSON.parse(stored);
+  const planIndex = allPlans.findIndex(p => p.id === planId);
+
+  if (planIndex !== -1) {
+    allPlans[planIndex].status = 'Rejected';
+    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+  }
+}
 }

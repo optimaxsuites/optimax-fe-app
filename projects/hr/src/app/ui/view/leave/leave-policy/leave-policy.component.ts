@@ -150,7 +150,7 @@ leaveSettings!: LeaveSettings;
     };
 
     this.leaveSettings.leaveTypes.push(newType);
-this.leaveService.updateLeaveTypes([...this.leaveSettings.leaveTypes, newType]);
+this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     // Reset form
     this.newLeaveType = { typeName: '', allocatedDays: 0, isActive: true };
     this.showAddForm = false;

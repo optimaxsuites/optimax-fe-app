@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
@@ -131,11 +132,11 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
   
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval']);
+    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
   
   viewLoanDetails(loanId: string): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-details', loanId]);
+    this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
   }
   
   getStatusClass(status: string): string {

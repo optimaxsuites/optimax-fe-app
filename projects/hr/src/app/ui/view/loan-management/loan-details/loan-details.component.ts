@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, StatusChange } from '../../../service/loan/loan.service';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
@@ -163,12 +164,12 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval', 'uuid']);
+    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
   
   viewEmployeeHistory(): void {
     if (this.loan) {
-      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.loan.employeeId, 'uuid']);
+      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.loan.employeeId, uuidV4()]);
     }
   }
   

@@ -24,7 +24,7 @@ export class CorrectionrequestformComponent {
     this.form = this.fb.group({
       date: ['', Validators.required],
       issueType: ['', Validators.required],
-      description: ['']
+      description: ['', Validators.required]
     });
   }
 

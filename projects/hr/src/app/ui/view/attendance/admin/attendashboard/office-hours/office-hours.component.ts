@@ -26,6 +26,7 @@ export class OfficeHoursComponent implements OnInit{
 
   save() {
     this.officeHoursService.updateOfficeHours(this.form.value);
+    this.editMode = false;
   }
 
   editMode = false;

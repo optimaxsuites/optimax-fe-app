@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import * as XLSX from 'xlsx';
@@ -420,10 +421,10 @@ export class LoanReportsComponent implements OnInit {
 }
 
   goBack(): void {
-  this.router.navigate(['/loan-management']);
+  this.router.navigate(['/admin/hr/loan-management/loan-dashboard', uuidV4()]);
 }
 
   viewLoanDetails(loanId: string): void {
-  this.router.navigate(['/loan-management/details', loanId]);
+  this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
 }
 }

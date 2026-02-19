@@ -24,6 +24,7 @@ export class LeaveRequestComponent {
   selectedLeaveType!: string[];
   selectedStatus: string[] = [];
   acceptModal = false;
+  selectedRequest!: LeaveRequest | null;
   selectedEmployee: any = null;
   searchTerm: string = '';
 
@@ -92,9 +93,8 @@ export class LeaveRequestComponent {
   }
 
   filterCandidates() {
-    this.filteredCandidates = this.allLeaveRequest.filter(
-      (employee) =>
-        employee.EmployeeId.toLowerCase().includes(this.searchTerm.toLowerCase())
+    this.filteredCandidates = this.allLeaveRequest.filter((employee) =>
+      employee.EmployeeId.toLowerCase().includes(this.searchTerm.toLowerCase()),
     );
     this.filteredCandidates = this.allLeaveRequest.filter((employee) => {
       const matchesSearchTerm = employee.EmployeeId.toLowerCase().includes(
@@ -147,49 +147,13 @@ export class LeaveRequestComponent {
   }
   openAcceptRejectModal(employee: any) {
     this.openViewEmployee = false;
+    this.selectedRequest = employee;
     this.selectedEmployee = employee;
     this.acceptModal = true;
   }
 
-  // acceptLeave() {
-  //   if (
-  //     this.selectedEmployee &&
-  //     this.selectedEmployee.Status.includes('Pending Approval')
-  //   ) {
-  //     let employee = this.getEmployeebyId(this.selectedEmployee.EmployeeId);
-  //     if (!employee) return;
-  //     let requestedDays = Number(
-  //       parseFloat(this.selectedEmployee.requestedDuration),
-  //     );
-  //     if (employee.leaveUsed + requestedDays > employee.totalLeaveAllowed) {
-  //       this.selectedEmployee.status = 'Rejected';
-  //     } else {
-  //       this.selectedEmployee.status = 'Approved';
-  //       employee.leaveUsed += requestedDays;
-  //     }
-  //     this.selectedEmployee.Status = 'Approved';
-
-  //     this.selectedEmployee.ApprovalComment = this.comment
-  //       ? this.comment
-  //       : 'No comment';
-
-  //     this.comment = '';
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Leave',
-  //       detail: `${this.selectedEmployee?.Employee}'s leave has been accepted`,
-  //       key: 'tl',
-  //       life: 3000,
-  //     });
-
-  //     this.closeModal();
-  //     this.updateLocalStorage();
-
-  //     this.sortByStatus();
-  //   }
-  // }
   acceptLeave() {
-    if (!this.selectedEmployee) return;
+     if (!this.selectedEmployee) return;
 
     if (!this.selectedEmployee.Status.includes('Pending')) return;
 
@@ -206,6 +170,23 @@ export class LeaveRequestComponent {
       (lt) => lt.typeName === this.selectedEmployee.LeaveType,
     );
 
+    // if (!this.selectedRequest) return;
+
+    // if (!this.selectedRequest.Status.includes('Pending')) return;
+
+    // const employee = this.leaveService.getEmployeeById(
+    //   this.selectedRequest.EmployeeId,
+    // );
+    // if (!employee) return;
+
+    // const requestedDays = Number(
+    //   parseFloat(this.selectedRequest.RequestedDuration),
+    // );
+
+    // const leaveType = employee.leaveTypes.find(
+    //   (lt) => lt.typeName === this.selectedRequest?.LeaveType,
+    // );
+
     if (!leaveType) {
       // this.rejectWithComment('Invalid leave type');
       return;
@@ -215,6 +196,13 @@ export class LeaveRequestComponent {
 
     if (requestedDays > remaining) {
       // this.rejectWithComment('Insufficient leave balance');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Leave',
+        detail: `${this.selectedEmployee?.EmployeeId} has insufficient leave balance`,
+        key: 'tl',
+        life: 3000,
+      });
       return;
     }
 
@@ -224,7 +212,9 @@ export class LeaveRequestComponent {
 
     this.leaveService.updateEmployee(employee);
 
-    this.selectedEmployee.Status = 'Approved';
+    // this.selectedRequest.Status = 'Approved';
+    // this.selectedRequest.ApprovalComment = this.comment || 'No comment';
+      this.selectedEmployee.Status = 'Approved';
     this.selectedEmployee.ApprovalComment = this.comment || 'No comment';
 
     this.updateLocalStorage();
@@ -234,7 +224,26 @@ export class LeaveRequestComponent {
   }
 
   rejectLeave() {
-    if (
+    // if (
+    //   this.selectedRequest &&
+    //   this.selectedRequest.Status.includes('Pending Approval')
+    // ) {
+    //   this.selectedRequest.Status = 'Rejected';
+
+    //   this.selectedRequest.ApprovalComment = this.comment
+    //     ? this.comment
+    //     : 'No comment';
+
+    //   this.comment = '';
+    //   this.messageService.add({
+    //     severity: 'warn',
+    //     summary: 'Leave',
+    //     detail: `${this.selectedRequest?.EmployeeId}'s leave has been rejected`,
+    //     key: 'tl',
+    //     life: 3000,
+    //   });
+
+     if (
       this.selectedEmployee &&
       this.selectedEmployee.Status.includes('Pending Approval')
     ) {
@@ -263,83 +272,201 @@ export class LeaveRequestComponent {
   closeModal() {
     this.acceptModal = false;
     this.selectedEmployee = null;
+    this.selectedRequest = null;
   }
 
-  selectedEmployees: any[] = [];
+  selectedRequests: LeaveRequest[] = [];
+    selectedEmployees: any[] = [];
 
   bulkApprove() {
-    if (this.selectedEmployees.length == 0) return;
+  // Check if any requests selected
+  if (this.selectedEmployees.length == 0) return;
     if (
       this.selectedEmployees.every(
         (emp) =>
           emp.Status.includes('Approved') || emp.Status.includes('Rejected'),
       )
-    ) {
-      this.selectedEmployees = [];
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Leave',
-        detail: `Selected leave(s) has already been decided`,
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    this.selectedEmployees.forEach((employee) => {
-      if (employee.Status.includes('Pending Approval')) {
-        employee.Status = 'Approved';
-      }
-    });
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Leave',
-      detail: `Selected leave(s) has been accepted`,
-      key: 'tl',
-      life: 3000,
-    });
-    this.updateLocalStorage();
-
-    this.selectedEmployees = [];
-    this.sortByStatus();
-  }
-
-  bulkReject() {
-    if (this.selectedEmployees.length == 0) return;
-    if (
-      this.selectedEmployees.every(
-        (emp) =>
-          emp.Status.includes('Approved') || emp.Status.includes('Rejected'),
-      )
-    ) {
-      this.selectedEmployees = [];
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Leave',
-        detail: `Selected leave(s) has already been decided`,
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    this.selectedEmployees.forEach((employee) => {
-      if (employee.Status.includes('Pending Approval')) {
-        employee.Status = 'Rejected';
-      }
-    });
-    this.updateLocalStorage();
+) {
+this.selectedEmployees = [];
     this.messageService.add({
       severity: 'warn',
       summary: 'Leave',
-      detail: `Selected leave(s) has been rejected`,
+      detail: `Selected leave(s) has already been decided`,
       key: 'tl',
       life: 3000,
     });
-    this.selectedEmployees = [];
-    this.sortByStatus();
+    return;
   }
+
+  // Filter only pending requests
+  const pendingRequests = this.selectedEmployee.filter((req: { Status: string | string[]; }) =>
+    req.Status.includes('Pending Approval')
+  );
+
+  // Check if all selected are already processed
+  if (pendingRequests.length === 0) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Already Processed',
+      detail: 'Selected requests have already been decided',
+      key: 'tl',
+      life: 3000,
+    });
+    this.selectedEmployee = [];
+    return;
+  }
+
+  let approvedCount = 0;
+  let rejectedCount = 0;
+  const rejectionReasons: string[] = [];
+
+  // Process each pending request
+  pendingRequests.forEach((request: { EmployeeId: string; RequestedDuration: string; LeaveType: string; Status: string; ApprovalComment: string; }) => {
+    const employee = this.leaveService.getEmployeeById(request.EmployeeId);
+    
+    if (!employee) {
+      rejectedCount++;
+      rejectionReasons.push(`${request.EmployeeId}: Employee not found`);
+      return;
+    }
+
+    const requestedDays = parseFloat(request.RequestedDuration);
+
+    // Find the leave type for this request
+    const leaveType = employee.leaveTypes.find(
+      (lt) => lt.typeName === request.LeaveType
+    );
+
+    if (!leaveType) {
+      // Auto-reject if leave type not found
+      request.Status = 'Rejected';
+      request.ApprovalComment = 'Leave type not found in employee records';
+      rejectedCount++;
+      rejectionReasons.push(`${request.EmployeeId} (${request.LeaveType}): Leave type not found`);
+      return;
+    }
+
+    const remaining = leaveType.allocatedDays - leaveType.daysUsed;
+
+    // Check if sufficient balance
+    if (requestedDays > remaining) {
+      // Auto-reject if insufficient balance
+      request.Status = 'Rejected';
+      request.ApprovalComment = `Insufficient balance. Only ${remaining} days remaining for ${request.LeaveType}`;
+      rejectedCount++;
+      rejectionReasons.push(
+        `${request.EmployeeId} (${request.LeaveType}): Only ${remaining} days remaining`
+      );
+    } else {
+      // Approve and update balance
+      leaveType.daysUsed += requestedDays;
+      employee.leaveUsed += requestedDays;
+      
+      // Update employee in service
+      this.leaveService.updateEmployee(employee);
+      
+      // Update request status
+      request.Status = 'Approved';
+      request.ApprovalComment = 'Bulk approved by admin';
+      approvedCount++;
+    }
+  });
+
+  // Save all updated requests to localStorage
+  localStorage.setItem('leaveRequest', JSON.stringify(this.allLeaveRequest));
+
+  // Show detailed summary message
+  if (approvedCount > 0 && rejectedCount === 0) {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Bulk Approval Complete',
+      detail: `${approvedCount} request(s) approved successfully`,
+      key: 'tl',
+      life: 4000,
+    });
+  } else if (approvedCount === 0 && rejectedCount > 0) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Bulk Approval Failed',
+      detail: `${rejectedCount} request(s) rejected due to insufficient balance`,
+      key: 'tl',
+      life: 4000,
+    });
+  } else if (approvedCount > 0 && rejectedCount > 0) {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Bulk Approval Completed',
+      detail: `${approvedCount} approved, ${rejectedCount} rejected (insufficient balance)`,
+      key: 'tl',
+      life: 5000,
+    });
+  }
+
+  // Log rejection reasons for debugging
+  if (rejectionReasons.length > 0) {
+    console.warn('Bulk Approval - Rejected Requests:', rejectionReasons);
+  }
+
+  // Clear selection and reload data
+  this.selectedRequests = [];
+    this.selectedEmployees = [];
+  this.ngOnInit(); // Reload data to refresh the view
+}
+
+  bulkReject() {
+  // Check if any requests selected
+  if (this.selectedEmployees.length === 0) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'No Selection',
+      detail: 'Please select requests to reject',
+      key: 'tl',
+      life: 3000,
+    });
+    return;
+  }
+
+  // Filter only pending requests
+  const pendingRequests = this.selectedEmployees.filter(req =>
+    req.Status.includes('Pending Approval')
+  );
+
+  // Check if all selected are already processed
+  if (pendingRequests.length === 0) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Already Processed',
+      detail: 'Selected requests have already been decided',
+      key: 'tl',
+      life: 3000,
+    });
+    this.selectedRequests = [];
+    return;
+  }
+
+  // Reject all pending requests
+  pendingRequests.forEach((request) => {
+    request.Status = 'Rejected';
+    request.ApprovalComment = 'Bulk rejected by admin';
+  });
+
+  // Save all updated requests to localStorage
+  localStorage.setItem('leaveRequest', JSON.stringify(this.allLeaveRequest));
+
+  // Show success message
+  this.messageService.add({
+    severity: 'warn',
+    summary: 'Bulk Rejection Complete',
+    detail: `${pendingRequests.length} request(s) rejected`,
+    key: 'tl',
+    life: 3000,
+  });
+
+  // Clear selection and reload data
+  this.selectedRequests = [];
+    this.selectedEmployees = [];
+  this.ngOnInit(); // Reload data to refresh the view
+}
 
   updateLocalStorage() {
     localStorage.setItem(

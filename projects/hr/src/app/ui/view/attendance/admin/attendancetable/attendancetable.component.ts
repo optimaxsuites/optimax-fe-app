@@ -55,8 +55,12 @@ export class AttendancetableComponent implements OnInit{
  
 
   ngOnInit(): void {
-    this.attendance = MOCK_ATTENDANCE;
-    this.filteredAttendance = [...this.attendance];
+    this.attendancetableService.attendance$.subscribe(data => {
+    this.attendance = data;
+    this.filteredAttendance = [...data];
+  });
+    //this.attendance = MOCK_ATTENDANCE;
+    //this.filteredAttendance = [...this.attendance];
   }
 
 /*manualCorrection(record: any) {
@@ -64,7 +68,7 @@ export class AttendancetableComponent implements OnInit{
   alert(`Editing attendance for ${record.employee}`);
 }*/
 
-manualCorrection(record: any) {
+/*manualCorrection(record: any) {
   const newStatus = prompt(
     `Change status for ${record.employeeName} (PRESENT / LATE / ABSENT):`,
     record.status
@@ -88,7 +92,7 @@ manualCorrection(record: any) {
   } else {
     alert('Invalid status. Use PRESENT, LATE, or ABSENT.');
   }
-}
+}*/
 
   handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
     if (event.actionId === 'correct') {

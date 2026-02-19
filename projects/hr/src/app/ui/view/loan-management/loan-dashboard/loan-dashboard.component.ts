@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
@@ -167,13 +168,13 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   viewLoanDetails(loanId: string) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
-      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId]);
+      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
     }
   }
 
   // FIXED: Navigate to employee loan history with just the employee ID
   seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()]);
   }
 
   searchLoans(event: any) {
@@ -194,7 +195,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewPendingApprovals() {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval']);
+    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
 
   viewActiveLoans() {
