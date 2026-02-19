@@ -25,11 +25,11 @@ export class RecruitmentListComponent implements OnInit {
   showListView: boolean = true;
   viewModal?: boolean;
   jobColumns: TableColumn[] = [
-    { header: 'Title', field: 'title', sortable: true, className: 'table-item' },
+    { header: 'Title', field: 'jobTitle', sortable: true, className: 'table-item' },
     { header: 'Location', field: 'location', sortable: true, className: 'table-item' },
-    { header: 'Job Type', field: 'employmentType', sortable: true, className: 'table-item' },
-    { header: 'Posted Date', field: 'postedDate', sortable: true, className: 'table-item' },
-    { header: 'Expiry Date', field: 'expiryDate', sortable: true, className: 'table-item' },
+    { header: 'Job Type', field: 'jobType', sortable: true, className: 'table-item', formatter: (row) => row?.jobType?.name || row?.jobType || '—' },
+    { header: 'Posted Date', field: 'jobPostedDate', sortable: true, className: 'table-item', formatter: (row) => this.formatDateValue(row?.jobPostedDate) },
+    { header: 'Expiry Date', field: 'jobExpiryDate', sortable: true, className: 'table-item', formatter: (row) => this.formatDateValue(row?.jobExpiryDate) },
   ];
   jobActions: TableAction[] = [
     { id: 'view', label: 'View', icon: 'fas fa-eye' },
@@ -57,9 +57,15 @@ export class RecruitmentListComponent implements OnInit {
         this.customFieldList = [];
         return;
     }
+    const fields = this.activeItem.jobVacancyCustomFields;
+    const areObjects = fields.every((item) => typeof item === 'object');
+    if (areObjects) {
+      this.customFieldList = fields as JobPostingCustomFieldDTO[];
+      return;
+    }
 
-    const fetchRequests = this.activeItem.jobVacancyCustomFields.map((FieldId) =>
-        this.recruitmentService.getCustomFieldById(FieldId).toPromise()
+    const fetchRequests = (fields as number[]).map((fieldId) =>
+        this.recruitmentService.getCustomFieldById(fieldId).toPromise()
     );
 
     Promise.all(fetchRequests)
@@ -228,5 +234,19 @@ export class RecruitmentListComponent implements OnInit {
     );
   }
 
+  private formatDateValue(value: any): string {
+    if (!value) return '—';
+    if (value instanceof Date) return value.toLocaleDateString();
+    if (typeof value === 'number') return new Date(value * 1000).toLocaleDateString();
+    if (typeof value === 'string') {
+      const asNumber = Number(value);
+      if (!Number.isNaN(asNumber) && value.trim() !== '') {
+        return new Date(asNumber * 1000).toLocaleDateString();
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+    }
+    return String(value);
+  }
 
 }
