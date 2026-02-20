@@ -95,9 +95,9 @@ export class AttendancetableComponent implements OnInit{
 }*/
 
   handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
-    if (event.actionId === 'correct') {
-      this.manualCorrection(event.row);
-    }
+    // if (event.actionId === 'correct') {
+    //   this.manualCorrection(event.row);
+    // }
   }
 
 filters: any = {};

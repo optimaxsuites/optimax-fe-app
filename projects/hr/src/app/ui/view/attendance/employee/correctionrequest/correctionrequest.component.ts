@@ -107,9 +107,9 @@ export class CorrectionrequestComponent  implements OnInit{
 
 
   handleRequestAction(event: { actionId: string; row: CorrectionRequest }) {
-    if (event.actionId === 'remind') {
-      this.sendReminder(event.row);
-    }
+    // if (event.actionId === 'remind') {
+    //   this.sendReminder(event.row);
+    // }
   }
 
 }
