@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { VendorQuoteListComponent } from './vendor-quote-list/vendor-quote-list.component';
-import { VendorRfqListComponent } from './vendor-rfq-list/vendor-rfq-list.component';
 import { TabConfig } from '../../sharedComponent/service/interface/data';
+import { VendorListComponent } from '../vendor-management/vendor-list/vendor-list.component';
+import { VendorApprovalComponent } from '../vendor-management/vendor-approval/vendor-approval.component';
 
 @Component({
   selector: 'app-vendor-page',
@@ -10,8 +10,8 @@ import { TabConfig } from '../../sharedComponent/service/interface/data';
 })
 export class VendorPageComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'RFQ', component: VendorRfqListComponent },
-    { name: 'Quotation', component: VendorQuoteListComponent },
+  { name: 'Vendor List',  component: VendorListComponent },
+  { name: 'Vendor Approval',  component: VendorApprovalComponent },
     // { 
     //   name: 'LPO', 
     //   component: null, 
