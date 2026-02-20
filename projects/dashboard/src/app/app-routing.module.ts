@@ -8,7 +8,7 @@ import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
 const routes: Routes = [
   {
     path:'',
-    redirectTo: ':uuid',
+    redirectTo: '/uu',
     pathMatch: 'full'
   },
   {
