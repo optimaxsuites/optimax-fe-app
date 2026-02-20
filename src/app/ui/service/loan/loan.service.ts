@@ -80,7 +80,7 @@ export class LoanService {
       {
         id: 'LN-001',
         employeeId: 'EMP-123',
-        fullName: 'Jane Doe',
+        fullName: 'Eseose Odion',
         department: 'IT',
         loanAmount: 50000,
         paymentMode: 'monthly',
@@ -112,7 +112,7 @@ export class LoanService {
     const newApplication: LoanApplication = {
       id: this.generateId(),
       employeeId: 'EMP-123', // This should come from auth service in real app
-      fullName: 'Jane Doe', // This should come from auth service
+      fullName: 'Eseose Odion', // This should come from auth service
       department: 'IT', // This should come from auth service
       loanAmount: formData.loanAmount,
       paymentMode: formData.paymentMode,

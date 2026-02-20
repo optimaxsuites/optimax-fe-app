@@ -74,7 +74,7 @@ export class LoanStorageService {
     return [{
       id: 'LN-001',
       employeeId: 'EMP-123',
-      fullName: 'Jane Doe',
+      fullName: 'Eseose Odion',
       department: 'IT',
       loanAmount: 50000,
       paymentMode: 'monthly',

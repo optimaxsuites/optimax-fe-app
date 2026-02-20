@@ -162,6 +162,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 }
 
   generateReports() {
-  this.router.navigate(['/admin/hr/loan-management/reports']);
+  this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
 }
 }

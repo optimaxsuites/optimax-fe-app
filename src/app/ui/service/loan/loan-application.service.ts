@@ -16,7 +16,7 @@ export class LoanApplicationService {
     const newApplication: LoanApplication = {
       id: this.generateId(),
       employeeId: 'EMP-123', // Should come from auth
-      fullName: 'Jane Doe', // Should come from auth
+      fullName: 'Eseose Odion', // Should come from auth
       department: 'IT', // Should come from auth
       loanAmount: formData.loanAmount,
       paymentMode: formData.paymentMode,

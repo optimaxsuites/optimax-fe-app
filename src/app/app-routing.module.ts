@@ -72,7 +72,7 @@ const routes: Routes = [
     component: EmployeeLoanHistoryComponent
   },
   {
-  path: 'admin/hr/loan-management/reports',
+  path: 'admin/hr/loan-management/reports/:uuid',
   component: LoanReportsComponent
   },
   {

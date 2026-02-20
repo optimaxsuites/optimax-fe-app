@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
@@ -262,6 +263,6 @@ export class LoanApprovalUiComponent implements OnInit {
   }
 
   seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId]);
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()]);
   }
 }
