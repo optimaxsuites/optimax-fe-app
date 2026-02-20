@@ -5,9 +5,10 @@
       <button type="button" class="text-gray-600 hover:text-gray-800" (click)="goBack()">
         <i class="fa-solid fa-arrow-left text-lg"></i>
       </button>
-      <h1 class="text-2x1 font-bold text-gray-800">New Expense Request</h1>
+      <h1 class="text-2xl font-bold text-gray-800">New Expense Request</h1>
     </div>
   </div>
+
   <!-- Notice Box -->
   <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
     <div class="flex items-start">
@@ -21,6 +22,7 @@
       </div>
     </div>
   </div>
+
   <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)" class="w-full">
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -51,8 +53,9 @@
                 Category <span class="text-red-500">*</span>
               </label>
               <div class="flex gap-2">
-                <ng-select [items]="categories" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.category"
-                  name="category" required placeholder="Select a category" class="flex-1">
+                <ng-select class="contextual-dropdown" [items]="categories" bindLabel="name" bindValue="name"
+                  [(ngModel)]="expenseSummary.category" name="category" required placeholder="Select a category"
+                  class="flex-1">
                 </ng-select>
                 <button type="button"
                   class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
@@ -70,8 +73,9 @@
                 Merchant <span class="text-red-500">*</span>
               </label>
               <div class="flex gap-2">
-                <ng-select [items]="merchants" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.merchant"
-                  name="merchant" required placeholder="Select a merchant" class="flex-1">
+                <ng-select class="contextual-dropdown" [items]="merchants" bindLabel="name" bindValue="name"
+                  [(ngModel)]="expenseSummary.merchant" name="merchant" required placeholder="Select a merchant"
+                  class="flex-1">
                 </ng-select>
                 <button type="button"
                   class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
@@ -113,7 +117,8 @@
                 </label>
               </div>
             </div>
-            <!-- Employee Receipt Upload -->
+
+            <!-- ✅ Employee Receipt Upload — Fixed condition to match 'EMPLOYEE' (uppercase) -->
             <div class="col-span-2" *ngIf="expenseSummary.paidBy === 'EMPLOYEE'">
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Upload Employee Receipt <span class="text-red-500">*</span>
@@ -127,7 +132,8 @@
                   Click or drag and drop to upload Employee Receipt
                 </p>
                 <p class="text-sm font-medium text-gray-700" *ngIf="employeeReceiptFile">
-                  Employee Receipt: {{ employeeReceiptFile.name }}
+                  <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                  {{ employeeReceiptFile.name }}
                 </p>
                 <p class="text-xs text-gray-500 mt-1">
                   Supported formats: JPG, PNG, PDF (max 10MB)
@@ -135,7 +141,22 @@
                 <input type="file" #employeeReceiptInput class="hidden"
                   (change)="onFileSelect($event, 'employeeReceipt')" accept=".jpg,.png,.pdf" />
               </div>
+
+              <!-- Employee receipt image preview (if it's an image) -->
+              <div *ngIf="employeeReceiptFile && isImageFile(employeeReceiptFile)"
+                class="mt-3 border rounded-lg overflow-hidden w-32 h-32">
+                <img [src]="getFilePreview(employeeReceiptFile)" alt="Employee receipt preview"
+                  class="w-full h-full object-contain" />
+              </div>
+
+              <!-- Remove button -->
+              <button *ngIf="employeeReceiptFile" type="button"
+                class="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
+                (click)="removeFile('employeeReceipt')">
+                <i class="fas fa-trash mr-1"></i> Remove Employee Receipt
+              </button>
             </div>
+
             <!-- Event Date -->
             <div class="col-span-2 md:col-span-1">
               <label for="event-date" class="block text-sm font-medium text-gray-700 mb-1">
@@ -149,6 +170,7 @@
             </div>
           </div>
         </div>
+
         <!-- Financial Information -->
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
@@ -199,7 +221,7 @@
                 Tax Percentage (%)
               </label>
               <div class="flex gap-2">
-                <ng-select [items]="taxRates" bindLabel="name" bindValue="rate"
+                <ng-select class="contextual-dropdown" [items]="taxRates" bindLabel="name" bindValue="rate"
                   [(ngModel)]="expenseSummary.taxPercentage" name="taxPercentage" placeholder="Select a tax rate"
                   class="flex-1">
                   <ng-option *ngFor="let tax of taxRates" [value]="tax.rate">
@@ -215,6 +237,7 @@
             </div>
           </div>
         </div>
+
         <!-- Advanced Payment Options -->
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
@@ -249,7 +272,6 @@
             }
 
             <!-- Configuration State - Payment Setup Form -->
-            <!-- Schedule Payment Modal Section -->
             @if (showAdvancedPayment) {
             <div class="border border-blue-200 rounded-lg bg-blue-50 p-4 mt-3">
               <div class="flex items-center justify-between mb-4">
@@ -268,6 +290,22 @@
                 <app-recurring-payment-modal (save)="onAdvancedPaymentSave($event)"
                   (cancel)="onAdvancedPaymentCancel()"></app-recurring-payment-modal>
               </div>
+
+              <!-- ✅ Email Reminder Field -->
+              <div class="mt-4 bg-white rounded-lg p-4 border border-blue-100">
+                <label for="reminderEmail" class="block text-sm font-medium text-blue-800 mb-1">
+                  <i class="fa-solid fa-envelope mr-1"></i>
+                  Reminder Email Address
+                  <span class="text-blue-500 text-xs ml-1">(optional)</span>
+                </label>
+                <p class="text-xs text-blue-600 mb-2">
+                  A reminder will be sent to this email on each scheduled payment date.
+                </p>
+                <input type="email" id="reminderEmail" name="reminderEmail"
+                  [(ngModel)]="expenseSummary.reminderEmail" placeholder="e.g. finance@company.com"
+                  class="w-full px-4 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-sm" />
+              </div>
+
               <!-- Action Buttons -->
               <div class="flex gap-3 justify-end mt-4 pt-4 border-t border-blue-200">
                 <button type="button"
@@ -319,6 +357,15 @@
                         <span class="ml-1 text-green-600"> {{ advancedPaymentData.occurrences }} </span>
                       </div>
                       }
+                      <!-- Show reminder email if set -->
+                      @if (expenseSummary.reminderEmail) {
+                      <div class="text-sm col-span-2">
+                        <span class="font-medium text-green-700">
+                          <i class="fa-solid fa-envelope mr-1"></i>Reminder Email:
+                        </span>
+                        <span class="ml-1 text-green-600">{{ expenseSummary.reminderEmail }}</span>
+                      </div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -338,6 +385,7 @@
             </div>
             }
           </div>
+
           <!-- Bill Splitting Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
@@ -525,6 +573,7 @@
           </div>
         </div>
       </div>
+
       <!-- Right Column - Document Upload -->
       <div class="lg:col-span-1">
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-6">
@@ -533,31 +582,64 @@
           </h2>
 
           <div class="flex flex-col items-center gap-4">
+            <!-- File Preview Area -->
             <div
               class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
-              <i class="fas fa-file-upload text-4xl text-gray-400"></i>
+              <!-- Show preview if file is uploaded -->
+              <ng-container *ngIf="receiptFile; else noFilePreview">
+                <!-- Image Preview -->
+                <img *ngIf="isImageFile(receiptFile)" [src]="getFilePreview(receiptFile)" alt="Receipt preview"
+                  class="w-full h-full object-contain" />
+
+                <!-- PDF Icon -->
+                <div *ngIf="isPdfFile(receiptFile)" class="text-center">
+                  <i class="fas fa-file-pdf text-6xl text-red-500 mb-2"></i>
+                  <p class="text-sm text-gray-600">{{ receiptFile.name }}</p>
+                </div>
+              </ng-container>
+
+              <ng-template #noFilePreview>
+                <i class="fas fa-file-upload text-4xl text-gray-400"></i>
+              </ng-template>
             </div>
 
+            <!-- Drop Zone -->
             <div
               class="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
-              (click)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onFileDrop($event, 'receipt')">
+              [class.border-customBlue]="isDragging" (click)="fileInput.click()" (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event, 'receipt')">
+
               <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+
               <p class="text-sm text-gray-600" *ngIf="!receiptFile">
                 Click or drag and drop to upload Document
               </p>
+
               <p class="text-sm font-medium text-gray-700" *ngIf="receiptFile">
-                Receipt: {{ receiptFile.name }}
+                <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                {{ receiptFile.name }}
               </p>
+
               <p class="text-xs text-gray-500 mt-1">
                 Supported formats: JPG, PNG, PDF (max 10MB)
               </p>
+
               <input type="file" #fileInput class="hidden" (change)="onFileSelect($event, 'receipt')"
-                accept=".jpg,.png,.pdf" />
+                accept=".jpg,.jpeg,.png,.pdf" />
             </div>
+
+            <!-- Remove File Button -->
+            <button *ngIf="receiptFile" type="button"
+              class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              (click)="removeFile('receipt')">
+              <i class="fas fa-trash mr-2"></i>
+              Remove File
+            </button>
           </div>
         </div>
       </div>
     </div>
+
     <!-- Form Buttons -->
     <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
       <button type="button" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
@@ -571,6 +653,7 @@
       </button>
     </div>
   </form>
+
   <!-- Modals (keep existing modal code as is) -->
   <app-side-modal *ngIf="showCategoryModal" (close)="closeModal('category')">
     <div class="p-6">
@@ -786,3 +869,4 @@
     </div>
   </app-side-modal>
   <p-toast></p-toast>
+</div>

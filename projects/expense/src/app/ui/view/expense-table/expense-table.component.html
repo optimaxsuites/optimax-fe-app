@@ -1,499 +1,472 @@
-<link
-  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-  rel="stylesheet"
-/>
-<link
-  href="https://fonts.googleapis.com/icon?family=Material+Icons"
-  rel="stylesheet"
-/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-<p-confirmDialog
-  header="Confirm Deletion"
-  icon="pi pi-exclamation-triangle"
-  styleClass="custom-confirm-dialog"
-></p-confirmDialog>
-<p-toast></p-toast>
+<body class="font-dm-sans bg-gray-100 min-h-screen p-8">
 
-<div class="table-container mx-3">
-  <!-- Header Section with Buttons -->
-  <div class="container-header bg-white p-9 rounded shadow-md mb-4">
-    <div class="flex justify-between items-center mb-6">
-      <div class="header-content">
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">Expenses</h1>
-          <p class="text-gray-600">Manage and track your business expenses</p>
-      
+<!-- ========== PRIME COMPONENTS (placeholders) ========== -->
+<p-confirmDialog header="Confirm Action" icon="pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast position="top-right"></p-toast>
+
+<!-- ========== MAIN UI ========== -->
+<div class="expenses-wrapper">
+
+  <!-- HEADER + ADD BUTTON -->
+  <div class="header-section">
+    <div>
+      <h1 class="page-title">Expenses</h1>
+      <p class="page-subtitle">Manage and track your business expenses</p>
     </div>
+    <button class="btn-add-expense" (click)="navigateToForm()">
+      <span class="material-icons">add</span>
+      Add Expense
+    </button>
+  </div>
 
-    <div class="action-bar">
-      <div class="left-actions">
-        <!-- Add New Button -->
-        <button class="btn btn-primary flex items-center gap-2" (click)="navigateToForm()">
-          <span class="material-icons">add</span>
-          Add Expense
+  <!-- SUMMARY CARDS -->
+  <div class="summary-cards-grid">
+    <div class="summary-card total">
+      <div>
+        <p class="card-label">Total Expenses</p>
+        <h3 class="card-value">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</h3>
+      </div>
+      <div class="card-icon"><span class="material-icons">trending_up</span></div>
+    </div>
+    <div class="summary-card approved">
+      <div>
+        <p class="card-label">Approved</p>
+        <h3 class="card-value">{{ getApprovedCount() }}</h3>
+      </div>
+      <div class="card-icon"><span class="material-icons">check_circle</span></div>
+    </div>
+    <div class="summary-card pending">
+      <div>
+        <p class="card-label">Pending</p>
+        <h3 class="card-value">{{ getPendingCount() }}</h3>
+      </div>
+      <div class="card-icon"><span class="material-icons">schedule</span></div>
+    </div>
+    <div class="summary-card rejected">
+      <div>
+        <p class="card-label">Rejected</p>
+        <h3 class="card-value">{{ getRejectedCount() }}</h3>
+      </div>
+      <div class="card-icon"><span class="material-icons">cancel</span></div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR + BULK ACTIONS -->
+  <div class="filter-section">
+    <div class="filter-wrapper">
+      <div class="filter-controls">
+        <!-- search -->
+        <div class="search-box">
+          <span class="search-icon"><span class="material-icons">search</span></span>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="onSearchInputChange()"
+            placeholder="Search expenses..."
+            class="search-input"
+          >
+        </div>
+
+        <!-- category -->
+        <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="filter-select">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categoryNames" [value]="cat">{{ cat }}</option>
+        </select>
+
+        <!-- status -->
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="filter-select">
+          <option value="">All Status</option>
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+
+        <!-- date range -->
+        <select [(ngModel)]="dateRangeType" (ngModelChange)="selectDateRange($event)" class="filter-select">
+          <option value="">All Dates</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
+        </select>
+
+        <div *ngIf="dateRangeType === 'custom'" class="custom-date-range">
+          <input type="date" [(ngModel)]="dateFrom" (change)="applyCustomDateRange()" class="date-input">
+          <span class="date-separator">–</span>
+          <input type="date" [(ngModel)]="dateTo" (change)="applyCustomDateRange()" class="date-input">
+        </div>
+      </div>
+
+      <!-- bulk actions -->
+      <div class="bulk-actions" *ngIf="selectedExpenses.length > 0">
+        <span class="selected-count">{{ selectedExpenses.length }} selected</span>
+        <button (click)="bulkApprove()" class="bulk-btn approve">
+          <span class="material-icons">check</span> Accept
         </button>
-
-        <!-- Request Button with Badge -->
-        <!-- <div class="relative ml-3">
-          <button class="btn btn-outline-success flex items-center gap-2" (click)="navigateToexpense()">
-            <span class="material-icons btn-icon">request_page</span>
-            Request
-          </button>
-          
-            <div
-              class="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"
-            >
-              {{ getExpenseCount() }}
-            
-          </div>
-        </div> -->
+        <button (click)="bulkReject()" class="bulk-btn reject">
+          <span class="material-icons">block</span> Reject
+        </button>
+        <button (click)="deleteSelectedExpenses()" class="bulk-btn delete">
+          <span class="material-icons">delete</span> Delete
+        </button>
       </div>
     </div>
   </div>
 
-  
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-  <div class="summary-card bg-blue-100 p-4 rounded-lg border border-blue-100">
-    <div class="flex items-center gap-1 mb-1">
-    <div class="text-blue-600 text-xl font-medium">Total Expenses</div>
-        <span class="material-icons text-blue-600 text-3xl mb-2">insights</span>
-        </div>
-    <div class="text-2xl font-bold text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</div>
-    </div>
-  
+  <!-- EXPENSE TABLE -->
+  <div class="table-section">
+    <p-table
+      [value]="filteredExpenses"
+      [(selection)]="selectedExpenses"
+      dataKey="id"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} expenses"
+      styleClass="expense-table"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem" class="checkbox-header"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th class="table-header">Date</th>
+          <th class="table-header">Expense Name</th>
+          <th class="table-header">Merchant</th>
+          <th class="table-header">Category</th>
+          <th class="table-header text-right">Amount</th>
+          <th class="table-header">Status</th>
+          <th class="table-header text-center">Actions</th>
+        </tr>
+      </ng-template>
 
-  <div class="summary-card bg-green-100 p-4 rounded-lg border border-green-100">
-    <div class="flex items-center gap-1 mb-1">
-        <div class="text-green-600 text-xl font-medium">Approved</div>
-    <span class="material-icons text-green-600 text-3xl mb-2">check_circle</span>
-    </div>
-  <div class="text-2xl font-bold text-green-900">{{ getApprovedCount() }}</div>
-  </div>
+      <ng-template pTemplate="body" let-expense>
+        <tr class="table-row">
+          <td class="checkbox-cell"><p-tableCheckbox [value]="expense"></p-tableCheckbox></td>
 
-  <div class="summary-card bg-yellow-100 p-4 rounded-lg border border-yellow-100">
-    <div class="flex items-center gap-1 mb-1">
-        <div class="text-yellow-600 text-xl font-medium">Pending</div>
-    <span class="material-icons text-yellow-600 text-3xl mb-2">schedule</span>
-    </div>
-  <div class="text-2xl font-bold text-yellow-900">{{ getPendingCount() }}</div>
-  </div>
+          <td class="table-cell date-cell">{{ expense.eventDate | date:'mediumDate' }}</td>
 
-  <div class="summary-card bg-red-100 p-4 rounded-lg border border-red-100">
-    <div class="flex items-center gap-1 mb-1">
-          <div class="text-red-600 text-xl font-medium">Rejected</div>
-    <span class="material-icons text-red-600 text-3xl mb-2">cancel</span>
-    </div>
-    <div class="text-2xl font-bold text-red-900">{{ getRejectedCount() }}</div>
-  </div>
-  </div>
-  </div>
+          <td class="table-cell expense-name">{{ expense.name }}</td>
 
-  <div class="floating-box">
+          <td class="table-cell">{{ expense.merchant?.name || '—' }}</td>
 
-    
-    <!-- Filters and Table Section -->
-    <div class="table-with-filters w-full max-w-9xl mx-auto px-4">
-      <div class="filter-panel">
-        <!-- Left Filter -->
-        <div class="filter-left">
-          <div class="filter-group">
-            <label>Category:</label>
-            <select [(ngModel)]="selectedCategory" (change)="applyFilters()">
-              <option value="">All Categories</option>
-              <option *ngFor="let category of categories" [value]="category">
-                {{ category }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Status Filter -->
-          <div class="filter-group">
-            <label>Status:</label>
-            <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
-              <option value="">All Status</option>
-              <option *ngFor="let status of statuses" [value]="status">
-                {{ status }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Date Range Filter -->
-          <div class="filter-group">
-            <label>Date Range:</label>
-            <select [(ngModel)]="dateRangeType" (change)="applyDateRange()">
-              <option value="">All Dates</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="custom">Custom Range</option>
-            </select>
-          </div>
-
-          <!-- Optional custom range input (only shown when selectedDateRange === 'custom') -->
-          <div class="filter-group" *ngIf="dateRangeType === 'custom'">
-            <label>From:</label>
-            <input
-              type="date"
-              [(ngModel)]="dateFrom"
-              (change)="applyCustomDateRange()"
-            />
-            <label>To:</label>
-            <input
-              type="date"
-              [(ngModel)]="dateTo"
-              (change)="applyCustomDateRange()"
-            />
-          </div>
-        </div>
-
-        <!-- Right: Delete Button -->   
-        <div class="filter-right">
-        
-        
-        <button class="btn btn-success"
-  [disabled]="!selectedExpenses.length"
-        (click)="bulkApprove()"
-        >
-          <span class="material-icons btn-icon">check_circle</span>
-          Accept
-        </button>
-
-      
-        <button class="btn btn-warning"
-  [disabled]="!selectedExpenses.length"
-        (click)="bulkReject()"
-        >
-          <span class="material-icons btn-icon">cancel</span>
-          Reject
-        </button>
-
-
-          <button
-            class="btn btn-danger"
-            [disabled]="!selectedExpenses.length"
-            (click)="deleteSelectedExpenses()"
-          >
-            <span class="material-icons btn-icon">delete</span>
-            Delete
-          </button>
-        </div>
-
-        </div>
-
-      <!-- Table -->
-      <div class="table-container ml-5 mr-5">
-        <p-table
-          [value]="filteredExpenses"
-          [(selection)]="selectedExpenses"
-          dataKey="id"
-          [paginator]="true"
-          styleClass="p-datatable-striped"
-          [tableStyle]="{
-            'min-height': 'fit-content',
-            'max-height': '650px'
-          }"
-          [rows]="15"
-        >
-          <!-- Header -->
-          <ng-template pTemplate="header">
-            <tr>
-              <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-              <th class="table-item">Date</th>
-              <th class="table-item">Expense</th>
-              <th class="table-item">Merchant</th>
-              <th class="table-item">Category</th>
-              <th class="table-item">Amount</th>
-              <th class="table-item">Status</th>
-              <th class="table-item">Actions</th>
-              <th class="table-item">Decision</th>
-            </tr>
-          </ng-template>
-
-          <!-- Body Rows -->
-          <ng-template pTemplate="body" let-expense>
-            <tr>
-              <td><p-tableCheckbox [value]="expense" /></td>
-              <td class="table-item">{{ expense.eventDate }}</td>
-              <td class="table-item">{{ expense.name }}</td>
-              <td class="table-item">{{ expense.merchant?.name  || expense.merchant }}</td>
-              <td class="table-item">
-                <div
-                  class="rounded-[50px] w-44 py-2 pl-4"
-                >
-                  {{ expense.category?.name || expense.category }}
-                </div>
-              </td>                                                       
-              <td class="table-item">{{ calculateDisplayAmount(expense) | number:'1.2-2' }}</td>
-              <td class="table-item">
-                <span
-                  *ngIf="expense.status === 'PENDING'"
-                  class="material-icons text-yellow-600 text-3xl mb-2"
-                >
-                  schedule
-                </span>
-                <span
-                  *ngIf="expense.status === 'APPROVED'"
-                  class="material-icons text-green-600 text-3xl mb-2"
-                >
-                  check
-                </span>
-                <span
-                  *ngIf="expense.status === 'REJECTED'"
-                  class="material-icons text-red-600 text-3xl mb-2"
-                >
-                  close
-                </span>
-          
-
-                <span
-                  class="status-text"
-                  [ngClass]="{
-                    'pending-icon text-yellow-600 text-xl font-medium': expense.status === 'PENDING',
-                    'approved-icon text-green-600 text-xl font-medium': expense.status === 'APPROVED',
-                    'rejected-icon text-red-600 text-xl font-medium': expense.status === 'REJECTED'
-                  }"
-                >
-                  {{ expense.status }}
-                </span>
-              </td>
-
-              <td class="table-item">
-                <span
-                  class="material-icons cursor-pointer"
-                  (click)="viewExpenseApproval(expense)"
-                  >visibility</span
-                >
-                <span
-                  class="material-icons cursor-pointer ml-2"
-                  (click)="editExpense(expense)"
-                  >edit</span
-                >
-                <!-- <span
-                  class="material-icons cursor-pointer ml-2"
-                  (click)="confirmDelete(expense)"
-                  >cancel</span -->
-                
-              </td>
-
-               <td class="dropdown-container">
-            <span class="material-symbols-outlined action-icon">more_vert</span>
-            <div class="dropdown-content">
-              <a (click)="approve(expense)">
-                <span class="material-icons text-green-600 text-xl font-medium">check_circle</span> Accept
-              </a>
-              <a 
-              (click)="reject(expense)">
-                <span class="material-icons text-red-600 text-xl font-medium">cancel</span> Reject
-              </a>
-            </div>
+          <td class="table-cell">
+            <span class="category-badge" *ngIf="expense.category?.name; else noCategory">
+              {{ expense.category?.name }}
+            </span>
+            <ng-template #noCategory>
+              <span class="category-badge missing">—</span>
+            </ng-template>
           </td>
 
-        
+          <td class="table-cell amount-cell">
+            {{ calculateDisplayAmount(expense) | currency:'NGN':'symbol':'1.2-2' }}
+          </td>
 
-            </tr>
-          </ng-template>
+          <td class="table-cell">
+            <span class="status-badge" [ngClass]="expense.status?.toLowerCase()">
+              <span class="status-dot" [ngClass]="expense.status?.toLowerCase()"></span>
+              {{ expense.status | titlecase }}
+            </span>
+          </td>
 
-          <!-- Empty Message -->
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="8">
-                <div class="empty-state">
-                  <span class="material-symbols-outlined empty-icon"
-                    >assignment</span
-                  >
-                  <div class="empty-title">No expenses added yet.</div>
-                  <div class="empty-desc">
-                    You haven’t added any expenses yet. Click
-                    <b>Add Expense</b> to get started.
-                  </div>
+          <td class="table-cell actions-cell">
+            <div class="actions-wrapper">
+              <!-- view -->
+              <button
+                (click)="viewExpenseApproval(expense)"
+                class="action-btn view"
+                pTooltip="View Details">
+                <span class="material-icons">visibility</span>
+              </button>
+
+              <!-- edit — disabled & styled differently when APPROVED -->
+              <button
+                (click)="editExpense(expense)"
+                class="action-btn edit"
+                [class.action-btn--locked]="isApproved(expense)"
+                [pTooltip]="isApproved(expense) ? 'Approved expenses cannot be edited' : 'Edit'"
+                tooltipPosition="top">
+                <span class="material-icons">{{ isApproved(expense) ? 'lock' : 'edit' }}</span>
+              </button>
+
+              <!-- more menu -->
+              <div class="dropdown-container">
+                <button class="action-btn more">
+                  <span class="material-icons">more_vert</span>
+                </button>
+                <div class="dropdown-content">
+                  <button (click)="approve(expense)" class="dropdown-item approve">
+                    <span class="material-icons">check</span> Accept
+                  </button>
+                  <button (click)="reject(expense)" class="dropdown-item reject">
+                    <span class="material-icons">close</span> Reject
+                  </button>
                 </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
-    </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div class="empty-state-content">
+              <div class="empty-icon">
+                <span class="material-symbols-outlined">receipt_long</span>
+              </div>
+              <h3 class="empty-title">No expenses found</h3>
+              <p class="empty-description">Adjust your filters or add a new expense.</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
 </div>
 
-<!-- Edit Expense Modal -->
+<!-- ========== SIDE MODAL: EDIT ========== -->
 <app-side-modal *ngIf="isModalOpen" (close)="closeModal()">
-  <div class="side-modal-content">
-    <h1>Edit Expense</h1>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">Edit Expense</h2>
+      <button (click)="closeModal()" class="modal-close">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
 
-    <!-- ✅ Guard entire form -->
-    <form *ngIf="selectedExpense" #editForm="ngForm" class="space-y-6">
-      <div>
-        <label>Name:</label>
-        <input [(ngModel)]="selectedExpense.name" name="name" />
+    <form *ngIf="selectedExpense" #editForm="ngForm" class="modal-form">
+
+      <div class="form-group">
+        <label class="form-label">Expense Name</label>
+        <input [(ngModel)]="selectedExpense.name" name="name" class="form-input" />
       </div>
 
-      <div>
-        <label>Merchant:</label>
-        <input [(ngModel)]="selectedExpense.merchant" name="merchant" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount</label>
+          <input
+            [value]="formatAmount(selectedExpense.amount)"
+            (input)="updateEditAmount($event)"
+            (keypress)="onlyNumbers($event)"
+            name="amount" type="text" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tax (%)</label>
+          <input
+            [value]="getTaxRateDisplayValue(selectedExpense.tax)"
+            (input)="onTaxInputChange($event)"
+            name="taxPercentage" type="number" step="0.01" class="form-input" />
+        </div>
       </div>
 
-      <div>
-        <label>Category:</label>
-        <input [(ngModel)]="selectedExpense.category" name="category" />
-      </div>
-
-      <div>
-        <label>Amount:</label>
+      <div class="form-group">
+        <label class="form-label">Date</label>
         <input
-          [value]="formatAmount(selectedExpense.amount)"
-          (input)="updateEditAmount($event)"
-          (keypress)="onlyNumbers($event)"
-          name="amount"
-          type="text"
-        />
+          [value]="selectedExpense.eventDate ? (selectedExpense.eventDate | date:'yyyy-MM-dd') : ''"
+          (input)="onDateInputChange($event)"
+          name="eventDate" type="date" class="form-input" />
       </div>
 
-      <div>
-        <label>Tax Percentage:</label>
-        <input
-        [value]="getTaxRateDisplayValue(selectedExpense.tax)"
-        (input)="onTaxInputChange($event)"
-          name="taxPercentage"
-          type="number"
-          step="0.01"
-        />
+      <!-- Merchant dropdown -->
+      <div class="form-group">
+        <label class="form-label">
+          Merchant
+          <span *ngIf="!editMerchantId" class="field-warning">⚠ Not assigned</span>
+        </label>
+        <select
+          [(ngModel)]="editMerchantId"
+          name="merchantId"
+          class="form-input form-select"
+          [ngClass]="{'field-missing': !editMerchantId}">
+          <option [ngValue]="null" disabled>— Select Merchant —</option>
+          <option *ngFor="let m of merchants" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
       </div>
 
-      <div>
-        <label>Expense Date:</label>
-        <input
-        [value]="selectedExpense.eventDate ? (selectedExpense.eventDate | date:'yyyy-MM-dd') : ''"
-        (input)="onDateInputChange($event)"
-          name="eventDate"
-          type="date"
-        />
+      <!-- Category dropdown -->
+      <div class="form-group">
+        <label class="form-label">
+          Category
+          <span *ngIf="!editCategoryId" class="field-warning">⚠ Not assigned</span>
+        </label>
+        <select
+          [(ngModel)]="editCategoryId"
+          name="categoryId"
+          class="form-input form-select"
+          [ngClass]="{'field-missing': !editCategoryId}">
+          <option [ngValue]="null" disabled>— Select Category —</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+        </select>
       </div>
 
-      <div>
-        <label>Description:</label>
-        <textarea
-          [(ngModel)]="selectedExpense.description"
-          name="description"
-        ></textarea>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea [(ngModel)]="selectedExpense.description" name="description" rows="5" class="form-textarea"></textarea>
       </div>
 
-      <!-- Save / Cancel buttons -->
-      <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="saveEditedExpense()">
-          Save
-        </button>
-        <button type="button" class="btn btn-outline-success" (click)="closeModal()">
-          Cancel
-        </button>
-      </div>
     </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveEditedExpense()">Save Changes</button>
+    </div>
   </div>
 </app-side-modal>
 
-
-<!-- Expense Approval Modal -->
+<!-- ========== SIDE MODAL: DETAIL VIEW ========== -->
 <app-side-modal *ngIf="isModalOpen2" (close)="closeModal()">
-  <div
-    class="expense-approval-container mt-8"
-  >
-    <h1 class="title text-2xl font-semibold text-gray-800 mb-4">
-      Expense Approval Update
-    </h1>
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Expense Details</h2>
+        <p class="modal-subtitle">ID: #{{ selectedExpense?.id || '---' }}</p>
+      </div>
+      <button (click)="closeModal()" class="modal-close">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
 
-    <div class="expense-details space-y-4">
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Name:</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense?.name }}
-    </span>
-  </div>
+    <div class="modal-body">
 
-  <!-- Merchant -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Merchant:</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense?.merchant }}
-    </span>
-  </div>
+      <!-- APPROVED LOCK NOTICE -->
+      <div *ngIf="selectedExpense?.status === 'APPROVED'" class="approved-lock-notice">
+        <span class="material-icons">lock</span>
+        <span>This expense has been approved and cannot be edited.</span>
+      </div>
 
-  <!-- Amount -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Amount (NGN):</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense ? formatAmount(selectedExpense.amount) : '' }}
-    </span>
-  </div>
+      <!-- status banner -->
+      <div class="status-banner" [ngClass]="selectedExpense?.status?.toLowerCase()">
+        <div class="status-icon" [ngClass]="selectedExpense?.status?.toLowerCase()">
+          <span class="material-icons" *ngIf="selectedExpense?.status === 'APPROVED'">check_circle</span>
+          <span class="material-icons" *ngIf="selectedExpense?.status === 'PENDING'">schedule</span>
+          <span class="material-icons" *ngIf="selectedExpense?.status === 'REJECTED'">cancel</span>
+        </div>
+        <div>
+          <p class="status-label">Status</p>
+          <p class="status-value">{{ selectedExpense?.status }}</p>
+        </div>
+      </div>
 
-  <!-- Tax Percentage -->
-  <div class="detail-row flex justify-between items-center">
-  <label class="detail-label text-2xl text-gray-700">Tax Percentage (%):</label>
+      <!-- details -->
+      <div class="details-section">
+        <div class="details-grid">
+          <div class="detail-item">
+            <label class="detail-label">Expense Name</label>
+            <p class="detail-value">{{ selectedExpense?.name }}</p>
+          </div>
+          <div class="detail-item">
+            <label class="detail-label">Date</label>
+            <p class="detail-value">{{ selectedExpense?.eventDate | date:'mediumDate' }}</p>
+          </div>
+        </div>
 
-  <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax) as tax" class="detail-value text-2xl text-gray-900">
-    {{ tax }}%
-  </span>
-  <span *ngIf="!getTaxRateDisplayValue(selectedExpense?.tax)" class="detail-value text-2xl text-gray-900">
-    No tax applied
-  </span>
-</div>
+        <div class="detail-item">
+          <label class="detail-label">Merchant</label>
+          <div class="merchant-info">
+            <div class="merchant-icon"><span class="material-icons">store</span></div>
+            <p class="merchant-name">{{ selectedExpense?.merchant?.name || '—' }}</p>
+          </div>
+        </div>
 
+        <div class="financials-section">
+          <label class="detail-label">Financials</label>
+          <div class="financials-card">
+            <div class="financial-row">
+              <span>Subtotal</span>
+              <span class="financial-amount">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
+            </div>
+            <div class="financial-row">
+              <span>
+                Tax
+                <span class="tax-badge" *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)">
+                  {{ getTaxRateDisplayValue(selectedExpense?.tax) }}%
+                </span>
+              </span>
+              <span class="financial-amount" *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)">Included</span>
+              <span class="financial-amount" *ngIf="!getTaxRateDisplayValue(selectedExpense?.tax)">None</span>
+            </div>
+            <div class="financial-total">
+              <span class="total-label">Total</span>
+              <span class="total-amount">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
+            </div>
+          </div>
+        </div>
 
-  <!-- Expense Date -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Expense Date:</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense?.eventDate }}
-    </span>
-  </div>
+        <div class="detail-item">
+          <label class="detail-label">Category</label>
+          <span class="category-display">{{ selectedExpense?.category?.name || '—' }}</span>
+        </div>
 
-  <!-- Category -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Category:</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense?.category }}
-    </span>
-  </div>
+        <div class="detail-item" *ngIf="selectedExpense?.description">
+          <label class="detail-label">Description</label>
+          <p class="description-text">{{ selectedExpense?.description }}</p>
+        </div>
 
-  <!-- Description -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Description:</label>
-    <span class="detail-value text-2xl text-gray-900">
-      {{ selectedExpense?.description }}
-    </span>
-  </div>
+        <!-- ========== RECEIPT PREVIEWS ========== -->
+        <div class="receipts-section">
+          <label class="detail-label">Receipts</label>
 
-  <!-- Status -->
-  <div class="detail-row flex justify-between items-center">
-    <label class="detail-label text-2xl text-gray-700">Status:</label>
-    <span
-      class="detail-value flex items-center px-3 py-1 rounded-lg text-2xl"
-      [ngClass]="{
-    'text-green-500': selectedExpense?.status === 'APPROVED',
-    'text-red-500': selectedExpense?.status === 'REJECTED',
-    'text-yellow-500': selectedExpense?.status === 'PENDING'
-      }"
-      class="status-text"
-    >
-    {{ selectedExpense?.status }}
+          <div class="receipts-grid">
 
-      <mat-icon
-        *ngIf="selectedExpense?.status === 'APPROVED'"
-        class="mr-2 align-middle"
-        >check_circle</mat-icon
-      >
-      <mat-icon
-        *ngIf="selectedExpense?.status === 'REJECTED'"
-        class="mr-2 align-middle"
-        >cancel</mat-icon
-      >
-      <mat-icon
-        *ngIf="selectedExpense?.status === 'PENDING'"
-        class="mr-2 align-middle"
-        >access_time</mat-icon
-      >
-      {{ selectedExpense?.status }}
-    </span>
-  </div>
-</div>
+            <!-- Company Receipt -->
+            <div class="receipt-item">
+              <p class="receipt-label">
+                <span class="material-icons">business</span> Company Receipt
+              </p>
+              <div class="receipt-preview-box">
+                <!-- Loading -->
+                <div *ngIf="companyReceiptLoading" class="receipt-loading">
+                  <span class="material-icons rotating">autorenew</span>
+                  <span>Loading...</span>
+                </div>
+                <!-- Image preview -->
+                <a *ngIf="!companyReceiptLoading && companyReceiptUrl" [href]="companyReceiptUrl" target="_blank" class="receipt-link">
+                  <img [src]="companyReceiptUrl" alt="Company Receipt" class="receipt-img" />
+                  <span class="receipt-open-hint">
+                    <span class="material-icons">open_in_new</span> Open full size
+                  </span>
+                </a>
+                <!-- No receipt -->
+                <div *ngIf="!companyReceiptLoading && !companyReceiptUrl" class="receipt-empty">
+                  <span class="material-icons">receipt_long</span>
+                  <span>No company receipt uploaded</span>
+                </div>
+              </div>
+            </div>
 
+            <!-- Employee Receipt -->
+            <div class="receipt-item">
+              <p class="receipt-label">
+                <span class="material-icons">person</span> Employee Receipt
+              </p>
+              <div class="receipt-preview-box">
+                <!-- Loading -->
+                <div *ngIf="employeeReceiptLoading" class="receipt-loading">
+                  <span class="material-icons rotating">autorenew</span>
+                  <span>Loading...</span>
+                </div>
+                <!-- Image preview -->
+                <a *ngIf="!employeeReceiptLoading && employeeReceiptUrl" [href]="employeeReceiptUrl" target="_blank" class="receipt-link">
+                  <img [src]="employeeReceiptUrl" alt="Employee Receipt" class="receipt-img" />
+                  <span class="receipt-open-hint">
+                    <span class="material-icons">open_in_new</span> Open full size
+                  </span>
+                </a>
+                <!-- No receipt -->
+                <div *ngIf="!employeeReceiptLoading && !employeeReceiptUrl" class="receipt-empty">
+                  <span class="material-icons">receipt_long</span>
+                  <span>No employee receipt uploaded</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- ========== END RECEIPT PREVIEWS ========== -->
+
+      </div>
+    </div>
   </div>
 </app-side-modal>

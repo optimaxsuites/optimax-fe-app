@@ -9,6 +9,8 @@ import { ExpenseSummaryComponent } from './ui/view/expense-summary/expense-summa
 import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
+import { TaxReportComponent } from './ui/view/tax-report/tax-report.component';
+import { MobileCheckoutComponent } from './ui/view/mobile-checkout/mobile-checkout.component';
 
 
 const routes: Routes = [
@@ -40,6 +42,14 @@ const routes: Routes = [
       {
         path: 'report/:uuid',
         component: ApprovalReportsComponent,
+      },
+      {
+        path: 'admin/tax-report/:uuid',
+        component: TaxReportComponent,
+      },
+      {
+        path: 'mobile/checkout/:uuid',
+        component: MobileCheckoutComponent,
       },
       {
         path: 'expensesApproval/:id',

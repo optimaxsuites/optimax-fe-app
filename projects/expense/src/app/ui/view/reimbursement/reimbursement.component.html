@@ -483,18 +483,18 @@
 
 <!-- Popup for viewing request details (used for both tables) -->
 <!-- Popup for viewing request details (used for both tables) -->
-<div *ngIf="showFilePopup && previewRequest" class="custom-popup">
+<div *ngIf="showFilePopup && previewRequest as pr" class="custom-popup">
   <div class="custom-popup-content" (click)="$event.stopPropagation()">
     <div class="custom-popup-header">
       <span>Travel Request Details</span>
       <span
         class="status-badge"
         [ngClass]="{
-          pending: previewRequest.status === 'Pending',
-          approved: previewRequest.status === 'Approved',
-          rejected: previewRequest.status === 'Rejected'
+          pending: pr.status === 'Pending',
+          approved: pr.status === 'Approved',
+          rejected: pr.status === 'Rejected'
         }"
-      >{{ previewRequest.status }}</span>
+      >{{ pr.status }}</span>
       <button class="close-btn" (click)="closeFilePopup()">&times;</button>
       <button
         *ngIf="popupSource === 'recent' && previewRequest.status === 'Pending' && !editMode"
@@ -510,56 +510,56 @@
         <h3>Request Information</h3>
         <div class="info-grid">
           <div>
-            <b>Request ID</b><br />{{ previewRequest.id }}
+            <b>Request ID</b><br />{{ pr.id }}
           </div>
           <div>
             <b>Date</b><br />
             <ng-container *ngIf="editMode; else dateView">
               <input type="date" [(ngModel)]="editableRequest.date" />
             </ng-container>
-            <ng-template #dateView>{{ previewRequest.date | date : "yyyy-MM-dd" }}</ng-template>
+            <ng-template #dateView>{{ pr.date | date : "yyyy-MM-dd" }}</ng-template>
           </div>
           <div>
             <b>Type</b><br />
             <ng-container *ngIf="editMode; else typeView">
               <input type="text" [(ngModel)]="editableRequest.type" />
             </ng-container>
-            <ng-template #typeView>{{ previewRequest.type }}</ng-template>
+            <ng-template #typeView>{{ pr.type }}</ng-template>
           </div>
           <div>
             <b>Category</b><br />
             <ng-container *ngIf="editMode; else catView">
               <input type="text" [(ngModel)]="editableRequest.category" />
             </ng-container>
-            <ng-template #catView>{{ previewRequest.category }}</ng-template>
+            <ng-template #catView>{{ pr.category }}</ng-template>
           </div>
           <div>
             <b>Employee ID</b><br />
             <ng-container *ngIf="editMode; else empView">
               <input type="text" [(ngModel)]="editableRequest.employeeId" />
             </ng-container>
-            <ng-template #empView>{{ previewRequest.employeeId }}</ng-template>
+            <ng-template #empView>{{ pr.employeeId }}</ng-template>
           </div>
           <div>
             <b>Department</b><br />
             <ng-container *ngIf="editMode; else deptView">
               <input type="text" [(ngModel)]="editableRequest.department" />
             </ng-container>
-            <ng-template #deptView>{{ previewRequest.department }}</ng-template>
+            <ng-template #deptView>{{ pr.department }}</ng-template>
           </div>
           <div>
             <b>Receiver Name</b><br />
             <ng-container *ngIf="editMode; else recvView">
               <input type="text" [(ngModel)]="editableRequest.receiverName" />
             </ng-container>
-            <ng-template #recvView>{{ previewRequest.receiverName }}</ng-template>
+            <ng-template #recvView>{{ pr.receiverName }}</ng-template>
           </div>
           <div class="desc-cell" style="grid-column: 1 / -1">
             <b>Description</b><br />
             <ng-container *ngIf="editMode; else descView">
               <textarea [(ngModel)]="editableRequest.description"></textarea>
             </ng-container>
-            <ng-template #descView>{{ previewRequest.description }}</ng-template>
+            <ng-template #descView>{{ pr.description }}</ng-template>
           </div>
         </div>
       </div>
@@ -571,44 +571,44 @@
             <ng-container *ngIf="editMode; else merchView">
               <input type="text" [(ngModel)]="editableRequest.merchant" />
             </ng-container>
-            <ng-template #merchView>{{ previewRequest.merchant }}</ng-template>
+            <ng-template #merchView>{{ pr.merchant }}</ng-template>
           </div>
           <div>
             <b>Amount</b><br />
             <ng-container *ngIf="editMode; else amtView">
               <input type="number" [(ngModel)]="editableRequest.amount" />
             </ng-container>
-            <ng-template #amtView>₦{{ previewRequest.amount | number : "1.2-2" }}</ng-template>
+            <ng-template #amtView>₦{{ pr.amount | number : "1.2-2" }}</ng-template>
           </div>
           <div>
             <b>Payment Method</b><br />
             <ng-container *ngIf="editMode; else payView">
               <input type="text" [(ngModel)]="editableRequest.paymentMethod" />
             </ng-container>
-            <ng-template #payView>{{ previewRequest.paymentMethod }}</ng-template>
+            <ng-template #payView>{{ pr.paymentMethod }}</ng-template>
           </div>
           <div>
             <b>Account Number</b><br />
             <ng-container *ngIf="editMode; else accView">
               <input type="text" [(ngModel)]="editableRequest.accountNumber" />
             </ng-container>
-            <ng-template #accView>{{ previewRequest.accountNumber }}</ng-template>
+            <ng-template #accView>{{ pr.accountNumber }}</ng-template>
           </div>
           <div>
             <b>Bank Name</b><br />
             <ng-container *ngIf="editMode; else bankView">
               <input type="text" [(ngModel)]="editableRequest.bankName" />
             </ng-container>
-            <ng-template #bankView>{{ previewRequest.bankName }}</ng-template>
+            <ng-template #bankView>{{ pr.bankName }}</ng-template>
           </div>
         </div>
       </div>
       <!-- ...rest of popup (receipt, comment, etc.) ... -->
-      <div *ngIf="previewRequest.status !== 'Pending' && previewRequest.comment">
+      <div *ngIf="pr.status !== 'Pending' && pr.comment">
         <h4>Rejection Reason:</h4>
-        <p>{{ previewRequest.comment }}</p>
+        <p>{{ pr.comment }}</p>
       </div>
-      <div *ngIf="previewRequest.status === 'Pending' && popupSource === 'new'">
+      <div *ngIf="pr.status === 'Pending' && popupSource === 'new'">
         <h4>Rejection Reason (required if rejecting):</h4>
         <textarea [(ngModel)]="comment" placeholder="Enter rejection reason"></textarea>
       </div>
@@ -623,12 +623,12 @@
         (click)="cancelEdit()"
       >Cancel</button>
       <button
-        *ngIf="!editMode && previewRequest.status === 'Pending' && popupSource === 'new'"
-        (click)="approveRequest(previewRequest)"
+        *ngIf="!editMode && pr.status === 'Pending' && popupSource === 'new'"
+        (click)="approveRequest(pr)"
       >Approve</button>
       <button
-        *ngIf="!editMode && previewRequest.status === 'Pending' && popupSource === 'new'"
-        (click)="declineRequest(previewRequest)"
+        *ngIf="!editMode && pr.status === 'Pending' && popupSource === 'new'"
+        (click)="declineRequest(pr)"
       >Decline</button>
       <button (click)="closeFilePopup()">Close</button>
     </div>
