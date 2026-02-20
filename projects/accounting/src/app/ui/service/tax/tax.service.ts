@@ -1,655 +1,625 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// §3F  Nigerian Tax Constants  (Finance Act 2020 + subsequent amendments)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const NIGERIAN_VAT_RATE = 0.075; // 7.5%
+
+/** WHT rate codes per §2B — keyed by rate-code string */
+export const WHT_RATES: Record<string, number> = {
+  'WHT-050': 0.05,   // Professional services / consultancy / management fees
+  'WHT-100': 0.10,   // Building / construction / contract of supply
+  'WHT-025': 0.025,  // Dividends to corporate shareholders
+  'WHT-150': 0.15,   // Directors' fees (non-resident)
+};
+
+/** CIT tier lookup — rate determined by TURNOVER, tax calculated on PROFIT */
+export const CIT_TIERS: ReadonlyArray<{ label: string; maxTurnover: number; rate: number }> = [
+  { label: 'Small Company',  maxTurnover: 25_000_000,  rate: 0.00 },
+  { label: 'Medium Company', maxTurnover: 100_000_000, rate: 0.20 },
+  { label: 'Large Company',  maxTurnover: Infinity,    rate: 0.30 },
+];
+
+export const EDUCATION_TAX_RATE = 0.025;  // 2.5% of assessable profit
+export const NASENI_LEVY_RATE   = 0.0025; // 0.25% of PBT (turnover > ₦100M only)
+
+export const FILING_DEADLINES: Record<string, string> = {
+  VAT:  'Monthly — 21st of the following month',
+  WHT:  'Monthly — 21st of the following month',
+  CIT:  'Annual — 6 months after financial year end',
+  EDT:  'Annual — Same deadline as CIT',
+  PAYE: 'Monthly — 10th of the following month',
+};
+
+export const LATE_PENALTIES: Record<string, string> = {
+  VAT: '₦5,000 first month + ₦25,000 each subsequent month',
+  WHT: '10% penalty + interest at CBN MPR',
+  CIT: '₦25,000 first month + ₦5,000 per day thereafter',
+};
+
+/** GL accounts — §3F. Every tax direction has both an asset and a liability account */
+export const GL_ACCOUNTS = {
+  VAT_INPUT:       { code: '1050', label: 'VAT Recoverable (Asset)' },
+  VAT_OUTPUT:      { code: '2140', label: 'VAT Payable (Liability)' },
+  WHT_INPUT:       { code: '1060', label: 'WHT Receivable (Asset)' },
+  WHT_OUTPUT:      { code: '2150', label: 'WHT Payable (Liability)' },
+  CIT_PREPAYMENT:  { code: '1070', label: 'CIT Prepayment (Asset)' },
+  CIT_PAYABLE:     { code: '2160', label: 'Income Tax Payable (Liability)' },
+  EDT_PREPAYMENT:  { code: '1080', label: 'EDT Prepayment (Asset)' },
+  EDT_PAYABLE:     { code: '2170', label: 'Education Tax Payable (Liability)' },
+  PAYE_INPUT:      { code: '1090', label: 'PAYE Recoverable (Asset)' },
+  PAYE_OUTPUT:     { code: '2180', label: 'PAYE Payable (Liability)' },
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums & Interfaces
+// ─────────────────────────────────────────────────────────────────────────────
+
 export enum TaxType {
-  VAT = 'VAT',                    // Value Added Tax
-  WHT = 'WHT',                    // Withholding Tax
-  CORPORATE_TAX = 'CORPORATE',    // Corporate Income Tax
-  SALES_TAX = 'SALES',            // Sales Tax (where applicable)
-  EXCISE = 'EXCISE',              // Excise Tax
-  OTHER = 'OTHER'                 // Other taxes
+  VAT           = 'VAT',
+  WHT           = 'WHT',
+  CORPORATE_TAX = 'CORPORATE',
+  EDT           = 'EDT',
+  NASENI        = 'NASENI',
+  PAYE          = 'PAYE',
+  OTHER         = 'OTHER',
 }
 
-export interface TaxRate {
-  type: TaxType;
-  rate: number;                   // As decimal (0.075 = 7.5%)
-  code: string;                   // e.g., 'VAT-75', 'WHT-10'
-  description: string;
-  glAccountCode: string;          // Where to post (liability)
-  isRecoverable: boolean;         // Can be recovered/credited
-  effectiveDate: Date;
-  expiryDate?: Date;
-}
-
-
+/**
+ * direction — per §2B and §3C data model:
+ *   'input'  → asset / recoverable (VAT paid on purchases; WHT deducted FROM you)
+ *   'output' → liability / payable  (VAT collected on sales; WHT deducted BY you)
+ */
 export interface TaxLine {
-vendorName: any;
   id: string;
+  period: string;              // 'YYYY-MM'
   type: TaxType;
+  direction: 'input' | 'output';
   rateCode: string;
-  rate: number;
-  baseAmount: number;             // Amount tax is calculated on
-  taxAmount: number;              // Calculated tax
-  glAccount: string;              // Classification (liability)
+  rate: number;                // e.g. 0.075
+  baseAmount: number;          // Pre-tax amount
+  taxAmount: number;           // Calculated tax
+  glAccount: string;           // GL code e.g. '2140'
   description: string;
   isRecoverable: boolean;
+  vendorName: string;          // For WHT — vendor who received payment
+  source: string;              // Source module e.g. 'Sales Module', 'Procurement'
   timestamp: Date;
-  source: 'transaction' | 'manual' | 'adjustment';
-  relatedDocumentId?: string;     // GL entry, invoice, etc.
+  relatedDocumentId?: string;
 }
 
+export interface TaxRateBreakdown {
+  rate: number;
+  input: number;
+  output: number;
+  net: number;
+}
 
 export interface TaxSummary {
   period: string;
   taxType: TaxType;
-  
-  // Gross amounts
-  grossInputTax: number;          // Tax paid on purchases
-  grossOutputTax: number;         // Tax collected on sales
-  
-  // Net amounts
-  netTaxLiability: number;        // Output - Input (payable to gov)
-  netTaxRecoverable: number;      // Recoverable amount
-  
-  // Breakdown by rate
-  byRate: {
-    rate: number;
-    input: number;
-    output: number;
-    net: number;
-  }[];
-  
+  grossInputTax: number;          // Total recoverable/asset tax
+  grossOutputTax: number;         // Total payable/liability tax
+  netTaxLiability: number;        // Output − Input
+  netTaxRecoverable: number;
+  vatCreditCarryForward?: number; // VAT only — credit carried from prior months
+  amountPayableToFIRS?: number;   // VAT only — after applying carry-forward credit
+  byRate: TaxRateBreakdown[];
   taxLines: TaxLine[];
-  
-  // Compliance
   isFilingDue: boolean;
   filingDeadline?: Date;
   status: 'open' | 'in-review' | 'filed' | 'paid';
 }
 
-/**
- * Tax reconciliation result
- */
+/** Per §2F and §3C — CITEstimate is separate from TaxSummary */
+export interface CITEstimate {
+  turnover: number;
+  assessableProfit: number;
+  tier: string;
+  citRate: number;
+  citAmount: number;
+  educationTax: number;
+  naseniLevy: number;
+  totalAnnualTaxLiability: number;
+  nextDueQuarter: string;
+}
+
+/** §2E §4a — ComplianceIssue severity MUST be 'low' | 'medium' | 'high' */
+export interface ComplianceIssue {
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+}
+
+/** §3C interface spec */
+export interface TaxComplianceStatus {
+  period: string;
+  taxType: TaxType;
+  filed: boolean;
+  paid: boolean;
+  complianceScore: number; // 0–100, formula in §3E point 10
+  paymentDue: number;
+  filingDeadline: Date;
+  flaggedIssues: ComplianceIssue[];
+}
+
 export interface TaxReconciliation {
   period: string;
   taxType: TaxType;
-  
   systemCalculation: number;
-  auditTrail: string;             // How it was calculated
-  
+  auditTrail: string;
   discrepancies: {
     type: 'missing' | 'duplicate' | 'incorrect_rate' | 'incorrect_amount' | 'wrong_classification';
     description: string;
     amount: number;
     affectedEntries: string[];
   }[];
-  
   isReconciled: boolean;
   reconciledBy?: string;
   reconciledDate?: Date;
 }
 
-/**
- * Tax compliance status
- */
-export interface TaxComplianceStatus {
-  taxType: TaxType;
-  period: string;
-  
-  // Filing status
-  filingRequired: boolean;
-  filingDeadline: Date;
-  filed: boolean;
-  filedDate?: Date;
-  filedBy?: string;
-  
-  // Payment status
-  paymentDue: number;
-  paymentDueDate: Date;
-  paid: boolean;
-  paidAmount?: number;
-  paidDate?: Date;
-  
-  // Audit status
-  auditTrailComplete: boolean;
-  allEntriesReconciled: boolean;
-  complianceScore: number;        // 0-100
-  
-  flaggedIssues: {
-    severity: 'info' | 'warning' | 'critical';
-    message: string;
-    affectedItems: string[];
-  }[];
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────────────────────
 
-
-export interface TaxConfig {
-  jurisdiction: string;           // e.g., 'NG' for Nigeria
-  currency: string;
-  
-  // Applicable taxes
-  taxRates: TaxRate[];
-  
-  // Thresholds
-  vatRegistrationThreshold: number;
-  whtThresholds: {
-    employees: number;
-    vendors: number;
-    contractors: number;
-  };
-  
-  // Compliance
-  filingFrequency: 'weekly' | 'monthly' | 'quarterly' | 'annually';
-  filingDeadlineDay: number;      // E.g., 15 for 15th of month
-  
-  // Reporting
-  includeInGrossProfit: boolean;
-  taxInclusivePricing: boolean;
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TaxService {
 
-  private taxRates = new Map<string, TaxRate>();
   private taxLines: TaxLine[] = [];
-  private taxConfigs = new Map<string, TaxConfig>();
-  
-  // Observable for tax summary changes
+
+  /**
+   * VAT credit carry-forward balance (§2D carry-forward behaviour).
+   * Negative net (Input > Output) adds to this balance.
+   * Positive net consumes it before remitting to FIRS.
+   */
+  private vatCreditBalance = 0;
+
   private taxSummarySubject = new BehaviorSubject<Map<string, TaxSummary> | null>(null);
-  public taxSummary$: Observable<Map<string, TaxSummary> | null> = this.taxSummarySubject.asObservable();
-  
-  // Observable for compliance status
-  private complianceStatusSubject = new BehaviorSubject<Map<string, TaxComplianceStatus> | null>(null);
-  public complianceStatus$: Observable<Map<string, TaxComplianceStatus> | null> = this.complianceStatusSubject.asObservable();
+  public taxSummary$: Observable<Map<string, TaxSummary> | null> =
+    this.taxSummarySubject.asObservable();
 
   constructor() {
-    this.initializeDefaultTaxRates();
-    this.initializeNigerianTaxConfig();
+    this.seedMockData();
   }
 
+  // ── Seed ────────────────────────────────────────────────────────────────────
 
-  private initializeDefaultTaxRates(): void {
-    // VAT rates
-    this.addTaxRate({
-      type: TaxType.VAT,
-      rate: 0.075,                 // 7.5% VAT in Nigeria
-      code: 'VAT-075',
-      description: 'Value Added Tax (7.5%)',
-      glAccountCode: '2140',       // VAT Payable
-      isRecoverable: true,
-      effectiveDate: new Date(2020, 0, 1)
-    });
+  /** Realistic Nigerian business mock data — remove once backend is connected */
+  private seedMockData(): void {
+    const now    = new Date();
+    const year   = now.getFullYear();
+    const month  = now.getMonth(); // 0-indexed
+    const period = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-    // WHT rates
-    this.addTaxRate({
-      type: TaxType.WHT,
-      rate: 0.05,                  // 5% WHT on services
-      code: 'WHT-050',
-      description: 'Withholding Tax - Services (5%)',
-      glAccountCode: '2150',       // WHT Payable
-      isRecoverable: false,
-      effectiveDate: new Date(2020, 0, 1)
-    });
-
-    this.addTaxRate({
-      type: TaxType.WHT,
-      rate: 0.10,                  // 10% WHT on contractors
-      code: 'WHT-100',
-      description: 'Withholding Tax - Contractors (10%)',
-      glAccountCode: '2150',
-      isRecoverable: false,
-      effectiveDate: new Date(2020, 0, 1)
-    });
-
-    // Corporate tax (simplified)
-    this.addTaxRate({
-      type: TaxType.CORPORATE_TAX,
-      rate: 0.30,                  // 30% corporate tax
-      code: 'CT-300',
-      description: 'Corporate Income Tax (30%)',
-      glAccountCode: '2160',       // Income Tax Payable
-      isRecoverable: false,
-      effectiveDate: new Date(2020, 0, 1)
-    });
-  }
-
-
-  private initializeNigerianTaxConfig(): void {
-    const config: TaxConfig = {
-      jurisdiction: 'NG',
-      currency: 'NGN',
-      
-      taxRates: Array.from(this.taxRates.values()),
-      
-      vatRegistrationThreshold: 25000000,  // ₦25M threshold
-      whtThresholds: {
-        employees: 0,              // WHT on all employee payments
-        vendors: 0,                // WHT on all vendor payments
-        contractors: 0
+    const raw: Omit<TaxLine, 'id'>[] = [
+      // VAT Output — sales invoices (GL 2140)
+      {
+        period, type: TaxType.VAT, direction: 'output',
+        rateCode: 'VAT-075', rate: NIGERIAN_VAT_RATE,
+        baseAmount: 2_500_000, taxAmount: 187_500,
+        glAccount: GL_ACCOUNTS.VAT_OUTPUT.code,
+        description: 'Sales Invoice INV-2025-0145',
+        isRecoverable: false, vendorName: '',
+        source: 'Sales Module', timestamp: new Date(year, month, 5),
       },
-      
-      filingFrequency: 'monthly',
-      filingDeadlineDay: 15,       // 15th of following month
-      
-      includeInGrossProfit: false, // Tax is separate from profit
-      taxInclusivePricing: true    // Prices typically include tax
-    };
+      {
+        period, type: TaxType.VAT, direction: 'output',
+        rateCode: 'VAT-075', rate: NIGERIAN_VAT_RATE,
+        baseAmount: 800_000, taxAmount: 60_000,
+        glAccount: GL_ACCOUNTS.VAT_OUTPUT.code,
+        description: 'Service Invoice SRV-2025-033',
+        isRecoverable: false, vendorName: '',
+        source: 'Sales Module', timestamp: new Date(year, month, 12),
+      },
+      // VAT Input — purchases (GL 1050)
+      {
+        period, type: TaxType.VAT, direction: 'input',
+        rateCode: 'VAT-075', rate: NIGERIAN_VAT_RATE,
+        baseAmount: 1_200_000, taxAmount: 90_000,
+        glAccount: GL_ACCOUNTS.VAT_INPUT.code,
+        description: 'Purchase Order PO-2025-0089',
+        isRecoverable: true, vendorName: '',
+        source: 'Procurement', timestamp: new Date(year, month, 8),
+      },
+      {
+        period, type: TaxType.VAT, direction: 'input',
+        rateCode: 'VAT-075', rate: NIGERIAN_VAT_RATE,
+        baseAmount: 350_000, taxAmount: 26_250,
+        glAccount: GL_ACCOUNTS.VAT_INPUT.code,
+        description: 'Office Supplies — Vendor Receipt',
+        isRecoverable: true, vendorName: '',
+        source: 'Procurement', timestamp: new Date(year, month, 18),
+      },
+      // WHT Output — deducted from vendor payments (GL 2150)
+      {
+        period, type: TaxType.WHT, direction: 'output',
+        rateCode: 'WHT-050', rate: 0.05,
+        baseAmount: 500_000, taxAmount: 25_000,
+        glAccount: GL_ACCOUNTS.WHT_OUTPUT.code,
+        description: 'Consulting Payment — ABC Ltd',
+        isRecoverable: false, vendorName: 'ABC Consulting Ltd',
+        source: 'Accounts Payable', timestamp: new Date(year, month, 10),
+      },
+      {
+        period, type: TaxType.WHT, direction: 'output',
+        rateCode: 'WHT-100', rate: 0.10,
+        baseAmount: 3_000_000, taxAmount: 300_000,
+        glAccount: GL_ACCOUNTS.WHT_OUTPUT.code,
+        description: 'Contract Payment — XYZ Builders',
+        isRecoverable: false, vendorName: 'XYZ Builders Nig. Ltd',
+        source: 'Accounts Payable', timestamp: new Date(year, month, 15),
+      },
+    ];
 
-    this.taxConfigs.set('NG', config);
+    this.taxLines = raw.map((l, i) => ({
+      ...l,
+      id: `TL${String(i + 1).padStart(3, '0')}`,
+    }));
+
+    this.notifyTaxChange();
   }
 
+  // ── GL Classification ────────────────────────────────────────────────────────
 
-  addTaxRate(rate: Omit<TaxRate, 'id'>): void {
-    const id = `${rate.type}-${rate.code}`;
-    const fullRate: TaxRate = { ...rate } as TaxRate;
-    this.taxRates.set(id, fullRate);
+  /** Every tax transaction maps to a debit + credit GL — §2F, §3C */
+  classifyTaxForGL(line: TaxLine): { code: string; label: string; type: 'Liability' | 'Asset' } {
+    switch (line.type) {
+      case TaxType.VAT:
+        return line.isRecoverable
+          ? { ...GL_ACCOUNTS.VAT_INPUT,  type: 'Asset'     }
+          : { ...GL_ACCOUNTS.VAT_OUTPUT, type: 'Liability' };
+      case TaxType.WHT:
+        return line.isRecoverable
+          ? { ...GL_ACCOUNTS.WHT_INPUT,  type: 'Asset'     }
+          : { ...GL_ACCOUNTS.WHT_OUTPUT, type: 'Liability' };
+      case TaxType.CORPORATE_TAX:
+        return { ...GL_ACCOUNTS.CIT_PAYABLE,  type: 'Liability' };
+      case TaxType.EDT:
+        return { ...GL_ACCOUNTS.EDT_PAYABLE,  type: 'Liability' };
+      case TaxType.PAYE:
+        return { ...GL_ACCOUNTS.PAYE_OUTPUT,  type: 'Liability' };
+      default:
+        return { code: '2999', label: 'Other Tax Payable', type: 'Liability' };
+    }
   }
 
-
-  getTaxRate(code: string): TaxRate | undefined {
-    return this.taxRates.get(code);
+  getGLAccountLabel(code: string): string {
+    const entry = Object.values(GL_ACCOUNTS).find(a => a.code === code);
+    return entry?.label ?? 'Tax Account';
   }
 
+  // ── Tax Calculations ─────────────────────────────────────────────────────────
 
-  getTaxRatesByType(type: TaxType): TaxRate[] {
-    return Array.from(this.taxRates.values()).filter(r => r.type === type);
-  }
-
-
+  /**
+   * §2C VAT calculation — direction determines GL and recoverability.
+   * 'output' → liability (GL 2140), 'input' → asset (GL 1050).
+   */
   calculateVAT(
     baseAmount: number,
-    rateCode: string = 'VAT-075',
-    direction: 'input' | 'output' = 'output'
+    rateCode = 'VAT-075',
+    direction: 'input' | 'output' = 'output',
   ): TaxLine | null {
-    const rate = this.getTaxRate(rateCode);
-    if (!rate || rate.type !== TaxType.VAT) {
-      console.error(`Invalid VAT rate code: ${rateCode}`);
-      return null;
-    }
+    const rate = NIGERIAN_VAT_RATE; // Only one VAT rate in Nigeria (for now)
+    const taxAmount  = this.round(baseAmount * rate);
+    const isRecoverable = direction === 'input';
+    const now = new Date();
 
-    const taxAmount = this.roundToMonetary(baseAmount * rate.rate);
-
-    const taxLine: TaxLine = {
-      vendorName: '',
-      id: `TAX-${Date.now()}-${Math.random()}`,
+    const line: TaxLine = {
+      id: this.genId(),
+      period: this.toPeriod(now),
       type: TaxType.VAT,
+      direction,
       rateCode,
-      rate: rate.rate,
+      rate,
       baseAmount,
       taxAmount,
-      glAccount: rate.glAccountCode,
-      description: `${direction === 'output' ? 'Sales' : 'Purchase'} VAT @ ${(rate.rate * 100).toFixed(1)}%`,
-      isRecoverable: rate.isRecoverable && direction === 'input',
-      timestamp: new Date(),
-      source: 'transaction'
+      glAccount: isRecoverable ? GL_ACCOUNTS.VAT_INPUT.code : GL_ACCOUNTS.VAT_OUTPUT.code,
+      description: `${direction === 'output' ? 'Sales' : 'Purchase'} VAT @ 7.5%`,
+      isRecoverable,
+      vendorName: '',
+      source: 'Manual Entry',
+      timestamp: now,
     };
 
-    // Only track if adds up to actual tax record
-    this.taxLines.push(taxLine);
+    this.taxLines.push(line);
     this.notifyTaxChange();
-
-    return taxLine;
-  }
-
-
-  calculateWHT(
-    grossAmount: number,
-    rateCode: string = 'WHT-050',
-    vendorName: string = ''
-  ): TaxLine | null {
-    const rate = this.getTaxRate(rateCode);
-    if (!rate || rate.type !== TaxType.WHT) {
-      console.error(`Invalid WHT rate code: ${rateCode}`);
-      return null;
-    }
-
-    // Validate: WHT should not be negative
-    if (grossAmount < 0) {
-      console.warn('WHT calculation on negative amount - this is unusual');
-    }
-
-    const taxAmount = this.roundToMonetary(grossAmount * rate.rate);
-
-    const taxLine: TaxLine = {
-      vendorName,
-      id: `TAX-${Date.now()}-${Math.random()}`,
-      type: TaxType.WHT,
-      rateCode,
-      rate: rate.rate,
-      baseAmount: grossAmount,
-      taxAmount,
-      glAccount: rate.glAccountCode,
-      description: `WHT (${(rate.rate * 100).toFixed(0)}%) - ${vendorName}`,
-      isRecoverable: false,        // WHT typically not recoverable
-      timestamp: new Date(),
-      source: 'transaction'
-    };
-
-    this.taxLines.push(taxLine);
-    this.notifyTaxChange();
-
-    return taxLine;
-  }
-
-
-  calculateNetAfterTax(
-    grossAmount: number,
-    taxLines: TaxLine[]
-  ): number {
-    let deductions = 0;
-    
-    for (const tax of taxLines) {
-      if (tax.type === TaxType.WHT) {
-        // WHT reduces the net payment
-        deductions += tax.taxAmount;
-      } else if (tax.type === TaxType.VAT) {
-        
-      }
-    }
-
-    return grossAmount - deductions;
-  }
-
-
-  classifyTaxForGL(taxLine: TaxLine): { accountCode: string; type: 'Liability' | 'Asset'; description: string } {
-    let accountCode = taxLine.glAccount;
-    let type: 'Liability' | 'Asset' = 'Liability';
-    let description = '';
-
-    switch (taxLine.type) {
-      case TaxType.VAT:
-        if (taxLine.isRecoverable) {
-          // Input VAT (recoverable)
-          accountCode = '1050';      // VAT Recoverable (Asset)
-          type = 'Asset';
-          description = 'Input VAT - Recoverable from revenue';
-        } else {
-          // Output VAT (payable)
-          accountCode = '2140';      // VAT Payable (Liability)
-          type = 'Liability';
-          description = 'Output VAT - Payable to government';
-        }
-        break;
-
-      case TaxType.WHT:
-        accountCode = '2150';        // WHT Payable (Liability)
-        type = 'Liability';
-        description = 'Withholding Tax - Payable to government';
-        break;
-
-      case TaxType.CORPORATE_TAX:
-        accountCode = '2160';        // Income Tax Payable (Liability)
-        type = 'Liability';
-        description = 'Corporate Income Tax - Payable';
-        break;
-
-      default:
-        accountCode = '2170';        // Other Taxes Payable
-        type = 'Liability';
-        description = 'Other Tax - Payable';
-    }
-
-    return { accountCode, type, description };
+    return line;
   }
 
   /**
-   * GENERATE TAX SUMMARY FOR PERIOD
-   * 
-   * Aggregates all tax transactions for reporting
+   * §2C WHT calculation — almost always 'output' (you deducted it from a vendor).
+   * 'input' = WHT deducted FROM you by a customer (rare; treated as asset).
+   */
+  calculateWHT(
+    grossAmount: number,
+    rateCode = 'WHT-050',
+    vendorName = '',
+    direction: 'input' | 'output' = 'output',
+  ): TaxLine | null {
+    const rate = WHT_RATES[rateCode];
+    if (rate === undefined) { console.error(`Unknown WHT rate code: ${rateCode}`); return null; }
+
+    const taxAmount     = this.round(grossAmount * rate);
+    const isRecoverable = direction === 'input';
+    const now = new Date();
+
+    const line: TaxLine = {
+      id: this.genId(),
+      period: this.toPeriod(now),
+      type: TaxType.WHT,
+      direction,
+      rateCode,
+      rate,
+      baseAmount: grossAmount,
+      taxAmount,
+      glAccount: isRecoverable ? GL_ACCOUNTS.WHT_INPUT.code : GL_ACCOUNTS.WHT_OUTPUT.code,
+      description: `WHT (${(rate * 100).toFixed(0)}%) — ${vendorName || 'Vendor'}`,
+      isRecoverable,
+      vendorName,
+      source: 'Manual Entry',
+      timestamp: now,
+    };
+
+    this.taxLines.push(line);
+    this.notifyTaxChange();
+    return line;
+  }
+
+  /**
+   * §2C CIT calculation — IMPORTANT: rate from TURNOVER, tax on ASSESSABLE PROFIT.
+   * Common pitfall (§3E): never apply rate to turnover.
+   */
+  calculateCIT(turnover: number, assessableProfit: number): CITEstimate {
+    const tier       = CIT_TIERS.find(t => turnover <= t.maxTurnover) ?? CIT_TIERS[2];
+    const citAmount  = this.round(assessableProfit * tier.rate);
+    const educationTax = this.round(assessableProfit * EDUCATION_TAX_RATE); // §2C EDT
+    const naseniLevy   = turnover > 100_000_000                             // §2C NASENI
+      ? this.round(assessableProfit * NASENI_LEVY_RATE)
+      : 0;
+
+    return {
+      turnover,
+      assessableProfit,
+      tier: tier.label,
+      citRate: tier.rate,
+      citAmount,
+      educationTax,
+      naseniLevy,
+      totalAnnualTaxLiability: citAmount + educationTax + naseniLevy,
+      nextDueQuarter: `Q4 ${new Date().getFullYear()}`,
+    };
+  }
+
+  // ── Summary Generation ───────────────────────────────────────────────────────
+
+  /**
+   * §2C computeVATSummary + §2D carry-forward logic.
+   * Splits lines by direction, applies credit balance, returns amountPayableToFIRS.
    */
   generateTaxSummary(period: string, taxType?: TaxType): TaxSummary | null {
-    const relevantLines = this.taxLines.filter(line => {
-      const lineDate = new Date(line.timestamp);
-      const [year, month] = period.split('-');
-      const lineMonth = `${lineDate.getFullYear()}-${String(lineDate.getMonth() + 1).padStart(2, '0')}`;
-      
-      return lineMonth === period && (!taxType || line.type === taxType);
+    const lines = this.taxLines.filter(l => {
+      const lp = this.toPeriod(new Date(l.timestamp));
+      return lp === period && (!taxType || l.type === taxType);
     });
 
-    if (relevantLines.length === 0) {
-      return null;
-    }
+    if (!lines.length) return null;
 
-    const firstTax = relevantLines[0];
-    const type = taxType || firstTax.type;
+    const type = taxType ?? lines[0].type;
+    const byRateMap = new Map<number, { input: number; output: number }>();
+    let grossInput = 0;
+    let grossOutput = 0;
 
-    // Group by rate
-    const byRateMap = new Map<number, { input: number; output: number; count: number }>();
-
-    let grossInputTax = 0;
-    let grossOutputTax = 0;
-
-    for (const line of relevantLines) {
-      const existing = byRateMap.get(line.rate) || { input: 0, output: 0, count: 0 };
-
-      if (line.isRecoverable) {
-        existing.input += line.taxAmount;
+    for (const l of lines) {
+      const entry = byRateMap.get(l.rate) ?? { input: 0, output: 0 };
+      if (l.isRecoverable) {
+        entry.input  += l.taxAmount;
+        grossInput   += l.taxAmount;
       } else {
-        existing.output += line.taxAmount;
+        entry.output += l.taxAmount;
+        grossOutput  += l.taxAmount;
       }
-      existing.count++;
-
-      byRateMap.set(line.rate, existing);
+      byRateMap.set(l.rate, entry);
     }
 
-    // Convert to array
-    const byRate = Array.from(byRateMap.entries()).map(([rate, data]) => ({
-      rate,
-      input: data.input,
-      output: data.output,
-      net: data.output - data.input
+    const byRate: TaxRateBreakdown[] = Array.from(byRateMap.entries()).map(([rate, d]) => ({
+      rate, input: d.input, output: d.output, net: d.output - d.input,
     }));
 
-    // Calculate totals
-    for (const rate of byRate) {
-      grossInputTax += rate.input;
-      grossOutputTax += rate.output;
-    }
+    const netLiability = grossOutput - grossInput;
 
-    const netTaxLiability = grossOutputTax - grossInputTax;
-    const netTaxRecoverable = grossInputTax;
+    // §2D VAT carry-forward
+    let vatCreditCarryForward: number | undefined;
+    let amountPayableToFIRS: number | undefined;
+
+    if (type === TaxType.VAT) {
+      if (netLiability < 0) {
+        // Net credit — carry it forward, nothing payable this period
+        this.vatCreditBalance += Math.abs(netLiability);
+        vatCreditCarryForward = this.vatCreditBalance;
+        amountPayableToFIRS   = 0;
+      } else if (this.vatCreditBalance > 0) {
+        // Offset against existing credit balance
+        amountPayableToFIRS   = Math.max(0, netLiability - this.vatCreditBalance);
+        this.vatCreditBalance = Math.max(0, this.vatCreditBalance - netLiability);
+        vatCreditCarryForward = this.vatCreditBalance;
+      } else {
+        amountPayableToFIRS   = netLiability;
+        vatCreditCarryForward = 0;
+      }
+    }
 
     return {
       period,
       taxType: type,
-      grossInputTax,
-      grossOutputTax,
-      netTaxLiability,
-      netTaxRecoverable,
+      grossInputTax:       grossInput,
+      grossOutputTax:      grossOutput,
+      netTaxLiability:     netLiability,
+      netTaxRecoverable:   grossInput,
+      vatCreditCarryForward,
+      amountPayableToFIRS,
       byRate,
-      taxLines: relevantLines,
-      isFilingDue: this.isFilingDueForPeriod(period, type),
-      filingDeadline: this.getFilingDeadline(period),
-      status: 'open'
+      taxLines: lines,
+      isFilingDue:    this.isFilingDue(period),
+      filingDeadline: this.filingDeadline(period),
+      status: 'open',
     };
   }
+
+
+  getComplianceStatus(period: string, taxType: TaxType): TaxComplianceStatus {
+    const validation = this.validateTaxCalculations(period);
+
+
+    const vatFiled = false;
+    const vatPaid  = false;
+    const whtFiled = false;
+    const whtPaid  = false;
+
+    const baseIssues: ComplianceIssue[] = [
+      { severity: 'high',   message: 'VAT return for current period not yet filed' },
+      { severity: 'medium', message: '2 WHT certificates pending issuance to vendors' },
+    ];
+
+    const validationIssues: ComplianceIssue[] = validation.errors.map(e => ({
+      severity: 'high' as const, message: e,
+    }));
+
+    const allIssues = [...baseIssues, ...validationIssues];
+
+
+    let score = 0;
+    if (vatFiled)              score += 25;
+    if (vatPaid)               score += 25;
+    if (whtFiled)              score += 20;
+    if (whtPaid)               score += 15;
+    if (allIssues.length === 0) score += 15;
+
+    const summary = this.generateTaxSummary(period, taxType);
+
+    return {
+      period,
+      taxType,
+      filed: vatFiled,
+      paid:  vatPaid,
+      complianceScore: score,
+      paymentDue: summary?.amountPayableToFIRS ?? summary?.netTaxLiability ?? 0,
+      filingDeadline: this.filingDeadline(period),
+      flaggedIssues: allIssues,
+    };
+  }
+
 
   validateTaxCalculations(period: string): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
+    const lines = this.getTaxLinesByPeriod(period);
 
-    const periodLines = this.taxLines.filter(line => {
-      const lineDate = new Date(line.timestamp);
-      const lineMonth = `${lineDate.getFullYear()}-${String(lineDate.getMonth() + 1).padStart(2, '0')}`;
-      return lineMonth === period;
-    });
+    for (const l of lines) {
+      if (l.taxAmount  < 0) errors.push(`Negative tax amount on: ${l.description}`);
+      if (l.baseAmount < 0) errors.push(`Negative base amount on: ${l.description}`);
+    }
 
-    // Check 1: No negative tax
-    for (const line of periodLines) {
-      if (line.taxAmount < 0) {
-        errors.push(`Negative tax amount found: ${line.description} (${line.taxAmount})`);
-      }
-      if (line.baseAmount < 0) {
-        errors.push(`Negative base amount for tax: ${line.description} (${line.baseAmount})`);
+    const seen = new Set<string>();
+    for (const l of lines) {
+      if (seen.has(l.id)) errors.push(`Duplicate entry: ${l.id}`);
+      seen.add(l.id);
+    }
+
+    // §2D cross-period assertion: VAT net must equal sum of individual lines
+    const vatLines = lines.filter(l => l.type === TaxType.VAT);
+    const sumOutput = vatLines.filter(l => !l.isRecoverable).reduce((s, l) => s + l.taxAmount, 0);
+    const sumInput  = vatLines.filter(l =>  l.isRecoverable).reduce((s, l) => s + l.taxAmount, 0);
+    const summary   = this.generateTaxSummary(period, TaxType.VAT);
+    if (summary) {
+      const tolerance = 1000; // §3E point 8 — allow ₦1,000 rounding tolerance
+      if (Math.abs(summary.netTaxLiability - (sumOutput - sumInput)) > tolerance) {
+        errors.push(`VAT reconciliation mismatch: computed ₦${(sumOutput - sumInput).toLocaleString()} vs summary ₦${summary.netTaxLiability.toLocaleString()}`);
       }
     }
 
-    // Check 2: No duplicate entries
-    const seenIds = new Set<string>();
-    for (const line of periodLines) {
-      if (seenIds.has(line.id)) {
-        errors.push(`Duplicate tax entry detected: ${line.id}`);
-      }
-      seenIds.add(line.id);
-    }
-
-    // Check 3: Classification validation
-    for (const line of periodLines) {
-      const classification = this.classifyTaxForGL(line);
-      if (classification.type !== 'Liability' && line.type === TaxType.WHT) {
-        errors.push(`WHT incorrectly classified as ${classification.type}: ${line.description}`);
-      }
-    }
-
-    // Check 4: Recoverable VAT tracking
-    const vatLines = periodLines.filter(l => l.type === TaxType.VAT);
-    for (const vat of vatLines) {
-      if (vat.isRecoverable && !vat.description.includes('Input')) {
-        errors.push(`Recoverable VAT not properly marked as input: ${vat.description}`);
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+    return { isValid: errors.length === 0, errors };
   }
+
   reconcileTaxForPeriod(period: string, taxType: TaxType): TaxReconciliation {
-    const summary = this.generateTaxSummary(period, taxType);
+    const summary    = this.generateTaxSummary(period, taxType);
     const validation = this.validateTaxCalculations(period);
 
-    const auditTrail = `
-      Tax Reconciliation - ${period}
-      Type: ${taxType}
-      
-      Calculation Method:
-      1. Identified all ${taxType} entries for period
-      2. Grouped by rate and direction (input/output)
-      3. Summed gross input tax
-      4. Summed gross output tax
-      5. Calculated net liability/recovery
-      
-      Results:
-      - Gross Input Tax: ₦${summary?.grossInputTax.toLocaleString()}
-      - Gross Output Tax: ₦${summary?.grossOutputTax.toLocaleString()}
-      - Net Liability: ₦${summary?.netTaxLiability.toLocaleString()}
-      
-      Validation: ${validation.isValid ? 'PASSED' : 'FAILED'}
-    `;
+    const auditTrail = [
+      `Reconciliation — ${period} / ${taxType}`,
+      `Gross Input:   ₦${(summary?.grossInputTax ?? 0).toLocaleString()}`,
+      `Gross Output:  ₦${(summary?.grossOutputTax ?? 0).toLocaleString()}`,
+      `Net Liability: ₦${(summary?.netTaxLiability ?? 0).toLocaleString()}`,
+      `Status: ${validation.isValid ? 'PASSED ✓' : 'FAILED ✗'}`,
+    ].join('\n');
 
     return {
-      period,
-      taxType,
-      systemCalculation: summary?.netTaxLiability || 0,
+      period, taxType,
+      systemCalculation: summary?.netTaxLiability ?? 0,
       auditTrail,
-      discrepancies: validation.errors.map(err => ({
-        type: 'incorrect_amount',
-        description: err,
-        amount: 0,
-        affectedEntries: []
+      discrepancies: validation.errors.map(e => ({
+        type: 'incorrect_amount' as const, description: e, amount: 0, affectedEntries: [],
       })),
-      isReconciled: validation.isValid,
-      reconciledBy: 'System',
-      reconciledDate: new Date()
+      isReconciled:   validation.isValid,
+      reconciledBy:   'System',
+      reconciledDate: new Date(),
     };
   }
 
-  getComplianceStatus(period: string, taxType: TaxType): TaxComplianceStatus {
-    const summary = this.generateTaxSummary(period, taxType);
-    const validation = this.validateTaxCalculations(period);
-
-    const complianceScore = validation.isValid ? 100 : Math.max(0, 100 - (validation.errors.length * 10));
-
-    const flaggedIssues = validation.errors.map(err => ({
-      severity: 'warning' as const,
-      message: err,
-      affectedItems: []
-    }));
-
-    return {
-      taxType,
-      period,
-      filingRequired: summary?.isFilingDue || false,
-      filingDeadline: summary?.filingDeadline || new Date(),
-      filed: false,
-      paymentDue: summary?.netTaxLiability || 0,
-      paymentDueDate: this.getFilingDeadline(period),
-      paid: false,
-      auditTrailComplete: true,
-      allEntriesReconciled: validation.isValid,
-      complianceScore,
-      flaggedIssues
+  getWHTRateDescription(rateCode: string): string {
+    const map: Record<string, string> = {
+      'WHT-050': 'Services (Standard)',
+      'WHT-100': 'Contractors & Professionals',
+      'WHT-025': 'Corporate Dividends',
+      'WHT-150': "Non-Resident Directors' Fees",
     };
+    return map[rateCode] ?? 'Other';
   }
 
 
-  private isFilingDueForPeriod(period: string, taxType: TaxType): boolean {
-    // Simplified: filing due 15 days after period end
-    const [year, month] = period.split('-');
-    const periodEnd = new Date(parseInt(year), parseInt(month), 0);
-    const filingDeadline = new Date(parseInt(year), parseInt(month), 15);
-    const now = new Date();
-
-    return now >= periodEnd && now <= filingDeadline;
-  }
-
-  private getFilingDeadline(period: string): Date {
-    const [year, month] = period.split('-');
-    return new Date(parseInt(year), parseInt(month), 15);
-  }
-
-
-  private roundToMonetary(value: number): number {
-    return Math.round(value * 100) / 100;
-  }
-
-
-  private notifyTaxChange(): void {
-    const summaries = new Map<string, TaxSummary>();
-    // Group by period
-    const byPeriod = new Map<string, TaxLine[]>();
-
-    for (const line of this.taxLines) {
-      const lineDate = new Date(line.timestamp);
-      const period = `${lineDate.getFullYear()}-${String(lineDate.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!byPeriod.has(period)) {
-        byPeriod.set(period, []);
-      }
-      byPeriod.get(period)!.push(line);
-    }
-
-    // Generate summaries
-    for (const [period] of byPeriod) {
-      const summary = this.generateTaxSummary(period);
-      if (summary) {
-        summaries.set(period, summary);
-      }
-    }
-
-    this.taxSummarySubject.next(summaries);
-  }
-
-
-  getTaxSummaryByPeriod(period: string, taxType?: TaxType): Observable<TaxSummary | null> {
-    return new Observable(observer => {
-      const summary = this.generateTaxSummary(period, taxType);
-      observer.next(summary);
-      observer.complete();
-    });
-  }
   getTaxLinesByPeriod(period: string): TaxLine[] {
-    return this.taxLines.filter(line => {
-      const lineDate = new Date(line.timestamp);
-      const lineMonth = `${lineDate.getFullYear()}-${String(lineDate.getMonth() + 1).padStart(2, '0')}`;
-      return lineMonth === period;
-    });
+    return this.taxLines.filter(
+      l => this.toPeriod(new Date(l.timestamp)) === period,
+    );
   }
 
   resetAllData(): void {
     this.taxLines = [];
+    this.vatCreditBalance = 0;
     this.taxSummarySubject.next(null);
-    this.complianceStatusSubject.next(null);
+  }
+
+
+  private toPeriod(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private genId(): string {
+    return `TAX-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  }
+
+  private round(v: number): number {
+    return Math.round(v * 100) / 100;
+  }
+
+  private isFilingDue(period: string): boolean {
+    const [y, m] = period.split('-').map(Number);
+    const deadline = new Date(y, m, 21); // 21st of following month
+    return new Date() <= deadline;
+  }
+
+  private filingDeadline(period: string): Date {
+    const [y, m] = period.split('-').map(Number);
+    return new Date(y, m, 21);
+  }
+
+  private notifyTaxChange(): void {
+    const summaries = new Map<string, TaxSummary>();
+    const periods = new Set(this.taxLines.map(l => this.toPeriod(new Date(l.timestamp))));
+    for (const p of periods) {
+      const s = this.generateTaxSummary(p);
+      if (s) summaries.set(p, s);
+    }
+    this.taxSummarySubject.next(summaries);
   }
 }
