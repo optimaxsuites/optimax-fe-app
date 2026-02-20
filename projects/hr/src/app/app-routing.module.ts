@@ -40,39 +40,39 @@ const routes: Routes = [
     component: LoanComponent,
   },
   {
-    path: 'admin/hr/loan-management/loan-dashboard/:uuid',
+    path: 'loan-management/loan-dashboard/:uuid',
     component: LoanDashboardComponent,
   },
   {
-    path: 'admin/hr/loan-management/request-for-loan/:uuid',
+    path: 'loan-management/request-for-loan/:uuid',
     component: LoanRequestFormComponent,
   },
   {
-    path: 'admin/hr/loan-management/loan-approval/:uuid',
+    path: 'loan-management/loan-approval/:uuid',
     component: LoanApprovalUiComponent,
   },
    {
-    path: 'admin/hr/loan-management/loan-details/:employeeId',
+    path: 'loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
   // {
-//   path: 'admin/hr/loan-management.loan-details/:loanId',
+//   path: 'loan-management.loan-details/:loanId',
 //   component: LoanDetailsComponent
 //  },
   {
-    path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
+    path: 'loan-management/loan-details/:employeeId/:uuid',
     component: LoanDetailsComponent,
   },
   {
-    path: 'admin/hr/loan-management/employee-loan-history/:employeeId',
+    path: 'loan-management/employee-loan-history/:employeeId',
     component: EmployeeLoanHistoryComponent
   },
   {
-    path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
+    path: 'loan-management/employee-loan-history/:employeeId/:uuid',
     component: EmployeeLoanHistoryComponent
   },
   {
-  path: 'admin/hr/loan-management/reports',
+  path: 'loan-management/reports/:uuid',
   component: LoanReportsComponent
   },
   {
