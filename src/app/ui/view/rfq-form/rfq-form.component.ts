@@ -2,11 +2,11 @@ import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/c
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, Renderer2,} from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AddressDTO, AttachmentDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../../domain/quotation.dto';
-import { QuotationService } from '../../../service/quotation.service';
-import { NavigationLinksService } from '../../../sharedComponent/service/navigation-links/navigation-links.service';
-import { RandomTokenService } from '../../../sharedComponent/service/random-token/random-token.service';
-import { QuotationStage } from '../../../domain/procurement.dto';
+import { AddressDTO, AttachmentDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../domain/quotation.dto';
+import { QuotationService } from '../../service/quotation.service';
+import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
+import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
+import { QuotationStage } from '../../domain/procurement.dto';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 

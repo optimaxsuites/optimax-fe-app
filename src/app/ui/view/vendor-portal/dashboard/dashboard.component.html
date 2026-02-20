@@ -1,0 +1,148 @@
+<div class="p-6 space-y-6 bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-800">Vendor Dashboard</h1>
+      <p class="text-gray-500">Welcome back. Here's your procurement performance overview.</p>
+    </div>
+    <button class="bg-indigo-600 text-white px-5 py-2 rounded-xl shadow hover:bg-indigo-700 transition">
+      Download Report
+    </button>
+  </div>
+
+  <!-- Dynamic KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+
+    <div *ngFor="let card of statCards"
+         class="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition group border border-gray-100">
+
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">{{card.label}}</p>
+          <h2 class="text-3xl font-bold mt-1">{{card.value}}</h2>
+        </div>
+
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+             [ngClass]="card.bg">
+          {{card.icon}}
+        </div>
+      </div>
+
+      <p class="text-sm mt-3 font-medium"
+         [ngClass]="card.trendColor">
+         {{card.trend}}
+      </p>
+
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <!-- <div class="flex gap-6">
+
+    <div class="bg-white p-6 rounded-2xl shadow">
+      <h3 class="text-lg font-semibold mb-4">Quotation Trend</h3>
+      <canvas
+        baseChart
+        [data]="lineChartData"
+        [options]="lineChartOptions"
+        [type]="lineChartType">
+      </canvas>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow w-24">
+      <h3 class="text-lg font-semibold mb-4">RFQ Status</h3>
+      <canvas baseChart
+        [data]="pieChartData"
+        [type]="pieChartType">
+      </canvas>
+    </div>
+
+  </div> -->
+
+  <div class="flex gap-6">
+
+  <!-- Quotation Trend Chart -->
+  <div class="bg-white p-6 rounded-2xl shadow w-[74.5%] h-[500px] flex flex-col">
+    <h3 class="text-lg font-semibold mb-4">Quotation Trend</h3>
+    <div class="flex-1">
+      <canvas
+        baseChart
+        [data]="lineChartData"
+        [options]="lineChartOptions"
+        [type]="lineChartType">
+      </canvas>
+    </div>
+  </div>
+
+  <!-- RFQ Status Chart -->
+  <div class="bg-white p-6 rounded-2xl shadow flex flex-col items-center">
+    <h3 class="text-lg font-semibold mb-4">RFQ Status</h3>
+    <div class="flex-1">
+      <canvas
+        baseChart
+        [data]="pieChartData"
+        [type]="pieChartType"
+        [width]="400"
+        [height]="300">
+      </canvas>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+  <!-- Tables -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <div class="bg-white rounded-2xl shadow">
+      <div class="p-5 border-b font-semibold">Recent RFQs</div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr>
+            <th class="p-3 text-left">RFQ</th>
+            <th class="p-3 text-left">Deadline</th>
+            <th class="p-3 text-left">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let rfq of rfqs" class="border-t hover:bg-gray-50">
+            <td class="p-3 font-medium">{{rfq.title}}</td>
+            <td class="p-3">{{rfq.deadline}}</td>
+            <td class="p-3">
+              <span class="px-3 py-1 rounded-full text-xs"
+                [ngClass]="{
+                  'bg-green-100 text-green-600': rfq.status==='OPEN',
+                  'bg-gray-200 text-gray-600': rfq.status==='CLOSED',
+                  'bg-blue-100 text-blue-600': rfq.status==='AWARDED'
+                }">
+                {{rfq.status}}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow">
+      <div class="p-5 border-b font-semibold">Pending LPO Actions</div>
+      <div class="divide-y">
+        <div *ngFor="let lpo of lpos" class="p-5 flex justify-between items-center">
+          <div>
+            <p class="font-semibold">{{lpo.id}}</p>
+            <p class="text-gray-500 text-sm">Issued {{lpo.date}}</p>
+          </div>
+          <div class="space-x-2">
+            <button class="px-4 py-1 bg-green-600 text-white rounded-lg">Accept</button>
+            <button class="px-4 py-1 bg-red-600 text-white rounded-lg">Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

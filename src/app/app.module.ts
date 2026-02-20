@@ -62,14 +62,14 @@ import { CommonModule } from '@angular/common';
 import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component';
 import { HttpClientModule } from '@angular/common/http';
 import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
-import { RfqComponent } from './ui/view/rfq/rfq.component';
+import { RfqComponent } from './ui/view/vendor-portal/rfq/rfq.component';
 import { QuotationComponent } from './ui/view/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './ui/view/proforma-invoice/proforma-invoice.component';
 import { InvoiceComponent } from './ui/view/invoice/invoice.component';
 import { DispatchNoteComponent } from './ui/view/dispatch-note/dispatch-note.component';
 import { IncomingComponent } from './ui/view/lpo/incoming/incoming.component';
 import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
-import { RfqFormComponent } from './ui/view/rfq/rfq-form/rfq-form.component';
+import { RfqFormComponent } from './ui/view/rfq-form/rfq-form.component';
 import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
 import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
 import { VendorQuoteFormComponent } from './ui/view/vendor/vendor-quote-form/vendor-quote-form.component';
@@ -92,8 +92,9 @@ import { VendorDetailsComponent } from './ui/view/vendor-management/vendor-detai
 import { VendorRegistrationComponent } from './ui/view/vendor-management/vendor-registration/vendor-registration.component';
 import { VendorApprovalComponent } from './ui/view/vendor-management/vendor-approval/vendor-approval.component';
 import { PaginatorModule } from 'primeng/paginator';
+import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 
-
+import { NgChartsModule } from 'ng2-charts';
 
 
 @NgModule({
@@ -128,6 +129,7 @@ import { PaginatorModule } from 'primeng/paginator';
     VendorDetailsComponent,
     VendorRegistrationComponent,
     VendorApprovalComponent,
+    DashboardComponent,
   ],
   imports: [
     BrowserModule,
@@ -186,7 +188,8 @@ import { PaginatorModule } from 'primeng/paginator';
     FileUploadModule,
     DropdownModule,
     PaginatorModule,
-    DialogModule
+    DialogModule,
+    NgChartsModule
   ],
   providers: [MessageService],
   bootstrap: [AppComponent],
