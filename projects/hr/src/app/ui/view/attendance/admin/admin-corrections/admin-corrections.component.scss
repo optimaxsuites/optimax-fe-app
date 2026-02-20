@@ -29,7 +29,7 @@ th {
   text-align: left;
   padding: 12px 14px;
   font-weight: 600;
-  color: #065f46;
+  color: white;
   border-bottom: 1px solid #d1fae5;
 }
 
@@ -136,24 +136,30 @@ button:first-child {
       background: #b91c1c;
     }
   }
+}
 
-  .empty-state {
-    text-align: center;
-    padding: 2rem 0;
-    color: var(--gray-600);
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: #9ca3af;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
-    span {
-      font-size: 1.85rem;
-      font-weight: 600;
-      display: block;
-    }
+  span {
+    font-size: 18px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 1px;
+  }
 
-    p {
-      font-size: 1.2rem;
-      margin-top: 0.2rem;
-    }
+  p {
+    font-size: 14px;
+    color: #9ca3af;
   }
 }
+
 
 /* Responsive */
 @media (max-width: 900px) {

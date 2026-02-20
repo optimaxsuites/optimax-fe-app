@@ -11,6 +11,7 @@ export interface DepartmentHeatmap {
 }
 
 export interface LateArrival {
+  id: string;
   name: string;
   time: string;
   department?: string;

@@ -7,7 +7,14 @@ import { AttendanceStats } from '../../../../../shared-component/models/models';
   styleUrl: './stats-cards.component.scss'
 })
 export class StatsCardsComponent {
-  @Input() stats!: AttendanceStats;
+  @Input() stats!: {
+    present: string;
+  absent: string;
+  late: string;
+  onLeave: string;
+  };
+
+  //@Input() stats!: AttendanceStats;
   /*stats = {
   present: 128,
   absent: 12,

@@ -46,8 +46,49 @@
   padding-right: 1.6rem;
 }
 
+.buttonslol {
+  display: flex;
+  gap: 8px; // controls spacing between buttons
+  align-items: center;
+  margin-top: 12px;
+  height: 30;
+}
+
+.apply-btn,
+.reset-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+/* Apply button (primary) */
+.apply-btn {
+  background-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+  color: black;
+
+  &:hover {
+    background-color: #d1d5db;
+  }
+}
+
+/* Reset button (secondary) */
+.reset-btn {
+  background-color: #e5e7eb;
+  color: black;
+  border: 1px solid #d1d5db;
+
+  &:hover {
+    background-color: #d1d5db;
+  }
+}
+
 /* Apply Button */
-.filters button {
+/*.filters button {
   grid-column: span 2;
   justify-self: end;
   width:50%;
@@ -70,7 +111,7 @@
   &:active {
     transform: scale(0.97);
   }
-}
+}*/
 
 /* Responsive tweaks */
 @media (max-width: 900px) {

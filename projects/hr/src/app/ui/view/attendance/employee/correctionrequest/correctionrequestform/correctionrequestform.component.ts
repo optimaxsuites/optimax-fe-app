@@ -28,12 +28,16 @@ export class CorrectionrequestformComponent {
     });
   }
 
+  department = "Engineering";
+
   submit() {
     if (this.form.invalid) return;
 
     const newRequest: CorrectionRequest = {
       id: uuidv4(),
       employeeId: this.form.value.employeeId,
+      employeeName: this.form.value.employeeName,
+      department: this.form.value.employeeId,
       date: this.form.value.date,
       issueType: this.form.value.issueType,
       description: this.form.value.description,

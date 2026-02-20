@@ -1,6 +1,5 @@
 import { Component, Input, OnChanges, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
-import { exportCSV } from '../../../../shared-component/exports/export.util';
 
 @Component({
   selector: 'app-attendancesummary',
@@ -42,14 +41,4 @@ export class AttendancesummaryComponent implements OnChanges {
     this.summary = { total, present, late, absent, avgHours };
   }
 
-
-  columns = ['id', 'employee', 'department', 'date', 'checkIn', 'checkOut', 'status', 'hours'];
-
-export(format: 'csv' | 'excel' | 'pdf') {
-  if (format === 'csv') {
-    exportCSV(this.data, this.columns);
-  } else {
-    alert(`${format.toUpperCase()} export coming soon 😄`);
-  }
-}
 }

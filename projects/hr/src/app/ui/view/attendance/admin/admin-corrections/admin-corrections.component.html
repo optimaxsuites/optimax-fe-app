@@ -1,5 +1,64 @@
 <div class="admin-corrections-card">
+  <h2 *ngIf="requests.length > 0">Correction Requests</h2>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="requests.length === 0">
+    <span>Such empty 🥲</span>
+    <p>No correction requests here.</p>
+  </div>
+
+  <!-- Table (only show when there are requests) -->
+  <table *ngIf="requests.length > 0">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Date</th>
+        <th>Issue</th>
+        <th>Status</th>
+        <th>Details</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let req of requests">
+        <td>{{ req.employeeName || 'Employee' }}</td>
+        <td>{{ req.date }}</td>
+        <td>{{ req.issueType }}</td>
+        <td>{{ req.status }}</td>
+        <td>Details: {{ req.description }}
+          <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
+            Rejection Reason: {{ req.rejectionReason }}
+          </div> 
+        </td>
+
+        <td>
+          <button 
+            *ngIf="req.status === 'PENDING'" 
+            (click)="approve(req)">
+            Approve
+          </button>
+
+          <div *ngIf="req.status === 'PENDING'" class="reject-box">
+            <input 
+              type="text" 
+              placeholder="Reason for rejection"
+              [(ngModel)]="rejectReason[req.id]" />
+            <button (click)="reject(req)">Reject</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!--<div class="admin-corrections-card">
   <h2>Correction Requests</h2>
+                   Empty State 
+  <div class="empty-state" *ngIf="requests.length === 0">
+    <span>Such empty 🥲</span>
+    <p>No correction requests here.</p>
+  </div>
 
   <table>
     <thead>
@@ -39,13 +98,8 @@
           </div>
         </td>
       </tr>
-                <!-- Empty State -->
-  <div class="empty-state" *ngIf="requests.length === 0">
-    <span>Such empty 🥲</span>
-    <p>No correction requests here.</p>
-  </div>
     </tbody>
   </table>
-</div>
+</div>-->
 
 

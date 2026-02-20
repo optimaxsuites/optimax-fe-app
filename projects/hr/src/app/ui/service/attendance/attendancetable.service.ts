@@ -157,6 +157,42 @@ getClockStatus() {
 setClockStatus(status: ClockStatus) {
   this.clockStatusSubject.next(status);
 }
+
+updateAttendanceStatus(employeeId: string, employeeName: string, department: string, date: string, newStatus: AttendanceTableRecord['status']) {
+
+  const data = [...this.attendanceSubject.value];
+
+  const recordIndex = data.findIndex(
+    r => r.id === employeeId && r.date === date
+  );
+
+  if (recordIndex !== -1) {
+
+    // Update existing record
+    data[recordIndex] = {
+      ...data[recordIndex],
+      status: newStatus
+    };
+
+  } else {
+
+    // If record does not exist for that date, create one
+    data.unshift({
+      id: employeeId,
+      employee: employeeName,
+      department: department,
+      date: date,
+      checkIn: null,
+      checkOut: null,
+      status: newStatus,
+      hours: 0
+    });
+
+  }
+
+  this.attendanceSubject.next(data);
+}
+
 }
 
 

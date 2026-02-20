@@ -33,7 +33,7 @@ export class AdminCorrectionsComponent implements OnInit {
     });
   }
 
-  approve(req: CorrectionRequest) {
+  /*approve(req: CorrectionRequest) {
     this.correctionService.updateRequest(req.id, {
       status: 'APPROVED'
     });
@@ -44,7 +44,23 @@ export class AdminCorrectionsComponent implements OnInit {
     date: req.date,
     status: 'PRESENT'
   });
-  }
+  }*/
+
+  approve(req: CorrectionRequest) {
+
+  this.correctionService.updateRequest(req.id, {
+    status: 'APPROVED'
+  });
+
+  // to make both tables update instantly
+  this.attendanceService.updateAttendanceStatus(
+    req.employeeId,
+    req.employeeName ?? '',
+    req.department,
+    req.date,
+    'PRESENT'
+  );
+}
 
   reject(req: CorrectionRequest) {
     const reason = this.rejectReason[req.id];
