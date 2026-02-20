@@ -1,0 +1,56 @@
+.export-card {
+  //background: #ffffff;
+  //padding: 16px 20px;
+  border-radius: 12px;
+  //box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  height: 4.5rem;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 1.7rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* CSV */
+.export-btn.csv {
+  background-color: white/*e0f2fe*/;
+  color: #0369a1;
+
+  &:hover {
+    background-color: #bae6fd;
+  }
+}
+
+/* Excel */
+.export-btn.excel {
+  background-color: white;//#dcfce7;
+  color: #166534;
+
+  &:hover {
+    background-color: #bbf7d0;
+  }
+}
+
+/* PDF */
+.export-btn.pdf {
+  background-color: white;//#fee2e2;
+  color: #991b1b;
+
+  &:hover {
+    background-color: #fecaca;
+  }
+}

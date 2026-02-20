@@ -33,7 +33,10 @@
         </td>
         <td>
           {{ req.description }}
-          
+
+          <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
+            Rejection Reason: {{ req.rejectionReason }}
+          </div>          
         </td>
       </tr>
     </tbody>

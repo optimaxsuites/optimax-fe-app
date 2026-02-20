@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
@@ -17,16 +17,31 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
- 
+  //heatmapData: any[] = [];
+  //lateArrivalsData: any[] = [];
+  //statsData: any[] = [];
 
+  @Output() dataChange = new EventEmitter<{ data: AttendanceTableRecord[], filters: any }>();
+ 
   ngOnInit(): void {
+  this.attendancetableService.attendance$.subscribe(data => {
+    const today = new Date().toISOString().split('T')[0];
+
+    this.attendance = data;
+
+    // Default = today only
+    this.filteredAttendance = data.filter(record => record.date === today);
+  });
+}
+
+  /*ngOnInit(): void {
     this.attendancetableService.attendance$.subscribe(data => {
     this.attendance = data;
     this.filteredAttendance = [...data];
   });
     //this.attendance = MOCK_ATTENDANCE;
     //this.filteredAttendance = [...this.attendance];
-  }
+  }*/
 
 /*manualCorrection(record: any) {
   console.log('Manual correction:', record);
@@ -62,12 +77,146 @@ export class AttendancetableComponent implements OnInit{
 filters: any = {};
 
 onFiltersChange(filters: any) {
-  this.attendancetableService.getAttendance(filters).subscribe((data: AttendanceTableRecord[]) => {
-    this.attendance = data;
-  });
+  this.filters = filters;
+
+  const hasFilters =
+    filters.dateFrom ||
+    filters.dateTo ||
+    filters.id ||
+    filters.employee ||
+    filters.department ||
+    filters.status;
+
+  if (!hasFilters) {
+    this.resetToToday();
+  } else {
+    this.applyFilters();
+  }
+}
+
+resetToToday() {
+  const today = new Date().toISOString().split('T')[0];
+
+  this.filteredAttendance = this.attendance.filter(
+    record => record.date === today
+  );
+
+  this.dataChange.emit({
+    data: this.filteredAttendance,
+  filters: this.filters
+});
 }
 
 applyFilters() {
+  this.filteredAttendance = this.attendance.filter(record => {
+
+    const recordDate = record.date ?? '';
+
+    // Date period filter
+    if (this.filters.dateFrom && recordDate < this.filters.dateFrom) return false;
+    if (this.filters.dateTo && recordDate > this.filters.dateTo) return false;
+
+    // Employee ID
+    if (this.filters.id &&
+        !record.id.toString().includes(this.filters.id)) {
+      return false;
+    }
+
+    // Employee Name
+    if (this.filters.employee &&
+        !record.employee.toLowerCase().includes(this.filters.employee.toLowerCase())) {
+      return false;
+    }
+
+    // Department
+    if (this.filters.department &&
+        record.department !== this.filters.department) {
+      return false;
+    }
+
+    // Status
+    if (this.filters.status &&
+        record.status !== this.filters.status) {
+      return false;
+    }
+
+    return true;
+  });
+
+  this.dataChange.emit({
+    data: this.filteredAttendance,
+  filters: this.filters});
+}
+
+/*calculateDashboardData() {
+
+  const data = this.filteredAttendance;
+
+  // =========================
+  // HEATMAP (Status Count)
+  // =========================
+  const present = data.filter(r => r.status === 'PRESENT').length;
+  const absent = data.filter(r => r.status === 'ABSENT').length;
+  const late = data.filter(r => r.status === 'LATE').length;
+  const onLeave = data.filter(r => r.status === 'ON_LEAVE').length;
+
+  this.heatmapData = [
+    { department: 'Present', attendance: present },
+    { department: 'Absent', attendance: absent },
+    { department: 'Late', attendance: late },
+    { department: 'On Leave', attendance: onLeave }
+  ];
+
+  // =========================
+  // 🔥 LATE ARRIVALS
+  // =========================
+  this.lateArrivalsData = data
+    .filter(r => r.status === 'LATE')
+    .map(r => ({
+      id: r.id,
+      name: r.employee,
+      time: r.checkIn
+    }));
+
+  // =========================
+  // 🔥 TOP 3 DEPARTMENTS BY PUNCTUALITY
+  // =========================
+
+  const departmentMap: any = {};
+
+  data.forEach(record => {
+    if (!departmentMap[record.department]) {
+      departmentMap[record.department] = {
+        total: 0,
+        present: 0
+      };
+    }
+
+    departmentMap[record.department].total++;
+
+    if (record.status === 'PRESENT') {
+      departmentMap[record.department].present++;
+    }
+  });
+
+  const punctualityRates = Object.keys(departmentMap).map(dept => {
+    const deptData = departmentMap[dept];
+    const rate = (deptData.present / deptData.total) * 100;
+
+    return {
+      department: dept,
+      rate: Number(rate.toFixed(1))
+    };
+  });
+
+  const topThree = punctualityRates
+    .sort((a, b) => b.rate - a.rate)
+    .slice(0, 3);
+
+  this.statsData = topThree;
+}*/
+
+/*applyFilters() {
   this.filteredAttendance = this.attendance.filter(record => {
 
     const recordDate = record.date ?? ''; //fallback if daste is null
@@ -92,7 +241,7 @@ applyFilters() {
 
     return true;
   });
-}
+}*/
 
     /*private route = inject(ActivatedRoute);
   private attendancetableService = inject(AttendancetableService);

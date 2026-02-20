@@ -1,13 +1,10 @@
 <!--<p>attendancefilter works!</p>-->
 <div class="filters">
 
-  <!--Month Filter-->
-  <input type="month" [(ngModel)]="filters.month" />
+  <!--Date range-->
+  <input type="date" [(ngModel)]="filters.dateFrom" >
+  <input type="date" [(ngModel)]="filters.dateTo" >
 
-  <!-- Date range -->
-   <!--<input type="date" [(ngModel)]="filters.dateFrom">
-  <input type="date" [(ngModel)]="filters.dateTo">-->
-  
   <!-- ID dropdown -->
   <input type="text" placeholder="ID" [(ngModel)]="filters.id">
 
@@ -17,10 +14,9 @@
   <!-- Department -->
   <select [(ngModel)]="filters.department">
     <option value="">All Departments</option>
-    <option value="HR">HR</option>
-    <option value="Engineering">Engineering</option>
-    <option value="Finance">Finance</option>
-    <option value="Sales">Sales</option>
+    <option *ngFor="let dept of departments" [value]="dept">
+      {{ dept }}
+    </option>
   </select>
 
   <!-- Status -->
@@ -31,5 +27,10 @@
     <option value="LATE">Late</option>
   </select>
 
-  <button type="button" (click)="applyFilters()">Apply</button>
+  <div class="buttonslol">
+    <button type="button" class="apply-btn" (click)="applyFilters()">Apply</button>
+    <button type="button" class="reset-btn" (click)="resetFilters()">Reset</button>
+  </div>
+
+  
 </div>

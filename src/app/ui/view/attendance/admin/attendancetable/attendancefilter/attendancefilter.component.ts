@@ -14,10 +14,12 @@ export class AttendancefilterComponent {
 
   @Output() filtersChange = new EventEmitter<any>();
 
+  departments:string[] = [];
+
   filters = {
-    month: '',
-    //dateFrom: '',
-    //dateTo: '',
+    //month: '',
+    dateFrom: '',
+    dateTo: '',
     id: '',
     employee: '',
     department: '',
@@ -28,8 +30,15 @@ export class AttendancefilterComponent {
   constructor(private attendancetableService: AttendancetableService) {}
 
   ngOnInit() {
+  this.attendancetableService.attendance$.subscribe(data => {
+    const uniqueDepartments = [...new Set(data.map(r => r.department))];
+    this.departments = uniqueDepartments;
+  });
+}
+
+  /*ngOnInit() {
     this.attendance = this.attendancetableService.getAttendance();
-  }
+  }*/
 
   applyFilters() {
     /*this.router.navigate([], {
@@ -41,4 +50,17 @@ export class AttendancefilterComponent {
     console.log('Filters applied: ', this.filters);
     this.filtersChange.emit(this.filters);
   }
+
+  resetFilters() {
+  this.filters = {
+    dateFrom: '',
+    dateTo: '',
+    id: '',
+    employee: '',
+    department: '',
+    status: ''
+  };
+
+  this.filtersChange.emit(this.filters);
+}
 }

@@ -151,6 +151,7 @@ import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/sc
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { AdminexportComponent } from './ui/view/attendance/admin/attendashboard/adminexport/adminexport.component';
 import { LoanBalanceIndicatorsComponent } from './ui/view/loan-management/loan-balance-indicators/loan-balance-indicators.component';
 import { RepaymentScheduleViewComponent } from './ui/view/loan-management/repayment-schedule-view/repayment-schedule-view.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
@@ -257,6 +258,7 @@ import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loa
     CreateProjectComponent,
     SchedulesComponent,
     SchedulingComponent,
+    AdminexportComponent,
     LoanBalanceIndicatorsComponent,
     RepaymentScheduleViewComponent,
     LoanRequestFormComponent,

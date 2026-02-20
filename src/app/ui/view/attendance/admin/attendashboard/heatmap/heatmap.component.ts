@@ -12,7 +12,13 @@ export class HeatmapComponent {
   { name: 'HR', attendance: 95 },
   { name: 'Engineering', attendance: 82 },
   { name: 'Sales', attendance: 68 }
-];*/
+];
+getHeatColor(value: number): string {
+  if (value > 20) return '#d1fae5';
+  if (value > 10) return '#fef3c7';
+  return '#fee2e2';
+}*/
+
   getHeatColor(value: number): string {
   if (value > 90) return '#d1fae5';
   if (value > 75) return '#fef3c7';

@@ -1,9 +1,13 @@
 <!--<p>late-arrivals works!</p>-->
 <div class="late-list">
-  <h3>Late Arrivals Today</h3>
+  <h3>Late Arrivals</h3>
 
-  <div class="late-item" *ngFor="let user of lateArrivals">
+  <div class="late-item" *ngFor="let user of lateArrivals; else noData">
+    <span>{{ user.id }}</span>
     <span>{{ user.name }}</span>
     <span>{{ user.time }}</span>
   </div>
+  <ng-template #noData>
+  <p>No data for selected period :P</p>
+</ng-template>
 </div>
