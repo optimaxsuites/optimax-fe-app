@@ -97,6 +97,7 @@ import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.
 import { NgChartsModule } from 'ng2-charts';
 
 
+
 @NgModule({
   declarations: [
     AppComponent,
