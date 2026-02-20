@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -18,6 +18,8 @@ import { ExpenseTableComponent } from './ui/view/expense-table/expense-table.com
 import { UploadRecieptComponent } from './ui/view/upload-reciept/upload-reciept.component';
 import { ExpensesComponent } from './ui/view/expenses.component';
 import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
+import { TaxReportComponent } from './ui/view/tax-report/tax-report.component';
+import { MobileCheckoutComponent } from './ui/view/mobile-checkout/mobile-checkout.component';
 import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 import { RecurringPaymentModalComponent } from './ui/sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component';
@@ -75,7 +77,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 
 import { NgSelectModule } from '@ng-select/ng-select';
 import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-splitting-modal/bill-splitting-modal.component';
-import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
+import { JWT_OPTIONS, JwtHelperService, JwtModule } from '@auth0/angular-jwt';
 import { MessageService } from 'primeng/api';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
@@ -86,69 +88,78 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
     ExpenseApprovalComponent,
     ExpenseFormsModalComponent,
     ExpenseSummaryComponent,
-    ExpenseTableComponent,
     UploadRecieptComponent,
     ExpensesComponent,
     ApprovalReportsComponent,
-    ReimbursementComponent,
     DisbursementComponent,
     RecurringPaymentModalComponent,
+    TaxReportComponent,
+    MobileCheckoutComponent,
     BillSplittingModalComponent
   ],
-  imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    FormsModule,
-    ReactiveFormsModule,
-    CommonModule,
-    RouterModule,
-    HttpClientModule,
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    CommonModule,
+    RouterModule,
+    HttpClientModule,
 
-    // PrimeNG
-    ButtonModule,
-    EditorModule,
-    PasswordModule,
-    TableModule,
-    ToastModule,
-    SidebarModule,
-    DialogModule,
-    TabViewModule,
-    ToolbarModule,
-    ConfirmDialogModule,
-    SplitButtonModule,
-    PanelModule,
-    DividerModule,
-    OverlayPanelModule,
-    StepperModule,
-    InputTextModule,
-    FloatLabelModule,
-    MessagesModule,
-    MessageModule,
-    RippleModule,
-    InputNumberModule,
-    ChartModule,
+    //  Configure JwtModule to provide JwtHelperService
+    JwtModule.forRoot({
+      config: {
+        tokenGetter: tokenGetter,
+        allowedDomains: ['be.optimaxsuites.com'], 
+        disallowedRoutes: [],
+      },
+    }),
 
-    // Angular Material
-    MatDialogModule,
-    MatIconModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatExpansionModule,
-    MatDatepickerModule,
-    MatSelectModule,
-    MatTooltipModule,
-    MatButtonModule,
-    MatMenuModule,
-    MatTabsModule,
-    MatDividerModule,
-    MatRadioModule,
-    MatAutocompleteModule,
-    MatPaginatorModule,
-    MatTableModule,
-    MatProgressSpinnerModule,
-    MatCardModule,
-    MatGridListModule,
+    // PrimeNG
+    ButtonModule,
+    EditorModule,
+    PasswordModule,
+    TableModule,
+    ToastModule,
+    SidebarModule,
+    DialogModule,
+    TabViewModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    InputNumberModule,
+    ChartModule,
+
+    // Angular Material
+    MatDialogModule,
+    MatIconModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatExpansionModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatButtonModule,
+    MatMenuModule,
+    MatTabsModule,
+    MatDividerModule,
+    MatRadioModule,
+    MatAutocompleteModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatProgressSpinnerModule,
+    MatCardModule,
+    MatGridListModule,
 
     // NgSelect
     NgSelectModule,
@@ -157,7 +168,9 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
     // Standalone components
     BackButtonComponent,
     ButtonComponent,
-    SideModalComponent
+    SideModalComponent,
+    ExpenseTableComponent,
+    ReimbursementComponent
   ],
 
    providers: [
@@ -176,6 +189,13 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
 
   ],
 
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA]
 })
-export class AppExpensesModule {}
+export class AppModule {}
+
+export function tokenGetter() {
+  return sessionStorage.getItem('Token') || localStorage.getItem('token');
+}
+
+export { AppModule as AppExpensesModule };
