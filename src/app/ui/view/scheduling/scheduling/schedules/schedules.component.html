@@ -207,15 +207,15 @@
         <div class="space-y-4">
             <p class="text-sm">
                 <span class="font-semibold text-gray-700">Employee:</span> 
-                <span class="text-base font-medium text-gray-900 block">{{ selectedEmployee.employeeName }}</span>
+                <span class="text-base font-medium text-gray-900 block">{{ selectedEmployee?.employeeName }}</span>
             </p>
             <p class="text-sm" *ngIf="selectedRecord">
                 <span class="font-semibold text-gray-700">Shift:</span> 
-                <span class="text-gray-800 block">{{ getShiftName(selectedRecord.shiftId) }}</span>
+                <span class="text-gray-800 block">{{ getShiftName(selectedRecord?.shiftId || 0) }}</span>
             </p>
             <p class="text-sm" *ngIf="selectedRecord">
                 <span class="font-semibold text-gray-700">Project:</span> 
-                <span class="text-gray-800 block">{{ getProjectName(selectedRecord.shiftId) }}</span>
+                <span class="text-gray-800 block">{{ getProjectName(selectedRecord?.shiftId || 0) }}</span>
             </p>
             <p class="text-sm">
                 <span class="font-semibold text-gray-700">Date:</span> 
@@ -224,8 +224,8 @@
 
             <div class="pt-2">
                 <span class="font-semibold text-gray-700">Current Status: </span>
-                <span [ngClass]="getStatusClass(selectedEmployee.status)" class="ml-2 px-3 py-1 rounded-full text-sm font-bold uppercase">
-                    {{ selectedEmployee.status }}
+                <span [ngClass]="getStatusClass(selectedEmployee?.status || 'Scheduled')" class="ml-2 px-3 py-1 rounded-full text-sm font-bold uppercase">
+                    {{ selectedEmployee?.status }}
                 </span>
             </div>
 
@@ -237,43 +237,43 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="border p-3 rounded-lg bg-gray-50">
                         <p class="font-medium text-gray-600">Expected Clock-In</p>
-                        <p class="text-xl font-bold text-blue-600">{{ selectedRecord.expectedClockIn }}</p>
+                        <p class="text-xl font-bold text-blue-600">{{ selectedRecord?.expectedClockIn }}</p>
                     </div>
                     <div class="border p-3 rounded-lg"
-                        [ngClass]="{'bg-green-50': selectedRecord.actualClockIn, 'bg-red-50': selectedRecord.status === 'Late'}"
+                        [ngClass]="{'bg-green-50': selectedRecord?.actualClockIn, 'bg-red-50': selectedRecord?.status === 'Late'}"
                     >
                         <p class="font-medium text-gray-600">Actual Clock-In</p>
                         <p class="text-xl font-bold"
-                            [ngClass]="{'text-green-700': selectedRecord.actualClockIn, 'text-red-700': !selectedRecord.actualClockIn}"
+                            [ngClass]="{'text-green-700': selectedRecord?.actualClockIn, 'text-red-700': !selectedRecord?.actualClockIn}"
                         >
-                            {{ selectedRecord.actualClockIn || '— Not Clocked In' }}
+                            {{ selectedRecord?.actualClockIn || '— Not Clocked In' }}
                         </p>
                     </div>
                     
                     <div class="border p-3 rounded-lg bg-gray-50">
                         <p class="font-medium text-gray-600">Expected Clock-Out</p>
-                        <p class="text-xl font-bold text-blue-600">{{ selectedRecord.expectedClockOut }}</p>
+                        <p class="text-xl font-bold text-blue-600">{{ selectedRecord?.expectedClockOut }}</p>
                     </div>
                     <div class="border p-3 rounded-lg"
-                        [ngClass]="{'bg-green-50': selectedRecord.actualClockOut, 'bg-yellow-50': selectedRecord.actualClockIn && !selectedRecord.actualClockOut}"
+                        [ngClass]="{'bg-green-50': selectedRecord?.actualClockOut, 'bg-yellow-50': selectedRecord?.actualClockIn && !selectedRecord?.actualClockOut}"
                     >
                         <p class="font-medium text-gray-600">Actual Clock-Out</p>
                         <p class="text-xl font-bold"
-                             [ngClass]="{'text-green-700': selectedRecord.actualClockOut, 'text-gray-500': !selectedRecord.actualClockOut}"
+                             [ngClass]="{'text-green-700': selectedRecord?.actualClockOut, 'text-gray-500': !selectedRecord?.actualClockOut}"
                         >
-                            {{ selectedRecord.actualClockOut || '— Pending' }}
+                            {{ selectedRecord?.actualClockOut || '— Pending' }}
                         </p>
                     </div>
                 </div>
 
-                <div *ngIf="selectedRecord.notes || selectedRecord.verifiedBy" class="pt-4">
-                     <p *ngIf="selectedRecord.notes" class="text-sm">
+                <div *ngIf="selectedRecord?.notes || selectedRecord?.verifiedBy" class="pt-4">
+                     <p *ngIf="selectedRecord?.notes" class="text-sm">
                         <span class="font-semibold text-gray-700">Notes:</span> 
-                        <span class="text-gray-800 italic block">{{ selectedRecord.notes }}</span>
+                        <span class="text-gray-800 italic block">{{ selectedRecord?.notes }}</span>
                     </p>
-                     <p *ngIf="selectedRecord.verifiedBy" class="text-sm mt-2">
+                     <p *ngIf="selectedRecord?.verifiedBy" class="text-sm mt-2">
                         <span class="font-semibold text-gray-700">Verified By:</span> 
-                        <span class="text-gray-800 block">{{ selectedRecord.verifiedBy }}</span>
+                        <span class="text-gray-800 block">{{ selectedRecord?.verifiedBy }}</span>
                     </p>
                 </div>
             </div>
@@ -281,7 +281,7 @@
             <!-- Show message if no record yet -->
             <div *ngIf="!selectedRecord" class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p class="text-sm text-yellow-800">
-                    <strong>{{ selectedEmployee.employeeName }}</strong> is scheduled for this shift but hasn't clocked in yet.
+                    <strong>{{ selectedEmployee?.employeeName }}</strong> is scheduled for this shift but hasn't clocked in yet.
                 </p>
             </div>
         </div>

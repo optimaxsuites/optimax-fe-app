@@ -69,7 +69,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       this.uuid = params['uuid'];
       
       // In real app, get from auth service
-      this.employeeName = 'John Doe';
+      this.employeeName = 'Eseose Odion';
       this.employeeId = 'EMP-123';
       
       this.loadLoanData();

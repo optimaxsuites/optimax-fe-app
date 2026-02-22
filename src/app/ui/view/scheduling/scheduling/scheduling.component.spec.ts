@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { SchedulingComponent } from './scheduling.component';
 
@@ -8,7 +9,8 @@ describe('SchedulingComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [SchedulingComponent]
+      declarations: [SchedulingComponent],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
     

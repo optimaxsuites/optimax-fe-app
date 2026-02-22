@@ -13,15 +13,17 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 export class LoanDashboardComponent implements OnInit, OnDestroy {
   isLoading = false;
   searchTerm: string = '';
+  activeFilter: string = 'ALL'; // 'ALL', 'PENDING', 'ACTIVE'
   
-  dashboardStats = {
-    activeLoans: 0,
-    pendingApplications: 0,
-    totalBalance: 0
-  };
+  dashboardStats: {
+    activeLoans: number;
+    pendingApplications: number;
+    totalBalance: number;
+  } | null = null;
 
   recentLoans: LoanApplication[] = [];
   allLoans: LoanApplication[] = [];
+  filteredLoans: LoanApplication[] = [];
   selectedLoan: LoanApplication | null = null;
   
   private loanSubscription!: Subscription;
@@ -32,6 +34,11 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.dashboardStats = {
+      activeLoans: 0,
+      pendingApplications: 0,
+      totalBalance: 0
+    };
     this.loadDashboardData();
     this.setupLoanSubscription();
   }
@@ -47,7 +54,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       next: (applications) => {
         this.allLoans = applications;
         this.updateDashboardStats();
-        this.updateRecentLoans();
+        this.applyFilter(); // Apply current filter when data changes
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
@@ -61,7 +68,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       next: (applications) => {
         this.allLoans = applications;
         this.updateDashboardStats();
-        this.updateRecentLoans();
+        this.applyFilter(); // Apply current filter when data loads
         this.isLoading = false;
       },
       error: (error) => {
@@ -72,6 +79,14 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   updateDashboardStats(): void {
+    if (!this.dashboardStats) {
+      this.dashboardStats = {
+        activeLoans: 0,
+        pendingApplications: 0,
+        totalBalance: 0
+      };
+    }
+    
     this.dashboardStats.pendingApplications = this.allLoans.filter(loan => 
       loan.status === 'PENDING'
     ).length;
@@ -85,11 +100,50 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  updateRecentLoans(): void {
-    // Get 5 most recent loans
-    this.recentLoans = [...this.allLoans]
+  // New method to apply filters
+  applyFilter(): void {
+    let filtered = [...this.allLoans];
+    
+    // Apply status filter
+    if (this.activeFilter === 'PENDING') {
+      filtered = filtered.filter(loan => loan.status === 'PENDING');
+    } else if (this.activeFilter === 'ACTIVE') {
+      filtered = filtered.filter(loan => loan.status === 'ACTIVE' || loan.status === 'APPROVED');
+    }
+    
+    // Apply search filter if exists
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(loan => 
+        loan.fullName.toLowerCase().includes(term) ||
+        loan.employeeId.toLowerCase().includes(term) ||
+        (loan.purpose && loan.purpose.toLowerCase().includes(term)) ||
+        loan.department.toLowerCase().includes(term)
+      );
+    }
+    
+    // Sort by date and limit to 5 for display
+    this.filteredLoans = filtered
       .sort((a, b) => new Date(b.dateSubmitted).getTime() - new Date(a.dateSubmitted).getTime())
       .slice(0, 5);
+      
+    this.recentLoans = this.filteredLoans;
+  }
+
+  // Filter methods
+  showPendingLoans(): void {
+    this.activeFilter = 'PENDING';
+    this.applyFilter();
+  }
+
+  showActiveLoans(): void {
+    this.activeFilter = 'ACTIVE';
+    this.applyFilter();
+  }
+
+  showAllLoans(): void {
+    this.activeFilter = 'ALL';
+    this.applyFilter();
   }
 
   getStatusClass(status: string): string {
@@ -107,21 +161,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.selectedLoan = loan;
   }
 
-  // Navigation methods for HR admin
-  // viewPendingApprovals() {
-  //   this.router.navigate(['/admin/hr/loan-management/loan-approval']);
-  // }
-
-  // viewActiveLoans() {
-  //   this.router.navigate(['/admin/hr/loan-management/loans'], { 
-  //     queryParams: { status: 'ACTIVE' } 
-  //   });
-  // }
-
-  // generateReports() {
-  //   this.router.navigate(['/admin/hr/loan-management/reports']);
-  // }
-
   viewLoanDetails(loanId: string) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
@@ -129,39 +168,12 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // FIXED: Navigate to employee loan history with just the employee ID
   seeLoanHistory(employeeId: string) {
     this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()]);
   }
 
   searchLoans(event: any) {
     this.searchTerm = event.target.value;
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      this.recentLoans = this.allLoans
-        .filter(loan => 
-          loan.fullName.toLowerCase().includes(term) ||
-          loan.employeeId.toLowerCase().includes(term) ||
-          (loan.purpose && loan.purpose.toLowerCase().includes(term)) ||
-          loan.department.toLowerCase().includes(term)
-        )
-        .slice(0, 5);
-    } else {
-      this.updateRecentLoans();
-    }
+    this.applyFilter(); // Re-apply filters with new search term
   }
-
-  viewPendingApprovals() {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
-  }
-
-  viewActiveLoans() {
-  this.router.navigate(['/admin/hr/loan-management/loans'], { 
-    queryParams: { status: 'ACTIVE' } 
-  });
-}
-
-  generateReports() {
-  this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
-}
 }

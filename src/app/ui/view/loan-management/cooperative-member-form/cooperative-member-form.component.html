@@ -1,0 +1,112 @@
+<div class="member-form-container">
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading member data...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="form-content">
+    <!-- Header -->
+    <div class="form-header">
+      <button class="back-btn" (click)="cancel()">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <h1>
+        <i class="fas" [class.fa-user-plus]="!isEdit" [class.fa-user-edit]="isEdit"></i>
+        {{ isEdit ? 'Edit Member' : 'Add New Member' }}
+      </h1>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="memberForm" (ngSubmit)="onSubmit()" class="member-form">
+      <div class="form-section">
+        <h2>Personal Information</h2>
+        
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" formControlName="fullName" placeholder="Enter full name">
+          <div class="error" *ngIf="memberForm.get('fullName')?.invalid && memberForm.get('fullName')?.touched">
+            Name is required
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" formControlName="email" placeholder="email@example.com">
+            <div class="error" *ngIf="memberForm.get('email')?.invalid && memberForm.get('email')?.touched">
+              <span *ngIf="memberForm.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="memberForm.get('email')?.errors?.['email']">Invalid email format</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Phone <span class="required">*</span></label>
+            <input type="tel" formControlName="phone" placeholder="+234 123 456 7890">
+            <div class="error" *ngIf="memberForm.get('phone')?.invalid && memberForm.get('phone')?.touched">
+              Phone is required
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" formControlName="address" placeholder="Enter address">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Membership Details</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Share Capital (₦) <span class="required">*</span></label>
+            <input type="number" formControlName="shareCapital" placeholder="0">
+            <div class="error" *ngIf="memberForm.get('shareCapital')?.invalid && memberForm.get('shareCapital')?.touched">
+              <span *ngIf="memberForm.get('shareCapital')?.errors?.['required']">Share capital is required</span>
+              <span *ngIf="memberForm.get('shareCapital')?.errors?.['min']">Must be 0 or more</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Status <span class="required">*</span></label>
+            <select formControlName="status">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Emergency Contact (Optional)</h2>
+        
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" formControlName="emergencyName" placeholder="Emergency contact name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" formControlName="emergencyPhone" placeholder="Phone number">
+          </div>
+
+          <div class="form-group">
+            <label>Relationship</label>
+            <input type="text" formControlName="emergencyRelationship" placeholder="e.g., Spouse, Brother">
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="!memberForm.valid">
+          {{ isEdit ? 'Update Member' : 'Add Member' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

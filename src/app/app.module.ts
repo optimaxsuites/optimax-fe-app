@@ -164,8 +164,13 @@ import { StatusTrackingComponent } from './ui/view/loan-management/status-tracki
 import { LoanComponent } from './ui/view/loan-management/loan.component';
 import { EmployeeRepaymentScheduleComponent } from './ui/view/loan-management/employee-repayment-schedule/employee-repayment-schedule.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
-
-
+import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
+import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
+import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
+import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/cooperative-loan-application/cooperative-loan-application.component';
+import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
+import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
+import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -272,7 +277,14 @@ import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loa
     LoanComponent,
     EmployeeRepaymentScheduleComponent,
     LoanReportsComponent,
-  ],
+    CooperativeDashboardComponent,
+    CooperativeLoansComponent,
+    CooperativeLoanDetailComponent,
+    CooperativeLoanApplicationComponent,
+    CooperativeMembersComponent,
+    CooperativeMemberDetailComponent,
+    CooperativeMemberFormComponent,
+    ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

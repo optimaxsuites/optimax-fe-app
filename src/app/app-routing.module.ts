@@ -23,6 +23,13 @@ import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loa
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
+import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
+import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
+import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
+import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/cooperative-loan-application/cooperative-loan-application.component';
+import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
+import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
+import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
 
 const routes: Routes = [
   {
@@ -74,6 +81,39 @@ const routes: Routes = [
   {
   path: 'admin/hr/loan-management/reports/:uuid',
   component: LoanReportsComponent
+  },
+ // Cooperative Routes
+  {
+    path: 'admin/hr/cooperative/dashboard',
+    component: CooperativeDashboardComponent
+  },
+  {
+    path: 'admin/hr/cooperative/members',
+    component: CooperativeMembersComponent
+  },
+  {
+    path: 'admin/hr/cooperative/members/:id',
+    component: CooperativeMemberDetailComponent
+  },
+  {
+    path: 'admin/hr/cooperative/members/add',
+    component: CooperativeMemberFormComponent
+  },
+  {
+    path: 'admin/hr/cooperative/members/edit/:id',
+    component: CooperativeMemberFormComponent
+  },
+  {
+    path: 'admin/hr/cooperative/loans',
+    component: CooperativeLoansComponent
+  },
+  {
+    path: 'admin/hr/cooperative/loans/:id',
+    component: CooperativeLoanDetailComponent
+  },
+  {
+    path: 'admin/hr/cooperative/apply',
+    component: CooperativeLoanApplicationComponent
   },
   {
     path: 'leave/:uuid',
