@@ -44,7 +44,7 @@
 
       <div class="mb-4">
       <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
+      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
       <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="text-red-600">
         {{ getErrorMessage(basicForm.get("email"),'email') }}
       </small>

@@ -142,7 +142,7 @@ export class AddEmployeeFormComponent {
   ) {  }
 
   ngOnInit(): void {
-    this.employeeId = this.route.snapshot.paramMap.get('id') as unknown as number;
+    this.employeeId = parseFloat(this.route.snapshot.paramMap.get('id') as string);
     const today = new Date();
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
     this.maxDate = maxDate.toISOString().split('T')[0];  
@@ -225,6 +225,7 @@ export class AddEmployeeFormComponent {
               firstName: employee.firstName,
               lastName: employee.lastName,
               email: employee.email,
+              // workEmail: "q.oluwadare@centrifugegroup.com",
             });
       }
     })

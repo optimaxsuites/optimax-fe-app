@@ -1,7 +1,7 @@
 <div *ngIf="onboardingStatus == 'inProgress'" class="flex justify-center items-center h-[80vh]">
     <div class="flex flex-col gap-4 justify-center items-center h-full text-customBlue">
         <i class="fa-solid fa-lock text-5xl"></i>
-        <p class="text-3xl font-bold text-center text-customBlue">Employee has not completed their onboarding process, click <span routerLink="/user/onboarding/{{employeeInView.id}}/uthedhk45678j" class="text-customGreen font-bold cursor-pointer">here</span> to continue the process</p>
+        <p class="text-3xl font-bold text-center text-customBlue">Employee has not completed their onboarding process, click <span routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j" class="text-customGreen font-bold cursor-pointer">here</span> to continue the process</p>
     </div>
 </div>
 <div *ngIf="onboardingStatus == 'completed'" class="grid grid-cols-2 gap-3">
