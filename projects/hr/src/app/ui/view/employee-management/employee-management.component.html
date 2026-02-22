@@ -59,10 +59,22 @@
       <span class="uppercase tracking-wide">
         {{ employee?.department?.name || employee?.department || 'Department' }}
       </span>
-      <span class="inline-flex items-center gap-2">
-        <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
-        <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
-      </span>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-2">
+          <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
+          <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
+        </span>
+        <button
+          type="button"
+          class="employee-action delete-action"
+          [disabled]="deletingEmployeeIds[employee?.id]"
+          (click)="deleteEmployee(employee, $event)"
+          aria-label="Delete employee"
+          title="Delete employee">
+          <span *ngIf="!deletingEmployeeIds[employee?.id]" class="fa-solid fa-trash text-[10px]"></span>
+          <span *ngIf="deletingEmployeeIds[employee?.id]" class="fa-solid fa-spinner animate-spin text-[10px]"></span>
+        </button>
+      </div>
     </div>
 
     <div class="mt-4 flex flex-col items-center text-center">
@@ -130,6 +142,8 @@
     </div>
   </div>
 </div>
+
+<p-confirmDialog></p-confirmDialog>
 
 <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false" class="flex flex-col gap-8 table-item">
 <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> 

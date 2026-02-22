@@ -53,6 +53,14 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  deleteEmployee(id: number | string): Observable<any> {
+    return this.http
+      .delete<any>(
+        this.baseurl +
+          `/x/api/v2/hr/employees/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
   
   getSalaryById(id: number): Observable<any>{
     return this.http

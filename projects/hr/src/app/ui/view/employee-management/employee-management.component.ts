@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { finalize } from 'rxjs';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
@@ -20,7 +21,7 @@ import { HttpClient } from '@angular/common/http';
   selector: 'app-employee-management',
   templateUrl: './employee-management.component.html',
   styleUrl: './employee-management.component.scss',
-  providers: [MessageService]
+  providers: [MessageService, ConfirmationService]
 
 })
 export class EmployeeManagementComponent {
@@ -245,6 +246,7 @@ calendarOptions: CalendarOptions = {}
 currentPage = 1;
 pageSize = 12;
 pageSizeOptions = [8, 12, 16, 24];
+deletingEmployeeIds: Record<string, boolean> = {};
 
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
@@ -253,6 +255,7 @@ handleDateClick(arg: DateClickArg) {
 
   constructor(
     private messageService: MessageService,
+    private confirmationService: ConfirmationService,
     private http: HttpClient,
    private employeeService: EmployeeService,
    private sanitizer: DomSanitizer, 
@@ -385,6 +388,44 @@ handleDateClick(arg: DateClickArg) {
     
     
     }    
+
+  deleteEmployee(employee: any, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const employeeId = employee?.id;
+    if (employeeId === undefined || employeeId === null || employeeId === '') {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Employee ID is missing.', key: 'tl', life: 3000 });
+      return;
+    }
+
+    const displayName = `${employee?.lastName ?? ''} ${employee?.firstName ?? ''}`.trim() || 'this employee';
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${displayName}?`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        const idKey = +employeeId;
+        this.deletingEmployeeIds[idKey] = true;
+        this.employeeService.deleteEmployee(employeeId).pipe(
+          finalize(() => {
+            delete this.deletingEmployeeIds[idKey];
+          })
+        ).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Employee removed successfully.', key: 'tl', life: 3000 });
+            this.fetchEmployees();
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete employee. Please try again.', key: 'tl', life: 3000 });
+          }
+        });
+      }
+    });
+  }
 
 
     closeViewEmployee() {

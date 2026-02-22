@@ -85,3 +85,19 @@ p{
 .page-number.ellipsis {
     @apply border-transparent bg-transparent text-slate-400 hover:bg-transparent cursor-default;
 }
+
+.employee-action {
+    @apply h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 transition opacity-0 group-hover:opacity-100;
+}
+
+.employee-action:hover {
+    @apply text-slate-600 border-slate-300;
+}
+
+.employee-action:disabled {
+    @apply opacity-60 cursor-not-allowed;
+}
+
+.delete-action:hover {
+    @apply text-red-600 border-red-200 bg-red-50;
+}
