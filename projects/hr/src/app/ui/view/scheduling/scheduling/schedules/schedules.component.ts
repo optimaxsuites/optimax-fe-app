@@ -128,11 +128,12 @@ export class SchedulesComponent implements OnInit {
     return false;
   }
 
-  onDateSelect(selected: Date) {
-    this.selectedDate = selected;
-    const yyyy = selected.getFullYear();
-    const mm = String(selected.getMonth() + 1).padStart(2, '0');
-    const dd = String(selected.getDate()).padStart(2, '0');
+  onDateSelect(selected: Date | Event) {
+    const resolvedDate = selected instanceof Date ? selected : new Date();
+    this.selectedDate = resolvedDate;
+    const yyyy = resolvedDate.getFullYear();
+    const mm = String(resolvedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(resolvedDate.getDate()).padStart(2, '0');
     this.selectedDateString = `${yyyy}-${mm}-${dd}`;
     
     // Build shifts with ALL assigned employees (with or without records)

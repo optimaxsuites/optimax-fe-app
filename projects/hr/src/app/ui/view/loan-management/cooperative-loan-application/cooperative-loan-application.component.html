@@ -1,0 +1,119 @@
+<div class="application-container">
+  <div class="application-header">
+    <button class="back-btn" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <h1><i class="fas fa-file-invoice"></i> Apply for Loan</h1>
+  </div>
+
+  <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="application-form">
+    <!-- Member Selection -->
+    <div class="form-section">
+      <h2>1. Select Member</h2>
+      <div class="form-group">
+        <label>Member <span class="required">*</span></label>
+        <select formControlName="memberId">
+          <option value="">-- Select a member --</option>
+          <option *ngFor="let member of members" [value]="member.id">
+            {{ member.memberId }} - {{ member.fullName }}
+          </option>
+        </select>
+        <div class="error" *ngIf="applicationForm.get('memberId')?.invalid && applicationForm.get('memberId')?.touched">
+          Please select a member
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Selection -->
+    <div class="form-section">
+      <h2>2. Select Loan Product</h2>
+      <div class="form-group">
+        <label>Product <span class="required">*</span></label>
+        <select formControlName="productId">
+          <option value="">-- Select a product --</option>
+          <option *ngFor="let product of products" [value]="product.id">
+            {{ product.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="product-info" *ngIf="selectedProduct">
+        <p>{{ selectedProduct.description }}</p>
+        <div class="product-details">
+          <span><strong>Amount:</strong> {{ formatCurrency(selectedProduct.minAmount) }} - {{ formatCurrency(selectedProduct.maxAmount) }}</span>
+          <span><strong>Interest:</strong> {{ selectedProduct.interestRate }}%</span>
+          <span><strong>Duration:</strong> {{ selectedProduct.minDuration }} - {{ selectedProduct.maxDuration }} months</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loan Details -->
+    <div class="form-section">
+      <h2>3. Loan Details</h2>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Amount (₦) <span class="required">*</span></label>
+          <input type="number" formControlName="amount" placeholder="e.g., 100000">
+          <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
+            <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Amount is required</span>
+            <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum is {{ formatCurrency(selectedProduct?.minAmount || 0) }}</span>
+            <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum is {{ formatCurrency(selectedProduct?.maxAmount || 0) }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Duration (months) <span class="required">*</span></label>
+          <input type="number" formControlName="duration" placeholder="e.g., 12">
+          <div class="error" *ngIf="applicationForm.get('duration')?.invalid && applicationForm.get('duration')?.touched">
+            <span *ngIf="applicationForm.get('duration')?.errors?.['required']">Duration is required</span>
+            <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedProduct?.minDuration }} months</span>
+            <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedProduct?.maxDuration }} months</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Purpose <span class="required">*</span></label>
+        <textarea formControlName="purpose" rows="3" placeholder="Explain the purpose of this loan..."></textarea>
+      </div>
+
+      <!-- Calculation Preview -->
+      <div class="calculation-preview" *ngIf="monthlyRepayment > 0">
+        <h3>Loan Summary</h3>
+        <div class="calc-grid">
+          <div class="calc-item">
+            <span class="label">Monthly Repayment:</span>
+            <span class="value">{{ formatCurrency(monthlyRepayment) }}</span>
+          </div>
+          <div class="calc-item">
+            <span class="label">Total Interest:</span>
+            <span class="value">{{ formatCurrency(totalInterest) }}</span>
+          </div>
+          <div class="calc-item total">
+            <span class="label">Total Repayment:</span>
+            <span class="value">{{ formatCurrency(totalRepayment) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms -->
+    <div class="form-section">
+      <div class="checkbox-group">
+        <input type="checkbox" id="terms" formControlName="acceptTerms">
+        <label for="terms">
+          I confirm that all information provided is true and accurate. I agree to the terms and conditions.
+        </label>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="form-actions">
+      <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
+      <button type="submit" class="submit-btn" [disabled]="!applicationForm.valid">
+        Submit Application
+      </button>
+    </div>
+  </form>
+</div>

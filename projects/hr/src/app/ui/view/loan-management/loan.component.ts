@@ -3,6 +3,7 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { LoanDashboardComponent } from './loan-dashboard/loan-dashboard.component';
 import { LoanApprovalUiComponent } from './loan-approval-ui/loan-approval-ui.component';
 import { EmployeeDashboardComponent } from './employee-loan-dashboard/employee-loan-dashboard.component';
+import { CooperativeDashboardComponent } from './cooperative-dashboard/cooperative-dashboard.component';
 
 @Component({
   selector: 'app-loan',
@@ -15,12 +16,19 @@ export class LoanComponent {
       component: LoanDashboardComponent,
       icon: 'fas fa-chart-line'
     },
-    { name: 'Manage Loans',
+    {
+      name: 'Cooperative Dashboard',
+      component: CooperativeDashboardComponent,
+      icon: 'fas fa-handshake'
+    },
+    { name: 'Manage Employee Welfare',
       component: LoanApprovalUiComponent,
       icon: 'fas fa-clipboard'
     },
-    { name: 'Employee Loan Dashboard',
+    { name: 'My Loans',
       component: EmployeeDashboardComponent,
-      icon: 'fas fa-user-circle'},
+      icon: 'fas fa-user'
+    },
+
   ];
 }
