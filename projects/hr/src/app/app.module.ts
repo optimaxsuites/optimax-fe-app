@@ -118,6 +118,7 @@ import { FooterComponent } from './ui/shared-component/view/footer/footer.compon
 import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
 import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
+import { ErrorToastInterceptor } from './ui/shared-component/service/error-message/error-toast.interceptor';
 import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
@@ -351,6 +352,11 @@ import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooper
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ErrorToastInterceptor,
       multi: true,
     },
     {
