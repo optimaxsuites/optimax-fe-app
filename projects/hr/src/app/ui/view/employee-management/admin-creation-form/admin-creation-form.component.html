@@ -391,14 +391,14 @@
     
       <div class="mt-6 flex justify-end gap-2">
         <button type="button" (click)="previousTab()" class="btn-ghost">Previous</button>
-        <button type="button" (click)="onSubmit(true)" class="btn-success" [disabled]="employeeForm.invalid">
-          <span [ngClass]="loading ? 'animate-ping' : ''">
-            {{loading ? "Loading..." : "Submit and Continue"}}
+        <button type="button" (click)="onSubmit(true)" class="btn-success" [disabled]="employeeForm.invalid || isSubmitting">
+          <span [ngClass]="submitContinueLoading ? 'animate-ping' : ''">
+            {{submitContinueLoading ? "Loading..." : "Submit and Continue"}}
           </span>
         </button>   
-        <button type="button" (click)="onSubmit()" class="btn-success"  [disabled]="employeeForm.invalid">
-          <span [ngClass]="loading ? 'animate-ping' : ''">
-            {{loading ? "Loading..." : "Submit"}}
+        <button type="button" (click)="onSubmit()" class="btn-success"  [disabled]="employeeForm.invalid || isSubmitting">
+          <span [ngClass]="submitLoading ? 'animate-ping' : ''">
+            {{submitLoading ? "Loading..." : "Submit"}}
           </span>
         </button>
       </div>

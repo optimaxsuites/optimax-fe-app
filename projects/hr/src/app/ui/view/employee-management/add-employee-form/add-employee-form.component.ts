@@ -11,6 +11,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { DataService } from '../../../service/data.service';
 import { MetadataService } from '../../../service/metadata.service';
+import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
 interface Employee {
   id: number;
@@ -138,7 +139,8 @@ export class AddEmployeeFormComponent {
     private messageService: MessageService,
     private dataService: DataService, 
     private employeeService: EmployeeService, 
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorMessageService: ErrorMessageService
   ) {  }
 
   ngOnInit(): void {
@@ -301,7 +303,15 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
       const formData = new FormData();
       formData.append('nextOfKinDTO', JSON.stringify(nokData));
 
-      this.employeeService.addNOK(formData).subscribe()
+      this.employeeService.addNOK(formData).subscribe({
+        error: (err) => {
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Failed to save next of kin details. Please try again.'
+          );
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+        }
+      })
     })
     this.nextTab()
   }
@@ -337,7 +347,15 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
       if (guarantor.signature instanceof File) {
         formData.append('Signature', guarantor.signature)
       }
-      this.employeeService.addGuarantor(formData).subscribe()
+      this.employeeService.addGuarantor(formData).subscribe({
+        error: (err) => {
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Failed to save guarantor details. Please try again.'
+          );
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+        }
+      })
     })
     this.nextTab()
   }
@@ -406,20 +424,28 @@ addNewEmployee(){
     formData.append('file', this.basicForm.get('profilePhoto')?.value)
   }
   console.log(formData)
-  this.employeeService.addEmployee(formData).subscribe(
-   { next: (data: any) => {
-    console.log(data)
-    this.loading = false;
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
-    this.basicForm.reset()
-    this.guarantorForm.reset()
-    this.employeeForm.reset()
-    // this.currentTab = 1
+  this.employeeService.addEmployee(formData).subscribe({
+    next: (data: any) => {
+      console.log(data)
+      this.loading = false;
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
+      this.basicForm.reset()
+      this.guarantorForm.reset()
+      this.employeeForm.reset()
+      // this.currentTab = 1
 
-    // if (shouldRedirect) {
-    //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-    //   }
-   }
+      // if (shouldRedirect) {
+      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+      // }
+    },
+    error: (err) => {
+      this.loading = false;
+      const detail = this.errorMessageService.getUserMessage(
+        err,
+        'Failed to submit onboarding details. Please try again.'
+      );
+      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+    }
   })
 
 

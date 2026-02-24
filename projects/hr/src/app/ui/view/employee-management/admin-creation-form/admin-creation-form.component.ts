@@ -11,6 +11,7 @@ import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
+import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -33,7 +34,8 @@ export class AdminCreationFormComponent {
   currentFile: string = '';
   hide = true;
   hideConfirm = true;
-  loading = false
+  submitLoading = false;
+  submitContinueLoading = false;
   fileDataUrl: SafeUrl = '';
   imageURL: string =''
   salaryStructure: any = [];
@@ -96,7 +98,8 @@ export class AdminCreationFormComponent {
     private dataService: DataService,
     private authenticationService: AuthenticationService,
     private rolesService: RolesService,
-    public navigationLink: NavigationLinksService
+    public navigationLink: NavigationLinksService,
+    private errorMessageService: ErrorMessageService
   ) {  }
 
   ngOnInit(): void {
@@ -413,9 +416,18 @@ private setProbationValidators(): void {
     }
   }
 
+  get isSubmitting(): boolean {
+    return this.submitLoading || this.submitContinueLoading;
+  }
+
   onSubmit(shouldRedirect: boolean = false) {
-  this.loading = true;
-  this.addNewEmployee(shouldRedirect)
+    if (this.isSubmitting) return;
+    if (shouldRedirect) {
+      this.submitContinueLoading = true;
+    } else {
+      this.submitLoading = true;
+    }
+    this.addNewEmployee(shouldRedirect);
   }
   openBulkInstruction() {
       this.openInfoModal = true
@@ -514,7 +526,12 @@ private setProbationValidators(): void {
     }
    },
    error: (err) => {
-    this.loading = false;
+    this.resetSubmitLoading();
+    const detail = this.errorMessageService.getUserMessage(
+      err,
+      'Failed to create employee. Please try again.'
+    );
+    this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
     console.log(err)
   }
   },
@@ -539,7 +556,7 @@ private setProbationValidators(): void {
       severity?: 'success' | 'warn' | 'error';
     }
   ) {
-    this.loading = false;
+    this.resetSubmitLoading();
     const severity = options?.severity || 'success';
     const summary = severity === 'success' ? 'Success' : 'Notice';
 
@@ -579,6 +596,11 @@ private setProbationValidators(): void {
     if (shouldRedirect) {
       this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
     }
+  }
+
+  private resetSubmitLoading() {
+    this.submitLoading = false;
+    this.submitContinueLoading = false;
   }
 
   private buildSignupDetails(username: string, password: string, email: string) {

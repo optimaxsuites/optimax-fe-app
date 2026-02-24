@@ -136,7 +136,7 @@ export class EmployeeService {
                 `body was: ${JSON.stringify(error.error)}`
         );
     }
-    return throwError(`${error.status}`);
+    return throwError(() => error);
     // 'Something bad happened; please try again later.');
   }
 }
