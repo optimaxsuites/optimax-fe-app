@@ -69,6 +69,7 @@ export class AddEmployeeFormComponent {
   hide = true;
   hideConfirm = true;
   loading = false
+  draftLoading = false;
   fileDataUrl: SafeUrl = '';
   imageURL: string =''
   salaryStructure: any = [];
@@ -222,17 +223,107 @@ export class AddEmployeeFormComponent {
   fetchEmployeeData(employeeId: number): void {
     this.employeeService.getEmployeeById(employeeId).subscribe({
       next: (employee: any) => {
-        this.employeeData = employee
-        this.basicForm.patchValue({
-              firstName: employee.firstName,
-              lastName: employee.lastName,
-              email: employee.email,
-              // workEmail: "q.oluwadare@centrifugegroup.com",
-            });
+        this.employeeData = employee;
+        this.applyEmployeeData(employee);
       }
     })
 
     console.log(this.employeeData)
+  }
+
+  private applyEmployeeData(employee: any): void {
+    if (!employee) return;
+
+    const genderId = this.resolveId(employee.genderId ?? employee.gender);
+    const maritalStatusId = this.resolveId(employee.maritalStatusId ?? employee.maritalStatus);
+    const religionId = this.resolveId(employee.religionId ?? employee.religion);
+
+    this.basicForm.patchValue({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone,
+      address: employee.address,
+      DOB: this.toDateInputValue(employee.dob ?? employee.DOB),
+      gender: genderId,
+      maritalStatus: maritalStatusId,
+      religion: religionId
+    });
+
+    this.employeeForm.patchValue({
+      bankName: employee.bankName,
+      accountNumber: employee.accountNumber,
+      bvn: employee.bvn,
+      nin: employee.nin
+    });
+
+    const mediaNo = employee?.employeeMedia?.mediaNo;
+    const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
+    if (mediaNo) {
+      this.loadProfilePhoto(mediaNo);
+      this.basicForm.get('profilePhoto')?.setValue(mediaNo);
+    } else if (profileImage) {
+      this.imageURL = profileImage;
+      this.basicForm.get('profilePhoto')?.setValue(profileImage);
+    }
+    this.basicForm.get('profilePhoto')?.updateValueAndValidity();
+
+    const nextOfKin = employee?.nextOfKin || employee?.nextOfKins;
+    if (Array.isArray(nextOfKin)) {
+      this.nextOfKinList = nextOfKin.map((nok: any) => ({
+        fullName: nok.fullName,
+        email: nok.email,
+        phone: nok.phone,
+        address: nok.address,
+        relationship: this.resolveId(nok.relationshipId ?? nok.relationship),
+        DOB: this.toDateInputValue(nok.dob ?? nok.DOB),
+        emergencyContact: nok.emergencyContact,
+        __saved: true
+      }));
+    }
+
+    const guarantors = employee?.guarantor || employee?.guarantors;
+    if (Array.isArray(guarantors)) {
+      this.guarantorList = guarantors.map((guarantor: any) => ({
+        fullName: guarantor.fullName,
+        email: guarantor.email,
+        phone: guarantor.phone,
+        address: guarantor.address,
+        relationship: this.resolveId(guarantor.relationshipId ?? guarantor.relationship),
+        DOB: this.toDateInputValue(guarantor.dob ?? guarantor.DOB),
+        yearsKnown: guarantor.yearsKnown,
+        signature: guarantor.signature,
+        passportPhoto: guarantor.passportPhoto,
+        idCard: guarantor.idCard,
+        idNumber: guarantor.idNumber,
+        __saved: true
+      }));
+    }
+  }
+
+  private resolveId(value: any): any {
+    if (!value) return value;
+    if (typeof value === 'object' && 'id' in value) return value.id;
+    return value;
+  }
+
+  private toDateInputValue(date: Date | string | null | undefined): string | null {
+    if (!date) return null;
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return formatDate(parsed, 'yyyy-MM-dd', 'en-US');
+  }
+
+  private loadProfilePhoto(mediaNo: string): void {
+    this.employeeService.getEmployeeImage(mediaNo).subscribe({
+      next: (response) => {
+        const blob = new Blob([response], { type: 'image/png' });
+        this.imageURL = URL.createObjectURL(blob);
+      },
+      error: (err) => {
+        console.error('Failed to load profile photo:', err);
+      }
+    });
   }
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -252,15 +343,7 @@ export class AddEmployeeFormComponent {
       }
     }
     else if(typeof(file) == "string"){
-      const allowedTypes = ['.png', '.jpeg', '.jpg'];
-      const fileExtension = file.slice(file.lastIndexOf('.')).toLowerCase();
-      console.log(file)
-    console.log(fileExtension)
-      if (!allowedTypes.includes(fileExtension )) {
-        return { invalidFileType: true };
-      }else{
-       return null
-      }
+      return null;
     } 
     else {return {invalidFileType: true}}
   };
@@ -288,7 +371,20 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
     if(this.NOKForm.valid) {
     this.addNextOfKin()
     }
-    this.nextOfKinList.map((nok) => {
+    this.saveNextOfKinEntries();
+    this.nextTab()
+  }
+
+  private saveNextOfKinEntries(onComplete?: (hadError: boolean) => void) {
+    const unsaved = this.nextOfKinList.filter((nok) => !nok.__saved);
+    if (unsaved.length === 0) {
+      onComplete?.(false);
+      return;
+    }
+    let pending = unsaved.length;
+    let hadError = false;
+
+    unsaved.forEach((nok) => {
       const nokData = {
         fullName: nok.fullName,
         email: nok.email,
@@ -304,16 +400,23 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
       formData.append('nextOfKinDTO', JSON.stringify(nokData));
 
       this.employeeService.addNOK(formData).subscribe({
+        next: () => {
+          nok.__saved = true;
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        },
         error: (err) => {
+          hadError = true;
           const detail = this.errorMessageService.getUserMessage(
             err,
             'Failed to save next of kin details. Please try again.'
           );
           this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
         }
       })
-    })
-    this.nextTab()
+    });
   }
   nextTabFromGuarantor(){
     console.log(this.guarantorForm.value)
@@ -323,7 +426,20 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
     if(this.guarantorForm.valid) {
     this.addGuarantor()
     }
-    this.guarantorList.map((guarantor) => {
+    this.saveGuarantorEntries();
+    this.nextTab()
+  }
+
+  private saveGuarantorEntries(onComplete?: (hadError: boolean) => void) {
+    const unsaved = this.guarantorList.filter((guarantor) => !guarantor.__saved);
+    if (unsaved.length === 0) {
+      onComplete?.(false);
+      return;
+    }
+    let pending = unsaved.length;
+    let hadError = false;
+
+    unsaved.forEach((guarantor) => {
       const guarantorData = {
         fullName: guarantor.fullName,
         email: guarantor.email,
@@ -348,16 +464,23 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
         formData.append('Signature', guarantor.signature)
       }
       this.employeeService.addGuarantor(formData).subscribe({
+        next: () => {
+          guarantor.__saved = true;
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        },
         error: (err) => {
+          hadError = true;
           const detail = this.errorMessageService.getUserMessage(
             err,
             'Failed to save guarantor details. Please try again.'
           );
           this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
         }
       })
-    })
-    this.nextTab()
+    });
   }
 
   previousTab() {
@@ -371,6 +494,77 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   this.addNewEmployee()
   }
 
+  saveDraft() {
+    if (this.draftLoading || this.loading) return;
+
+    const isValid = this.validateCurrentSectionForDraft();
+    if (!isValid) return;
+
+    this.draftLoading = true;
+
+    if (this.currentTab === 3) {
+      this.saveNextOfKinEntries((hadError) => {
+        this.draftLoading = false;
+        if (!hadError) {
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+        }
+      });
+      return;
+    }
+
+    if (this.currentTab === 4) {
+      this.saveGuarantorEntries((hadError) => {
+        this.draftLoading = false;
+        if (!hadError) {
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+        }
+      });
+      return;
+    }
+
+    const formData = this.buildEmployeeFormData();
+    this.employeeService.addEmployee(formData).subscribe({
+      next: () => {
+        this.draftLoading = false;
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+      },
+      error: (err) => {
+        this.draftLoading = false;
+        const detail = this.errorMessageService.getUserMessage(
+          err,
+          'Failed to save draft. Please try again.'
+        );
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      }
+    })
+  }
+
+  private validateCurrentSectionForDraft(): boolean {
+    if (this.currentTab === 1) {
+      this.basicForm.markAllAsTouched();
+      return this.basicForm.valid;
+    }
+    if (this.currentTab === 2) {
+      this.employeeForm.markAllAsTouched();
+      return this.employeeForm.valid;
+    }
+    if (this.currentTab === 3) {
+      this.NOKForm.markAllAsTouched();
+      if (this.NOKForm.valid) {
+        this.addNextOfKin();
+      }
+      return this.nextOfKinList.length > 0;
+    }
+    if (this.currentTab === 4) {
+      this.guarantorForm.markAllAsTouched();
+      if (this.guarantorForm.valid) {
+        this.addGuarantor();
+      }
+      return this.guarantorList.length > 0;
+    }
+    return true;
+  }
+
   toLocalDateTime(date: Date | string): string {
     if (!date) return '';
     const parsedDate = new Date(date);
@@ -378,6 +572,33 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
 addNewEmployee(){
+  const formData = this.buildEmployeeFormData();
+  this.employeeService.addEmployee(formData).subscribe({
+    next: (data: any) => {
+      console.log(data)
+      this.loading = false;
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
+      this.basicForm.reset()
+      this.guarantorForm.reset()
+      this.employeeForm.reset()
+      // this.currentTab = 1
+
+      // if (shouldRedirect) {
+      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+      // }
+    },
+    error: (err) => {
+      this.loading = false;
+      const detail = this.errorMessageService.getUserMessage(
+        err,
+        'Failed to submit onboarding details. Please try again.'
+      );
+      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+    }
+  })
+}
+
+private buildEmployeeFormData(): FormData {
   const newEmployee = {
  
 
@@ -424,41 +645,14 @@ addNewEmployee(){
     formData.append('file', this.basicForm.get('profilePhoto')?.value)
   }
   console.log(formData)
-  this.employeeService.addEmployee(formData).subscribe({
-    next: (data: any) => {
-      console.log(data)
-      this.loading = false;
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
-      this.basicForm.reset()
-      this.guarantorForm.reset()
-      this.employeeForm.reset()
-      // this.currentTab = 1
-
-      // if (shouldRedirect) {
-      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-      // }
-    },
-    error: (err) => {
-      this.loading = false;
-      const detail = this.errorMessageService.getUserMessage(
-        err,
-        'Failed to submit onboarding details. Please try again.'
-      );
-      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-    }
-  })
-
-
-
-
-
+  return formData;
 }
 
 
  
   addNextOfKin() {
     if (this.NOKForm.valid) {
-      this.nextOfKinList.push(this.NOKForm.value);
+      this.nextOfKinList.push({ ...this.NOKForm.value, __saved: false });
       this.NOKForm.reset(); 
     } else {
     }
@@ -478,7 +672,7 @@ addNewEmployee(){
   }
   addGuarantor() {
     if (this.guarantorForm.valid) {
-      const guarantor = { ...this.guarantorForm.value };
+      const guarantor = { ...this.guarantorForm.value, __saved: false };
   
       // Convert files to base64 if they are present
       this.convertFileToBase64(guarantor.signature).then(base64 => guarantor.signature = base64);
@@ -559,7 +753,7 @@ addNewEmployee(){
     }));
   }
   getKeys(obj: any): string[] {
-    return Object.keys(obj);
+    return Object.keys(obj).filter(key => key !== '__saved');
   }
   toTitleCaseWithSpace(key: string): string {
     return key

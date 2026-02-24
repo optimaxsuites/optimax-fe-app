@@ -126,6 +126,11 @@
 
 
       <div class="text-right" *ngIf="!basicForm.get('createLogin')?.value">
+      <button type="button" (click)="saveDraft()" class="bg-gray-200 text-black px-4 py-3 rounded-lg mr-2" [disabled]="draftLoading || loading">
+        <span [ngClass]="draftLoading ? 'animate-ping' : ''">
+          {{draftLoading ? "Saving..." : "Save Draft"}}
+        </span>
+      </button>
       <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" >
         Next
       </button>
@@ -179,6 +184,11 @@
 
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="saveDraft()" class="bg-gray-200 text-black px-4 py-3 rounded-lg mr-2" [disabled]="draftLoading || loading">
+          <span [ngClass]="draftLoading ? 'animate-ping' : ''">
+            {{draftLoading ? "Saving..." : "Save Draft"}}
+          </span>
+        </button>
         <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
           Next
         </button>
@@ -270,6 +280,11 @@
 
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="saveDraft()" class="bg-gray-200 text-black px-4 py-3 rounded-lg mr-2" [disabled]="draftLoading || loading">
+          <span [ngClass]="draftLoading ? 'animate-ping' : ''">
+            {{draftLoading ? "Saving..." : "Save Draft"}}
+          </span>
+        </button>
         <button type="button" (click)="nextTabFromNok()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !NOKForm.valid">
           Next
         </button>
@@ -399,6 +414,11 @@
 
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="saveDraft()" class="bg-gray-200 text-black px-4 py-3 rounded-lg mr-2" [disabled]="draftLoading || loading">
+          <span [ngClass]="draftLoading ? 'animate-ping' : ''">
+            {{draftLoading ? "Saving..." : "Save Draft"}}
+          </span>
+        </button>
         <button type="button" (click)="nextTabFromGuarantor()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
           Next
         </button>
@@ -466,8 +486,8 @@
     
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-        <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
-          {{loading ? "Loading..." : "Submit"}}
+        <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid || loading"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+          {{loading ? "Loading..." : "Complete"}}
           </span></button>
       </div>
 
