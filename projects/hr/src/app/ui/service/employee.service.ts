@@ -1,15 +1,14 @@
-import { Injectable, isDevMode } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 
-import { Router } from '@angular/router';
-import { JwtHelperService } from '@auth0/angular-jwt';
-import { employeeDTO, LevelDTO } from '../domain/employee.dto';
+import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
 @Injectable({
   providedIn: 'root'
 })
 export class EmployeeService {
  baseurl = 'https://be.optimaxsuites.com'
+ vettingWebhookUrl = 'https://automation.optimaxsuites.com/webhook/a6eb636c-407e-49e1-9810-ee852b4a2a22'
   constructor(private http: HttpClient) { }
 
   addEmployee(data: any): Observable<any>{
@@ -125,6 +124,20 @@ export class EmployeeService {
         this.baseurl +
             `/x/api/v2/hr/guarantors`, data)
     .pipe(catchError(this.handleError));
+  }
+
+  sendOnboardingVetting(payload: any): Observable<any> {
+    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
+    return this.http
+      .post<any>(this.vettingWebhookUrl, payload, { context })
+      .pipe(catchError(this.handleError));
+  }
+
+  submitGuarantorConfirmation(data: FormData): Observable<any> {
+    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
+    return this.http
+      .post<any>(this.vettingWebhookUrl, data, { context })
+      .pipe(catchError(this.handleError));
   }
 
   private handleError(error: HttpErrorResponse) {

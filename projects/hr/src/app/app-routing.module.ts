@@ -11,6 +11,7 @@ import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/emp
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
+import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 import { MasterComponent } from './master.component';
 import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
 import { ProjectComponent } from './ui/view/project/project.component';
@@ -35,6 +36,10 @@ const routes: Routes = [
   {
     path: 'user/onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
+  },
+  {
+    path: 'guarantor/confirm/:token',
+    component: GuarantorConfirmationComponent,
   },
 
   {

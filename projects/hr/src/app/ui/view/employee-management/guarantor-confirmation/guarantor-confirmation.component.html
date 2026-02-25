@@ -1,0 +1,76 @@
+<div class="min-h-screen bg-slate-50 py-10 px-4">
+  <div class="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-6">
+    <h1 class="text-2xl font-bold text-customBlue mb-2">Guarantor Confirmation</h1>
+    <p class="text-sm text-gray-600 mb-6">
+      Please confirm that you know
+      <span class="font-semibold">{{ employeeName || 'the employee' }}</span>
+      and upload the required documents.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      <div>
+        <label class="block text-[13px] font-medium">Full Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="fullName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('fullName')?.touched && form.get('fullName')?.invalid" class="text-red-600">
+          Full name is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="email" formControlName="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('email')?.touched && form.get('email')?.invalid" class="text-red-600">
+          Enter a valid email address.
+        </small>
+      </div>
+
+      <div>
+        <label class="block text-[13px] font-medium">Phone <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="tel" formControlName="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('phone')?.touched && form.get('phone')?.invalid" class="text-red-600">
+          Phone number is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block text-[13px] font-medium">Signature <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file" (change)="onFileChange($event, 'signature')" formControlName="signature" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('signature')?.touched && form.get('signature')?.invalid" class="text-red-600">
+          Signature is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block text-[13px] font-medium">Passport Photograph <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file" (change)="onFileChange($event, 'passportPhoto')" formControlName="passportPhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('passportPhoto')?.touched && form.get('passportPhoto')?.invalid" class="text-red-600">
+          Passport photograph is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block text-[13px] font-medium">ID Card <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file" (change)="onFileChange($event, 'idCard')" formControlName="idCard" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="form.get('idCard')?.touched && form.get('idCard')?.invalid" class="text-red-600">
+          ID card is required.
+        </small>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" formControlName="confirm" class="h-5 w-5 accent-customGreen" />
+        <label class="text-sm text-gray-700">I confirm that I know this employee and agree to be contacted if needed.</label>
+      </div>
+      <small *ngIf="form.get('confirm')?.touched && form.get('confirm')?.invalid" class="text-red-600">
+        You must confirm before submitting.
+      </small>
+
+      <div class="text-right">
+        <button type="submit" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="submitting">
+          <span [ngClass]="submitting ? 'animate-ping' : ''">
+            {{ submitting ? 'Submitting...' : 'Submit Confirmation' }}
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

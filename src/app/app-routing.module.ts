@@ -36,6 +36,7 @@ import { PaymentComponent } from './ui/marketplace/view/payment/payment.componen
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
+import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 
 const routes: Routes = [
   {
@@ -81,6 +82,10 @@ const routes: Routes = [
     path: 'onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
     canActivate: [AuthGuard],
+  },
+    {
+    path: 'guarantor/confirm/:token/:uuid',
+    component: GuarantorConfirmationComponent,
   },
   {
     path: 'admin/settings/user-reg/:uuid',

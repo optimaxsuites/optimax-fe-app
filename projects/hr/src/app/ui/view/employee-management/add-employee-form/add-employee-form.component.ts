@@ -1,15 +1,9 @@
-import { Component, OnInit , Input } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, Input } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { environment } from '../../../shared-component/service/environments/environment';
-import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
-import { DataService } from '../../../service/data.service';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
@@ -64,13 +58,10 @@ export class AddEmployeeFormComponent {
   guarantorForm!: FormGroup
   NOKForm!: FormGroup
   registerInfo!: FormGroup
-  showModal: boolean = false;
-  currentFile: string = '';
   hide = true;
   hideConfirm = true;
   loading = false
   draftLoading = false;
-  fileDataUrl: SafeUrl = '';
   imageURL: string =''
   salaryStructure: any = [];
   departments = [
@@ -138,7 +129,6 @@ export class AddEmployeeFormComponent {
     private fb: FormBuilder,  
     private metadataService: MetadataService,
     private messageService: MessageService,
-    private dataService: DataService, 
     private employeeService: EmployeeService, 
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService
@@ -191,14 +181,6 @@ export class AddEmployeeFormComponent {
       fullName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
-      address: ['', [Validators.required]],
-      relationship: ['', [Validators.required]],
-      DOB: ['', [Validators.required]],
-      idNumber: ['', [Validators.required]],
-      yearsKnown: ['', [Validators.required, ]],
-      signature: ['', [Validators.required, this.imageFileValidator()]],
-      passportPhoto: ['', [Validators.required, this.imageFileValidator()]],
-      idCard: ['', [ this.imageFileValidator()]],
     });
 
     this.registerInfo = this.fb.group( {
@@ -288,14 +270,6 @@ export class AddEmployeeFormComponent {
         fullName: guarantor.fullName,
         email: guarantor.email,
         phone: guarantor.phone,
-        address: guarantor.address,
-        relationship: this.resolveId(guarantor.relationshipId ?? guarantor.relationship),
-        DOB: this.toDateInputValue(guarantor.dob ?? guarantor.DOB),
-        yearsKnown: guarantor.yearsKnown,
-        signature: guarantor.signature,
-        passportPhoto: guarantor.passportPhoto,
-        idCard: guarantor.idCard,
-        idNumber: guarantor.idNumber,
         __saved: true
       }));
     }
@@ -444,25 +418,11 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
         fullName: guarantor.fullName,
         email: guarantor.email,
         phone: guarantor.phone,
-        address: guarantor.address,
-        relationshipId: guarantor.relationship,
-        dob: this.toLocalDateTime(guarantor.DOB),
         employeeId:  Number(this.employeeId),
-        yearsKnown: Number(guarantor.yearsKnown),
-        idNumber: Number(guarantor.idNumber)
       } 
 
       const formData = new FormData();
       formData.append('guarantor', JSON.stringify(guarantorData));
-      if (guarantor.passportPhoto instanceof File) {
-        formData.append('Passport Photograph', guarantor.passportPhoto)
-      }
-      if (guarantor.idCard instanceof File) {
-        formData.append('Id Photo', guarantor.idCard)
-      }
-      if (guarantor.signature instanceof File) {
-        formData.append('Signature', guarantor.signature)
-      }
       this.employeeService.addGuarantor(formData).subscribe({
         next: () => {
           guarantor.__saved = true;
@@ -575,6 +535,21 @@ addNewEmployee(){
   const formData = this.buildEmployeeFormData();
   this.employeeService.addEmployee(formData).subscribe({
     next: (data: any) => {
+      const vettingPayload = this.buildEmployeePayload();
+      if (data?.id) {
+        vettingPayload.employee.id = data.id;
+        vettingPayload.employeeId = data.id;
+      }
+      this.employeeService.sendOnboardingVetting(vettingPayload).subscribe({
+        error: (err) => {
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Vetting request could not be sent. Please contact support.'
+          );
+          this.messageService.add({ severity: 'warn', summary: 'Notice', detail, key: 'tl', life: 4000 });
+        }
+      });
+
       console.log(data)
       this.loading = false;
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
@@ -598,7 +573,12 @@ addNewEmployee(){
   })
 }
 
-private buildEmployeeFormData(): FormData {
+private buildEmployeePayload(): {
+  employeeId: number;
+  employee: any;
+  nextOfKin: any[];
+  guarantors: any[];
+} {
   const newEmployee = {
  
 
@@ -637,9 +617,38 @@ private buildEmployeeFormData(): FormData {
 
 
   
-  }
+  };
+
+  const nextOfKin = this.nextOfKinList.map((nok) => ({
+    fullName: nok.fullName,
+    email: nok.email,
+    phone: nok.phone,
+    address: nok.address,
+    relationshipId: nok.relationship,
+    dob: this.toLocalDateTime(nok.DOB),
+    emergencyContact: nok.emergencyContact,
+    employeeId: Number(this.employeeId)
+  }));
+
+  const guarantors = this.guarantorList.map((guarantor) => ({
+    fullName: guarantor.fullName,
+    email: guarantor.email,
+    phone: guarantor.phone,
+    employeeId: Number(this.employeeId)
+  }));
+
+  return {
+    employeeId: Number(this.employeeId),
+    employee: newEmployee,
+    nextOfKin,
+    guarantors
+  };
+}
+
+private buildEmployeeFormData(): FormData {
+  const payload = this.buildEmployeePayload();
   const formData = new FormData();
-  formData.append('employee', JSON.stringify(newEmployee));
+  formData.append('employee', JSON.stringify(payload.employee));
 
   if (this.basicForm.get('profilePhoto')?.value instanceof File) {
     formData.append('file', this.basicForm.get('profilePhoto')?.value)
@@ -673,30 +682,12 @@ private buildEmployeeFormData(): FormData {
   addGuarantor() {
     if (this.guarantorForm.valid) {
       const guarantor = { ...this.guarantorForm.value, __saved: false };
-  
-      // Convert files to base64 if they are present
-      this.convertFileToBase64(guarantor.signature).then(base64 => guarantor.signature = base64);
-      this.convertFileToBase64(guarantor.passportPhoto).then(base64 => guarantor.passportPhoto = base64);
-      this.convertFileToBase64(guarantor.idCard).then(base64 => guarantor.idCard = base64);
-  
       // Push to the guarantorList
       this.guarantorList.push(guarantor);
   
       // Reset the form
       this.guarantorForm.reset();
     }
-  }
-  convertFileToBase64(file: File | null): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        resolve(null);
-      } else {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-      }
-    });
   }
   
   editGuarantor(index: number) {
@@ -705,14 +696,6 @@ private buildEmployeeFormData(): FormData {
       fullName: guarantor.fullName,
       email: guarantor.email,
       phone: guarantor.phone,
-      address: guarantor.address,
-      relationship: guarantor.relationship,
-      DOB: guarantor.DOB,
-      idNumber: guarantor.idNumber,
-      yearsKnown: guarantor.yearsKnown,
-      signature: null, 
-      passportPhoto: null, 
-      idCard: null, 
     });
     this.guarantorList.splice(index, 1);
   }
@@ -723,18 +706,6 @@ private buildEmployeeFormData(): FormData {
     }
   }
 
-  onFileChange(event: Event, controlName: string) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length) {
-      const file = input.files[0];
-     console.log(`${controlName} file:`, file);
-      // this.guarantorForm.patchValue({ [controlName]: file }); 
-      this.guarantorForm.get(controlName)?.setValue(file)
-
-      this.guarantorForm.get(controlName)?.updateValueAndValidity();
-
-    }
-  }
   onProfilePhotoChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
@@ -759,27 +730,6 @@ private buildEmployeeFormData(): FormData {
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
-  }
-  isFile(value: any): boolean {
-    return typeof value === 'string' && value.startsWith('data:image/');
-  }
-
-  openFileInModal(fileUrl: string) {
-    this.currentFile = fileUrl;
-    this.showModal = true;
-  }
-
-  closeModal() {
-    this.showModal = false;
-    this.fileDataUrl = '';
-  }
-
-  previewFile(fileUrl: string) {
-    if (fileUrl) {
-      this.fileDataUrl = fileUrl;
-      this.showModal = true;
-    }
-  
   }
 
   previewImageFile(file: File){
