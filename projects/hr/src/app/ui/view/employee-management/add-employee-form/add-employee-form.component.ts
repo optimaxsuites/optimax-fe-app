@@ -533,7 +533,9 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
 
 addNewEmployee(){
   const formData = this.buildEmployeeFormData();
-  this.employeeService.addEmployee(formData).subscribe({
+      const vettingPayload = this.buildEmployeePayload();
+
+  this.employeeService.updateEmployee(formData, vettingPayload.employee.id).subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
       if (data?.id) {
@@ -568,6 +570,7 @@ addNewEmployee(){
         err,
         'Failed to submit onboarding details. Please try again.'
       );
+      console.log("vettingPayload:", vettingPayload)
       this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
     }
   })
@@ -589,7 +592,7 @@ private buildEmployeePayload(): {
     workEmail: this.employeeData.workEmail,
     jobTitle: this.employeeData.jobTitle,
     departmentId: this.employeeData.departmentId,
-    levelId: this.employeeData.levelId,
+    levelId: 4,
     employmentType:  this.employeeData.employmentType,
     supervisor: this.employeeData.supervisor,
 
@@ -615,6 +618,10 @@ private buildEmployeePayload(): {
     bvn: this.employeeForm.get('bvn')?.value,
   
 
+    // levelId: this.employeeData.levelId,
+    // departmentId: this.employeeData.departmentId,
+    //  jobTitle: this.employeeData.jobTitle,
+     profilePhoto: this.basicForm.get('profilePhoto')?.value instanceof File ? null : this.basicForm.get('profilePhoto')?.value || null
 
   
   };
@@ -645,7 +652,7 @@ private buildEmployeePayload(): {
   };
 }
 
-private buildEmployeeFormData(): FormData {
+private buildEmployeeFormData():any {
   const payload = this.buildEmployeePayload();
   const formData = new FormData();
   formData.append('employee', JSON.stringify(payload.employee));
@@ -654,7 +661,7 @@ private buildEmployeeFormData(): FormData {
     formData.append('file', this.basicForm.get('profilePhoto')?.value)
   }
   console.log(formData)
-  return formData;
+  return payload.employee;
 }
 
 

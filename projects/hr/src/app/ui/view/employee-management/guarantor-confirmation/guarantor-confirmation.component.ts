@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { EmployeeService } from '../../../service/employee.service';
@@ -14,16 +14,9 @@ export class GuarantorConfirmationComponent {
   token = '';
   employeeName = '';
   submitting = false;
+  form!: FormGroup
 
-  form = this.fb.group({
-    fullName: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required]],
-    confirm: [false, [Validators.requiredTrue]],
-    signature: [null as File | null, [Validators.required]],
-    passportPhoto: [null as File | null, [Validators.required]],
-    idCard: [null as File | null, [Validators.required]],
-  });
+
 
   constructor(
     private fb: FormBuilder,
@@ -34,7 +27,19 @@ export class GuarantorConfirmationComponent {
   ) {
     this.token = this.route.snapshot.paramMap.get('token') || '';
     this.employeeName = this.route.snapshot.queryParamMap.get('employee') || '';
+       this.form = this.fb.group({
+    fullName: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required]],
+    confirm: [false, [Validators.requiredTrue]],
+    signature: [null as File | null, [Validators.required]],
+    passportPhoto: [null as File | null, [Validators.required]],
+    idCard: [null as File | null, [Validators.required]],
+    
+  });
+
   }
+
 
   onFileChange(event: Event, controlName: 'signature' | 'passportPhoto' | 'idCard') {
     const input = event.target as HTMLInputElement;

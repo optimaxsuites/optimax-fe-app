@@ -19,6 +19,14 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  updateEmployee(data: any, id: number): Observable<any>{
+    return this.http
+        .put<any>(
+            this.baseurl +
+                `/x/api/v2/hr/employees/${id}`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   addBulkEmployee(data: {}[]): Observable<any>{
     return this.http
         .post<any>(
