@@ -15,6 +15,32 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('dashboardLink'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
+      submenu: [
+        {
+          label: 'Communications',
+          code: 'DASH_COMM',
+          route: this.navigationLink.getLink('dashboardLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'View and manage communications across the organization.'
+        },
+        {
+          label: 'optimaXAI',
+          code: 'OPTIMA_AI',
+          route: this.navigationLink.getLink('optimaXAILink'), 
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'optimax business artificial intelligence.'
+        },
+        {
+          label: 'Analytics',
+          code: 'DASH_ANALY',
+          route: this.navigationLink.getLink('analyticsLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'BUSINESS ANALYTICS.'
+        }
+      ]
     },
     {
       label: 'Sales',
@@ -58,7 +84,57 @@ export class MenuItemsService {
       description: 'The Procurement module of OptimaXSuites supports the end-to-end process of requisitions, supplier selection, and order processing.',
       shortDescription: 'Manage requisitions, supplier selection, and procurement workflows.',
       locked: true,
-      active: false
+      active: true,
+      submenu: [
+        {
+          label: 'PR Management',
+          code: 'PR_MGMT',
+          route: this.navigationLink.getLink('procurementLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'View and manage procurements across the organization.'
+        },
+        {
+          label: 'Vendor management ',
+          code: 'VENDOR_MGMT',
+          route: this.navigationLink.getLink('vendorManagementLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'Manage vendor profiles, contracts, and supplier relationships.'
+        },
+        {
+          label: 'Vendor',
+          code: 'PR_VENDOR',
+          route: this.navigationLink.getLink('vendorLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View vendor details and manage vendor relationships.'
+        },
+        {
+          label: 'RFQs',
+          code: 'PR_RFQ',
+          route: this.navigationLink.getLink('rfqLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'Manage RFQs and vendor responses.'
+        },
+        {
+          label: 'Quotations',
+          code: 'PR_QUOTE',
+          route: this.navigationLink.getLink('quotationLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage vendor quotations.'
+        },
+        {
+          label: 'LPO',
+          code: 'PR_LPO',
+          route: this.navigationLink.getLink('lpoLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage LPOs.'
+        }
+      ]
     },    
     {
       label: 'Accounting',

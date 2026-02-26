@@ -20,10 +20,10 @@ export class NavigationLinksService {
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
     this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
 
-    this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
+    // this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
     this.links['procurementSettingsLink'] = '/admin/procurement/settings/' +uuidV4();
-    this.links['rfqLink'] = '/admin/procurement/rfq/' +uuidV4();
-    this.links['rfqFormLink'] = '/admin/procurement/rfq-form/' +uuidV4();
+    // this.links['rfqLink'] = '/admin/procurement/rfq/' +uuidV4();
+    // this.links['rfqFormLink'] = '/admin/procurement/rfq-form/' +uuidV4();
 
 
 
@@ -74,8 +74,8 @@ export class NavigationLinksService {
 
 
 // Vendor link========================================================================================================
-    this.links['vendorLink'] = '/vendor/' +uuidV4();
-    this.links['vendorRfqLink'] = '/vendor/rfq/' +uuidV4();
+    // this.links['vendorLink'] = '/vendor/' +uuidV4();
+    // this.links['vendorRfqLink'] = '/vendor/rfq/' +uuidV4();
 
 
 
@@ -122,6 +122,15 @@ this.links['ingredientLink'] = '/admin/pos/ingredients/' +uuidV4();
 this.links['reimbursementLink'] = '/admin/expenses/reimbursement/' +uuidV4()
 this.links['advanceLink'] = '/admin/expenses/advance/' +uuidV4()
 this.links['expenseReportLink'] = '/admin/expenses/report/' +uuidV4()
+
+
+// procurement ================================================================================================================
+this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
+this.links['vendorManagementLink'] = '/admin/procurement/vendor/' +uuidV4();
+this.links['vendorLink'] = '/admin/procurement/vendor-portal/dashboard/' +uuidV4();
+this.links['rfqLink'] = '/admin/procurement/rfqs/' +uuidV4();
+this.links['quotationLink'] = '/admin/procurement/quotation/' +uuidV4();
+this.links['lpoLink'] = '/admin/procurement/lpo/' +uuidV4();
 
 
 

@@ -14,12 +14,12 @@ import { RfqComponent } from './ui/view/vendor-portal/rfq/rfq.component';
 
 const routes: Routes = [
   { path: 'admin/procurement', component: ProcurementPageComponent },
-  { path: 'admin/vendor', component: VendorPageComponent },
+  { path: 'vendor/:uuid', component: VendorPageComponent },
   
-  {path: 'vendor-portal/dashboard', component: DashboardComponent},
-  {path: 'vendor-portal/rfq', component: RfqComponent},
+  {path: 'vendor-portal/dashboard/:uuid', component: DashboardComponent},
+  {path: 'vendor-portal/rfq/:uuid', component: RfqComponent},
 
-  { path: 'vendor-register', component: VendorRegistrationComponent },
+  { path: 'vendor-register/:uuid', component: VendorRegistrationComponent },
 
   {
     path: '',
