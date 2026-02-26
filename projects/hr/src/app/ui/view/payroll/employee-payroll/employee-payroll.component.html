@@ -199,34 +199,6 @@
   
 </div>
 
-<div class="border-2 rounded-3xl m-4 table-item">
-    <p-toolbar styleClass="mb-4 gap-2">
-        <ng-template pTemplate="left">
-        <div class="flex gap-3 text-gray-700 items-center">
-            <p class="text-gray-700 text-[20px]">Payroll Queries</p>
-            <span class="text-[12px] text-gray-500">Period: {{selectedMonth}} {{selectedYear}}</span>
-        </div>
-         
-          </ng-template>
-      <ng-template pTemplate="right">
-        <app-button text="Create Query" class="btn-navigate gap-2"></app-button>
-      </ng-template>
-    </p-toolbar>
-
-    <app-table 
-        [columns]="queryColumns"
-        [rows]="filteredPayrollQueries"
-        [actions]="queryActions"
-        [paginator]="true"
-        [rowsPerPage]="10"
-        [tableStyle]="{'min-height': 'fit-content', 'max-height': '600px'}"
-        [emptyMessage]="'No queries for this period'"
-        (actionClick)="handleQueryAction($event)"
-        >
-    </app-table>
-</div>
-
-
   <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false">
     <div class="py-3 text-customBlue table-item">
         <p class="text-center text-[20px] font-semibold">Payslip for the period of {{selectedMonth}} {{selectedYear}}</p>

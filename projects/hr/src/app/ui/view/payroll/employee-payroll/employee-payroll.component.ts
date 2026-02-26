@@ -54,19 +54,6 @@ interface PayrollSettings {
   salaryByLevel: SalaryLevelSetting[];
 }
 
-interface PayrollQuery {
-  id: string;
-  employeeId: number;
-  employeeName: string;
-  periodMonth: number;
-  periodYear: number;
-  issue: string;
-  requestedBy: string;
-  createdAt: string;
-  adjustment: number;
-  status: 'Open' | 'Approved' | 'Rejected' | 'Resolved';
-  notes?: string;
-}
 @Component({
   selector: 'app-employee-payroll',
   templateUrl: './employee-payroll.component.html',
@@ -133,69 +120,6 @@ overtimeOverrides: Record<number, number> = {
   6: 5,
   9: 3
 };
-
-payrollQueries: PayrollQuery[] = [
-  {
-    id: 'Q-1001',
-    employeeId: 1,
-    employeeName: 'Adebayo Oluwaseun',
-    periodMonth: 10,
-    periodYear: 2024,
-    issue: 'Late arrival dispute',
-    requestedBy: 'Employee',
-    createdAt: '2024-10-18',
-    adjustment: -1000,
-    status: 'Open',
-    notes: 'Client visit confirmed by sales lead.'
-  },
-  {
-    id: 'Q-1002',
-    employeeId: 4,
-    employeeName: 'Yemi Adesanya',
-    periodMonth: 10,
-    periodYear: 2024,
-    issue: 'Overtime correction',
-    requestedBy: 'HR',
-    createdAt: '2024-10-19',
-    adjustment: 2500,
-    status: 'Approved',
-    notes: 'Overtime hours validated by team lead.'
-  },
-  {
-    id: 'Q-1003',
-    employeeId: 2,
-    employeeName: 'Chinaza Okeke',
-    periodMonth: 9,
-    periodYear: 2024,
-    issue: 'Attendance penalty review',
-    requestedBy: 'Employee',
-    createdAt: '2024-09-20',
-    adjustment: 0,
-    status: 'Resolved'
-  }
-];
-
-filteredPayrollQueries: PayrollQuery[] = [];
-
-queryColumns: TableColumn[] = [
-  { header: 'Employee', field: 'employeeName', sortable: true, className: 'table-item' },
-  { header: 'Issue', field: 'issue', sortable: true, className: 'table-item' },
-  {
-    header: 'Adjustment',
-    field: 'adjustment',
-    sortable: true,
-    className: 'table-item',
-    formatter: (row) => this.formatCurrency(row?.adjustment ?? 0)
-  },
-  { header: 'Status', field: 'status', sortable: true, className: 'table-item' },
-  { header: 'Raised On', field: 'createdAt', sortable: true, className: 'table-item' }
-];
-
-queryActions: TableAction[] = [
-  { id: 'approve', label: 'Approve', icon: 'pi pi-check', visible: (row) => row.status === 'Open' },
-  { id: 'reject', label: 'Reject', icon: 'pi pi-times', visible: (row) => row.status === 'Open' },
-  { id: 'resolve', label: 'Resolve', icon: 'pi pi-check-circle', visible: (row) => row.status !== 'Resolved' }
-];
 
   payrollColumns: TableColumn[] = [
     { header: 'Employee', field: 'name', sortable: true, className: 'table-item' },
@@ -1824,9 +1748,6 @@ ngOnInit(){
         this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
         this.filteredEmployeePayroll = [...normalizedPayroll];
         this.currentPayroll = [...normalizedPayroll];
-        this.filteredPayrollQueries = this.payrollQueries.filter(
-          query => query.periodYear === this.selectedYear && query.periodMonth === monthIndex
-        );
       } else {
      
         this.payType = [];
@@ -1834,7 +1755,6 @@ ngOnInit(){
         this.level = [];
         this.filteredEmployeePayroll = [];
         this.currentPayroll = [];
-        this.filteredPayrollQueries = [];
       }
       this.payrollSumary = this.calculatePayrollSummary();
   }
@@ -1962,23 +1882,6 @@ ngOnInit(){
   onSettingsChange() {
     if (!this.selectedMonth || !this.selectedYear) return;
     this.handlePeriodChange();
-  }
-
-  handleQueryAction(event: { actionId: string; row: PayrollQuery }) {
-    const queryIndex = this.payrollQueries.findIndex(query => query.id === event.row.id);
-    if (queryIndex === -1) return;
-
-    const current = this.payrollQueries[queryIndex];
-    let status = current.status;
-    if (event.actionId === 'approve') status = 'Approved';
-    if (event.actionId === 'reject') status = 'Rejected';
-    if (event.actionId === 'resolve') status = 'Resolved';
-    this.payrollQueries[queryIndex] = { ...current, status };
-
-    const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
-    this.filteredPayrollQueries = this.payrollQueries.filter(
-      query => query.periodYear === this.selectedYear && query.periodMonth === monthIndex
-    );
   }
 
   viewSummary(){
