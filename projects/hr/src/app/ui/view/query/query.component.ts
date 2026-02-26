@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { TableAction, TableColumn } from '../../shared-component/view/table/table.component';
 
-type QueryRole = 'Admin' | 'Employee';
 type QueryStatus = 'Open' | 'Responded' | 'Verdict Passed';
 type QueryVerdict = 'Approved' | 'Rejected' | 'Pending';
 
@@ -10,11 +9,14 @@ interface QueryRecord {
   employeeId: number;
   employeeName: string;
   department: string;
+  createdById: number;
+  createdByName: string;
   periodMonth: number;
   periodYear: number;
   issue: string;
   description: string;
   adjustment: number;
+  requiresJustification: boolean;
   status: QueryStatus;
   verdict: QueryVerdict;
   createdAt: string;
@@ -28,13 +30,16 @@ interface QueryRecord {
   styleUrl: './query.component.scss'
 })
 export class QueryComponent {
-  viewRole: QueryRole = 'Admin';
-  currentEmployeeId = 1;
+  userRole = sessionStorage.getItem('role') || 'Employee';
+  isAdmin = this.userRole.toLowerCase().includes('admin');
+  currentUserId = this.isAdmin ? 99 : 1;
+  currentUserName = this.isAdmin ? 'HR Admin' : 'John Doe';
   showCreateForm = false;
   showDetail = false;
   selectedQuery: QueryRecord | null = null;
   searchTerm = '';
   statusFilter: QueryStatus | 'All' = 'All';
+  activeTab: 'all' | 'mine' = this.isAdmin ? 'all' : 'mine';
 
   monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -47,7 +52,8 @@ export class QueryComponent {
     periodYear: 2024,
     issue: '',
     description: '',
-    adjustment: 0
+    adjustment: 0,
+    requiresJustification: true
   };
 
   queryRecords: QueryRecord[] = [
@@ -56,11 +62,14 @@ export class QueryComponent {
       employeeId: 1,
       employeeName: 'Adebayo Oluwaseun',
       department: 'Sales',
+      createdById: 99,
+      createdByName: 'HR Admin',
       periodMonth: 10,
       periodYear: 2024,
       issue: 'Late arrival dispute',
       description: 'Attendance flagged as late. Employee claims client visit.',
       adjustment: -1000,
+      requiresJustification: true,
       status: 'Open',
       verdict: 'Pending',
       createdAt: '2024-10-18'
@@ -70,11 +79,14 @@ export class QueryComponent {
       employeeId: 4,
       employeeName: 'Yemi Adesanya',
       department: 'Marketing',
+      createdById: 99,
+      createdByName: 'HR Admin',
       periodMonth: 10,
       periodYear: 2024,
       issue: 'Overtime correction',
       description: 'Overtime hours mismatch between attendance and payroll.',
       adjustment: 2500,
+      requiresJustification: true,
       status: 'Responded',
       verdict: 'Pending',
       createdAt: '2024-10-19',
@@ -86,11 +98,14 @@ export class QueryComponent {
       employeeId: 2,
       employeeName: 'Chinaza Okeke',
       department: 'Finance',
+      createdById: 12,
+      createdByName: 'Payroll Lead',
       periodMonth: 9,
       periodYear: 2024,
       issue: 'Attendance penalty review',
       description: 'Penalty applied despite approved leave.',
       adjustment: 0,
+      requiresJustification: false,
       status: 'Verdict Passed',
       verdict: 'Approved',
       createdAt: '2024-09-20',
@@ -109,14 +124,14 @@ export class QueryComponent {
 
   refreshView() {
     this.filteredQueries = this.queryRecords.filter(query => {
-      const roleMatch = this.viewRole === 'Admin' || query.employeeId === this.currentEmployeeId;
+      const roleMatch = this.isAdmin ? (this.activeTab === 'all' || query.createdById === this.currentUserId) : query.employeeId === this.currentUserId;
       const statusMatch = this.statusFilter === 'All' || query.status === this.statusFilter;
       const term = this.searchTerm.toLowerCase();
       const termMatch = !term || query.issue.toLowerCase().includes(term) || query.employeeName.toLowerCase().includes(term);
       return roleMatch && statusMatch && termMatch;
     });
 
-    this.queryColumns = this.viewRole === 'Admin'
+    this.queryColumns = this.isAdmin
       ? [
           { header: 'Employee', field: 'employeeName', sortable: true, className: 'table-item' },
           { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
@@ -134,14 +149,14 @@ export class QueryComponent {
           { header: 'Verdict', field: 'verdict', sortable: true, className: 'table-item' }
         ];
 
-    this.queryActions = this.viewRole === 'Admin'
+    this.queryActions = this.isAdmin
       ? [
           { id: 'review', label: 'Review', icon: 'pi pi-eye' },
-          { id: 'approve', label: 'Approve', icon: 'pi pi-check', visible: (row) => row.status === 'Responded' },
-          { id: 'reject', label: 'Reject', icon: 'pi pi-times', visible: (row) => row.status === 'Responded' }
+          { id: 'approve', label: 'Approve', icon: 'pi pi-check', visible: (row) => row.status === 'Responded' || (!row.requiresJustification && row.status === 'Open') },
+          { id: 'reject', label: 'Reject', icon: 'pi pi-times', visible: (row) => row.status === 'Responded' || (!row.requiresJustification && row.status === 'Open') }
         ]
       : [
-          { id: 'respond', label: 'Respond', icon: 'pi pi-comment', visible: (row) => row.status === 'Open' },
+          { id: 'respond', label: 'Respond', icon: 'pi pi-comment', visible: (row) => row.status === 'Open' && row.requiresJustification },
           { id: 'view', label: 'View', icon: 'pi pi-eye' }
         ];
   }
@@ -156,11 +171,16 @@ export class QueryComponent {
     return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
-  onRoleChange() {
+  onFilterChange() {
     this.refreshView();
   }
 
-  onFilterChange() {
+  setActiveTab(tab: 'all' | 'mine') {
+    if (!this.isAdmin) {
+      this.activeTab = 'mine';
+    } else {
+      this.activeTab = tab;
+    }
     this.refreshView();
   }
 
@@ -236,11 +256,14 @@ export class QueryComponent {
       employeeId: this.createForm.employeeId,
       employeeName,
       department,
+      createdById: this.currentUserId,
+      createdByName: this.currentUserName,
       periodMonth: this.createForm.periodMonth,
       periodYear: this.createForm.periodYear,
       issue: issue,
       description: this.createForm.description.trim() || issue,
       adjustment: Number(this.createForm.adjustment) || 0,
+      requiresJustification: this.createForm.requiresJustification,
       status: 'Open',
       verdict: 'Pending',
       createdAt: new Date().toISOString().slice(0, 10)
@@ -249,6 +272,7 @@ export class QueryComponent {
     this.createForm.issue = '';
     this.createForm.description = '';
     this.createForm.adjustment = 0;
+    this.createForm.requiresJustification = true;
     this.showCreateForm = false;
     this.refreshView();
   }
