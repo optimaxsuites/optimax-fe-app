@@ -31,6 +31,7 @@ import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/c
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
+import { QueryComponent } from './ui/view/query/query.component';
 
 const routes: Routes = [
   {
@@ -66,6 +67,10 @@ const routes: Routes = [
    {
     path: 'loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
+  },
+   {
+    path: 'query/:uuid',
+    component: QueryComponent,
   },
   // {
 //   path: 'loan-management.loan-details/:loanId',

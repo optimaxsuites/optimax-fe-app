@@ -218,6 +218,14 @@ export class MenuItemsService {
           description: 'Monitor employee performance, set goals, and conduct evaluations.'
         },
         {
+          label: 'Query',
+          code: 'HR_QUERY',
+          route: this.navigationLink.getLink('queryLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-question-circle',
+          description: 'Manage queries and support tickets raised by employees.'
+        },
+        {
           label: 'Work Schedule',
           code: 'HR_WORK_SCH',
           route: this.navigationLink.getLink('workScheduleLink'),
