@@ -1,3 +1,109 @@
+<div class="border-2 rounded-3xl m-4 p-4 table-item">
+  <div class="flex justify-between items-center">
+    <div>
+      <p class="text-gray-700 text-[20px] font-semibold">Payroll Settings Snapshot</p>
+      <p class="text-[12px] text-gray-500">Configured in settings and applied to this payroll run.</p>
+    </div>
+    <app-button text="Edit Settings" class="btn-navigate gap-2"></app-button>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4 mt-4">
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+      <p class="font-semibold text-gray-700">Pay Schedule</p>
+      <p class="text-[13px] text-gray-600 mt-2">
+        Cycle: {{ payrollSettings.paySchedule.startDay }}th - {{ payrollSettings.paySchedule.endDay }}th
+      </p>
+      <p class="text-[13px] text-gray-600">Working days: {{ payrollSettings.paySchedule.workingDaysPerPeriod }}</p>
+      <p class="text-[13px] text-gray-600">Hours/day: {{ payrollSettings.paySchedule.hoursPerDay }}</p>
+    </div>
+
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+      <p class="font-semibold text-gray-700">Attendance Deductions</p>
+      <p class="text-[13px] text-gray-600 mt-2">
+        Resumption: {{ payrollSettings.attendancePolicy.resumptionTime }}
+        ({{ payrollSettings.attendancePolicy.graceMinutes }} min grace)
+      </p>
+      <p class="text-[13px] text-gray-600">Late until {{ payrollSettings.attendancePolicy.lateWindowEnd }}</p>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-[12px] text-gray-500">Late penalty</span>
+        <select
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
+          [(ngModel)]="payrollSettings.attendancePolicy.latePenalty.type"
+          (change)="onSettingsChange()">
+          <option value="fixed">Fixed</option>
+          <option value="percentage">%</option>
+        </select>
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
+          [(ngModel)]="payrollSettings.attendancePolicy.latePenalty.amount"
+          (change)="onSettingsChange()"
+        />
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-[12px] text-gray-500">Absent penalty</span>
+        <select
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
+          [(ngModel)]="payrollSettings.attendancePolicy.absentPenalty.type"
+          (change)="onSettingsChange()">
+          <option value="fixed">Fixed</option>
+          <option value="percentage">%</option>
+        </select>
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
+          [(ngModel)]="payrollSettings.attendancePolicy.absentPenalty.amount"
+          (change)="onSettingsChange()"
+        />
+      </div>
+    </div>
+
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+      <p class="font-semibold text-gray-700">Overtime</p>
+      <label class="flex items-center gap-2 text-[13px] text-gray-600 mt-2">
+        <input type="checkbox" [(ngModel)]="payrollSettings.overtime.enabled" (change)="onSettingsChange()" />
+        Enabled
+      </label>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-[12px] text-gray-500">Rate</span>
+        <select
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
+          [(ngModel)]="payrollSettings.overtime.rateType"
+          (change)="onSettingsChange()">
+          <option value="percentage">%</option>
+          <option value="fixed">Fixed</option>
+        </select>
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
+          [(ngModel)]="payrollSettings.overtime.rateValue"
+          (change)="onSettingsChange()"
+        />
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-[12px] text-gray-500">Max hours/period</span>
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
+          [(ngModel)]="payrollSettings.overtime.maxHoursPerPeriod"
+          (change)="onSettingsChange()"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-5">
+    <p class="font-semibold text-gray-700">Salary By Level</p>
+    <div class="grid grid-cols-4 gap-3 mt-3">
+      <div *ngFor="let levelSetting of payrollSettings.salaryByLevel" class="bg-white border border-gray-100 rounded-xl p-3">
+        <p class="font-semibold text-gray-700">{{ levelSetting.level }}</p>
+        <p class="text-[12px] text-gray-600">Monthly: {{ formatCurrency(levelSetting.monthly) }}</p>
+        <p class="text-[12px] text-gray-600">Daily: {{ formatCurrency(levelSetting.daily) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="border-2  rounded-3xl m-4 table-item">
     <p-toolbar styleClass="mb-4 gap-2">
         <ng-template pTemplate="left">
@@ -93,6 +199,33 @@
   
 </div>
 
+<div class="border-2 rounded-3xl m-4 table-item">
+    <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+        <div class="flex gap-3 text-gray-700 items-center">
+            <p class="text-gray-700 text-[20px]">Payroll Queries</p>
+            <span class="text-[12px] text-gray-500">Period: {{selectedMonth}} {{selectedYear}}</span>
+        </div>
+         
+          </ng-template>
+      <ng-template pTemplate="right">
+        <app-button text="Create Query" class="btn-navigate gap-2"></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <app-table 
+        [columns]="queryColumns"
+        [rows]="filteredPayrollQueries"
+        [actions]="queryActions"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '600px'}"
+        [emptyMessage]="'No queries for this period'"
+        (actionClick)="handleQueryAction($event)"
+        >
+    </app-table>
+</div>
+
 
   <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false">
     <div class="py-3 text-customBlue table-item">
@@ -107,7 +240,7 @@
                 <p><span>Department: </span>{{currentEmployeeInView.department}}</p>
                 <p><span>Account Number: </span>{{currentEmployeeInView.accountNumber}}</p>
                 <p><span>Bank Name: </span>{{currentEmployeeInView.bank}}</p>
-                <p><span>Days worked: </span>22.0</p>
+                <p><span>Days worked: </span>{{ currentEmployeeInView.daysWorked ?? payrollSettings.paySchedule.workingDaysPerPeriod }}</p>
             </div>
         
         </div>
@@ -183,10 +316,10 @@
         </ng-template>
 
         <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        <tr *ngIf="employee.type == 'salaried'"  class="p-table-row bg-gray-50 "> 
-            <td class="table-item capitalize" style="width: 60%;">Base Salary</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.salary | number: '1.2-2' }}</td>
-            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.salary | number: '1.2-2'}}</td>
+        <tr *ngIf="employee.payType !== 'project'"  class="p-table-row bg-gray-50 "> 
+            <td class="table-item capitalize" style="width: 60%;">{{ employee.basePayLabel }}</td>
+            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.basePay | number: '1.2-2' }}</td>
+            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.basePay | number: '1.2-2'}}</td>
         </tr>
         <ng-container *ngIf="employee.type === 'project-based'">
             <ng-container *ngFor="let project of employee.projects">
@@ -207,10 +340,15 @@
             <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
             <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
         </tr>
+        <tr *ngIf="employee.overtimePay > 0" class="p-table-row bg-gray-50 ">
+            <td class="table-item capitalize" style="width: 60%;">Overtime ({{ employee.overtimeHours }} hrs)</td>
+            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.overtimePay | number: '1.2-2'}}</td>
+            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.overtimePay | number: '1.2-2'}}</td>
+        </tr>
         <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
             <td class="table-item capitalize" style="width: 60%;"></td>
             <td class="table-item capitalize" style="width: 20%;">Gross Pay</td>
-            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>12345</td>
+            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>{{ employee.grossPay | number: '1.2-2'}}</td>
         </tr>
         </ng-template>
 
@@ -246,7 +384,7 @@
         <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
             <td class="table-item capitalize" style="width: 60%;"></td>
             <td class="table-item capitalize" style="width: 20%;">Total Deduction</td>
-            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>12345</td>
+            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>{{ employee.totalDeductions | number: '1.2-2' }}</td>
         </tr>
         </ng-template>
 
@@ -338,8 +476,16 @@
                 <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.totalBonuses | number: '1.2-2' }}</td>
             </tr>
             <tr  class="p-table-row bg-gray-50 "> 
+                <td class="table-item capitalize" style="width: 80%;">Total Overtime</td>
+                <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.totalOvertimePay | number: '1.2-2' }}</td>
+            </tr>
+            <tr  class="p-table-row bg-gray-50 "> 
                 <td class="table-item capitalize" style="width: 80%;">Total Deductions</td>
                 <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.totalDeductions | number: '1.2-2' }}</td>
+            </tr>
+            <tr  class="p-table-row bg-gray-50 "> 
+                <td class="table-item capitalize" style="width: 80%;">Attendance Deductions</td>
+                <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.totalAttendanceDeductions | number: '1.2-2' }}</td>
             </tr>
             <tr  class="p-table-row bg-gray-50 "> 
                 <td class="table-item capitalize" style="width: 80%;">Total Tax</td>

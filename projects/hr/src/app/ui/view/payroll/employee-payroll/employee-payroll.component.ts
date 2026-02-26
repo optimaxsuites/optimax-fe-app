@@ -10,35 +10,218 @@ interface Allowances {
     travelAllowance: number;
     [key: string]: number; 
 }
+type PenaltyType = 'fixed' | 'percentage';
+type PayType = 'monthly' | 'daily' | 'hourly' | 'project';
+
+interface AttendanceSummary {
+  lateDays: number;
+  absentDays: number;
+}
+
+interface SalaryLevelSetting {
+  level: string;
+  monthly: number;
+  daily: number;
+  hourly?: number;
+}
+
+interface PayrollSettings {
+  paySchedule: {
+    startDay: number;
+    endDay: number;
+    workingDaysPerPeriod: number;
+    hoursPerDay: number;
+  };
+  attendancePolicy: {
+    resumptionTime: string;
+    graceMinutes: number;
+    lateWindowEnd: string;
+    latePenalty: {
+      type: PenaltyType;
+      amount: number;
+    };
+    absentPenalty: {
+      type: PenaltyType;
+      amount: number;
+    };
+  };
+  overtime: {
+    enabled: boolean;
+    rateType: 'percentage' | 'fixed';
+    rateValue: number;
+    maxHoursPerPeriod: number;
+  };
+  salaryByLevel: SalaryLevelSetting[];
+}
+
+interface PayrollQuery {
+  id: string;
+  employeeId: number;
+  employeeName: string;
+  periodMonth: number;
+  periodYear: number;
+  issue: string;
+  requestedBy: string;
+  createdAt: string;
+  adjustment: number;
+  status: 'Open' | 'Approved' | 'Rejected' | 'Resolved';
+  notes?: string;
+}
 @Component({
   selector: 'app-employee-payroll',
   templateUrl: './employee-payroll.component.html',
   styleUrl: './employee-payroll.component.scss'
 })
 export class EmployeePayrollComponent {
-payType: any[] =[]
-selectedPayType: any;
-department:  any[] = []
-selectedDepartment: any;
-selectedLevel: any;
-searchTerm: any;
-level: any[] = []
-viewEmployee: boolean = false
-openSummary: boolean = false
+payType: string[] = [];
+selectedPayType: string[] = [];
+department: string[] = [];
+selectedDepartment: string[] = [];
+selectedLevel: string[] = [];
+searchTerm = '';
+level: string[] = [];
+viewEmployee = false;
+openSummary = false;
 showDropdown = false;
-  selectedEmployees: any = [];
-  currentEmployeeInView: any = {}
+selectedEmployees: any[] = [];
+currentEmployeeInView: any = {};
+
+payrollSettings: PayrollSettings = {
+  paySchedule: {
+    startDay: 15,
+    endDay: 15,
+    workingDaysPerPeriod: 22,
+    hoursPerDay: 8
+  },
+  attendancePolicy: {
+    resumptionTime: '09:00',
+    graceMinutes: 15,
+    lateWindowEnd: '10:30',
+    latePenalty: {
+      type: 'fixed',
+      amount: 1000
+    },
+    absentPenalty: {
+      type: 'fixed',
+      amount: 3000
+    }
+  },
+  overtime: {
+    enabled: true,
+    rateType: 'percentage',
+    rateValue: 150,
+    maxHoursPerPeriod: 20
+  },
+  salaryByLevel: [
+    { level: 'Junior', monthly: 4500, daily: 200 },
+    { level: 'Mid-level', monthly: 5500, daily: 250 },
+    { level: 'Senior', monthly: 6500, daily: 300 },
+    { level: 'Contract', monthly: 0, daily: 180 }
+  ]
+};
+
+attendanceOverrides: Record<number, AttendanceSummary> = {
+  1: { lateDays: 1, absentDays: 0 },
+  2: { lateDays: 0, absentDays: 1 },
+  4: { lateDays: 2, absentDays: 0 },
+  8: { lateDays: 0, absentDays: 2 }
+};
+
+overtimeOverrides: Record<number, number> = {
+  1: 4,
+  3: 2,
+  6: 5,
+  9: 3
+};
+
+payrollQueries: PayrollQuery[] = [
+  {
+    id: 'Q-1001',
+    employeeId: 1,
+    employeeName: 'Adebayo Oluwaseun',
+    periodMonth: 10,
+    periodYear: 2024,
+    issue: 'Late arrival dispute',
+    requestedBy: 'Employee',
+    createdAt: '2024-10-18',
+    adjustment: -1000,
+    status: 'Open',
+    notes: 'Client visit confirmed by sales lead.'
+  },
+  {
+    id: 'Q-1002',
+    employeeId: 4,
+    employeeName: 'Yemi Adesanya',
+    periodMonth: 10,
+    periodYear: 2024,
+    issue: 'Overtime correction',
+    requestedBy: 'HR',
+    createdAt: '2024-10-19',
+    adjustment: 2500,
+    status: 'Approved',
+    notes: 'Overtime hours validated by team lead.'
+  },
+  {
+    id: 'Q-1003',
+    employeeId: 2,
+    employeeName: 'Chinaza Okeke',
+    periodMonth: 9,
+    periodYear: 2024,
+    issue: 'Attendance penalty review',
+    requestedBy: 'Employee',
+    createdAt: '2024-09-20',
+    adjustment: 0,
+    status: 'Resolved'
+  }
+];
+
+filteredPayrollQueries: PayrollQuery[] = [];
+
+queryColumns: TableColumn[] = [
+  { header: 'Employee', field: 'employeeName', sortable: true, className: 'table-item' },
+  { header: 'Issue', field: 'issue', sortable: true, className: 'table-item' },
+  {
+    header: 'Adjustment',
+    field: 'adjustment',
+    sortable: true,
+    className: 'table-item',
+    formatter: (row) => this.formatCurrency(row?.adjustment ?? 0)
+  },
+  { header: 'Status', field: 'status', sortable: true, className: 'table-item' },
+  { header: 'Raised On', field: 'createdAt', sortable: true, className: 'table-item' }
+];
+
+queryActions: TableAction[] = [
+  { id: 'approve', label: 'Approve', icon: 'pi pi-check', visible: (row) => row.status === 'Open' },
+  { id: 'reject', label: 'Reject', icon: 'pi pi-times', visible: (row) => row.status === 'Open' },
+  { id: 'resolve', label: 'Resolve', icon: 'pi pi-check-circle', visible: (row) => row.status !== 'Resolved' }
+];
+
   payrollColumns: TableColumn[] = [
     { header: 'Employee', field: 'name', sortable: true, className: 'table-item' },
     { header: 'Level', field: 'level', sortable: true, className: 'table-item' },
     { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
     { header: 'Salary Structure', field: 'type', sortable: true, className: 'table-item' },
     {
+      header: 'Attendance Deduction',
+      field: 'attendancePenalty',
+      sortable: true,
+      className: 'table-item',
+      formatter: (row) => this.formatCurrency(row?.attendancePenalty ?? 0)
+    },
+    {
+      header: 'Overtime',
+      field: 'overtimePay',
+      sortable: true,
+      className: 'table-item',
+      formatter: (row) => this.formatCurrency(row?.overtimePay ?? 0)
+    },
+    {
       header: 'Amount Payable',
       field: 'netPayable',
       sortable: true,
       className: 'table-item',
-      formatter: (row) => `₦${row?.netPayable ?? 0}`
+      formatter: (row) => this.formatCurrency(row?.netPayable ?? 0)
     }
   ];
   payrollActions: TableAction[] = [
@@ -1483,43 +1666,186 @@ ngOnInit(){
     this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b))
     this.selectedMonth = this.months[this.months.length - 1]
     this.selectedYear = this.years[this.years.length - 1]
-    this.payrollSumary = this.calculatePayrollSummary()
-
-    
     this.handlePeriodChange()
       
 }
+  formatCurrency(value: number): string {
+    const normalized = Number.isFinite(value) ? value : 0;
+    return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  private resolvePayType(employee: any): PayType {
+    if (employee.payType) return employee.payType as PayType;
+    if (employee.type === 'daily') return 'daily';
+    if (employee.type === 'hourly') return 'hourly';
+    if (employee.type === 'project-based') return 'project';
+    return 'monthly';
+  }
+
+  private getLevelRate(level: string, payType: Exclude<PayType, 'project'>): number {
+    const match = this.payrollSettings.salaryByLevel.find(setting => setting.level === level);
+    if (!match) return 0;
+    if (payType === 'hourly') {
+      return match.hourly ?? (match.daily / this.payrollSettings.paySchedule.hoursPerDay);
+    }
+    return match[payType];
+  }
+
+  private getDailyRate(employee: any, payType: PayType, basePay: number): number {
+    if (payType === 'daily') return employee.dailyRate ?? this.getLevelRate(employee.level, 'daily');
+    if (payType === 'hourly') return (employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly')) * this.payrollSettings.paySchedule.hoursPerDay;
+    if (payType === 'monthly') return basePay / this.payrollSettings.paySchedule.workingDaysPerPeriod;
+    return 0;
+  }
+
+  private getHourlyRate(employee: any, payType: PayType, basePay: number): number {
+    if (payType === 'hourly') return employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly');
+    const dailyRate = this.getDailyRate(employee, payType, basePay);
+    return dailyRate / this.payrollSettings.paySchedule.hoursPerDay;
+  }
+
+  private getAttendanceSummary(employee: any): AttendanceSummary {
+    return employee.attendanceSummary ?? this.attendanceOverrides[employee.id] ?? { lateDays: 0, absentDays: 0 };
+  }
+
+  private resolvePenaltyAmount(penalty: { type: PenaltyType; amount: number }, dailyRate: number): number {
+    if (penalty.type === 'percentage') {
+      return dailyRate * (penalty.amount / 100);
+    }
+    return penalty.amount;
+  }
+
+  private calculateAttendancePenalty(employee: any, basePay: number, payType: PayType): number {
+    const attendance = this.getAttendanceSummary(employee);
+    if (!attendance.lateDays && !attendance.absentDays) return 0;
+    const dailyRate = this.getDailyRate(employee, payType, basePay);
+    const latePenalty = this.resolvePenaltyAmount(this.payrollSettings.attendancePolicy.latePenalty, dailyRate);
+    const absentPenalty = this.resolvePenaltyAmount(this.payrollSettings.attendancePolicy.absentPenalty, dailyRate);
+    return (attendance.lateDays * latePenalty) + (attendance.absentDays * absentPenalty);
+  }
+
+  private calculateOvertimePay(employee: any, basePay: number, payType: PayType): { overtimePay: number; overtimeHours: number } {
+    if (!this.payrollSettings.overtime.enabled) return { overtimePay: 0, overtimeHours: 0 };
+    const overrideHours = this.overtimeOverrides[employee.id] ?? 0;
+    const overtimeHours = Math.min(employee.overtimeHours ?? overrideHours, this.payrollSettings.overtime.maxHoursPerPeriod);
+    if (!overtimeHours) return { overtimePay: 0, overtimeHours: 0 };
+    const hourlyRate = this.getHourlyRate(employee, payType, basePay);
+    if (!hourlyRate) return { overtimePay: 0, overtimeHours: 0 };
+    const overtimeRate = this.payrollSettings.overtime.rateType === 'percentage'
+      ? hourlyRate * (this.payrollSettings.overtime.rateValue / 100)
+      : this.payrollSettings.overtime.rateValue;
+    return { overtimePay: overtimeRate * overtimeHours, overtimeHours };
+  }
+
+  private calculateBasePay(employee: any, payType: PayType): number {
+    if (payType === 'project') {
+      if (employee.totalProjectPay) return employee.totalProjectPay;
+      return (employee.projects || []).reduce((sum: number, project: any) => sum + (project.projectPay || 0), 0);
+    }
+    if (payType === 'daily') {
+      const dailyRate = employee.dailyRate ?? this.getLevelRate(employee.level, 'daily');
+      const daysWorked = employee.daysWorked ?? this.payrollSettings.paySchedule.workingDaysPerPeriod;
+      return dailyRate * daysWorked;
+    }
+    if (payType === 'hourly') {
+      const hourlyRate = employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly');
+      return hourlyRate * (employee.hoursWorked ?? 0);
+    }
+    return employee.salary ?? this.getLevelRate(employee.level, 'monthly');
+  }
+
+  private getBasePayLabel(payType: PayType): string {
+    if (payType === 'daily') return 'Daily Wage';
+    if (payType === 'hourly') return 'Hourly Pay';
+    if (payType === 'project') return 'Project Pay';
+    return 'Base Salary';
+  }
+
+  private sumAllowances(allowances?: Allowances): number {
+    if (!allowances) return 0;
+    return Object.values(allowances).reduce((sum, amount) => sum + (amount || 0), 0);
+  }
+
+  private sumBonuses(bonuses?: { amount: number }[]): number {
+    if (!bonuses) return 0;
+    return bonuses.reduce((sum, bonus) => sum + (bonus.amount || 0), 0);
+  }
+
+  private sumDeductions(deductions?: { amount: number }[]): number {
+    if (!deductions) return 0;
+    return deductions.reduce((sum, deduction) => sum + (deduction.amount || 0), 0);
+  }
+
+  private applyPayrollRules(employee: any): any {
+    const payType = this.resolvePayType(employee);
+    const basePay = this.calculateBasePay(employee, payType);
+    const attendancePenalty = this.calculateAttendancePenalty(employee, basePay, payType);
+    const overtime = this.calculateOvertimePay(employee, basePay, payType);
+    const bonuses = (employee.bonuses || []).map((bonus: any) => ({ ...bonus }));
+    const allowances = { ...(employee.allowances || {}) };
+    const deductions = (employee.deductions || []).map((deduction: any) => ({ ...deduction }));
+    if (attendancePenalty > 0) {
+      deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
+    }
+
+    const totalAllowances = this.sumAllowances(allowances);
+    const totalBonuses = this.sumBonuses(bonuses);
+    const totalDeductions = this.sumDeductions(deductions);
+    const grossPay = basePay + totalAllowances + totalBonuses + overtime.overtimePay;
+    const netPayable = grossPay - totalDeductions;
+
+    return {
+      ...employee,
+      payType,
+      basePay,
+      basePayLabel: this.getBasePayLabel(payType),
+      attendanceSummary: this.getAttendanceSummary(employee),
+      attendancePenalty,
+      overtimeHours: overtime.overtimeHours,
+      overtimePay: overtime.overtimePay,
+      deductions,
+      grossPay,
+      totalDeductions,
+      netPayable
+    };
+  }
   handlePeriodChange(){
+    const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
     const currentPayroll = this.payrollRecords.find(
-        (payroll) => payroll.year == this.selectedYear && payroll.month == this.monthNames.indexOf(this.selectedMonth) + 1
+        (payroll) => payroll.year == this.selectedYear && payroll.month == monthIndex
       );
 
       console.log(this.selectedYear, this.selectedMonth)
 
     if (currentPayroll) {
-        this.payType = Array.from(new Set(currentPayroll.employeesPayroll.map(emp => emp.type)));
-        this.department = Array.from(new Set(currentPayroll.employeesPayroll.map(emp => emp.department)));
-        this.level = Array.from(new Set(currentPayroll.employeesPayroll.map(emp => emp.level)));
-        this.filteredEmployeePayroll = [...currentPayroll.employeesPayroll];
-        this.currentPayroll = [...currentPayroll.employeesPayroll]
+        const normalizedPayroll = currentPayroll.employeesPayroll.map(emp => this.applyPayrollRules(emp));
+        this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
+        this.department = Array.from(new Set(normalizedPayroll.map(emp => emp.department)));
+        this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
+        this.filteredEmployeePayroll = [...normalizedPayroll];
+        this.currentPayroll = [...normalizedPayroll];
+        this.filteredPayrollQueries = this.payrollQueries.filter(
+          query => query.periodYear === this.selectedYear && query.periodMonth === monthIndex
+        );
       } else {
      
         this.payType = [];
         this.department = [];
         this.level = [];
         this.filteredEmployeePayroll = [];
+        this.currentPayroll = [];
+        this.filteredPayrollQueries = [];
       }
+      this.payrollSumary = this.calculatePayrollSummary();
   }
    
     filterEmployee() {
-        this.filteredEmployeePayroll = this.currentPayroll.filter((employee: { name: string; }) => 
-            employee.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-        );
+        const term = (this.searchTerm || '').toLowerCase();
         this.filteredEmployeePayroll = this.currentPayroll.filter(employee => {
-            const matchesSearchTerm = employee.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+            const matchesSearchTerm = !term || employee.name.toLowerCase().includes(term);
             const matchesPay = this.selectedPayType.length === 0 || this.selectedPayType.includes(employee.type);
             const matchesLevel = this.selectedLevel.length === 0 || this.selectedLevel.includes(employee.level);
-            const matchesDepartment = this.selectedDepartment.length === 0 || this.selectedDepartment.includes(employee.level);
+            const matchesDepartment = this.selectedDepartment.length === 0 || this.selectedDepartment.includes(employee.department);
             return matchesSearchTerm && matchesLevel && matchesDepartment && matchesPay;
         });
     }
@@ -1575,8 +1901,11 @@ ngOnInit(){
 
   generateCSV() {
     if (this.selectedEmployees.length > 0) {
-      const csvData = this.convertToCSV([this.selectedEmployees]); 
-      this.downloadCSV(csvData, `${this.selectedEmployees?.name} for ${this.selectedMonth + this.selectedYear}_payroll.csv`);
+      const csvData = this.convertToCSV(this.selectedEmployees);
+      const label = this.selectedEmployees.length === 1
+        ? `${this.selectedEmployees[0]?.name}`
+        : 'selected employees';
+      this.downloadCSV(csvData, `${label} for ${this.selectedMonth + this.selectedYear}_payroll.csv`);
     } else {
       const csvData = this.convertToCSV(this.currentPayroll);
       this.downloadCSV(csvData, `payroll for ${this.selectedMonth + this.selectedYear}.csv`);
@@ -1584,13 +1913,15 @@ ngOnInit(){
   }
 
   convertToCSV(data: any[]) {
-    const headers = ['Employee ID', 'Name', 'Pay type', 'Account Number', 'Bank Name', 'Net Pay'];
+    const headers = ['Employee ID', 'Name', 'Pay type', 'Account Number', 'Bank Name', 'Attendance Deduction', 'Overtime', 'Net Pay'];
     const rows = data.map(employee => [
       employee.id,
       employee.name,
       employee.type,
       employee.accountNumber,
       employee.bank,
+      employee.attendancePenalty || 0,
+      employee.overtimePay || 0,
       employee.netPayable
     ]);
     
@@ -1628,6 +1959,28 @@ ngOnInit(){
     }
   }
 
+  onSettingsChange() {
+    if (!this.selectedMonth || !this.selectedYear) return;
+    this.handlePeriodChange();
+  }
+
+  handleQueryAction(event: { actionId: string; row: PayrollQuery }) {
+    const queryIndex = this.payrollQueries.findIndex(query => query.id === event.row.id);
+    if (queryIndex === -1) return;
+
+    const current = this.payrollQueries[queryIndex];
+    let status = current.status;
+    if (event.actionId === 'approve') status = 'Approved';
+    if (event.actionId === 'reject') status = 'Rejected';
+    if (event.actionId === 'resolve') status = 'Resolved';
+    this.payrollQueries[queryIndex] = { ...current, status };
+
+    const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
+    this.filteredPayrollQueries = this.payrollQueries.filter(
+      query => query.periodYear === this.selectedYear && query.periodMonth === monthIndex
+    );
+  }
+
   viewSummary(){
     this.payrollSumary = this.calculatePayrollSummary()
 
@@ -1638,6 +1991,8 @@ ngOnInit(){
       totalSalary: 0,
       totalBonuses: 0,
       totalDeductions: 0,
+      totalOvertimePay: 0,
+      totalAttendanceDeductions: 0,
       totalAllowances: {
         housingAllowance: 0,
         transportationAllowance: 0,
@@ -1656,13 +2011,9 @@ ngOnInit(){
   
 
     this.currentPayroll.forEach(emp => {
-        if (emp.type === "salaried") {
-            payrollSummary.totalSalary += emp.salary;
-        } else if (emp.type === "project-based") {
-            payrollSummary.totalSalary += emp.totalProjectPay;
-        }
-
-
+      payrollSummary.totalSalary += emp.basePay ?? 0;
+      payrollSummary.totalOvertimePay += emp.overtimePay ?? 0;
+      payrollSummary.totalAttendanceDeductions += emp.attendancePenalty ?? 0;
 
       (emp?.bonuses || []).forEach((bonus: { amount: number; }) => {
         payrollSummary.totalBonuses += bonus.amount;
@@ -1686,21 +2037,14 @@ ngOnInit(){
       });
   
 
-      for (let key in emp?.allowances) {
-        payrollSummary.totalAllowances[key as keyof Allowances] += emp?.allowances[key as keyof Allowances];
+      const allowances = emp?.allowances || {};
+      for (let key in allowances) {
+        payrollSummary.totalAllowances[key as keyof Allowances] += allowances[key as keyof Allowances] || 0;
       }
   
-     
-
-
       payrollSummary.totalNetPayable += emp?.netPayable;
+      payrollSummary.totalGross += emp?.grossPay ?? 0;
     });
-
-    const totalGrossForEmployee = (payrollSummary?.totalSalary || 0)
-    + payrollSummary.totalBonuses
-    + Object.values(payrollSummary.totalAllowances).reduce((sum, allowance) => sum + (allowance || 0), 0);
-
-  payrollSummary.totalGross += totalGrossForEmployee;
   
     return payrollSummary;
   }
