@@ -334,7 +334,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.hotelService
-        .updateMaintenanceRequest(request.id, updatedRequest)
+        .updateMaintenanceRequest(request.id!, updatedRequest)
         .subscribe({
           next: () => {
             this.messageService.add({

@@ -1,10 +1,10 @@
 import { Injectable, isDevMode } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
-import { environment } from '../environments/environment.prod';
+import { environment } from '../environments/environment';
 
 
 
@@ -22,7 +22,13 @@ export class AuthenticationService {
   ) {  }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = 
+      localStorage.getItem('Token2') || 
+      localStorage.getItem('accessToken2') || 
+      sessionStorage.getItem('Token') || 
+      sessionStorage.getItem('accessToken') ||
+      localStorage.getItem('token') || 
+      sessionStorage.getItem('token');
 
     if (!token || this.jwtHelper.isTokenExpired(token)) {
       return false;
@@ -34,13 +40,16 @@ export class AuthenticationService {
   logout(): void {
     sessionStorage.removeItem("username");
     sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
 
     //added by yomi
     sessionStorage.removeItem("userInfoRegData");
     sessionStorage.removeItem("userRegData");
     sessionStorage.removeItem("accessToken");
+    localStorage.removeItem("accessToken2");
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
+    localStorage.removeItem("Token2");
     sessionStorage.removeItem("userPrimaryInfoRegData");
 
 
@@ -55,21 +64,23 @@ export class AuthenticationService {
 
 
   userLogin(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
-
     return this.http
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
 
   getUserPrimaryInfoById(data: string): Observable<any>{
-    // console.log((this.getBaseApiUrl() + `/x/api/v2/us/ur/get/user/primary/info/${data}`+"---"+JSON.stringify(data)))
-    // const url = `${this.getBaseApiUrl()}/x/api/v2/us/ur/get/user/primary/info/${data}`;
-
     return this.http
         .get<any>(
             this.getBaseApiUrl() +
                 `/x/api/v2/us/ur/get/user/primary/info/${data}`)
+        .pipe(catchError(this.handleError));
+  }
+
+  getUserBranchInfoById(id: string): Observable<any>{
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
         .pipe(catchError(this.handleError));
   }
 
@@ -95,11 +106,15 @@ export class AuthenticationService {
   }
 
   userVerification(token: string): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
-
     return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
       .pipe(catchError(this.handleError))
+  }
+
+  getUserApplicationRole(id: number): Observable<any> {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
+      .pipe(catchError(this.handleError));
   }
 
   private getBaseApiUrl(): string {
