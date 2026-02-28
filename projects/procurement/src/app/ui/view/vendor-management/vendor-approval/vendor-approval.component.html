@@ -1,7 +1,7 @@
 <div class="card">
   <div class="p-4 md:p-6">
     <div class="mb-4">
-      <div class="text-xl font-bold text-slate-900">Vendor Approval Queue</div>
+      <div class="text-xl font-bold text-slate-900">Pending Approval Queue</div>
       <div class="text-sm text-slate-500">Review vendor registrations and approve or reject them.</div>
     </div>
 
@@ -9,27 +9,51 @@
       <p-table [value]="vendors" [loading]="loading" responsiveLayout="scroll">
         <ng-template pTemplate="header">
           <tr class="text-xs text-slate-600">
-            <th>Vendor</th>
+            <th>Vendor Id</th>
+            <th>Business Name</th>
+            <th>Registartion Token</th>
             <th>Email</th>
-            <th>Contact</th>
-            <th>Submitted</th>
+            <th>Submitted On</th>
+            <th>Status</th>
+            <th>AI status</th>
             <th class="text-right">Actions</th>
           </tr>
         </ng-template>
 
         <ng-template pTemplate="body" let-v>
-          <tr class="text-sm">
-            <td class="font-medium text-slate-900">{{ v.legalName }}</td>
+          <tr class="text-xs">
+            <td class="font-medium text-slate-900">{{ v.id }}</td>
+            <td class="font-medium text-slate-900">
+              <div class="flex flex-col">
+                <span>{{ v.legalName }}</span>
+                <span class="text-xs text-slate-500" *ngIf="v.vendorCode">#{{ v.vendorCode }}</span>
+              </div>
+            </td>
+            <td>{{ v.registrationToken }}</td>
             <td class="text-slate-700">{{ v.email }}</td>
-            <td class="text-slate-600">{{ v.primaryContact?.name || '—' }}</td>
             <td class="text-slate-600">{{ v.createdAt | date:'mediumDate' }}</td>
+            <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
+            <td>{{v.aiStatus}}</td>
             <td class="text-right">
-              <button pButton class="p-button-text p-button-sm" icon="pi pi-check" (click)="openAction(v,'Approve')"
-                label="Approve"></button>
+              <!-- Review -->
+              <button pButton class="p-button-text p-button-sm" icon="pi pi-eye" (click)="reviewVendor(v)"
+                label="Review">
+              </button>
+
+              <!-- Approve -->
+              <button pButton class="p-button-text p-button-sm p-button-success" icon="pi pi-check"
+                (click)="openAction(v, 'Approve')" label="Approve">
+              </button>
+
+              <!-- Reject -->
               <button pButton class="p-button-text p-button-sm p-button-danger" icon="pi pi-times"
-                (click)="openAction(v,'Reject')" label="Reject"></button>
-              <button pButton class="p-button-text p-button-sm" icon="pi pi-question-circle"
-                (click)="openAction(v,'RequestMoreInfo')" label="More info"></button>
+                (click)="openAction(v, 'Reject')" label="Reject">
+              </button>
+
+              <!-- Request Changes -->
+              <button pButton class="p-button-text p-button-sm p-button-warning" icon="pi pi-send"
+                (click)="openAction(v, 'RequestChanges')" label="Request Changes">
+              </button>
             </td>
           </tr>
         </ng-template>
@@ -37,7 +61,7 @@
         <ng-template pTemplate="emptymessage">
           <tr>
             <td colspan="5">
-              <div class="p-6 text-center text-slate-500">No pending vendors.</div>
+              <div class="p-6 text-center text-slate-500">No pending vendors approval.</div>
             </td>
           </tr>
         </ng-template>
@@ -68,3 +92,19 @@
     </p-dialog>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+<p-dialog [(visible)]="displayVendorDialog" header="Vendor Details" [modal]="true" [style]="{ width: '60vw' }">
+
+  <!-- <app-vendor-details [vendor]="selectedVendor"></app-vendor-details> -->
+
+</p-dialog>

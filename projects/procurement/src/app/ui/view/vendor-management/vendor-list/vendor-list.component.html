@@ -6,11 +6,9 @@
         <div class="text-sm text-slate-500">Manage supplier master data, compliance, and approvals.</div>
       </div>
 
-      <!-- <div class="flex items-center gap-2">
-      <a class="text-sm text-slate-600 hover:text-slate-900 underline" routerLink="/vendor/approval">
-        Approval Queue
-      </a>
-    </div> -->
+      <div class="flex items-center gap-2">
+        <app-button text="Add Vendor" class="btn-navigate" (click)="openForm()"></app-button>
+      </div>
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 mb-4">
@@ -20,54 +18,66 @@
           <span class="p-input-icon-left w-full">
             <i class="pi pi-search"></i>
             <input pInputText class="w-full editinput" [(ngModel)]="query.q" placeholder="Name, email, code..."
-              (keyup.enter)="fetch()" />
+              (keyup.enter)="fetchInvitedAndInProgress()" />
           </span>
         </div>
-
+<!-- 
         <div>
           <label class="text-xs font-medium text-slate-600">Status</label>
-          <p-dropdown class="w-full" [options]="statusOptions" [(ngModel)]="query.status" (onChange)="fetch()">
+          <p-dropdown class="w-full" [options]="statusOptions" [(ngModel)]="query.status" (onChange)="fetchLocalVendors()">
           </p-dropdown>
-        </div>
+        </div> -->
 
         <div class="flex items-end justify-end">
           <button pButton type="button" icon="pi pi-filter" label="Apply" class="p-button-sm"
-            (click)="fetch()"></button>
+            (click)="fetchInvitedAndInProgress()"></button>
         </div>
       </div>
     </div>
- 
+
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <p-table [value]="vendors" [loading]="loading" [paginator]="false" dataKey="id" responsiveLayout="scroll">
         <ng-template pTemplate="header">
           <tr class="text-xs text-slate-600">
-            <th>Name</th>
+            <th>Vondor ID</th>
+            <th>Business Name</th>
+            <th>Registration Token</th>
             <th>Email</th>
+            <th>Invited On</th>
             <th>Status</th>
-            <th>Categories</th>
-            <th>Created</th>
             <th class="text-right">Action</th>
           </tr>
         </ng-template>
 
         <ng-template pTemplate="body" let-v>
-          <tr class="text-sm">
+          <tr class="text-xs">
+            <td>{{ v.id }}</td>
             <td class="font-medium text-slate-900">
               <div class="flex flex-col">
                 <span>{{ v.legalName }}</span>
                 <span class="text-xs text-slate-500" *ngIf="v.vendorCode">#{{ v.vendorCode }}</span>
               </div>
             </td>
+            <td>{{ v.registrationToken }}</td>
             <td class="text-slate-700">{{ v.email }}</td>
-            <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
-            <td class="text-slate-600">
-              <span *ngIf="v.categoryIds?.length; else none">{{ v.categoryIds.length }} selected</span>
-              <ng-template #none><span class="text-slate-400">—</span></ng-template>
-            </td>
             <td class="text-slate-600">{{ v.createdAt | date:'mediumDate' }}</td>
+            <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
             <td class="text-right">
-              <button pButton type="button" class="p-button-text p-button-sm" icon="pi pi-arrow-right" label="Open"
-                (click)="open(v)"></button>
+              <button pButton type="button" icon="pi pi-eye" pTooltip="View" tooltipPosition="top"
+                class="p-button-sm p-button-text text-slate-600 hover:text-blue-600" (click)="open(v)">
+              </button>
+
+              <button pButton type="button" icon="pi pi-pencil" pTooltip="Edit" tooltipPosition="top"
+                class="p-button-sm p-button-text text-slate-600 hover:text-amber-600">
+              </button>
+
+              <button pButton type="button" icon="pi pi-refresh" pTooltip="Resend Invite" tooltipPosition="top"
+                class="p-button-sm p-button-text text-slate-600 hover:text-purple-700">
+              </button>
+
+              <button pButton type="button" icon="pi pi-trash" pTooltip="Delete" tooltipPosition="top"
+                class="p-button-sm p-button-text text-slate-600 hover:text-red-700">
+              </button>
             </td>
           </tr>
         </ng-template>
@@ -90,4 +100,84 @@
       </div>
     </div>
   </div>
+</div>
+
+
+
+
+<div>
+  <p-dialog header="Add Vendor"
+          [(visible)]="displayVendorForm"
+          [modal]="true"
+          [style]="{ width: '800px' }"
+          [draggable]="false"
+          [resizable]="false">
+
+  <form [formGroup]="vendorForm" (ngSubmit)="addVendor()">
+    <div class="space-y-2">
+
+      <p class="text-sm text-gray-500">
+        Enter vendor details below. This information will be used for records and communication.
+      </p>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-building text-primary"></i>
+          Company Information
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Company Name</label>
+          <input pInputText formControlName="legalName" class="w-full" placeholder="e.g. Acme Ltd." />
+          <p class="text-xs text-gray-400">Registered business name</p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Company Email</label>
+          <input pInputText type="email" formControlName="email" class="w-full" placeholder="company@email.com" />
+          <p class="text-xs text-gray-400">Main official email address</p>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-user text-primary"></i>
+          Contact Person
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Full Name</label>
+          <input pInputText formControlName="contactName" class="w-full" placeholder="Samuel Alli" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Phone Number</label>
+          <input pInputText formControlName="contactPhone" class="w-full" placeholder="+234..." />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Email</label>
+          <input pInputText type="email" formControlName="contactEmail" class="w-full" placeholder="contact@email.com" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-gray-700">Role</label>
+          <input pInputText formControlName="contactRole" class="w-full" placeholder="Admin / Owner" />
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-4">
+      <div class="flex justify-end gap-3">
+        <button pButton type="button" label="Cancel"
+                (click)="displayVendorForm=false"
+                class="!bg-red-500 !border-red-500 hover:!bg-red-600 hover:!border-red-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"></button>
+
+        <button pButton type="submit" label="Add Vendor"
+                class="!bg-green-500 !border-green-500 hover:!bg-green-600 hover:!border-green-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"></button>
+      </div>
+    </div>
+  </form>
+</p-dialog>
 </div>

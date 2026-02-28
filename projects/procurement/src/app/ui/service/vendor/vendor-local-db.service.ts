@@ -5,7 +5,6 @@ import {
   VendorApprovalActionDto,
   VendorDto,
   VendorListQuery,
-  VendorRegistrationRequestDto,
   VendorRegistrationResponseDto,
   VendorStatus,
 } from '../../domain/vendor.dto';
@@ -163,46 +162,94 @@ export class VendorLocalDbService {
   // ------------------------------
   // Registration
   // ------------------------------
-  registerVendor(
-    payload: VendorRegistrationRequestDto,
-  ): Observable<VendorRegistrationResponseDto> {
-    this.seedIfEmpty();
-    const ctxMap = this.readRegLinks();
-    const ctx = ctxMap[payload.registrationToken];
-    if (!ctx) return throwError(() => new Error('Invalid registration token'));
+  // registerVendor(
+  //   payload: VendorDto,
+  // ): Observable<VendorRegistrationResponseDto> {
+  //   this.seedIfEmpty();
+  //   const ctxMap = this.readRegLinks();
+  //   const ctx = ctxMap[payload.registrationToken];
+  //   if (!ctx) return throwError(() => new Error('Invalid registration token'));
 
-    const db = this.readDb();
-    const tenantId = ctx.tenantId;
+  //   const db = this.readDb();
+  //   const tenantId = ctx.tenantId;
 
-    const now = new Date().toISOString();
+  //   const now = new Date().toISOString();
 
-    const vendor: VendorDto = {
-      id: uuidv4(),
-      tenantId,
-      vendorCode: `VND-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
-      legalName: payload.legalName,
-      tradingName: payload.tradingName,
-      email: payload.email,
-      phone: payload.phone,
-      address: payload.address,
-      country: payload.country,
-      state: payload.state,
-      categoryIds: payload.categoryIds ?? [],
-      status: VendorStatus.Pending,
-      createdAt: now,
-      updatedAt: now,
-      primaryContact: payload.primaryContact,
-    };
+  //   const vendor: VendorDto = {
+  //     id: uuidv4(),
+  //     tenantId,
+  //     registrationToken: '',
+  //     vendorCode: `VND-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+  //     legalName: payload.legalName,
+  //     tradingName: payload.tradingName,
+  //     email: payload.email,
+  //     phone: payload.phone,
+  //     address: payload.address,
+  //     country: payload.country,
+  //     state: payload.state,
+  //     categoryIds: payload.categoryIds ?? [],
+  //     status: payload.status,
+  //     createdAt: now,
+  //     updatedAt: now,
+  //     primaryContact: payload.primaryContact,
+  //   };
 
-    db.vendors[tenantId] = [vendor, ...(db.vendors[tenantId] ?? [])];
-    this.writeDb(db);
+  //   db.vendors[tenantId] = [vendor, ...(db.vendors[tenantId] ?? [])];
+  //   this.writeDb(db);
 
-    return of({
-      vendorId: vendor.id,
-      status: vendor.status,
-      message: 'Registration submitted successfully. Status: Pending Approval.',
-    }).pipe(delay(this.NETWORK_DELAY));
-  }
+  //   return of({
+  //     vendorId: vendor.id,
+  //     status: vendor.status,
+  //     message: 'Registration submitted successfully. Status: Pending Approval.',
+  //   }).pipe(delay(this.NETWORK_DELAY));
+  // }
+
+  registerVendor(payload: VendorDto & { registrationToken: string })
+  : Observable<VendorRegistrationResponseDto> {
+
+  this.seedIfEmpty();
+  const ctxMap = this.readRegLinks();
+  const ctx = ctxMap[payload.registrationToken];
+  if (!ctx) return throwError(() => new Error('Invalid registration token'));
+
+  const tenantId = ctx.tenantId;
+  if (!tenantId) return throwError(() => new Error('Registration context is missing tenantId'));
+
+  const db = this.readDb();
+  const now = new Date().toISOString();
+
+  const vendorId = uuidv4();                         // ✅ string
+  const status: VendorStatus = VendorStatus.PendingApproval; // ✅ VendorStatus
+
+  const vendor: VendorDto = {
+    id: vendorId,
+    tenantId,
+    registrationToken: '',
+    vendorCode: `VND-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+    legalName: payload.legalName,
+    tradingName: payload.tradingName,
+    email: payload.email,
+    phone: payload.phone,
+    address: payload.address,
+    country: payload.country,
+    state: payload.state,
+    categoryIds: payload.categoryIds ?? [],
+    primaryContact: payload.primaryContact,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  db.vendors[tenantId] = [vendor, ...(db.vendors[tenantId] ?? [])];
+  this.writeDb(db);
+
+  // ✅ Now this exactly matches VendorRegistrationResponseDto
+  return of({
+    vendorId,
+    status,
+    message: 'Registration submitted successfully. Status: Pending Approval.',
+  }).pipe(delay(this.NETWORK_DELAY));
+}
 
   // ------------------------------
   // Approval
@@ -211,7 +258,7 @@ export class VendorLocalDbService {
     this.seedIfEmpty();
     const db = this.readDb();
     const list = (db.vendors[tenantId] ?? []).filter(
-      (v: any) => v.status === VendorStatus.Pending,
+      (v: any) => v.status === VendorStatus.PendingRegistration,
     );
     list.sort(
       (a: any, b: any) =>
@@ -368,47 +415,47 @@ export class VendorLocalDbService {
     const token = this.ensureTenantLink(tenantId, tenantName);
 
     const now = new Date().toISOString();
-    const vendors: VendorDto[] = [
-      {
-        id: uuidv4(),
-        tenantId,
-        vendorCode: 'VND-AX21K',
-        legalName: 'Apex Logistics Ltd',
-        tradingName: 'Apex',
-        email: 'hello@apexlogistics.com',
-        phone: '+234 800 000 0000',
-        address: '12 Marina, Lagos',
-        country: 'Nigeria',
-        state: 'Lagos',
-        categoryIds: ['logistics'],
-        status: VendorStatus.Approved,
-        createdAt: now,
-        updatedAt: now,
-        primaryContact: {
-          name: 'Tolu A.',
-          email: 'tolu@apexlogistics.com',
-          phone: '+234 801 111 2222',
-        },
-      },
-      {
-        id: uuidv4(),
-        tenantId,
-        vendorCode: 'VND-KT91P',
-        legalName: 'Keystone IT Services',
-        email: 'sales@keystoneit.ng',
-        categoryIds: ['it'],
-        status: VendorStatus.Pending,
-        createdAt: now,
-        updatedAt: now,
-        primaryContact: { name: 'Ifeoma K.', email: 'ifeoma@keystoneit.ng' },
-      },
-    ];
+    // const vendors: VendorDto[] = [
+    //   {
+    //     id: uuidv4(),
+    //     tenantId,
+    //     vendorCode: 'VND-AX21K',
+    //     legalName: 'Apex Logistics Ltd',
+    //     tradingName: 'Apex',
+    //     email: 'hello@apexlogistics.com',
+    //     phone: '+234 800 000 0000',
+    //     address: '12 Marina, Lagos',
+    //     country: 'Nigeria',
+    //     state: 'Lagos',
+    //     categoryIds: ['logistics'],
+    //     status: VendorStatus.Approved,
+    //     createdAt: now,
+    //     updatedAt: now,
+    //     primaryContact: {
+    //       name: 'Tolu A.',
+    //       email: 'tolu@apexlogistics.com',
+    //       phone: '+234 801 111 2222',
+    //     },
+    //   },
+    //   {
+    //     id: uuidv4(),
+    //     tenantId,
+    //     vendorCode: 'VND-KT91P',
+    //     legalName: 'Keystone IT Services',
+    //     email: 'sales@keystoneit.ng',
+    //     categoryIds: ['it'],
+    //     status: VendorStatus.Pending,
+    //     createdAt: now,
+    //     updatedAt: now,
+    //     primaryContact: { name: 'Ifeoma K.', email: 'ifeoma@keystoneit.ng' },
+    //   },
+    // ];
 
-    this.writeDb({
-      vendors: { [tenantId]: vendors },
-      documents: { [tenantId]: {} },
-      meta: { seededAt: now, demoRegistrationToken: token },
-    });
+    // this.writeDb({
+    //   vendors: { [tenantId]: vendors },
+    //   documents: { [tenantId]: {} },
+    //   meta: { seededAt: now, demoRegistrationToken: token },
+    // });
   }
 
   private seedCategories(): VendorCategoryDto[] {

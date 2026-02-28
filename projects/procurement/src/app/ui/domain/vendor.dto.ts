@@ -3,6 +3,8 @@ export enum VendorStatus {
   Approved = 'Approved',
   Rejected = 'Rejected',
   Inactive = 'Inactive',
+  PendingRegistration = 'PendingRegistration',
+  PendingApproval = 'PendingApproval'
 }
 
 export interface VendorContactDto {
@@ -13,13 +15,21 @@ export interface VendorContactDto {
 }
 
 export interface VendorDto {
-  id: string;
-  tenantId: string;
+  // ================================
+  // System / Identity
+  // ================================
+  id?: string;                 // exists after creation
+  tenantId?: string;           // system assigned
+  vendorCode?: string;         // system generated
+  registrationToken: string;  // only during registration
 
-  vendorCode?: string;
-
+  // ================================
+  // Company
+  // ================================
   legalName: string;
   tradingName?: string;
+
+  businessType?: 'Limited' | 'SoleProprietor' | 'Partnership' | 'NGO' | 'Other';
 
   email: string;
   phone?: string;
@@ -28,14 +38,49 @@ export interface VendorDto {
   country?: string;
   state?: string;
 
-  categoryIds: string[];
+  website?: string;
+  yearEstablished?: number;
+  employeeCount?: number;
 
+  // ================================
+  // Categorization
+  // ================================
+  categoryIds: string[];
+  capabilityStatement?: string;
+
+  // ================================
+  // Status
+  // ================================
   status: VendorStatus;
 
-  createdAt: string;
-  updatedAt?: string;
+  // ================================
+  // Contact
+  // ================================
+  primaryContact: {
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+  };
 
-  primaryContact?: VendorContactDto;
+  // ================================
+  // Payment
+  // ================================
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  currency?: string;
+
+  // ================================
+  // Confirmation
+  // ================================
+  acceptsTerms?: boolean;
+
+  // ================================
+  // Audit
+  // ================================
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface VendorListQuery {
@@ -53,64 +98,49 @@ export interface PagedResult<T> {
   total: number;
 }
 
+
 // export interface VendorRegistrationRequestDto {
-//   // comes from the unique account vendor registration link
 //   registrationToken: string;
 
+//   // Company
 //   legalName: string;
 //   tradingName?: string;
+//   businessType: 'Limited' | 'SoleProprietor' | 'Partnership' | 'NGO' | 'Other';
 
 //   email: string;
 //   phone?: string;
 
-//   address?: string;
-//   country?: string;
-//   state?: string;
+//   address: string;
+//   country: string;
+//   state: string;
 
+//   status: VendorStatus;
+
+//   website?: string;
+//   yearEstablished?: number;
+//   employeeCount?: number;
+
+//   // Categorization
 //   categoryIds: string[];
+//   capabilityStatement: string;
 
-//   primaryContact: VendorContactDto;
+//   // Primary Contact
+//   primaryContact: {
+//     name: string;
+//     email: string;
+//     phone?: string;
+//     role?: string;
+//   };
+
+//   // Payment (optional)
+//   bankName?: string;
+//   accountName?: string;
+//   accountNumber?: string;
+//   currency?: string;
+
+//   // Confirmation
+//   acceptsTerms: boolean;
 // }
-export interface VendorRegistrationRequestDto {
-  registrationToken: string;
-
-  // Company
-  legalName: string;
-  tradingName?: string;
-  businessType: 'Limited' | 'SoleProprietor' | 'Partnership' | 'NGO' | 'Other';
-
-  email: string;
-  phone?: string;
-
-  address: string;
-  country: string;
-  state: string;
-
-  website?: string;
-  yearEstablished?: number;
-  employeeCount?: number;
-
-  // Categorization
-  categoryIds: string[];
-  capabilityStatement: string;
-
-  // Primary Contact
-  primaryContact: {
-    name: string;
-    email: string;
-    phone?: string;
-    role?: string;
-  };
-
-  // Payment (optional)
-  bankName?: string;
-  accountName?: string;
-  accountNumber?: string;
-  currency?: string;
-
-  // Confirmation
-  acceptsTerms: boolean;
-}
 
 
 export interface VendorRegistrationResponseDto {
@@ -121,6 +151,6 @@ export interface VendorRegistrationResponseDto {
 
 export interface VendorApprovalActionDto {
   vendorId: string;
-  action: 'Approve' | 'Reject' | 'RequestMoreInfo';
+  action: 'Approve' | 'Reject' | 'RequestChanges';
   reason?: string;
 }

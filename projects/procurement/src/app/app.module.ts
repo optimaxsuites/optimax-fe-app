@@ -95,6 +95,9 @@ import { PaginatorModule } from 'primeng/paginator';
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 
 import { NgChartsModule } from 'ng2-charts';
+import { NgApexchartsModule } from "ng-apexcharts";
+import { ApprovedVendorComponent } from './ui/view/vendor-management/approved-vendor/approved-vendor.component';
+import { RejectedVendorComponent } from './ui/view/vendor-management/rejected-vendor/rejected-vendor.component';
 
 
 
@@ -131,6 +134,8 @@ import { NgChartsModule } from 'ng2-charts';
     VendorRegistrationComponent,
     VendorApprovalComponent,
     DashboardComponent,
+    ApprovedVendorComponent,
+    RejectedVendorComponent,
   ],
   imports: [
     // BrowserModule,
@@ -190,7 +195,9 @@ import { NgChartsModule } from 'ng2-charts';
     DropdownModule,
     PaginatorModule,
     DialogModule,
-    NgChartsModule
+    NgChartsModule,
+    NgApexchartsModule,
+    
   ],
   providers: [MessageService],
   bootstrap: [AppComponent],

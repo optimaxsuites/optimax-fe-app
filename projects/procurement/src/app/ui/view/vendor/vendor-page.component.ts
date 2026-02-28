@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../sharedComponent/service/interface/data';
 import { VendorListComponent } from '../vendor-management/vendor-list/vendor-list.component';
 import { VendorApprovalComponent } from '../vendor-management/vendor-approval/vendor-approval.component';
+import { ApprovedVendorComponent } from '../vendor-management/approved-vendor/approved-vendor.component';
+import { RejectedVendorComponent } from '../vendor-management/rejected-vendor/rejected-vendor.component';
 
 @Component({
   selector: 'app-vendor-page',
@@ -11,7 +13,9 @@ import { VendorApprovalComponent } from '../vendor-management/vendor-approval/ve
 export class VendorPageComponent {
   tabsConfig: TabConfig[] = [
   { name: 'Vendor List',  component: VendorListComponent },
-  { name: 'Vendor Approval',  component: VendorApprovalComponent },
+  { name: 'Pending Approval',  component: VendorApprovalComponent },
+    { name: 'Approved Vendor',  component: ApprovedVendorComponent },
+      { name: 'Rejected Vendor',  component: RejectedVendorComponent },
     // { 
     //   name: 'LPO', 
     //   component: null, 
