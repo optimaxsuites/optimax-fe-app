@@ -1,0 +1,86 @@
+<div class="card">
+  <div class="p-4 md:p-6">
+    <div class="mb-4">
+      <div class="text-xl font-bold text-slate-900">Approved Vendors</div>
+      <div class="text-sm text-slate-500">
+        Vendors that have completed onboarding and have been approved for procurement activities.
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <p-table [value]="vendors" [loading]="loading" responsiveLayout="scroll">
+        
+        <ng-template pTemplate="header">
+          <tr class="text-xs text-slate-600">
+            <th>Vendor Id</th>
+            <th>Business Name</th>
+            <th>Email</th>
+            <th>Approved On</th>
+            <th>Approved By</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-v>
+          <tr class="text-sm">
+            <td class="font-medium text-slate-900">{{ v.id }}</td>
+            <td class="font-medium text-slate-900">{{ v.legalName }}</td>
+            <td class="text-slate-700">{{ v.email }}</td>
+            <td class="text-slate-600">
+              {{ v.approvedAt | date:'mediumDate' }}
+            </td>
+            <td class="text-slate-700">
+              {{ v.approvedBy }}
+            </td>
+            <td>
+              <app-vendor-status-badge [status]="v.status"></app-vendor-status-badge>
+            </td>
+
+            <td class="text-right space-x-2">
+
+              <!-- View -->
+              <button 
+                pButton 
+                class="p-button-text p-button-sm" 
+                icon="pi pi-eye" 
+                (click)="reviewVendor(v)"
+                label="View">
+              </button>
+
+              <!-- Re-validate (optional) -->
+              <button 
+                pButton 
+                class="p-button-text p-button-sm p-button-warning" 
+                icon="pi pi-refresh"
+                (click)="openAction(v)" 
+                label="Re-validate">
+              </button>
+
+              <!-- Suspend -->
+              <button 
+                pButton 
+                class="p-button-text p-button-sm p-button-danger" 
+                icon="pi pi-ban"
+                (click)="openAction(v)" 
+                label="Suspend">
+              </button>
+
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7">
+              <div class="p-6 text-center text-slate-500">
+                No approved vendors yet.
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+      </p-table>
+    </div>
+  </div>
+</div>

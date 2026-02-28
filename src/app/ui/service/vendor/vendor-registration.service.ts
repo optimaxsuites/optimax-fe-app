@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  VendorRegistrationRequestDto,
+  VendorDto,
   VendorRegistrationResponseDto,
 } from '../../domain/vendor.dto';
 import { VendorLocalDbService } from './vendor-local-db.service';
@@ -11,7 +11,7 @@ export class VendorRegistrationService {
   constructor(private db: VendorLocalDbService) {}
 
   registerVendor(
-    payload: VendorRegistrationRequestDto,
+    payload: VendorDto,
   ): Observable<VendorRegistrationResponseDto> {
     return this.db.registerVendor(payload);
   }

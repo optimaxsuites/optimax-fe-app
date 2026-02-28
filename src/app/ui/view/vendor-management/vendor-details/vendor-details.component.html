@@ -1,4 +1,4 @@
-<div class="p-4 md:p-6">
+<!-- <div class="p-4 md:p-6">
   <div class="flex items-center justify-between mb-4">
     <div>
       <div class="text-xl font-bold text-slate-900">Vendor Details</div>
@@ -9,7 +9,7 @@
   </div>
 
   <div *ngIf="vendor" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <!-- Left: Vendor card -->
+
     <div class="lg:col-span-1 rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
       <div class="flex items-start justify-between">
         <div>
@@ -39,13 +39,13 @@
 
         <div class="pt-3 border-t border-slate-100">
           <div class="text-xs text-slate-500 mb-1">Primary Contact</div>
-          <div class="text-sm font-medium text-slate-900">{{ vendor.primaryContact?.name }}</div>
-          <div class="text-sm text-slate-600">{{ vendor.primaryContact?.email }}</div>
+          <div class="text-sm font-medium text-slate-900">{{ vendor.primaryContact.name }}</div>
+          <div class="text-sm text-slate-600">{{ vendor.primaryContact.email }}</div>
         </div>
       </div>
     </div>
 
-    <!-- Right: Compliance -->
+
     <div class="lg:col-span-2 space-y-4">
       <app-compliance-document-upload (upload)="uploadDoc($event)"></app-compliance-document-upload>
 
@@ -90,6 +90,290 @@
           </ng-template>
         </p-table>
       </div>
+    </div>
+  </div>
+</div> -->
+
+
+
+
+<div class="p-4 md:p-6">
+  <!-- Header -->
+  <div class="flex items-start md:items-center justify-between mb-4 gap-3">
+    <div>
+      <div class="text-xl font-bold text-slate-900">Vendor Details</div>
+      <div class="text-sm text-slate-500">
+        Supplier master data, onboarding submission, AI validation and compliance documents.
+      </div>
+    </div>
+
+    <a
+      routerLink="/vendor"
+      class="text-sm text-slate-600 hover:text-slate-900 underline whitespace-nowrap"
+    >
+      Back to Vendors
+    </a>
+  </div>
+
+  <!-- Loading / Not Found -->
+  <div *ngIf="loading" class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 text-slate-600">
+    Loading vendor...
+  </div>
+
+  <div *ngIf="!loading && !vendor" class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 text-slate-600">
+    Vendor not found.
+  </div>
+
+  <!-- Body -->
+  <div *ngIf="!loading && vendor" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <!-- Left: Summary Card -->
+    <div class="lg:col-span-1 space-y-4">
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-lg font-semibold text-slate-900">{{ vendor.legalName || '—' }}</div>
+            <div class="text-sm text-slate-500" *ngIf="vendor.tradingName">{{ vendor.tradingName }}</div>
+            <div class="text-xs text-slate-500 mt-1">
+              <span class="font-medium text-slate-700">Vendor Code:</span> {{ vendor.vendorCode || '—' }}
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end gap-2">
+            <app-vendor-status-badge [status]="vendor.status"></app-vendor-status-badge>
+
+            <span
+              class="text-[11px] px-2 py-1 rounded-full border"
+              [ngClass]="
+                vendor.aiStatus === 'Passed' ? 'border-green-200 bg-green-50 text-green-700' :
+                vendor.aiStatus === 'Running' ? 'border-blue-200 bg-blue-50 text-blue-700' :
+                vendor.aiStatus === 'NeedsHumanReview' ? 'border-amber-200 bg-amber-50 text-amber-700' :
+                vendor.aiStatus === 'Failed' ? 'border-red-200 bg-red-50 text-red-700' :
+                'border-slate-200 bg-slate-50 text-slate-600'
+              "
+            >
+              AI: {{ vendor.aiStatus || 'NotStarted' }}
+            </span>
+
+            <div class="text-[11px] text-slate-500" *ngIf="vendor.aiConfidenceScore !== null && vendor.aiConfidenceScore !== undefined">
+              Confidence: <span class="font-semibold text-slate-700">{{ vendor.aiConfidenceScore }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Company summary -->
+        <div class="mt-4 space-y-2 text-sm">
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Business Type</span>
+            <span class="text-slate-900 font-medium">{{ vendor.businessType || '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Email</span>
+            <span class="text-slate-900 font-medium">{{ vendor.email || '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Phone</span>
+            <span class="text-slate-900 font-medium">{{ vendor.phone || '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Location</span>
+            <span class="text-slate-900 font-medium">
+              {{ vendor.state || '—' }}, {{ vendor.country || '—' }}
+            </span>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100">
+            <div class="text-xs text-slate-500 mb-1">Address</div>
+            <div class="text-sm text-slate-800">
+              {{ vendor.address || '—' }}
+              <span *ngIf="vendor.city">, {{ vendor.city }}</span>
+              <span *ngIf="vendor.postalCode">, {{ vendor.postalCode }}</span>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100">
+            <div class="text-xs text-slate-500 mb-1">Primary Contact</div>
+            <div class="text-sm font-medium text-slate-900">{{ vendor.primaryContact?.name || '—' }}</div>
+            <div class="text-sm text-slate-600">{{ vendor.primaryContact?.email || '—' }}</div>
+            <div class="text-sm text-slate-600">{{ vendor.primaryContact?.phone || '—' }}</div>
+            <div class="text-xs text-slate-500" *ngIf="vendor.primaryContact?.role">
+              Role: {{ vendor.primaryContact?.role }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline / Audit -->
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="font-semibold text-slate-900 mb-3">Lifecycle</div>
+
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Invited</span>
+            <span class="text-slate-900 font-medium">{{ vendor.invitedAt ? (vendor.invitedAt | date:'medium') : '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Started</span>
+            <span class="text-slate-900 font-medium">{{ vendor.registrationStartedAt ? (vendor.registrationStartedAt | date:'medium') : '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Submitted</span>
+            <span class="text-slate-900 font-medium">{{ vendor.submittedAt ? (vendor.submittedAt | date:'medium') : '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Approved</span>
+            <span class="text-slate-900 font-medium">{{ vendor.approvedAt ? (vendor.approvedAt | date:'medium') : '—' }}</span>
+          </div>
+
+          <div class="flex justify-between gap-4">
+            <span class="text-slate-500">Rejected</span>
+            <span class="text-slate-900 font-medium">{{ vendor.rejectedAt ? (vendor.rejectedAt | date:'medium') : '—' }}</span>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 text-xs text-slate-500">
+            Submission Version: <span class="font-semibold text-slate-700">{{ vendor.submissionVersion || 0 }}</span>
+            • Current Step: <span class="font-semibold text-slate-700">{{ vendor.currentOnboardingStep || 1 }}</span>
+          </div>
+
+          <div class="text-xs text-slate-500">
+            Created: {{ vendor.createdAt ? (vendor.createdAt | date:'medium') : '—' }}
+            <span *ngIf="vendor.createdBy"> by {{ vendor.createdBy }}</span>
+          </div>
+
+          <div class="text-xs text-slate-500" *ngIf="vendor.updatedAt">
+            Updated: {{ vendor.updatedAt | date:'medium' }}
+            <span *ngIf="vendor.updatedBy"> by {{ vendor.updatedBy }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Details + Documents -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Details Grid -->
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold text-slate-900">Registration Details</div>
+          <div class="text-xs text-slate-500">
+            Terms accepted: <span class="font-semibold text-slate-700">{{ vendor.acceptsTerms ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+
+          <!-- Company meta -->
+          <div class="rounded-xl border border-slate-200 p-4">
+            <div class="font-semibold text-slate-900 mb-2">Company</div>
+            <div class="space-y-1 text-slate-700">
+              <div><span class="text-slate-500">Website:</span> <span class="font-medium">{{ vendor.website || '—' }}</span></div>
+              <div><span class="text-slate-500">Year Established:</span> <span class="font-medium">{{ vendor.yearEstablished || '—' }}</span></div>
+              <div><span class="text-slate-500">Employee Count:</span> <span class="font-medium">{{ vendor.employeeCount || '—' }}</span></div>
+            </div>
+          </div>
+
+          <!-- Bank -->
+          <div class="rounded-xl border border-slate-200 p-4">
+            <div class="font-semibold text-slate-900 mb-2">Bank Details</div>
+            <div class="space-y-1 text-slate-700">
+              <div><span class="text-slate-500">Bank:</span> <span class="font-medium">{{ vendor.bankName || '—' }}</span></div>
+              <div><span class="text-slate-500">Account Name:</span> <span class="font-medium">{{ vendor.accountName || '—' }}</span></div>
+              <div><span class="text-slate-500">Account Number:</span> <span class="font-medium">{{ vendor.accountNumber || '—' }}</span></div>
+              <div><span class="text-slate-500">Currency:</span> <span class="font-medium">{{ vendor.currency || '—' }}</span></div>
+            </div>
+          </div>
+
+          <!-- Categories -->
+          <div class="md:col-span-2 rounded-xl border border-slate-200 p-4">
+            <div class="font-semibold text-slate-900 mb-2">Services & Categories</div>
+            <div class="text-slate-700">
+              <div class="text-xs text-slate-500 mb-1">Category IDs</div>
+              <div class="font-medium">
+                {{ vendor.categoryIds?.length ? vendor.categoryIds.join(', ') : '—' }}
+              </div>
+
+              <div class="text-xs text-slate-500 mt-3 mb-1">Capability Statement</div>
+              <div class="whitespace-pre-line rounded-xl bg-slate-50 border border-slate-200 p-3">
+                {{ vendor.capabilityStatement || '—' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- AI findings (optional) -->
+          <div class="md:col-span-2 rounded-xl border border-slate-200 p-4" *ngIf="vendor.aiFindings?.length">
+            <div class="font-semibold text-slate-900 mb-2">AI Findings</div>
+            <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+              <li *ngFor="let f of vendor.aiFindings">{{ f }}</li>
+            </ul>
+          </div>
+
+          <!-- Rejection reason -->
+          <div class="md:col-span-2 rounded-xl border border-red-200 bg-red-50 p-4" *ngIf="vendor.rejectionReason">
+            <div class="font-semibold text-red-800 mb-1">Rejection Reason</div>
+            <div class="text-sm text-red-700">{{ vendor.rejectionReason }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="font-semibold text-slate-900">Uploaded Documents</div>
+          <div class="text-xs text-slate-500">{{ (vendor.documents?.length || 0) }} document(s)</div>
+        </div>
+
+        <p-table [value]="vendor.documents || []" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr class="text-xs text-slate-600">
+              <th>Type</th>
+              <th>File</th>
+              <th>Issued</th>
+              <th>Expiry</th>
+              <th>Uploaded</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-d>
+            <tr class="text-sm">
+              <td class="font-medium text-slate-900">{{ d.documentType || '—' }}</td>
+              <td class="text-slate-700">{{ d.fileName || '—' }}</td>
+              <td class="text-slate-600">{{ d.issuedDate ? (d.issuedDate | date:'mediumDate') : '—' }}</td>
+              <td class="text-slate-600">{{ d.expiryDate ? (d.expiryDate | date:'mediumDate') : '—' }}</td>
+              <td class="text-slate-600">{{ d.uploadedAt ? (d.uploadedAt | date:'medium') : '—' }}</td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5">
+                <div class="p-6 text-center text-slate-500">No documents uploaded yet.</div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Actions (optional) -->
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="font-semibold text-slate-900 mb-2">Actions</div>
+        <div class="flex flex-wrap gap-2">
+          <button pButton class="p-button-sm p-button-success" icon="pi pi-check" label="Approve Vendor"
+            (click)="approveVendor()"></button>
+
+          <button pButton class="p-button-sm p-button-danger" icon="pi pi-times" label="Reject Vendor"
+            (click)="rejectVendor()"></button>
+
+          <button pButton class="p-button-sm p-button-warning" icon="pi pi-send" label="Request Changes"
+            (click)="requestChanges()"></button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>

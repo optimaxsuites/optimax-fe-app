@@ -36,17 +36,17 @@
         <div class="grid-2">
           <div class="field">
             <label>Title <span class="req">*</span></label>
-            <input type="text" formControlName="title" placeholder="e.g. Office consumables request" />
+            <input class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" type="text" formControlName="title" placeholder="e.g. Office consumables request" />
           </div>
 
           <div class="field">
             <label>Required By <span class="req">*</span></label>
-            <input type="date" formControlName="requiredByDate" />
+            <input class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" type="date" formControlName="requiredByDate" />
           </div>
 
           <div class="field">
             <label>Department <span class="req">*</span></label>
-            <select formControlName="departmentId">
+            <select formControlName="departmentId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
               <option value="">Select department</option>
               <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
             </select>
@@ -54,7 +54,7 @@
 
           <div class="field">
             <label>Cost Center <span class="req">*</span></label>
-            <select formControlName="costCenterId">
+            <select formControlName="costCenterId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
               <option value="">Select cost center</option>
               <option *ngFor="let c of costCenters" [value]="c.id">
                 {{ c.code }} — {{ c.name }}
@@ -64,7 +64,7 @@
 
           <div class="field">
             <label>Budget Code <span class="req">*</span></label>
-            <select formControlName="budgetCodeId">
+            <select formControlName="budgetCodeId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
               <option value="">Select budget code</option>
               <option *ngFor="let b of filteredBudgetCodes()" [value]="b.id">
                 {{ b.code }} — {{ b.name }}
@@ -75,7 +75,7 @@
 
           <div class="field">
             <label>Justification <span class="req">*</span></label>
-            <textarea formControlName="justification" rows="3"></textarea>
+            <textarea formControlName="justification" rows="3" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200"></textarea>
           </div>
         </div>
       </div>
@@ -108,25 +108,25 @@
             <tbody>
               <tr *ngFor="let fg of items.controls; let i = index" [formGroupName]="i">
                 <td>
-                  <input type="text" formControlName="name" placeholder="e.g. A4 Paper" />
+                  <input type="text" formControlName="name" placeholder="e.g. A4 Paper" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
                 </td>
 
                 <td>
-                  <input type="text" formControlName="description" placeholder="Optional details" />
+                  <input type="text" formControlName="description" placeholder="Optional details" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
                 </td>
 
                 <td>
-                  <input type="number" min="1" formControlName="quantity" />
+                  <input type="number" min="1" formControlName="quantity" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
                 </td>
 
                 <td>
-                  <select formControlName="unitOfMeasure">
+                  <select formControlName="unitOfMeasure" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
                     <option *ngFor="let u of uoms" [value]="u">{{ u }}</option>
                   </select>
                 </td>
 
                 <td>
-                  <input type="text" formControlName="category" placeholder="e.g. Office Supplies" />
+                  <input type="text" formControlName="category" placeholder="e.g. Office Supplies" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
                 </td>
 
                 <td class="actions-cell">
@@ -154,7 +154,7 @@
         <div class="grid-2 tight">
           <div class="field">
             <label>Currency <span class="req">*</span></label>
-            <select [formGroup]="form" formControlName="currency">
+            <select [formGroup]="form" formControlName="currency" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
               <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
             </select>
           </div>
@@ -167,6 +167,7 @@
               [formGroup]="form"
               formControlName="budgetCapAmount"
               placeholder="e.g. 250000"
+              class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200"
             />
             <small
               class="error"
@@ -194,7 +195,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <!-- <div class="card">
         <h3>Approval Status</h3>
         <div class="timeline">
           <div class="step done">
@@ -239,7 +240,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div class="actions-panel">
         <button type="button" class="btn" (click)="saveDraft()">
