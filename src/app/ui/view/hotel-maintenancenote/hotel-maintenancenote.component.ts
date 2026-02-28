@@ -6,7 +6,7 @@ import {
 } from '../../hospitality/hotelservice.service';
 
 export interface Todo {
-  id: number;
+  id?: number;
   title: string;
   description?: string;
   reason?: string; // Added reason field
@@ -201,7 +201,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
   }
 
   toggleTodo(todo: Todo) {
-    if (!this.room) return;
+    if (!this.room || !todo.id) return;
     const updatedRequest: MaintenainceRequest = {
       id: todo.id,
       tasks: todo.title,
@@ -340,9 +340,8 @@ export class HotelMaintenancenoteComponent implements OnInit {
   }
 
   private generateId(): number {
-    return this.todos.length > 0
-      ? Math.max(...this.todos.map((todo) => todo.id)) + 1
-      : 1;
+    const ids = this.todos.map((todo) => todo.id).filter((id): id is number => !!id);
+    return ids.length > 0 ? Math.max(...ids) + 1 : 1;
   }
 
   closeModal() {
