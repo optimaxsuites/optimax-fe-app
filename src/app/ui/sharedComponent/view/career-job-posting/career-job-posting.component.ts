@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { JobDTO } from '../../../domain/job.dto';
+import { JobPostingDTO } from '../../../domain/job.dto';
 
 @Component({
   selector: 'app-career-job-posting',
@@ -9,15 +9,15 @@ import { JobDTO } from '../../../domain/job.dto';
 })
 export class CareerJobPostingComponent {
   
-  jobpostings: JobDTO[] = [];
-  filteredJobPostings: JobDTO[] = [];
+  jobpostings: JobPostingDTO[] = [];
+  filteredJobPostings: JobPostingDTO[] = [];
   
-  categories: string[] = []; // Add categories here
-  employmentTypes: string[] = []; // Add employment types here
+  categories: number[] = []; // Add categories here
+  employmentTypes: number[] = []; // Add employment types here
   locations: string[] = []; // Add locations here
 
-  selectedCategory: string | null = null;
-  selectedEmploymentType: string | null = null;
+  selectedCategory: number | null = null;
+  selectedEmploymentType: number | null = null;
   selectedLocation: string | null = null;
 
   ngOnInit(): void {
@@ -27,7 +27,7 @@ export class CareerJobPostingComponent {
   
   constructor(private router: Router) {}
 
-  navigateToJob(jobId: string): void {
+  navigateToJob(jobId: number): void {
     this.router.navigate(['/career/job-posting', jobId]);
   }
 
@@ -57,20 +57,43 @@ export class CareerJobPostingComponent {
 
   }
 
-  extractFilters() {
-    this.categories = [...new Set(this.jobpostings.map(job => job.category).filter(category => category !== undefined))] as string[]; 
-    this.employmentTypes = [...new Set(this.jobpostings.map(job => job.employmentType).filter(type => type !== undefined))] as string[]; 
-    this.locations = [...new Set(this.jobpostings.map(job => job.location).filter(location => location !== undefined))] as string[]; 
-  }
+  // extractFilters() {
+  //   this.categories = [...new Set(this.jobpostings.map(job => job.category).filter(category => category !== undefined))] as number[]; 
+  //   this.employmentTypes = [...new Set(this.jobpostings.map(job => job.employmentType).filter(type => type !== undefined))] as number[]; 
+  //   this.locations = [...new Set(this.jobpostings.map(job => job.location).filter(location => location !== undefined))] as number[]; 
+  // }
 
-  filterJobs() {
+  // filterJobs() {
+  //   this.filteredJobPostings = this.jobpostings.filter(job => {
+  //     return (
+  //       (!this.selectedCategory || job.category === this.selectedCategory) &&
+  //       (!this.selectedEmploymentType || job.employmentType === this.selectedEmploymentType) &&
+  //       (!this.selectedLocation || job.location === this.selectedLocation)
+  //     );
+  //   });
+  // }
+  extractFilters(): void {
+    this.categories = Array.from(
+      new Set(this.jobpostings.map(job => job.jobCategory).filter(category => category !== undefined))
+    ) as number[];
+  
+    this.employmentTypes = Array.from(
+      new Set(this.jobpostings.map(job => job.jobType).filter(type => type !== undefined))
+    ) as number[];
+  
+    this.locations = Array.from(
+      new Set(this.jobpostings.map(job => job.location).filter(location => location !== undefined))
+    ) as string[];
+  }
+  
+  filterJobs(): void {
     this.filteredJobPostings = this.jobpostings.filter(job => {
-      return (
-        (!this.selectedCategory || job.category === this.selectedCategory) &&
-        (!this.selectedEmploymentType || job.employmentType === this.selectedEmploymentType) &&
-        (!this.selectedLocation || job.location === this.selectedLocation)
-      );
+      const matchesCategory = !this.selectedCategory || job.jobCategory === this.selectedCategory;
+      const matchesEmploymentType = !this.selectedEmploymentType || job.jobType === this.selectedEmploymentType;
+      const matchesLocation = !this.selectedLocation || job.location === this.selectedLocation;
+  
+      return matchesCategory && matchesEmploymentType && matchesLocation;
     });
   }
-
+  
 }

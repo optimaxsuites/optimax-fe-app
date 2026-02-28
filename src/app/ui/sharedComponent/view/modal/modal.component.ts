@@ -1,12 +1,9 @@
-import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.component.html',
-  styleUrl: './modal.component.scss',
-  standalone: true,
-  imports: [CommonModule]
+  styleUrl: './modal.component.scss'
 })
 export class ModalComponent {
   @Input() header: string = '';
