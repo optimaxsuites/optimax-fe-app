@@ -157,6 +157,10 @@ export class CheckoutKitchenComponent implements OnInit {
   historyOrders: Order[] = [];
   orderItems: OrderItem[] = [];
   selectedOrder?: Order 
+  cashierOrderRowClass = (order: Order) => ({
+    'order-row': true,
+    selected: this.selectedOrder === order
+  });
 
 
   // ===== STOCK MANAGEMENT =====

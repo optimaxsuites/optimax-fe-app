@@ -67,6 +67,7 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
 import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
 import { CustomerCleanupComponent } from '../ui/view/pos-store/customer-cleanup/customer-cleanup.component';
+import { AppTableModule } from '../ui/sharedComponent/view/table/table.module';
 
 @NgModule({
   declarations: [
@@ -101,6 +102,7 @@ import { CustomerCleanupComponent } from '../ui/view/pos-store/customer-cleanup/
     OptimerceRoutingModule,
     TableModule,
     PaginatorModule,
+    AppTableModule,
     RippleModule,
     DialogModule,
     ToastModule,

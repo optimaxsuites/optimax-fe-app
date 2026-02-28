@@ -27,18 +27,16 @@
   [closable]="true"
   styleClass="dialog"
 >
-  <p-table [value]="tableData">
-    <ng-template pTemplate="header">
+  <app-table [rows]="tableData" [colSpanOverride]="2">
+    <ng-template appTableHeader>
       <tr>
         <th>Period</th>
         <th>Value</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-rowData>
-      <tr>
-        <td>{{ rowData.colName }}</td>
-        <td>{{ rowData.value }}</td>
-      </tr>
+    <ng-template appTableBody let-rowData>
+      <td>{{ rowData.colName }}</td>
+      <td>{{ rowData.value }}</td>
     </ng-template>
-  </p-table>
+  </app-table>
 </p-dialog>

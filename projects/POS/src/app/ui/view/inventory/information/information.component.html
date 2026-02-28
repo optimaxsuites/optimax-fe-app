@@ -155,9 +155,14 @@
   </div>
 
   <div *ngIf="!isMovementsLoading && stockMovements.length > 0" class="overflow-x-auto mt-4">
-    <table class="min-w-full border border-gray-200 rounded-lg">
-      <thead class="bg-gray-100 text-gray-700">
-        <tr class="border-t hover:bg-gray-50 relative overflow-visible">
+    <app-table
+      [rows]="stockMovements"
+      [tableClass]="'min-w-full border border-gray-200 rounded-lg'"
+      [colSpanOverride]="7"
+      [rowClass]="'border-t hover:bg-gray-50'"
+    >
+      <ng-template appTableHeader>
+        <tr class="border-t hover:bg-gray-50 relative overflow-visible bg-gray-100 text-gray-700">
           <th class="px-4 py-2 text-left">Date</th>
           <th class="px-4 py-2 text-left">Reference</th>
           <th class="px-4 py-2 text-right">Qty</th>
@@ -166,27 +171,26 @@
           <th class="px-4 py-2 text-left">Supplier</th>
           <th class="px-4 py-2 text-center w-24">Actions</th>
         </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let mv of stockMovements; let i = index" class="border-t hover:bg-gray-50">
-          <td class="px-4 py-2">
-            {{ toIsoString(mv.createdDate) | date:'medium' }}
-          </td>
-          <td class="px-4 py-2">{{ mv.reference || '-' }}</td>
-          <td class="px-4 py-2 text-right"
-              [ngClass]="mv.quantity >= 0 ? 'text-green-700' : 'text-red-700'">
-            {{ mv.quantity }}
-          </td>
-          <td class="px-4 py-2 text-right">
-            {{ mv.purchasePrice || 0 | currency:'₦' }}
-          </td>
-          <td class="px-4 py-2 text-right">
-            {{ mv.sellingPrice || 0 | currency:'₦' }}
-          </td>
-          <td class="px-4 py-2">
-            {{ mv.supplierId || '-' }}
-          </td>
-          <td class="mv-actions px-4 py-2 text-center w-24 relative overflow-visible">
+      </ng-template>
+      <ng-template appTableBody let-mv let-i="rowIndex">
+        <td class="px-4 py-2">
+          {{ toIsoString(mv.createdDate) | date:'medium' }}
+        </td>
+        <td class="px-4 py-2">{{ mv.reference || '-' }}</td>
+        <td class="px-4 py-2 text-right"
+            [ngClass]="mv.quantity >= 0 ? 'text-green-700' : 'text-red-700'">
+          {{ mv.quantity }}
+        </td>
+        <td class="px-4 py-2 text-right">
+          {{ mv.purchasePrice || 0 | currency:'₦' }}
+        </td>
+        <td class="px-4 py-2 text-right">
+          {{ mv.sellingPrice || 0 | currency:'₦' }}
+        </td>
+        <td class="px-4 py-2">
+          {{ mv.supplierId || '-' }}
+        </td>
+        <td class="mv-actions px-4 py-2 text-center w-24 relative overflow-visible">
 <button
   (click)="$event.stopPropagation(); toggleDropdown(i)"
   class="text-gray-700 hover:text-gray-900 focus:outline-none p-2 rounded-full hover:bg-gray-100"
@@ -220,10 +224,9 @@
                 Delete
               </button>
             </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+        </td>
+      </ng-template>
+    </app-table>
   </div>
 </div>
 

@@ -407,17 +407,21 @@
                ></i> clear all</div>
     <div *ngIf="draftOrders.length > 0; else noDrafts" >
       <div class="px-4 md:px-8 mt-6 md:mt-10 w-full" *ngIf="draftOrders.length > 0; else noDrafts">
-        <p-table 
-          [value]="draftOrders" 
+        <app-table 
+          [rows]="draftOrders" 
           [paginator]="true" 
-          [rows]="rowsPerPage"
+          [rowsPerPage]="rowsPerPage"
           [rowsPerPageOptions]="[5, 10, 15, 20, 25]"
           [totalRecords]="draftOrders.length"
           responsiveLayout="stack"
-          styleClass="p-datatable-striped"
-          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px', 'width': '75rem'}">
+          [wrapperClass]="'p-datatable-striped'"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px', 'width': '75rem'}"
+          [colSpanOverride]="4"
+          [rowClickable]="true"
+          (rowClick)="reOpenCart($event)"
+        >
           
-          <ng-template pTemplate="header">
+          <ng-template appTableHeader>
             <tr class="bg-gray-300 w-full max-w-7xl">
               <th class="bg-white border-b px-2 text-gray-700" pSortableColumn="updatedAt" style="width:20%">
                 Date <p-sortIcon field="updatedAt"></p-sortIcon>
@@ -435,9 +439,7 @@
             </tr>
           </ng-template>
 
-        <ng-template pTemplate="body" let-order let-columns="columns">
-        
-        <tr (click)="reOpenCart(order)" style="cursor:pointer">
+        <ng-template appTableBody let-order>
           <td class="text-nowrap">{{ formatDate( order.createdDate) | date:'medium' }}</td>
           <!-- <td>
             <span [ngClass]="{
@@ -461,11 +463,8 @@
                 (click)="deleteDraft(order)"></i>
             </div>
           </td>
-        </tr>
-
-       
       </ng-template>
-        </p-table>
+        </app-table>
       </div>
     </div>
     

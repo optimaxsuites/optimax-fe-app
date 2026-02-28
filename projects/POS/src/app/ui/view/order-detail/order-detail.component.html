@@ -103,8 +103,12 @@
             <div class="top-products-container">
               <div class="top-products">
                 <div class="top-products-table-container">
-                  <table class="top-products-table w3-table w3-striped">
-                    <thead>
+                  <app-table
+                    [rows]="navigationState.order.orderItem"
+                    [tableClass]="'top-products-table w3-table w3-striped'"
+                    [colSpanOverride]="5"
+                  >
+                    <ng-template appTableHeader>
                       <tr class="">
                         <th class="top-products-table-head col-1">Name</th>
                         <th class="top-products-table-head col-1">Quantity</th>
@@ -114,25 +118,21 @@
                         <th class="top-products-table-head col-1">Discount</th>
                         <th class="top-products-table-head col-1">total</th>
                       </tr>
-                    </thead>
-                    <tbody>
-                      <ng-container *ngFor="let item of navigationState.order.orderItem" >
-                        <tr>
-                            <td>
-                                {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
-                            </td>
-                            <td>
-                                <p class="mb-0 capitalize font-bold text-yellow-600">
-                                  {{ item.quantity }}
-                                </p>
-                            </td>
-                            <td class="capitalize">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
-                            <td>{{ item.discount | currency: '₦'}}</td>
-                            <td>{{ item.totalPrice | currency: '₦'}}</td>
-                        </tr>
-                      </ng-container>
-                    </tbody>
-                  </table>
+                    </ng-template>
+                    <ng-template appTableBody let-item>
+                      <td>
+                          {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
+                      </td>
+                      <td>
+                          <p class="mb-0 capitalize font-bold text-yellow-600">
+                            {{ item.quantity }}
+                          </p>
+                      </td>
+                      <td class="capitalize">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
+                      <td>{{ item.discount | currency: '₦'}}</td>
+                      <td>{{ item.totalPrice | currency: '₦'}}</td>
+                    </ng-template>
+                  </app-table>
                 </div>
               </div>
             </div>
@@ -176,31 +176,28 @@
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
-  <table style="width: 100%; border-collapse: collapse;">
-  <hr style="border-top: 1px dashed black; margin: 5px 0;">
-
-    <thead>
+  <app-table
+    [rows]="navigationState.order.orderItem"
+    [tableStyle]="{ width: '100%', 'border-collapse': 'collapse' }"
+    [colSpanOverride]="4"
+  >
+    <ng-template appTableHeader>
       <tr style=" font-size:  12px; font-weight: bold; color: black;">
         <th style="text-align: left;">Name</th>
         <th style="text-align: center;">Qty</th>
         <th style="text-align: center;">Price</th>
         <th style="text-align: center;">Total</th>
       </tr>
-    </thead>
-
-    <tbody>
-        <ng-container *ngFor="let item of navigationState.order.orderItem">
-            <tr>
-              <td style="text-align: left;">
-                {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
-              </td>
-              <td style="text-align: center;">{{ item.quantity }}</td>
-              <td style="text-align: center;">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
-              <td style="text-align: center;">{{ item.totalPrice | currency: '₦'}}</td>
-            </tr>
-        </ng-container>
-    </tbody>
-  </table>
+    </ng-template>
+    <ng-template appTableBody let-item>
+      <td style="text-align: left;">
+        {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
+      </td>
+      <td style="text-align: center;">{{ item.quantity }}</td>
+      <td style="text-align: center;">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
+      <td style="text-align: center;">{{ item.totalPrice | currency: '₦'}}</td>
+    </ng-template>
+  </app-table>
 
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 

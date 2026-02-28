@@ -9,8 +9,14 @@
         <div class="top-products-container">
           <div class="top-products">
             <div class="top-products-table-container">
-              <table class="top-products-table w3-table w3-striped">
-                <thead>
+              <app-table
+                [rows]="[0]"
+                [tableClass]="'top-products-table w3-table w3-striped'"
+                [colSpanOverride]="4"
+                [rowClickable]="true"
+                (rowClick)="openViewUser()"
+              >
+                <ng-template appTableHeader>
                   <tr class="top-products-table-row" >
                     <th class="top-products-table-head col-1">
                       Name
@@ -19,29 +25,26 @@
                     <th class="top-products-table-head col-1">Email</th>
                     <th class="top-products-table-head col-1">Actions</th>
                   </tr>
-                </thead>
-                <tbody>
-                    <tr style="cursor: pointer;" (click)="openViewUser()">
-                <td>Ogechi</td>
-                <td>Cashier</td>
-                <td>Ogechi&#64;gmail.com</td>
-                <td>
-                    <div class="actionDiv">
-                        <div class="image-container" (click)="openEditform()">
-                            <i class="fa-solid fa-pen-to-square"></i>
-                          <span class="tooltip">Edit</span>
+                </ng-template>
+                <ng-template appTableBody>
+                  <td>Ogechi</td>
+                  <td>Cashier</td>
+                  <td>Ogechi&#64;gmail.com</td>
+                  <td>
+                      <div class="actionDiv">
+                          <div class="image-container" (click)="openEditform()">
+                              <i class="fa-solid fa-pen-to-square"></i>
+                            <span class="tooltip">Edit</span>
+                          </div>
+    
+                          <div class="image-container" (click)="openDeleteModal()">
+                              <i class="fa-solid fa-trash" style="color: red;"></i>
+                            <span class="tooltip">Delete</span>
+                          </div>
                         </div>
-  
-                        <div class="image-container" (click)="openDeleteModal()">
-                            <i class="fa-solid fa-trash" style="color: red;"></i>
-                          <span class="tooltip">Delete</span>
-                        </div>
-                      </div>
-                </td>
-            </tr>
-                
-                </tbody>
-              </table>
+                  </td>
+                </ng-template>
+              </app-table>
             </div>
           </div>
         </div>

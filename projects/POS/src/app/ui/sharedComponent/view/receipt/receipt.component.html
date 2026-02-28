@@ -7,8 +7,12 @@
             <div class="top-products">
                 <!-- <p class="top-products-title">Recent Purcheases</p> -->
                 <div class="top-products-table-container">
-                  <table class="top-products-table w3-table w3-striped">
-                    <thead>
+                  <app-table
+                    [rows]="tableData"
+                    [tableClass]="'top-products-table w3-table w3-striped'"
+                    [rowClass]="'top-products-table-row'"
+                  >
+                    <ng-template appTableHeader>
                       <tr class="top-products-table-row">
                         <th class="top-products-table-head">Date/Time</th>
                         <th class="top-products-table-head">Receipt</th>
@@ -18,41 +22,39 @@
                         <th class="top-products-table-head">Status</th>
                         <th class="top-products-table-head col-2">Action</th>
                       </tr>
-                    </thead>
-                    <tbody>
-                      <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                        <td class="top-products-table-data">{{ item.dateAndTime }}</td>
-                        <td class="top-products-table-data">{{ item.invoice }}</td>
-                        <td class="top-products-table-data">{{ item.invoiceNo}}</td>
-                        <td class="top-products-table-data">{{item.clientName}}</td>
-                        <td class="top-products-table-data"> ₦{{ item.amount }}</td>
-                        <td class="top-products-table-data">{{item.status}}</td>
-                        <td class="top-products-table-data action">
-                          <span class="tb-action-btn1" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Open"
-                            matTooltipPosition="below" >
-                              <i class="fa-regular fa-folder-open"></i>
-                          </span>
-                          <span class="tb-action-btn2 ms-4 me-4" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Edit"
-                            matTooltipPosition="below" >
-                              <i class="fas fa-file-pen"></i>
-                          </span>
-                          <span class="tb-action-btn3" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Delete"
-                            matTooltipPosition="below" >
-                              <i class="fas fa-trash"></i>
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                    </ng-template>
+                    <ng-template appTableBody let-item>
+                      <td class="top-products-table-data">{{ item.dateAndTime }}</td>
+                      <td class="top-products-table-data">{{ item.invoice }}</td>
+                      <td class="top-products-table-data">{{ item.invoiceNo}}</td>
+                      <td class="top-products-table-data">{{item.clientName}}</td>
+                      <td class="top-products-table-data"> ₦{{ item.amount }}</td>
+                      <td class="top-products-table-data">{{item.status}}</td>
+                      <td class="top-products-table-data action">
+                        <span class="tb-action-btn1" 
+                          mat-raised-button 
+                          #tooltip="matTooltip"
+                          matTooltip="Open"
+                          matTooltipPosition="below" >
+                            <i class="fa-regular fa-folder-open"></i>
+                        </span>
+                        <span class="tb-action-btn2 ms-4 me-4" 
+                          mat-raised-button 
+                          #tooltip="matTooltip"
+                          matTooltip="Edit"
+                          matTooltipPosition="below" >
+                            <i class="fas fa-file-pen"></i>
+                        </span>
+                        <span class="tb-action-btn3" 
+                          mat-raised-button 
+                          #tooltip="matTooltip"
+                          matTooltip="Delete"
+                          matTooltipPosition="below" >
+                            <i class="fas fa-trash"></i>
+                        </span>
+                      </td>
+                    </ng-template>
+                  </app-table>
                 </div>
               </div>
               

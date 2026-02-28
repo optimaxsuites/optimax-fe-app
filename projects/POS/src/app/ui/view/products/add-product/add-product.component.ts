@@ -1609,6 +1609,33 @@ getMainImage(): string {
     return branch.get('variants') as FormArray<FormGroup>;
   }
 
+  get branchPricingRows(): Array<{
+    type: 'branchHeader' | 'regular' | 'variant';
+    branch: FormGroup;
+    variant?: FormGroup;
+    branchIndex: number;
+    variantIndex?: number;
+  }> {
+    const rows: Array<{
+      type: 'branchHeader' | 'regular' | 'variant';
+      branch: FormGroup;
+      variant?: FormGroup;
+      branchIndex: number;
+      variantIndex?: number;
+    }> = [];
+
+    this.branchess.controls.forEach((branch, branchIndex) => {
+      rows.push({ type: 'branchHeader', branch, branchIndex });
+      rows.push({ type: 'regular', branch, branchIndex });
+
+      this.getVariants(branch).controls.forEach((variant, variantIndex) => {
+        rows.push({ type: 'variant', branch, variant, branchIndex, variantIndex });
+      });
+    });
+
+    return rows;
+  }
+
   get currentBranch() {
     return this.userBranch !== 'headquarters'
       ? this.selecteddBranch
@@ -3255,6 +3282,16 @@ getErrorMessage(controlName: string, displayName?: string): string {
         // "size" becomes "Size"
         else return key.charAt(0).toLocaleUpperCase() + key.slice(1);
       });
+  }
+
+  getVariantTableColSpan(): number {
+    const hidePriceFields =
+      !(this.isEditMode || this.userBranch !== 'headquarters');
+    const visibleKeys = this.variantObjectKeys.filter((prop) => {
+      if (!hidePriceFields) return true;
+      return !(prop === 'Price' || prop === 'Quantity' || prop === 'Sku');
+    });
+    return visibleKeys.length + 1;
   }
 
   private resetVariantData() {

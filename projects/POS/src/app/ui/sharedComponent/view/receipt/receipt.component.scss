@@ -38,21 +38,21 @@
     // overflow-x: auto;
     width: 100%;
 }
-table{
+:host ::ng-deep .app-data-table__table{
     text-align: left;
     width: 100%;
     table-layout: auto;
     overflow-x: auto;
 
 }
-th{
+:host ::ng-deep .app-data-table__table th{
     padding: 0.6rem;
     box-sizing: border-box;
     background-color: #25925B;
     color: #224957 ;
 
 }
-td {
+:host ::ng-deep .app-data-table__table td {
     padding: 0.6rem;
     box-sizing: border-box;
     // color: #25925B ;
@@ -98,7 +98,7 @@ td {
     .top-products-table-container{
         overflow-x: scroll;
     }
-    table{
+    :host ::ng-deep .app-data-table__table{
         width: 1200px;
     }
 }

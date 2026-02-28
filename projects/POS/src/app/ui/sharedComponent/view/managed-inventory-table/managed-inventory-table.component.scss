@@ -22,35 +22,31 @@
 
     
 }
-.tbody{
-  .top-products-table-row{
-      background-color: #f8feff;
-      border: 1px solid #e3eef0;
-      // background-color: red;
-      margin-bottom: 1rem;
-      min-height: 200px;
-      // padding: 2rem 0;
-      // box-sizing: border-box;
-      margin-bottom: 1rem;
+:host ::ng-deep .top-products-table-row{
+  background-color: #f8feff;
+  border: 1px solid #e3eef0;
+  // background-color: red;
+  margin-bottom: 1rem;
+  min-height: 200px;
+  // padding: 2rem 0;
+  // box-sizing: border-box;
+  margin-bottom: 1rem;
 
 
-      .table-item{
-          display: flex;
-          justify-content: space-between;
-          padding: 1rem 0;
+  .table-item{
+      display: flex;
+      justify-content: space-between;
+      padding: 1rem 0;
 
 
 
-          .top-products-table-data{
-              input{
-                  background-color: transparent;
-                  padding: 0.5rem;
-              }
+      .top-products-table-data{
+          input{
+              background-color: transparent;
+              padding: 0.5rem;
           }
       }
   }
-
-
 }
 
 .table-container {
@@ -66,23 +62,26 @@
     background-color: #fff;
   }
 
-  table{
+  :host ::ng-deep .app-data-table__table{
     width: 100%;
   }
 
 
 
-  table, th, td {
+  :host ::ng-deep .app-data-table__table,
+  :host ::ng-deep .app-data-table__table th,
+  :host ::ng-deep .app-data-table__table td {
     font-weight: 400;
     // border: 1px solid #ddd;
   }
   
-  th, td {
+  :host ::ng-deep .app-data-table__table th,
+  :host ::ng-deep .app-data-table__table td {
     padding: 10px;
     text-align: left;
   }
   
-  th {
+  :host ::ng-deep .app-data-table__table th {
     padding: 1rem;
     box-sizing: border-box;
     background-color: #25925B;
@@ -90,12 +89,12 @@
   }
 
 
-  .item-cell {
+  :host ::ng-deep .item-cell {
     position: relative;
     display: inline-block;
 }
 
-.tooltip-content {
+:host ::ng-deep .tooltip-content {
     display: none;
     position: absolute;
     background-color: white;
@@ -107,17 +106,17 @@
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
-.item-cell:hover .tooltip-content {
+:host ::ng-deep .item-cell:hover .tooltip-content {
     display: block;
 }
 
-.tooltip-content img {
+:host ::ng-deep .tooltip-content img {
     max-width: 250%; /* Adjust as needed */
     height: 250px;
     margin-bottom: 10px;
 }
 
-.tooltip-content p {
+:host ::ng-deep .tooltip-content p {
     margin: 0;
     width: 500px;
     word-wrap: break-word;

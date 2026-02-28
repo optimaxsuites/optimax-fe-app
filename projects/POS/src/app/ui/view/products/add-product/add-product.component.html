@@ -690,9 +690,14 @@
               <h4 class="text-sm font-medium text-gray-700 mb-3">Configure Combo Items</h4>
 
               <div class="overflow-x-auto border rounded-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
+                <app-table
+                  [rows]="selectedBundleItems"
+                  [tableClass]="'min-w-full divide-y divide-gray-200'"
+                  [colSpanOverride]="6"
+                  [rowClass]="'hover:bg-gray-50'"
+                >
+                  <ng-template appTableHeader>
+                    <tr class="bg-gray-50">
                       <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Product
                       </th>
@@ -712,32 +717,31 @@
                         Action
                       </th>
                     </tr>
-                  </thead>
-                  <tbody class="bg-white divide-y divide-gray-200">
-                    <tr *ngFor="let item of selectedBundleItems; let i = index" class="hover:bg-gray-50">
-                      <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="flex items-center">
-                          <!-- <div class="flex-shrink-0 h-10 w-10">
-                            <img class="h-10 w-10 rounded object-cover"
-                              [src]="item.product.imageUrl$ || 'https://via.placeholder.com/40'"
-                              [alt]="item.product.name">
-                          </div> -->
-                          <div class="ml-3">
-                            <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
-                            <div class="text-sm text-gray-500">SKU: {{ item.product.sku }}</div>
-                          </div>
+                  </ng-template>
+                  <ng-template appTableBody let-item let-i="rowIndex">
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <!-- <div class="flex-shrink-0 h-10 w-10">
+                          <img class="h-10 w-10 rounded object-cover"
+                            [src]="item.product.imageUrl$ || 'https://via.placeholder.com/40'"
+                            [alt]="item.product.name">
+                        </div> -->
+                        <div class="ml-3">
+                          <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                          <div class="text-sm text-gray-500">SKU: {{ item.product.sku }}</div>
                         </div>
-                      </td>
-                      <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        ₦{{ (+(item.product?.sellingPrice || 0)) | number:'1.2-2' }}
-                      </td>
-                      <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="flex items-center space-x-2">
-                          <button type="button"
-                            class="h-8 w-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                            (click)="decrementBundleItemQuantity(i)" [disabled]="item.quantity <= 1">
-                            <i class="fa-solid fa-minus text-xs"></i>
-                          </button>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      ₦{{ (+(item.product?.sellingPrice || 0)) | number:'1.2-2' }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center space-x-2">
+                        <button type="button"
+                          class="h-8 w-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                          (click)="decrementBundleItemQuantity(i)" [disabled]="item.quantity <= 1">
+                          <i class="fa-solid fa-minus text-xs"></i>
+                        </button>
                           <!-- Fix: Remove ngModel and handle input properly -->
                           <input type="number" [value]="item.quantity"
                             (input)="updateBundleItemQuantity(i, $any($event.target).value)"
@@ -774,9 +778,8 @@
                           <i class="fa-solid fa-trash"></i>
                         </button>
                       </td>
-                    </tr>
-                  </tbody>
-                </table>
+                  </ng-template>
+                </app-table>
               </div>
 
               <!-- Bundle Summary -->
@@ -849,9 +852,14 @@
         </div>
 
         <div *ngIf="variants.length > 0" class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
+          <app-table
+            [rows]="variants"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="getVariantTableColSpan()"
+            [rowClass]="'hover:bg-gray-50'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
                 @for (prop of variantObjectKeys; track $index) {
                 <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider"
                   *ngIf="
@@ -870,30 +878,28 @@
                   Action
                 </th>
               </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let variant of variants; let i = index" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
-                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
-                  {{ variant.price }}
-                </td>
-                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
-                  {{ variant.quantity }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right">
-                  <button type="button" class="text-customBlue hover:text-customBlue mr-3" (click)="editVariant(i)">
-                    <i class="fa-regular fa-pen-to-square"></i>
-                  </button>
-                  <button type="button" class="text-red-600 hover:text-red-900" (click)="deleteVariant(i)">
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+            <ng-template appTableBody let-variant let-i="rowIndex">
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
+              <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                {{ variant.price }}
+              </td>
+              <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                {{ variant.quantity }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-right">
+                <button type="button" class="text-customBlue hover:text-customBlue mr-3" (click)="editVariant(i)">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button type="button" class="text-red-600 hover:text-red-900" (click)="deleteVariant(i)">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
 
@@ -958,9 +964,14 @@
 
           <!-- Ingredients Table -->
           <div *ngIf="selectedIngredients.length > 0" class="overflow-x-auto mt-4 border rounded-lg">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
+            <app-table
+              [rows]="selectedIngredients"
+              [tableClass]="'min-w-full divide-y divide-gray-200'"
+              [colSpanOverride]="3"
+              [rowClass]="'hover:bg-gray-50'"
+            >
+              <ng-template appTableHeader>
+                <tr class="bg-gray-50">
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ingredient
                   </th>
@@ -971,30 +982,26 @@
                     Action
                   </th>
                 </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                @for (ingredient of selectedIngredients; track $index) {
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ ingredient.ingredient.name }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center gap-2">
-                      <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
-                      <span class="text-gray-500">{{
-                        ingredient.ingredient.measurementUnit
-                        }}</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right">
-                    <button type="button" class="text-red-600 hover:text-red-900" (click)="removeIngredient($index)">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
+              </ng-template>
+              <ng-template appTableBody let-ingredient let-i="rowIndex">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {{ ingredient.ingredient.name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
+                    <span class="text-gray-500">{{
+                      ingredient.ingredient.measurementUnit
+                      }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <button type="button" class="text-red-600 hover:text-red-900" (click)="removeIngredient(i)">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </ng-template>
+            </app-table>
           </div>
 
           <!-- Cooking Time -->
@@ -1178,9 +1185,14 @@
     </h2>
 
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
+      <app-table
+        [rows]="branchPricingRows"
+        [tableClass]="'min-w-full divide-y divide-gray-200'"
+        [colSpanOverride]="11"
+        [rowClass]="'hover:bg-gray-50'"
+      >
+        <ng-template appTableHeader>
+          <tr class="bg-gray-50">
             <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
               Branch
             </th>
@@ -1215,140 +1227,137 @@
               Action
             </th>
           </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @for (branch of branchess.controls; track $index) {
-          <!-- Branch Name Row -->
-          <tr class="bg-gray-50">
-            <td colspan="11" class="px-4 py-3 font-semibold text-gray-700 capitalize">
-              {{ branch.get("branchName")?.value.name }}
-            </td>
-          </tr>
+        </ng-template>
+        <ng-template appTableBody let-row>
+          <ng-container [ngSwitch]="row.type">
+            <ng-container *ngSwitchCase="'branchHeader'">
+              <td colspan="11" class="px-4 py-3 font-semibold text-gray-700 capitalize bg-gray-50">
+                {{ row.branch.get("branchName")?.value.name }}
+              </td>
+            </ng-container>
+            <ng-container *ngSwitchCase="'regular'">
+              <ng-container [formGroup]="row.branch">
+                <td class="px-4 py-3 capitalize text-gray-600">Regular</td>
+                <td class="px-4 py-3">
+                  <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+                </td>
+                <td class="px-4 py-3">
+                  <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"
+                    styleClass="w-full"></p-inputNumber>
+                </td>
+                <td class="px-4 py-3">
+                  <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+                </td>
+                <td class="px-4 py-3">
+                  <input formControlName="sku" pInputText class="editInput" readOnly styleClass="w-full" />
+                </td>
+                <td class="px-4 py-3">
+                  <input formControlName="code" pInputText class="editInput" styleClass="w-full" />
+                </td>
+                <td class="px-4 py-3">
+                  <input formControlName="partNumber" pInputText class="editInput" styleClass="w-full" />
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-1">
+                    <ng-select [items]="taxes" bindLabel="name" [formControl]="getBranchTaxControl(row.branch)"
+                      [multiple]="true" placeholder="Select taxes" class="flex-1">
+                      <ng-template ng-label-tmp let-item="item">
+                        <div class="flex items-center gap-1">
+                          <span>{{ item.name }}</span>
+                          <span class="text-xs text-gray-500">({{ item.rate }}%)</span>
+                        </div>
+                      </ng-template>
+                    </ng-select>
 
-          <!-- Regular Row -->
-          <tr [formGroup]="branch" class="hover:bg-gray-50">
-            <td class="px-4 py-3 capitalize text-gray-600">Regular</td>
-            <td class="px-4 py-3">
-              <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
-            </td>
-            <td class="px-4 py-3">
-              <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"
-                styleClass="w-full"></p-inputNumber>
-            </td>
-            <td class="px-4 py-3">
-              <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
-            </td>
-            <td class="px-4 py-3">
-              <input formControlName="sku" pInputText class="editInput" readOnly styleClass="w-full" />
-            </td>
-            <td class="px-4 py-3">
-              <input formControlName="code" pInputText class="editInput" styleClass="w-full" />
-            </td>
-            <td class="px-4 py-3">
-              <input formControlName="partNumber" pInputText class="editInput" styleClass="w-full" />
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex gap-1">
-                <ng-select [items]="taxes" bindLabel="name" [formControl]="getBranchTaxControl(branch)"
-                  [multiple]="true" placeholder="Select taxes" class="flex-1">
-                  <ng-template ng-label-tmp let-item="item">
-                    <div class="flex items-center gap-1">
-                      <span>{{ item.name }}</span>
-                      <span class="text-xs text-gray-500">({{ item.rate }}%)</span>
+                    <div *ngIf="
+      getBranchTaxControl(row.branch)?.invalid &&
+      getBranchTaxControl(row.branch)?.touched
+    " class="mt-1 text-sm text-red-500">
+                      At least one tax is required for this branch.
                     </div>
-                  </ng-template>
-                </ng-select>
 
-                <div *ngIf="
-      getBranchTaxControl(branch)?.invalid &&
-      getBranchTaxControl(branch)?.touched
-    " class="mt-1 text-sm text-red-500">
-                  At least one tax is required for this branch.
-                </div>
-
-                <button class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
-                  type="button" (click)="openAddTax = true">
-                  <i class="fa-solid fa-plus"></i>
-                </button>
-              </div>
-
-              <!-- Error message for branch taxes -->
-              <div *ngIf="
-      getBranchTaxControl(branch)?.invalid &&
-      getBranchTaxControl(branch)?.touched
-    " class="mt-1 text-sm text-red-500">
-                At least one tax is required for this branch.
-              </div>
-
-              <!-- Display selected taxes for this branch -->
-              <div *ngIf="getBranchSelectedTaxes(branch).length > 0" class="mt-1">
-                <div class="flex flex-wrap gap-1">
-                  <div *ngFor="let tax of getBranchSelectedTaxes(branch)"
-                    class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                    <span>{{ tax.name }}({{ tax.rate }}%)</span>
-                    <button type="button" class="text-blue-600 hover:text-blue-800 text-xs"
-                      (click)="removeBranchTax(branch, tax.id)">
-                      <i class="fa-solid fa-times"></i>
+                    <button class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
+                      type="button" (click)="openAddTax = true">
+                      <i class="fa-solid fa-plus"></i>
                     </button>
                   </div>
-                </div>
-              </div>
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex gap-1">
-                <ng-select [items]="discounts" bindLabel="name" formControlName="discount" placeholder="Select discount"
-                  class="flex-1"></ng-select>
-                <button class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
-                  type="button" (click)="openAddDiscount = true">
-                  <i class="fa-solid fa-plus"></i>
-                </button>
-              </div>
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex gap-1">
-                <ng-select [items]="suppliers" bindLabel="name" formControlName="supplier" placeholder="Select supplier"
-                  class="flex-1"></ng-select>
-                <button class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
-                  type="button" (click)="openAddSupplier = true">
-                  <i class="fa-solid fa-plus"></i>
-                </button>
-              </div>
-            </td>
-            <td class="px-4 py-3 text-right">
-              <button class="text-red-600 hover:text-red-900" type="button" (click)="removeBranch($index)">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </td>
-          </tr>
 
-          <!-- Variant Rows -->
-          @for (variant of getVariants(branch).controls; track $index) {
-          <tr [formGroup]="variant" class="hover:bg-gray-50 border-t border-gray-100">
-            <td class="px-4 py-3 pl-8 text-gray-600 italic">
-              {{ variant.get("name")?.value }}
-            </td>
-            <td class="px-4 py-3"></td>
+                  <!-- Error message for branch taxes -->
+                  <div *ngIf="
+      getBranchTaxControl(row.branch)?.invalid &&
+      getBranchTaxControl(row.branch)?.touched
+    " class="mt-1 text-sm text-red-500">
+                    At least one tax is required for this branch.
+                  </div>
 
-            <td class="px-4 py-3">
-              <p-inputNumber formControlName="price" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
-            </td>
-            <td class="px-4 py-3">
-              <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
-            </td>
-            <td class="px-4 py-3">
-              <input formControlName="sku" readonly pInputText styleClass="w-full" />
-            </td>
-            <td colspan="6" class="px-4 py-3"></td>
-            <td class="px-4 py-3 text-right">
-              <button class="text-red-600 hover:text-red-900" type="button" (click)="removeVariant(branch, $index)">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-          }
-          }
-        </tbody>
-      </table>
+                  <!-- Display selected taxes for this branch -->
+                  <div *ngIf="getBranchSelectedTaxes(row.branch).length > 0" class="mt-1">
+                    <div class="flex flex-wrap gap-1">
+                      <div *ngFor="let tax of getBranchSelectedTaxes(row.branch)"
+                        class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                        <span>{{ tax.name }}({{ tax.rate }}%)</span>
+                        <button type="button" class="text-blue-600 hover:text-blue-800 text-xs"
+                          (click)="removeBranchTax(row.branch, tax.id)">
+                          <i class="fa-solid fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-1">
+                    <ng-select [items]="discounts" bindLabel="name" formControlName="discount" placeholder="Select discount"
+                      class="flex-1"></ng-select>
+                    <button class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
+                      type="button" (click)="openAddDiscount = true">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-1">
+                    <ng-select [items]="suppliers" bindLabel="name" formControlName="supplier" placeholder="Select supplier"
+                      class="flex-1"></ng-select>
+                    <button class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                      type="button" (click)="openAddSupplier = true">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button class="text-red-600 hover:text-red-900" type="button" (click)="removeBranch(row.branchIndex)">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </ng-container>
+            </ng-container>
+            <ng-container *ngSwitchCase="'variant'">
+              <ng-container [formGroup]="row.variant">
+                <td class="px-4 py-3 pl-8 text-gray-600 italic">
+                  {{ row.variant.get("name")?.value }}
+                </td>
+                <td class="px-4 py-3"></td>
+
+                <td class="px-4 py-3">
+                  <p-inputNumber formControlName="price" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+                </td>
+                <td class="px-4 py-3">
+                  <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+                </td>
+                <td class="px-4 py-3">
+                  <input formControlName="sku" readonly pInputText styleClass="w-full" />
+                </td>
+                <td colspan="6" class="px-4 py-3"></td>
+                <td class="px-4 py-3 text-right">
+                  <button class="text-red-600 hover:text-red-900" type="button" (click)="removeVariant(row.branch, row.variantIndex)">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </ng-container>
+            </ng-container>
+          </ng-container>
+        </ng-template>
+      </app-table>
     </div>
   </div>
 </form>

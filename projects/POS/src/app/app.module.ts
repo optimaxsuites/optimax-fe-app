@@ -80,6 +80,7 @@ import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
+import { AppTableModule } from './ui/sharedComponent/view/table/table.module';
 
 import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { SaleSummariesComponent } from './ui/view/sales/sale-summaries/sale-summaries.component';
@@ -318,6 +319,7 @@ const dbConfig: DBConfig = {
     DividerModule,
     OverlayPanelModule,
     StepperModule,
+    AppTableModule,
     InputTextModule,
     FloatLabelModule,
     EditorModule,

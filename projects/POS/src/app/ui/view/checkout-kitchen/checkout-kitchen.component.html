@@ -472,8 +472,15 @@
       <div class="orders-list-section">
         <h3>Orders for Payment Processing</h3>
         
-        <table class="cashier-orders-table">
-          <thead>
+        <app-table
+          [rows]="getFilteredCashierOrders()"
+          [tableClass]="'cashier-orders-table'"
+          [colSpanOverride]="7"
+          [rowClassFn]="cashierOrderRowClass"
+          [rowClickable]="true"
+          (rowClick)="selectOrder($event)"
+        >
+          <ng-template appTableHeader>
             <tr>
               <th>Table/Waiter</th>
               <th>Order No</th>
@@ -483,43 +490,38 @@
               <th>Chef Note</th>
               <th>Action</th>
             </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let o of getFilteredCashierOrders()" 
-                (click)="selectOrder(o)" 
-                [class.selected]="selectedOrder === o"
-                class="order-row">
-              <td class="table-waiter-cell">
-                <div class="table-waiter-combined">
-                  <span class="table-number">Table {{ o.table }}</span>
-                  <span class="waiter-separator">/</span>
-                  <span class="waiter-name" *ngIf="o.waiterId">{{ o.waiterName }}</span>
-                  <span class="waiter-name not-specified" *ngIf="!o.waiterId">No waiter</span>
-                </div>
-              </td>
-              <td class="order-number">{{ o.orderNo }}</td>
-              <td class="order-status">
-                <span class="badge" [ngClass]="o.status.toLowerCase()">{{ o.status }}</span>
-              </td>
-              <td class="order-items-count">{{ o.items.length }} items</td>
-              <td class="order-total">₦{{ getGrandTotal(o) | number:'1.0-0' }}</td>
-              <td class="chef-note-cell">
-                <span *ngIf="o.note" class="has-note" title="{{ o.note }}">💬</span>
-                <span *ngIf="!o.note">-</span>
-              </td>
-              <td class="order-action">
-                <button *ngIf="o.status === 'READY'" 
-                        class="btn-view" 
-                        (click)="selectOrder(o); $event.stopPropagation()">
-                  Process Payment
-                </button>
-                <span *ngIf="o.status !== 'READY'" class="not-ready-text">
-                  Not ready
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </ng-template>
+          <ng-template appTableBody let-o>
+            <td class="table-waiter-cell">
+              <div class="table-waiter-combined">
+                <span class="table-number">Table {{ o.table }}</span>
+                <span class="waiter-separator">/</span>
+                <span class="waiter-name" *ngIf="o.waiterId">{{ o.waiterName }}</span>
+                <span class="waiter-name not-specified" *ngIf="!o.waiterId">No waiter</span>
+              </div>
+            </td>
+            <td class="order-number">{{ o.orderNo }}</td>
+            <td class="order-status">
+              <span class="badge" [ngClass]="o.status.toLowerCase()">{{ o.status }}</span>
+            </td>
+            <td class="order-items-count">{{ o.items.length }} items</td>
+            <td class="order-total">₦{{ getGrandTotal(o) | number:'1.0-0' }}</td>
+            <td class="chef-note-cell">
+              <span *ngIf="o.note" class="has-note" title="{{ o.note }}">💬</span>
+              <span *ngIf="!o.note">-</span>
+            </td>
+            <td class="order-action">
+              <button *ngIf="o.status === 'READY'" 
+                      class="btn-view" 
+                      (click)="selectOrder(o); $event.stopPropagation()">
+                Process Payment
+              </button>
+              <span *ngIf="o.status !== 'READY'" class="not-ready-text">
+                Not ready
+              </span>
+            </td>
+          </ng-template>
+        </app-table>
 
         <div *ngIf="getFilteredCashierOrders().length === 0" class="no-orders">
           <p>No orders matching the selected filter</p>
@@ -596,8 +598,13 @@
             </div>
           </div>
 
-          <table class="invoice-table">
-            <thead>
+          <app-table
+            [rows]="selectedOrder.items"
+            [tableClass]="'invoice-table'"
+            [colSpanOverride]="5"
+            [rowClass]="'invoice-item'"
+          >
+            <ng-template appTableHeader>
               <tr>
                 <th>#</th>
                 <th>Item Description</th>
@@ -605,17 +612,15 @@
                 <th>Unit Price (₦)</th>
                 <th>Amount (₦)</th>
               </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of selectedOrder.items; let i = index" class="invoice-item">
-                <td class="item-sno">{{ i + 1 }}</td>
-                <td class="item-name">{{ item.name }}</td>
-                <td class="item-quantity">{{ item.qty }}</td>
-                <td class="item-price">₦{{ item.sellingPrice | number:'1.0-0' }}</td>
-                <td class="item-total">₦{{ item.total | number:'1.0-0' }}</td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+            <ng-template appTableBody let-item let-i="rowIndex">
+              <td class="item-sno">{{ i + 1 }}</td>
+              <td class="item-name">{{ item.name }}</td>
+              <td class="item-quantity">{{ item.qty }}</td>
+              <td class="item-price">₦{{ item.sellingPrice | number:'1.0-0' }}</td>
+              <td class="item-total">₦{{ item.total | number:'1.0-0' }}</td>
+            </ng-template>
+          </app-table>
 
           <div class="invoice-summary">
             <div class="summary-row">

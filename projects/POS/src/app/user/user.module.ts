@@ -66,6 +66,7 @@ import { DecimalPipe, TitleCasePipe, DatePipe } from '@angular/common';
 // import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
 // import { WhatsappWidgetComponent } from '../ui/view/pos-store/whatsapp-widget/whatsapp-widget.component';
 import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-history/checkout-kitchen-history.component';
+import { AppTableModule } from '../ui/sharedComponent/view/table/table.module';
 // import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
 // import { LocationPickingComponent } from '../ui/view/pos-store/location-picking/location-picking.component';
 
@@ -116,6 +117,7 @@ import { CheckoutKitchenHistoryComponent } from '../ui/view/checkout-kitchen-his
     ConfirmDialogModule,
     SplitButtonModule,
     PanelModule,
+    AppTableModule,
     DividerModule,
     OverlayPanelModule,
     StepperModule,

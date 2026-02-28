@@ -315,9 +315,14 @@
         </div>
 
         <div *ngIf="activeItem.variants.length > 0" class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
+          <app-table
+            [rows]="activeItem.variants"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="variantObjectKeys.length"
+            [rowClass]="'hover:bg-gray-50'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
                 @for (prop of variantObjectKeys; track $index) {
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider"
@@ -326,23 +331,18 @@
                   </th>
                 }
               </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr
-                *ngFor="let variant of activeItem.variants; let i = index"
-                class="hover:bg-gray-50"
-              >
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.price }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ variant.quantity }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color || 'N/A' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size || 'N/A'}}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+            <ng-template appTableBody let-variant>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.price }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                {{ variant.quantity }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.color || 'N/A' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.size || 'N/A'}}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
     </div>

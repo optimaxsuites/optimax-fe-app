@@ -186,8 +186,13 @@
     </div>
 
     <div *ngIf="filteredOrders.length > 0" class="table-responsive">
-      <table class="orders-table">
-        <thead>
+      <app-table
+        [rows]="paginatedOrders"
+        [tableClass]="'orders-table'"
+        [colSpanOverride]="9"
+        [rowClassFn]="orderRowClass"
+      >
+        <ng-template appTableHeader>
           <tr>
             <th>Table</th>
             <th>Order No</th>
@@ -199,92 +204,90 @@
             <th>Total</th>
             <th>Actions</th>
           </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let order of paginatedOrders" class="order-row" [class.expanded]="selectedOrderForTimeline === order">
-            <td class="table-number">
-              <div class="table-badge">Table {{ order.table }}</div>
-            </td>
-            <td class="order-number">
-              <strong>{{ order.orderNo }}</strong>
-            </td>
-            <td class="order-date">
-              <div class="date-primary">{{ order.date || order.createdAt }}</div>
-              <div *ngIf="isToday(order.date)" class="date-badge today">Today</div>
-            </td>
-            <td class="order-items">
-              <div class="items-list">
-                <span *ngFor="let item of order.items" class="item-tag">
-                  {{ item.name }} x{{ item.qty }}
-                  <span class="item-price">₦{{ formatAmount(item.total) }}</span>
-                </span>
-              </div>
-              <div *ngIf="order.note" class="order-note">
-                <i class="fas fa-sticky-note"></i>
-                <small style="white-space: pre-wrap;">{{ order.note }}</small>
-              </div>
-              <div class="items-count">
-                <!-- {{ order.items.length }} item{{ order.items.length !== 1 ? 's' : '' }} -->
-              </div>
-            </td>
-            
-            <!-- Staff Involved Column -->
-            <td class="staff-involved">
-              <div class="order-staff-info">
-                <div  class="staff-badge waiter">
-                  <i class="fas fa-user-tie"></i>
-                  {{ order.waiter?.username || "Not specified" }}
-                </div>
-                <div  class="staff-badge chef">
-                  <i class="fas fa-utensils"></i>
-                  {{ order.chef?.username || "Not specified"}}
-                </div>
-                <div class="staff-badge cashier">
-                  <i class="fas fa-cash-register"></i>
-                  {{ order.cashier?.username || "Not specified" }}
-                </div>
-                <!-- <div *ngIf="!order.waiterId && !order.chefId && !order.cashierId" class="no-staff-info">
-                  <span class="text-muted">No staff info</span>
-                </div> -->
-              </div>
-            </td>
-            
-            <td class="order-status">
-              <span [class]="'status-badge status-' + order.status.toLowerCase()" class="capitalize">
-                <i class="fas" [ngClass]="getStatusIcon(order.status)"></i>
-                {{order.status}}
+        </ng-template>
+        <ng-template appTableBody let-order>
+          <td class="table-number">
+            <div class="table-badge">Table {{ order.table }}</div>
+          </td>
+          <td class="order-number">
+            <strong>{{ order.orderNo }}</strong>
+          </td>
+          <td class="order-date">
+            <div class="date-primary">{{ order.date || order.createdAt }}</div>
+            <div *ngIf="isToday(order.date)" class="date-badge today">Today</div>
+          </td>
+          <td class="order-items">
+            <div class="items-list">
+              <span *ngFor="let item of order.items" class="item-tag">
+                {{ item.name }} x{{ item.qty }}
+                <span class="item-price">₦{{ formatAmount(item.total) }}</span>
               </span>
-            </td>
-            <td class="payment-method">
-              <span [class]="'payment-badge status-' + order.payment?.toLowerCase()">
-                <i class="fas" [ngClass]="getPaymentIcon(order.payment)"></i>
-                {{ order.payment || 'Unknown' }}
-              </span>
-            </td>
-            <td class="order-total">
-              <strong>₦{{ formatAmount(getOrderTotal(order)) }}</strong>
-            </td>
-            <td class="order-actions">
-              <div class="action-buttons">
-                <!-- Print Receipt Button -->
-                <button class="btn btn-sm btn-info" (click)="printOrder(order)" title="Print Receipt">
-                  <i class="fas fa-print"></i>
-                </button>
-                
-                <!-- View Timeline Button -->
-                <button class="btn btn-sm btn-outline" (click)="showOrderTimeline(order)" title="View Timeline">
-                  <i class="fas" [ngClass]="selectedOrderForTimeline === order ? 'fa-chevron-up' : 'fa-history'"></i>
-                </button>
-                
-                <!-- View Details Button - FIXED: This should open the details modal -->
-                <button class="btn btn-sm btn-success" (click)="viewOrderDetails(order)" title="View Details">
-                  <i class="fas fa-eye"></i>
-                </button>
+            </div>
+            <div *ngIf="order.note" class="order-note">
+              <i class="fas fa-sticky-note"></i>
+              <small style="white-space: pre-wrap;">{{ order.note }}</small>
+            </div>
+            <div class="items-count">
+              <!-- {{ order.items.length }} item{{ order.items.length !== 1 ? 's' : '' }} -->
+            </div>
+          </td>
+          
+          <!-- Staff Involved Column -->
+          <td class="staff-involved">
+            <div class="order-staff-info">
+              <div  class="staff-badge waiter">
+                <i class="fas fa-user-tie"></i>
+                {{ order.waiter?.username || "Not specified" }}
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <div  class="staff-badge chef">
+                <i class="fas fa-utensils"></i>
+                {{ order.chef?.username || "Not specified"}}
+              </div>
+              <div class="staff-badge cashier">
+                <i class="fas fa-cash-register"></i>
+                {{ order.cashier?.username || "Not specified" }}
+              </div>
+              <!-- <div *ngIf="!order.waiterId && !order.chefId && !order.cashierId" class="no-staff-info">
+                <span class="text-muted">No staff info</span>
+              </div> -->
+            </div>
+          </td>
+          
+          <td class="order-status">
+            <span [class]="'status-badge status-' + order.status.toLowerCase()" class="capitalize">
+              <i class="fas" [ngClass]="getStatusIcon(order.status)"></i>
+              {{order.status}}
+            </span>
+          </td>
+          <td class="payment-method">
+            <span [class]="'payment-badge status-' + order.payment?.toLowerCase()">
+              <i class="fas" [ngClass]="getPaymentIcon(order.payment)"></i>
+              {{ order.payment || 'Unknown' }}
+            </span>
+          </td>
+          <td class="order-total">
+            <strong>₦{{ formatAmount(getOrderTotal(order)) }}</strong>
+          </td>
+          <td class="order-actions">
+            <div class="action-buttons">
+              <!-- Print Receipt Button -->
+              <button class="btn btn-sm btn-info" (click)="printOrder(order)" title="Print Receipt">
+                <i class="fas fa-print"></i>
+              </button>
+              
+              <!-- View Timeline Button -->
+              <button class="btn btn-sm btn-outline" (click)="showOrderTimeline(order)" title="View Timeline">
+                <i class="fas" [ngClass]="selectedOrderForTimeline === order ? 'fa-chevron-up' : 'fa-history'"></i>
+              </button>
+              
+              <!-- View Details Button - FIXED: This should open the details modal -->
+              <button class="btn btn-sm btn-success" (click)="viewOrderDetails(order)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </td>
+        </ng-template>
+      </app-table>
     </div>
 
     <!-- Order Timeline Section (opens when timeline icon is clicked) -->
@@ -436,8 +439,13 @@
           <h4>Order Items ({{ selectedOrderForDetails.items.length }})</h4>
         </div>
         <div class="items-container">
-          <table class="items-table-details">
-            <thead>
+          <app-table
+            [rows]="selectedOrderForDetails.items"
+            [tableClass]="'items-table-details'"
+            [colSpanOverride]="5"
+            [rowClass]="'item-row'"
+          >
+            <ng-template appTableHeader>
               <tr>
                 <th class="item-number">#</th>
                 <th class="item-name">Item Name</th>
@@ -445,17 +453,15 @@
                 <th class="item-price">Unit Price</th>
                 <th class="item-total">Total</th>
               </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of selectedOrderForDetails.items; let i = index" class="item-row">
-                <td class="item-number">{{ i + 1 }}</td>
-                <td class="item-name">{{ item.name }}</td>
-                <td class="item-qty">{{ item.qty }}</td>
-                <td class="item-price">₦{{ formatAmount(item.price) }}</td>
-                <td class="item-total">₦{{ formatAmount(item.total) }}</td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+            <ng-template appTableBody let-item let-i="rowIndex">
+              <td class="item-number">{{ i + 1 }}</td>
+              <td class="item-name">{{ item.name }}</td>
+              <td class="item-qty">{{ item.qty }}</td>
+              <td class="item-price">₦{{ formatAmount(item.price) }}</td>
+              <td class="item-total">₦{{ formatAmount(item.total) }}</td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
 

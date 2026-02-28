@@ -112,17 +112,20 @@
           *ngIf="tableSections && (!(isLoading | async) && !isBranchSwitching); else tableLoadingState"
           class="bg-white rounded-xl shadow-sm overflow-visible"
         >
-        <p-table
-          [value]="products"
+        <app-table
+          [rows]="products"
           [paginator]="true"
           dataKey="id"
           responsiveLayout="stack"
           [breakpoint]="'960px'"
-          styleClass="p-datatable-striped"
+          [wrapperClass]="'p-datatable-striped'"
           [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
-          [rows]="15"
+          [rowsPerPage]="15"
+          [colSpanOverride]="8"
+          [rowClickable]="true"
+          (rowClick)="openViewProduct($event)"
         >
-          <ng-template pTemplate="header" let-columns>
+          <ng-template appTableHeader>
             <tr class="bg-gray-50">
               <th
                 style="width: 4rem"
@@ -140,94 +143,92 @@
             </tr>
           </ng-template>
           
-          <ng-template pTemplate="body" let-item let-i="rowIndex">
-            <tr (click)="openViewProduct(item)" style="cursor: pointer">
-              <td class="p-4">
-                <p-tableCheckbox [value]="item" class="custom-checkbox" />
-              </td>
-              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sku }}</td>
-              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.code }}</td>
-              <td class="p-4 text-gray-800 text-3xl font-extrabold">{{ item.name }}</td>
-              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sellingPrice | currency : "₦" }}</td>
-              <td
-                class="p-4 text-2xl font-extrabold"
-                [ngClass]="getQuantityClass(item.effectiveQuantity)"
-              >
-                <div class="flex items-center gap-2">
-                  <span
-                    class="font-extrabold text-2xl"
-                    [ngClass]="
-                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
-                    "
-                    >{{ item?.quantity }}</span
-                  >
-                  <span
-                    class="text-xl font-extrabold ml-2"
-                    [ngClass]="
-                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
-                    "
-                  >
-                    {{ item?.quantity >= 11 ? "In Stock" : "Low Stock" }}
-                  </span>
-                </div>
-              </td>
-              <td class="p-4">
+          <ng-template appTableBody let-item>
+            <td class="p-4">
+              <p-tableCheckbox [value]="item" class="custom-checkbox" />
+            </td>
+            <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sku }}</td>
+            <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.code }}</td>
+            <td class="p-4 text-gray-800 text-3xl font-extrabold">{{ item.name }}</td>
+            <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sellingPrice | currency : "₦" }}</td>
+            <td
+              class="p-4 text-2xl font-extrabold"
+              [ngClass]="getQuantityClass(item.effectiveQuantity)"
+            >
+              <div class="flex items-center gap-2">
                 <span
-                  class="bg-gray-100 text-gray-800 text-xl font-extrabold px-2.5 py-0.5 rounded"
+                  class="font-extrabold text-2xl"
+                  [ngClass]="
+                    item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                  "
+                  >{{ item?.quantity }}</span
                 >
-                  {{ item.productCategory?.name || "Uncategorized" }}
+                <span
+                  class="text-xl font-extrabold ml-2"
+                  [ngClass]="
+                    item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                  "
+                >
+                  {{ item?.quantity >= 11 ? "In Stock" : "Low Stock" }}
                 </span>
-              </td>
-              <td class="p-4">
-                <div class="dropdown relative">
-                  <button
+              </div>
+            </td>
+            <td class="p-4">
+              <span
+                class="bg-gray-100 text-gray-800 text-xl font-extrabold px-2.5 py-0.5 rounded"
+              >
+                {{ item.productCategory?.name || "Uncategorized" }}
+              </span>
+            </td>
+            <td class="p-4">
+              <div class="dropdown relative">
+                <button
+                  (click)="
+                    toggleDropdown2(item, $event); $event.stopPropagation()
+                  "
+                  class="text-gray-500 hover:text-gray-700"
+                >
+                  <i class="pi pi-ellipsis-v text-gray-700"></i>
+                </button>
+                <ul
+                  *ngIf="item.showMenu"
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
+                >
+                  <li
                     (click)="
-                      toggleDropdown2(item, $event); $event.stopPropagation()
+                      openInformation(item);
+                      closeDropdown(item);
+                      $event.stopPropagation()
                     "
-                    class="text-gray-500 hover:text-gray-700"
+                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                   >
-                    <i class="pi pi-ellipsis-v text-gray-700"></i>
-                  </button>
-                  <ul
-                    *ngIf="item.showMenu"
-                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
+                    <i class="pi pi-eye"></i> View Details
+                  </li>
+                  <li
+                    (click)="
+                      openEditInventory(item, 'child');
+                      closeDropdown(item);
+                      $event.stopPropagation()
+                    "
+                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                   >
-                    <li
-                      (click)="
-                        openInformation(item);
-                        closeDropdown(item);
-                        $event.stopPropagation()
-                      "
-                      class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                    >
-                      <i class="pi pi-eye"></i> View Details
-                    </li>
-                    <li
-                      (click)="
-                        openEditInventory(item, 'child');
-                        closeDropdown(item);
-                        $event.stopPropagation()
-                      "
-                      class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                    >
-                      <i class="pi pi-pen-to-square"></i> Edit
-                    </li>
-                    <li
-                      (click)="
-                        openStockMovement(item, 'child');
-                        closeDropdown(item);
-                        $event.stopPropagation()
-                      "
-                      class="px-4 py-2 text-sm text-green-700 hover:bg-green-50 cursor-pointer flex items-center gap-2 border-t border-gray-100"
-                    >
-                      <i class="pi pi-chart-line"></i> Stock Movement
-                    </li>
-                  </ul>
-                </div>
-              </td>
-            </tr>
+                    <i class="pi pi-pen-to-square"></i> Edit
+                  </li>
+                  <li
+                    (click)="
+                      openStockMovement(item, 'child');
+                      closeDropdown(item);
+                      $event.stopPropagation()
+                    "
+                    class="px-4 py-2 text-sm text-green-700 hover:bg-green-50 cursor-pointer flex items-center gap-2 border-t border-gray-100"
+                  >
+                    <i class="pi pi-chart-line"></i> Stock Movement
+                  </li>
+                </ul>
+              </div>
+            </td>
           </ng-template>
-        </p-table>
+        </app-table>
       </div>
 
       <ng-template #tableLoadingState>

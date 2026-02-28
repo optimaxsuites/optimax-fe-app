@@ -131,6 +131,13 @@ export class CheckoutOrdersComponent implements OnInit {
     this.selectedOrder = order;
   }
 
+  get selectedOrderItems(): any[] {
+    if (!this.selectedOrder) return [];
+    const orderItems = this.selectedOrder?.order?.orderItem || [];
+    const directItems = this.selectedOrder?.orderItem || [];
+    return [...orderItems, ...directItems];
+  }
+
   onDateRangeChange(): void {
     if (this.selectedDateRange === 0) {
       this.showAllOrders();

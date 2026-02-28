@@ -316,9 +316,14 @@
       Top Selling Products
     </h2>
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
+      <app-table
+        [rows]="topProducts"
+        [tableClass]="'min-w-full divide-y divide-gray-200'"
+        [colSpanOverride]="5"
+        [rowClass]="'hover:bg-gray-50'"
+      >
+        <ng-template appTableHeader>
+          <tr class="bg-gray-50">
             <th
               scope="col"
               class="px-4 py-3 text-left text-2xl font-extrabold text-white uppercase tracking-wider"
@@ -350,37 +355,35 @@
               Profit
             </th>
           </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr *ngFor="let product of topProducts" class="hover:bg-gray-50">
-            <td class="px-4 py-3 whitespace-nowrap">
-              <div class="font-bold text-xl text-gray-500">
-                {{ product.name }}
-              </div>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <div class="text-xl font-bold text-gray-500">
-                {{ product.category }}
-              </div>
-            </td>
-            <td
-              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-gray-500"
-            >
-              {{ Math.round(product.quantity) }}
-            </td>
-            <td
-              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-blue-700"
-            >
-              ₦{{ formatCurrency(product.sales) }}
-            </td>
-            <td
-              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-green-600"
-            >
-              ₦{{ formatCurrency(product.profit) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        </ng-template>
+        <ng-template appTableBody let-product>
+          <td class="px-4 py-3 whitespace-nowrap">
+            <div class="font-bold text-xl text-gray-500">
+              {{ product.name }}
+            </div>
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            <div class="text-xl font-bold text-gray-500">
+              {{ product.category }}
+            </div>
+          </td>
+          <td
+            class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-gray-500"
+          >
+            {{ Math.round(product.quantity) }}
+          </td>
+          <td
+            class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-blue-700"
+          >
+            ₦{{ formatCurrency(product.sales) }}
+          </td>
+          <td
+            class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-green-600"
+          >
+            ₦{{ formatCurrency(product.profit) }}
+          </td>
+        </ng-template>
+      </app-table>
     </div>
   </div>
 </div>

@@ -16,13 +16,15 @@
       <!-- Incoming Movements Table -->
       <div class="bg-white rounded-2xl shadow p-4">
         <h2 class="text-lg font-semibold mb-3 text-gray-700">Incoming Movements</h2>
-        <p-table 
-          [value]="incomingMovements" 
+        <app-table 
+          [rows]="incomingMovements" 
           [paginator]="true" 
-          [rows]="10" 
-          styleClass="p-datatable-striped w-full"
+          [rowsPerPage]="10" 
+          [wrapperClass]="'p-datatable-striped w-full'"
+          [colSpanOverride]="7"
+          [rowClass]="'border-b hover:bg-gray-50'"
         >
-          <ng-template pTemplate="header">
+          <ng-template appTableHeader>
             <tr class="bg-gray-50 text-gray-700">
               <th class="px-3 py-2 text-left">DATE & TIME</th>
               <th class="px-3 py-2 text-left">REFERENCE</th>
@@ -33,37 +35,37 @@
               <th class="px-3 py-2 text-center">ACTIONS</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-movement>
-            <tr class="border-b hover:bg-gray-50">
-              <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
-              <td class="px-3 py-2">{{ movement.reference }}</td>
-              <td 
-                class="px-3 py-2 font-semibold"
-                [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
-              >
-                {{ transformQuantity(movement.quantity) }}
-              </td>
-              <td class="px-3 py-2">₦{{ movement.purchasePrice | number }}</td>
-              <td class="px-3 py-2">₦{{ movement.sellingPrice | number }}</td>
-              <td class="px-3 py-2">{{ movement.supplier?.name || 'N/A' }}</td>
-              <td class="px-3 py-2 text-center">
-                <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
-              </td>
-            </tr>
+          <ng-template appTableBody let-movement>
+            <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
+            <td class="px-3 py-2">{{ movement.reference }}</td>
+            <td 
+              class="px-3 py-2 font-semibold"
+              [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
+            >
+              {{ transformQuantity(movement.quantity) }}
+            </td>
+            <td class="px-3 py-2">₦{{ movement.purchasePrice | number }}</td>
+            <td class="px-3 py-2">₦{{ movement.sellingPrice | number }}</td>
+            <td class="px-3 py-2">{{ movement.supplier?.name || 'N/A' }}</td>
+            <td class="px-3 py-2 text-center">
+              <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
+            </td>
           </ng-template>
-        </p-table>
+        </app-table>
       </div>
 
       <!-- Outgoing Movements Table -->
       <div class="bg-white rounded-2xl shadow p-4">
         <h2 class="text-lg font-semibold mb-3 text-gray-700">Outgoing Movements</h2>
-        <p-table 
-          [value]="outgoingMovements" 
+        <app-table 
+          [rows]="outgoingMovements" 
           [paginator]="true" 
-          [rows]="10" 
-          styleClass="p-datatable-striped w-full"
+          [rowsPerPage]="10" 
+          [wrapperClass]="'p-datatable-striped w-full'"
+          [colSpanOverride]="5"
+          [rowClass]="'border-b hover:bg-gray-50'"
         >
-          <ng-template pTemplate="header">
+          <ng-template appTableHeader>
             <tr class="bg-gray-50 text-gray-700">
               <th class="px-3 py-2 text-left">DATE & TIME</th>
               <th class="px-3 py-2 text-left">REFERENCE</th>
@@ -72,23 +74,21 @@
               <th class="px-3 py-2 text-center">ACTIONS</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-movement>
-            <tr class="border-b hover:bg-gray-50">
-              <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
-              <td class="px-3 py-2">{{ movement.reference }}</td>
-              <td 
-                class="px-3 py-2 font-semibold"
-                [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
-              >
-                {{ transformQuantity(movement.quantity) }}
-              </td>
-              <td class="px-3 py-2">{{ movement.destination || 'Kitchen' }}</td>
-              <td class="px-3 py-2 text-center">
-                <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
-              </td>
-            </tr>
+          <ng-template appTableBody let-movement>
+            <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
+            <td class="px-3 py-2">{{ movement.reference }}</td>
+            <td 
+              class="px-3 py-2 font-semibold"
+              [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
+            >
+              {{ transformQuantity(movement.quantity) }}
+            </td>
+            <td class="px-3 py-2">{{ movement.destination || 'Kitchen' }}</td>
+            <td class="px-3 py-2 text-center">
+              <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
+            </td>
           </ng-template>
-        </p-table>
+        </app-table>
       </div>
     </div>
 

@@ -111,31 +111,29 @@
     <div class="p-col-12 p-md-6">
       <div class="access-logs p-card p-p-3">
         <h4>Recent Access Logs</h4>
-        <p-table [value]="accessLogs" [rows]="5" [paginator]="true">
-          <ng-template pTemplate="header">
+        <app-table [rows]="accessLogs" [rowsPerPage]="5" [paginator]="true" [colSpanOverride]="3">
+          <ng-template appTableHeader>
             <tr>
               <th>Timestamp</th>
               <th>Key Type</th>
               <th>Access</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-log>
-            <tr>
-              <td>{{ log.timestamp | date : "short" }}</td>
-              <td>{{ log.accessType }}</td>
-              <td>
-                <span
-                  [ngClass]="{
-                    'access-granted': log.accessGranted,
-                    'access-denied': !log.accessGranted
-                  }"
-                >
-                  {{ log.accessGranted ? "Granted" : "Denied" }}
-                </span>
-              </td>
-            </tr>
+          <ng-template appTableBody let-log>
+            <td>{{ log.timestamp | date : "short" }}</td>
+            <td>{{ log.accessType }}</td>
+            <td>
+              <span
+                [ngClass]="{
+                  'access-granted': log.accessGranted,
+                  'access-denied': !log.accessGranted
+                }"
+              >
+                {{ log.accessGranted ? "Granted" : "Denied" }}
+              </span>
+            </td>
           </ng-template>
-        </p-table>
+        </app-table>
       </div>
     </div>
   </div>

@@ -412,8 +412,13 @@
         <div class="top-products">
           <div class="top-products-table-container">
          
-<table class="top-products-table w3-table w3-striped">
-  <thead>
+<app-table
+  [rows]="requests"
+  [tableClass]="'top-products-table w3-table w3-striped'"
+  [colSpanOverride]="5"
+  [rowClass]="'cursor-pointer'"
+>
+  <ng-template appTableHeader>
     <tr class="top-products-table-row">
       <th class="top-products-table-head col-1">Date</th>
       <th class="top-products-table-head col-1">Receipt Id</th>
@@ -421,38 +426,36 @@
       <th class="top-products-table-head col-1">Status</th>
       <th class="top-products-table-head col-1">Action</th>
     </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let request of requests" style="cursor: pointer">
-      <td>
-        {{ formatDate(request?.createdAt) | date : "mediumDate" }}
-      </td>
-  <td>
-  <p [ngClass]="{ 'text-green-700': request.status === 'Paid' }" 
-      class="mb-0 capitalize font-bold text-yellow-600">
-     {{ getOrderId(request) || 'N/A' }}
-  </p>
-</td>
-      <td class="capitalize">{{ request.name }}</td>
-      <td>
-        <span
-          class="px-2 py-1 font-medium rounded-full"
-          [ngClass]="getRefundStatusClass(request.refundStatus)"
-        >
-          {{ request.refundStatus }}
-        </span>
-      </td>
-      <td>
-        <div class="flex gap-3 text-[16px]">
-          <i
-            class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2"
-            (click)="requestDetails(request)"
-          ></i>
-        </div>
-      </td>
-    </tr>
-  </tbody>
-</table>
+  </ng-template>
+  <ng-template appTableBody let-request>
+    <td>
+      {{ formatDate(request?.createdAt) | date : "mediumDate" }}
+    </td>
+    <td>
+      <p [ngClass]="{ 'text-green-700': request.status === 'Paid' }" 
+          class="mb-0 capitalize font-bold text-yellow-600">
+        {{ getOrderId(request) || 'N/A' }}
+      </p>
+    </td>
+    <td class="capitalize">{{ request.name }}</td>
+    <td>
+      <span
+        class="px-2 py-1 font-medium rounded-full"
+        [ngClass]="getRefundStatusClass(request.refundStatus)"
+      >
+        {{ request.refundStatus }}
+      </span>
+    </td>
+    <td>
+      <div class="flex gap-3 text-[16px]">
+        <i
+          class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2"
+          (click)="requestDetails(request)"
+        ></i>
+      </div>
+    </td>
+  </ng-template>
+</app-table>
           </div>
         </div>
       </div>

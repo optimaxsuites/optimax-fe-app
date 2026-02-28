@@ -78,6 +78,13 @@ export class StockReportComponent implements OnInit {
   isMovementFilterOpen = false;
   isLoading = true;
   isMovementLoading = true;
+  movementRowClass = (movement: any) => ({
+    'bg-green-50': movement.quantity > 0,
+    'bg-red-50': movement.quantity < 0
+  });
+  inventoryRowClass = (item: any) => ({
+    'bg-red-50': item.lowStockAlert
+  });
 
   page = 1;
   pageSize = 10;

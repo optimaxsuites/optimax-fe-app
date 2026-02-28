@@ -139,22 +139,96 @@
 
       <div *ngIf="selectedTab === 'branches'" class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">Branch Performance</h2>
-        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left">Branch</th><th class="px-6 py-3 text-left">Revenue</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr *ngFor="let branch of salesReport.totalSalesPerBranch"><td class="px-6 py-4">{{ branch.branch.name }}</td><td class="px-6 py-4">{{ formatCurrency(branch.totalRevenue) }}</td></tr></tbody></table></div>
+        <div class="overflow-x-auto">
+          <app-table
+            [rows]="salesReport.totalSalesPerBranch"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="2"
+            [rowClass]="'border-b border-gray-200'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left">Branch</th>
+                <th class="px-6 py-3 text-left">Revenue</th>
+              </tr>
+            </ng-template>
+            <ng-template appTableBody let-branch>
+              <td class="px-6 py-4">{{ branch.branch.name }}</td>
+              <td class="px-6 py-4">{{ formatCurrency(branch.totalRevenue) }}</td>
+            </ng-template>
+          </app-table>
+        </div>
       </div>
 
       <div *ngIf="selectedTab === 'products'" class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Selling Products</h2>
-        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left">Product</th><th class="px-6 py-3 text-left">Qty</th><th class="px-6 py-3 text-left">Rev</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr *ngFor="let p of salesReport.topSellingProducts"><td class="px-6 py-4">{{ p.product.name }}</td><td class="px-6 py-4">{{ p.quantitySold }}</td><td class="px-6 py-4">{{ formatCurrency(p.revenue) }}</td></tr></tbody></table></div>
+        <div class="overflow-x-auto">
+          <app-table
+            [rows]="salesReport.topSellingProducts"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="3"
+            [rowClass]="'border-b border-gray-200'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left">Product</th>
+                <th class="px-6 py-3 text-left">Qty</th>
+                <th class="px-6 py-3 text-left">Rev</th>
+              </tr>
+            </ng-template>
+            <ng-template appTableBody let-p>
+              <td class="px-6 py-4">{{ p.product.name }}</td>
+              <td class="px-6 py-4">{{ p.quantitySold }}</td>
+              <td class="px-6 py-4">{{ formatCurrency(p.revenue) }}</td>
+            </ng-template>
+          </app-table>
+        </div>
       </div>
 
       <div *ngIf="selectedTab === 'cashiers'" class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">Cashier Performance</h2>
-        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left">Cashier</th><th class="px-6 py-3 text-left">Rev</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr *ngFor="let c of cashiersPerformance"><td class="px-6 py-4">{{ c.cashier?.name || 'Unknown' }}</td><td class="px-6 py-4">{{ formatCurrency(c.revenue) }}</td></tr></tbody></table></div>
+        <div class="overflow-x-auto">
+          <app-table
+            [rows]="cashiersPerformance"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="2"
+            [rowClass]="'border-b border-gray-200'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left">Cashier</th>
+                <th class="px-6 py-3 text-left">Rev</th>
+              </tr>
+            </ng-template>
+            <ng-template appTableBody let-c>
+              <td class="px-6 py-4">{{ c.cashier?.name || 'Unknown' }}</td>
+              <td class="px-6 py-4">{{ formatCurrency(c.revenue) }}</td>
+            </ng-template>
+          </app-table>
+        </div>
       </div>
 
       <div *ngIf="selectedTab === 'payments'" class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">Payment Method Analysis</h2>
-        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left">Method</th><th class="px-6 py-3 text-left">Rev</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr *ngFor="let p of salesReport.paymentMethodBreakdown"><td class="px-6 py-4">{{ p.paymentMethod }}</td><td class="px-6 py-4">{{ formatCurrency(p.revenue) }}</td></tr></tbody></table></div>
+        <div class="overflow-x-auto">
+          <app-table
+            [rows]="salesReport.paymentMethodBreakdown"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="2"
+            [rowClass]="'border-b border-gray-200'"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left">Method</th>
+                <th class="px-6 py-3 text-left">Rev</th>
+              </tr>
+            </ng-template>
+            <ng-template appTableBody let-p>
+              <td class="px-6 py-4">{{ p.paymentMethod }}</td>
+              <td class="px-6 py-4">{{ formatCurrency(p.revenue) }}</td>
+            </ng-template>
+          </app-table>
+        </div>
       </div>
 
       <div *ngIf="selectedTab === 'orderItems'" class="bg-white rounded-lg shadow p-6">
@@ -187,43 +261,44 @@
                    </div>
                </div>
 
-               <table class="min-w-full divide-y divide-gray-200">
-                   <thead class="bg-gray-50">
-                       <tr>
-                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
-                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
-                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                       </tr>
-                   </thead>
-                   <tbody class="bg-white divide-y divide-gray-200">
-                       <ng-container *ngFor="let item of group.items">
-                           <tr>
-                               <td class="px-6 py-4">
-                                   <div class="font-medium text-gray-900">{{ getProductName(item) }}</div>
-                                   <div *ngIf="isCombo(item)" class="mt-1">
-                                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mb-1">
-                                           Combo Bundle
-                                       </span>
-                                       <ul class="text-xs text-gray-500 list-disc list-inside pl-1">
-                                           <li *ngFor="let sub of getComboContent(item)">
-                                               {{ sub.quantity }}x {{ sub.name }}
-                                           </li>
-                                           <li *ngIf="getComboContent(item).length === 0" class="italic text-gray-400">
-                                               (No items listed)
-                                           </li>
-                                       </ul>
-                                   </div>
-                               </td>
-                               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ getVariant(item) }}</td>
-                               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ getQuantity(item) }}</td>
-                               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatCurrency(getUnitPrice(item)) }}</td>
-                               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ formatCurrency(getTotalAmount(item)) }}</td>
-                           </tr>
-                       </ng-container>
-                   </tbody>
-               </table>
+               <app-table
+                 [rows]="group.items"
+                 [tableClass]="'min-w-full divide-y divide-gray-200'"
+                 [colSpanOverride]="5"
+                 [rowClass]="'border-b border-gray-200'"
+               >
+                 <ng-template appTableHeader>
+                   <tr class="bg-gray-50">
+                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variant</th>
+                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                   </tr>
+                 </ng-template>
+                 <ng-template appTableBody let-item>
+                   <td class="px-6 py-4">
+                     <div class="font-medium text-gray-900">{{ getProductName(item) }}</div>
+                     <div *ngIf="isCombo(item)" class="mt-1">
+                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mb-1">
+                             Combo Bundle
+                         </span>
+                         <ul class="text-xs text-gray-500 list-disc list-inside pl-1">
+                             <li *ngFor="let sub of getComboContent(item)">
+                                 {{ sub.quantity }}x {{ sub.name }}
+                             </li>
+                             <li *ngIf="getComboContent(item).length === 0" class="italic text-gray-400">
+                                 (No items listed)
+                             </li>
+                         </ul>
+                     </div>
+                   </td>
+                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ getVariant(item) }}</td>
+                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ getQuantity(item) }}</td>
+                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatCurrency(getUnitPrice(item)) }}</td>
+                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ formatCurrency(getTotalAmount(item)) }}</td>
+                 </ng-template>
+               </app-table>
            </div>
         </div>
 

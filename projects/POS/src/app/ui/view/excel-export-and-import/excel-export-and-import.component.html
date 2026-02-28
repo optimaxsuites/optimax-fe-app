@@ -50,54 +50,60 @@
     </div>
 
     <form [formGroup]="stagingForm">
-      <table class="w-full border-collapse text-sm max-w-[2000px] overflow-x-scroll">
-        <thead class="sticky top-0 bg-gray-50 z-10">
-          <tr class="text-left border-b">
-            <th class="p-3 border-r w-16">Image</th>
-            <th class="p-3 border-r w-48">Name*</th>
-            <th class="p-3 border-r w-40">Branch*</th>
-            <th class="p-3 border-r w-40">Category*</th>
-            <th class="p-3 border-r w-48">Description</th>
+      <div formArrayName="products">
+        <app-table
+          [rows]="productRows.controls"
+          [tableClass]="'w-full border-collapse text-sm max-w-[2000px] overflow-x-scroll'"
+          [colSpanOverride]="17"
+          [rowClass]="'hover:bg-blue-50/30 transition border-b'"
+        >
+          <ng-template appTableHeader>
+            <tr class="text-left border-b sticky top-0 bg-gray-50 z-10">
+              <th class="p-3 border-r w-16">Image</th>
+              <th class="p-3 border-r w-48">Name*</th>
+              <th class="p-3 border-r w-40">Branch*</th>
+              <th class="p-3 border-r w-40">Category*</th>
+              <th class="p-3 border-r w-48">Description</th>
 
-            <th class="p-3 border-r w-24">Cost*</th>
-            <th class="p-3 border-r w-24">Selling*</th>
-            <th class="p-3 border-r w-20">Qty*</th>
-            <th class="p-3 border-r w-32">Expiry</th>
-            <th class="p-3 border-r w-24">Tax (%)</th>
-            <th class="p-3 border-r w-24">Discount</th>
-            <th class="p-3 border-r w-24">Supplier</th>
+              <th class="p-3 border-r w-24">Cost*</th>
+              <th class="p-3 border-r w-24">Selling*</th>
+              <th class="p-3 border-r w-20">Qty*</th>
+              <th class="p-3 border-r w-32">Expiry</th>
+              <th class="p-3 border-r w-24">Tax (%)</th>
+              <th class="p-3 border-r w-24">Discount</th>
+              <th class="p-3 border-r w-24">Supplier</th>
 
-            <th class="p-3 border-r w-32">Code</th>
-            <th class="p-3 border-r w-32">Part #</th>
+              <th class="p-3 border-r w-32">Code</th>
+              <th class="p-3 border-r w-32">Part #</th>
 
-            <th class="p-3 border-r w-24">Unit</th>
-            <th class="p-3 border-r w-24">Reorder</th>
-            <!-- <th class="p-3 border-r w-20">Combo?</th> -->
-            <th class="p-3 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody formArrayName="products">
-          <tr *ngFor="let row of productRows.controls; let i = index" [formGroupName]="i" class="hover:bg-blue-50/30 transition border-b">
-            <td class="p-2 border-r text-center">
-              <div class="relative w-10 h-10 mx-auto group">
-                <img [src]="row.value.previewUrl || 'assets/placeholder.png'" class="w-full h-full rounded-md object-cover border bg-gray-100">
-                <div class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/40 rounded-md flex items-center justify-center transition">
-                    <i class="fa-solid fa-camera text-white text-xs"></i>
+              <th class="p-3 border-r w-24">Unit</th>
+              <th class="p-3 border-r w-24">Reorder</th>
+              <!-- <th class="p-3 border-r w-20">Combo?</th> -->
+              <th class="p-3 text-center">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template appTableBody let-row let-i="rowIndex">
+            <ng-container [formGroupName]="i">
+              <td class="p-2 border-r text-center">
+                <div class="relative w-10 h-10 mx-auto group">
+                  <img [src]="row.value.previewUrl || 'assets/placeholder.png'" class="w-full h-full rounded-md object-cover border bg-gray-100">
+                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/40 rounded-md flex items-center justify-center transition">
+                      <i class="fa-solid fa-camera text-white text-xs"></i>
+                  </div>
+                  <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" (change)="onRowImageUpload($event, i)" accept="image/*">
                 </div>
-                <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" (change)="onRowImageUpload($event, i)" accept="image/*">
-              </div>
-            </td>
+              </td>
 
-            <td class="p-2 border-r"><input formControlName="name" class="w-full p-1.5 border rounded outline-none focus:border-customGreen"></td>
-            
-            <td class="p-2 border-r">
-              <select formControlName="branchId" class="w-full p-1.5 border rounded">
-                <option *ngFor="let b of branches" [value]="b.id">{{b.name}}</option>
-              </select>
-            </td>
+              <td class="p-2 border-r"><input formControlName="name" class="w-full p-1.5 border rounded outline-none focus:border-customGreen"></td>
+              
+              <td class="p-2 border-r">
+                <select formControlName="branchId" class="w-full p-1.5 border rounded">
+                  <option *ngFor="let b of branches" [value]="b.id">{{b.name}}</option>
+                </select>
+              </td>
 
-            <td class="p-2 border-r">
-                <select formControlName="categoryId" class="w-full p-1.5 border rounded">
+              <td class="p-2 border-r">
+                  <select formControlName="categoryId" class="w-full p-1.5 border rounded">
                   <option *ngFor="let c of categories" [value]="c.id">{{c.name}}</option>
                 </select>
             </td>
@@ -163,9 +169,10 @@
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </td>
-          </tr>
-        </tbody>
-      </table>
+            </ng-container>
+          </ng-template>
+        </app-table>
+      </div>
     </form>
 
     <div class="flex justify-end gap-4 mt-6">

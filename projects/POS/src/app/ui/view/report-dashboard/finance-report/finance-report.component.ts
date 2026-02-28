@@ -73,6 +73,11 @@ export class FinanceReportComponent implements OnInit {
 
   Math = Math;
   filterFormOpen = false;
+  branchRowClass = (branch: BranchPerformanceDTO) => ({
+    'bg-gray-100': this.selectedBranch === branch,
+    'cursor-pointer': true,
+    'hover:bg-gray-50': true
+  });
 
   constructor(
     private fb: FormBuilder,

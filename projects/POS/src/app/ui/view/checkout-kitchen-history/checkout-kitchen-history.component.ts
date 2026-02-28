@@ -125,6 +125,10 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   selectedOrderForTimeline: Order | null = null;
   selectedOrderForReceipt: Order | null = null;
   isPrinting: boolean = false;
+  orderRowClass = (order: Order) => ({
+    'order-row': true,
+    expanded: this.selectedOrderForTimeline === order
+  });
 
   // For view details modal
   selectedOrderForDetails: Order | null = null;

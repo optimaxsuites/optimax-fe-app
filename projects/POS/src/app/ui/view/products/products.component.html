@@ -156,22 +156,23 @@
 
 
     <!-- Products Table View -->
-    <p-table
+    <app-table
       *ngIf="tableSections && paginatedProducts.length > 0"
-      [value]="paginatedProducts"
+      [rows]="paginatedProducts"
       [paginator]="true"
       dataKey="id"
       responsiveLayout="stack"
       [breakpoint]="'960px'"
-      styleClass="p-datatable-striped"
+      [wrapperClass]="'p-datatable-striped'"
       [tableStyle]="{
         'min-height': 'fit-content',
         'max-height': '650px',
         'table-layout': 'fixed'
       }"
-      [rows]="15"
+      [rowsPerPage]="15"
+      [colSpanOverride]="8"
     >
-      <ng-template pTemplate="header" class="header" let-columns>
+      <ng-template appTableHeader class="header">
         <tr>
           <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
           @for (header of productTableHeaders | keyvalue:originalOrder; track $index) {
@@ -199,112 +200,109 @@
         </tr>
       </ng-template>
       <ng-template
-        pTemplate="body"
+        appTableBody
         let-item
         let-i="rowIndex"
-        let-columns="columns"
       >
-        <tr>
-          <td>
-            <p-tableCheckbox
-              [value]="item"
-              class="custom-checkbox"
-              (click)="toggleSelectedItemInList(item)"
-            />
-          </td>
-          <td class="table-item">
-            <span class="p-column-title">Product SKU</span>{{ item.sku }}
-          </td>
-          <td class="table-item">
-            <span class="p-column-title">Product Code</span>{{ item.code }}
-          </td>
+        <td>
+          <p-tableCheckbox
+            [value]="item"
+            class="custom-checkbox"
+            (click)="toggleSelectedItemInList(item)"
+          />
+        </td>
+        <td class="table-item">
+          <span class="p-column-title">Product SKU</span>{{ item.sku }}
+        </td>
+        <td class="table-item">
+          <span class="p-column-title">Product Code</span>{{ item.code }}
+        </td>
 
-          <td class="table-item">
-            <span class="p-column-title">Name</span>{{ item.name }}
-          </td>
-          <td class="table-item">
-            <span class="p-column-title">Price</span>{{ item.sellingPrice | currency : "₦" }}
-          </td>
-          <td class="table-item">
-            <span class="p-column-title">Quantity</span>
-            <div class="flex items-center gap-2">
-              <span
-                class="font-extrabold text-sm"
-                [ngClass]="
-                  item?.quantity > 0 
-                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
-                    : 'text-gray-500'
-                "
-              >{{ item?.quantity }}</span>
-              <span
-                class="text-xs font-extrabold ml-2"
-                [ngClass]="
-                  item?.quantity > 0
-                    ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800') 
-                    : 'text-gray-500'
-                "
-              >
-                {{ item?.quantity === 0 ? "Not in Stock" : item?.quantity >= (item.reorderThreshold ?? 10) ? "In Stock" : "Low Stock" }}
-              </span>
-            </div>
-          </td>
-          <td class="table-item">
-            <span class="p-column-title">Category</span
-            >{{ item.productCategory?.name }}
-          </td>
-          <td class="actions table-item actions-tab">
-            <span class="p-column-title">Action</span>
-            <div>
-              <i
-                class="pi pi-ellipsis-v table-item"
-                (click)="op.toggle($event)"
-              ></i>
+        <td class="table-item">
+          <span class="p-column-title">Name</span>{{ item.name }}
+        </td>
+        <td class="table-item">
+          <span class="p-column-title">Price</span>{{ item.sellingPrice | currency : "₦" }}
+        </td>
+        <td class="table-item">
+          <span class="p-column-title">Quantity</span>
+          <div class="flex items-center gap-2">
+            <span
+              class="font-extrabold text-sm"
+              [ngClass]="
+                item?.quantity > 0 
+                  ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800')
+                  : 'text-gray-500'
+              "
+            >{{ item?.quantity }}</span>
+            <span
+              class="text-xs font-extrabold ml-2"
+              [ngClass]="
+                item?.quantity > 0
+                  ? (item?.quantity >= (item.reorderThreshold ?? 10) ? 'text-green-800' : 'text-red-800') 
+                  : 'text-gray-500'
+              "
+            >
+              {{ item?.quantity === 0 ? "Not in Stock" : item?.quantity >= (item.reorderThreshold ?? 10) ? "In Stock" : "Low Stock" }}
+            </span>
+          </div>
+        </td>
+        <td class="table-item">
+          <span class="p-column-title">Category</span
+          >{{ item.productCategory?.name }}
+        </td>
+        <td class="actions table-item actions-tab">
+          <span class="p-column-title">Action</span>
+          <div>
+            <i
+              class="pi pi-ellipsis-v table-item"
+              (click)="op.toggle($event)"
+            ></i>
 
-              <p-overlayPanel #op ngClass="padding: 0;">
-                <ul class="">
-                  <li
-                    class="table-item-panel"
-                    (click)="openViewProduct(item)"
-                    style="column-gap: 0.5rem"
-                  >
-                    <i class="pi pi-eye table-item me-2"></i>
-                    <span>View</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    (click)="openEdit(item)"
-                    style="column-gap: 0.5rem"
-                    *ngIf="productPermissions.canEdit"
-                  >
-                    <i class="pi pi-pen-to-square table-item me-2"></i>
-                    <span>Edit</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    (click)="promptBarcode(item, op)"
-                    style="column-gap: 0.5rem"
-                  >
-                    <i class="pi pi-download table-item me-2"></i>
-                    <span>Generate Barcode</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    *ngIf="productPermissions.canDelete"
-                    (click)="openDeleteModalWithValidation(item)"
-                    style="column-gap: 0.5rem"
-                    [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
-                  >
-                    <i class="pi pi-times-circle table-item me-2"></i>
-                    <span>Delete</span>
-                    <i *ngIf="!canDeleteProduct(item)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
-                  </li>
-                </ul>
-              </p-overlayPanel>
-            </div>
-          </td>
-        </tr>
+            <p-overlayPanel #op ngClass="padding: 0;">
+              <ul class="">
+                <li
+                  class="table-item-panel"
+                  (click)="openViewProduct(item)"
+                  style="column-gap: 0.5rem"
+                >
+                  <i class="pi pi-eye table-item me-2"></i>
+                  <span>View</span>
+                </li>
+                <li
+                  class="table-item-panel"
+                  (click)="openEdit(item)"
+                  style="column-gap: 0.5rem"
+                  *ngIf="productPermissions.canEdit"
+                >
+                  <i class="pi pi-pen-to-square table-item me-2"></i>
+                  <span>Edit</span>
+                </li>
+                <li
+                  class="table-item-panel"
+                  (click)="promptBarcode(item, op)"
+                  style="column-gap: 0.5rem"
+                >
+                  <i class="pi pi-download table-item me-2"></i>
+                  <span>Generate Barcode</span>
+                </li>
+                <li
+                  class="table-item-panel"
+                  *ngIf="productPermissions.canDelete"
+                  (click)="openDeleteModalWithValidation(item)"
+                  style="column-gap: 0.5rem"
+                  [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
+                >
+                  <i class="pi pi-times-circle table-item me-2"></i>
+                  <span>Delete</span>
+                  <i *ngIf="!canDeleteProduct(item)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+                </li>
+              </ul>
+            </p-overlayPanel>
+          </div>
+        </td>
       </ng-template>
-    </p-table>
+    </app-table>
 
     <!-- Products Grid View -->
     <div *ngIf="!tableSections && products.length > 0" class="card-grid">

@@ -161,6 +161,36 @@ export class CashPaymentComponent implements OnInit {
       (this.paymentValues.mobile ?? 0) 
     );
   }
+
+  get receiptLineItems(): Array<{ name: string; qty: number; price: number; total: number }> {
+    const items = this.navigationState?.cart?.cartItems || [];
+    const lines: Array<{ name: string; qty: number; price: number; total: number }> = [];
+
+    for (const item of items) {
+      const variants = item?.selectedVariants || [];
+      if (variants.length) {
+        for (const variant of variants) {
+          const qty = Number(variant?.selectedQuantity || 0);
+          const price = Number(variant?.price || 0);
+          lines.push({
+            name: `${item?.name || ''} (${variant?.name || ''})`.trim(),
+            qty,
+            price,
+            total: price * qty
+          });
+        }
+      } else {
+        lines.push({
+          name: item?.name || '',
+          qty: Number(item?.count || 0),
+          price: Number(item?.sellingPrice || 0),
+          total: Number(item?.cartPriceTotal || 0)
+        });
+      }
+    }
+
+    return lines;
+  }
   
   openAllPaymentsModal() {
     this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;

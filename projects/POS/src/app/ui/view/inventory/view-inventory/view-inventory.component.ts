@@ -29,6 +29,11 @@ export class ViewInventoryComponent implements OnInit {
   isMovementsLoading = false;
   hasTriedMovements = false;             
   private inventoryId: number | null = null;
+  stockMovementRowClass = (movement: StockMovementByInventory) => ({
+    'hover:bg-gray-50 transition-colors duration-200': true,
+    'bg-green-50': movement.quantity > 0,
+    'bg-red-50': movement.quantity < 0
+  });
 
   // Dropdown and Edit Modal properties
   activeDropdownIndex: number | null = null;

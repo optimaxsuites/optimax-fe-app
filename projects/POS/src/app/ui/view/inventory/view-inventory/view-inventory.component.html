@@ -60,9 +60,14 @@
           </div>
 
           <div *ngIf="!isMovementsLoading && stockMovements && stockMovements.length > 0" class="overflow-auto flex-1">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50 sticky top-0">
-                <tr>
+            <app-table
+              [rows]="stockMovements"
+              [tableClass]="'min-w-full divide-y divide-gray-200'"
+              [colSpanOverride]="7"
+              [rowClassFn]="stockMovementRowClass"
+            >
+              <ng-template appTableHeader>
+                <tr class="bg-gray-50 sticky top-0">
                   <th class="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
                     Date & Time
                   </th>
@@ -85,38 +90,34 @@
                     Actions
                   </th>
                 </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr *ngFor="let movement of stockMovements; let i = index" 
-                    class="hover:bg-gray-50 transition-colors duration-200"
-                    [class.bg-green-50]="movement.quantity > 0"
-                    [class.bg-red-50]="movement.quantity < 0">
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+              </ng-template>
+              <ng-template appTableBody let-movement let-i="rowIndex">
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
   {{ toIsoString(movement.createdDate) | date:'mediumDate' }}
 </td>
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
-                    {{ movement.reference || 'N/A' }}
-                  </td>
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium"
-                      [ngClass]="{
-                        'text-green-700 bg-green-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity > 0,
-                        'text-red-700 bg-red-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity < 0,
-                        'text-gray-700': movement.quantity === 0
-                      }">
-                    <span *ngIf="movement.quantity > 0">+{{ movement.quantity }}</span>
-                    <span *ngIf="movement.quantity < 0">{{ movement.quantity }}</span>
-                    <span *ngIf="movement.quantity === 0">{{ movement.quantity }}</span>
-                  </td>
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
-                    {{ (movement.purchasePrice || 0) | currency:'₦':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
-                    {{ (movement.sellingPrice || 0) | currency:'₦':'symbol':'1.2-2' }}
-                  </td>
-                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
-                    {{ movement.supplier?.name || movement.supplierId || 'N/A' }}
-                  </td>
-               <td class="mv-actions px-3 py-2 sm:px-6 sm:py-4 text-center relative overflow-visible">
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                  {{ movement.reference || 'N/A' }}
+                </td>
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium"
+                    [ngClass]="{
+                      'text-green-700 bg-green-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity > 0,
+                      'text-red-700 bg-red-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity < 0,
+                      'text-gray-700': movement.quantity === 0
+                    }">
+                  <span *ngIf="movement.quantity > 0">+{{ movement.quantity }}</span>
+                  <span *ngIf="movement.quantity < 0">{{ movement.quantity }}</span>
+                  <span *ngIf="movement.quantity === 0">{{ movement.quantity }}</span>
+                </td>
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
+                  {{ (movement.purchasePrice || 0) | currency:'₦':'symbol':'1.2-2' }}
+                </td>
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
+                  {{ (movement.sellingPrice || 0) | currency:'₦':'symbol':'1.2-2' }}
+                </td>
+                <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                  {{ movement.supplier?.name || movement.supplierId || 'N/A' }}
+                </td>
+             <td class="mv-actions px-3 py-2 sm:px-6 sm:py-4 text-center relative overflow-visible">
   <button
     (click)="$event.stopPropagation(); toggleDropdown(i)"
     class="text-gray-700 hover:text-gray-900 focus:outline-none p-1 sm:p-2 rounded-full hover:bg-gray-100"
@@ -153,9 +154,8 @@
     </button>
   </div>
 </td>
-                </tr>
-              </tbody>
-            </table>
+              </ng-template>
+            </app-table>
           </div>
         </div>
       </div>

@@ -250,9 +250,16 @@
           <p class="mt-1 text-gray-500">Click on a branch to view detailed performance metrics</p>
         </div>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
+          <app-table
+            [rows]="reportData.branches"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="8"
+            [rowClassFn]="branchRowClass"
+            [rowClickable]="true"
+            (rowClick)="selectBranch($event)"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
@@ -262,46 +269,39 @@
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customers</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr 
-                *ngFor="let branch of reportData.branches" 
-                (click)="selectBranch(branch)"
-                [ngClass]="{'bg-gray-100': selectedBranch === branch}"
-                class="cursor-pointer hover:bg-gray-50"
-              >
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-700">{{ branch.branch.name }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-500">{{ branch.branch.location }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-700">{{ branch.branch.manager }}</div>
-                  <div class="text-xs text-gray-500">{{ branch.branch.contactInfo }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-700">{{ formatCurrency(branch.totalRevenue) }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div [class]="getGrowthClass(branch.revenueGrowthPercent)" class="text-sm font-medium flex items-center">
-                    <span class="material-icons mr-1">{{ getGrowthIcon(branch.revenueGrowthPercent) }}</span>
-                    {{ formatPercent(branch.revenueGrowthPercent) }}
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {{ branch.productMovement.toLocaleString() }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {{ branch.customerFootfall?.toLocaleString() || 'N/A' }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right font-medium">
-                  <button (click)="selectBranch(branch); $event.stopPropagation()" 
-                          class="text-customBlue hover:text-blue-900">View Details</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+            <ng-template appTableBody let-branch>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-700">{{ branch.branch.name }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">{{ branch.branch.location }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-700">{{ branch.branch.manager }}</div>
+                <div class="text-xs text-gray-500">{{ branch.branch.contactInfo }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-700">{{ formatCurrency(branch.totalRevenue) }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div [class]="getGrowthClass(branch.revenueGrowthPercent)" class="text-sm font-medium flex items-center">
+                  <span class="material-icons mr-1">{{ getGrowthIcon(branch.revenueGrowthPercent) }}</span>
+                  {{ formatPercent(branch.revenueGrowthPercent) }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                {{ branch.productMovement.toLocaleString() }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                {{ branch.customerFootfall?.toLocaleString() || 'N/A' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right font-medium">
+                <button (click)="selectBranch(branch); $event.stopPropagation()" 
+                        class="text-customBlue hover:text-blue-900">View Details</button>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
 

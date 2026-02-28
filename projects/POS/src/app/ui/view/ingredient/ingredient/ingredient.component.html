@@ -53,8 +53,18 @@
   </p-toolbar>
 
 
-  <p-table    [value]="filteredIngredients" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
-    <ng-template pTemplate="header" let-columns>
+  <app-table
+    [rows]="filteredIngredients"
+    [paginator]="true"
+    dataKey="id"
+    responsiveLayout="stack"
+    [breakpoint]="'960px'"
+    [wrapperClass]="'p-datatable-striped'"
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+    [rowsPerPage]="15"
+    [colSpanOverride]="8"
+  >
+    <ng-template appTableHeader>
       <tr>
         <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
         <th class="table-item">SKU</th>
@@ -68,40 +78,38 @@
     </ng-template>
 
 
-    <ng-template pTemplate="body" let-item let-i="rowIndex">
-      <tr >
-        <td><p-tableCheckbox [value]="item" class="custom-checkbox" /></td>
-        <td class="table-item">{{ item.sku }}</td>
-        <td class="table-item">{{ item.code }}</td>
-        <td class="table-item">{{ item.name }}</td>
-        <td class="table-item">{{ item.purchasePrice }}</td>
-        <td class="table-item">{{ item.currentStock }}</td>
-        <td class="table-item">{{ item.measurementUnit }}</td>
+    <ng-template appTableBody let-item let-i="rowIndex">
+      <td><p-tableCheckbox [value]="item" class="custom-checkbox" /></td>
+      <td class="table-item">{{ item.sku }}</td>
+      <td class="table-item">{{ item.code }}</td>
+      <td class="table-item">{{ item.name }}</td>
+      <td class="table-item">{{ item.purchasePrice }}</td>
+      <td class="table-item">{{ item.currentStock }}</td>
+      <td class="table-item">{{ item.measurementUnit }}</td>
 
-        <td class="actions  relative table-item ">
-          <div class="dropdown relative">
-              <span (click)="toggleDropdown2(item, $event)">
-              <i class="material-icons cursor-pointer">more_vert</i>
-            </span>
-            <ul class="absolute bg-white border shadow-lg rounded-lg py-2 z-50" *ngIf="item.showMenu">
-              <li  class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToViewIngredient(item)">
-                <i class="pi pi-eye pr-2 text-2xl "  > </i> View
-              </li>
-              <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToEditIngredient(item)">
-                <i class="pi pi-pen-to-square pr-2 text-2xl"></i> Edit
-              </li>
-              <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToUpdateStock(item)">
-                <i class="pi pi-boxes pr-2 text-2xl"></i> Update Stock
-              </li>
-              <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="deleteIngredient(item)">
-                <i class="pi pi-trash pr-2 text-2xl"  ></i> Delete
-              </li>
-            </ul>
-          </div>
-        </td>
-      </tr>
+      <td class="actions  relative table-item ">
+        <div class="dropdown relative">
+            <span (click)="toggleDropdown2(item, $event)">
+            <i class="material-icons cursor-pointer">more_vert</i>
+          </span>
+          <ul class="absolute bg-white border shadow-lg rounded-lg py-2 z-50" *ngIf="item.showMenu">
+            <li  class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToViewIngredient(item)">
+              <i class="pi pi-eye pr-2 text-2xl "  > </i> View
+            </li>
+            <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToEditIngredient(item)">
+              <i class="pi pi-pen-to-square pr-2 text-2xl"></i> Edit
+            </li>
+            <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToUpdateStock(item)">
+              <i class="pi pi-boxes pr-2 text-2xl"></i> Update Stock
+            </li>
+            <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="deleteIngredient(item)">
+              <i class="pi pi-trash pr-2 text-2xl"  ></i> Delete
+            </li>
+          </ul>
+        </div>
+      </td>
     </ng-template>
-    </p-table>
+    </app-table>
 
 </div>
 

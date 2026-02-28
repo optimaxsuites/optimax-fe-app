@@ -67,48 +67,33 @@
             <div class="top-products-container">
               <div class="top-products">
                 <div class="top-products-table-container overflow-x-auto">
-                  <table class="top-products-table w-full">
-                    <thead class="bg-gray-100">
-                      <tr>
+                  <app-table
+                    [rows]="getReturnItems()"
+                    [tableClass]="'top-products-table w-full'"
+                    [colSpanOverride]="5"
+                    [rowClass]="'border-b hover:bg-gray-50'"
+                  >
+                    <ng-template appTableHeader>
+                      <tr class="bg-gray-100">
                         <th class="top-products-table-head px-4 py-2 text-left">Name</th>
                         <th class="top-products-table-head px-4 py-2 text-center">Quantity</th>
                         <th class="top-products-table-head px-4 py-2 text-right">Item Price</th>
                         <th class="top-products-table-head px-4 py-2 text-right">Discount</th>
                         <th class="top-products-table-head px-4 py-2 text-right">Total</th>
                       </tr>
-                    </thead>
-                    <tbody>
-                      <ng-container *ngFor="let item of getReturnItems()">
-                        <ng-container *ngIf="item.productVariant; else noVariantTemplate">
-                          <tr class="border-b hover:bg-gray-50">
-                            <td class="px-4 py-2">{{ getItemNameWithVariant(item) }}</td>
-                            <td class="px-4 py-2 text-center">
-                              <p class="font-bold text-yellow-600">
-                                {{ getItemQuantity(item) }}
-                              </p>
-                            </td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemPrice(item) | number:'1.2-2' }}</td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemDiscount(item) | number:'1.2-2' }}</td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemTotal(item) | number:'1.2-2' }}</td>
-                          </tr>
-                        </ng-container>
-
-                        <ng-template #noVariantTemplate>
-                          <tr class="border-b hover:bg-gray-50">
-                            <td class="px-4 py-2">{{ getItemName(item) }}</td>
-                            <td class="px-4 py-2 text-center">
-                              <p class="font-bold text-yellow-600">
-                                {{ getItemQuantity(item) }}
-                              </p>
-                            </td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemPrice(item) | number:'1.2-2' }}</td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemDiscount(item) | number:'1.2-2' }}</td>
-                            <td class="px-4 py-2 text-right">₦{{ getItemTotal(item) | number:'1.2-2' }}</td>
-                          </tr>
-                        </ng-template>
-                      </ng-container>
-                    </tbody>
-                  </table>
+                    </ng-template>
+                    <ng-template appTableBody let-item>
+                      <td class="px-4 py-2">{{ item.productVariant ? getItemNameWithVariant(item) : getItemName(item) }}</td>
+                      <td class="px-4 py-2 text-center">
+                        <p class="font-bold text-yellow-600">
+                          {{ getItemQuantity(item) }}
+                        </p>
+                      </td>
+                      <td class="px-4 py-2 text-right">₦{{ getItemPrice(item) | number:'1.2-2' }}</td>
+                      <td class="px-4 py-2 text-right">₦{{ getItemDiscount(item) | number:'1.2-2' }}</td>
+                      <td class="px-4 py-2 text-right">₦{{ getItemTotal(item) | number:'1.2-2' }}</td>
+                    </ng-template>
+                  </app-table>
                 </div>
               </div>
             </div>

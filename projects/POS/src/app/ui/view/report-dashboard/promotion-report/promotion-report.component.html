@@ -212,9 +212,16 @@
           <h3 class="text-lg leading-6 font-medium text-gray-700">Promotions Details</h3>
         </div>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
+          <app-table
+            [rows]="reportData.promotions"
+            [tableClass]="'min-w-full divide-y divide-gray-200'"
+            [colSpanOverride]="8"
+            [rowClass]="'hover:bg-gray-50'"
+            [rowClickable]="true"
+            (rowClick)="selectPromotion($event)"
+          >
+            <ng-template appTableHeader>
+              <tr class="bg-gray-50">
                 <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Code</th>
                 <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Discount</th>
@@ -228,58 +235,56 @@
 
                 <th scope="" class="px-6 py-3 text-right font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let promo of reportData.promotions"  (click)="selectPromotion(promo)">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div>
-                      <div class="text-sm font-medium text-gray-700">
-                        {{ promo.promotion.name }}
-                      </div>
-                      <div class="text-sm text-gray-500">
-                        {{ promo.promotion.description }}
-                      </div>
+            </ng-template>
+            <ng-template appTableBody let-promo>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div>
+                    <div class="text-sm font-medium text-gray-700">
+                      {{ promo.promotion.name }}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {{ promo.promotion.description }}
                     </div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex leading-5  rounded-full bg-customBlue text-white">
-                    {{ promo.promotion.code || 'N/A' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex leading-5 font-semibold rounded-full" 
-                        [ngClass]="{'bg-green-100 text-green-800': promo.promotion.discountType === 'PERCENTAGE', 
-                                   'bg-purple-100 text-purple-800': promo.promotion.discountType === 'FIXED_AMOUNT'}">
-                    {{ getDiscountDisplay(promo.promotion) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ promo.usageCount | number }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatCurrency(promo.totalDiscountAmount) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatDate(promo.startDate) }} - {{ formatDate(promo.endDate) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-2 inline-flex leading-5 font-semibold rounded-full" 
-                        [ngClass]="{'bg-green-100 text-green-800': promo.promotion.active, 
-                                   'bg-red-100 text-red-800': !promo.promotion.active}">
-                    {{ promo.promotion.active ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button (click)="selectPromotion(promo)" 
-                          class="text-blue-600 hover:text-blue-900">
-                    View Details
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex leading-5  rounded-full bg-customBlue text-white">
+                  {{ promo.promotion.code || 'N/A' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex leading-5 font-semibold rounded-full" 
+                      [ngClass]="{'bg-green-100 text-green-800': promo.promotion.discountType === 'PERCENTAGE', 
+                                 'bg-purple-100 text-purple-800': promo.promotion.discountType === 'FIXED_AMOUNT'}">
+                  {{ getDiscountDisplay(promo.promotion) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ promo.usageCount | number }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ formatCurrency(promo.totalDiscountAmount) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ formatDate(promo.startDate) }} - {{ formatDate(promo.endDate) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex leading-5 font-semibold rounded-full" 
+                      [ngClass]="{'bg-green-100 text-green-800': promo.promotion.active, 
+                                 'bg-red-100 text-red-800': !promo.promotion.active}">
+                  {{ promo.promotion.active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button (click)="selectPromotion(promo)" 
+                        class="text-blue-600 hover:text-blue-900">
+                  View Details
+                </button>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
       </div>
       
@@ -369,9 +374,14 @@
           <!-- Affected Products Table -->
           <div class="overflow-x-auto">
             <h4 class="text-md font-medium text-gray-700 mb-4">Affected Products</h4>
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
+            <app-table
+              [rows]="selectedPromotion.affectedProducts"
+              [tableClass]="'min-w-full divide-y divide-gray-200'"
+              [colSpanOverride]="6"
+              [rowClass]="'hover:bg-gray-50'"
+            >
+              <ng-template appTableHeader>
+                <tr class="bg-gray-50">
                   <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
                   <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Category</th>
                   <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Price</th>
@@ -379,30 +389,28 @@
                   <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Discount</th>
                   <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Avg. Discount/Unit</th>
                 </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr *ngFor="let product of selectedPromotion.affectedProducts">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                    {{ product.name }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ product.category }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatCurrency(product.price) }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ product.discountedUnits | number }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatCurrency(product.totalDiscountAmount ?? 0) }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatCurrency((product.totalDiscountAmount ?? 0) / (product.discountedUnits ?? 1)) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              </ng-template>
+              <ng-template appTableBody let-product>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                  {{ product.name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ product.category }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ formatCurrency(product.price) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ product.discountedUnits | number }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ formatCurrency(product.totalDiscountAmount ?? 0) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ formatCurrency((product.totalDiscountAmount ?? 0) / (product.discountedUnits ?? 1)) }}
+                </td>
+              </ng-template>
+            </app-table>
           </div>
         </div>
       </div>

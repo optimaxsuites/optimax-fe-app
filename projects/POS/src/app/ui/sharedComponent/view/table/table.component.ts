@@ -1,5 +1,8 @@
 import { Component, ContentChild, EventEmitter, Input, Output } from '@angular/core';
 import { TableBodyDirective } from './table-body.directive';
+import { TableEmptyDirective } from './table-empty.directive';
+import { TableFooterDirective } from './table-footer.directive';
+import { TableHeaderDirective } from './table-header.directive';
 
 export interface TableColumn<T = any> {
   header: string;
@@ -34,9 +37,15 @@ export class TableComponent {
   @Input() wrapperClass: string = '';
   @Input() tableClass: string = '';
   @Input() tableStyle: Record<string, any> | null = null;
+  @Input() responsiveLayout: 'scroll' | 'stack' | string = 'scroll';
+  @Input() breakpoint: string = '';
+  @Input() loading: boolean = false;
   @Input() compact: boolean = false;
   @Input() striped: boolean = false;
   @Input() rowClickable: boolean = false;
+  @Input() rowHover: boolean = true;
+  @Input() rowClass: string | string[] | Record<string, boolean> = '';
+  @Input() rowClassFn?: (row: any, rowIndex: number) => string | string[] | Record<string, boolean>;
   @Input() selectable: boolean = false;
   @Input() selectionMode: 'single' | 'multiple' = 'multiple';
   @Input() selection: any[] | any = [];
@@ -44,17 +53,25 @@ export class TableComponent {
   @Input() paginator: boolean = false;
   @Input() rowsPerPage: number = 10;
   @Input() rowsPerPageOptions: number[] = [10, 20, 50];
+  @Input() totalRecords: number = 0;
+  @Input() showCurrentPageReport: boolean = false;
+  @Input() currentPageReportTemplate: string = '';
+  @Input() colSpanOverride?: number;
 
   @Output() rowClick = new EventEmitter<any>();
   @Output() actionClick = new EventEmitter<{ actionId: string; row: any }>();
   @Output() selectionChange = new EventEmitter<any[] | any>();
 
   @ContentChild(TableBodyDirective) bodyTemplate?: TableBodyDirective;
+  @ContentChild(TableFooterDirective) footerTemplate?: TableFooterDirective;
+  @ContentChild(TableEmptyDirective) emptyTemplate?: TableEmptyDirective;
+  @ContentChild(TableHeaderDirective) headerTemplate?: TableHeaderDirective;
 
   get colSpan(): number {
     const actionCount = this.actions?.length ? 1 : 0;
     const selectionCount = this.selectable ? 1 : 0;
-    return this.columns.length + actionCount + selectionCount || 1;
+    const base = this.colSpanOverride ?? this.columns.length;
+    return base + actionCount + selectionCount || 1;
   }
 
   buildClass(base: string, extra: string): string {
