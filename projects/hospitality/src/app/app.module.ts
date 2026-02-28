@@ -62,7 +62,9 @@ import { BookingformComponent } from './ui/bookings/bookingform/bookingform.comp
 import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-// import { JwtHelperService, JWT_OPTIONS, JwtModule } from '@auth0/angular-jwt';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
+import { JwtHelperService, JWT_OPTIONS, JwtModule } from '@auth0/angular-jwt';
 @NgModule({
   declarations: [
     AppComponent,
@@ -127,43 +129,45 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
     CheckboxModule,
     FileUploadModule,
     ProgressSpinnerModule,
-    // JwtModule.forRoot({
-    //   jwtOptionsProvider: {
-    //     provide: JWT_OPTIONS,
-    //     useValue: {
-    //       tokenGetter: () => {
-    //         // First check localStorage, then sessionStorage
-    //         const token =
-    //           localStorage.getItem('Token2') ||
-    //           localStorage.getItem('accessToken2') ||
-    //           sessionStorage.getItem('Token') ||
-    //           sessionStorage.getItem('accessToken');
+    HttpClientModule,
+    JwtModule.forRoot({
+      jwtOptionsProvider: {
+        provide: JWT_OPTIONS,
+        useValue: {
+          tokenGetter: () => {
+            // First check localStorage, then sessionStorage
+            const token =
+              localStorage.getItem('Token2') ||
+              localStorage.getItem('accessToken2') ||
+              sessionStorage.getItem('Token') ||
+              sessionStorage.getItem('accessToken') ||
+              localStorage.getItem('token') ||
+              sessionStorage.getItem('token');
 
-    //         if (!token) return null;
+            if (!token) return null;
 
-    //         // If token is in format "key=value;", extract the value
-    //         if (token.includes('=')) {
-    //           const tokenStartIndex = token.indexOf('=') + 1;
-    //           const tokenEndIndex = token.indexOf(';');
-    //           return tokenEndIndex > tokenStartIndex
-    //             ? token.substring(tokenStartIndex, tokenEndIndex)
-    //             : token.substring(tokenStartIndex);
-    //         }
+            // If token is in format "key=value;", extract the value
+            if (token.includes('=')) {
+              const tokenStartIndex = token.indexOf('=') + 1;
+              const tokenEndIndex = token.indexOf(';');
+              return tokenEndIndex > tokenStartIndex
+                ? token.substring(tokenStartIndex, tokenEndIndex)
+                : token.substring(tokenStartIndex);
+            }
 
-    //         return token;
-    //       },
-    //       allowedDomains: ['be.optimaxsuites.com'], // Add your domain here
-    //       disallowedRoutes: [],
-    //     },
-    //   },
-    // }),
+            return token;
+          },
+          allowedDomains: ['be.optimaxsuites.com'], // Add your domain here
+          disallowedRoutes: [],
+        },
+      },
+    }),
   ],
   providers: [
     MessageService,
     ConfirmationService,
-    // { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
-    // JwtHelperService,
     DialogService,
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
   ],
 
   bootstrap: [AppComponent],

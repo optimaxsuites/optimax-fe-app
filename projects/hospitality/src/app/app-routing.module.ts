@@ -5,6 +5,13 @@ import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admin
 
 const routes: Routes = [
   { path: 'room/:uuid', component: HotelAdmintableComponent },
+  {
+    path: 'hospitality',
+    loadChildren: () =>
+      import('./ui/view/room-management/room-management.module').then(
+        (m) => m.RoomManagementModule
+      ),
+  },
 ];
 
 @NgModule({
@@ -12,3 +19,4 @@ const routes: Routes = [
   exports: [RouterModule],
 })
 export class AppRoutingModule {}
+

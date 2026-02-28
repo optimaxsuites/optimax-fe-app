@@ -17,7 +17,7 @@ import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/mult
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'checkout/34567whr4567yhsdzr56',
+    redirectTo: 'hospitality',
     pathMatch: 'full',
   },
   {
