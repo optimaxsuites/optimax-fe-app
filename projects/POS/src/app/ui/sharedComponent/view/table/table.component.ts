@@ -1,4 +1,5 @@
-import { Component, ContentChild, EventEmitter, Input, Output } from '@angular/core';
+import { Component, ContentChild, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Table } from 'primeng/table';
 import { TableBodyDirective } from './table-body.directive';
 import { TableEmptyDirective } from './table-empty.directive';
 import { TableFooterDirective } from './table-footer.directive';
@@ -27,9 +28,17 @@ export interface TableAction<T = any> {
 @Component({
   selector: 'app-table',
   templateUrl: './table.component.html',
-  styleUrl: './table.component.scss'
+  styleUrl: './table.component.scss',
+  providers: [
+    {
+      provide: Table,
+      useFactory: (component: TableComponent) => component.pTable,
+      deps: [TableComponent]
+    }
+  ]
 })
 export class TableComponent {
+  @ViewChild('pTable', { static: true }) pTable!: Table;
   @Input() columns: TableColumn[] = [];
   @Input() rows: any[] = [];
   @Input() actions: TableAction[] = [];
