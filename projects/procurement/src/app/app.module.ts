@@ -141,8 +141,8 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     TableComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,

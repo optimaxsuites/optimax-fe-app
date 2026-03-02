@@ -126,12 +126,12 @@ this.links['expenseReportLink'] = '/admin/expenses/report/' +uuidV4()
 
 
 // procurement ================================================================================================================
-this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
+this.links['procurementLink'] = '/admin/procurement/pr-management/' +uuidV4();
 this.links['vendorManagementLink'] = '/admin/procurement/vendor-management/' +uuidV4();
 this.links['vendorLink'] = '/admin/procurement/vendor-portal/dashboard/' +uuidV4();
-this.links['rfqLink'] = '/admin/procurement/rfq/' +uuidV4();
-this.links['quotationLink'] = '/admin/procurement/quotation/' +uuidV4();
-this.links['lpoLink'] = '/admin/procurement/lpo/' +uuidV4();
+this.links['rfqLink'] = '/admin/procurement/vendor-portal/rfqs/' +uuidV4();
+this.links['quotationLink'] = '/admin/procurement/vendor-portal/quotations/' +uuidV4();
+this.links['lpoLink'] = '/admin/procurement/vendor-portal/lpo/' +uuidV4();
 
 
 
