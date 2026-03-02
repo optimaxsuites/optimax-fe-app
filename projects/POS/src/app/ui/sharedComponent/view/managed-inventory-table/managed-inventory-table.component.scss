@@ -62,31 +62,7 @@
     background-color: #fff;
   }
 
-  :host ::ng-deep .app-data-table__table{
-    width: 100%;
-  }
-
-
-
-  :host ::ng-deep .app-data-table__table,
-  :host ::ng-deep .app-data-table__table th,
-  :host ::ng-deep .app-data-table__table td {
-    font-weight: 400;
-    // border: 1px solid #ddd;
-  }
   
-  :host ::ng-deep .app-data-table__table th,
-  :host ::ng-deep .app-data-table__table td {
-    padding: 10px;
-    text-align: left;
-  }
-  
-  :host ::ng-deep .app-data-table__table th {
-    padding: 1rem;
-    box-sizing: border-box;
-    background-color: #25925B;
-    color: #fff ;
-  }
 
 
   :host ::ng-deep .item-cell {

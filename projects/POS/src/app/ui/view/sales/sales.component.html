@@ -119,64 +119,62 @@
     <div class="overflow-x-auto" *ngIf="filteredOrders.length > 0; else noOrdersTemplate">
       <app-table
         [rows]="paginatedOrders"
-        [tableClass]="'min-w-full bg-white'"
         [colSpanOverride]="hasSalespersonData() ? 11 : 10"
-        [rowClass]="'hover:bg-gray-50 border-b border-gray-200'"
       >
         <ng-template appTableHeader>
-          <tr class="bg-gray-100">
-            <th class="py-3 px-4 text-left font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
+          <tr>
+            <th class="cursor-pointer" (click)="sort('id')">
               ID 
               <span class="ml-1">{{ sortBy === 'id' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderNumber')">
+            <th class="cursor-pointer" (click)="sort('orderNumber')">
               Order # 
               <span class="ml-1">{{ sortBy === 'orderNumber' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('customer')">
+            <th class="cursor-pointer" (click)="sort('customer')">
               Customer 
               <span class="ml-1">{{ sortBy === 'customer' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('salesperson')"
+            <th class="cursor-pointer" (click)="sort('salesperson')"
                 *ngIf="hasSalespersonData()">
               Salesperson 
               <span class="ml-1">{{ sortBy === 'salesperson' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('salesType')">
+            <th class="cursor-pointer" (click)="sort('salesType')">
               Sales Type 
               <span class="ml-1">{{ sortBy === 'salesType' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalAmount')">
+            <th class="cursor-pointer" (click)="sort('totalAmount')">
               Subtotal 
               <span class="ml-1">{{ sortBy === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('tax')">
+            <th class="cursor-pointer" (click)="sort('tax')">
               Tax 
               <span class="ml-1">{{ sortBy === 'tax' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalWithTax')">
+            <th class="cursor-pointer" (click)="sort('totalWithTax')">
               Total Paid 
               <span class="ml-1">{{ sortBy === 'totalWithTax' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderStatus')">
+            <th class="cursor-pointer" (click)="sort('orderStatus')">
               Status 
               <span class="ml-1">{{ sortBy === 'orderStatus' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('date')">
+            <th class="cursor-pointer" (click)="sort('date')">
               Date 
               <span class="ml-1">{{ sortBy === 'date' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+            <th>
               Actions
             </th>
           </tr>
         </ng-template>
         <ng-template appTableBody let-order>
-          <td class="py-4 px-4 text-gray-900">{{ order.id }}</td>
-          <td class="py-4 px-4 text-gray-900">{{ order.orderNumber }}</td>
-          <td class="py-4 px-4 text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
-          <td class="py-4 px-4 text-gray-900" *ngIf="hasSalespersonData()">{{ getSalespersonName(order) }}</td>
-          <td class="py-4 px-4">
+          <td>{{ order.id }}</td>
+          <td>{{ order.orderNumber }}</td>
+          <td>{{ order.customer?.name || "Walk-in" }}</td>
+          <td *ngIf="hasSalespersonData()">{{ getSalespersonName(order) }}</td>
+          <td>
             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
                   [ngClass]="{
                     'bg-green-100 text-green-800': getDisplaySalesType(order) === 'Online',
@@ -186,16 +184,16 @@
               {{ getDisplaySalesType(order) }}
             </span>
           </td>
-          <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
-          <td class="py-4 px-4 text-gray-900">₦{{ calculateOrderTax(order).toLocaleString() }}</td>
-          <td class="py-4 px-4 text-gray-900 font-semibold">₦{{ calculateOrderTotalWithTax(order).toLocaleString() }}</td>
-          <td class="py-4 px-4">
+          <td>₦{{ order.totalAmount.toLocaleString() }}</td>
+          <td>₦{{ calculateOrderTax(order).toLocaleString() }}</td>
+          <td>₦{{ calculateOrderTotalWithTax(order).toLocaleString() }}</td>
+          <td>
             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
               {{ order.orderStatus }}
             </span>
           </td>
-          <td class="py-4 px-4 text-gray-900">{{ formatDate(order.createdDate) }}</td>
-          <td class="py-4 px-4 text-gray-900">
+          <td>{{ formatDate(order.createdDate) }}</td>
+          <td>
             <button (click)="viewOrderDetails(order)" class="text-indigo-600 hover:text-indigo-900 font-medium">
               View Details
             </button>

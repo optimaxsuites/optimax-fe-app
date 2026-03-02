@@ -296,14 +296,14 @@ h1,h2,h3,h4,h5,h6{
     padding: 2rem 0;
 }
 
-table{
+.table-container table{
     text-align: left;
     width: 100%;
     table-layout: auto;
     overflow-x: auto;
 
 }
-th{
+.table-container th{
     padding: 1rem;
     box-sizing: border-box;
     background-color: var(--celadon-green);
@@ -313,7 +313,7 @@ th{
   border-bottom: 1px solid rgb(238, 238, 238);
 }
 
-td {
+.table-container td {
     // padding: 0.6rem;
     box-sizing: border-box;
     /* background-color: #f1f1f1; */
@@ -1034,4 +1034,3 @@ body {
 
 }
  
-

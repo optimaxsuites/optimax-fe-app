@@ -139,6 +139,16 @@ h6 {
   font-size: 14px !important;
 }
 
+/* Force app-table header colors to match HR */
+.app-data-table .p-datatable-thead > tr > th {
+  background-color: #f4f7f9 !important;
+  color: #224957 !important;
+  text-transform: none !important;
+}
+.app-data-table .p-datatable-thead > tr > th * {
+  color: #224957 !important;
+}
+
 /* Style rows */
 .p-datatable .p-datatable-tbody > tr > td {
   font-size: 14px !important;

@@ -18,17 +18,21 @@
 }
 
 :host ::ng-deep .app-data-table .p-datatable-thead > tr > th {
-  background: #f4f7f9;
-  color: #224957;
+  background: #f4f7f9 !important;
+  color: #224957 !important;
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.01em;
-  text-transform: none;
+  text-transform: none !important;
   border-bottom: 1px solid #e6edf2;
   padding: 0.75rem 0.9rem;
   position: sticky;
   top: 0;
   z-index: 3;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-thead > tr > th * {
+  color: #224957 !important;
 }
 
 :host ::ng-deep .app-data-table .p-datatable-tbody > tr > td {
@@ -70,7 +74,7 @@
   position: sticky;
   left: 0;
   z-index: 2;
-  background: #f4f7f9;
+  background: #f4f7f9 !important;
 }
 
 :host ::ng-deep .app-data-table .p-datatable-tbody > tr > td.app-table-select {
@@ -137,14 +141,14 @@
 
 :host ::ng-deep .app-data-table .p-datatable-thead > tr > th.app-table-main-col {
   z-index: 4;
-  background: #f4f7f9;
+  background: #f4f7f9 !important;
 }
 
 :host ::ng-deep .app-data-table .app-table-actions-col {
   position: sticky;
   right: 0;
   z-index: 2;
-  background: #f4f7f9;
+  background: #f4f7f9 !important;
 }
 
 :host ::ng-deep .app-data-table .p-datatable-tbody > tr > td.app-table-actions-col {
