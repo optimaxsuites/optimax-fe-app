@@ -144,6 +144,7 @@ import { CustomDatePipe } from './shared/pipes/custom-date.pipe';
 // import { CheckoutKitchenHeaderComponent } from './ui/view/checkout-kitchen-header/checkout-header.component';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
+import { TableComponent } from './ui/sharedComponent/view/table/table.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -304,7 +305,7 @@ const dbConfig: DBConfig = {
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
-    TableModule,
+    AppTableModule,
     RippleModule,
     DialogModule,
     ToastModule,
@@ -319,7 +320,6 @@ const dbConfig: DBConfig = {
     DividerModule,
     OverlayPanelModule,
     StepperModule,
-    AppTableModule,
     InputTextModule,
     FloatLabelModule,
     EditorModule,

@@ -28,7 +28,6 @@ export interface TableAction<T = any> {
 @Component({
   selector: 'app-table',
   templateUrl: './table.component.html',
-  styleUrl: './table.component.scss',
   providers: [
     {
       provide: Table,
