@@ -1,9 +1,9 @@
 export const environment = {
   production: true,
-  baseUrl: "https://be.optimaxsuites.com",
-  apiBaseUrl: "https://be.optimaxsuites.com",
-  env:"production",
+  baseUrl: 'https://be.optimaxsuites.com',
+  apiBaseUrl: 'https://be.optimaxsuites.com',
+  env: 'production',
 
   project: 'ERP',
-  apiKey: 'ApiKey 8e2da356563ef460e52d56e83d73b8ee'
+  apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071'
 };

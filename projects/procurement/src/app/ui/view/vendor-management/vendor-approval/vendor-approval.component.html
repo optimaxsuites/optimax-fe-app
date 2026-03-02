@@ -2,10 +2,12 @@
   <div class="p-4 md:p-6">
     <div class="mb-4">
       <div class="text-xl font-bold text-slate-900">Pending Approval Queue</div>
-      <div class="text-sm text-slate-500">Review vendor registrations and approve or reject them.</div>
+      <div class="text-sm text-slate-500">
+        Review vendor registrations and approve or reject them.
+      </div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <!-- <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <p-table [value]="vendors" [loading]="loading" responsiveLayout="scroll">
         <ng-template pTemplate="header">
           <tr class="text-xs text-slate-600">
@@ -35,22 +37,17 @@
             <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
             <td>{{v.aiStatus}}</td>
             <td class="text-right">
-              <!-- Review -->
               <button pButton class="p-button-text p-button-sm" icon="pi pi-eye" (click)="reviewVendor(v)"
                 label="Review">
               </button>
 
-              <!-- Approve -->
               <button pButton class="p-button-text p-button-sm p-button-success" icon="pi pi-check"
                 (click)="openAction(v, 'Approve')" label="Approve">
               </button>
-
-              <!-- Reject -->
               <button pButton class="p-button-text p-button-sm p-button-danger" icon="pi pi-times"
                 (click)="openAction(v, 'Reject')" label="Reject">
               </button>
 
-              <!-- Request Changes -->
               <button pButton class="p-button-text p-button-sm p-button-warning" icon="pi pi-send"
                 (click)="openAction(v, 'RequestChanges')" label="Request Changes">
               </button>
@@ -66,45 +63,72 @@
           </tr>
         </ng-template>
       </p-table>
-    </div>
+    </div> -->
 
-    <p-dialog [(visible)]="actionDialog" [modal]="true" [draggable]="false" [resizable]="false" header="Vendor Action"
-      [style]="{width:'520px'}">
+    <app-table
+      [columns]="columns"
+      [rows]="vendors"
+      [actions]="actions"
+      [paginator]="true"
+      [rowsPerPage]="10"
+      [rowClickable]="true"
+      dataKey="id"
+      (rowClick)="reviewVendor($event)"
+      (actionClick)="onAction($event)"
+    ></app-table>
+
+    <p-dialog
+      [(visible)]="actionDialog"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      header="Vendor Action"
+      [style]="{ width: '520px' }"
+    >
       <div class="space-y-3">
         <div class="text-sm text-slate-700">
-          <div class="font-semibold text-slate-900">{{ selected?.legalName }}</div>
+          <div class="font-semibold text-slate-900">
+            {{ selected?.legalName }}
+          </div>
           <div class="text-slate-500">{{ selected?.email }}</div>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-          <div class="font-medium text-slate-700">Action: <span class="text-slate-900">{{ action }}</span></div>
-          <div class="text-xs text-slate-500 mt-1">Add an optional note for audit and communication.</div>
+          <div class="font-medium text-slate-700">
+            Action: <span class="text-slate-900">{{ action }}</span>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Add an optional note for audit and communication.
+          </div>
         </div>
 
-        <textarea rows="4" pInputTextarea fclass="w-full" [(ngModel)]="reason"
-          placeholder="Reason / note (optional)"></textarea>
+        <textarea
+          rows="4"
+          pInputTextarea
+          fclass="w-full"
+          [(ngModel)]="reason"
+          placeholder="Reason / note (optional)"
+        ></textarea>
       </div>
 
       <ng-template pTemplate="footer">
-        <button pButton class="p-button-text" label="Cancel" (click)="actionDialog=false"></button>
+        <button
+          pButton
+          class="p-button-text"
+          label="Cancel"
+          (click)="actionDialog = false"
+        ></button>
         <button pButton label="Submit" (click)="submitAction()"></button>
       </ng-template>
     </p-dialog>
   </div>
 </div>
 
-
-
-
-
-
-
-
-
-
-
-<p-dialog [(visible)]="displayVendorDialog" header="Vendor Details" [modal]="true" [style]="{ width: '60vw' }">
-
+<p-dialog
+  [(visible)]="displayVendorDialog"
+  header="Vendor Details"
+  [modal]="true"
+  [style]="{ width: '60vw' }"
+>
   <!-- <app-vendor-details [vendor]="selectedVendor"></app-vendor-details> -->
-
 </p-dialog>

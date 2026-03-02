@@ -1,23 +1,9 @@
-<!-- <p-confirmDialog class="table-item" header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog> -->
-<!-- <p-toast class="table-item"></p-toast> -->
-<div class="table-item" *ngIf="purchaseReqTable">
-  <div class="card">
-    <p-toolbar styleClass="mb-4 gap-2">
+<div *ngIf="purchaseReqTable">
+  <div class="card p-3">
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
       <ng-template pTemplate="left">
         <app-button text="Delete" class="btn-delete"></app-button>
       </ng-template>
-
-      <!-- <ng-template pTemplate="center">
-        <div class="table-item w-[450px]">
-          <input
-            type="text"
-            placeholder="Search"
-            class="editInput h-[36px]"
-            [(ngModel)]="searchTerm"
-            (ngModelChange)="search()"
-          />
-        </div>
-      </ng-template> -->
 
       <ng-template pTemplate="right">
         <app-button
@@ -28,89 +14,32 @@
       </ng-template>
     </p-toolbar>
 
-    <!-- Table View -->
-    <p-table
-      [value]="purchaseReqList"
+    <app-table
+      [columns]="columns"
+      [rows]="purchaseReqList"
+      [actions]="actions"
       [paginator]="true"
-      styleClass="p-striped"
-      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
-      [rows]="15"
-    >
-      <ng-template pTemplate="header">
-        <tr class="text-sm">
-          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-          <th class="table-item" pSortableColumn="title">Title</th>
-          <th class="table-item" pSortableColumn="prmNo">PRM No</th>
-          <th class="table-item" pSortableColumn="department">Department</th>
-          <th class="table-item" pSortableColumn="department">Budget Cap Amount</th>
-          <th class="table-item" pSortableColumn="requiredDate">Required By Date</th>
-          <th class="table-item" pSortableColumn="expiryDate">Status</th>
-          <th class=""></th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-item>
-        <tr class="p-table-row text-sm">
-          <td><p-tableCheckbox [value]="item" /></td>
-          <td class="table-item">{{ item.title }}</td>
-                    <td class="table-item">{{ item.prmNo }}</td>
-                    <td class="table-item">{{ item.department }}</td>
-                    <td class="table-item">{{ item.budgetCapAmount }}</td>
-                    <td class="table-item">{{ item.requiredByDate }}</td>
-          <td class="table-item">
-                        <span [ngClass]="getStatusClass(item.status)">
-                          {{ item.status }} 
-                        </span>
-                    </td>
-          <td class="actions">
-            <i
-              class="pi pi-ellipsis-v table-item"
-              (click)="op.toggle($event)"
-            ></i>
-            <p-overlayPanel #op ngClass="padding: 0;">
-              <div>
-                <li class="table-item-panel" > <i class="pi pi-eye table-item me-2"></i> View</li>
-                <li class="table-item-panel" > <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
-                <li class="table-item-panel" > <i class="pi pi-trash table-item me-2"></i>Delete</li>
-              </div>
-            </p-overlayPanel>
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="8" class="text-center py-5">
-            <div
-              class="d-flex flex-column align-items-center gap-2 font-[1000]"
-            >
-              <i
-                class="pi pi-file-edit"
-                style="font-size: 2.2rem; color: #adb5bd"
-              ></i>
-
-              <div class="fw-semibold mt-2">No Purchase Requisitions found</div>
-
-              <div class="text-muted text-sm m-4">
-                Create a purchase requisition to request items, <br />
-                assign a cost center and budget code, and submit it for
-                approval.
-              </div>
-
-              <!-- <button
-          pButton
-          type="button"
-          icon="pi pi-plus"
-          label="New Purchase Requisition"
-          class="p-button-sm p-button-primary mt-3"
-          (click)="goToCreatePR()">
-        </button> -->
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+      [rowsPerPage]="10"
+      [selectable]="true"
+      selectionMode="multiple"
+      [(selection)]="selectedPurchaseReqList"
+      dataKey="id"
+      (rowClick)="openVendor($event)"
+      (actionClick)="onAction($event)"
+      (selectionChange)="selectedPurchaseReqList = $event"
+    ></app-table>
   </div>
 </div>
 
 <div class="rfq-form-container" *ngIf="purchaseReqForm">
-    <app-pr-create (submitForm)="onPrSaved($event)" [purchaseReqData]="activeItem" (back)="close()" [isView]="isView" [isCreate]="isCreate" [isEdit]="isEdit" [isRfq]="true" [isQuote]="false"></app-pr-create>
+  <app-pr-create
+    (submitForm)="onPrSaved($event)"
+    [purchaseReqData]="activeItem"
+    (back)="close()"
+    [isView]="isView"
+    [isCreate]="isCreate"
+    [isEdit]="isEdit"
+    [isRfq]="true"
+    [isQuote]="false"
+  ></app-pr-create>
 </div>

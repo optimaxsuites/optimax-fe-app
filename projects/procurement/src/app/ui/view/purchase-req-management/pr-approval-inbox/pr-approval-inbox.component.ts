@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { PrApprovalWorkflowService } from '../../../service/pr-approval-workflow.service';
 import { PrStorageService } from '../../../service/pr-storage.service';
 import { PurchaseRequisitionLS } from '../../../domain/procurement.dto';
@@ -9,148 +8,58 @@ import { MessageService } from 'primeng/api';
   selector: 'app-approval-inbox',
   templateUrl: './pr-approval-inbox.component.html',
   styleUrls: ['./pr-approval-inbox.component.scss'],
-  providers: [MessageService]
+  providers: [MessageService],
 })
 export class PrApprovalInboxComponent implements OnInit, OnDestroy {
-
-  // // ✅ Mock logged-in user (replace later with auth)
-  // currentUserId = 'u-dept-head-1'; // try u-finance-1 or u-proc-1 to see other queues
-
-  // pending: PurchaseRequisitionLS[] = [];
-  // loading = false;
-
-  // // Modal state
-  // showRejectModal = false;
-  // rejectReason = '';
-  // activePr: PurchaseRequisitionLS | null = null;
-
-  // private intervalId: any;
-
-  // constructor(
-  //   private workflow: PrApprovalWorkflowService,
-  //   private store: PrStorageService,
-  //   private messageService: MessageService
-  // ) {}
-
-  // ngOnInit(): void {
-  //   this.refresh();
-
-  //   // auto refresh + escalation simulation
-  //   this.intervalId = setInterval(() => {
-  //     this.workflow.checkEscalations();
-  //     this.refresh();
-  //   }, 30_000);
-  // }
-
-  // ngOnDestroy(): void {
-  //   if (this.intervalId) clearInterval(this.intervalId);
-  // }
-
-  // refresh(): void {
-  //   this.loading = true;
-  //   // pulls only PRs pending for the current approver
-  //   this.pending = this.workflow.getPendingForApprover(this.currentUserId);
-  //   this.loading = false;
-  // }
-
-  // // Helper: show who is waiting now
-  // currentStepInfo(pr: PurchaseRequisitionLS): string {
-  //   const step = pr.approval?.steps?.find(s => s.level === pr.approval?.currentLevel);
-  //   if (!step) return '';
-  //   return `Level ${step.level} • ${step.role}`;
-  // }
-
-  // approve(pr: PurchaseRequisitionLS): void {
-  //   this.workflow.approve(pr.id, this.currentUserId);
-
-  //   this.messageService.add({
-  //     severity: 'success',
-  //     summary: 'Approved',
-  //     detail: `PR ${pr.prmNo} approved successfully.`,
-  //     life: 3000
-  //   });
-
-  //   this.refresh();
-  // }
-
-  // openReject(pr: PurchaseRequisitionLS): void {
-  //   this.activePr = pr;
-  //   this.rejectReason = '';
-  //   this.showRejectModal = true;
-  // }
-
-  // cancelReject(): void {
-  //   this.showRejectModal = false;
-  //   this.rejectReason = '';
-  //   this.activePr = null;
-  // }
-
-  // confirmReject(): void {
-  //   if (!this.activePr) return;
-
-  //   const reason = this.rejectReason.trim();
-  //   if (!reason) {
-  //     this.messageService.add({
-  //       severity: 'warn',
-  //       summary: 'Reason required',
-  //       detail: 'Please enter a rejection reason.',
-  //       life: 3000
-  //     });
-  //     return;
-  //   }
-
-  //   this.workflow.reject(this.activePr.id, this.currentUserId, reason);
-
-  //   this.messageService.add({
-  //     severity: 'error',
-  //     summary: 'Rejected',
-  //     detail: `PR ${this.activePr.prmNo} rejected.`,
-  //     life: 3500
-  //   });
-
-  //   this.cancelReject();
-  //   this.refresh();
-  // }
-
-  // // Optional: quick view details (you can route later)
-  // viewDetails(pr: PurchaseRequisitionLS): void {
-  //   console.log('PR Details:', pr);
-  //   this.messageService.add({
-  //     severity: 'info',
-  //     summary: 'PR Details',
-  //     detail: `Opened details for ${pr.prmNo} (console).`,
-  //     life: 2500
-  //   });
-  // }
-
-  // // Badge styling for status
-  statusBadgeClass(status: string): string {
-    switch (status) {
-      case 'UnderReview':
-        return 'bg-amber-100 text-amber-800 ring-1 ring-amber-200';
-      case 'Approved':
-        return 'bg-green-100 text-green-800 ring-1 ring-green-200';
-      case 'Rejected':
-        return 'bg-red-100 text-red-800 ring-1 ring-red-200';
-      case 'Submitted':
-        return 'bg-blue-100 text-blue-800 ring-1 ring-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 ring-1 ring-gray-200';
-    }
-  }
-
   currentUserId = 'u-dept-head-1'; // mock user (replace later)
   pendingList: any[] = [];
-
+  selectedPendingList: any[] = [];
   showRejectModal = false;
   rejectReason = '';
   activePr: PurchaseRequisitionLS | null = null;
+
+  columns = [
+    { header: 'Title', field: 'title', sortable: true },
+    { header: 'PRM No', field: 'prmNo', sortable: true },
+    { header: 'Department', field: 'department', sortable: true },
+    { header: 'Budget Cap Amount', field: 'budgetCapAmount', sortable: true },
+    {
+      header: 'Required By',
+      field: 'requiredByDate',
+      sortable: true,
+      formatter: (row: any) =>
+        new Date(row.requiredByDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        }),
+    },
+    {
+      header: 'Current Step',
+      formatter: (row: PurchaseRequisitionLS) => this.currentStepInfo(row),
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      sortable: true,
+      formatter: (row: any) => row.status ?? '__',
+      badgeClass: (row: any) =>
+        'px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center ' +
+        this.statusBadgeClass(row.status),
+    },
+  ];
+
+  actions = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' },
+    { id: 'approve', label: 'Approve', icon: 'pi pi-check' },
+    { id: 'reject', label: 'Reject', icon: 'pi pi-times', className: 'danger' },
+  ];
 
   private intervalId: any;
 
   constructor(
     private workflow: PrApprovalWorkflowService,
-    private messageService: MessageService
+    private messageService: MessageService,
   ) {}
 
   ngOnInit(): void {
@@ -167,14 +76,49 @@ export class PrApprovalInboxComponent implements OnInit, OnDestroy {
     if (this.intervalId) clearInterval(this.intervalId);
   }
 
+  openItem($event: any) {
+    throw new Error('Method not implemented.');
+  }
+  onAction($event: { actionId: string; row: PurchaseRequisitionLS }) {
+    const pr = $event.row;
+
+    switch ($event.actionId) {
+      case 'view':
+        this.viewDetails(pr);
+        break;
+
+      case 'approve':
+        this.approve(pr);
+        break;
+
+      case 'reject':
+        this.openReject(pr);
+        break;
+
+      default:
+        console.warn('Unknown action:', $event.actionId, pr);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Action',
+          detail: 'Unknown action selected.',
+          life: 2500,
+        });
+        break;
+    }
+  }
+
   refresh(): void {
     this.pendingList = this.workflow.getPendingForApprover(this.currentUserId);
   }
 
   currentStepInfo(pr: PurchaseRequisitionLS): string {
-    const step = pr.approval?.steps?.find(s => s.level === pr.approval?.currentLevel);
+    const step = pr.approval?.steps?.find(
+      (s) => s.level === pr.approval?.currentLevel,
+    );
     if (!step) return '';
-    const escalated = pr.approval?.escalation?.lastEscalatedAt ? ' • Escalated' : '';
+    const escalated = pr.approval?.escalation?.lastEscalatedAt
+      ? ' • Escalated'
+      : '';
     return `L${step.level} • ${step.role}${escalated}`;
   }
 
@@ -241,25 +185,33 @@ export class PrApprovalInboxComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ reuse your existing badge classes
-  getStatusClass(status: string) {
-    switch (status) {
-      case 'Draft':
-        return 'badge badge-lightgrey';
-      case 'Submitted':
-        return 'badge badge-blue';
-      case 'UnderReview':
-        return 'badge badge-warning';
-      case 'Approved':
-        return 'badge badge-success';
-      case 'Rejected':
-        return 'badge badge-danger';
-      case 'Cancelled':
-        return 'badge badge-dark';
-      case 'Converted':
-        return 'badge badge-lightblue';
-      default:
-        return '';
-    }
+  private readonly statusClasses: Record<string, string> = {
+    Draft: 'bg-gray-100 text-gray-700 ring-1 ring-gray-200',
+    Inactive: 'bg-gray-200 text-gray-700 ring-1 ring-gray-300',
+    Cancelled: 'bg-gray-300 text-gray-900 ring-1 ring-gray-400',
+
+    Submitted: 'bg-blue-100 text-blue-800 ring-1 ring-blue-200',
+    Converted: 'bg-sky-100 text-sky-800 ring-1 ring-sky-200',
+
+    Pending: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
+    PendingApproval: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
+    PendingRegistration: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
+    UnderReview: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
+
+    Approved: 'bg-green-100 text-green-800 ring-1 ring-green-200',
+    AiApproved: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200',
+
+    Rejected: 'bg-red-100 text-red-800 ring-1 ring-red-200',
+    AiRejected: 'bg-rose-100 text-rose-800 ring-1 ring-rose-200',
+    AiFlagged: 'bg-rose-100 text-rose-800 ring-1 ring-rose-200',
+
+    AiPending: 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200',
+  };
+
+  statusBadgeClass(status: string): string {
+    return (
+      this.statusClasses[status] ??
+      'bg-gray-100 text-gray-800 ring-1 ring-gray-200'
+    );
   }
 }

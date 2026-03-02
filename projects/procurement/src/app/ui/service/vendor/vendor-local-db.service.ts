@@ -221,7 +221,7 @@ export class VendorLocalDbService {
   const vendorId = uuidv4();                         // ✅ string
   const status: VendorStatus = VendorStatus.PendingApproval; // ✅ VendorStatus
 
-  const vendor: VendorDto = {
+  const vendor: any = {
     id: vendorId,
     tenantId,
     registrationToken: '',

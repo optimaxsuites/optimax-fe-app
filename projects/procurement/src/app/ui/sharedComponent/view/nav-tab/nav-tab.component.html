@@ -1,4 +1,4 @@
-<div class="sales">
+<div class="sales text-[10px]">
     <div class="link-wrapper" >
       <!-- Loop through tabsConfig to render tabs -->
       <div *ngFor="let tab of tabsConfig" class="relative">
@@ -7,8 +7,9 @@
           class="tab-btn" 
           [ngClass]="{'active': selectedTab === tab.name}" 
           (click)="selectTab(tab)">
-          {{ tab.name }}
-          <span *ngIf="tab.hasDropdown">▼</span>
+          <span *ngIf="tab.icon" class="tab-icon" [ngClass]="tab.icon" aria-hidden="true"></span>
+          <span class="tab-label">{{ tab.name }}</span>
+          <span *ngIf="tab.hasDropdown" class="tab-caret">▼</span>
         </button>
 
         <div 

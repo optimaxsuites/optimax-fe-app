@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -60,7 +60,7 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 import { RfqComponent } from './ui/view/vendor-portal/rfq/rfq.component';
 import { QuotationComponent } from './ui/view/quotation/quotation.component';
@@ -98,7 +98,9 @@ import { NgChartsModule } from 'ng2-charts';
 import { NgApexchartsModule } from "ng-apexcharts";
 import { ApprovedVendorComponent } from './ui/view/vendor-management/approved-vendor/approved-vendor.component';
 import { RejectedVendorComponent } from './ui/view/vendor-management/rejected-vendor/rejected-vendor.component';
-
+import { TableComponent } from './ui/sharedComponent/view/table/table.component';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
+import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 
 
 @NgModule({
@@ -136,10 +138,11 @@ import { RejectedVendorComponent } from './ui/view/vendor-management/rejected-ve
     DashboardComponent,
     ApprovedVendorComponent,
     RejectedVendorComponent,
+    TableComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
@@ -199,7 +202,20 @@ import { RejectedVendorComponent } from './ui/view/vendor-management/rejected-ve
     NgApexchartsModule,
     
   ],
-  providers: [MessageService],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS,
+    },
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi()),
+    MessageService,
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

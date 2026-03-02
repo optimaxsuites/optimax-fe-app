@@ -1,183 +1,184 @@
 <div class="card">
   <div class="p-4 md:p-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-      <div>
-        <div class="text-xl font-bold text-slate-900">Vendors</div>
-        <div class="text-sm text-slate-500">Manage supplier master data, compliance, and approvals.</div>
-      </div>
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <div>
+          <div class="text-xl font-bold text-slate-900">Vendors</div>
+          <div class="text-sm text-slate-500">
+            Manage supplier master data, compliance, and approvals.
+          </div>
+        </div>
+      </ng-template>
 
-      <div class="flex items-center gap-2">
-        <app-button text="Add Vendor" class="btn-navigate" (click)="openForm()"></app-button>
-      </div>
+      <ng-template pTemplate="right">
+        <app-button
+          text="Add Vendor"
+          class="btn-navigate"
+          (click)="openForm()"
+        ></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div
+      class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4"
+    >
+      <div class="flex items-center gap-2"></div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 mb-4">
+    <div class="p-4 mb-4">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label class="text-xs font-medium text-slate-600">Search</label>
-          <span class="p-input-icon-left w-full">
+        <div class="text-sm">
+          <label class="font-medium text-slate-600">Search</label>
+          <span class="p-input-icon-right w-full">
             <i class="pi pi-search"></i>
-            <input pInputText class="w-full editinput" [(ngModel)]="query.q" placeholder="Name, email, code..."
-              (keyup.enter)="fetchInvitedAndInProgress()" />
+            <input
+              pInputText
+              class="w-full border p-2"
+              [(ngModel)]="query.q"
+              placeholder="Name, email, code..."
+              (ngModelChange)="applyFilters()"
+            />
           </span>
         </div>
-<!-- 
-        <div>
-          <label class="text-xs font-medium text-slate-600">Status</label>
-          <p-dropdown class="w-full" [options]="statusOptions" [(ngModel)]="query.status" (onChange)="fetchLocalVendors()">
-          </p-dropdown>
-        </div> -->
-
-        <div class="flex items-end justify-end">
-          <button pButton type="button" icon="pi pi-filter" label="Apply" class="p-button-sm"
-            (click)="fetchInvitedAndInProgress()"></button>
-        </div>
       </div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <p-table [value]="vendors" [loading]="loading" [paginator]="false" dataKey="id" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
-          <tr class="text-xs text-slate-600">
-            <th>Vondor ID</th>
-            <th>Business Name</th>
-            <th>Registration Token</th>
-            <th>Email</th>
-            <th>Invited On</th>
-            <th>Status</th>
-            <th class="text-right">Action</th>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-v>
-          <tr class="text-xs">
-            <td>{{ v.id }}</td>
-            <td class="font-medium text-slate-900">
-              <div class="flex flex-col">
-                <span>{{ v.legalName }}</span>
-                <span class="text-xs text-slate-500" *ngIf="v.vendorCode">#{{ v.vendorCode }}</span>
-              </div>
-            </td>
-            <td>{{ v.registrationToken }}</td>
-            <td class="text-slate-700">{{ v.email }}</td>
-            <td class="text-slate-600">{{ v.createdAt | date:'mediumDate' }}</td>
-            <td><app-vendor-status-badge [status]="v.status"></app-vendor-status-badge></td>
-            <td class="text-right">
-              <button pButton type="button" icon="pi pi-eye" pTooltip="View" tooltipPosition="top"
-                class="p-button-sm p-button-text text-slate-600 hover:text-blue-600" (click)="open(v)">
-              </button>
-
-              <button pButton type="button" icon="pi pi-pencil" pTooltip="Edit" tooltipPosition="top"
-                class="p-button-sm p-button-text text-slate-600 hover:text-amber-600">
-              </button>
-
-              <button pButton type="button" icon="pi pi-refresh" pTooltip="Resend Invite" tooltipPosition="top"
-                class="p-button-sm p-button-text text-slate-600 hover:text-purple-700">
-              </button>
-
-              <button pButton type="button" icon="pi pi-trash" pTooltip="Delete" tooltipPosition="top"
-                class="p-button-sm p-button-text text-slate-600 hover:text-red-700">
-              </button>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6">
-              <div class="p-6 text-center text-slate-500">
-                No vendors found. Try adjusting your filters.
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-
-      <div class="border-t border-slate-100 p-3">
-        <p-paginator [rows]="query.pageSize ?? 10" [totalRecords]="total"
-          [first]="((query.page ?? 1) - 1) * (query.pageSize ?? 10)" (onPageChange)="onPage($event)">
-        </p-paginator>
-      </div>
+    <div class="">
+      <app-table
+        [columns]="columns"
+        [rows]="vendors"
+        [actions]="actions"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [(selection)]="selectVendor"
+        dataKey="id"
+        (rowClick)="openItem($event)"
+        (actionClick)="onAction($event)"
+        (selectionChange)="selectVendor = $event"
+      ></app-table>
     </div>
   </div>
 </div>
 
-
-
-
 <div>
-  <p-dialog header="Add Vendor"
-          [(visible)]="displayVendorForm"
-          [modal]="true"
-          [style]="{ width: '800px' }"
-          [draggable]="false"
-          [resizable]="false">
+  <p-dialog
+    header="Add Vendor"
+    [(visible)]="displayVendorForm"
+    [modal]="true"
+    [style]="{ width: '800px' }"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form [formGroup]="vendorForm" (ngSubmit)="addVendor()">
+      <div class="space-y-2">
+        <p class="text-sm text-gray-500">
+          Enter vendor details below. This information will be used for records
+          and communication.
+        </p>
 
-  <form [formGroup]="vendorForm" (ngSubmit)="addVendor()">
-    <div class="space-y-2">
+        <div class="text-sm bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+          <div class="flex items-center gap-2 font-semibold text-gray-700">
+            <i class="pi pi-building text-primary"></i>
+            Company Information
+          </div>
 
-      <p class="text-sm text-gray-500">
-        Enter vendor details below. This information will be used for records and communication.
-      </p>
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Company Name</label
+            >
+            <input
+              pInputText
+              formControlName="legalName"
+              class="w-full border p-2"
+              placeholder="e.g. Acme Ltd."
+            />
+            <p class="text-xs text-gray-400">Registered business name</p>
+          </div>
 
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
-        <div class="flex items-center gap-2 font-semibold text-gray-700">
-          <i class="pi pi-building text-primary"></i>
-          Company Information
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Company Email</label
+            >
+            <input
+              pInputText
+              type="email"
+              formControlName="email"
+              class="w-full border p-2"
+              placeholder="company@email.com"
+            />
+            <p class="text-xs text-gray-400">Main official email address</p>
+          </div>
         </div>
 
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Company Name</label>
-          <input pInputText formControlName="legalName" class="w-full" placeholder="e.g. Acme Ltd." />
-          <p class="text-xs text-gray-400">Registered business name</p>
-        </div>
+        <div class="text-sm bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+          <div class="flex items-center gap-2 font-semibold text-gray-700">
+            <i class="pi pi-user text-primary"></i>
+            Contact Person
+          </div>
 
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Company Email</label>
-          <input pInputText type="email" formControlName="email" class="w-full" placeholder="company@email.com" />
-          <p class="text-xs text-gray-400">Main official email address</p>
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Full Name</label>
+            <input
+              pInputText
+              formControlName="contactName"
+              class="w-full border p-2"
+              placeholder="Samuel Alli"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Phone Number</label
+            >
+            <input
+              pInputText
+              formControlName="contactPhone"
+              class="w-full border p-2"
+              placeholder="+234..."
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Email</label>
+            <input
+              pInputText
+              type="email"
+              formControlName="contactEmail"
+              class="w-full border p-2"
+              placeholder="contact@email.com"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Role</label>
+            <input
+              pInputText
+              formControlName="contactRole"
+              class="w-full border p-2"
+              placeholder="Admin / Owner"
+            />
+          </div>
         </div>
       </div>
 
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
-        <div class="flex items-center gap-2 font-semibold text-gray-700">
-          <i class="pi pi-user text-primary"></i>
-          Contact Person
-        </div>
+      <div class="mt-4">
+        <div class="text-sm flex justify-end gap-3">
+          <button
+            pButton
+            type="button"
+            label="Cancel"
+            (click)="displayVendorForm = false"
+            class="!bg-red-500 !border-red-500 hover:!bg-red-600 hover:!border-red-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+          ></button>
 
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Full Name</label>
-          <input pInputText formControlName="contactName" class="w-full" placeholder="Samuel Alli" />
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Phone Number</label>
-          <input pInputText formControlName="contactPhone" class="w-full" placeholder="+234..." />
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Email</label>
-          <input pInputText type="email" formControlName="contactEmail" class="w-full" placeholder="contact@email.com" />
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-gray-700">Role</label>
-          <input pInputText formControlName="contactRole" class="w-full" placeholder="Admin / Owner" />
+          <button
+            pButton
+            type="submit"
+            label="Add Vendor"
+            class="!bg-green-500 !border-green-500 hover:!bg-green-600 hover:!border-green-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+          ></button>
         </div>
       </div>
-
-    </div>
-
-    <div class="mt-4">
-      <div class="flex justify-end gap-3">
-        <button pButton type="button" label="Cancel"
-                (click)="displayVendorForm=false"
-                class="!bg-red-500 !border-red-500 hover:!bg-red-600 hover:!border-red-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"></button>
-
-        <button pButton type="submit" label="Add Vendor"
-                class="!bg-green-500 !border-green-500 hover:!bg-green-600 hover:!border-green-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"></button>
-      </div>
-    </div>
-  </form>
-</p-dialog>
+    </form>
+  </p-dialog>
 </div>

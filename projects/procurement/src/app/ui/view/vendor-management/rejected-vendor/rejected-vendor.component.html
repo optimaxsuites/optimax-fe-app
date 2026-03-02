@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <!-- <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <p-table [value]="vendors" [loading]="loading" responsiveLayout="scroll">
 
         <ng-template pTemplate="header">
@@ -43,8 +43,6 @@
             </td>
 
             <td class="text-right gap-6">
-              
-              <!-- View Details -->
               <button 
                 pButton 
                 class="p-button-text p-button-sm" 
@@ -52,8 +50,6 @@
                 (click)="reviewVendor(v)"
                 label="View">
               </button>
-
-              <!-- Allow Resubmission -->
               <button 
                 pButton 
                 class="p-button-text p-button-sm p-button-warning" 
@@ -62,7 +58,6 @@
                 label="Allow Resubmit">
               </button>
 
-              <!-- Archive (Optional) -->
               <button 
                 pButton 
                 class="p-button-text p-button-sm p-button-danger" 
@@ -86,6 +81,22 @@
         </ng-template>
 
       </p-table>
-    </div>
+    </div> -->
+  
+  
+  
+          <app-table
+        [rows]="vendors"
+        [columns]="columns"
+        [actions]="actions"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [rowClickable]="true"
+        [(selection)]="selectedVendors"
+        dataKey="id"
+        (rowClick)="reviewVendor($event)"
+        (actionClick)="onAction($event)"
+      >
+      </app-table>
   </div>
 </div>

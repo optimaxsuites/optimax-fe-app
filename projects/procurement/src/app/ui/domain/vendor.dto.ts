@@ -3,8 +3,11 @@ export enum VendorStatus {
   Approved = 'Approved',
   Rejected = 'Rejected',
   Inactive = 'Inactive',
+  UnderReview = 'UnderReview',
   PendingRegistration = 'PendingRegistration',
-  PendingApproval = 'PendingApproval'
+  PendingApproval = 'PendingApproval',
+  RegistrationInProgress = 'RegistrationInProgress',
+  AiFlagged = 'AiFlagged'
 }
 
 export interface VendorContactDto {
@@ -15,6 +18,9 @@ export interface VendorContactDto {
 }
 
 export interface VendorDto {
+  aiStatus: string;
+  approvedAt: string | number | Date;
+  approvedBy: string;
   // ================================
   // System / Identity
   // ================================
