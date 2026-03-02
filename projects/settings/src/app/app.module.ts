@@ -91,6 +91,7 @@ import { TaxComponent } from './ui/view/pos/metadatas/tax/tax.component';
 import { SupplierComponent } from './ui/view/pos/metadatas/supplier/supplier.component';
 import { DiscountComponent } from './ui/view/pos/metadatas/discount/discount.component';
 import { QrcodeComponent } from './ui/view/pos/qrcode/qrcode.component';
+import { MetadataComponent } from './ui/view/hr/metadata/metadata.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -121,14 +122,15 @@ import { QrcodeComponent } from './ui/view/pos/qrcode/qrcode.component';
     PaykeysComponent,
     DelveryComponent,
     LocationPickerComponent,
-     EstimatedDeliveryPipe,
-      LogisticFormComponent,
-      MetadatasComponent,
-      CategoryComponent,
-      TaxComponent,
-      SupplierComponent,
-      DiscountComponent,
-      QrcodeComponent
+    EstimatedDeliveryPipe,
+    LogisticFormComponent,
+    MetadatasComponent,
+    CategoryComponent,
+    TaxComponent,
+    SupplierComponent,
+    DiscountComponent,
+    QrcodeComponent,
+    MetadataComponent
   ],
   imports: [
     // BrowserModule,

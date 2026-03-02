@@ -45,15 +45,87 @@ export class DataService {
    }
 
 
-   addDeliveryNote(data: any){
+  addDeliveryNote(data: any){
     return this.http.post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/deliveryTypes', data)
     .pipe(catchError(this.handleError));
    }
 
-   getDeliveryNote(){
+  getDeliveryNote(){
     return this.http.get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/deliveryTypes')
     .pipe(catchError(this.handleError));
    }
+
+  getGender() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/genders')
+      .pipe(catchError(this.handleError));
+  }
+
+  addGender(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/genders', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getMaritalStatus() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/maritalStatuses')
+      .pipe(catchError(this.handleError));
+  }
+
+  addMaritalStatus(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/maritalStatuses', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getReligion() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/religions')
+      .pipe(catchError(this.handleError));
+  }
+
+  addReligion(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/religions', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getDepartment() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/departments')
+      .pipe(catchError(this.handleError));
+  }
+
+  addDepartment(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/departments', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getJobType() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/jobTypes')
+      .pipe(catchError(this.handleError));
+  }
+
+  addJobType(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/jobTypes', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getRelationship() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/hr/relationships')
+      .pipe(catchError(this.handleError));
+  }
+
+  addRelationship(data: { id?: number; name: string; description?: string; code?: string }) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/hr/relationships', data)
+      .pipe(catchError(this.handleError));
+  }
 
 
   private handleError(error: HttpErrorResponse) {

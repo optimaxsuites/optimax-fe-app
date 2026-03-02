@@ -535,7 +535,7 @@ addNewEmployee(){
   const formData = this.buildEmployeeFormData();
       const vettingPayload = this.buildEmployeePayload();
 
-  this.employeeService.updateEmployee(formData, vettingPayload.employee.id).subscribe({
+  this.employeeService.addEmployee(formData).subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
       if (data?.id) {
@@ -582,7 +582,8 @@ private buildEmployeePayload(): {
   nextOfKin: any[];
   guarantors: any[];
 } {
-  const newEmployee = {
+  const employeeMediaId = this.employeeData?.employeeMedia?.id;
+  const newEmployee: any = {
  
 
    id: this.employeeId,
@@ -591,8 +592,8 @@ private buildEmployeePayload(): {
     email:  this.employeeData.email,
     workEmail: this.employeeData.workEmail,
     jobTitle: this.employeeData.jobTitle,
-    departmentId: this.employeeData.departmentId,
-    levelId: 4,
+    // departmentId: this.employeeData.departmentId,
+    levelId: this.employeeData.level.id,
     employmentType:  this.employeeData.employmentType,
     supervisor: this.employeeData.supervisor,
 
@@ -619,12 +620,14 @@ private buildEmployeePayload(): {
   
 
     // levelId: this.employeeData.levelId,
-    // departmentId: this.employeeData.departmentId,
-    //  jobTitle: this.employeeData.jobTitle,
-     profilePhoto: this.basicForm.get('profilePhoto')?.value instanceof File ? null : this.basicForm.get('profilePhoto')?.value || null
+    departmentId: this.employeeData.department.id,
+    jobTypeId: this.employeeData.jobType.id
 
   
   };
+  if (employeeMediaId) {
+    newEmployee.employeeMediaId = employeeMediaId;
+  }
 
   const nextOfKin = this.nextOfKinList.map((nok) => ({
     fullName: nok.fullName,
@@ -654,13 +657,6 @@ private buildEmployeePayload(): {
 
 private buildEmployeeFormData():any {
   const payload = this.buildEmployeePayload();
-  const formData = new FormData();
-  formData.append('employee', JSON.stringify(payload.employee));
-
-  if (this.basicForm.get('profilePhoto')?.value instanceof File) {
-    formData.append('file', this.basicForm.get('profilePhoto')?.value)
-  }
-  console.log(formData)
   return payload.employee;
 }
 

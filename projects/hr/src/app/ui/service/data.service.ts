@@ -57,6 +57,14 @@ export class DataService {
         .pipe(catchError(this.handleError));
   }
 
+  addGender(data: { id?: number; name: string; description?: string; code?: string }): Observable<any> {
+    return this.http
+        .post<any>(
+            this.baseurl +
+                `/x/api/v2/hr/genders`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   getDepartment(): Observable<any>{
     return this.http
         .get<any>(

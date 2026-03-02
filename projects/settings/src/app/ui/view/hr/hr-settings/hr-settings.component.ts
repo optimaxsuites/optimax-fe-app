@@ -6,6 +6,7 @@ import { LevelComponent } from '../level/level.component';
 import { LeaveComponent } from '../leave/leave.component';
 import { CompensationComponent } from '../compensation/compensation.component';
 import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.component';
+import { MetadataComponent } from '../metadata/metadata.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -44,6 +45,12 @@ export class HrSettingsComponent {
       subSetting: ['Salary Structure', 'Deductions and Overtime'],
       icon: 'pi pi-receipt',
       component: null,
+    },
+    {
+      name: 'Metadata',
+      subSetting: ['Genders', 'Marital Statuses', 'Religions'],
+      icon: 'pi pi-tags',
+      component: MetadataComponent,
     },
     {
       name: 'Level',

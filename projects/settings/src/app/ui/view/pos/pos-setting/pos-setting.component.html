@@ -12,7 +12,7 @@
       />
     </div>
     
-    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-10 px-10 py-4" > 
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-10 px-10 py-4" > 
       <div *ngFor="let setting of filteredSettings; let i = index" class="relative bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[21rem] p-3"  (click)="openSideBar(setting)" (mouseleave)="hoveredIndex = -1">
           <i *ngIf="setting.icon" [class]="setting.icon" class="text-5xl"></i>
           <p class="text-[16px] font-bold my-3">{{setting.name}}</p>
