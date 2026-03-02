@@ -6,7 +6,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   templateUrl: './button.component.html',
   styleUrl: './button.component.scss',
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule],
 })
 export class ButtonComponent {
 
