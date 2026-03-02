@@ -176,6 +176,7 @@ import { CooperativeMembersComponent } from './ui/view/loan-management/cooperati
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
 import { QueryComponent } from './ui/view/query/query.component';
+import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -293,6 +294,7 @@ import { QueryComponent } from './ui/view/query/query.component';
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
     QueryComponent,
+    EmployeeProfileDashboardComponent,
     ],
   imports: [
     // BrowserModule,

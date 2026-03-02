@@ -190,6 +190,13 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
+         {
+        label: 'My Dashboard',
+        code: 'HR_EMP_ME',
+        route: this.navigationLink.getLink('employeeDashboardLink'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-user-circle'
+      },
         {
           label: 'Employee Management',
           code: 'HR_EMP_MG',
