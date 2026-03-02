@@ -1,0 +1,30 @@
+<div class="card">
+  <div class="p-4 md:p-6">
+    <div class="mb-4">
+      <div class="text-xl font-bold text-slate-900">Approved Vendors</div>
+      <div class="text-sm text-slate-500">
+        Vendors that have completed onboarding and have been approved for
+        procurement activities.
+      </div>
+    </div>
+
+    <div
+      class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+    >
+
+      <app-table
+        [rows]="vendors"
+        [columns]="columns"
+        [actions]="actions"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [rowClickable]="true"
+        [(selection)]="selectedVendors"
+        dataKey="id"
+        (rowClick)="reviewVendor($event)"
+        (actionClick)="onAction($event)"
+      >
+      </app-table>
+    </div>
+  </div>
+</div>
