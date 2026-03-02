@@ -1,0 +1,817 @@
+<div class="min-h-screen bg-gray-50 font-sans">
+  <div class="max-w-screen-2xl mx-auto px-10 py-10">
+
+    <div class="mb-10">
+      <h2 class="text-4xl font-bold text-gray-900 tracking-tight">
+        Tax &amp; Compliance Management
+      </h2>
+      <p class="text-lg text-gray-500 mt-2">Manage VAT, WHT, CIT, and FIRS Compliance</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl px-8 py-6 mb-8
+                flex flex-wrap items-end justify-between gap-6">
+
+      <!-- Filters -->
+      <div class="flex flex-wrap items-end gap-8">
+
+        <!-- Period -->
+        <div class="flex flex-col gap-2">
+          <label for="period-select"
+                 class="text-base font-semibold text-gray-500 uppercase tracking-wide">
+            Period
+          </label>
+          <input
+            type="month"
+            id="period-select"
+            [value]="currentPeriod"
+            (change)="changePeriod($any($event.target).value)"
+            class="h-12 px-5 rounded-lg border border-gray-300 text-lg text-gray-800 bg-white
+                   focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          />
+          <span class="text-base text-gray-400 mt-1.5">{{ getPeriodDateRange(currentPeriod) }}</span>
+        </div>
+
+        <!-- Tax Type -->
+        <div class="flex flex-col gap-2">
+          <label for="tax-type-select"
+                 class="text-base font-semibold text-gray-500 uppercase tracking-wide">
+            Tax Type
+          </label>
+          <select
+            id="tax-type-select"
+            [(ngModel)]="selectedTaxType"
+            (change)="changeTaxType(selectedTaxType)"
+            class="h-12 px-5 pr-12 rounded-lg border border-gray-300 text-lg text-gray-800 bg-white
+                   focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                   appearance-none cursor-pointer"
+          >
+            <option *ngFor="let type of taxTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-4">
+        <button
+          (click)="validateTaxCalculations()"
+          class="inline-flex items-center gap-2.5 h-12 px-6 rounded-lg border border-gray-300
+                 text-lg font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+        >
+          <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="4 10 8 14 16 6"/>
+          </svg>
+          Validate
+        </button>
+        <button
+          (click)="checkComplianceStatus()"
+          class="inline-flex items-center gap-2.5 h-12 px-6 rounded-lg border border-gray-300
+                 text-lg font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+        >
+          <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="10" cy="10" r="7"/>
+            <path d="M10 7v3l2 2"/>
+          </svg>
+          Compliance
+        </button>
+        <button
+          (click)="exportTaxReport()"
+          class="inline-flex items-center gap-2.5 h-12 px-6 rounded-lg shadow-sm
+                 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900
+                 text-white text-lg font-medium transition-colors"
+        >
+          <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 3v10m0 0l-3-3m3 3l3-3M4 17h12"/>
+          </svg>
+          Export
+        </button>
+      </div>
+    </div>
+
+
+
+    <div class="flex border-b border-gray-200 mb-8">
+
+      <button
+        (click)="selectedReportType = 'summary'"
+        class="inline-flex items-center gap-3 px-8 py-5 text-lg -mb-px border-b-2 transition-colors"
+        [class.border-gray-900]="selectedReportType === 'summary'"
+        [class.text-gray-900]="selectedReportType === 'summary'"
+        [class.font-semibold]="selectedReportType === 'summary'"
+        [class.border-transparent]="selectedReportType !== 'summary'"
+        [class.text-gray-500]="selectedReportType !== 'summary'"
+      >
+        <svg class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0
+                   4a1 1 0 000 2h14a1 1 0 100-2H3z"/>
+        </svg>
+        Overview
+      </button>
+
+      <button
+        (click)="selectedReportType = 'vat'"
+        [disabled]="!vatSummary"
+        class="inline-flex items-center gap-3 px-8 py-5 text-lg -mb-px border-b-2
+               transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        [class.border-gray-900]="selectedReportType === 'vat'"
+        [class.text-gray-900]="selectedReportType === 'vat'"
+        [class.font-semibold]="selectedReportType === 'vat'"
+        [class.border-transparent]="selectedReportType !== 'vat'"
+        [class.text-gray-500]="selectedReportType !== 'vat'"
+      >
+        <span class="text-xl">💰</span> VAT Return
+      </button>
+
+      <button
+        (click)="selectedReportType = 'wht'"
+        [disabled]="!whtSummary"
+        class="inline-flex items-center gap-3 px-8 py-5 text-lg -mb-px border-b-2
+               transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        [class.border-gray-900]="selectedReportType === 'wht'"
+        [class.text-gray-900]="selectedReportType === 'wht'"
+        [class.font-semibold]="selectedReportType === 'wht'"
+        [class.border-transparent]="selectedReportType !== 'wht'"
+        [class.text-gray-500]="selectedReportType !== 'wht'"
+      >
+        <span class="text-xl">📊</span> WHT Report
+      </button>
+    </div>
+
+
+
+    <div *ngIf="selectedReportType === 'summary'">
+
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+
+
+
+        <div class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-5"
+             *ngIf="complianceStatus">
+
+          <div class="flex items-center justify-between">
+            <span class="text-lg font-semibold text-gray-700">Compliance</span>
+            <span class="text-base font-bold px-4 py-1.5 rounded-full"
+                  [ngClass]="getComplianceScoreClass(complianceStatus.complianceScore)">
+              {{ complianceStatus.complianceScore }}%
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-4 text-lg">
+            <!-- Filing status -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Filing</span>
+              <span class="px-4 py-1.5 rounded text-base font-semibold"
+                    [class.bg-amber-50]="!complianceStatus.filed"
+                    [class.text-amber-700]="!complianceStatus.filed"
+                    [class.bg-emerald-50]="complianceStatus.filed"
+                    [class.text-emerald-700]="complianceStatus.filed">
+                {{ complianceStatus.filed ? 'Filed' : 'Pending' }}
+              </span>
+            </div>
+            <!-- Payment status -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Payment</span>
+              <span class="px-4 py-1.5 rounded text-base font-semibold"
+                    [class.bg-red-50]="!complianceStatus.paid"
+                    [class.text-red-600]="!complianceStatus.paid"
+                    [class.bg-emerald-50]="complianceStatus.paid"
+                    [class.text-emerald-700]="complianceStatus.paid">
+                {{ complianceStatus.paid ? 'Paid' : 'Outstanding' }}
+              </span>
+            </div>
+            <!-- Amount due — monospace per §3G -->
+            <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+              <span class="text-gray-500">Due</span>
+              <span class="font-semibold text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatTaxAmount(complianceStatus.paymentDue || 0) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Flagged issues — severity: 'low'/'medium'/'high' (§2E §4a, §3C) -->
+          <div class="flex flex-col gap-3"
+               *ngIf="(complianceStatus?.flaggedIssues?.length ?? 0) > 0">
+            <div
+              *ngFor="let issue of complianceStatus?.flaggedIssues"
+              class="flex items-start gap-2.5 text-base rounded-md px-4 py-3 leading-relaxed"
+              [ngClass]="getIssueSeverityClass(issue.severity)"
+            >
+              <span class="shrink-0 mt-1 text-lg">⚠</span>
+              <span class="text-base">{{ issue.message }}</span>
+            </div>
+          </div>
+        </div><!-- /Compliance card -->
+
+
+        <!-- Card 2: VAT Summary — Output VAT / Input VAT / Net Payable (§2E §4a) -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-5"
+             *ngIf="vatSummary">
+          <span class="text-lg font-semibold text-gray-700">VAT Summary</span>
+          <div class="flex flex-col gap-4 text-lg">
+            <!-- Output VAT = liability -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Output VAT</span>
+              <span class="font-medium text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatCurrency(vatSummary.grossOutputTax) }}
+              </span>
+            </div>
+            <!-- Input VAT = recoverable asset — green per §3G --accounting-positive -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Input VAT</span>
+              <span class="font-medium text-emerald-600 font-mono tabular-nums text-lg">
+                {{ formatCurrency(vatSummary.grossInputTax) }}
+              </span>
+            </div>
+            <!-- VAT carry-forward credit line (§2D) — only when credit balance > 0 -->
+            <div class="flex items-center justify-between text-blue-600 text-base"
+                 *ngIf="(vatSummary.vatCreditCarryForward ?? 0) > 0">
+              <span>Credit B/F</span>
+              <span class="font-mono tabular-nums text-base">
+                {{ formatCurrency(vatSummary.vatCreditCarryForward ?? 0) }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+              <span class="font-semibold text-gray-700">Net Payable</span>
+              <span class="font-bold text-gray-900 font-mono tabular-nums text-lg">
+                {{ formatCurrency(vatSummary.netTaxLiability) }}
+              </span>
+            </div>
+          </div>
+        </div><!-- /VAT Summary card -->
+
+
+        <!-- Card 3: WHT Summary — Total Withheld / Transactions / Status (§2E §4a) -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-5"
+             *ngIf="whtSummary">
+          <span class="text-lg font-semibold text-gray-700">WHT Summary</span>
+          <div class="flex flex-col gap-4 text-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Total Withheld</span>
+              <span class="font-medium text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatCurrency(whtSummary.netTaxLiability) }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Transactions</span>
+              <span class="font-medium text-gray-800">{{ whtSummary.taxLines.length }}</span>
+            </div>
+            <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+              <span class="text-gray-500">Status</span>
+              <span class="px-4 py-1.5 rounded text-base font-semibold bg-blue-50 text-blue-700">
+                To Be Filed
+              </span>
+            </div>
+          </div>
+        </div><!-- /WHT Summary card -->
+
+
+
+        <div class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-5"
+             *ngIf="citEstimate">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-lg font-semibold text-gray-700">CIT (Annual Est.)</span>
+            <span class="shrink-0 text-sm px-3 py-1.5 rounded
+                         bg-blue-50 text-blue-600 font-semibold whitespace-nowrap">
+              {{ citEstimate.tier }}
+            </span>
+          </div>
+          <div class="flex flex-col gap-4 text-lg">
+            <!-- Estimated CIT — based on 30%/20%/0% of assessable profit -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">
+                Estimated CIT
+                <span class="text-sm text-gray-400 ml-1.5">
+                  ({{ (citEstimate.citRate * 100).toFixed(0) }}%)
+                </span>
+              </span>
+              <span class="font-medium text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatCurrency(citEstimate.citAmount) }}
+              </span>
+            </div>
+            <!-- Education Tax — 2.5% of assessable profit (§2B EDT) -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Education Tax <span class="text-sm text-gray-400">(2.5%)</span></span>
+              <span class="font-medium text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatCurrency(citEstimate.educationTax) }}
+              </span>
+            </div>
+            <!-- NASENI Levy — 0.25% PBT, only when turnover > ₦100M (§2B, §3E pitfall 6) -->
+            <div class="flex items-center justify-between" *ngIf="citEstimate.naseniLevy > 0">
+              <span class="text-gray-500">NASENI Levy <span class="text-sm text-gray-400">(0.25%)</span></span>
+              <span class="font-medium text-gray-800 font-mono tabular-nums text-lg">
+                {{ formatCurrency(citEstimate.naseniLevy) }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+              <span class="text-gray-500">Next Due</span>
+              <span class="font-semibold text-gray-800">{{ citEstimate.nextDueQuarter }}</span>
+            </div>
+          </div>
+        </div><!-- /CIT card -->
+
+
+        <!-- Card 5: Total Tax Position
+             Per §2F: Payable = Net VAT + WHT; Recoverable = Input VAT; Net = Payable − Recoverable.
+             Negative amounts in parentheses per §3G accounting convention. -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-5"
+             *ngIf="vatSummary && whtSummary">
+          <span class="text-lg font-semibold text-gray-700">Total Tax Position</span>
+          <div class="flex flex-col gap-4 text-lg">
+            <!-- Tax Payable — red per §3G --accounting-negative -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Tax Payable</span>
+              <span class="font-medium text-red-500 font-mono tabular-nums text-lg">
+                {{ formatCurrency(totalTaxPayable) }}
+              </span>
+            </div>
+            <!-- Tax Recoverable — green per §3G --accounting-positive -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">Tax Recoverable</span>
+              <span class="font-medium text-emerald-600 font-mono tabular-nums text-lg">
+                {{ formatCurrency(totalTaxRecoverable) }}
+              </span>
+            </div>
+            <!-- Net Position — parentheses if negative per §3G -->
+            <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+              <span class="font-semibold text-gray-700">Net Position</span>
+              <span class="font-bold font-mono tabular-nums text-lg"
+                    [class.text-gray-900]="netTaxPosition >= 0"
+                    [class.text-red-600]="netTaxPosition < 0">
+                {{ formatAccounting(netTaxPosition) }}
+              </span>
+            </div>
+          </div>
+        </div><!-- /Total Tax Position card -->
+
+
+      </div><!-- /KPI Grid -->
+
+
+      <!-- ── §2E §4b  Recent Tax Entries Table ────────────────────────────── -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden"
+           *ngIf="taxLines.length > 0">
+
+        <div class="px-8 py-6 border-b border-gray-100">
+          <h3 class="text-lg font-semibold text-gray-800">Recent Tax Entries</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-lg">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="px-6 py-5 text-left text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                <th class="px-6 py-5 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                <th class="px-6 py-5 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                <!-- Base Amount — right-aligned, monospace per §3G -->
+                <th class="px-6 py-5 text-right text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Base Amount</th>
+                <!-- Tax Amount — right-aligned, monospace, bold per §2E §4b -->
+                <th class="px-6 py-5 text-right text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tax Amount</th>
+                <!-- GL Account — e.g. "VAT Payable (Liability)" per §2E §4b -->
+                <th class="px-6 py-5 text-left text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">GL Account</th>
+                <!-- Classification — "Liability" or "Asset" badge per §2E §4b -->
+                <th class="px-6 py-5 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">Classification</th>
+                <th class="px-6 py-5 w-10"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <ng-container *ngFor="let line of taxLines">
+
+                <!-- Main row -->
+                <tr class="hover:bg-gray-50 transition-colors">
+
+                  <td class="px-6 py-5 text-gray-500 whitespace-nowrap font-mono text-base">
+                    {{ line.timestamp | date:'dd/MM/yyyy' }}
+                  </td>
+
+                  <!-- Type badge: VAT = green (--accounting-vat), WHT = amber (--accounting-wht) -->
+                  <td class="px-6 py-5">
+                    <span class="inline-block px-4 py-1.5 rounded text-base font-semibold"
+                          [class.bg-emerald-50]="line.type === 'VAT'"
+                          [class.text-emerald-700]="line.type === 'VAT'"
+                          [class.bg-amber-50]="line.type === 'WHT'"
+                          [class.text-amber-700]="line.type === 'WHT'"
+                          [class.bg-blue-50]="line.type === 'CORPORATE'"
+                          [class.text-blue-700]="line.type === 'CORPORATE'">
+                      {{ line.type }}
+                    </span>
+                  </td>
+
+                  <td class="px-6 py-5 text-gray-800">{{ line.description }}</td>
+
+                  <!-- Base Amount — right-aligned monospace (§3G) -->
+                  <td class="px-6 py-5 text-right text-gray-700 font-mono tabular-nums whitespace-nowrap text-lg">
+                    {{ formatTaxAmount(line.baseAmount) }}
+                  </td>
+
+                  <!-- Tax Amount — bold, right-aligned monospace (§2E §4b) -->
+                  <td class="px-6 py-5 text-right font-semibold text-gray-900 font-mono tabular-nums whitespace-nowrap text-lg">
+                    {{ formatTaxAmount(line.taxAmount) }}
+                  </td>
+
+                  <!-- GL Account label — e.g. "VAT Payable (Liability)" -->
+                  <td class="px-6 py-5 text-gray-500 text-base whitespace-nowrap">
+                    {{ getGLAccountLabel(line.glAccount) }}
+                  </td>
+
+                  <!-- Classification badge: Liability (amber) or Asset (sky) -->
+                  <td class="px-6 py-5">
+                    <span class="inline-block px-4 py-1.5 rounded text-base font-semibold"
+                          [class.bg-amber-50]="getTaxClassificationBadge(line).class === 'badge-warning'"
+                          [class.text-amber-700]="getTaxClassificationBadge(line).class === 'badge-warning'"
+                          [class.bg-sky-50]="getTaxClassificationBadge(line).class === 'badge-info'"
+                          [class.text-sky-700]="getTaxClassificationBadge(line).class === 'badge-info'">
+                      {{ getTaxClassificationBadge(line).text }}
+                    </span>
+                  </td>
+
+                  <!-- Expand chevron -->
+                  <td class="px-5 py-5 text-center">
+                    <button
+                      (click)="expandTaxLine(line.id)"
+                      class="w-8 h-8 inline-flex items-center justify-center rounded
+                             text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <svg class="w-6 h-6 transition-transform duration-200"
+                           [class.rotate-180]="expandedTaxLines.has(line.id)"
+                           viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414
+                                 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                              clip-rule="evenodd"/>
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- §2E §4b Expanded audit-trail row:
+                     Transaction ID / Source module / Tax rate / Period / Direction / Vendor -->
+                <tr *ngIf="expandedTaxLines.has(line.id)" class="bg-gray-50">
+                  <td colspan="8" class="px-8 py-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 text-base text-gray-600">
+
+                      <!-- §2F audit trail: Source Transaction ID -->
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">ID</span>
+                        {{ line.id }}
+                      </div>
+
+                      <!-- §2F audit trail: Source Module -->
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Source</span>
+                        {{ line.source }}
+                      </div>
+
+                      <!-- §2F audit trail: Tax Rate Applied -->
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Rate</span>
+                        {{ (line.rate * 100).toFixed(line.rate < 0.10 ? 1 : 0) }}%
+                      </div>
+
+                      <!-- §2F audit trail: Period -->
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Period</span>
+                        {{ line.period }}
+                      </div>
+
+                      <!-- §2F audit trail: Direction — input (asset) or output (liability) -->
+                      <div>
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Direction</span>
+                        <span class="capitalize font-medium"
+                              [class.text-emerald-600]="line.direction === 'input'"
+                              [class.text-amber-600]="line.direction === 'output'">
+                          {{ line.direction }}
+                          {{ line.direction === 'input' ? '(Recoverable)' : '(Payable)' }}
+                        </span>
+                      </div>
+
+                      <!-- §2F audit trail: Vendor name (WHT) -->
+                      <div *ngIf="line.vendorName">
+                        <span class="block text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Vendor</span>
+                        {{ line.vendorName }}
+                      </div>
+
+                    </div>
+                  </td>
+                </tr>
+
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /Entries Table -->
+
+
+      <!-- Empty State -->
+      <div class="bg-white border border-gray-200 rounded-xl p-20 text-center"
+           *ngIf="taxLines.length === 0 && !vatSummary && !whtSummary">
+        <div class="text-6xl mb-5">📭</div>
+        <h4 class="text-2xl font-semibold text-gray-700 mb-3">
+          No Tax Data for {{ currentPeriod }}
+        </h4>
+        <p class="text-lg text-gray-400">Start by adding your first tax entry.</p>
+      </div>
+
+    </div><!-- /Overview Tab -->
+
+
+
+    <div *ngIf="selectedReportType === 'vat' && vatReturnData">
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between px-10 py-8 border-b border-gray-100">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">VAT Return Statement</h2>
+            <p class="text-lg text-gray-500 mt-2">Period: {{ getPeriodDisplay() }}</p>
+          </div>
+          <button
+            (click)="exportVATReport()"
+            class="inline-flex items-center gap-2.5 h-11 px-5 rounded-lg border border-gray-300
+                   text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 3v10m0 0l-3-3m3 3l3-3M4 17h12"/>
+            </svg>
+            Download
+          </button>
+        </div>
+
+        <!-- Three-Column VAT Boxes (§2E §5) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+
+          <!-- §2C: Sales (Output VAT) — grossOutputVAT / 0.075 = totalSalesValue -->
+          <div class="p-10 flex flex-col gap-6">
+            <div>
+              <h4 class="text-xl font-semibold text-gray-800">Sales (Output VAT)</h4>
+              <p class="text-base text-gray-400 mt-1.5">VAT Collected on Sales</p>
+            </div>
+            <div class="flex flex-col gap-4 text-lg">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500">Total Sales Value</span>
+                <span class="text-gray-800 font-mono tabular-nums text-lg">{{ vatReturnData.totalSales }}</span>
+              </div>
+              <div class="flex justify-between items-center bg-gray-50 rounded-lg px-5 py-4">
+                <span class="text-gray-700 font-medium">VAT Collected (7.5%)</span>
+                <span class="font-bold text-gray-900 font-mono tabular-nums text-lg">{{ vatReturnData.salesVAT }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- §2C: Purchases (Input VAT) — grossInputVAT / 0.075 = totalPurchaseValue -->
+          <div class="p-10 flex flex-col gap-6">
+            <div>
+              <h4 class="text-xl font-semibold text-gray-800">Purchases (Input VAT)</h4>
+              <p class="text-base text-gray-400 mt-1.5">VAT Paid on Purchases</p>
+            </div>
+            <div class="flex flex-col gap-4 text-lg">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500">Total Purchase Value</span>
+                <span class="text-gray-800 font-mono tabular-nums text-lg">{{ vatReturnData.totalPurchases }}</span>
+              </div>
+              <div class="flex justify-between items-center bg-gray-50 rounded-lg px-5 py-4">
+                <span class="text-gray-700 font-medium">VAT Paid (Recoverable)</span>
+                <span class="font-bold text-gray-900 font-mono tabular-nums text-lg">{{ vatReturnData.purchasesVAT }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- §2C + §2D: Net VAT Position — includes carry-forward credit deduction -->
+          <div class="p-10 flex flex-col gap-6">
+            <div>
+              <h4 class="text-xl font-semibold text-gray-800">Net VAT Position</h4>
+              <p class="text-base text-gray-400 mt-1.5">Amount Due to FIRS</p>
+            </div>
+            <div class="flex flex-col gap-4 text-lg">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500">VAT Payable (Output)</span>
+                <span class="text-gray-800 font-mono tabular-nums text-lg">{{ vatReturnData.payable }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500">Less: VAT Recoverable</span>
+                <span class="text-emerald-600 font-mono tabular-nums text-lg">-{{ vatReturnData.recoverable }}</span>
+              </div>
+              <!-- §2D carry-forward: shown only when a credit balance applies -->
+              <div class="flex justify-between items-center text-blue-600 text-base"
+                   *ngIf="vatReturnData.hasCreditBalance">
+                <span>Less: Credit B/F Applied</span>
+                <span class="font-mono tabular-nums text-base">-{{ vatReturnData.vatCreditBalance }}</span>
+              </div>
+              <!-- Final amount payable to FIRS after credit offset -->
+              <div class="flex justify-between items-center border-t-2 border-gray-200 pt-5 mt-3">
+                <span class="font-bold text-gray-800 text-xl">Net VAT Payable</span>
+                <span class="font-bold text-gray-900 text-xl font-mono tabular-nums">
+                  {{ vatReturnData.amountToFIRS }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /Three-column -->
+
+        <!-- VAT Breakdown by Rate (multi-rate support per §2C byRate) -->
+        <div class="px-10 py-8 border-t border-gray-100"
+             *ngIf="vatSummary && vatSummary.byRate.length > 0">
+          <h4 class="text-lg font-semibold text-gray-700 mb-5">VAT Breakdown by Rate</h4>
+          <div class="rounded-lg border border-gray-200 overflow-hidden">
+            <table class="w-full text-lg">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                  <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">VAT Rate</th>
+                  <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider">Input VAT</th>
+                  <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider">Output VAT</th>
+                  <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider">Net</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr *ngFor="let r of vatSummary.byRate" class="hover:bg-gray-50 transition-colors">
+                  <td class="px-6 py-4 font-semibold text-gray-800">{{ (r.rate * 100).toFixed(1) }}%</td>
+                  <td class="px-6 py-4 text-right text-emerald-600 font-mono tabular-nums text-lg">{{ formatCurrency(r.input) }}</td>
+                  <td class="px-6 py-4 text-right text-gray-700 font-mono tabular-nums text-lg">{{ formatCurrency(r.output) }}</td>
+                  <td class="px-6 py-4 text-right font-semibold text-gray-900 font-mono tabular-nums text-lg">{{ formatAccounting(r.net) }}</td>
+                </tr>
+                <tr class="bg-gray-50 border-t-2 border-gray-200">
+                  <td class="px-6 py-4 font-bold text-gray-800">Total</td>
+                  <td class="px-6 py-4 text-right font-bold text-emerald-600 font-mono tabular-nums text-lg">{{ formatCurrency(vatSummary.grossInputTax) }}</td>
+                  <td class="px-6 py-4 text-right font-bold text-gray-800 font-mono tabular-nums text-lg">{{ formatCurrency(vatSummary.grossOutputTax) }}</td>
+                  <td class="px-6 py-4 text-right font-bold text-gray-900 font-mono tabular-nums text-lg">{{ formatAccounting(vatSummary.netTaxLiability) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- §2E §5: Statutory Information Panel -->
+        <div class="border-t border-gray-100 bg-gray-50 px-10 py-6">
+          <div class="flex items-center gap-2.5 mb-5">
+            <svg class="w-6 h-6 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0
+                112 0 1 1 0 01-2 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0
+                00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-base font-semibold text-gray-500 uppercase tracking-wide">
+              Important Information
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-3 text-base text-gray-600">
+            <div><strong class="text-gray-700">Filing Deadline:</strong> Monthly — 21st of following month</div>
+            <div><strong class="text-gray-700">Remittance:</strong> Federal Inland Revenue Service (FIRS)</div>
+            <div><strong class="text-gray-700">Currency:</strong> All amounts in NGN (₦)</div>
+            <div><strong class="text-gray-700">Input VAT Recovery:</strong> Business-related purchases only</div>
+            <div><strong class="text-gray-700">Late Filing Penalty:</strong> ₦5,000 first month + ₦25,000 each subsequent month</div>
+            <div><strong class="text-gray-700">VAT Rate:</strong> 7.5% (Finance Act 2020)</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /VAT Return Tab -->
+
+
+    <div *ngIf="selectedReportType === 'wht' && whtReportData">
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between px-10 py-8 border-b border-gray-100">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Withholding Tax Schedule</h2>
+            <p class="text-lg text-gray-500 mt-2">Period: {{ getPeriodDisplay() }}</p>
+          </div>
+          <button
+            (click)="exportWHTReport()"
+            class="inline-flex items-center gap-2.5 h-11 px-5 rounded-lg border border-gray-300
+                   text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 3v10m0 0l-3-3m3 3l3-3M4 17h12"/>
+            </svg>
+            Download
+          </button>
+        </div>
+
+        <!-- §2E §6a: Total WHT Hero display — large centred amount -->
+        <div class="bg-gray-50 border-b border-gray-100 px-10 py-12 text-center">
+          <p class="text-base font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            Total Withholding Tax Withheld
+          </p>
+          <p class="text-7xl font-bold text-gray-900 font-mono tabular-nums tracking-tight">
+            {{ whtReportData.totalWHTWithheld }}
+          </p>
+          <p class="text-base text-gray-400 mt-5 max-w-2xl mx-auto leading-relaxed">
+            Amount withheld on behalf of vendors and contractors during the period.
+            This represents a liability to be remitted to FIRS.
+          </p>
+        </div>
+
+        <div class="px-10 py-10 flex flex-col gap-10">
+
+          <!-- §2E §6b: Breakdown by Rate
+               All 4 WHT rate codes rendered via getWHTRateDescription() — no hardcoded '5%/10%' only -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-700 mb-5">Breakdown by Rate</h4>
+            <div class="rounded-lg border border-gray-200 overflow-hidden">
+              <table class="w-full text-lg">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">WHT Rate</th>
+                    <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-4 text-center text-base font-semibold text-gray-500 uppercase tracking-wider"># Transactions</th>
+                    <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider">Amount Withheld</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr *ngFor="let r of whtReportData.breakdownByRate"
+                      class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-semibold text-gray-800">{{ r.rate }}</td>
+                    <!-- Description via service method — covers all 4 WHT codes (§2B) -->
+                    <td class="px-6 py-4 text-gray-600">{{ r.description }}</td>
+                    <td class="px-6 py-4 text-center text-gray-700">{{ r.count }}</td>
+                    <td class="px-6 py-4 text-right font-medium text-gray-800 font-mono tabular-nums text-lg">
+                      {{ r.amount }}
+                    </td>
+                  </tr>
+                  <tr class="bg-gray-50 border-t-2 border-gray-300">
+                    <td colspan="3" class="px-6 py-4 font-bold text-gray-800">Total Withheld</td>
+                    <td class="px-6 py-4 text-right font-bold text-gray-900 font-mono tabular-nums text-lg">
+                      {{ whtReportData.totalWHTWithheld }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- §2E §6c: Transaction Details — 7-column vendor-level schedule -->
+          <div *ngIf="whtSummary && whtSummary.taxLines.length > 0">
+            <h4 class="text-lg font-semibold text-gray-700 mb-5">Transaction Details</h4>
+            <div class="rounded-lg border border-gray-200 overflow-x-auto">
+              <table class="w-full text-lg">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Date</th>
+                    <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-4 text-left text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Vendor/Recipient</th>
+                    <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Gross Amount</th>
+                    <th class="px-6 py-4 text-center text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">WHT Rate</th>
+                    <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">WHT Amount</th>
+                    <!-- Net Payment = Gross − WHT = amount vendor actually received -->
+                    <th class="px-6 py-4 text-right text-base font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Net Payment</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr *ngFor="let line of whtSummary.taxLines" class="hover:bg-gray-50 transition-colors">
+
+                    <td class="px-6 py-4 text-gray-500 whitespace-nowrap font-mono text-base">
+                      {{ line.timestamp | date:'dd/MM/yyyy' }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-800">{{ line.description }}</td>
+                    <td class="px-6 py-4 text-gray-600 whitespace-nowrap">{{ line.vendorName || 'N/A' }}</td>
+                    <td class="px-6 py-4 text-right text-gray-700 font-mono tabular-nums whitespace-nowrap text-lg">
+                      {{ formatCurrency(line.baseAmount) }}
+                    </td>
+                    <td class="px-6 py-4 text-center text-gray-700">
+                      {{ (line.rate * 100).toFixed(line.rate < 0.10 ? 1 : 0) }}%
+                    </td>
+                    <!-- WHT Amount — amber accent (--accounting-wht per §3G) -->
+                    <td class="px-6 py-4 text-right font-semibold text-amber-600 font-mono tabular-nums whitespace-nowrap text-lg">
+                      {{ formatCurrency(line.taxAmount) }}
+                    </td>
+                    <!-- Net Payment = Gross − WHT -->
+                    <td class="px-6 py-4 text-right text-gray-800 font-mono tabular-nums whitespace-nowrap text-lg">
+                      {{ formatCurrency(line.baseAmount - line.taxAmount) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /px-10 py-10 -->
+
+        <!-- §2E §6d: WHT Statutory Information Panel -->
+        <div class="border-t border-gray-100 bg-gray-50 px-10 py-6">
+          <div class="flex items-center gap-2.5 mb-5">
+            <svg class="w-6 h-6 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0
+                112 0 1 1 0 01-2 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0
+                00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-base font-semibold text-gray-500 uppercase tracking-wide">
+              Withholding Tax Information
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-3 text-base text-gray-600">
+            <!-- All 4 WHT rate codes listed per §2B -->
+            <div><strong class="text-gray-700">Standard Rates:</strong> 5% (Services), 10% (Contractors), 2.5% (Dividends), 15% (Non-resident Directors)</div>
+            <div><strong class="text-gray-700">Remittance:</strong> Monthly — 21st of following month</div>
+            <div><strong class="text-gray-700">Employee WHT:</strong> Remitted via PAYE system</div>
+            <div><strong class="text-gray-700">Vendor WHT:</strong> Remitted directly to FIRS</div>
+            <div><strong class="text-gray-700">Purpose:</strong> Advance payment of income tax</div>
+            <div><strong class="text-gray-700">Late Penalty:</strong> 10% penalty + interest at CBN MPR</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /WHT Report Tab -->
+
+
+  </div>
+</div>

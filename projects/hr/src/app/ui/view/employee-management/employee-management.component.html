@@ -1,0 +1,154 @@
+<div class="employee-toolbar table-item">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="text-lg font-semibold text-customBlue">Employees</p>
+      <p class="text-xs text-slate-500">{{ filteredEmployees?.length || 0 }} total</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <Button class="btn-primary" (click)="openAddForm = true">
+        <span class="fa-solid fa-plus mr-2 text-xs"></span>
+        Add new employee
+      </Button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
+    <div class="w-full">
+      <ng-select
+        [items]="uniqueLevels"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        placeholder="Filter by level type"
+        [(ngModel)]="selectedEmployeeType"
+        (ngModelChange)="filterBySelectedEmployeeType()">
+      </ng-select>
+    </div>
+
+    <div class="w-full">
+      <ng-select
+        [items]="uniquePositions"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        placeholder="Filter by position"
+        [(ngModel)]="selectedPosition"
+        (ngModelChange)="filterBySelectedPosition()">
+      </ng-select>
+    </div>
+
+    <div class="relative w-full md:col-span-1 xl:col-span-2">
+      <span class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm"></span>
+      <input
+        type="text"
+        placeholder="Search by name or title"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilters()"
+        class="input-modern w-full pl-9"
+      />
+    </div>
+  </div>
+</div>
+
+<div class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+  <div *ngFor="let employee of pagedEmployees; let i = index"
+    class="employee-card group"
+    (click)="viewThisEmployee(employee)">
+
+    <div class="flex w-full items-start justify-between text-[11px] text-slate-500">
+      <span class="uppercase tracking-wide">
+        {{ employee?.department?.name || employee?.department || 'Department' }}
+      </span>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-2">
+          <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
+          <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
+        </span>
+        <button
+          type="button"
+          class="employee-action delete-action"
+          [disabled]="deletingEmployeeIds[employee?.id]"
+          (click)="deleteEmployee(employee, $event)"
+          aria-label="Delete employee"
+          title="Delete employee">
+          <span *ngIf="!deletingEmployeeIds[employee?.id]" class="fa-solid fa-trash text-[10px]"></span>
+          <span *ngIf="deletingEmployeeIds[employee?.id]" class="fa-solid fa-spinner animate-spin text-[10px]"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-col items-center text-center">
+      <div class="employee-avatar">
+        <img
+          [src]="employee.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
+          alt=""
+        />
+      </div>
+      <p class="mt-3 text-sm font-semibold text-slate-800 capitalize">{{employee.lastName}} {{employee.firstName}}</p>
+      <p class="text-xs text-slate-500 capitalize">{{employee.jobTitle}}</p>
+    </div>
+
+    <div class="mt-4 grid w-full grid-cols-2 gap-2">
+      <div class="employee-meta">
+        <span class="employee-meta-label">Level</span>
+        <span class="employee-meta-value">{{ employee?.level?.name || employee?.level || '-' }}</span>
+      </div>
+      <div class="employee-meta">
+        <span class="employee-meta-label">Type</span>
+        <span class="employee-meta-value">{{ employee?.employmentType?.name || employee?.jobType || '-' }}</span>
+      </div>
+    </div>
+
+    <div class="mt-4 flex w-full items-center justify-between text-[11px] text-slate-500">
+      <span class="truncate max-w-[65%]">{{ employee?.email || ' ' }}</span>
+      <span class="text-customBlue font-semibold group-hover:underline">View</span>
+    </div>
+  </div>
+</div>
+
+<div class="pagination-bar">
+  <div class="text-xs text-slate-500">
+    Showing
+    <span class="font-semibold text-slate-700">{{ startItem }}</span>
+    -
+    <span class="font-semibold text-slate-700">{{ endItem }}</span>
+    of
+    <span class="font-semibold text-slate-700">{{ filteredEmployees.length }}</span>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 text-xs text-slate-500">
+      <span>Rows</span>
+      <select class="input-modern" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+    </div>
+
+    <div class="flex items-center gap-1">
+      <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+        <span class="fa-solid fa-chevron-left text-xs"></span>
+      </button>
+      <button
+        *ngFor="let page of displayPages"
+        class="page-number"
+        [ngClass]="{ 'active': page === currentPage, 'ellipsis': page === '...' }"
+        [disabled]="page === '...'"
+        (click)="onPageClick(page)">
+        {{ page }}
+      </button>
+      <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        <span class="fa-solid fa-chevron-right text-xs"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<p-confirmDialog></p-confirmDialog>
+
+<app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false" class="flex flex-col gap-8 table-item">
+<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> 
+</app-large-side-modal>
+
+<app-large-side-modal *ngIf="openAddForm" (close)="closeAddForm()">
+   <app-admin-creation-form></app-admin-creation-form>
+</app-large-side-modal>

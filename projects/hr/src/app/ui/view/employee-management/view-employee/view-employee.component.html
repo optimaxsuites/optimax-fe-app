@@ -1,0 +1,232 @@
+<div class="employee-view">
+  <section class="employee-hero">
+    <div class="hero-main">
+      <div class="avatar">
+        <img
+          [src]="employeeInView?.imageUrl?.changingThisBreaksApplicationSecurity || employeeInView?.imageUrl || employeeProfilePhotoUrl"
+          alt=""
+        />
+      </div>
+      <div class="hero-text">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="hero-name">{{ employeeInView?.lastName }} {{ employeeInView?.firstName }}</h2>
+          <span class="status-pill"><span class="status-dot"></span>Active</span>
+        </div>
+        <p class="hero-title">{{ employeeInView?.jobTitle || 'Role' }}</p>
+        <div class="chip-row">
+          <span class="chip">{{ employeeInView?.department?.name || employeeInView?.department || 'Department' }}</span>
+          <span class="chip">{{ employeeInView?.level?.name || employeeInView?.level || 'Level' }}</span>
+          <span class="chip">{{ employeeInView?.employmentType?.name || employeeInView?.employmentType || employeeInView?.jobType || 'Type' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-details">
+      <div class="detail-item">
+        <span class="detail-label">Employee ID</span>
+        <span class="detail-value">{{ employeeInView?.id || '-' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Date Joined</span>
+        <span class="detail-value">{{ employeeInView?.hireDate || employeeInView?.employementStartDate || '-' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Email</span>
+        <span class="detail-value">{{ employeeInView?.email || '-' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Phone</span>
+        <span class="detail-value">{{ employeeInView?.phone || '-' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-4">
+    <div class="info-card">
+      <div class="card-header">
+        <p class="card-title">Profile</p>
+      </div>
+      <div class="card-grid">
+        <div class="info-block">
+          <p class="block-title">Basic</p>
+          <div class="info-row">
+            <span class="info-label">Full name</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.lastName }} {{ employeeInView?.firstName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Gender</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.gender?.name || employeeInView?.gender || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date of birth</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.dob || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <p class="block-title">Contact</p>
+          <div class="info-row">
+            <span class="info-label">Work email</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Phone</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.phone || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Location</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.address || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <p class="block-title">Job</p>
+          <div class="info-row">
+            <span class="info-label">Department</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.department?.name || employeeInView?.department || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Level</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.level?.name || employeeInView?.level || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Supervisor</span>
+            <span class="row-leader"></span>
+            <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="card-header">
+        <p class="card-title">Compensation</p>
+        <span class="text-xs text-slate-400">Monthly</span>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <span class="metric-label">Base salary</span>
+          <span class="metric-value">{{ employeeInView?.salaryDetails?.baseSalary | currency: 'NGN' }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Net salary</span>
+          <span class="metric-value">{{ employeeInView?.salaryDetails?.netSalary | currency: 'NGN' }}</span>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div class="list-block">
+          <p class="list-title">Allowances</p>
+          <div *ngIf="employeeInView?.salaryDetails?.allowance?.length; else noAllowances" class="list-stack">
+            <p *ngFor="let allowance of employeeInView?.salaryDetails?.allowance">
+              {{ (getAllowanceName(allowance.allowanceTypeId) | async) || allowance.allowanceTypeId }}:
+              {{ allowance.amount | currency: 'NGN' }}
+            </p>
+          </div>
+          <ng-template #noAllowances>
+            <p class="empty-text">No allowances available</p>
+          </ng-template>
+        </div>
+
+        <div class="list-block">
+          <p class="list-title">Bonuses</p>
+          <div *ngIf="employeeInView?.salaryDetails?.bonus?.length; else noBonuses" class="list-stack">
+            <p *ngFor="let bonus of employeeInView?.salaryDetails?.bonus">
+              {{ (getBonusName(bonus.bonusTypeId) | async) || bonus.bonusTypeId }}:
+              {{ bonus.amount | currency: 'NGN' }}
+            </p>
+          </div>
+          <ng-template #noBonuses>
+            <p class="empty-text">No bonuses available</p>
+          </ng-template>
+        </div>
+
+        <div class="list-block">
+          <p class="list-title">Deductions</p>
+          <div *ngIf="employeeInView?.salaryDetails?.deductions?.length; else noDeduction" class="list-stack">
+            <p *ngFor="let deduction of employeeInView?.salaryDetails?.deductions">
+              {{ (getDeductionName(deduction.deductionsTypeId) | async) || deduction.deductionsTypeId }}:
+              {{ deduction.amount | currency: 'NGN' }}
+            </p>
+          </div>
+          <ng-template #noDeduction>
+            <p class="empty-text">No deductions available</p>
+          </ng-template>
+        </div>
+
+        <div class="list-block">
+          <p class="list-title">Overtime</p>
+          <div *ngIf="employeeInView?.salaryDetails?.overtime?.length; else noOvertime" class="list-stack">
+            <p *ngFor="let overtime of employeeInView?.salaryDetails?.overtime">
+              {{ (getOvertimeName(overtime.overtimeTypeId) | async) || overtime.overtimeTypeId }}:
+              {{ overtime.rate | currency: 'NGN' }}
+            </p>
+          </div>
+          <ng-template #noOvertime>
+            <p class="empty-text">No overtime available</p>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid xl:grid-cols-3 gap-4">
+    <div class="info-card">
+      <div class="card-header">
+        <p class="card-title">Leave Summary</p>
+      </div>
+      <div class="stat-stack">
+        <div class="stat-card">
+          <span class="stat-label">Available days left</span>
+          <span class="stat-value">{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} day(s)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Days used</span>
+          <span class="stat-value">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} day(s)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total accrued</span>
+          <span class="stat-value">{{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} day(s)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="card-header">
+        <p class="card-title">Leave Usage</p>
+      </div>
+      <div class="calendar-wrap">
+        <full-calendar [options]="calendarOptions"></full-calendar>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="card-header">
+        <p class="card-title">Attendance</p>
+        <span class="status-pill"><span class="status-dot"></span>Online</span>
+      </div>
+      <div class="stat-stack">
+        <div class="stat-card">
+          <span class="stat-label">Days present</span>
+          <span class="stat-value">{{ employeeInView?.attendance?.daysPresent || 0 }} day(s)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Days absent</span>
+          <span class="stat-value">{{ employeeInView?.attendance?.daysAbsent || 0 }} day(s)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Late arrivals</span>
+          <span class="stat-value">{{ employeeInView?.attendance?.lateArrivals || 0 }} day(s)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

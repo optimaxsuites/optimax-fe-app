@@ -1,0 +1,165 @@
+<div class="loan-detail-container">
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading loan details...</p>
+  </div>
+
+  <div *ngIf="!isLoading && loan" class="detail-content">
+    <!-- Header -->
+    <div class="detail-header">
+      <button class="back-btn" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to Loans
+      </button>
+      <h1>Loan Application: {{ loan.loanId }}</h1>
+      <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+        {{ loan.status }}
+      </span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-bar" *ngIf="loan.status === 'PENDING'">
+      <button class="approve-btn" (click)="approveLoan()">
+        <i class="fas fa-check-circle"></i> Approve
+      </button>
+      <button class="reject-btn" (click)="showRejectDialog()">
+        <i class="fas fa-times-circle"></i> Reject
+      </button>
+    </div>
+
+    <div class="action-bar" *ngIf="loan.status === 'APPROVED'">
+      <button class="disburse-btn" (click)="disburseLoan()">
+        <i class="fas fa-hand-holding-usd"></i> Disburse Loan
+      </button>
+    </div>
+
+    <div class="action-bar" *ngIf="loan.status === 'ACTIVE'">
+      <button class="complete-btn" (click)="completeLoan()">
+        <i class="fas fa-flag-checkered"></i> Mark as Completed
+      </button>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal-overlay" *ngIf="showRejectModal" (click)="cancelReject()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3><i class="fas fa-exclamation-circle"></i> Reject Application</h3>
+        <p>Please provide a reason for rejection:</p>
+        <textarea 
+          [(ngModel)]="rejectionReason" 
+          rows="4" 
+          placeholder="Enter reason..."></textarea>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="cancelReject()">Cancel</button>
+          <button class="confirm-btn" (click)="rejectLoan()" [disabled]="!rejectionReason.trim()">
+            Confirm Rejection
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="details-grid">
+      <!-- Loan Details -->
+      <div class="info-card">
+        <h3><i class="fas fa-file-invoice"></i> Loan Details</h3>
+        <div class="info-row">
+          <span class="label">Amount:</span>
+          <span class="value highlight">{{ formatCurrency(loan.amount) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Duration:</span>
+          <span class="value">{{ loan.duration }} months</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Interest Rate:</span>
+          <span class="value">{{ loan.interestRate }}%</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Monthly Repayment:</span>
+          <span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+        </div>
+        <div class="info-row total">
+          <span class="label">Total Repayment:</span>
+          <span class="value">{{ formatCurrency(loan.totalRepayment) }}</span>
+        </div>
+      </div>
+
+      <!-- Member Details -->
+      <div class="info-card" *ngIf="member">
+        <h3><i class="fas fa-user"></i> Member</h3>
+        <div class="info-row">
+          <span class="label">Name:</span>
+          <span class="value">{{ member.fullName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Member ID:</span>
+          <span class="value">{{ member.memberId }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Share Capital:</span>
+          <span class="value">{{ formatCurrency(member.shareCapital) }}</span>
+        </div>
+      </div>
+
+      <!-- Product Details -->
+      <div class="info-card" *ngIf="product">
+        <h3><i class="fas fa-tag"></i> Product</h3>
+        <div class="info-row">
+          <span class="label">Name:</span>
+          <span class="value">{{ product.name }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Description:</span>
+          <span class="value">{{ product.description }}</span>
+        </div>
+      </div>
+
+      <!-- Purpose -->
+      <div class="info-card full-width">
+        <h3><i class="fas fa-comment"></i> Purpose</h3>
+        <p class="purpose">{{ loan.purpose }}</p>
+      </div>
+
+      <!-- Timeline -->
+      <div class="info-card full-width">
+        <h3><i class="fas fa-clock"></i> Timeline</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.applicationDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Application Submitted</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.approvedDate">
+            <div class="timeline-dot approved"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.approvedDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Application Approved</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.disbursementDate">
+            <div class="timeline-dot active"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.disbursementDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Loan Disbursed</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.completionDate">
+            <div class="timeline-dot completed"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.completionDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Loan Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejection Reason -->
+      <div class="info-card full-width rejection" *ngIf="loan.status === 'REJECTED' && loan.rejectionReason">
+        <h3><i class="fas fa-exclamation-circle"></i> Rejection Reason</h3>
+        <p>{{ loan.rejectionReason }}</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "erp-procurement": {
+    "ERP-FE": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -24,7 +24,13 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/erp-procurement",
+            
+            "allowedCommonJsDependencies": [
+              "apexcharts",
+              "@canvasjs/angular-charts",
+              "@canvasjs/charts"
+            ],
+            "outputPath": "dist/erp-fe",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -34,31 +40,41 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
-              "src/styles.scss"
+              "@angular/material/prebuilt-themes/purple-green.css",
+              "src/styles.scss",
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
+              "node_modules/ngx-toastr/toastr.css",
+              "node_modules/primeng/resources/themes/saga-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeicons/primeicons.css"
+
             ],
-            "stylePreprocessorOptions": {
-              "includePaths": ["src"]
-            },
-            "scripts": []
+            "scripts": [
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+              "node_modules/apexcharts/dist/apexcharts.min.js"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "15mb",
+                  "maximumError": "20mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "5mb",
+                  "maximumError": "10mb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -72,10 +88,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "erp-procurement:build:production"
+              "buildTarget": "ERP-FE:build:production"
             },
             "development": {
-              "buildTarget": "erp-procurement:build:development"
+              "buildTarget": "ERP-FE:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -83,7 +99,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "erp-procurement:build"
+            "buildTarget": "ERP-FE:build"
           }
         },
         "test": {
@@ -97,10 +113,17 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest"
             ],
             "styles": [
-              "src/styles.scss"
+              "@angular/material/prebuilt-themes/purple-green.css",
+              "src/styles.scss",
+                "node_modules/@fullcalendar/core/main.css",
+              "node_modules/@fullcalendar/daygrid/main.css"
             ],
             "scripts": []
           }
@@ -112,3 +135,5 @@
     "analytics": false
   }
 }
+
+

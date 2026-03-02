@@ -1,0 +1,26 @@
+<!--<p>attendashboard works!</p>-->
+<div class="dashboard-grid">
+    <app-office-hours></app-office-hours>
+<!--<div class="stats-section">
+    <app-stats-cards [stats]="statsData"></app-stats-cards>
+</div>-->
+<div class="dashboard-middle">
+    <app-heatmap [departments]="heatmapData"></app-heatmap>
+    <app-late-arrivals [lateArrivals]="lateArrivalsData"></app-late-arrivals>
+</div>
+<div>
+    <app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>
+</div>
+<div>
+    <app-attendancetable (dataChange)="onDataChange($event)"></app-attendancetable>
+</div>
+<div>
+    <app-adminexport
+  [data]="filteredAttendance"
+  [filters]="currentFilters">
+</app-adminexport>
+
+</div>
+</div>
+
+<!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->

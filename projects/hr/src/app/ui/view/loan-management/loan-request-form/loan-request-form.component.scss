@@ -1,0 +1,422 @@
+.loan-application-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(46, 98, 118, 0.08);
+  border: 1px solid #e3eef0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  .form-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #B6D6E2;
+
+    h1 {
+      color: #2E6276;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .confidential {
+      color: #8a8a8a;
+      font-size: 1rem;
+      margin: 0;
+      font-style: italic;
+      font-weight: 500;
+    }
+  }
+
+  .section {
+    margin-bottom: 40px;
+
+    .section-title {
+      color: #2E6276;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 32px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #B6D6E2;
+    }
+  }
+
+  .two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+
+    .left-column,
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .field-label {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      color: #2E6276;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+
+      .label-number {
+        font-weight: 800;
+        color: #2E6276;
+      }
+
+      .label-text {
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .required {
+        color: #FF0000;
+        margin-left: 2px;
+        font-weight: 800;
+      }
+    }
+
+    .form-select,
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e3eef0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      background-color: white;
+      color: #2E6276;
+      font-weight: 500;
+      height: 52px;
+
+      &:focus {
+        outline: none;
+        border-color: #2E6276;
+        box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.1);
+      }
+
+      &.error {
+        border-color: #FF0000;
+      }
+
+      &::placeholder {
+        color: #b8b8b8;
+        font-weight: 400;
+      }
+    }
+
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232E6276' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 18px;
+    }
+
+    .calculated-field-wrapper {
+      position: relative;
+      width: 100%;
+
+      .form-input.calculated {
+        background-color: #f8feff;
+        border-color: #B6D6E2;
+        color: #2E6276;
+        font-weight: 600;
+        padding-right: 110px;
+        
+        &[readonly] {
+          cursor: default;
+        }
+      }
+
+      .calculated-badge {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: #2EB270;
+        color: white;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        pointer-events: none;
+      }
+    }
+
+    .field-hint {
+      color: #8a8a8a;
+      font-size: 0.8rem;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .error {
+      color: #FF0000;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .other-purpose {
+      margin-top: 16px;
+      padding: 20px;
+      background-color: #f8feff;
+      border-radius: 12px;
+      border: 1px solid #B6D6E2;
+
+      .sub-label {
+        display: block;
+        color: #495057;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .form-input {
+        height: 46px;
+      }
+    }
+
+    .payment-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 12px 16px;
+      background-color: #f8feff;
+      border-radius: 8px;
+      border-left: 4px solid #2E6276;
+      color: #2E6276;
+      font-size: 0.85rem;
+      line-height: 1.5;
+
+      .info-badge {
+        color: #2EB270;
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+    }
+
+    &.acknowledgement-field {
+      .acknowledgement-box {
+        border: 2px solid #B6D6E2;
+        border-radius: 12px;
+        padding: 24px;
+        background-color: #f8feff;
+
+        .acknowledgement-intro {
+          color: #495057;
+          font-weight: 700;
+          margin: 0 0 16px 0;
+          font-size: 0.95rem;
+        }
+
+        .terms-list {
+          margin: 0 0 24px 0;
+          padding-left: 24px;
+          list-style-type: disc;
+
+          li {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+
+            &::marker {
+              color: #2EB270;
+              font-weight: bold;
+            }
+          }
+        }
+
+        .checkbox-wrapper {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding-top: 20px;
+          border-top: 1px solid #e3eef0;
+
+          .form-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #2E6276;
+            border-radius: 5px;
+
+            &:hover {
+              transform: scale(1.05);
+            }
+          }
+
+          .checkbox-label {
+            color: #495057;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            cursor: pointer;
+            flex: 1;
+
+            .required {
+              color: #FF0000;
+              margin-left: 4px;
+            }
+          }
+        }
+
+        .error {
+          margin-top: 16px;
+        }
+      }
+    }
+  }
+
+  .form-actions {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 2px solid #B6D6E2;
+    text-align: center;
+
+    .submit-button {
+      min-width: 280px;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #2E6276, #2EB270);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46, 98, 118, 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: linear-gradient(135deg, #8a8a8a, #a8a8a8);
+        box-shadow: none;
+      }
+
+      .loading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        &::before {
+          content: '';
+          width: 20px;
+          height: 20px;
+          border: 3px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+// Responsive Design
+@media (max-width: 992px) {
+  .loan-application-container {
+    padding: 30px;
+    margin: 0 20px;
+
+    .two-column {
+      gap: 30px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .loan-application-container {
+    padding: 24px;
+    margin: 0 16px;
+
+    .form-header {
+      h1 {
+        font-size: 1.8rem;
+      }
+    }
+
+    .two-column {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .form-actions {
+      .submit-button {
+        width: 100%;
+        min-width: auto;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .loan-application-container {
+    padding: 20px;
+    margin: 0 12px;
+
+    .form-header {
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .form-field {
+      .field-label {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+      }
+
+      .form-select,
+      .form-input {
+        height: 48px;
+        padding: 12px 14px;
+      }
+
+      .calculated-field-wrapper {
+        .calculated-badge {
+          padding: 4px 10px;
+          font-size: 0.7rem;
+        }
+      }
+
+      .acknowledgement-box {
+        padding: 20px;
+      }
+    }
+  }
+}

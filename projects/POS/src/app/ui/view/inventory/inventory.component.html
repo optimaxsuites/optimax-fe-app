@@ -1,0 +1,432 @@
+<div
+  class="font-sans antialiased text-gray-800 bg-gray-50 min-h-screen p-6 text-2xl"
+  [attr.aria-hidden]="showInformation ? 'true' : null"
+  [class.pointer-events-none]="showInformation"
+  [class.overflow-hidden]="showInformation"
+>
+  <div *ngIf="tableSection" class=" mt-8 space-y-8">
+      <div class="gap-3 w-full flex justify-between items-center">
+      <div class="flex gap-3">
+        <div>
+        <p class="text-sm">Category:</p>
+        <ng-select
+          [items]="categories"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="selectedCategories"
+          [multiple]="true"
+          placeholder="Categories"
+          (ngModelChange)="applyFilters()"
+        >
+        </ng-select>
+        </div>
+
+        <div>
+        <p class="text-sm">Branch:</p>
+        <ng-select
+        *ngIf="superUser"
+          [items]="branches"
+          bindLabel="name"
+          bindValue="id"
+          placeholder="Branches"
+          [(ngModel)]="selectedBranch"
+          (ngModelChange)="onBranchChange($event)"
+        >
+        </ng-select>
+           </div>
+
+        <div>
+        <p class="text-sm">Status:</p>
+        <ng-select
+          [items]="status"
+          bindLabel="name"
+          bindValue="id"
+          placeholder="Branches"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onStatusChange($event)"
+        >
+        </ng-select>
+        </div>
+       
+      </div>
+
+      <div class="w-1/2 flex gap-2">
+        <div class="search-container">
+          <input
+            type="input"
+            class="Search-input"
+            placeholder="Search..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="filterProductsBySearch($event)"
+          />
+          <i class="fas fa-search"></i>
+        </div>
+
+        <div class="flex">
+          <div
+            (click)="toggleView()"
+            class="flex bg-[var(--background-color)] rounded-lg shadow-md border-[0.5px] text-[var(--text-color)] text-gray-400"
+          >
+            <i
+              class="fa-brands fa-microsoft text-2xl px-3 py-1.5 cursor-pointer"
+              [ngClass]="{
+                'bg-white rounded-l-lg text-customBlue': !tableSections
+              }"
+            ></i>
+            <i
+              class="fa-solid fa-list text-2xl px-3 py-1.5 cursor-pointer"
+              [ngClass]="{
+                'bg-white rounded-r-lg text-customBlue': tableSections
+              }"
+            ></i>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-8 mt-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-2xl  text-gray-800">Product Inventory</h2>
+        <div class="flex gap-3 items-center">
+          <input type="date" [(ngModel)]="reportDate" class="border rounded px-2 py-1" />
+          <app-button
+            text="Export Inventory"
+            icon="pi pi-file-excel"
+            class="btn-navigate text-2xl font-extrabold"
+            (click)="exportInventoryReport()"
+          ></app-button>
+          <app-button
+            text="Add Inventory"
+            icon="pi pi-plus"
+            class="btn-navigate text-2xl font-extrabold"
+            *ngIf="!(isLoading | async)&& !isBranchSwitching && productPermissions.canCreate"
+            (click)="openEditInventory(null, 'parent')"
+          ></app-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-8xl space-y-8 px-6">
+      <div
+          *ngIf="tableSections && (!(isLoading | async) && !isBranchSwitching); else tableLoadingState"
+          class="bg-white rounded-xl shadow-sm overflow-visible"
+        >
+        <p-table
+          [value]="products"
+          [paginator]="true"
+          dataKey="id"
+          responsiveLayout="stack"
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+          [rows]="15"
+        >
+          <ng-template pTemplate="header" let-columns>
+            <tr class="bg-gray-50">
+              <th
+                style="width: 4rem"
+                class="p-4 text-left font-medium text-gray-700 uppercase text-sm"
+              >
+                <p-tableHeaderCheckbox />
+              </th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">SKU</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Code</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Name</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Price</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Quantity</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Category</th>
+              <th class="p-4 text-left font-medium text-gray-700 uppercase text-sm">Action</th>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="body" let-item let-i="rowIndex">
+            <tr (click)="openViewProduct(item)" style="cursor: pointer">
+              <td class="p-4">
+                <p-tableCheckbox [value]="item" class="custom-checkbox" />
+              </td>
+              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sku }}</td>
+              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.code }}</td>
+              <td class="p-4 text-gray-800 text-3xl font-extrabold">{{ item.name }}</td>
+              <td class="p-4 text-gray-700 text-2xl font-extrabold">{{ item.sellingPrice | currency : "₦" }}</td>
+              <td
+                class="p-4 text-2xl font-extrabold"
+                [ngClass]="getQuantityClass(item.effectiveQuantity)"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="font-extrabold text-2xl"
+                    [ngClass]="
+                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                    "
+                    >{{ item?.quantity }}</span
+                  >
+                  <span
+                    class="text-xl font-extrabold ml-2"
+                    [ngClass]="
+                      item?.quantity >= 11 ? 'text-green-800' : 'text-red-800'
+                    "
+                  >
+                    {{ item?.quantity >= 11 ? "In Stock" : "Low Stock" }}
+                  </span>
+                </div>
+              </td>
+              <td class="p-4">
+                <span
+                  class="bg-gray-100 text-gray-800 text-xl font-extrabold px-2.5 py-0.5 rounded"
+                >
+                  {{ item.productCategory?.name || "Uncategorized" }}
+                </span>
+              </td>
+              <td class="p-4">
+                <div class="dropdown relative">
+                  <button
+                    (click)="
+                      toggleDropdown2(item, $event); $event.stopPropagation()
+                    "
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="pi pi-ellipsis-v text-gray-700"></i>
+                  </button>
+                  <ul
+                    *ngIf="item.showMenu"
+                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
+                  >
+                    <li
+                      (click)="
+                        openInformation(item);
+                        closeDropdown(item);
+                        $event.stopPropagation()
+                      "
+                      class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    >
+                      <i class="pi pi-eye"></i> View Details
+                    </li>
+                    <li
+                      (click)="
+                        openEditInventory(item, 'child');
+                        closeDropdown(item);
+                        $event.stopPropagation()
+                      "
+                      class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    >
+                      <i class="pi pi-pen-to-square"></i> Edit
+                    </li>
+                    <li
+                      (click)="
+                        openStockMovement(item, 'child');
+                        closeDropdown(item);
+                        $event.stopPropagation()
+                      "
+                      class="px-4 py-2 text-sm text-green-700 hover:bg-green-50 cursor-pointer flex items-center gap-2 border-t border-gray-100"
+                    >
+                      <i class="pi pi-chart-line"></i> Stock Movement
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <ng-template #tableLoadingState>
+        <div *ngIf="tableSections" class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="p-4">
+            <div *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8]" class="flex items-center space-x-4 p-4 border-b">
+              <p-skeleton width="40px" height="20px"></p-skeleton>
+              <p-skeleton width="80px" height="20px"></p-skeleton>
+              <p-skeleton width="80px" height="20px"></p-skeleton>
+              <p-skeleton width="200px" height="20px"></p-skeleton>
+              <p-skeleton width="80px" height="20px"></p-skeleton>
+              <p-skeleton width="60px" height="20px"></p-skeleton>
+              <p-skeleton width="100px" height="20px"></p-skeleton>
+              <p-skeleton width="40px" height="20px"></p-skeleton>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+<div
+  *ngIf="!tableSections"
+  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7 gap-4"
+>
+  <ng-container *ngIf="(isLoading | async)|| isBranchSwitching; else productList">
+    <div
+      *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]"
+      class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+    >
+      <div class="relative">
+        <p-skeleton width="100%" height="15rem"></p-skeleton>
+        <div class="absolute top-3 right-3">
+          <p-skeleton width="2.5rem" height="2.5rem" borderRadius="50%"></p-skeleton>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <p-skeleton width="100%" height="50%" class="mb-3"></p-skeleton>
+        <p-skeleton width="100%" class="mb-2"></p-skeleton>
+        <p-skeleton width="100%" class="mb-2"></p-skeleton>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #productList>
+    <div
+      *ngFor="let product of paginatedProducts"
+      class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+      (click)="openViewProduct(product)"
+    >
+      <div class="relative">
+        <img
+          [src]="getImageUrl(product) | async"
+          alt="{{product.name}}"
+          class="w-full h-48 object-cover"
+          (error)="onImageError($event)"
+        />
+
+        <div class="absolute top-3 right-3">
+  <button 
+    class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+    (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
+  >
+    <i class="pi pi-ellipsis-v text-gray-700"></i>
+  </button>
+
+  <p-overlayPanel #op appendTo="body" [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
+    <ul>
+      <li
+        class="table-item-panel"
+        (click)="openViewProduct(product); op.hide()"
+      >
+        <i class="pi pi-eye table-item me-2"></i>
+        <span>View Details</span>
+      </li>
+      <li
+        class="table-item-panel"
+        (click)="openEditInventory(product, 'child'); op.hide()"
+      >
+        <i class="pi pi-pen-to-square table-item me-2"></i>
+        <span>Edit</span>
+      </li>
+      <li
+        class="table-item-panel text-green-700 hover:bg-green-50 border-t border-gray-100"
+        (click)="openStockMovement(product, 'child'); op.hide()"
+      >
+        <i class="pi pi-chart-line table-item me-2"></i>
+        <span>Stock Movement</span>
+      </li>
+    </ul>
+  </p-overlayPanel>
+</div>
+      </div>
+
+      <div class="p-4 flex-grow">
+        <h3 class="font-medium text-gray-800 mb-2 line-clamp-2 h-10 text-[13px]">
+          {{ product?.name || ('#' + (product?.id ?? '')) }}
+        </h3>
+
+        <div class="mt-2 space-y-1 text-sm flex-grow">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Price:</span>
+            <span class="font-semibold text-gray-800">{{ product?.sellingPrice | currency : "₦" }}</span>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-extrabold">Stock:</span>
+            <ng-container *ngIf="product.quantity !== undefined">
+              <span
+                [ngClass]="
+                  product.quantity >= 11
+                    ? 'text-green-800'
+                    : 'text-red-800'
+                "
+                class="font-extrabold"
+              >
+                {{ product.quantity }}
+                <span
+  class="ml-2 text-sm font-bold"
+  [ngClass]="
+    product.quantity === 0
+      ? 'bg-gray-100 text-gray-500 px-2 py-1 rounded-full'
+      : (product.quantity >= 11
+          ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full'
+          : 'bg-red-100 text-red-800 px-2 py-1 rounded-full')
+  "
+>
+  {{ product.quantity === 0 ? "Not in Stock" : (product.quantity >= 11 ? "In Stock" : "Low Stock") }}
+</span>
+              </span>
+            </ng-container>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-extrabold">Category:</span>
+            <span class="font-extrabold">{{ product?.productCategory?.name || "-" }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</div>
+      <div
+        *ngIf="!tableSections && products.length > 0 && !(isLoading | async) && !isBranchSwitching"
+        class="flex justify-center mt-6"
+      >
+        <p-paginator
+          [rows]="rowsPerPage"
+          [totalRecords]="products.length"
+          [rowsPerPageOptions]="[12, 24, 36]"
+          (onPageChange)="onPageChange($event)"
+          styleClass="border border-gray-200 rounded-lg shadow-sm"
+        ></p-paginator>
+      </div>
+    </div>
+  </div>
+
+  <app-view-inventory
+    *ngIf="viewInventory && !showInformation"
+    [activeItem]="activeItem"
+    (edit)="openEditInventory(activeItem, 'child')"
+    (close)="openViewInventory()"
+    (recordStockMovement)="openStockMovement($event, 'child')"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+  ></app-view-inventory>
+
+  <app-edit-inventory
+    *ngIf="editInventory && !showInformation"
+    [activeItem]="activeItem"
+    [mode]="mode"
+    (updated)="onInventoryUpdated($event)"        
+    (close)="closeEditInventory()"
+    [product]="products">
+  </app-edit-inventory>
+</div>
+
+<div
+  *ngIf="showInformation"
+  class="fixed bg-black bg-opacity-50 inset-0 z-[9999] flex items-center justify-center p-4"
+  (click)="onBackdropClick($event); closeInformation()"
+>
+  <div
+    class="modal-backdrop"
+    (click)="closeInformation()"
+    aria-hidden="true"
+  ></div>
+
+  <div
+    class="modal-content bg-white rounded-lg shadow-2xl relative w-full max-w-4xl max-h-[90vh] overflow-visible"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'modal-title-' + selectedProductId"
+  >
+    <div class="modal-scroll-container overflow-y-auto max-h-[90vh]">
+      <app-information
+        [productId]="selectedProductId"
+        [inventoryId]="activeItem?.inventoryId || activeItem?.__inventory?.id"
+        (close)="closeInformation()"
+      ></app-information>
+    </div>
+  </div>
+</div>

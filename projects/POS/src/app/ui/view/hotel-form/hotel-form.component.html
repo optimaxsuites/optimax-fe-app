@@ -1,0 +1,930 @@
+<div class="hotel-form-container">
+  <!-- Selected Rooms Section -->
+  <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div class="flex items-center mb-3">
+      <div class="bg-blue-500 p-2 rounded-lg mr-3">
+        <i class="pi pi-home text-white"></i>
+      </div>
+      <h4 class="text-xl font-bold text-gray-700">Selected Rooms</h4>
+    </div>
+
+    <div class="space-y-2">
+      <div
+        *ngFor="let room of selectedRooms"
+        class="p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center"
+      >
+        <div>
+          <p class="font-semibold">
+            Room {{ room.number }} - {{ room.type }}
+            <span *ngIf="room.floor" class="text-sm text-gray-500 ml-2">
+              (Floor {{ room.floor }})
+            </span>
+          </p>
+          <p class="text-sm text-gray-600">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="font-semibold">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Booking Form Modal -->
+  <div
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto py-8"
+  >
+    <div
+      class="bg-white w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col shadow-2xl rounded-lg"
+    >
+      <!-- Form Header (Sticky) -->
+      <div class="sticky top-0 bg-white z-10 p-6 border-b border-gray-100">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">
+              {{ formType === "booking" ? "New Booking" : "Check-in Guest" }}
+              <span *ngIf="selectedRooms.length" class="text-blue-500">
+                - {{ selectedRooms.length }} Room{{
+                  selectedRooms.length > 1 ? "s" : ""
+                }}
+              </span>
+            </h3>
+            <p class="text-gray-500 mt-1">
+              Please fill in the required details
+            </p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
+              (click)="goBack()"
+              aria-label="Close form"
+            >
+              <i class="pi pi-times text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Form Content -->
+      <div class="overflow-y-auto flex-1">
+        <form
+          [formGroup]="bookingForm"
+          (ngSubmit)="onSubmit()"
+          class="space-y-4 p-6"
+        >
+          <!-- Guest Information Section -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-center mb-3">
+              <div class="bg-blue-500 p-2 rounded-lg mr-3">
+                <i class="pi pi-user text-white"></i>
+              </div>
+              <h4 class="text-xl font-bold text-gray-700">Guest Information</h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Title Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Title
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i>
+                </label>
+                <select
+                  formControlName="title"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Title</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Ms">Ms</option>
+                  <option value="Dr">Dr</option>
+                </select>
+                <div
+                  *ngIf="formErrors.title"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.title }}
+                </div>
+              </div>
+
+              <!-- First Name Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >First Name
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="text"
+                  formControlName="firstName"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="John"
+                />
+                <div
+                  *ngIf="formErrors.firstName"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.firstName }}
+                </div>
+              </div>
+
+              <!-- Last Name Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Last Name
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="text"
+                  formControlName="lastName"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Doe"
+                />
+                <div
+                  *ngIf="formErrors.lastName"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.lastName }}
+                </div>
+              </div>
+
+              <!-- Email Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Email
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="email"
+                  formControlName="email"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="guest@example.com"
+                />
+                <div
+                  *ngIf="formErrors.email"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.email }}
+                </div>
+              </div>
+
+              <!-- Phone Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="tel"
+                  formControlName="phone"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="+2348012345678"
+                />
+                <div
+                  *ngIf="formErrors.phone"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.phone }}
+                </div>
+              </div>
+
+              <!-- Country Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Country
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <select
+                  formControlName="country"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option *ngFor="let country of countries" [value]="country">
+                    {{ country }}
+                  </option>
+                </select>
+                <div
+                  *ngIf="formErrors.country"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.country }}
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  IdNumber
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="tel"
+                  formControlName="idNumber"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="idNumber"
+                />
+                <div
+                  *ngIf="formErrors.phone"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.idNumber }}
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Gender
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <select
+                  formControlName="gender"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div
+                  *ngIf="formErrors.gender"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.gender }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected Rooms Section -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-center mb-3">
+              <div class="bg-blue-500 p-2 rounded-lg mr-3">
+                <i class="pi pi-home text-white"></i>
+              </div>
+              <h4 class="text-xl font-bold text-gray-700">Selected Rooms</h4>
+            </div>
+
+            <div class="space-y-2">
+              <div
+                *ngFor="let room of selectedRooms"
+                class="p-5 bg-white rounded-lg border border-gray-200 flex justify-between items-center"
+              >
+                <div>
+                  <p class="font-extrabold text-2xl">
+                    Room {{ room.number }} - {{ room.type }}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="font-extrabold text-2xl text-blue-600">
+                    {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}
+                    /Night
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Booking Details Section -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-center mb-3">
+              <div class="bg-blue-500 p-2 rounded-lg mr-3">
+                <i class="pi pi-calendar text-white"></i>
+              </div>
+              <h4 class="text-xl font-bold text-gray-700">Booking Details</h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Check-in Date Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Check-in Date
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <p-calendar
+                  formControlName="checkinDate"
+                  [minDate]="currentDate"
+                  [showIcon]="true"
+                  inputId="checkinDate"
+                  dateFormat="dd/mm/yy"
+                  class="w-full"
+                >
+                </p-calendar>
+                <div
+                  *ngIf="formErrors.checkinDate"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.checkinDate }}
+                </div>
+              </div>
+
+              <!-- Check-out Date Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Check-out Date
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <p-calendar
+                  formControlName="checkoutDate"
+                  [minDate]="minCheckoutDate()"
+                  [showIcon]="true"
+                  inputId="checkoutDate"
+                  dateFormat="dd/mm/yy"
+                  class="w-full"
+                >
+                </p-calendar>
+                <div
+                  *ngIf="formErrors.checkoutDate"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.checkoutDate }}
+                </div>
+              </div>
+
+              <!-- Adults Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Adults
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <input
+                  type="number"
+                  formControlName="adults"
+                  min="1"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div
+                  *ngIf="formErrors.adults"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.adults }}
+                </div>
+              </div>
+
+              <!-- Children Field -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Children</label
+                >
+                <input
+                  type="number"
+                  formControlName="children"
+                  min="0"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div
+                  *ngIf="formErrors.children"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.children }}
+                </div>
+              </div>
+
+              <!-- Special Requests Field -->
+              <div class="form-group md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Special Requests</label
+                >
+                <textarea
+                  formControlName="specialRequests"
+                  rows="3"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Any special requirements..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Information Section -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-center mb-3">
+              <div class="bg-blue-500 p-2 rounded-lg mr-3">
+                <i class="pi pi-credit-card text-white"></i>
+              </div>
+              <h4 class="text-xl font-bold text-gray-700">
+                Payment Information
+              </h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Payment Method Field -->
+              <div class="form-group md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <select
+                  formControlName="paymentMethod"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Payment Method</option>
+                  <option value="cash">Cash</option>
+                  <option value="creditCard">Credit Card</option>
+                  <option value="debitCard">Debit Card</option>
+                  <option value="bankTransfer">Bank Transfer</option>
+                </select>
+                <div
+                  *ngIf="formErrors.paymentMethod"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.paymentMethod }}
+                </div>
+              </div>
+
+              <!-- Deposit Amount Field -->
+              <div class="form-group md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Deposit Amount (₦)</label
+                >
+                <input
+                  type="number"
+                  formControlName="depositAmount"
+                  min="0"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter amount"
+                />
+                <div
+                  *ngIf="formErrors.depositAmount"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.depositAmount }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sticky Footer Buttons -->
+          <div
+            class="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-6 px-6"
+          >
+            <div class="flex justify-end space-x-3">
+              <button
+                type="button"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+                (click)="closeForm()"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
+              >
+                Confirm Booking
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Confirmation Modal -->
+  <div
+    *ngIf="bookingSummary"
+    class="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+  >
+    <div
+      class="bg-white rounded-xl shadow-2xl w-full max-w-6xl overflow-hidden border border-white/20 animate-scaleIn"
+    >
+      <!-- Header -->
+      <div
+        class="bg-gradient-to-r from-blue-800 to-green-700 p-6 text-white relative"
+      >
+        <div class="flex items-center gap-4">
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="pi pi-check-circle text-3xl"></i>
+          </div>
+          <div>
+            <h3 class="text-3xl text-white font-bold">Booking Confirmation</h3>
+            <p class="text-blue-100 mt-5 text-xl">Your reservation is ready</p>
+          </div>
+        </div>
+        <button
+          (click)="editBooking()"
+          class="absolute right-6 top-6 text-white/80 hover:text-white transition-all p-2 rounded-full hover:bg-black/20"
+        >
+          <i class="pi pi-times text-2xl"></i>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Left Column - Rooms Summary -->
+        <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="bg-white p-3 rounded-lg shadow-sm">
+              <i class="pi pi-home text-blue-500 text-2xl"></i>
+            </div>
+            <h4 class="font-bold text-2xl text-blue-800">Selected Rooms</h4>
+          </div>
+
+          <div
+            class="space-y-4"
+            [class.max-h-96]="bookingSummary.roomIds.length > 3"
+            [class.overflow-y-auto]="bookingSummary.roomIds.length > 3"
+            [class.pr-3]="bookingSummary.roomIds.length > 3"
+          >
+            <div
+              *ngFor="let room of bookingSummary.roomIds; let i = index"
+              class="bg-white/90 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+            >
+              <div class="flex justify-between items-start">
+                <div>
+                  <h5
+                    class="font-semibold text-xl text-blue-800 flex items-center gap-3"
+                  >
+                    <span>Room {{ room }}</span>
+                    <span
+                      class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
+                    >
+                      {{ bookingSummary.roomTypes[i] }}
+                    </span>
+                  </h5>
+                  <div class="flex items-center text-gray-600 mt-2 text-base">
+                    <i class="pi pi-calendar mr-3 text-blue-400 text-xl"></i>
+                    <span>
+                      {{ bookingSummary.checkinDate | date : "shortDate" }} →
+                      {{ bookingSummary.checkoutDate | date : "shortDate" }}
+                    </span>
+                  </div>
+                </div>
+                <span
+                  class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-base font-medium"
+                >
+                  ₦{{ bookingSummary.roomRates[i] | number }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-5 border-t border-blue-200/50">
+            <div class="flex justify-between text-gray-600 mb-3 text-xl-start">
+              <span>Subtotal:</span>
+              <span>₦{{ bookingSummary.subtotal | number }}</span>
+            </div>
+            <div class="flex justify-between text-gray-600 mb-3 text-xl">
+              <span>Taxes (7.5%):</span>
+              <span>₦{{ bookingSummary.taxes | number }}</span>
+            </div>
+            <div
+              class="flex justify-between font-extrabold text-blue-800 mt-4 text-xl"
+            >
+              <span>Total:</span>
+              <span>₦{{ bookingSummary.total | number }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add this inside the booking confirmation modal, after the guest information section -->
+        <div
+          *ngIf="formType === 'checkin' && showCheckinForm"
+          class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4"
+        >
+          <div class="flex items-center mb-3">
+            <div class="bg-blue-500 p-2 rounded-lg mr-3">
+              <i class="pi pi-user-plus text-white"></i>
+            </div>
+            <h4 class="text-xl font-bold text-gray-700">Check-in Form</h4>
+          </div>
+
+          <form
+            [formGroup]="checkinForm"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <!-- First Name -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >First Name
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <input
+                type="text"
+                formControlName="firstName"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+
+            <!-- Last Name -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Last Name
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <input
+                type="text"
+                formControlName="lastName"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+
+            <!-- Phone -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Phone
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <input
+                type="tel"
+                formControlName="phone"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Email
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <input
+                type="email"
+                formControlName="email"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+
+            <!-- ID Number -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ID Number
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <input
+                type="text"
+                formControlName="idNumber"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+
+            <!-- Gender -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Gender
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
+              <select
+                formControlName="gender"
+                class="w-full p-2 border border-gray-300 rounded-lg"
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </form>
+
+          <!-- Same Guest Button -->
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-gray-600 mb-3">
+              Is this the same guest who made the booking?
+            </p>
+            <button
+              (click)="onSameGuestCheckin()"
+              class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition"
+            >
+              Yes, same guest
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column - Guest & Payment Info -->
+        <div class="space-y-6">
+          <!-- Guest Info -->
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="bg-blue-500 p-3 rounded-lg">
+                <i class="pi pi-user text-white text-xl"></i>
+              </div>
+              <h4 class="font-bold text-2xl text-gray-700">
+                Guest Information
+              </h4>
+            </div>
+
+            <div class="space-y-3 text-xl">
+              <p class="font-medium text-gray-600">
+                <span class="font-medium">Name: </span>
+                {{ bookingSummary.guest.title }}
+                {{ bookingSummary.guest.firstName }}
+                {{ bookingSummary.guest.lastName }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Email: </span
+                >{{ bookingSummary.guest.email }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Phone: </span
+                >{{ bookingSummary.guest.phone }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Country: </span
+                >{{ bookingSummary.guest.country }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">ID: </span>
+                {{ bookingSummary.guest.idNumber }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Gender: </span>
+                {{ bookingSummary.guest.gender }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Payment Info -->
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="bg-blue-500 p-3 rounded-lg">
+                <i class="pi pi-credit-card text-white text-xl"></i>
+              </div>
+              <h4 class="font-bold text-2xl text-gray-700">
+                Payment Information
+              </h4>
+            </div>
+
+            <div class="space-y-4 text-xl">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Method:</span>
+                <span class="font-medium">{{
+                  bookingSummary.paymentMethod | titlecase
+                }}</span>
+              </div>
+
+              <div class="flex justify-between text-green-600">
+                <span>Deposit Paid:</span>
+                <span class="font-medium"
+                  >₦{{ bookingSummary.depositAmount | number }}</span
+                >
+              </div>
+
+              <div
+                class="flex justify-between"
+                [ngClass]="{
+                  'text-green-600': bookingSummary.balanceAmount === 0,
+                  'text-amber-600': bookingSummary.balanceAmount > 0
+                }"
+              >
+                <span>Balance Due:</span>
+                <span class="font-medium"
+                  >₦{{ bookingSummary.balanceAmount | number }}</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Special Requests -->
+          <div
+            *ngIf="bookingSummary.specialRequests"
+            class="bg-amber-50 p-5 rounded-xl border border-amber-100"
+          >
+            <div class="flex items-center gap-3 text-amber-700 text-lg">
+              <i class="pi pi-comment"></i>
+              <h4 class="font-medium">Special Requests</h4>
+            </div>
+            <p class="text-amber-800 mt-3 italic text-lg">
+              "{{ bookingSummary.specialRequests }}"
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer with confirmation button -->
+
+      <div
+        class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-t border-gray-200/50 flex justify-between items-center"
+      >
+        <!-- Action Buttons -->
+        <div class="flex space-x-3">
+          <!-- Edit Button -->
+          <button
+            type="button"
+            class="px-5 py-2.5 bg-white text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-all border border-gray-300/50 hover:border-gray-400/50 shadow-sm hover:shadow-md flex items-center gap-2"
+            (click)="editBooking()"
+          >
+            <i class="pi pi-pencil text-sm"></i>
+            Edit Booking
+          </button>
+
+          <!-- Status Toggle Buttons -->
+          <div
+            class="flex bg-gray-200/70 p-1 rounded-lg border border-gray-300/30"
+          >
+            <!-- Check-in Button -->
+            <button
+              type="button"
+              class="px-4 py-2 text-xl font-medium rounded-md transition-all flex items-center gap-1.5 hover:bg-white/80 hover:shadow-sm [&.active]:bg-gradient-to-r [&.active]:from-blue-500 [&.active]:to-blue-600 [&.active]:text-white [&.active]:shadow-md"
+              [class.active]="activeStatus === 'checkin'"
+              (click)="setActiveStatus('checkin')"
+            >
+              <i class="pi pi-sign-in text-lg"></i>
+              Check-in
+            </button>
+
+            <!-- Booked Button -->
+            <button
+              type="button"
+              class="px-4 py-2 text-xl font-medium rounded-md transition-all flex items-center gap-1.5 hover:bg-white/80 hover:shadow-sm [&.active]:bg-gradient-to-r [&.active]:from-emerald-500 [&.active]:to-emerald-600 [&.active]:text-white [&.active]:shadow-md"
+              [class.active]="activeStatus === 'booked'"
+              (click)="setActiveStatus('booked')"
+            >
+              <i class="pi pi-calendar text-lg"></i>
+              Booked
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirm Button -->
+        <button
+          type="button"
+          class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+          (click)="confirmBooking()"
+        >
+          <i class="pi pi-check-circle"></i>
+          Confirm {{ activeStatus === "checkin" ? "Check-in" : "Booking" }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

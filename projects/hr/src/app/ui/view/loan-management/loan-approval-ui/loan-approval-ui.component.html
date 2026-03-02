@@ -1,0 +1,82 @@
+<div class="loan-approval-container">
+    <!-- Add loading indicator -->
+    <div *ngIf="isLoading" class="loading">
+        Loading applications...
+    </div>
+
+    <div *ngIf="!isLoading">
+        <header class="approval-header">
+            <h1>Loan Applications</h1>
+            <div class="search-box">
+                <input type="text"
+                       placeholder="Search by employee name or ID..."
+                       (keyup)="onSearch($event)"
+                       [(ngModel)]="searchTerm">
+            </div>
+        </header>
+
+        <!-- Filters Section -->
+        <div class="loan-filters">
+            <!-- Employee ID Filter -->
+            <div class="filter-group">
+                <label for="employeeIdFilter">Employee ID:</label>
+                <input type="text"
+                       id="employeeIdFilter"
+                       [(ngModel)]="filters.employeeId"
+                       (ngModelChange)="applyFilters()"
+                       placeholder="EMP-001">
+            </div>
+
+            <!-- Department Dropdown Filter -->
+            <div class="filter-group">
+                <label for="departmentFilter">Department:</label>
+                <select id="departmentFilter"
+                        [(ngModel)]="filters.department"
+                        (ngModelChange)="applyFilters()">
+                    <option value="">All Departments</option>
+                    <option value="Finance">Finance</option>
+                    <option value="HR">HR</option>
+                    <option value="IT">IT</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Operations">Operations</option>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter"
+                        [(ngModel)]="filters.status"
+                        (ngModelChange)="applyFilters()">
+                    <option value="">All Status</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="REJECTED">REJECTED</option>
+                </select>
+            </div>
+
+            <!-- Refresh Button -->
+            <button class="refresh-btn" (click)="loadApplications()">Refresh</button>
+            
+            <!-- Reset Button -->
+            <button class="reset-btn" (click)="resetFilters()">Reset Filters</button>
+        </div>
+
+        <!-- Results Count -->
+        <div class="results-count">
+            Showing {{ filteredLoans.length }} of {{ loanApplications.length }} applications
+        </div>
+
+        <!-- Table Section -->
+        <div class="approval-table-container">
+            <app-table
+                [columns]="loanColumns"
+                [rows]="filteredLoans"
+                [actions]="loanActions"
+                [emptyMessage]="'No loan applications found matching your filters'"
+                (actionClick)="handleLoanAction($event)"
+            ></app-table>
+        </div>
+    </div>
+</div>
