@@ -70,6 +70,10 @@ p {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
 }
 
+.edit-btn {
+  @apply text-sm font-medium text-white bg-customBlue px-4 py-2 rounded-lg hover:bg-customBlueHover transition;
+}
+
 .detail-item {
   @apply flex flex-col gap-1 text-xs;
 }

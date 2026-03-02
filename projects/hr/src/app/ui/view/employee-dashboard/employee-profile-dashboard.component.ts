@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
@@ -16,6 +17,9 @@ export class EmployeeProfileDashboardComponent {
   employeeInView: any;
   calendarOptions: CalendarOptions = {};
   loading = false;
+  saving = false;
+  isEditOpen = false;
+  editForm: FormGroup;
 
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
@@ -23,8 +27,16 @@ export class EmployeeProfileDashboardComponent {
   constructor(
     private employeeService: EmployeeService,
     private sanitizer: DomSanitizer,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+    private fb: FormBuilder
+  ) {
+    this.editForm = this.fb.group({
+      phone: [''],
+      email: ['', [Validators.email]],
+      address: [''],
+      workEmail: [{ value: '', disabled: true }],
+    });
+  }
 
   ngOnInit(): void {
     this.fetchFirstEmployee();
@@ -98,6 +110,8 @@ export class EmployeeProfileDashboardComponent {
           return;
         }
 
+        this.patchEditForm();
+
         if (this.employeeInView?.level) {
           this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
             next: (salaryData) => {
@@ -130,6 +144,71 @@ export class EmployeeProfileDashboardComponent {
         this.loading = false;
       },
     });
+  }
+
+  openEdit(): void {
+    if (!this.employeeInView) return;
+    this.patchEditForm();
+    this.isEditOpen = true;
+  }
+
+  closeEdit(): void {
+    this.isEditOpen = false;
+  }
+
+  saveEdit(): void {
+    if (!this.employeeInView || this.editForm.invalid || this.saving) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    const payload = this.buildUpdatePayload();
+    if (!payload?.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Missing employee ID',
+        detail: 'Unable to update profile.',
+        key: 'global',
+      });
+      return;
+    }
+
+    this.saving = true;
+    this.employeeService.updateEmployee(payload, payload.id).subscribe({
+      next: (response) => {
+        const updated = response?.data ?? response ?? {};
+        this.employeeInView = { ...this.employeeInView, ...updated, ...payload };
+        this.patchEditForm();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Profile updated',
+          detail: 'Your changes have been saved.',
+          key: 'global',
+        });
+        this.isEditOpen = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Update failed',
+          detail: 'Unable to save changes. Please try again.',
+          key: 'global',
+        });
+      },
+      complete: () => {
+        this.saving = false;
+      },
+    });
+  }
+
+  private patchEditForm(): void {
+    this.editForm.patchValue({
+      phone: this.employeeInView?.phone || '',
+      email: this.employeeInView?.email || '',
+      address: this.employeeInView?.address || '',
+      workEmail: this.employeeInView?.workEmail || '',
+    });
+    this.editForm.markAsPristine();
   }
 
   private sortEmployeesLatest(employees: any[]): any[] {
@@ -179,5 +258,42 @@ export class EmployeeProfileDashboardComponent {
           'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
       },
     });
+  }
+
+  private buildUpdatePayload(): any {
+    const employee = this.employeeInView || {};
+
+    return {
+      id: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: this.editForm.get('email')?.value ?? employee.email,
+      workEmail: employee.workEmail,
+      jobTitle: employee.jobTitle,
+      departmentId: employee.departmentId ?? employee.department?.id ?? null,
+      levelId: employee.levelId ?? employee.level?.id ?? null,
+      employmentType: employee.employmentType ?? employee.jobType?.name ?? null,
+      supervisor: employee.supervisor,
+      employeeStatus: employee.employeeStatus,
+      employementStartDate: employee.employementStartDate,
+      employmentEndDate: employee.employmentEndDate,
+      onProbation: employee.onProbation,
+      probationStartDate: employee.probationStartDate,
+      probationEndDate: employee.probationEndDate,
+      appraisalDueDate: employee.appraisalDueDate,
+      phone: this.editForm.get('phone')?.value ?? employee.phone,
+      address: this.editForm.get('address')?.value ?? employee.address,
+      dob: employee.dob,
+      genderId: employee.genderId ?? employee.gender?.id ?? null,
+      maritalStatusId: employee.maritalStatusId ?? employee.maritalStatus?.id ?? null,
+      religionId: employee.religionId ?? employee.religion?.id ?? null,
+      bankName: employee.bankName,
+      accountNumber: employee.accountNumber,
+      nin: employee.nin,
+      bvn: employee.bvn,
+      jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null,
+      relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
+      employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
+    };
   }
 }
