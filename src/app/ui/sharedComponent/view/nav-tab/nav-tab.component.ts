@@ -6,8 +6,8 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
-  // standalone: true,
-  // imports: [CommonModule],
+  standalone: true,
+  imports: [CommonModule],
 })
 export class NavTabComponent {
   @Input() tabsConfig: TabConfig[] = [];
