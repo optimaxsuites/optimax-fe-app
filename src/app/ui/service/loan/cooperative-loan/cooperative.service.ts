@@ -5,7 +5,8 @@ import {
   CooperativeLoan, 
   CooperativeLoanProduct,
   CooperativeRepayment,
-  CooperativeStats 
+  CooperativeStats,
+  CooperativeNotification
 } from './cooperative.types';
 
 @Injectable({
@@ -18,9 +19,11 @@ export class CooperativeService {
   private loans: CooperativeLoan[] = [];
   private products: CooperativeLoanProduct[] = [];
   private repayments: CooperativeRepayment[] = [];
+  private notifications: CooperativeNotification[] = [];
   
   private membersSubject = new BehaviorSubject<CooperativeMember[]>([]);
   private loansSubject = new BehaviorSubject<CooperativeLoan[]>([]);
+  private notificationsSubject = new BehaviorSubject<CooperativeNotification[]>([]);
 
   constructor() {
     this.loadFromStorage();
@@ -36,8 +39,17 @@ export class CooperativeService {
         const data = JSON.parse(stored);
         this.members = data.members || [];
         this.loans = data.loans || [];
-        this.products = data.products || this.getDefaultProducts();
+        this.products = (data.products || this.getDefaultProducts()).map((product: any) => ({
+          ...product,
+          patronageEligible: product.patronageEligible ?? true,
+          patronageRate: product.patronageRate ?? 0
+        }));
         this.repayments = data.repayments || [];
+        this.notifications = (data.notifications || []).map((notification: any) => ({
+          ...notification,
+          type: notification.type || 'LOAN_PENDING_APPROVAL',
+          recipient: notification.recipient || 'ADMIN'
+        }));
       } catch (e) {
         console.error('Failed to load data', e);
       }
@@ -49,11 +61,13 @@ export class CooperativeService {
       members: this.members,
       loans: this.loans,
       products: this.products,
-      repayments: this.repayments
+      repayments: this.repayments,
+      notifications: this.notifications
     };
     localStorage.setItem(this.storageKey, JSON.stringify(data));
     this.membersSubject.next([...this.members]);
     this.loansSubject.next([...this.loans]);
+    this.notificationsSubject.next([...this.notifications]);
   }
 
   private getDefaultProducts(): CooperativeLoanProduct[] {
@@ -68,6 +82,8 @@ export class CooperativeService {
         minDuration: 3,
         maxDuration: 24,
         requiresShares: true,
+        patronageEligible: true,
+        patronageRate: 20,
         status: 'ACTIVE'
       },
       {
@@ -80,6 +96,8 @@ export class CooperativeService {
         minDuration: 3,
         maxDuration: 18,
         requiresShares: false,
+        patronageEligible: true,
+        patronageRate: 15,
         status: 'ACTIVE'
       },
       {
@@ -92,6 +110,8 @@ export class CooperativeService {
         minDuration: 1,
         maxDuration: 6,
         requiresShares: true,
+        patronageEligible: false,
+        patronageRate: 0,
         status: 'ACTIVE'
       }
     ];
@@ -101,9 +121,13 @@ export class CooperativeService {
     if (this.members.length === 0) {
       this.createSampleMembers();
       this.createSampleLoans();
+      if (this.products.length === 0) {
+        this.products = this.getDefaultProducts();
+      }
       this.saveToStorage();
-    } else {
+    } else if (this.products.length === 0) {
       this.products = this.getDefaultProducts();
+      this.saveToStorage();
     }
   }
 
@@ -305,6 +329,11 @@ export class CooperativeService {
       updatedAt: new Date().toISOString()
     };
     this.loans.push(newLoan);
+
+    if (newLoan.status === 'PENDING') {
+      this.createPendingApprovalNotification(newLoan);
+    }
+
     this.saveToStorage();
     return { ...newLoan };
   }
@@ -319,6 +348,275 @@ export class CooperativeService {
     return { ...loan };
   }
 
+  approveLoan(id: string): CooperativeLoan | undefined {
+    const loan = this.loans.find(item => item.id === id);
+    if (!loan || loan.status !== 'PENDING') {
+      return undefined;
+    }
+
+    loan.status = 'APPROVED';
+    loan.approvedDate = new Date().toISOString();
+    loan.fundsReserved = true;
+    loan.updatedAt = new Date().toISOString();
+
+    this.createMemberStatusNotification(
+      loan,
+      'Loan Approved',
+      `Your loan ${loan.loanId} has been approved and funds are marked for disbursement.`
+    );
+
+    this.saveToStorage();
+    return { ...loan };
+  }
+
+  disburseLoan(id: string): CooperativeLoan | undefined {
+    const loan = this.loans.find(item => item.id === id);
+    if (!loan || loan.status !== 'APPROVED') {
+      return undefined;
+    }
+
+    loan.status = 'ACTIVE';
+    loan.disbursementDate = new Date().toISOString();
+    loan.fundsReserved = false;
+    loan.updatedAt = new Date().toISOString();
+
+    this.generateRepaymentSchedule(loan);
+    this.createMemberStatusNotification(
+      loan,
+      'Loan Disbursed',
+      `Your loan ${loan.loanId} has been disbursed and is now active with repayment schedule generated.`
+    );
+
+    this.saveToStorage();
+    return { ...loan };
+  }
+
+  rejectLoan(id: string, reason: string): CooperativeLoan | undefined {
+    const loan = this.loans.find(item => item.id === id);
+    if (!loan || !reason.trim()) {
+      return undefined;
+    }
+
+    loan.status = 'REJECTED';
+    loan.rejectionReason = reason.trim();
+    loan.fundsReserved = false;
+    loan.updatedAt = new Date().toISOString();
+
+    this.createMemberStatusNotification(
+      loan,
+      'Loan Rejected',
+      `Your loan ${loan.loanId} was rejected. Reason: ${loan.rejectionReason}`
+    );
+
+    this.saveToStorage();
+    return { ...loan };
+  }
+
+  requestLoanChanges(id: string, note: string): CooperativeLoan | undefined {
+    const loan = this.loans.find(item => item.id === id);
+    if (!loan || !note.trim()) {
+      return undefined;
+    }
+
+    loan.adminRequestNote = note.trim();
+    loan.updatedAt = new Date().toISOString();
+
+    this.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'LOAN_CHANGE_REQUESTED',
+      recipient: 'MEMBER',
+      title: 'Changes Requested',
+      message: `Admin requested updates on loan ${loan.loanId}: ${loan.adminRequestNote}`,
+      loanId: loan.id,
+      memberId: loan.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+
+    this.saveToStorage();
+    return { ...loan };
+  }
+
+  getRepaymentsByLoanId(loanId: string): CooperativeRepayment[] {
+    this.ensureRepaymentScheduleForLoan(loanId);
+    this.refreshOverdueStatuses(loanId);
+
+    return this.repayments
+      .filter(item => item.loanId === loanId)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .map(item => ({ ...item }));
+  }
+
+  recordRepayment(
+    loanId: string,
+    payload: { amount: number; paymentMethod: CooperativeRepayment['paymentMethod']; paidDate?: string }
+  ): CooperativeRepayment | undefined {
+    const loan = this.loans.find(item => item.id === loanId);
+    if (!loan || loan.status !== 'ACTIVE') {
+      return undefined;
+    }
+
+    this.refreshOverdueStatuses(loanId);
+
+    const nextDue = this.repayments
+      .filter(item => item.loanId === loanId && item.status !== 'PAID')
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+
+    if (!nextDue) {
+      return undefined;
+    }
+
+    const paidAmount = Number(payload.amount || 0);
+    if (paidAmount <= 0) {
+      return undefined;
+    }
+
+    nextDue.amount = paidAmount;
+    nextDue.paidDate = payload.paidDate || new Date().toISOString();
+    nextDue.paymentMethod = payload.paymentMethod || 'BANK_TRANSFER';
+    nextDue.status = 'PAID';
+
+    const remainingOpen = this.repayments.some(item => item.loanId === loanId && item.status !== 'PAID');
+    if (!remainingOpen) {
+      loan.status = 'COMPLETED';
+      loan.completionDate = new Date().toISOString();
+      loan.updatedAt = new Date().toISOString();
+
+      this.createMemberStatusNotification(
+        loan,
+        'Loan Completed',
+        `All repayments for loan ${loan.loanId} are received. Your loan is now completed.`
+      );
+    }
+
+    this.saveToStorage();
+    return { ...nextDue };
+  }
+
+  getOverdueRepaymentsByLoanId(loanId: string): CooperativeRepayment[] {
+    this.refreshOverdueStatuses(loanId);
+    return this.repayments
+      .filter(item => item.loanId === loanId && item.status === 'OVERDUE')
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .map(item => ({ ...item }));
+  }
+
+  sendRepaymentReminder(loanId: string): boolean {
+    const loan = this.loans.find(item => item.id === loanId);
+    if (!loan) {
+      return false;
+    }
+
+    const overdueItems = this.getOverdueRepaymentsByLoanId(loanId);
+    const totalOverdue = overdueItems.reduce((sum, item) => sum + item.amount, 0);
+    const message = overdueItems.length > 0
+      ? `Reminder: ${overdueItems.length} repayment(s) are overdue for loan ${loan.loanId} totaling ${this.formatCurrency(totalOverdue)}.`
+      : `Reminder: Your next repayment for loan ${loan.loanId} is due soon.`;
+
+    this.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'LOAN_REPAYMENT_REMINDER',
+      recipient: 'MEMBER',
+      title: 'Loan Repayment Reminder',
+      message,
+      loanId: loan.id,
+      memberId: loan.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+
+    this.saveToStorage();
+    return true;
+  }
+
+  markLoanAsDefaulted(loanId: string): CooperativeLoan | undefined {
+    const loan = this.loans.find(item => item.id === loanId);
+    if (!loan || (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED')) {
+      return undefined;
+    }
+
+    this.refreshOverdueStatuses(loanId);
+
+    loan.status = 'DEFAULTED';
+    loan.defaultedDate = new Date().toISOString();
+    loan.updatedAt = new Date().toISOString();
+
+    this.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'LOAN_DEFAULTED',
+      recipient: 'MEMBER',
+      title: 'Loan Marked as Defaulted',
+      message: `Your loan ${loan.loanId} has been marked as defaulted. Please contact the cooperative admin immediately.`,
+      loanId: loan.id,
+      memberId: loan.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+
+    this.saveToStorage();
+    return { ...loan };
+  }
+
+  applyPatronageToMemberLoan(memberId: string, amount: number): { appliedAmount: number; loanId?: string } {
+    const patronageAmount = Number(amount || 0);
+    if (patronageAmount <= 0) {
+      return { appliedAmount: 0 };
+    }
+
+    const activeLoan = this.loans
+      .filter(item => item.memberId === memberId && item.status === 'ACTIVE')
+      .sort((a, b) => new Date(a.applicationDate).getTime() - new Date(b.applicationDate).getTime())[0];
+
+    if (!activeLoan) {
+      return { appliedAmount: 0 };
+    }
+
+    this.ensureRepaymentScheduleForLoan(activeLoan.id);
+    this.refreshOverdueStatuses(activeLoan.id);
+
+    const openRepayments = this.repayments
+      .filter(item => item.loanId === activeLoan.id && item.status !== 'PAID')
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+    if (openRepayments.length === 0) {
+      return { appliedAmount: 0, loanId: activeLoan.id };
+    }
+
+    let remainingCredit = patronageAmount;
+    const now = new Date().toISOString();
+
+    openRepayments.forEach(item => {
+      if (remainingCredit <= 0) {
+        return;
+      }
+
+      if (remainingCredit >= item.amount) {
+        remainingCredit -= item.amount;
+        item.paidDate = now;
+        item.paymentMethod = 'OTHER';
+        item.status = 'PAID';
+        return;
+      }
+
+      item.amount = Number((item.amount - remainingCredit).toFixed(2));
+      remainingCredit = 0;
+    });
+
+    const appliedAmount = Number((patronageAmount - remainingCredit).toFixed(2));
+    const stillOpen = this.repayments.some(item => item.loanId === activeLoan.id && item.status !== 'PAID');
+
+    if (!stillOpen) {
+      activeLoan.status = 'COMPLETED';
+      activeLoan.completionDate = now;
+      activeLoan.updatedAt = now;
+    } else {
+      activeLoan.updatedAt = now;
+    }
+
+    this.saveToStorage();
+    return { appliedAmount, loanId: activeLoan.id };
+  }
+
   // ==================== PRODUCT METHODS ====================
 
   getProducts(): CooperativeLoanProduct[] {
@@ -327,6 +625,158 @@ export class CooperativeService {
 
   getProductById(id: string): CooperativeLoanProduct | undefined {
     return this.products.find(p => p.id === id);
+  }
+
+  addProduct(product: Omit<CooperativeLoanProduct, 'id'>): CooperativeLoanProduct {
+    const newProduct: CooperativeLoanProduct = {
+      ...product,
+      id: Date.now().toString(),
+      patronageRate: product.patronageEligible ? product.patronageRate : 0
+    };
+
+    this.products.push(newProduct);
+    this.saveToStorage();
+    return { ...newProduct };
+  }
+
+  updateProduct(product: CooperativeLoanProduct): CooperativeLoanProduct {
+    const index = this.products.findIndex(p => p.id === product.id);
+    if (index !== -1) {
+      this.products[index] = {
+        ...product,
+        patronageRate: product.patronageEligible ? product.patronageRate : 0
+      };
+      this.saveToStorage();
+    }
+    return { ...product };
+  }
+
+  setProductStatus(id: string, status: 'ACTIVE' | 'INACTIVE'): void {
+    const product = this.products.find(p => p.id === id);
+    if (!product) {
+      return;
+    }
+
+    product.status = status;
+    this.saveToStorage();
+  }
+
+  // ==================== NOTIFICATION METHODS ====================
+
+  getNotifications(): Observable<CooperativeNotification[]> {
+    return of([...this.notifications]);
+  }
+
+  getNotificationsObservable(): Observable<CooperativeNotification[]> {
+    return this.notificationsSubject.asObservable();
+  }
+
+  markNotificationAsRead(id: string): void {
+    const notification = this.notifications.find(item => item.id === id);
+    if (!notification) {
+      return;
+    }
+
+    notification.read = true;
+    this.saveToStorage();
+  }
+
+  private createPendingApprovalNotification(loan: CooperativeLoan): void {
+    const member = this.getMemberById(loan.memberId);
+    const product = this.getProductById(loan.productId);
+
+    const notification: CooperativeNotification = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'LOAN_PENDING_APPROVAL',
+      recipient: 'ADMIN',
+      title: 'Loan Pending Approval',
+      message: `${member?.fullName || 'Member'} submitted ${this.formatCurrency(loan.amount)} for ${product?.name || 'loan product'} (${loan.loanId}).`,
+      loanId: loan.id,
+      memberId: loan.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    };
+
+    this.notifications.unshift(notification);
+  }
+
+  private createMemberStatusNotification(loan: CooperativeLoan, title: string, message: string): void {
+    this.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'LOAN_STATUS_UPDATE',
+      recipient: 'MEMBER',
+      title,
+      message,
+      loanId: loan.id,
+      memberId: loan.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+  }
+
+  private generateRepaymentSchedule(loan: CooperativeLoan): void {
+    this.repayments = this.repayments.filter(item => item.loanId !== loan.id);
+
+    const monthlyAmount = Number((loan.totalRepayment / loan.duration).toFixed(2));
+    const disbursementDate = loan.disbursementDate ? new Date(loan.disbursementDate) : new Date();
+
+    for (let installment = 1; installment <= loan.duration; installment++) {
+      const dueDate = new Date(disbursementDate);
+      dueDate.setMonth(disbursementDate.getMonth() + installment);
+
+      this.repayments.push({
+        id: `${loan.id}-RP-${installment}`,
+        loanId: loan.id,
+        amount: monthlyAmount,
+        dueDate: dueDate.toISOString(),
+        status: 'PENDING'
+      });
+    }
+  }
+
+  private ensureRepaymentScheduleForLoan(loanId: string): void {
+    const loan = this.loans.find(item => item.id === loanId);
+    if (!loan || loan.status !== 'ACTIVE') {
+      return;
+    }
+
+    const hasRepayment = this.repayments.some(item => item.loanId === loanId);
+    if (hasRepayment) {
+      return;
+    }
+
+    this.generateRepaymentSchedule(loan);
+    this.saveToStorage();
+  }
+
+  private refreshOverdueStatuses(loanId?: string): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let updated = false;
+
+    this.repayments.forEach(item => {
+      if (loanId && item.loanId !== loanId) {
+        return;
+      }
+
+      if (item.status === 'PAID') {
+        return;
+      }
+
+      const due = new Date(item.dueDate);
+      due.setHours(0, 0, 0, 0);
+
+      const nextStatus: CooperativeRepayment['status'] = due < today ? 'OVERDUE' : 'PENDING';
+      if (item.status !== nextStatus) {
+        item.status = nextStatus;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      this.saveToStorage();
+    }
   }
 
   // ==================== STATS METHODS ====================

@@ -147,9 +147,15 @@ export class RecruitmentFormComponent {
         this.customFieldList = [];
         return;
     }
+    const fields = this.jobData.jobVacancyCustomFields;
+    const areObjects = fields.every((item) => typeof item === 'object');
+    if (areObjects) {
+      this.customFieldList = fields as JobPostingCustomFieldDTO[];
+      return;
+    }
 
-    const fetchRequests = this.jobData.jobVacancyCustomFields.map((FieldId) =>
-        this.recruitmentService.getCustomFieldById(FieldId).toPromise()
+    const fetchRequests = (fields as number[]).map((fieldId) =>
+        this.recruitmentService.getCustomFieldById(fieldId).toPromise()
     );
 
     Promise.all(fetchRequests)
@@ -392,24 +398,7 @@ onExpiryDateChange(value: string): void {
       console.log('Job added:', this.jobData);
     }
 
-    function isDate(value: any): value is Date {
-      return value instanceof Date;
-    }
-    
-    const jobPostedDate =
-      this.jobData.jobPostedDate != null
-        ? isDate(this.jobData.jobPostedDate)
-          ? this.jobData.jobPostedDate.toISOString()
-          : typeof this.jobData.jobPostedDate === 'number'
-            ? new Date(this.jobData.jobPostedDate * 1000).toISOString()
-            : this.jobData.jobPostedDate
-        : null;
-
-  // Prepare the data object, including jobPostedDate
-  const data = {
-    ...this.jobData,
-    jobPostedDate
-  };
+    const data = this.buildJobPayload();
   
     // Call the recruitment service to save the job data
     this.recruitmentService.addJobVacancy(data).subscribe(
@@ -427,6 +416,48 @@ onExpiryDateChange(value: string): void {
         });
       }
     );
+  }
+
+  private buildJobPayload(): JobPostingDTO {
+    const toIdObject = (value: any) => {
+      if (value === null || value === undefined) return value;
+      if (typeof value === 'object') return value;
+      return { id: value };
+    };
+
+    const toIsoDate = (value: any): string | undefined => {
+      if (value === null || value === undefined || value === '') return undefined;
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'number') return new Date(value * 1000).toISOString();
+      if (typeof value === 'string') {
+        const asNumber = Number(value);
+        if (!Number.isNaN(asNumber) && value.trim() !== '') {
+          return new Date(asNumber * 1000).toISOString();
+        }
+        return value;
+      }
+      return String(value);
+    };
+
+    const normalizeCustomFields = (fields: any) => {
+      if (!fields || !Array.isArray(fields)) return [];
+      return fields.map((field) => {
+        if (typeof field === 'object') return field;
+        return { id: field };
+      });
+    };
+
+    return {
+      ...this.jobData,
+      jobCategory: toIdObject(this.jobData.jobCategory),
+      jobType: toIdObject(this.jobData.jobType),
+      jobVacancyExperience: toIdObject(this.jobData.jobVacancyExperience),
+      jobVacancySpecification: toIdObject(this.jobData.jobVacancySpecification),
+      jobPostedDate: toIsoDate(this.jobData.jobPostedDate),
+      jobExpiryDate: toIsoDate(this.jobData.jobExpiryDate),
+      qualifications: this.jobData.qualifications,
+      jobVacancyCustomFields: normalizeCustomFields(this.jobData.jobVacancyCustomFields),
+    };
   }
   
 

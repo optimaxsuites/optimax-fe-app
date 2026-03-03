@@ -4,7 +4,8 @@ import { OfficeHours } from '../../shared-component/models/office-hours.model';
 
 const DEFAULT_OFFICE_HOURS: OfficeHours = {
   openingTime: '09:00',
-  closingTime: '17:00'
+  closingTime: '17:00',
+  absentTime: '10:00' // default auto-absent time
 };
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +27,41 @@ export class OfficeHoursService {
 
   private loadOfficeHours(): OfficeHours {
     const saved = localStorage.getItem('officeHours');
-    return saved ? JSON.parse(saved) : DEFAULT_OFFICE_HOURS;
+    //return saved ? JSON.parse(saved) : DEFAULT_OFFICE_HOURS;
+    if (!saved) return DEFAULT_OFFICE_HOURS;
+
+  const parsed = JSON.parse(saved);
+
+  return {
+    openingTime: parsed.openingTime ?? DEFAULT_OFFICE_HOURS.openingTime,
+    closingTime: parsed.closingTime ?? DEFAULT_OFFICE_HOURS.closingTime,
+    absentTime: parsed.absentTime ?? DEFAULT_OFFICE_HOURS.absentTime
+  };
   }
+
+  isWithinOfficeHours(current: Date): boolean {
+  const { openingTime, closingTime } = this.getOfficeHours();
+
+  const [openHour, openMin] = openingTime.split(':').map(Number);
+  const [closeHour, closeMin] = closingTime.split(':').map(Number);
+
+  const openDate = new Date(current);
+  openDate.setHours(openHour, openMin, 0, 0);
+
+  const closeDate = new Date(current);
+  closeDate.setHours(closeHour, closeMin, 0, 0);
+
+  return current >= openDate && current <= closeDate;
+}
+ 
+ isAfterOpeningTime(current: Date): boolean {
+  const { openingTime } = this.getOfficeHours();
+
+  const [openHour, openMin] = openingTime.split(':').map(Number);
+
+  const openDate = new Date(current);
+  openDate.setHours(openHour, openMin, 0, 0);
+
+  return current >= openDate;
+}
 }

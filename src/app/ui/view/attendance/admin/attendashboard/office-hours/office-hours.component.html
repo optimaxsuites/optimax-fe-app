@@ -20,6 +20,11 @@
       <span class="label">Closing Time</span>
       <span class="value">{{ form.value.closingTime }}</span>
     </div>
+
+    <div class="hour-item">
+  <span class="label">Absent After</span>
+  <span class="value">{{ form.value.absentTime }}</span>
+</div>
   </div>
 
   <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
@@ -32,6 +37,11 @@
       <label>Closing Time</label>
       <input type="time" formControlName="closingTime" />
     </div>
+
+    <div class="input-group">
+  <label>Mark Absent After</label>
+  <input type="time" formControlName="absentTime" />
+</div>
 
     <div class="actions">
       <button type="submit" class="primary" (click)="save()">Save Changes</button>

@@ -3,6 +3,7 @@ import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { LeaveServiceService } from '../../../service/leave-service.service';
 import { LeaveRequest } from '../../../domain/leave.dto';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-leave-request',
@@ -24,6 +25,7 @@ export class LeaveRequestComponent {
   selectedStatus: string[] = [];
   acceptModal = false;
   selectedRequest!: LeaveRequest | null;
+  selectedEmployee: any = null;
   searchTerm: string = '';
 
   comment: string = '';
@@ -32,6 +34,23 @@ export class LeaveRequestComponent {
   savedEmployees: any[] = [];
   allLeaveRequest: LeaveRequest[] = [];
   filteredCandidates: LeaveRequest[] = [];
+  leaveRequestColumns: TableColumn[] = [
+    { header: 'Employee', field: 'Employee', sortable: true, className: 'table-item' },
+    { header: 'Date Applied for', field: 'Date', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'LeaveType', sortable: true, className: 'table-item' },
+    { header: 'Net Leave Balance', field: 'NetLeaveBalance', sortable: true, className: 'table-item' },
+    { header: 'Requested Duration', field: 'RequestedDuration', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'Status', sortable: true, className: 'table-item' },
+  ];
+  leaveRequestActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' },
+    {
+      id: 'approveReject',
+      label: 'Approve/Reject',
+      icon: 'pi pi-download',
+      visible: (row) => row?.Status?.includes('Pending Approval'),
+    }
+  ];
 
   constructor(
     private messageService: MessageService,
@@ -129,26 +148,44 @@ export class LeaveRequestComponent {
   openAcceptRejectModal(employee: any) {
     this.openViewEmployee = false;
     this.selectedRequest = employee;
+    this.selectedEmployee = employee;
     this.acceptModal = true;
   }
 
   acceptLeave() {
-    if (!this.selectedRequest) return;
+     if (!this.selectedEmployee) return;
 
-    if (!this.selectedRequest.Status.includes('Pending')) return;
+    if (!this.selectedEmployee.Status.includes('Pending')) return;
 
     const employee = this.leaveService.getEmployeeById(
-      this.selectedRequest.EmployeeId,
+      this.selectedEmployee.EmployeeId,
     );
     if (!employee) return;
 
     const requestedDays = Number(
-      parseFloat(this.selectedRequest.RequestedDuration),
+      parseFloat(this.selectedEmployee.RequestedDuration),
     );
 
     const leaveType = employee.leaveTypes.find(
-      (lt) => lt.typeName === this.selectedRequest?.LeaveType,
+      (lt) => lt.typeName === this.selectedEmployee.LeaveType,
     );
+
+    // if (!this.selectedRequest) return;
+
+    // if (!this.selectedRequest.Status.includes('Pending')) return;
+
+    // const employee = this.leaveService.getEmployeeById(
+    //   this.selectedRequest.EmployeeId,
+    // );
+    // if (!employee) return;
+
+    // const requestedDays = Number(
+    //   parseFloat(this.selectedRequest.RequestedDuration),
+    // );
+
+    // const leaveType = employee.leaveTypes.find(
+    //   (lt) => lt.typeName === this.selectedRequest?.LeaveType,
+    // );
 
     if (!leaveType) {
       // this.rejectWithComment('Invalid leave type');
@@ -162,7 +199,7 @@ export class LeaveRequestComponent {
       this.messageService.add({
         severity: 'warn',
         summary: 'Leave',
-        detail: `${this.selectedRequest?.EmployeeId} has insufficient leave balance`,
+        detail: `${this.selectedEmployee?.EmployeeId} has insufficient leave balance`,
         key: 'tl',
         life: 3000,
       });
@@ -175,8 +212,10 @@ export class LeaveRequestComponent {
 
     this.leaveService.updateEmployee(employee);
 
-    this.selectedRequest.Status = 'Approved';
-    this.selectedRequest.ApprovalComment = this.comment || 'No comment';
+    // this.selectedRequest.Status = 'Approved';
+    // this.selectedRequest.ApprovalComment = this.comment || 'No comment';
+      this.selectedEmployee.Status = 'Approved';
+    this.selectedEmployee.ApprovalComment = this.comment || 'No comment';
 
     this.updateLocalStorage();
 
@@ -185,13 +224,32 @@ export class LeaveRequestComponent {
   }
 
   rejectLeave() {
-    if (
-      this.selectedRequest &&
-      this.selectedRequest.Status.includes('Pending Approval')
-    ) {
-      this.selectedRequest.Status = 'Rejected';
+    // if (
+    //   this.selectedRequest &&
+    //   this.selectedRequest.Status.includes('Pending Approval')
+    // ) {
+    //   this.selectedRequest.Status = 'Rejected';
 
-      this.selectedRequest.ApprovalComment = this.comment
+    //   this.selectedRequest.ApprovalComment = this.comment
+    //     ? this.comment
+    //     : 'No comment';
+
+    //   this.comment = '';
+    //   this.messageService.add({
+    //     severity: 'warn',
+    //     summary: 'Leave',
+    //     detail: `${this.selectedRequest?.EmployeeId}'s leave has been rejected`,
+    //     key: 'tl',
+    //     life: 3000,
+    //   });
+
+     if (
+      this.selectedEmployee &&
+      this.selectedEmployee.Status.includes('Pending Approval')
+    ) {
+      this.selectedEmployee.Status = 'Rejected';
+
+      this.selectedEmployee.ApprovalComment = this.comment
         ? this.comment
         : 'No comment';
 
@@ -199,7 +257,7 @@ export class LeaveRequestComponent {
       this.messageService.add({
         severity: 'warn',
         summary: 'Leave',
-        detail: `${this.selectedRequest?.EmployeeId}'s leave has been rejected`,
+        detail: `${this.selectedEmployee?.Employee}'s leave has been rejected`,
         key: 'tl',
         life: 3000,
       });
@@ -213,18 +271,27 @@ export class LeaveRequestComponent {
 
   closeModal() {
     this.acceptModal = false;
+    this.selectedEmployee = null;
     this.selectedRequest = null;
   }
 
   selectedRequests: LeaveRequest[] = [];
+    selectedEmployees: any[] = [];
 
   bulkApprove() {
   // Check if any requests selected
-  if (this.selectedRequests.length === 0) {
+  if (this.selectedEmployees.length == 0) return;
+    if (
+      this.selectedEmployees.every(
+        (emp) =>
+          emp.Status.includes('Approved') || emp.Status.includes('Rejected'),
+      )
+) {
+this.selectedEmployees = [];
     this.messageService.add({
       severity: 'warn',
-      summary: 'No Selection',
-      detail: 'Please select requests to approve',
+      summary: 'Leave',
+      detail: `Selected leave(s) has already been decided`,
       key: 'tl',
       life: 3000,
     });
@@ -232,7 +299,7 @@ export class LeaveRequestComponent {
   }
 
   // Filter only pending requests
-  const pendingRequests = this.selectedRequests.filter(req =>
+  const pendingRequests = this.selectedEmployee.filter((req: { Status: string | string[]; }) =>
     req.Status.includes('Pending Approval')
   );
 
@@ -245,7 +312,7 @@ export class LeaveRequestComponent {
       key: 'tl',
       life: 3000,
     });
-    this.selectedRequests = [];
+    this.selectedEmployee = [];
     return;
   }
 
@@ -254,7 +321,7 @@ export class LeaveRequestComponent {
   const rejectionReasons: string[] = [];
 
   // Process each pending request
-  pendingRequests.forEach((request) => {
+  pendingRequests.forEach((request: { EmployeeId: string; RequestedDuration: string; LeaveType: string; Status: string; ApprovalComment: string; }) => {
     const employee = this.leaveService.getEmployeeById(request.EmployeeId);
     
     if (!employee) {
@@ -342,12 +409,13 @@ export class LeaveRequestComponent {
 
   // Clear selection and reload data
   this.selectedRequests = [];
+    this.selectedEmployees = [];
   this.ngOnInit(); // Reload data to refresh the view
 }
 
   bulkReject() {
   // Check if any requests selected
-  if (this.selectedRequests.length === 0) {
+  if (this.selectedEmployees.length === 0) {
     this.messageService.add({
       severity: 'warn',
       summary: 'No Selection',
@@ -359,7 +427,7 @@ export class LeaveRequestComponent {
   }
 
   // Filter only pending requests
-  const pendingRequests = this.selectedRequests.filter(req =>
+  const pendingRequests = this.selectedEmployees.filter(req =>
     req.Status.includes('Pending Approval')
   );
 
@@ -396,6 +464,7 @@ export class LeaveRequestComponent {
 
   // Clear selection and reload data
   this.selectedRequests = [];
+    this.selectedEmployees = [];
   this.ngOnInit(); // Reload data to refresh the view
 }
 
@@ -406,11 +475,20 @@ export class LeaveRequestComponent {
     );
   }
 
-  viewEmployee(employee: any, op: any) {
+  viewEmployee(employee: any, op?: any) {
     this.employeeInView = employee;
     console.log(employee);
     this.openViewEmployee = true;
-    op.hide();
+    op?.hide?.();
+  }
+
+  handleLeaveRequestAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewEmployee(event.row);
+    }
+    if (event.actionId === 'approveReject') {
+      this.openAcceptRejectModal(event.row);
+    }
   }
 
   downloadAttachment(leaveRequest: any) {

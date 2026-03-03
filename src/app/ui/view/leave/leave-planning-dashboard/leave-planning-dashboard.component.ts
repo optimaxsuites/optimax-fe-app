@@ -59,8 +59,6 @@ export class LeavePlanningDashboardComponent implements OnInit {
   departmentsAtRisk = 0;
 
   // Policy Settings
-  showPolicySettings = false;
-    planningPolicy!: LeavePlanningPolicy;
   planningMode: 'Annual' | 'Rolling' | 'Custom' = 'Rolling';
   planningModes: ('Annual' | 'Rolling' | 'Custom')[] = [
     'Annual',
@@ -95,7 +93,6 @@ export class LeavePlanningDashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
-    this.planningPolicy = this.leaveService.getLeavePlanningPolicy();
   }
 
   loadData() {
@@ -273,27 +270,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
     ];
   }
 
-  // savePolicy() {
-  //   const policy = {
-  //     planningMode: this.planningMode,
-  //     planningWindowDays: this.planningWindowDays,
-  //     maxDaysPerPlan: this.maxDaysPerPlan,
-  //     totalAllowedPlannedDays: this.totalAllowedPlannedDays,
-  //     emergencyLeaveEnabled: this.emergencyLeaveEnabled,
-  //   };
 
-  //   localStorage.setItem('leavePlanningPolicy', JSON.stringify(policy));
-
-  //   this.messageService.add({
-  //     severity: 'success',
-  //     summary: 'Policy Saved',
-  //     detail: 'Leave planning policy updated successfully',
-  //     key: 'tl',
-  //     life: 3000,
-  //   });
-
-  //   this.showPolicySettings = false;
-  // }
   getDepartmentStats() {
     const deptMap = new Map<string, number>();
 
@@ -365,66 +342,5 @@ export class LeavePlanningDashboardComponent implements OnInit {
     });
 
     return maxDept || '-';
-  }
-savePolicy() {
-    // Validate
-    if (this.planningPolicy.maxDaysPerMonth * this.planningPolicy.maxPlanningMonths 
-        !== this.planningPolicy.totalAllowedPlannedDays) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Warning',
-        detail: `Total days (${this.planningPolicy.totalAllowedPlannedDays}) should equal max days per month (${this.planningPolicy.maxDaysPerMonth}) × months (${this.planningPolicy.maxPlanningMonths})`,
-        key: 'tl',
-        life: 5000,
-      });
-    }
-
-    this.leaveService.updateLeavePlanningPolicy(this.planningPolicy);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Policy Saved',
-      detail: 'Leave planning policy updated successfully',
-      key: 'tl',
-      life: 3000,
-    });
-
-    this.showPolicySettings = false;
-  }
-
-  // Approve plan
-  approvePlan(plan: PlannedLeave) {
-    if (!confirm(`Approve ${plan.employeeName}'s plan for ${plan.workingDays} days?`)) {
-      return;
-    }
-
-    this.leaveService.approvePlannedLeave(plan.id);
-    this.loadData();
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Plan Approved',
-      detail: `${plan.employeeName}'s leave plan approved`,
-      key: 'tl',
-      life: 3000,
-    });
-  }
-
-  // Reject plan
-  rejectPlan(plan: PlannedLeave) {
-    if (!confirm(`Reject ${plan.employeeName}'s plan for ${plan.workingDays} days?`)) {
-      return;
-    }
-
-    this.leaveService.rejectPlannedLeave(plan.id);
-    this.loadData();
-
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Plan Rejected',
-      detail: `${plan.employeeName}'s leave plan rejected`,
-      key: 'tl',
-      life: 3000,
-    });
   }
 }

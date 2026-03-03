@@ -1,16 +1,11 @@
-import { Component, OnInit , Input } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, Input } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { environment } from '../../../shared-component/service/environments/environment';
-import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
-import { DataService } from '../../../service/data.service';
 import { MetadataService } from '../../../service/metadata.service';
+import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
 interface Employee {
   id: number;
@@ -63,12 +58,10 @@ export class AddEmployeeFormComponent {
   guarantorForm!: FormGroup
   NOKForm!: FormGroup
   registerInfo!: FormGroup
-  showModal: boolean = false;
-  currentFile: string = '';
   hide = true;
   hideConfirm = true;
   loading = false
-  fileDataUrl: SafeUrl = '';
+  draftLoading = false;
   imageURL: string =''
   salaryStructure: any = [];
   departments = [
@@ -136,13 +129,13 @@ export class AddEmployeeFormComponent {
     private fb: FormBuilder,  
     private metadataService: MetadataService,
     private messageService: MessageService,
-    private dataService: DataService, 
     private employeeService: EmployeeService, 
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorMessageService: ErrorMessageService
   ) {  }
 
   ngOnInit(): void {
-    this.employeeId = this.route.snapshot.paramMap.get('id') as unknown as number;
+    this.employeeId = parseFloat(this.route.snapshot.paramMap.get('id') as string);
     const today = new Date();
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
     this.maxDate = maxDate.toISOString().split('T')[0];  
@@ -188,14 +181,6 @@ export class AddEmployeeFormComponent {
       fullName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
-      address: ['', [Validators.required]],
-      relationship: ['', [Validators.required]],
-      DOB: ['', [Validators.required]],
-      idNumber: ['', [Validators.required]],
-      yearsKnown: ['', [Validators.required, ]],
-      signature: ['', [Validators.required, this.imageFileValidator()]],
-      passportPhoto: ['', [Validators.required, this.imageFileValidator()]],
-      idCard: ['', [ this.imageFileValidator()]],
     });
 
     this.registerInfo = this.fb.group( {
@@ -211,6 +196,7 @@ export class AddEmployeeFormComponent {
   }
 
   fetchMetaData(){
+    this.metadataService.ensureMetaLoaded();
     this.metadataService.gender$.subscribe(data => (this.gender = data));
     this.metadataService.maritalStatuses$.subscribe(data => (this.maritalStatuses = data));
     this.metadataService.religions$.subscribe(data => (this.religions = data));
@@ -219,16 +205,99 @@ export class AddEmployeeFormComponent {
   fetchEmployeeData(employeeId: number): void {
     this.employeeService.getEmployeeById(employeeId).subscribe({
       next: (employee: any) => {
-        this.employeeData = employee
-        this.basicForm.patchValue({
-              firstName: employee.firstName,
-              lastName: employee.lastName,
-              email: employee.email,
-            });
+        this.employeeData = employee;
+        this.applyEmployeeData(employee);
       }
     })
 
     console.log(this.employeeData)
+  }
+
+  private applyEmployeeData(employee: any): void {
+    if (!employee) return;
+
+    const genderId = this.resolveId(employee.genderId ?? employee.gender);
+    const maritalStatusId = this.resolveId(employee.maritalStatusId ?? employee.maritalStatus);
+    const religionId = this.resolveId(employee.religionId ?? employee.religion);
+
+    this.basicForm.patchValue({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone,
+      address: employee.address,
+      DOB: this.toDateInputValue(employee.dob ?? employee.DOB),
+      gender: genderId,
+      maritalStatus: maritalStatusId,
+      religion: religionId
+    });
+
+    this.employeeForm.patchValue({
+      bankName: employee.bankName,
+      accountNumber: employee.accountNumber,
+      bvn: employee.bvn,
+      nin: employee.nin
+    });
+
+    const mediaNo = employee?.employeeMedia?.mediaNo;
+    const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
+    if (mediaNo) {
+      this.loadProfilePhoto(mediaNo);
+      this.basicForm.get('profilePhoto')?.setValue(mediaNo);
+    } else if (profileImage) {
+      this.imageURL = profileImage;
+      this.basicForm.get('profilePhoto')?.setValue(profileImage);
+    }
+    this.basicForm.get('profilePhoto')?.updateValueAndValidity();
+
+    const nextOfKin = employee?.nextOfKin || employee?.nextOfKins;
+    if (Array.isArray(nextOfKin)) {
+      this.nextOfKinList = nextOfKin.map((nok: any) => ({
+        fullName: nok.fullName,
+        email: nok.email,
+        phone: nok.phone,
+        address: nok.address,
+        relationship: this.resolveId(nok.relationshipId ?? nok.relationship),
+        DOB: this.toDateInputValue(nok.dob ?? nok.DOB),
+        emergencyContact: nok.emergencyContact,
+        __saved: true
+      }));
+    }
+
+    const guarantors = employee?.guarantor || employee?.guarantors;
+    if (Array.isArray(guarantors)) {
+      this.guarantorList = guarantors.map((guarantor: any) => ({
+        fullName: guarantor.fullName,
+        email: guarantor.email,
+        phone: guarantor.phone,
+        __saved: true
+      }));
+    }
+  }
+
+  private resolveId(value: any): any {
+    if (!value) return value;
+    if (typeof value === 'object' && 'id' in value) return value.id;
+    return value;
+  }
+
+  private toDateInputValue(date: Date | string | null | undefined): string | null {
+    if (!date) return null;
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return formatDate(parsed, 'yyyy-MM-dd', 'en-US');
+  }
+
+  private loadProfilePhoto(mediaNo: string): void {
+    this.employeeService.getEmployeeImage(mediaNo).subscribe({
+      next: (response) => {
+        const blob = new Blob([response], { type: 'image/png' });
+        this.imageURL = URL.createObjectURL(blob);
+      },
+      error: (err) => {
+        console.error('Failed to load profile photo:', err);
+      }
+    });
   }
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -248,15 +317,7 @@ export class AddEmployeeFormComponent {
       }
     }
     else if(typeof(file) == "string"){
-      const allowedTypes = ['.png', '.jpeg', '.jpg'];
-      const fileExtension = file.slice(file.lastIndexOf('.')).toLowerCase();
-      console.log(file)
-    console.log(fileExtension)
-      if (!allowedTypes.includes(fileExtension )) {
-        return { invalidFileType: true };
-      }else{
-       return null
-      }
+      return null;
     } 
     else {return {invalidFileType: true}}
   };
@@ -284,7 +345,20 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
     if(this.NOKForm.valid) {
     this.addNextOfKin()
     }
-    this.nextOfKinList.map((nok) => {
+    this.saveNextOfKinEntries();
+    this.nextTab()
+  }
+
+  private saveNextOfKinEntries(onComplete?: (hadError: boolean) => void) {
+    const unsaved = this.nextOfKinList.filter((nok) => !nok.__saved);
+    if (unsaved.length === 0) {
+      onComplete?.(false);
+      return;
+    }
+    let pending = unsaved.length;
+    let hadError = false;
+
+    unsaved.forEach((nok) => {
       const nokData = {
         fullName: nok.fullName,
         email: nok.email,
@@ -299,9 +373,24 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
       const formData = new FormData();
       formData.append('nextOfKinDTO', JSON.stringify(nokData));
 
-      this.employeeService.addNOK(formData).subscribe()
-    })
-    this.nextTab()
+      this.employeeService.addNOK(formData).subscribe({
+        next: () => {
+          nok.__saved = true;
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        },
+        error: (err) => {
+          hadError = true;
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Failed to save next of kin details. Please try again.'
+          );
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        }
+      })
+    });
   }
   nextTabFromGuarantor(){
     console.log(this.guarantorForm.value)
@@ -311,33 +400,47 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
     if(this.guarantorForm.valid) {
     this.addGuarantor()
     }
-    this.guarantorList.map((guarantor) => {
+    this.saveGuarantorEntries();
+    this.nextTab()
+  }
+
+  private saveGuarantorEntries(onComplete?: (hadError: boolean) => void) {
+    const unsaved = this.guarantorList.filter((guarantor) => !guarantor.__saved);
+    if (unsaved.length === 0) {
+      onComplete?.(false);
+      return;
+    }
+    let pending = unsaved.length;
+    let hadError = false;
+
+    unsaved.forEach((guarantor) => {
       const guarantorData = {
         fullName: guarantor.fullName,
         email: guarantor.email,
         phone: guarantor.phone,
-        address: guarantor.address,
-        relationshipId: guarantor.relationship,
-        dob: this.toLocalDateTime(guarantor.DOB),
         employeeId:  Number(this.employeeId),
-        yearsKnown: Number(guarantor.yearsKnown),
-        idNumber: Number(guarantor.idNumber)
       } 
 
       const formData = new FormData();
       formData.append('guarantor', JSON.stringify(guarantorData));
-      if (guarantor.passportPhoto instanceof File) {
-        formData.append('Passport Photograph', guarantor.passportPhoto)
-      }
-      if (guarantor.idCard instanceof File) {
-        formData.append('Id Photo', guarantor.idCard)
-      }
-      if (guarantor.signature instanceof File) {
-        formData.append('Signature', guarantor.signature)
-      }
-      this.employeeService.addGuarantor(formData).subscribe()
-    })
-    this.nextTab()
+      this.employeeService.addGuarantor(formData).subscribe({
+        next: () => {
+          guarantor.__saved = true;
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        },
+        error: (err) => {
+          hadError = true;
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Failed to save guarantor details. Please try again.'
+          );
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          pending -= 1;
+          if (pending === 0) onComplete?.(hadError);
+        }
+      })
+    });
   }
 
   previousTab() {
@@ -351,6 +454,77 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   this.addNewEmployee()
   }
 
+  saveDraft() {
+    if (this.draftLoading || this.loading) return;
+
+    const isValid = this.validateCurrentSectionForDraft();
+    if (!isValid) return;
+
+    this.draftLoading = true;
+
+    if (this.currentTab === 3) {
+      this.saveNextOfKinEntries((hadError) => {
+        this.draftLoading = false;
+        if (!hadError) {
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+        }
+      });
+      return;
+    }
+
+    if (this.currentTab === 4) {
+      this.saveGuarantorEntries((hadError) => {
+        this.draftLoading = false;
+        if (!hadError) {
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+        }
+      });
+      return;
+    }
+
+    const formData = this.buildEmployeeFormData();
+    this.employeeService.addEmployee(formData).subscribe({
+      next: () => {
+        this.draftLoading = false;
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
+      },
+      error: (err) => {
+        this.draftLoading = false;
+        const detail = this.errorMessageService.getUserMessage(
+          err,
+          'Failed to save draft. Please try again.'
+        );
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      }
+    })
+  }
+
+  private validateCurrentSectionForDraft(): boolean {
+    if (this.currentTab === 1) {
+      this.basicForm.markAllAsTouched();
+      return this.basicForm.valid;
+    }
+    if (this.currentTab === 2) {
+      this.employeeForm.markAllAsTouched();
+      return this.employeeForm.valid;
+    }
+    if (this.currentTab === 3) {
+      this.NOKForm.markAllAsTouched();
+      if (this.NOKForm.valid) {
+        this.addNextOfKin();
+      }
+      return this.nextOfKinList.length > 0;
+    }
+    if (this.currentTab === 4) {
+      this.guarantorForm.markAllAsTouched();
+      if (this.guarantorForm.valid) {
+        this.addGuarantor();
+      }
+      return this.guarantorList.length > 0;
+    }
+    return true;
+  }
+
   toLocalDateTime(date: Date | string): string {
     if (!date) return '';
     const parsedDate = new Date(date);
@@ -358,6 +532,56 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
 addNewEmployee(){
+  const formData = this.buildEmployeeFormData();
+      const vettingPayload = this.buildEmployeePayload();
+
+  this.employeeService.updateEmployee(formData, vettingPayload.employee.id).subscribe({
+    next: (data: any) => {
+      const vettingPayload = this.buildEmployeePayload();
+      if (data?.id) {
+        vettingPayload.employee.id = data.id;
+        vettingPayload.employeeId = data.id;
+      }
+      this.employeeService.sendOnboardingVetting(vettingPayload).subscribe({
+        error: (err) => {
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Vetting request could not be sent. Please contact support.'
+          );
+          this.messageService.add({ severity: 'warn', summary: 'Notice', detail, key: 'tl', life: 4000 });
+        }
+      });
+
+      console.log(data)
+      this.loading = false;
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
+      this.basicForm.reset()
+      this.guarantorForm.reset()
+      this.employeeForm.reset()
+      // this.currentTab = 1
+
+      // if (shouldRedirect) {
+      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+      // }
+    },
+    error: (err) => {
+      this.loading = false;
+      const detail = this.errorMessageService.getUserMessage(
+        err,
+        'Failed to submit onboarding details. Please try again.'
+      );
+      console.log("vettingPayload:", vettingPayload)
+      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+    }
+  })
+}
+
+private buildEmployeePayload(): {
+  employeeId: number;
+  employee: any;
+  nextOfKin: any[];
+  guarantors: any[];
+} {
   const newEmployee = {
  
 
@@ -368,7 +592,7 @@ addNewEmployee(){
     workEmail: this.employeeData.workEmail,
     jobTitle: this.employeeData.jobTitle,
     departmentId: this.employeeData.departmentId,
-    levelId: this.employeeData.levelId,
+    levelId: 4,
     employmentType:  this.employeeData.employmentType,
     supervisor: this.employeeData.supervisor,
 
@@ -394,43 +618,57 @@ addNewEmployee(){
     bvn: this.employeeForm.get('bvn')?.value,
   
 
+    // levelId: this.employeeData.levelId,
+    // departmentId: this.employeeData.departmentId,
+    //  jobTitle: this.employeeData.jobTitle,
+     profilePhoto: this.basicForm.get('profilePhoto')?.value instanceof File ? null : this.basicForm.get('profilePhoto')?.value || null
 
   
-  }
+  };
+
+  const nextOfKin = this.nextOfKinList.map((nok) => ({
+    fullName: nok.fullName,
+    email: nok.email,
+    phone: nok.phone,
+    address: nok.address,
+    relationshipId: nok.relationship,
+    dob: this.toLocalDateTime(nok.DOB),
+    emergencyContact: nok.emergencyContact,
+    employeeId: Number(this.employeeId)
+  }));
+
+  const guarantors = this.guarantorList.map((guarantor) => ({
+    fullName: guarantor.fullName,
+    email: guarantor.email,
+    phone: guarantor.phone,
+    employeeId: Number(this.employeeId)
+  }));
+
+  return {
+    employeeId: Number(this.employeeId),
+    employee: newEmployee,
+    nextOfKin,
+    guarantors
+  };
+}
+
+private buildEmployeeFormData():any {
+  const payload = this.buildEmployeePayload();
   const formData = new FormData();
-  formData.append('employee', JSON.stringify(newEmployee));
+  formData.append('employee', JSON.stringify(payload.employee));
 
   if (this.basicForm.get('profilePhoto')?.value instanceof File) {
     formData.append('file', this.basicForm.get('profilePhoto')?.value)
   }
   console.log(formData)
-  this.employeeService.addEmployee(formData).subscribe(
-   { next: (data: any) => {
-    console.log(data)
-    this.loading = false;
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
-    this.basicForm.reset()
-    this.guarantorForm.reset()
-    this.employeeForm.reset()
-    // this.currentTab = 1
-
-    // if (shouldRedirect) {
-    //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-    //   }
-   }
-  })
-
-
-
-
-
+  return payload.employee;
 }
 
 
  
   addNextOfKin() {
     if (this.NOKForm.valid) {
-      this.nextOfKinList.push(this.NOKForm.value);
+      this.nextOfKinList.push({ ...this.NOKForm.value, __saved: false });
       this.NOKForm.reset(); 
     } else {
     }
@@ -450,31 +688,13 @@ addNewEmployee(){
   }
   addGuarantor() {
     if (this.guarantorForm.valid) {
-      const guarantor = { ...this.guarantorForm.value };
-  
-      // Convert files to base64 if they are present
-      this.convertFileToBase64(guarantor.signature).then(base64 => guarantor.signature = base64);
-      this.convertFileToBase64(guarantor.passportPhoto).then(base64 => guarantor.passportPhoto = base64);
-      this.convertFileToBase64(guarantor.idCard).then(base64 => guarantor.idCard = base64);
-  
+      const guarantor = { ...this.guarantorForm.value, __saved: false };
       // Push to the guarantorList
       this.guarantorList.push(guarantor);
   
       // Reset the form
       this.guarantorForm.reset();
     }
-  }
-  convertFileToBase64(file: File | null): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        resolve(null);
-      } else {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-      }
-    });
   }
   
   editGuarantor(index: number) {
@@ -483,14 +703,6 @@ addNewEmployee(){
       fullName: guarantor.fullName,
       email: guarantor.email,
       phone: guarantor.phone,
-      address: guarantor.address,
-      relationship: guarantor.relationship,
-      DOB: guarantor.DOB,
-      idNumber: guarantor.idNumber,
-      yearsKnown: guarantor.yearsKnown,
-      signature: null, 
-      passportPhoto: null, 
-      idCard: null, 
     });
     this.guarantorList.splice(index, 1);
   }
@@ -501,18 +713,6 @@ addNewEmployee(){
     }
   }
 
-  onFileChange(event: Event, controlName: string) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length) {
-      const file = input.files[0];
-     console.log(`${controlName} file:`, file);
-      // this.guarantorForm.patchValue({ [controlName]: file }); 
-      this.guarantorForm.get(controlName)?.setValue(file)
-
-      this.guarantorForm.get(controlName)?.updateValueAndValidity();
-
-    }
-  }
   onProfilePhotoChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
@@ -531,33 +731,12 @@ addNewEmployee(){
     }));
   }
   getKeys(obj: any): string[] {
-    return Object.keys(obj);
+    return Object.keys(obj).filter(key => key !== '__saved');
   }
   toTitleCaseWithSpace(key: string): string {
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
-  }
-  isFile(value: any): boolean {
-    return typeof value === 'string' && value.startsWith('data:image/');
-  }
-
-  openFileInModal(fileUrl: string) {
-    this.currentFile = fileUrl;
-    this.showModal = true;
-  }
-
-  closeModal() {
-    this.showModal = false;
-    this.fileDataUrl = '';
-  }
-
-  previewFile(fileUrl: string) {
-    if (fileUrl) {
-      this.fileDataUrl = fileUrl;
-      this.showModal = true;
-    }
-  
   }
 
   previewImageFile(file: File){

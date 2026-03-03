@@ -15,6 +15,13 @@
             </div>
         </header>
 
+        <section class="alerts-section" *ngIf="alerts.length > 0">
+            <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
+                <i class="fas" [ngClass]="alert.level === 'danger' ? 'fa-exclamation-triangle' : 'fa-bell'"></i>
+                <span>{{ alert.message }}</span>
+            </div>
+        </section>
+
         <!-- Quick Actions -->
         <section class="quick-actions">
             <h2>Quick Actions</h2>
@@ -42,6 +49,17 @@
                     <i class="fas fa-list"></i>
                     All Loans
                 </button>
+
+                <button class="btn-primary" (click)="manageEmployeeWelfare()">
+                    <i class="fas fa-clipboard"></i>
+                    Manage Employee Welfare
+                </button>
+
+                <button class="btn-primary" (click)="generateReports()">
+                    <i class="fas fa-chart-bar"></i>
+                    Generate Reports
+                </button>
+
             </div>
         </section>
 
@@ -53,7 +71,7 @@
                 </div>
                 <div class="card-content">
                     <h3>Active Loans</h3> 
-                    <p class="stat-value">{{ dashboardStats?.activeLoans }}</p>
+                    <p class="stat-value">{{ dashboardStats.activeLoans }}</p>
                 </div>
             </div>
             <div class="stat-card" (click)="showPendingLoans()" style="cursor: pointer;">
@@ -62,7 +80,7 @@
                 </div>
                 <div class="card-content">
                     <h3>Pending Applications</h3>  
-                    <p class="stat-value">{{ dashboardStats?.pendingApplications }}</p>
+                    <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
                 </div>
             </div>
             <div class="stat-card"> 
@@ -72,7 +90,7 @@
                 <div class="card-content">
                     <h3>Total Balance</h3> 
                     <p class="stat-value">
-                        ₦{{ dashboardStats?.totalBalance | number:'1.2-2' }}
+                        ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
                     </p> 
                 </div>
             </div>
@@ -104,7 +122,7 @@
             </div>
 
             <div class="table-wrapper" *ngIf="filteredLoans.length > 0">
-                <table class="loan-table"> 
+                <table appSortableTable class="loan-table"> 
                     <thead>
                         <tr>
                             <th>Loan ID</th>
@@ -118,7 +136,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let loan of filteredLoans">
-                            <td class="loan-id">{{ loan.id }}</td>
+                            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
                             <td>
                                 <div class="employee-info">
                                     <span class="name">{{ loan.fullName }}</span>
@@ -136,12 +154,16 @@
                             <td>
                                 <div class="action-buttons">
                                     <button class="btn-view" 
-                                            (click)="viewLoanDetails(loan.id)">
-                                        <i class="fas fa-eye"></i> View
+                                            (click)="viewLoanDetails(loan.id)"
+                                            title="View"
+                                            aria-label="View">
+                                        <i class="fas fa-eye"></i>
                                     </button>
                                     <button class="btn-history" 
-                                            (click)="seeLoanHistory(loan.employeeId)">
-                                        <i class="fas fa-history"></i> History
+                                            (click)="seeLoanHistory(loan.employeeId)"
+                                            title="See History"
+                                            aria-label="See History">
+                                        <i class="fas fa-history"></i>
                                     </button>
                                 </div>
                             </td>

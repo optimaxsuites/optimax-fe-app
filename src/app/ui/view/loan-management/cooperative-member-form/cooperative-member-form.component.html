@@ -6,19 +6,17 @@
   </div>
 
   <div *ngIf="!isLoading" class="form-content">
-    <!-- Header -->
     <div class="form-header">
-      <button class="back-btn" (click)="cancel()">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
-      <h1>
-        <i class="fas" [class.fa-user-plus]="!isEdit" [class.fa-user-edit]="isEdit"></i>
-        {{ isEdit ? 'Edit Member' : 'Add New Member' }}
-      </h1>
+      <h1>{{ isEdit ? 'EDIT MEMBER' : 'ADD NEW MEMBER' }}</h1>
+      <div class="header-actions">
+        <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="!memberForm.valid" form="member-form">
+          Save
+        </button>
+      </div>
     </div>
 
-    <!-- Form -->
-    <form [formGroup]="memberForm" (ngSubmit)="onSubmit()" class="member-form">
+    <form id="member-form" [formGroup]="memberForm" (ngSubmit)="onSubmit()" class="member-form">
       <div class="form-section">
         <h2>Personal Information</h2>
         
@@ -57,13 +55,26 @@
 
       <div class="form-section">
         <h2>Membership Details</h2>
+
+        <div class="form-group">
+          <label>Member ID</label>
+          <input
+            type="text"
+            [value]="memberIdDisplay"
+            readonly>
+          <small class="hint" *ngIf="!isEdit">Auto-generated when member is saved</small>
+        </div>
         
         <div class="form-row">
           <div class="form-group">
-            <label>Share Capital (₦) <span class="required">*</span></label>
-            <input type="number" formControlName="shareCapital" placeholder="0">
+            <label>{{ isEdit ? 'Share Capital (₦)' : 'Initial Share Purchase (₦)' }} <span class="required">*</span></label>
+            <div class="currency-input">
+              <span>₦</span>
+              <input type="number" formControlName="shareCapital" [placeholder]="isEdit ? 'Update share capital' : 'Enter initial share purchase amount'">
+            </div>
+            <small class="hint">Used to determine share-backed loan eligibility.</small>
             <div class="error" *ngIf="memberForm.get('shareCapital')?.invalid && memberForm.get('shareCapital')?.touched">
-              <span *ngIf="memberForm.get('shareCapital')?.errors?.['required']">Share capital is required</span>
+              <span *ngIf="memberForm.get('shareCapital')?.errors?.['required']">{{ isEdit ? 'Share capital is required' : 'Initial share purchase is required' }}</span>
               <span *ngIf="memberForm.get('shareCapital')?.errors?.['min']">Must be 0 or more</span>
             </div>
           </div>
@@ -76,6 +87,11 @@
               <option value="SUSPENDED">Suspended</option>
             </select>
           </div>
+        </div>
+
+        <div class="eligibility-box">
+          <strong>Share-backed Loan Eligibility:</strong>
+          <span>{{ formatCurrency(maxShareBackedEligibility) }}</span>
         </div>
       </div>
 
@@ -98,14 +114,6 @@
             <input type="text" formControlName="emergencyRelationship" placeholder="e.g., Spouse, Brother">
           </div>
         </div>
-      </div>
-
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
-        <button type="submit" class="submit-btn" [disabled]="!memberForm.valid">
-          {{ isEdit ? 'Update Member' : 'Add Member' }}
-        </button>
       </div>
     </form>
   </div>

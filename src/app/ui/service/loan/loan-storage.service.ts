@@ -7,11 +7,14 @@ import { LoanApplication } from './loan.types';
   providedIn: 'root'
 })
 export class LoanStorageService {
-  private storageKey = 'loanApplications';
+  private storageKey = 'loanApplications_v2';
+  private legacyStorageKeys = ['loanApplications'];
+  private resetMarkerKey = 'loanDataReset_v2';
   private applications: LoanApplication[] = [];
   private applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
   
   constructor() {
+    this.resetSavedDataIfNeeded();
     this.loadFromStorage();
     this.applicationsSubject.next(this.applications);
   }
@@ -111,6 +114,20 @@ export class LoanStorageService {
         this.applications = [];
       }
     }
+  }
+
+  private resetSavedDataIfNeeded(): void {
+    if (localStorage.getItem(this.resetMarkerKey) === 'done') {
+      return;
+    }
+
+    [this.storageKey, ...this.legacyStorageKeys].forEach((key) => {
+      if (localStorage.getItem(key) !== null) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    localStorage.setItem(this.resetMarkerKey, 'done');
   }
 
   private saveToStorage(): void {

@@ -74,9 +74,9 @@ export class LeavePlanComponent implements OnInit {
     select: this.handleDateSelect.bind(this),
     events: this.calendarEvents,
     headerToolbar: {
-      left: 'prev,next today',
+      left: 'prev,next',
       center: 'title',
-      right: 'dayGridMonth,dayGridWeek',
+      right: 'dayGridMonth',
     },
     height: 'auto',
     validRange: {
@@ -143,7 +143,7 @@ export class LeavePlanComponent implements OnInit {
 
     // Calculate end date (subtract 1 day as FullCalendar is exclusive)
     const endDate = new Date(selectInfo.end);
-    endDate.setDate(endDate.getDate() - 1);
+    endDate.setDate(endDate.getDate());
     this.selectedEndDate = endDate.toISOString().split('T')[0];
 
     this.calculateWorkingDays();
@@ -151,25 +151,20 @@ export class LeavePlanComponent implements OnInit {
   }
 
   calculateWorkingDays() {
-    if (!this.selectedStartDate || !this.selectedEndDate) {
-      this.workingDays = 0;
-      return;
-    }
-
-    const start = new Date(this.selectedStartDate);
-    const end = new Date(this.selectedEndDate);
-    let days = 0;
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dayOfWeek = d.getDay();
-      // Skip weekends (0 = Sunday, 6 = Saturday)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        days++;
-      }
-    }
-
-    this.workingDays = days;
+  if (!this.selectedStartDate || !this.selectedEndDate) {
+    this.workingDays = 0;
+    return;
   }
+
+  const start = new Date(this.selectedStartDate);
+  const end = new Date(this.selectedEndDate);
+  
+  // Calculate total days including weekends
+  const timeDiff = end.getTime() - start.getTime();
+  const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+
+  this.workingDays = days;
+}
 
   // submitPlan() {
   //   // Validation

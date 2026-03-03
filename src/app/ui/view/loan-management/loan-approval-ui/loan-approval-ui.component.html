@@ -1,4 +1,6 @@
 <div class="loan-approval-container">
+    <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
     <!-- Add loading indicator -->
     <div *ngIf="isLoading" class="loading">
         Loading applications...
@@ -6,6 +8,7 @@
 
     <div *ngIf="!isLoading">
         <header class="approval-header">
+            <app-back-button (click)="goBack()"></app-back-button>
             <h1>Loan Applications</h1>
             <div class="search-box">
                 <input type="text"
@@ -70,59 +73,13 @@
 
         <!-- Table Section -->
         <div class="approval-table-container">
-            <table class="loans-table">
-                <thead>
-                    <tr>
-                        <th (click)="setSort('employeeId')" class="sortable">
-                            Employee ID 
-                            <i class="fas" [ngClass]="getSortIcon('employeeId')"></i>
-                        </th>
-                        <th (click)="setSort('fullName')" class="sortable">
-                            Name 
-                            <i class="fas" [ngClass]="getSortIcon('fullName')"></i>
-                        </th>
-                        <th (click)="setSort('department')" class="sortable">
-                            Department 
-                            <i class="fas" [ngClass]="getSortIcon('department')"></i>
-                        </th>
-                        <th (click)="setSort('loanAmount')" class="sortable">
-                            Amount 
-                            <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
-                        </th>
-                        <th (click)="setSort('dateSubmitted')" class="sortable">
-                            Date Submitted 
-                            <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
-                        </th>
-                        <th (click)="setSort('status')" class="sortable">
-                            Status 
-                            <i class="fas" [ngClass]="getSortIcon('status')"></i>
-                        </th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let loan of filteredLoans">
-                        <td>{{ loan.employeeId }}</td>
-                        <td>{{ loan.fullName }}</td>
-                        <td>{{ loan.department }}</td>
-                        <td>₦{{ loan.loanAmount | number:'1.2-2' }}</td>
-                        <td>{{ loan.dateSubmitted | date:'mediumDate' }}</td>
-                        <td>
-                            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-                                {{ loan.status }}
-                            </span>
-                        </td>
-                        <td class="actions">
-                            <button class="btn-view" (click)="viewLoanDetails(loan.id, loan.employeeId)">
-                                View
-                            </button>
-                            <button class="btn-history" (click)="seeLoanHistory(loan.employeeId)">
-                                History
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <app-table
+                [columns]="loanColumns"
+                [rows]="filteredLoans"
+                [actions]="loanActions"
+                [emptyMessage]="'No loan applications found matching your filters'"
+                (actionClick)="handleLoanAction($event)"
+            ></app-table>
         </div>
     </div>
 </div>

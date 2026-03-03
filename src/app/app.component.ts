@@ -3,7 +3,6 @@ import { TabConfig } from './ui/shared-component/service/interface/data';
 import { RecruitmentListComponent } from './ui/view/recruitment/recruitment-list/recruitment-list.component';
 import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.component';
 import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-interview/scheduled-interview.component';
-import { MessageService } from 'primeng/api';
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
 import { MetadataService } from './ui/service/metadata.service';
 
@@ -11,7 +10,6 @@ import { MetadataService } from './ui/service/metadata.service';
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  providers: [MessageService],
 })
 export class AppHrComponent {
   messageService: any;
@@ -27,7 +25,7 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.userLoginAction();
-    this.metadataService.fetchMetaData();
+    this.metadataService.fetchMetaData(true);
   }
   async userLoginAction(): Promise<void> {
     const loginDetails = {

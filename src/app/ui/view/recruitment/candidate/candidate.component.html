@@ -29,60 +29,17 @@
       </div>
     </div>
 
-    <p-table 
-      [value]="filteredCandidates" 
+    <app-table 
+      [columns]="candidateColumns" 
+      [rows]="filteredCandidates" 
+      [actions]="candidateActions"
       [paginator]="true" 
-      styleClass="p-datatable-striped" 
+      [rowsPerPage]="15"
       [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
-      [rows]="15"
+      [emptyMessage]="'No candidate(s) application yet.'"
+      (actionClick)="handleCandidateAction($event)"
       >
-        <ng-template pTemplate="header">
-          <tr class="">
-            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-            <th class="table-item" pSortableColumn="candidate">Name</th>
-            <th class="table-item" pSortableColumn="email">Email</th>
-            <th class="table-item" pSortableColumn="contactNumber">Position</th>
-            <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
-            <th class="table-item" pSortableColumn="stage">Stage</th>
-            <th class="table-item"></th>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-candidate let-i="rowIndex">
-        <tr class="p-table-row">
-            <td><p-tableCheckbox [value]="candidate" /></td>
-            <td class="table-item">{{ candidate.candidateName }}</td>
-            <td class="table-item">{{ candidate.email }}</td>
-            <td class="table-item">{{ candidate.position }}</td>
-            <td class="table-item">{{ candidate.dateApplied }}</td>
-            <td class="table-item">
-                <span [ngClass]="getStatusClass(candidate.stage)">
-                  {{ candidate.stage }} 
-                </span>
-            </td>
-            <td class="actions">
-              <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
-              <p-overlayPanel #op ngClass="padding: 0;">
-                <div>
-                  <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
-                  <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                  <!-- <li class="table-item-panel" (click)="downloadFile(candidate)"> <i class="pi pi-download table-item me-2"></i> Download Resume</li> -->
-                  <li class="table-item-panel" *ngIf="candidate.stage == 'Application Received'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
-                  <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
-                  <!-- <li class="table-item-panel" (click)="confirmCandidateDelete(candidate)"> <i class="pi pi-trash table-item me-2"></i> Delete</li> -->
-                </div>
-              </p-overlayPanel>
-            </td>
-        </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="8" class="text-center table-item py-4"> 
-              No candidate(s) application yet.
-            </td>
-          </tr>
-        </ng-template>
-    </p-table>
+    </app-table>
   </div>
 </div>
 

@@ -33,6 +33,32 @@ viewMode: 'calendar' | 'table' = 'calendar';
 
   constructor(private shiftService: ShiftService) {}
 
+  myScheduleColumns = [
+    { header: 'Shift', field: 'shiftName' },
+    { header: 'Project', field: 'projectName' },
+    { header: 'Time', field: 'time' },
+    { header: 'Actual In/Out', field: 'actualTime' },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: any) => this.getStatusClass(row.status)
+    }
+  ];
+
+  get myScheduleRows() {
+    return this.selectedDateShifts.map((shift) => {
+      const attendance = shift.attendance[0];
+      return {
+        shiftName: shift.name,
+        projectName: shift.projectName || '—',
+        time: `${shift.startTime} - ${shift.endTime}`,
+        actualTime: this.formatActualTime(attendance?.record),
+        status: attendance?.status || 'Scheduled',
+        record: attendance?.record || null
+      };
+    });
+  }
+
   ngOnInit() {
     // Fetch only the current user’s data
     this.shifts = this.shiftService.getMyShifts();
@@ -102,7 +128,8 @@ viewMode: 'calendar' | 'table' = 'calendar';
     this.selectedRecord = null;
   }
 
-  selectRecord(record: ShiftRecord) {
+  selectRecord(record: ShiftRecord | null) {
+    if (!record) return;
     this.selectedRecord = record;
   }
 
@@ -118,5 +145,11 @@ viewMode: 'calendar' | 'table' = 'calendar';
       case 'Missed': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
+  }
+
+  private formatActualTime(record?: ShiftRecord): string {
+    if (!record?.actualClockIn) return '—';
+    const clockOut = record.actualClockOut ? ` - ${record.actualClockOut}` : '';
+    return `${record.actualClockIn}${clockOut}`;
   }
 }

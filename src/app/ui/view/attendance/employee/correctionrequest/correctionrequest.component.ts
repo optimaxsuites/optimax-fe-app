@@ -59,6 +59,31 @@ export class CorrectionrequestComponent  implements OnInit{
   requests: CorrectionRequest[] = [];
   showForm = false;
 
+  requestColumns = [
+    {
+      header: 'Date',
+      formatter: (row: CorrectionRequest) => new Date(row.date).toLocaleDateString()
+    },
+    {
+      header: 'Issue Type',
+      formatter: (row: CorrectionRequest) => this.getIssueLabel(row.issueType)
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: CorrectionRequest) => `status ${row.status.toLowerCase()}`
+    }
+  ];
+
+  requestActions = [
+    {
+      id: 'remind',
+      label: 'Remind Admin',
+      className: 'remind-btn',
+      visible: (row: CorrectionRequest) => row.status === 'PENDING'
+    }
+  ];
+
   constructor(private correctionService: CorrectionrequestService) {}
 
   ngOnInit() {
@@ -80,5 +105,11 @@ export class CorrectionrequestComponent  implements OnInit{
     this.closeForm();
   }
 
+
+  handleRequestAction(event: { actionId: string; row: CorrectionRequest }) {
+    // if (event.actionId === 'remind') {
+    //   this.sendReminder(event.row);
+    // }
+  }
 
 }

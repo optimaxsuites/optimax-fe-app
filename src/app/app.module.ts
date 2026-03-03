@@ -69,6 +69,8 @@ import { BackButtonComponent } from './ui/shared-component/view/back-button/back
 import { ButtonComponent } from './ui/shared-component/view/button/button.component';
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
+import { TableComponent } from './ui/shared-component/view/table/table.component';
+import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
@@ -104,6 +106,7 @@ import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok
 import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
 import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
 import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
+import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 import { TargetComponent } from './ui/view/performance/target/target.component';
 import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
 import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/bulk-employee-instruction/bulk-employee-instruction.component';
@@ -116,6 +119,7 @@ import { FooterComponent } from './ui/shared-component/view/footer/footer.compon
 import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
 import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
+import { ErrorToastInterceptor } from './ui/shared-component/service/error-message/error-toast.interceptor';
 import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
@@ -171,6 +175,12 @@ import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/c
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
+import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
+import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
+import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
+import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
+import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
+import { QueryComponent } from './ui/view/query/query.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -206,6 +216,7 @@ import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooper
     EmployeePayslipListComponent,
     PayslipViewComponent,
     AdminCreationFormComponent,
+    GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,
     EmployeeGuarantorComponent,
@@ -222,6 +233,8 @@ import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooper
     CareerJobPostingComponent,
     DashboardFooterComponent,
     ButtonComponent,
+    TableComponent,
+    TableBodyDirective,
     NavTabComponent,
     Navbar2Component,
     NavbarComponent,
@@ -284,6 +297,12 @@ import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooper
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
+    CooperativeMemberDashboardComponent,
+    CooperativeMemberLoansComponent,
+    CooperativeLoanProductsComponent,
+    MainDashboardComponent,
+    SortableTableDirective,
+    QueryComponent,
     ],
   imports: [
     BrowserModule,
@@ -347,6 +366,11 @@ import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooper
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ErrorToastInterceptor,
       multi: true,
     },
     {

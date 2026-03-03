@@ -16,6 +16,12 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
+        if (
+            request.url.startsWith('https://automation.optimaxsuites.com') ||
+            request.url.startsWith('https://n8n.royalvilletechnologies.com')
+        ) {
+            return next.handle(request);
+        }
         const accessToken = sessionStorage.getItem("Token");
 //  
 

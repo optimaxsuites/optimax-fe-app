@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
@@ -15,18 +16,22 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   employeeLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
   isLoading: boolean = true;
+  viewSource: 'admin' | 'employee' = 'admin';
   
   // Sorting properties
   sortField: string = 'dateSubmitted';
   sortDirection: 'asc' | 'desc' = 'desc';
   
   constructor(
+    private location: Location,
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService
   ) {}
   
   ngOnInit(): void {
+    this.viewSource = window.history.state?.source === 'employee' ? 'employee' : 'admin';
+
     this.route.params.subscribe(params => {
       this.employeeId = params['employeeId'];
       this.loadEmployeeHistory();
@@ -69,6 +74,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
         case 'loanAmount':
           valueA = a.loanAmount;
           valueB = b.loanAmount;
+          break;
+        case 'interestRate':
+          valueA = a.interestRate;
+          valueB = b.interestRate;
           break;
         case 'loanId':
           valueA = a.id.toLowerCase();
@@ -132,11 +141,18 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
   
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
   
   viewLoanDetails(loanId: string): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
+    this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
+      state: { source: this.viewSource === 'employee' ? 'employee-history' : 'admin-history' }
+    });
   }
   
   getStatusClass(status: string): string {

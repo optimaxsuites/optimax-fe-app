@@ -52,6 +52,23 @@
         class="editInput w-full h-[36px]"
       />
     </div>
+   
+
+    <app-table
+        [columns]="leaveRequestColumns"
+        [rows]="filteredCandidates"
+        [actions]="leaveRequestActions"
+        [selectable]="true"
+        selectionMode="multiple"
+        [(selection)]="selectedEmployees"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
+        [emptyMessage]="'No request made yet'"
+        (actionClick)="handleLeaveRequestAction($event)"
+        >
+    </app-table>
+  
   </div>
 
   <p-table

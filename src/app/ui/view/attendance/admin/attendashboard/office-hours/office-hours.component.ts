@@ -20,7 +20,8 @@ export class OfficeHoursComponent implements OnInit{
 
     this.form = this.fb.group({
       openingTime: [hours.openingTime],
-      closingTime: [hours.closingTime]
+      closingTime: [hours.closingTime],
+      absentTime: [hours.absentTime]
     });
   }
 
@@ -32,7 +33,7 @@ export class OfficeHoursComponent implements OnInit{
   editMode = false;
 
 resetDefault() {
-  const defaultHours = { openingTime: '09:00', closingTime: '17:00' };
+  const defaultHours = { openingTime: '09:00', closingTime: '17:00', absentTime: '10:00' };
   this.form.setValue(defaultHours);
   this.officeHoursService.updateOfficeHours(defaultHours);
   this.editMode = false;

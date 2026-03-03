@@ -18,7 +18,7 @@ export class Sidebar2Component {
     this.role = sessionStorage.getItem('role'); // Retrieve role from session storage
     console.log("role = ", this.role)
     if (this.role) {
-      this.menuItems = this.menuService.getMenuItemsForRole(this.role).map(item => ({
+      this.menuItems = this.menuService.getSettingsMenuItemsForRole(this.role).map((item: MenuItem) => ({
         ...item,
         open: false
       }));

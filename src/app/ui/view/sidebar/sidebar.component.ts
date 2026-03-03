@@ -40,10 +40,15 @@ export class SidebarComponent {
 
   toggleSubMenu(item: MenuItem): void {
     if (item.submenu) {
-      item.open = !item.open; // Toggle the 'open' property to show/hide submenu
+      const willOpen = !item.open;
+      this.menuItems.forEach(menuItem => {
+        if (menuItem.submenu) {
+          menuItem.open = false;
+        }
+      });
+      item.open = willOpen; // Toggle the 'open' property to show/hide submenu
       console.log(`Toggled submenu for ${item.label}, open: ${item.open}`);
     }
   }
 }
-
 

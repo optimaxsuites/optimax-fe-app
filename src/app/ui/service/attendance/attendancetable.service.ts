@@ -16,7 +16,11 @@ export class AttendancetableService {
     return of(this.attendanceSubject.value);
   }
 
-  constructor(private officeHoursService: OfficeHoursService) {}
+  constructor(private officeHoursService: OfficeHoursService) {
+    setInterval(() => {
+    this.autoMarkAbsentIfNeeded();
+  }, 60000); // every minute
+  }
 
   /*clockAction(
   employeeId: string,
@@ -74,6 +78,10 @@ private convertToDateTime(time: string): Date {
 
 
 clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+if (this.hasCompletedToday(employeeid)) {
+  return; // Block further clocking
+}
+
   const data = [...this.attendanceSubject.value];
   const today = new Date().toISOString().split('T')[0];
 
@@ -100,22 +108,45 @@ clockAction(employeeid: string, employeeName: string, department: string, action
   const opening = this.convertToDateTime(officeHours.openingTime);
   const closing = this.convertToDateTime(officeHours.closingTime);
 
-  if (action === 'IN') {
+  /*if (action === 'IN') {
     record.checkIn = now.toLocaleTimeString();
 
-    // ✅ LATE or PRESENT logic
+    // LATE or PRESENT logic
     if (now > opening) {
       record.status = 'LATE';
     } else {
       record.status = 'PRESENT';
     }
+  }*/
+
+  if (action === 'IN') {
+
+  record.checkIn = now.toLocaleTimeString();
+
+  // 🔥 If admin opened attendance, never mark late
+  if (record.overrideOpen) {
+    record.status = 'PRESENT';
+
+    // Optional cleanup: remove override after successful clock-in
+    record.overrideOpen = false;
+
+  } else {
+
+    // Normal Late / Present logic
+    if (now > opening) {
+      record.status = 'LATE';
+    } else {
+      record.status = 'PRESENT';
+    }
+
   }
+}
 
   if (action === 'OUT') {
     record.checkOut = now.toLocaleTimeString();
     record.hours = this.calculateHours(record.checkIn!, record.checkOut);
 
-    // ✅ OVERTIME logic (but do not remove LATE)
+    // OVERTIME logic (but do not remove LATE)
     if (now > closing) {
       record.status = 'OVERTIME';
     }
@@ -192,6 +223,164 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
 
   this.attendanceSubject.next(data);
 }
+
+private registeredEmployees = [
+  { id: '001', name: 'Chrisha Okorocha', department: 'Engineering' },
+  { id: '002', name: 'John Doe', department: 'HR' }
+];
+
+private lastAbsentRunDate: string | null = null;
+
+private autoMarkAbsentIfNeeded() {
+
+  const now = new Date();
+
+  // Skip Saturdays (6) and Sundays (0)
+  const day = now.getDay();
+  if (day === 0 || day === 6) {
+    return;
+  }
+
+  const officeHours = this.officeHoursService.getOfficeHours();
+
+  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
+
+  const absentTimeToday = new Date();
+  absentTimeToday.setHours(hour, minute, 0, 0);
+
+  if (now < absentTimeToday) return;
+
+  const today = now.toISOString().split('T')[0];
+  const data = [...this.attendanceSubject.value];
+
+  let changed = false;
+
+  this.registeredEmployees.forEach(emp => {
+
+    const recordExists = data.some(
+      r => r.id === emp.id && r.date === today
+    );
+
+    if (!recordExists) {
+      data.unshift({
+        id: emp.id,
+        employee: emp.name,
+        department: emp.department,
+        date: today,
+        checkIn: null,
+        checkOut: null,
+        status: 'ABSENT',
+        hours: 0
+      });
+
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    this.attendanceSubject.next(data);
+  }
+
+
+  /*const officeHours = this.officeHoursService.getOfficeHours();
+  const now = new Date();
+
+  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
+
+  const absentTimeToday = new Date();
+  absentTimeToday.setHours(hour, minute, 0, 0);
+
+  if (now < absentTimeToday) return;
+
+  const today = now.toISOString().split('T')[0];
+  const data = [...this.attendanceSubject.value];
+
+  this.registeredEmployees.forEach(emp => {
+
+    const existingRecord = data.find(
+      r => r.id === emp.id && r.date === today
+    );
+
+    if (!existingRecord) {
+      data.unshift({
+        id: emp.id,
+        employee: emp.name,
+        department: emp.department,
+        date: today,
+        checkIn: null,
+        checkOut: null,
+        status: 'ABSENT',
+        hours: 0
+      });
+    }
+
+  });
+
+  this.attendanceSubject.next(data);*/
+}
+
+isEmployeeBlockedToday(employeeId: string): boolean {
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const record = this.attendanceSubject.value.find(
+    r => r.id === employeeId && r.date === today
+  );
+
+  if (!record) return false;
+
+  // Block only if absent AND not opened by admin
+  if (record.status === 'ABSENT' && !record.overrideOpen) {
+    return true;
+  }
+
+  return false;
+}
+
+  /*isEmployeeAbsentToday(employeeId: string): boolean {
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const record = this.attendanceSubject.value.find(
+    r => r.id === employeeId && r.date === today
+  );
+
+  return record?.status === 'ABSENT';
+}*/
+
+openAttendanceForToday(employeeId: string) {
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const records = [...this.attendanceSubject.value];
+
+  const record = records.find(
+    r => r.id === employeeId && r.date === today
+  );
+
+  if (!record) return;
+
+  record.overrideOpen = true; //allow record override
+  //record.status = 'PRESENT'; // immediately mark PRESENT
+
+  this.attendanceSubject.next(records);
+}
+
+hasCompletedToday(employeeId: string): boolean {
+  const today = new Date().toDateString();
+
+  const todayRecord = this.attendanceSubject.value.find(record => {
+    if (!record.date) return false; //to guar against null
+    return (
+      record.id === employeeId &&
+      new Date(record.date).toDateString() === today
+    );
+  });
+
+  // If record exists AND both clockIn & clockOut exist → completed
+  return !!(todayRecord?.checkIn && todayRecord?.checkOut);
+}
+
 
 }
 

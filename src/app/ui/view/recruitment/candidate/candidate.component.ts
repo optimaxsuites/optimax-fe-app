@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-candidate',
@@ -14,6 +15,28 @@ export class CandidateComponent implements OnInit {
   searchTerm: string = '';
   activeItem: ApplicantDTO = {}
   viewModal: boolean = false;
+  candidateColumns: TableColumn[] = [
+    { header: 'Name', field: 'candidateName', sortable: true, className: 'table-item' },
+    { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
+    { header: 'Position', field: 'position', sortable: true, className: 'table-item' },
+    { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
+    {
+      header: 'Stage',
+      field: 'stage',
+      sortable: true,
+      className: 'table-item',
+      badgeClass: (row) => this.getStatusClass(row.stage)
+    }
+  ];
+  candidateActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' },
+    {
+      id: 'invite',
+      label: 'Send Invite',
+      icon: 'pi pi-send',
+      visible: (row) => row?.stage === 'Application Received'
+    }
+  ];
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -37,10 +60,10 @@ export class CandidateComponent implements OnInit {
   }
 
 
-  openViewModal(candidate: any, op: any) {
+  openViewModal(candidate: any, op?: any) {
     this.activeItem = candidate
     this.viewModal = !this.viewModal;
-    op.hide();
+    op?.hide?.();
   }
 
   closeViewModal() {
@@ -58,6 +81,15 @@ export class CandidateComponent implements OnInit {
     console.log(candidate)
     this.showCandidate = false;
     this.showInterviewInvite = true;
+  }
+
+  handleCandidateAction(event: { actionId: string; row: ApplicantDTO }) {
+    if (event.actionId === 'view') {
+      this.openViewModal(event.row);
+    }
+    if (event.actionId === 'invite') {
+      this.openInterviewInvite(event.row);
+    }
   }
   closeInterviewInvite() {
     this.showCandidate = true;

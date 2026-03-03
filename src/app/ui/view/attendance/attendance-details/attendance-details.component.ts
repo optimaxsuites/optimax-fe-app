@@ -13,6 +13,28 @@ export class AttendanceDetailsComponent {
   records: any[] = [];
   summary: any = {};
 
+  detailsColumns = [
+    { header: 'Date', field: 'date' },
+    {
+      header: 'Clock In',
+      formatter: (row: any) => row.clockIn || '-'
+    },
+    {
+      header: 'Clock Out',
+      formatter: (row: any) => row.clockOut || '-'
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: any) => {
+        if (row.status === 'Present') return 'bg-green-100 text-green-700';
+        if (row.status === 'Late') return 'bg-yellow-100 text-yellow-700';
+        if (row.status === 'Absent') return 'bg-red-100 text-red-700';
+        return '';
+      }
+    }
+  ];
+
   constructor(
     private route: ActivatedRoute,
     private attendanceService: AttendanceService,

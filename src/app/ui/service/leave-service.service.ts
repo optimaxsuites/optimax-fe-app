@@ -7,17 +7,35 @@ import {
   LeaveSettings,
   LeaveRequest,
   LeaveTypeWithAllocation,
-  PlannedLeave, LeavePlanningPolicy, MonthlyPlanSummary
+  PlannedLeave,
+  LeavePlanningPolicy,
+  MonthlyPlanSummary,
+  EmployeeLevel,
+  LevelLeaveAllocation,
+  EmployeeLeaveTypeWithAllocation,
+  LeaveAllocationMatrix,
+  LevelChange,
 } from '../domain/leave.dto';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LeaveServiceService {
+  // Storage Keys
+  private EMPLOYEES_KEY = 'mock_employees';
+  private LEAVE_SETTINGS_KEY = 'leaveSettings';
+  private LEAVE_REQUESTS_KEY = 'leaveRequest';
+  private PLANNED_LEAVES_KEY = 'plannedLeaves';
+  private PLANNING_POLICY_KEY = 'leavePlanningPolicy';
+  private LEVELS_KEY = 'employeeLevels';
+  private ALLOCATION_MATRIX_KEY = 'leaveAllocationMatrix';
+
   constructor(private http: HttpClient) {}
+
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
+
   getEmployees() {
     return this.http
       .get<any>(
@@ -29,13 +47,12 @@ export class LeaveServiceService {
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
     if (error.error instanceof ErrorEvent) {
-      // Client-side error
       errorMessage = `Error: ${error.error.message}`;
     } else {
-      // Server-side error
       if (error.status === 500) {
         errorMessage =
-          'Server error: ' + error.error.message ||
+          'Server error: ' +
+          error.error.message ||
           'Check form details and try again.';
       } else if (error.status === 404) {
         errorMessage = 'Resource not found. Please try again.';
@@ -49,29 +66,269 @@ export class LeaveServiceService {
     return throwError(() => errorMessage);
   }
 
-  private EMPLOYEES_KEY = 'mock_employees';
+  // ==================== EMPLOYEE LEVELS ====================
+
+  getEmployeeLevels(): EmployeeLevel[] {
+    const stored = localStorage.getItem(this.LEVELS_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+
+    // Default levels
+    const defaultLevels: EmployeeLevel[] = [
+      {
+        id: 'L1',
+        name: 'Intern',
+        order: 0,
+        description: 'Internship position',
+        isActive: true,
+      },
+      {
+        id: 'L2',
+        name: 'Junior',
+        order: 1,
+        description: 'Entry-level employee',
+        isActive: true,
+      },
+      {
+        id: 'L3',
+        name: 'Mid-Level',
+        order: 2,
+        description: 'Experienced employee',
+        isActive: true,
+      },
+      {
+        id: 'L4',
+        name: 'Senior',
+        order: 3,
+        description: 'Senior-level employee',
+        isActive: true,
+      },
+      {
+        id: 'L5',
+        name: 'Manager',
+        order: 4,
+        description: 'Management position',
+        isActive: true,
+      },
+    ];
+
+    localStorage.setItem(this.LEVELS_KEY, JSON.stringify(defaultLevels));
+    return defaultLevels;
+  }
+
+  // updateEmployeeLevels(levels: EmployeeLevel[]): void {
+  //   localStorage.setItem(this.LEVELS_KEY, JSON.stringify(levels));
+  // }
+
+  // addEmployeeLevel(level: EmployeeLevel): void {
+  //   const levels = this.getEmployeeLevels();
+  //   levels.push(level);
+  //   this.updateEmployeeLevels(levels);
+  // }
+
+  // deleteEmployeeLevel(levelId: string): void {
+  //   const levels = this.getEmployeeLevels().filter((l) => l.id !== levelId);
+  //   this.updateEmployeeLevels(levels);
+  // }
+
+  // ==================== ALLOCATION MATRIX ====================
+
+  getLeaveAllocationMatrix(): LeaveAllocationMatrix {
+    const stored = localStorage.getItem(this.ALLOCATION_MATRIX_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+
+    // Create default matrix
+    const levels = this.getEmployeeLevels();
+    const leaveTypes = this.getLeaveSettings().leaveTypes;
+    const allocations: LevelLeaveAllocation[] = [];
+
+    // Default allocation rules
+    const defaultRules: { [key: string]: { [key: string]: number } } = {
+      L1: { 'Annual Leave': 10, 'Sick Leave': 3, 'Study Leave': 0 }, // Intern
+      L2: { 'Annual Leave': 15, 'Sick Leave': 5, 'Study Leave': 2 }, // Junior
+      L3: { 'Annual Leave': 21, 'Sick Leave': 10, 'Study Leave': 5 }, // Mid-Level
+      L4: { 'Annual Leave': 25, 'Sick Leave': 12, 'Study Leave': 7 }, // Senior
+      L5: { 'Annual Leave': 30, 'Sick Leave': 15, 'Study Leave': 10 }, // Manager
+    };
+
+    // Generate allocation matrix
+    levels.forEach((level) => {
+      leaveTypes.forEach((leaveType) => {
+        const defaultDays =
+          defaultRules[level.id]?.[leaveType.typeName] ?? 0;
+        allocations.push({
+          levelId: level.id,
+          leaveTypeId: leaveType.id,
+          allocatedDays: defaultDays,
+        });
+      });
+    });
+
+    const matrix: LeaveAllocationMatrix = { levels, allocations };
+    localStorage.setItem(
+      this.ALLOCATION_MATRIX_KEY,
+      JSON.stringify(matrix),
+    );
+    return matrix;
+  }
+
+  updateLeaveAllocationMatrix(matrix: LeaveAllocationMatrix): void {
+    localStorage.setItem(
+      this.ALLOCATION_MATRIX_KEY,
+      JSON.stringify(matrix),
+    );
+  }
+
+  getAllocationForLevel(levelId: string, leaveTypeId: string): number {
+    const matrix = this.getLeaveAllocationMatrix();
+    const allocation = matrix.allocations.find(
+      (a) => a.levelId === levelId && a.leaveTypeId === leaveTypeId,
+    );
+    return allocation?.allocatedDays ?? 0;
+  }
+
+  updateSingleAllocation(
+    levelId: string,
+    leaveTypeId: string,
+    days: number,
+  ): void {
+    const matrix = this.getLeaveAllocationMatrix();
+    const allocation = matrix.allocations.find(
+      (a) => a.levelId === levelId && a.leaveTypeId === leaveTypeId,
+    );
+
+    if (allocation) {
+      allocation.allocatedDays = days;
+    } else {
+      matrix.allocations.push({ levelId, leaveTypeId, allocatedDays: days });
+    }
+
+    this.updateLeaveAllocationMatrix(matrix);
+  }
+
+  // ==================== LEAVE SETTINGS ====================
+
+  getLeaveSettings(): LeaveSettings {
+    const stored = localStorage.getItem(this.LEAVE_SETTINGS_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+
+    const leaveSettings: LeaveSettings = {
+      totalLeaveDaysAllowed: 21,
+      automaticApproval: false,
+      leaveTypes: [],
+      useLevelBasedAllocation: false,
+    };
+
+    localStorage.setItem(
+      this.LEAVE_SETTINGS_KEY,
+      JSON.stringify(leaveSettings),
+    );
+    return leaveSettings;
+  }
+
+  updateLeaveSettings(leaveSettings: LeaveSettings): void {
+    localStorage.setItem(
+      this.LEAVE_SETTINGS_KEY,
+      JSON.stringify(leaveSettings),
+    );
+  }
+
+  updateLeaveTypes(leaveTypes: LeaveTypeWithAllocation[]): void {
+    const settings = this.getLeaveSettings();
+    settings.leaveTypes = leaveTypes;
+    this.updateLeaveSettings(settings);
+
+    // Sync employees if using level-based allocation
+    if (settings.useLevelBasedAllocation) {
+      this.syncAllEmployeesWithMatrix();
+    } else {
+      this.syncEmployeesWithLeaveTypes();
+    }
+  }
+
+  // ==================== EMPLOYEE MANAGEMENT ====================
+
+  getLeaveTypesForLevel(levelId: string): EmployeeLeaveTypeWithAllocation[] {
+    const leaveTypes = this.getLeaveSettings().leaveTypes;
+
+    return leaveTypes.map((lt) => ({
+      ...lt,
+      allocatedDays: this.getAllocationForLevel(levelId, lt.id),
+      daysUsed: 0,
+    }));
+  }
+
   private initEmployees(): Employee[] {
     const stored = localStorage.getItem(this.EMPLOYEES_KEY);
     if (stored) {
       return JSON.parse(stored);
     }
 
-    const leaveTypes = this.getLeaveSettings().leaveTypes.map((lt) => ({
-      ...lt,
-      daysUsed: 0,
-    }));
+    const settings = this.getLeaveSettings();
+    const useLevelBased = settings.useLevelBasedAllocation;
 
     const employees: Employee[] = [
-      { id: 'EMP-001', name: 'Employee 1', leaveUsed: 0, leaveTypes },
-      { id: 'EMP-002', name: 'Employee 2', leaveUsed: 0, leaveTypes },
-      { id: 'EMP-003', name: 'Employee 3', leaveUsed: 0, leaveTypes },
-      { id: 'EMP-004', name: 'Employee 4', leaveUsed: 0, leaveTypes },
-      { id: 'EMP-005', name: 'Employee 5', leaveUsed: 0, leaveTypes },
+      {
+        id: 'EMP-001',
+        name: 'Employee 1',
+        levelId: 'L3',
+        levelName: 'Mid-Level',
+        leaveUsed: 0,
+        leaveTypes: useLevelBased
+          ? this.getLeaveTypesForLevel('L3')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
+      },
+      {
+        id: 'EMP-002',
+        name: 'Employee 2',
+        levelId: 'L2',
+        levelName: 'Junior',
+        leaveUsed: 0,
+        leaveTypes: useLevelBased
+          ? this.getLeaveTypesForLevel('L2')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
+      },
+      {
+        id: 'EMP-003',
+        name: 'Employee 3',
+        levelId: 'L4',
+        levelName: 'Senior',
+        leaveUsed: 0,
+        leaveTypes: useLevelBased
+          ? this.getLeaveTypesForLevel('L4')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
+      },
+      {
+        id: 'EMP-004',
+        name: 'Employee 4',
+        levelId: 'L1',
+        levelName: 'Intern',
+        leaveUsed: 0,
+        leaveTypes: useLevelBased
+          ? this.getLeaveTypesForLevel('L1')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
+      },
+      {
+        id: 'EMP-005',
+        name: 'Employee 5',
+        levelId: 'L5',
+        levelName: 'Manager',
+        leaveUsed: 0,
+        leaveTypes: useLevelBased
+          ? this.getLeaveTypesForLevel('L5')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
+      },
     ];
 
     localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(employees));
     return employees;
   }
+
   private syncEmployeesWithLeaveTypes(): void {
     const employees = this.initEmployees();
     const leaveTypes = this.getLeaveSettings().leaveTypes;
@@ -80,9 +337,7 @@ export class LeaveServiceService {
       const updatedLeaveTypes = leaveTypes.map((lt) => {
         const existing = emp.leaveTypes.find((e) => e.id === lt.id);
 
-        return existing
-          ? { ...existing } // keep daysUsed
-          : { ...lt, daysUsed: 0 }; // new leave type
+        return existing ? { ...existing } : { ...lt, daysUsed: 0 };
       });
 
       return {
@@ -94,30 +349,20 @@ export class LeaveServiceService {
     localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(updatedEmployees));
   }
 
-  getLeaveSettings(): LeaveSettings {
-    const stored = localStorage.getItem('leaveSettings');
-    if (stored) {
-      return JSON.parse(stored);
+  syncAllEmployeesWithMatrix(): void {
+    const employees = this.initEmployees();
+    const settings = this.getLeaveSettings();
+
+    if (!settings.useLevelBasedAllocation) {
+      return;
     }
 
-    const leaveSettings: LeaveSettings = {
-      totalLeaveDaysAllowed: 21,
-      automaticApproval: false,
-      leaveTypes: [],
-    };
+    const updatedEmployees = employees.map((emp) => ({
+      ...emp,
+      leaveTypes: this.getLeaveTypesForLevel(emp.levelId),
+    }));
 
-    localStorage.setItem('leaveSettings', JSON.stringify(leaveSettings));
-    return leaveSettings;
-  }
-  updateLeaveSettings(leaveSettings: LeaveSettings): void {
-    localStorage.setItem('leaveSettings', JSON.stringify(leaveSettings));
-  }
-  updateLeaveTypes(leaveTypes: LeaveTypeWithAllocation[]): void {
-    const settings = this.getLeaveSettings();
-    settings.leaveTypes = leaveTypes;
-    this.updateLeaveSettings(settings);
-
-    this.syncEmployeesWithLeaveTypes();
+    localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(updatedEmployees));
   }
 
   getAllEmployees(): Employee[] {
@@ -126,15 +371,18 @@ export class LeaveServiceService {
 
   getEmployeeById(employeeId: string): Employee {
     const employees = this.initEmployees();
+    const settings = this.getLeaveSettings();
+
     return (
       employees.find((emp) => emp.id === employeeId) || {
         id: 'EMP-005',
         name: 'Employee 5',
+        levelId: 'L2',
+        levelName: 'Junior',
         leaveUsed: 0,
-        leaveTypes: this.getLeaveSettings().leaveTypes.map((lt) => ({
-          ...lt,
-          daysUsed: 0,
-        })),
+        leaveTypes: settings.useLevelBasedAllocation
+          ? this.getLeaveTypesForLevel('L2')
+          : settings.leaveTypes.map((lt) => ({ ...lt, daysUsed: 0 })),
       }
     );
   }
@@ -148,15 +396,67 @@ export class LeaveServiceService {
     employees[index] = updatedEmployee;
     localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(employees));
   }
+
+  changeEmployeeLevel(
+    employeeId: string,
+    newLevelId: string,
+    reason?: string,
+  ): void {
+    const employees = this.initEmployees();
+    const employeeIndex = employees.findIndex((e) => e.id === employeeId);
+
+    if (employeeIndex === -1) return;
+
+    const employee = employees[employeeIndex];
+    const levels = this.getEmployeeLevels();
+    const newLevel = levels.find((l) => l.id === newLevelId);
+
+    if (!newLevel) return;
+
+    // Record level change
+    const levelChange: LevelChange = {
+      fromLevelId: employee.levelId,
+      fromLevelName: employee.levelName,
+      toLevelId: newLevelId,
+      toLevelName: newLevel.name,
+      changedOn: new Date().toISOString(),
+      changedBy: 'Admin',
+      reason: reason,
+    };
+
+    // Update employee
+    employee.levelId = newLevelId;
+    employee.levelName = newLevel.name;
+    employee.promotionDate = new Date().toISOString();
+
+    // Add to history
+    if (!employee.levelHistory) {
+      employee.levelHistory = [];
+    }
+    employee.levelHistory.push(levelChange);
+
+    // Update leave types based on new level
+    const settings = this.getLeaveSettings();
+    if (settings.useLevelBasedAllocation) {
+      employee.leaveTypes = this.getLeaveTypesForLevel(newLevelId);
+    }
+
+    employees[employeeIndex] = employee;
+    localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(employees));
+  }
+
+  // ==================== LEAVE REQUESTS ====================
+
   getAllLeaveRequests(): LeaveRequest[] {
-    const stored = localStorage.getItem('leaveRequest');
+    const stored = localStorage.getItem(this.LEAVE_REQUESTS_KEY);
     if (stored) {
       return JSON.parse(stored);
     }
     const leaveRequest: LeaveRequest[] = [];
-    localStorage.setItem('leaveRequest', JSON.stringify(leaveRequest));
+    localStorage.setItem(this.LEAVE_REQUESTS_KEY, JSON.stringify(leaveRequest));
     return leaveRequest;
   }
+
   getEmployeeLeaveRequests(employeeId: string): LeaveRequest[] {
     const allRequests = this.getAllLeaveRequests();
     if (allRequests) {
@@ -164,11 +464,13 @@ export class LeaveServiceService {
     }
     return [];
   }
+
   createLeaveRequest(request: LeaveRequest): void {
     const allRequests = this.getAllLeaveRequests();
     allRequests.push(request);
-    localStorage.setItem('leaveRequest', JSON.stringify(allRequests));
+    localStorage.setItem(this.LEAVE_REQUESTS_KEY, JSON.stringify(allRequests));
   }
+
   updateLeaveRequestStatus(
     requestId: string,
     status: 'Approved' | 'Rejected',
@@ -179,12 +481,17 @@ export class LeaveServiceService {
     );
     if (requestIndex !== -1) {
       allRequests[requestIndex].Status = status;
-      localStorage.setItem('leaveRequest', JSON.stringify(allRequests));
+      localStorage.setItem(
+        this.LEAVE_REQUESTS_KEY,
+        JSON.stringify(allRequests),
+      );
     }
   }
 
+  // ==================== PLANNED LEAVES ====================
+
   loadPlannedLeaves(employeeId: string): PlannedLeave[] {
-    const stored = localStorage.getItem('plannedLeaves');
+    const stored = localStorage.getItem(this.PLANNED_LEAVES_KEY);
     if (stored) {
       const allPlans = JSON.parse(stored) as PlannedLeave[];
       return allPlans.filter((plan) => plan.employeeId === employeeId);
@@ -192,125 +499,113 @@ export class LeaveServiceService {
       return [];
     }
   }
+
   savePlannedLeaves(plannedLeaves: PlannedLeave[], employeeId: string) {
-    const stored = localStorage.getItem('plannedLeaves');
+    const stored = localStorage.getItem(this.PLANNED_LEAVES_KEY);
     let allPlans: PlannedLeave[] = stored ? JSON.parse(stored) : [];
-    
+
     // Remove current employee's plans
-    allPlans = allPlans.filter(plan => plan.employeeId !== employeeId);
-    
+    allPlans = allPlans.filter((plan) => plan.employeeId !== employeeId);
+
     // Add updated plans
     allPlans = [...allPlans, ...plannedLeaves];
-    
-    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+
+    localStorage.setItem(this.PLANNED_LEAVES_KEY, JSON.stringify(allPlans));
   }
 
+  approvePlannedLeave(planId: string): void {
+    const stored = localStorage.getItem(this.PLANNED_LEAVES_KEY);
+    if (!stored) return;
 
-  // testing planned leaves
-  // Add to LeaveServiceService class
+    const allPlans: PlannedLeave[] = JSON.parse(stored);
+    const planIndex = allPlans.findIndex((p) => p.id === planId);
 
-private PLANNING_POLICY_KEY = 'leavePlanningPolicy';
-
-getLeavePlanningPolicy(): LeavePlanningPolicy {
-  const stored = localStorage.getItem(this.PLANNING_POLICY_KEY);
-  if (stored) {
-    return JSON.parse(stored);
+    if (planIndex !== -1) {
+      allPlans[planIndex].status = 'Approved';
+      allPlans[planIndex].approvedOn = new Date().toISOString();
+      localStorage.setItem(this.PLANNED_LEAVES_KEY, JSON.stringify(allPlans));
+    }
   }
 
-  // Default policy
-  const defaultPolicy: LeavePlanningPolicy = {
-    maxDaysPerMonth: 10,
-    maxPlanningMonths: 3,
-    totalAllowedPlannedDays: 30,
-    emergencyLeaveDaysAllowed: 5,
-    planningWindowDays: 90,
-    allowPlanEditing: false,
-  };
+  rejectPlannedLeave(planId: string): void {
+    const stored = localStorage.getItem(this.PLANNED_LEAVES_KEY);
+    if (!stored) return;
 
-  localStorage.setItem(this.PLANNING_POLICY_KEY, JSON.stringify(defaultPolicy));
-  return defaultPolicy;
-}
+    const allPlans: PlannedLeave[] = JSON.parse(stored);
+    const planIndex = allPlans.findIndex((p) => p.id === planId);
 
-updateLeavePlanningPolicy(policy: LeavePlanningPolicy): void {
-  localStorage.setItem(this.PLANNING_POLICY_KEY, JSON.stringify(policy));
-}
-
-// Get monthly planning summary for an employee
-getMonthlyPlanSummary(employeeId: string): MonthlyPlanSummary[] {
-  const plannedLeaves = this.loadPlannedLeaves(employeeId);
-  const policy = this.getLeavePlanningPolicy();
-  const monthMap = new Map<string, number>();
-
-  // Calculate days per month
-  plannedLeaves
-    .filter(p => p.status === 'Planned' || p.status === 'Pending')
-    .forEach(plan => {
-      if (!monthMap.has(plan.month)) {
-        monthMap.set(plan.month, 0);
-      }
-      monthMap.set(plan.month, monthMap.get(plan.month)! + plan.workingDays);
-    });
-
-  // Convert to array
-  return Array.from(monthMap.entries()).map(([month, daysPlanned]) => ({
-    month,
-    daysPlanned,
-    maxDays: policy.maxDaysPerMonth,
-    remaining: policy.maxDaysPerMonth - daysPlanned,
-  }));
-}
-
-// Check if employee can plan for a specific month
-canPlanForMonth(employeeId: string, month: string): boolean {
-  const summary = this.getMonthlyPlanSummary(employeeId);
-  const policy = this.getLeavePlanningPolicy();
-
-  // Check if already planning for max months
-  if (summary.length >= policy.maxPlanningMonths) {
-    // Only allow if planning for existing month
-    return summary.some(s => s.month === month);
+    if (planIndex !== -1) {
+      allPlans[planIndex].status = 'Rejected';
+      localStorage.setItem(this.PLANNED_LEAVES_KEY, JSON.stringify(allPlans));
+    }
   }
 
-  return true;
-}
+  // ==================== LEAVE PLANNING POLICY ====================
 
-// Get remaining days for a specific month
-getRemainingDaysForMonth(employeeId: string, month: string): number {
-  const summary = this.getMonthlyPlanSummary(employeeId);
-  const policy = this.getLeavePlanningPolicy();
-  
-  const monthSummary = summary.find(s => s.month === month);
-  return monthSummary 
-    ? monthSummary.remaining 
-    : policy.maxDaysPerMonth;
-}
+  getLeavePlanningPolicy(): LeavePlanningPolicy {
+    const stored = localStorage.getItem(this.PLANNING_POLICY_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
 
-// Approve planned leave
-approvePlannedLeave(planId: string): void {
-  const stored = localStorage.getItem('plannedLeaves');
-  if (!stored) return;
+    const defaultPolicy: LeavePlanningPolicy = {
+      maxDaysPerMonth: 10,
+      maxPlanningMonths: 3,
+      totalAllowedPlannedDays: 30,
+      emergencyLeaveDaysAllowed: 5,
+      planningWindowDays: 90,
+      allowPlanEditing: false,
+    };
 
-  const allPlans: PlannedLeave[] = JSON.parse(stored);
-  const planIndex = allPlans.findIndex(p => p.id === planId);
-
-  if (planIndex !== -1) {
-    allPlans[planIndex].status = 'Approved';
-    allPlans[planIndex].approvedOn = new Date().toISOString();
-    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+    localStorage.setItem(
+      this.PLANNING_POLICY_KEY,
+      JSON.stringify(defaultPolicy),
+    );
+    return defaultPolicy;
   }
-}
 
-// Reject planned leave
-rejectPlannedLeave(planId: string): void {
-  const stored = localStorage.getItem('plannedLeaves');
-  if (!stored) return;
-
-  const allPlans: PlannedLeave[] = JSON.parse(stored);
-  const planIndex = allPlans.findIndex(p => p.id === planId);
-
-  if (planIndex !== -1) {
-    allPlans[planIndex].status = 'Rejected';
-    localStorage.setItem('plannedLeaves', JSON.stringify(allPlans));
+  updateLeavePlanningPolicy(policy: LeavePlanningPolicy): void {
+    localStorage.setItem(this.PLANNING_POLICY_KEY, JSON.stringify(policy));
   }
-}
+
+  getMonthlyPlanSummary(employeeId: string): MonthlyPlanSummary[] {
+    const plannedLeaves = this.loadPlannedLeaves(employeeId);
+    const policy = this.getLeavePlanningPolicy();
+    const monthMap = new Map<string, number>();
+
+    plannedLeaves
+      .filter((p) => p.status === 'Planned' || p.status === 'Pending')
+      .forEach((plan) => {
+        if (!monthMap.has(plan.month)) {
+          monthMap.set(plan.month, 0);
+        }
+        monthMap.set(plan.month, monthMap.get(plan.month)! + plan.workingDays);
+      });
+
+    return Array.from(monthMap.entries()).map(([month, daysPlanned]) => ({
+      month,
+      daysPlanned,
+      maxDays: policy.maxDaysPerMonth,
+      remaining: policy.maxDaysPerMonth - daysPlanned,
+    }));
+  }
+
+  canPlanForMonth(employeeId: string, month: string): boolean {
+    const summary = this.getMonthlyPlanSummary(employeeId);
+    const policy = this.getLeavePlanningPolicy();
+
+    if (summary.length >= policy.maxPlanningMonths) {
+      return summary.some((s) => s.month === month);
+    }
+
+    return true;
+  }
+
+  getRemainingDaysForMonth(employeeId: string, month: string): number {
+    const summary = this.getMonthlyPlanSummary(employeeId);
+    const policy = this.getLeavePlanningPolicy();
+
+    const monthSummary = summary.find((s) => s.month === month);
+    return monthSummary ? monthSummary.remaining : policy.maxDaysPerMonth;
+  }
 }

@@ -13,6 +13,8 @@ export class LoanApplicationService {
 
   // Submit a new loan application
   submitLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
+    const submittedAt = new Date().toISOString();
+
     const newApplication: LoanApplication = {
       id: this.generateId(),
       employeeId: 'EMP-123', // Should come from auth
@@ -21,12 +23,13 @@ export class LoanApplicationService {
       loanAmount: formData.loanAmount,
       paymentMode: formData.paymentMode,
       status: 'PENDING',
-      dateSubmitted: formData.submissionDate || new Date().toISOString().split('T')[0],
+      submittedAt,
+      dateSubmitted: formData.submissionDate || submittedAt.split('T')[0],
       purpose: formData.loanPurpose === 'other' ? formData.otherPurpose || 'Other' : formData.loanPurpose,
       repaymentPeriod: formData.repaymentPeriod,
       monthlyRepayment: formData.monthlyRepaymentAmount,
       acknowledgment: formData.acknowledgment,
-      interestRate: 5.5,
+      interestRate: 0,
       currentBalance: formData.loanAmount,
       totalPaid: 0,
       statusHistory: [{
@@ -38,10 +41,11 @@ export class LoanApplicationService {
       repaymentSchedule: this.generateRepaymentSchedule(
         formData.loanAmount, 
         formData.repaymentPeriod, 
-        5.5,
+        0,
         formData.paymentMode
       ),
-      paymentHistory: []
+      paymentHistory: [],
+      supportingDocuments: formData.supportingDocuments || []
     };
     
     this.storageService.saveApplication(newApplication);
@@ -69,7 +73,9 @@ export class LoanApplicationService {
   }
 
   private generateId(): string {
-    return 'LN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    const timestampPart = Date.now().toString(36).toUpperCase().slice(-5);
+    const randomPart = Math.random().toString(36).slice(2, 5).toUpperCase();
+    return `LN-${timestampPart}${randomPart}`;
   }
 
   private generateRepaymentSchedule(

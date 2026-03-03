@@ -1,0 +1,179 @@
+<div class="member-dashboard-container">
+  <app-modal *ngIf="showPaymentModal" [header]="'Make Payment'" (close)="closePaymentModal()">
+    <div class="modal-content payment-modal">
+      <h3>Make Payment</h3>
+      <p *ngIf="selectedPaymentLoan">Loan: <strong>{{ selectedPaymentLoan.loanId }}</strong></p>
+
+      <div class="payment-form">
+        <label>
+          Amount
+          <input type="number" min="1" step="0.01" [(ngModel)]="paymentAmount" />
+        </label>
+        <label>
+          Method
+          <select [(ngModel)]="paymentMethod">
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="CASH">Cash</option>
+            <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
+            <option value="MOBILE_MONEY">Mobile Money</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closePaymentModal()">Cancel</button>
+        <button class="btn-primary" (click)="submitPayment()" [disabled]="paymentAmount <= 0">Submit Payment</button>
+      </div>
+    </div>
+  </app-modal>
+
+  <app-modal *ngIf="showApplicationModal" [header]="'New Cooperative Loan Application'" (close)="closeApplicationModal()">
+    <app-cooperative-loan-application
+      [isModal]="true"
+      (formCancelled)="closeApplicationModal()"
+      (applicationSubmitted)="onApplicationSubmitted()">
+    </app-cooperative-loan-application>
+  </app-modal>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading your dashboard...</p>
+  </div>
+
+  <div *ngIf="!isLoading && member" class="dashboard-content">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+      <div>
+        <h1>My Co-operative Dashboard</h1>
+        <p class="welcome-text">Welcome back, {{ member.fullName | uppercase }}!</p>
+        <p class="member-id">Member since: {{ member.joinDate | date:'MMM yyyy' }} | Member ID: {{ member.memberId }}</p>
+      </div>
+      <button class="apply-btn" (click)="applyForLoan()">
+        <i class="fas fa-plus"></i> Apply for Loan
+      </button>
+    </div>
+
+    <p class="action-message" *ngIf="actionMessage">{{ actionMessage }}</p>
+
+    <!-- Stats Cards -->
+    <h2 class="section-title">My Financial Snapshot</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-label">My Shares</span>
+          <span class="stat-value">{{ formatCurrency(member.shareCapital) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-label">Borrowed</span>
+          <span class="stat-value">{{ formatCurrency(totalBorrowed) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-label">Outstanding</span>
+          <span class="stat-value">{{ formatCurrency(outstandingBalance) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-label">Next Payment</span>
+          <span class="stat-value" *ngIf="nextPayment">{{ formatCurrency(nextPayment.amount) }}</span>
+          <span class="stat-value" *ngIf="!nextPayment">₦0</span>
+          <span class="stat-sub" *ngIf="nextPayment">{{ nextPayment.dueDate | date:'mediumDate' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Loans Section -->
+    <div class="loans-section">
+      <div class="section-header">
+        <h2>My Loans</h2>
+      </div>
+
+      <div class="status-strip">
+        <button class="status-pill" [class.active]="loanStatusFilter === 'PENDING'" (click)="setLoanStatusFilter('PENDING')">
+          Pending ({{ pendingLoans.length }})
+        </button>
+        <button class="status-pill" [class.active]="loanStatusFilter === 'ACTIVE'" (click)="setLoanStatusFilter('ACTIVE')">
+          Active ({{ activeLoans.length }})
+        </button>
+        <button class="status-pill" [class.active]="loanStatusFilter === 'COMPLETED'" (click)="setLoanStatusFilter('COMPLETED')">
+          Completed ({{ completedLoans.length }})
+        </button>
+      </div>
+
+      <div class="active-loan-card" *ngIf="loanStatusFilter === 'ACTIVE' && primaryActiveLoan as loan">
+        <h3>Active Loan: {{ loan.loanId }}</h3>
+        <p>
+          Amount: <strong>{{ formatCurrency(loan.amount) }}</strong>
+          <span class="separator">|</span>
+          Monthly: <strong>{{ formatCurrency(loan.monthlyRepayment) }}</strong>
+          <span class="separator">|</span>
+          Next: <strong>{{ getNextDueDate(loan.id) ? (getNextDueDate(loan.id) | date:'dd/MM/yyyy') : '-' }}</strong>
+        </p>
+        <p class="last-payment-line">
+          Last payment: <strong>{{ getLastPaymentDate(loan.id) ? (getLastPaymentDate(loan.id) | date:'dd/MM/yyyy') : 'No payment yet' }}</strong>
+        </p>
+        <div class="loan-actions">
+          <button class="btn-secondary" (click)="viewLoanDetails(loan.id)">View Details</button>
+          <button class="btn-primary" (click)="openPaymentModal(loan)">Make Payment</button>
+        </div>
+      </div>
+
+      <div class="table-container" *ngIf="filteredLoansByStatus.length > 0">
+        <table appSortableTable class="loans-table compact">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th *ngIf="loanStatusFilter === 'ACTIVE'">Outstanding</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let loan of filteredLoansByStatus | slice:0:5">
+              <td class="loan-id">{{ loan.loanId }}</td>
+              <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+              </td>
+              <td *ngIf="loanStatusFilter === 'ACTIVE'">{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
+              <td>
+                <button class="icon-btn" (click)="viewLoanDetails(loan.id)"><i class="fas fa-eye"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="filteredLoansByStatus.length === 0" class="empty-state">
+        <i class="fas fa-smile"></i>
+        <p>No {{ loanStatusFilter.toLowerCase() }} loans yet.</p>
+        <button class="apply-btn" (click)="applyForLoan()">Apply for a Loan</button>
+      </div>
+    </div>
+
+    <!-- Patronage Info Card -->
+    <div class="patronage-card">
+      <div class="patronage-icon">
+        <i class="fas fa-percentage"></i>
+      </div>
+      <div class="patronage-content">
+        <h3>What is Patronage?</h3>
+        <p>You earn back a portion of the interest you pay!</p>
+        <div class="patronage-example">
+          <span><strong>Your estimated patronage this year:</strong> {{ formatCurrency(estimatedPatronageThisYear) }}</span>
+          <span class="coming-soon">(Will be calculated at year-end)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

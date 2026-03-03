@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import {
-  LeaveRequest,
   LeaveSettings,
-  LeaveType,
-  Employee,
+  EmployeeLevel,
+  LeaveAllocationMatrix,
+  LeavePlanningPolicy,
 } from '../../../domain/leave.dto';
 import { LeaveServiceService } from '../../../service/leave-service.service';
 
@@ -30,25 +30,30 @@ interface LeaveTypeWithAllocation {
 export class LeavePolicyComponent implements OnInit {
   // Form states
   showAddForm = false;
+  showLevelManagement = false;
+  showAllocationMatrix = false;
+  showPlanningPolicyModal = false; // NEW
   editingLeaveId: string | null = null;
   tempEditDays = 0;
-// core data
-leaveSettings!: LeaveSettings;
+
+  // Core data
+  leaveSettings!: LeaveSettings;
+  employeeLevels: EmployeeLevel[] = [];
+  allocationMatrix: LeaveAllocationMatrix | null = null;
+  planningPolicy!: LeavePlanningPolicy; // NEW
+
+  // New level form
+  newLevel = {
+    name: '',
+    description: '',
+    order: 0,
+  };
+
   newLeaveType: NewLeaveTypeForm = {
     typeName: '',
     allocatedDays: 0,
     isActive: true,
   };
-
-  // Static data - replace with service later
-  // leaveTypesWithAllocation: LeaveTypeWithAllocation[] = [
-  //   { id: '1', typeName: 'Annual Leave', allocatedDays: 21, isActive: true },
-  //   { id: '2', typeName: 'Sick Leave', allocatedDays: 10, isActive: true },
-  //   { id: '3', typeName: 'Maternity Leave', allocatedDays: 90, isActive: true },
-  //   { id: '4', typeName: 'Paternity Leave', allocatedDays: 14, isActive: true },
-  //   { id: '5', typeName: 'Study Leave', allocatedDays: 5, isActive: false },
-  // ];
-
 
   constructor(
     private messageService: MessageService,
@@ -56,45 +61,37 @@ leaveSettings!: LeaveSettings;
   ) {}
 
   ngOnInit(): void {
-    // Load from service or localStorage later
-    this.leaveSettings = this.leaveService.getLeaveSettings();
-    // this.loadLeaveTypes();
+    this.loadData();
   }
 
-  // loadLeaveTypes(): void {
-  //   const stored = localStorage.getItem('leaveTypesWithAllocation');
-  //   if (stored) {
-  //     this.leaveTypesWithAllocation = JSON.parse(stored);
-  //   }
-  // }
+  loadData(): void {
+    this.leaveSettings = this.leaveService.getLeaveSettings();
+    this.employeeLevels = this.leaveService.getEmployeeLevels();
+    this.allocationMatrix = this.leaveService.getLeaveAllocationMatrix();
+    this.planningPolicy = this.leaveService.getLeavePlanningPolicy(); // NEW
+  }
 
-  // Persist to localStorage
   persist(): void {
     try {
-      // localStorage.setItem(
-      //   'leaveTypesWithAllocation',
-      //   JSON.stringify(this.leaveTypesWithAllocation)
-      // );
       this.leaveService.updateLeaveSettings(this.leaveSettings);
     } catch (error) {
       console.error('Error saving settings:', error);
     }
   }
 
-  // Calculate total days across all active leave types
   get totalAllocatedDays(): number {
     return this.leaveSettings.leaveTypes
-      .filter(lt => lt.isActive)
+      .filter((lt) => lt.isActive)
       .reduce((sum, lt) => sum + lt.allocatedDays, 0);
   }
 
-  // Start editing leave days
+  // ==================== LEAVE TYPE MANAGEMENT ====================
+
   startEditLeaveDays(leaveType: LeaveTypeWithAllocation): void {
     this.editingLeaveId = leaveType.id;
     this.tempEditDays = leaveType.allocatedDays;
   }
 
-  // Save edited leave days
   saveLeaveDays(leaveType: LeaveTypeWithAllocation): void {
     if (this.tempEditDays < 0) {
       this.messageService.add({
@@ -116,13 +113,11 @@ leaveSettings!: LeaveSettings;
     });
   }
 
-  // Cancel editing
   cancelEditLeaveDays(): void {
     this.editingLeaveId = null;
     this.tempEditDays = 0;
   }
 
-  // Add new leave type
   addLeaveType(): void {
     if (!this.newLeaveType.typeName || !this.newLeaveType.typeName.trim()) {
       this.messageService.add({
@@ -150,12 +145,17 @@ leaveSettings!: LeaveSettings;
     };
 
     this.leaveSettings.leaveTypes.push(newType);
-this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
-    // Reset form
+    this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
+
+    if (this.leaveSettings.useLevelBasedAllocation) {
+      this.employeeLevels.forEach((level) => {
+        this.leaveService.updateSingleAllocation(level.id, newType.id, 0);
+      });
+      this.loadData();
+    }
+
     this.newLeaveType = { typeName: '', allocatedDays: 0, isActive: true };
     this.showAddForm = false;
-
-    // this.persist();
 
     this.messageService.add({
       severity: 'success',
@@ -164,7 +164,6 @@ this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     });
   }
 
-  // Toggle leave type active status
   toggleLeaveType(leaveType: LeaveTypeWithAllocation): void {
     leaveType.isActive = !leaveType.isActive;
     this.persist();
@@ -176,7 +175,6 @@ this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     });
   }
 
-  // Delete leave type
   deleteLeaveType(id: string): void {
     const leaveType = this.leaveSettings.leaveTypes.find((l) => l.id === id);
 
@@ -185,7 +183,7 @@ this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     }
 
     this.leaveSettings.leaveTypes = this.leaveSettings.leaveTypes.filter(
-      (l) => l.id !== id
+      (l) => l.id !== id,
     );
 
     this.persist();
@@ -197,10 +195,15 @@ this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     });
   }
 
-  // Toggle automatic approval
+  // ==================== SETTINGS TOGGLES ====================
+
   toggleAutomaticApproval(): void {
-    this.leaveSettings.automaticApproval = !this.leaveSettings.automaticApproval;
-    localStorage.setItem('automaticApproval', JSON.stringify(this.leaveSettings.automaticApproval));
+    this.leaveSettings.automaticApproval =
+      !this.leaveSettings.automaticApproval;
+    localStorage.setItem(
+      'automaticApproval',
+      JSON.stringify(this.leaveSettings.automaticApproval),
+    );
 
     this.messageService.add({
       severity: 'info',
@@ -209,24 +212,132 @@ this.leaveService.updateLeaveTypes(this.leaveSettings.leaveTypes);
     });
   }
 
-  // Reset all employees' leave
+  toggleLevelBasedAllocation(): void {
+    this.leaveSettings.useLevelBasedAllocation =
+      !this.leaveSettings.useLevelBasedAllocation;
+    this.leaveService.updateLeaveSettings(this.leaveSettings);
+
+    if (this.leaveSettings.useLevelBasedAllocation) {
+      this.allocationMatrix = this.leaveService.getLeaveAllocationMatrix();
+      this.leaveService.syncAllEmployeesWithMatrix();
+    }
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Updated',
+      detail: `Level-based allocation is now ${this.leaveSettings.useLevelBasedAllocation ? 'enabled' : 'disabled'}`,
+    });
+  }
+
   resetAllLeave(): void {
     const year = new Date().getFullYear();
 
-    if (
-      !confirm(
-        `Reset ALL employees' leave balances for ${year}?`
-      )
-    ) {
+    if (!confirm(`Reset ALL employees' leave balances for ${year}?`)) {
       return;
     }
 
-    // Here you would call your API to reset all employees
-    // For now, just show success message
     this.messageService.add({
       severity: 'success',
       summary: 'Reset Complete',
       detail: `All employees' leave balances have been reset!`,
     });
+  }
+
+  // ==================== LEVEL MANAGEMENT ====================
+
+  openLevelManagement(): void {
+    this.showLevelManagement = true;
+  }
+
+  closeLevelManagement(): void {
+    this.showLevelManagement = false;
+  }
+
+  // ==================== ALLOCATION MATRIX ====================
+
+  openAllocationMatrix(): void {
+    this.loadData();
+    this.showAllocationMatrix = true;
+  }
+
+  closeAllocationMatrix(): void {
+    this.showAllocationMatrix = false;
+  }
+
+  getAllocationForCell(levelId: string, leaveTypeId: string): number {
+    return this.leaveService.getAllocationForLevel(levelId, leaveTypeId);
+  }
+
+  updateAllocation(levelId: string, leaveTypeId: string, event: any): void {
+    const days = parseInt(event.target.value) || 0;
+
+    if (days < 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Invalid Input',
+        detail: 'Days cannot be negative',
+      });
+      return;
+    }
+
+    this.leaveService.updateSingleAllocation(levelId, leaveTypeId, days);
+    this.loadData();
+  }
+
+  saveAllocationMatrix(): void {
+    this.leaveService.syncAllEmployeesWithMatrix();
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Matrix Saved',
+      detail: 'Allocation matrix saved and employees updated',
+    });
+
+    this.closeAllocationMatrix();
+  }
+
+  getTotalForLevel(levelId: string): number {
+    if (!this.allocationMatrix) return 0;
+
+    return this.allocationMatrix.allocations
+      .filter((a) => a.levelId === levelId)
+      .reduce((sum, a) => sum + a.allocatedDays, 0);
+  }
+
+  // ==================== PLANNING POLICY (NEW) ====================
+
+  openPlanningPolicy(): void {
+    this.showPlanningPolicyModal = true;
+  }
+
+  closePlanningPolicy(): void {
+    this.showPlanningPolicyModal = false;
+  }
+
+  savePlanningPolicy(): void {
+    // Validate
+    const calculatedTotal =
+      this.planningPolicy.maxDaysPerMonth *
+      this.planningPolicy.maxPlanningMonths;
+
+    if (calculatedTotal !== this.planningPolicy.totalAllowedPlannedDays) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Warning',
+        detail: `Total days (${this.planningPolicy.totalAllowedPlannedDays}) should equal max days per month (${this.planningPolicy.maxDaysPerMonth}) × months (${this.planningPolicy.maxPlanningMonths}) = ${calculatedTotal}`,
+        key: 'tl',
+        life: 5000,
+      });
+    }
+
+    this.leaveService.updateLeavePlanningPolicy(this.planningPolicy);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Policy Saved',
+      detail: 'Leave planning policy updated successfully',
+    });
+
+    this.closePlanningPolicy();
   }
 }

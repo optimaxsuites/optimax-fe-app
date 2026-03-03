@@ -43,11 +43,11 @@ export class LeaveComponent {
   component: LeaveRequestComponent, 
   icon: 'fa fa-file-alt' 
 },
-{ 
-  name: 'Assign Leave', 
-  component: AssignLeaveComponent, 
-  icon: 'fa fa-user-plus' 
-},
+// { 
+//   name: 'Assign Leave', 
+//   component: AssignLeaveComponent, 
+//   icon: 'fa fa-user-plus' 
+// },
 { 
   name: 'Leave Policy', 
   component: LeavePolicyComponent, 

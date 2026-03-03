@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.service';
 
 @Component({
   selector: 'app-repayment-schedule-view',
@@ -10,6 +10,60 @@ export class RepaymentScheduleViewComponent implements OnInit {
   @Input() loan!: LoanApplication;
   
   displayedColumns: string[] = ['month', 'dueDate', 'principal', 'interest', 'total', 'balance', 'status'];
+
+  repaymentColumns = [
+    {
+      header: 'Month',
+      formatter: (row: RepaymentRow) => row.isTotal ? 'Totals' : row.monthNumber
+    },
+    {
+      header: 'Due Date',
+      formatter: (row: RepaymentRow) =>
+        row.isTotal ? '—' : (row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '—')
+    },
+    {
+      header: 'Principal',
+      formatter: (row: RepaymentRow) =>
+        typeof row.principal === 'number' ? `₦${row.principal.toLocaleString()}` : '—'
+    },
+    {
+      header: 'Interest',
+      formatter: (row: RepaymentRow) =>
+        typeof row.interest === 'number' ? `₦${row.interest.toLocaleString()}` : '—'
+    },
+    {
+      header: 'Total Payment',
+      formatter: (row: RepaymentRow) =>
+        typeof row.totalPayment === 'number' ? `₦${row.totalPayment.toLocaleString()}` : '—'
+    },
+    {
+      header: 'Remaining Balance',
+      formatter: (row: RepaymentRow) =>
+        row.isTotal ? '-' : (typeof row.remainingBalance === 'number' ? `₦${row.remainingBalance.toLocaleString()}` : '—')
+    },
+    {
+      header: 'Status',
+      formatter: (row: RepaymentRow) => row.isTotal ? '' : row.status,
+      badgeClass: (row: RepaymentRow) =>
+        row.isTotal ? '' : (row.status ? `payment-status ${this.getStatusClass(row.status)}` : '')
+    }
+  ];
+
+  get repaymentRows() {
+    if (!this.loan?.repaymentSchedule) return [];
+    const rows: RepaymentRow[] = [...this.loan.repaymentSchedule];
+    rows.push({
+      monthNumber: 0,
+      dueDate: '',
+      principal: this.getTotalPrincipal(),
+      interest: this.getTotalInterest(),
+      totalPayment: this.getTotalPayment(),
+      remainingBalance: 0,
+      status: 'PENDING',
+      isTotal: true
+    });
+    return rows;
+  }
   
   // Visualization data
   paymentBreakdown: { month: number, principal: number, interest: number }[] = [];
@@ -62,3 +116,5 @@ export class RepaymentScheduleViewComponent implements OnInit {
     return (amount / this.maxPaymentAmount) * 100;
   }
 }
+
+type RepaymentRow = RepaymentScheduleItem & { isTotal?: boolean };

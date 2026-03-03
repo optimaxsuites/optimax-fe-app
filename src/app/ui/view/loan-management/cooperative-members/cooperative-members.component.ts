@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -133,15 +134,71 @@ export class CooperativeMembersComponent implements OnInit {
   }
 
   viewMember(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/members/${id}`]);
+    this.router.navigate([`/admin/hr/cooperative/members/${id}/${uuidV4()}`]);
+  }
+
+  viewLoanHistory(memberId: string, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${uuidV4()}`], {
+      queryParams: { tab: 'loans' }
+    });
+  }
+
+  updateMemberStatus(member: CooperativeMember, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'): void {
+    if (member.status === status) {
+      return;
+    }
+
+    this.cooperativeService.updateMember({
+      ...member,
+      status
+    });
+
+    this.loadMembers();
+  }
+
+  suspendMember(member: CooperativeMember, event: Event): void {
+    event.stopPropagation();
+    const shouldSuspend = window.confirm(`Suspend ${member.fullName}? They will lose active cooperative privileges until reactivated.`);
+    if (!shouldSuspend) {
+      return;
+    }
+    this.updateMemberStatus(member, 'SUSPENDED');
+  }
+
+  reactivateMember(member: CooperativeMember, event: Event): void {
+    event.stopPropagation();
+    const shouldReactivate = window.confirm(`Reactivate ${member.fullName}? They will regain active cooperative privileges.`);
+    if (!shouldReactivate) {
+      return;
+    }
+    this.updateMemberStatus(member, 'ACTIVE');
+  }
+
+  markMemberInactive(member: CooperativeMember, event: Event): void {
+    event.stopPropagation();
+    const shouldMarkInactive = window.confirm(`Mark ${member.fullName} as inactive?`);
+    if (!shouldMarkInactive) {
+      return;
+    }
+    this.updateMemberStatus(member, 'INACTIVE');
+  }
+
+  activateInactiveMember(member: CooperativeMember, event: Event): void {
+    event.stopPropagation();
+    const shouldActivate = window.confirm(`Set ${member.fullName} back to active?`);
+    if (!shouldActivate) {
+      return;
+    }
+    this.updateMemberStatus(member, 'ACTIVE');
   }
 
   addMember(): void {
-    this.router.navigate(['/admin/hr/cooperative/members/add']);
+    this.router.navigate(['/admin/hr/cooperative/members/add', uuidV4()]);
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard']);
+    this.router.navigate(['/admin/hr/cooperative/dashboard', uuidV4()]);
   }
 
   formatCurrency(amount: number): string {

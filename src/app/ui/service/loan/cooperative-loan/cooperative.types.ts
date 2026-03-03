@@ -27,6 +27,8 @@ export interface CooperativeLoanProduct {
   minDuration: number;
   maxDuration: number;
   requiresShares: boolean;
+  patronageEligible: boolean;
+  patronageRate: number;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -43,12 +45,29 @@ export interface CooperativeLoan {
   totalRepayment: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED';
   applicationDate: string;
+  useSharesAsCollateral?: boolean;
+  pledgedSharesAmount?: number;
+  fundsReserved?: boolean;
+  adminRequestNote?: string;
   approvedDate?: string;
   disbursementDate?: string;
   completionDate?: string;
+  defaultedDate?: string;
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CooperativeNotification {
+  id: string;
+  type: 'LOAN_PENDING_APPROVAL' | 'LOAN_STATUS_UPDATE' | 'LOAN_CHANGE_REQUESTED' | 'LOAN_REPAYMENT_REMINDER' | 'LOAN_DEFAULTED';
+  recipient: 'ADMIN' | 'MEMBER';
+  title: string;
+  message: string;
+  loanId: string;
+  memberId: string;
+  createdAt: string;
+  read: boolean;
 }
 
 export interface CooperativeRepayment {
@@ -57,6 +76,7 @@ export interface CooperativeRepayment {
   amount: number;
   dueDate: string;
   paidDate?: string;
+  paymentMethod?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
   status: 'PENDING' | 'PAID' | 'OVERDUE';
 }
 

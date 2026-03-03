@@ -5,6 +5,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
 import { RecruitmentService } from '../../../service/recruitment.service';
 import { RecruitmentFormComponent } from '../recruitment-form/recruitment-form.component';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-recruitment-list',
@@ -23,6 +24,18 @@ export class RecruitmentListComponent implements OnInit {
   filteredJobPostings: JobPostingDTO[] = [];
   showListView: boolean = true;
   viewModal?: boolean;
+  jobColumns: TableColumn[] = [
+    { header: 'Title', field: 'jobTitle', sortable: true, className: 'table-item' },
+    { header: 'Location', field: 'location', sortable: true, className: 'table-item' },
+    { header: 'Job Type', field: 'jobType', sortable: true, className: 'table-item', formatter: (row) => row?.jobType?.name || row?.jobType || '—' },
+    { header: 'Posted Date', field: 'jobPostedDate', sortable: true, className: 'table-item', formatter: (row) => this.formatDateValue(row?.jobPostedDate) },
+    { header: 'Expiry Date', field: 'jobExpiryDate', sortable: true, className: 'table-item', formatter: (row) => this.formatDateValue(row?.jobExpiryDate) },
+  ];
+  jobActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'fas fa-eye' },
+    { id: 'edit', label: 'Edit', icon: 'fas fa-pen-to-square' },
+    { id: 'delete', label: 'Delete', icon: 'fas fa-trash-can' }
+  ];
 
 
   constructor(
@@ -44,9 +57,15 @@ export class RecruitmentListComponent implements OnInit {
         this.customFieldList = [];
         return;
     }
+    const fields = this.activeItem.jobVacancyCustomFields;
+    const areObjects = fields.every((item) => typeof item === 'object');
+    if (areObjects) {
+      this.customFieldList = fields as JobPostingCustomFieldDTO[];
+      return;
+    }
 
-    const fetchRequests = this.activeItem.jobVacancyCustomFields.map((FieldId) =>
-        this.recruitmentService.getCustomFieldById(FieldId).toPromise()
+    const fetchRequests = (fields as number[]).map((fieldId) =>
+        this.recruitmentService.getCustomFieldById(fieldId).toPromise()
     );
 
     Promise.all(fetchRequests)
@@ -183,6 +202,18 @@ export class RecruitmentListComponent implements OnInit {
     this.showRecruitmentForm = true;
   }
 
+  handleJobAction(event: { actionId: string; row: JobPostingDTO }) {
+    if (event.actionId === 'view') {
+      this.viewJob(event.row);
+    }
+    if (event.actionId === 'edit') {
+      this.editJob(event.row);
+    }
+    if (event.actionId === 'delete') {
+      this.confirmJobDelete(event.row);
+    }
+  }
+
   close() {
     this.showRecruitmentList = true;
     this.showRecruitmentForm = false;
@@ -203,6 +234,19 @@ export class RecruitmentListComponent implements OnInit {
     );
   }
 
+  private formatDateValue(value: any): string {
+    if (!value) return '—';
+    if (value instanceof Date) return value.toLocaleDateString();
+    if (typeof value === 'number') return new Date(value * 1000).toLocaleDateString();
+    if (typeof value === 'string') {
+      const asNumber = Number(value);
+      if (!Number.isNaN(asNumber) && value.trim() !== '') {
+        return new Date(asNumber * 1000).toLocaleDateString();
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+    }
+    return String(value);
+  }
 
 }
-

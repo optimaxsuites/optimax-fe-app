@@ -1,16 +1,16 @@
 export interface JobPostingDTO {
     id?: number;
     jobTitle?: string;
-    jobCategory?: number;
+    jobCategory?: JobVacancyCategoryDTO | number | any;
     companyOverview?: string;
     location?: string;
-    jobType?: number;
+    jobType?: JobVacancyTypeDTO | number | any;
     jobPostedDate?: string;
     jobExpiryDate?: string;
-    jobVacancySpecification?: number;
-    jobVacancyExperience?: number;
-    qualifications?: number;
-    jobVacancyCustomFields?: number[]; 
+    jobVacancySpecification?: JobVacancySpecificationDTO | number | any;
+    jobVacancyExperience?: JobVacancyExperienceDTO | number | any;
+    qualifications?: JobVacancyQualificationDTO | number | string | any;
+    jobVacancyCustomFields?: (JobPostingCustomFieldDTO | number)[]; 
 }
 export interface JobPostingCustomFieldDTO {
     id?: number;
@@ -38,6 +38,13 @@ export interface JobVacancyTypeDTO{
     description?: string;
 }
 export interface JobVacancySpecificationDTO{
+    id?: number;
+    name?: string;
+    code?: string;
+    description?: string;
+}
+
+export interface JobVacancyQualificationDTO{
     id?: number;
     name?: string;
     code?: string;

@@ -3,6 +3,12 @@
     <div class="attendance-card">
       <!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->
       <app-attendancefilter (filtersChange)="onFiltersChange($event)"></app-attendancefilter>
+        <app-table
+          [columns]="attendanceColumns"
+          [rows]="attendance"
+          [actions]="attendanceActions"
+          (actionClick)="handleAttendanceAction($event)"
+        ></app-table>
         <table class="attendance-table">
   <thead> 
     
@@ -43,6 +49,20 @@
 
     <td class="actions">
         <button class="view-btn">View</button> <!--(click)=""-->
+        <button
+  *ngIf="isToday(record.date) && 
+  record.status === 'ABSENT' &&
+  !record.overrideOpen"
+  (click)="openAttendance(record)">
+  Open
+</button>
+<span
+  *ngIf="isToday(record.date) &&
+    record.status === 'ABSENT' &&
+    record.overrideOpen"
+  class="opened-label">
+  Opened
+</span>
     </td>
 
   </tr>

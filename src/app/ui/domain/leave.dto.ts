@@ -84,3 +84,51 @@ export interface MonthlyPlanSummary {
   maxDays: number;
   remaining: number;
 }
+export interface EmployeeLevel {
+  id: string;
+  name: string; // Intern, Junior, Mid-Level, Senior, Manager
+  order: number; // For hierarchy (0 = lowest, higher numbers = more senior)
+  description: string;
+  isActive: boolean;
+}
+
+export interface LevelLeaveAllocation {
+  levelId: string;
+  leaveTypeId: string;
+  allocatedDays: number;
+}
+
+export interface LeaveAllocationMatrix {
+  levels: EmployeeLevel[];
+  allocations: LevelLeaveAllocation[]; // Matrix of level x leave type
+}
+
+// Update Employee interface
+export interface Employee {
+  id: string;
+  name: string;
+  levelId: string; // NEW
+  levelName: string; // NEW
+  leaveUsed: number;
+  leaveTypes: EmployeeLeaveTypeWithAllocation[];
+  promotionDate?: string; // NEW - track when level changed
+  levelHistory?: LevelChange[]; // NEW - track level changes
+}
+
+export interface LevelChange {
+  fromLevelId: string;
+  fromLevelName: string;
+  toLevelId: string;
+  toLevelName: string;
+  changedOn: string;
+  changedBy: string;
+  reason?: string;
+}
+
+// Update LeaveSettings
+export interface LeaveSettings {
+  totalLeaveDaysAllowed: number;
+  automaticApproval: boolean;
+  leaveTypes: LeaveTypeWithAllocation[];
+  useLevelBasedAllocation: boolean; // NEW - toggle for level-based system
+}

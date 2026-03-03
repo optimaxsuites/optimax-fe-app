@@ -136,103 +136,28 @@
         </div>
 
         <div *ngIf="selectedCriterias.length > 0">
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Criteria</th>
-                <th class="text-center">1</th>
-                <th class="text-center">2</th>
-                <th class="text-center">3</th>
-                <th class="text-center">4</th>
-                <th class="text-center">5</th>
-              </tr>
-            </thead>
-              <tbody>
-
-                <tr *ngFor="let question of selectedCriterias; let j = index">
-                  <td>{{ j + 1 }}</td>
-                  <td>{{ question.text }}</td>
-                  <td class="text-center" *ngFor="let value of [1, 2, 3, 4, 5]">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="value"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                </tr>
-                
-                <!-- <tr *ngFor="let question of selectedCriterias; let j = index">
-                  <td>{{ j + 1 }}</td>
-                  <td>{{ question.text }}</td>
-                  <td class="text-center">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question.text_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="1"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                  <td class="text-center">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question.text_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="2"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                  <td class="text-center">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question.text_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="3"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                  <td class="text-center">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question.text_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="4"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                  <td class="text-center">
-                    <label class="custom-radio">
-                      <input
-                        type="radio"
-                        [name]="'question.text_' + j"
-                        [(ngModel)]="question.score"
-                        [value]="5"
-                        (change)="onScoreChange(question)"
-                      />
-                      <span class="custom-radio-checkmark"></span>
-                    </label>
-                  </td>
-                </tr> -->
-              </tbody>
-          </table>
+          <app-table
+            tableClass="table table-bordered"
+            [columns]="interviewColumns"
+            [rows]="selectedCriterias"
+          >
+            <ng-template appTableBody let-row let-rowIndex="rowIndex">
+              <td>{{ rowIndex + 1 }}</td>
+              <td>{{ row.text }}</td>
+              <td class="text-center" *ngFor="let value of [1, 2, 3, 4, 5]">
+                <label class="custom-radio">
+                  <input
+                    type="radio"
+                    [name]="'question_' + rowIndex"
+                    [(ngModel)]="row.score"
+                    [value]="value"
+                    (change)="onScoreChange(row)"
+                  />
+                  <span class="custom-radio-checkmark"></span>
+                </label>
+              </td>
+            </ng-template>
+          </app-table>
           <div>
             <p>Score: {{ sumOfScore }}</p>
             <p>Maximum Score: {{ maximumScore }}</p>

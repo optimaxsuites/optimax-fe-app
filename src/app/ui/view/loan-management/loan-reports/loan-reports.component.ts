@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+//import { saveAs } from 'file-saver';
 import { formatDate } from '@angular/common';
 
 @Component({
@@ -48,6 +49,7 @@ export class LoanReportsComponent implements OnInit {
   };
 
   constructor(
+    private location: Location,
     private router: Router,
     private loanApplicationService: LoanApplicationService
   ) {}
@@ -252,9 +254,9 @@ export class LoanReportsComponent implements OnInit {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Loan Reports');
     
-    // Generate filename with date
-    const date = formatDate(new Date(), 'yyyyMMdd_HHmmss', 'en-US');
-    const filename = `loan_report_${date}.xlsx`;
+    // Generate filename with report date
+    const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
+    const filename = `loan_report_for_${reportDate}.xlsx`;
     
     XLSX.writeFile(workbook, filename);
   }
@@ -293,14 +295,19 @@ export class LoanReportsComponent implements OnInit {
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
+    // saveAs(blob, `loan_report_for_${reportDate}.csv`);
     const date = formatDate(new Date(), 'yyyyMMdd_HHmmss', 'en-US');
-    saveAs(blob, `loan_report_${date}.csv`);
+    //saveAs(blob, `loan_report_${date}.csv`);
   }
 
   // Print Report
   printReport(): void {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
+    const reportName = `loan_report_for_${reportDate}`;
 
     const styles = `
       <style>
@@ -327,10 +334,10 @@ export class LoanReportsComponent implements OnInit {
 
     const content = `
       <html>
-        <head><title>Loan Report</title>${styles}</head>
+        <head><title>${reportName}</title>${styles}</head>
         <body>
           <div class="header">
-            <h1>Loan Report</h1>
+            <h1>${reportName}</h1>
             <div class="date">Generated: ${formatDate(new Date(), 'medium', 'en-US')}</div>
           </div>
           
@@ -421,10 +428,17 @@ export class LoanReportsComponent implements OnInit {
 }
 
   goBack(): void {
-  this.router.navigate(['/admin/hr/loan-management/loan-dashboard', uuidV4()]);
+  if (window.history.length > 1) {
+    this.location.back();
+    return;
+  }
+
+  this.router.navigate(['/admin/hr/loan', uuidV4()]);
 }
 
   viewLoanDetails(loanId: string): void {
-  this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
+  this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
+    state: { source: 'reports' }
+  });
 }
 }

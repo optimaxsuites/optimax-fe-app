@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
-import { LoanDashboardComponent } from './loan-dashboard/loan-dashboard.component';
-import { LoanApprovalUiComponent } from './loan-approval-ui/loan-approval-ui.component';
 import { EmployeeDashboardComponent } from './employee-loan-dashboard/employee-loan-dashboard.component';
-import { CooperativeDashboardComponent } from './cooperative-dashboard/cooperative-dashboard.component';
+import { CooperativeMemberDashboardComponent } from './cooperative-member-dashboard/cooperative-member-dashboard.component';
+import { MainDashboardComponent } from './main-dashboard-component/main-dashboard-component.component';
 
 @Component({
   selector: 'app-loan',
@@ -12,22 +11,18 @@ import { CooperativeDashboardComponent } from './cooperative-dashboard/cooperati
 })
 export class LoanComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Dashboard',
-      component: LoanDashboardComponent,
-      icon: 'fas fa-chart-line'
-    },
     {
-      name: 'Cooperative Dashboard',
-      component: CooperativeDashboardComponent,
-      icon: 'fas fa-handshake'
-    },
-    { name: 'Manage Employee Welfare',
-      component: LoanApprovalUiComponent,
-      icon: 'fas fa-clipboard'
+      name: 'See Dashboards',
+      component: MainDashboardComponent,
+      icon: 'fas fa-chart-line'
     },
     { name: 'My Loans',
       component: EmployeeDashboardComponent,
       icon: 'fas fa-user'
+    },
+    { name: 'My Membership',
+      component: CooperativeMemberDashboardComponent,
+      icon: 'fas fa-user-tie'
     },
 
   ];

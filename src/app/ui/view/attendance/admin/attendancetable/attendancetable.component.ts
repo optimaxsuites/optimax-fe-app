@@ -17,6 +17,42 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
+  attendanceColumns = [
+    { header: 'ID', field: 'id' },
+    {
+      header: 'Employee',
+      formatter: (row: AttendanceTableRecord) => (row as any).employee || (row as any).employeeName || ''
+    },
+    { header: 'Department', field: 'department' },
+    {
+      header: 'Date',
+      formatter: (row: AttendanceTableRecord) => row.date || '-'
+    },
+    {
+      header: 'In',
+      formatter: (row: AttendanceTableRecord) => (row as any).checkIn || '-'
+    },
+    {
+      header: 'Out',
+      formatter: (row: AttendanceTableRecord) => (row as any).checkOut || '-'
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      badgeClass: (row: AttendanceTableRecord) => {
+        if (row.status === 'PRESENT') return 'status present';
+        if (row.status === 'LATE') return 'status late';
+        if (row.status === 'ABSENT') return 'status absent';
+        return 'status';
+      }
+    },
+    { header: 'Hours', field: 'hours' }
+  ];
+
+  attendanceActions = [
+    { id: 'correct', label: 'Correct', className: 'correct-btn' }
+  ];
+ 
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -32,6 +68,18 @@ export class AttendancetableComponent implements OnInit{
     // Default = today only
     this.filteredAttendance = data.filter(record => record.date === today);
   });
+}
+
+isToday(date: string | null): boolean {
+  if (!date) return false;
+  
+  const today = new Date().toISOString().split('T')[0];
+  return date === today;
+}
+
+openAttendance(record: AttendanceTableRecord) {
+  record.overrideOpen = true;
+  this.attendancetableService.openAttendanceForToday(record.id);
 }
 
   /*ngOnInit(): void {
@@ -73,6 +121,12 @@ export class AttendancetableComponent implements OnInit{
     alert('Invalid status. Use PRESENT, LATE, or ABSENT.');
   }
 }*/
+
+  handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
+    // if (event.actionId === 'correct') {
+    //   this.manualCorrection(event.row);
+    // }
+  }
 
 filters: any = {};
 
@@ -168,7 +222,7 @@ applyFilters() {
   ];
 
   // =========================
-  // 🔥 LATE ARRIVALS
+  // LATE ARRIVALS
   // =========================
   this.lateArrivalsData = data
     .filter(r => r.status === 'LATE')
@@ -179,7 +233,7 @@ applyFilters() {
     }));
 
   // =========================
-  // 🔥 TOP 3 DEPARTMENTS BY PUNCTUALITY
+  // TOP 3 DEPARTMENTS BY PUNCTUALITY
   // =========================
 
   const departmentMap: any = {};

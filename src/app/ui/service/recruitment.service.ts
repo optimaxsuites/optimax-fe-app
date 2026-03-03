@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { environment } from '../shared-component/service/environments/environment.prod';
 import { catchError, Observable, throwError } from 'rxjs';
-import { JobPostingCustomFieldDTO } from '../domain/job.dto';
+import { JobPostingCustomFieldDTO, JobPostingDTO } from '../domain/job.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -59,7 +59,7 @@ export class RecruitmentService {
     .pipe(catchError(this.handleError));
   }
 
-  addJobVacancy(data: JobPostingCustomFieldDTO): Observable<any>{
+  addJobVacancy(data: JobPostingDTO): Observable<any>{
     console.log("saving jobVacancies", data)
     return this.http
         .post<any>(

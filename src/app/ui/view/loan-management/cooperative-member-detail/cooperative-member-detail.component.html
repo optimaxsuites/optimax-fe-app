@@ -6,176 +6,164 @@
   </div>
 
   <div *ngIf="!isLoading && member" class="detail-content">
-    <!-- Header -->
     <div class="detail-header">
-      <button class="back-btn" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back to Members
-      </button>
-      <h1>Member Profile</h1>
+      <h1>MEMBER PROFILE: {{ member.fullName | uppercase }}</h1>
       <div class="header-actions">
         <button class="edit-btn" (click)="editMember()">
           <i class="fas fa-edit"></i> Edit
         </button>
         <button class="loan-btn" (click)="applyForLoan()">
-          <i class="fas fa-hand-holding-usd"></i> Apply for Loan
+          <i class="fas fa-hand-holding-usd"></i> Apply Loan
         </button>
       </div>
     </div>
 
-    <!-- Profile Card -->
-    <div class="profile-card">
-      <div class="profile-avatar">
-        {{ member.fullName.charAt(0) }}
-      </div>
-      <div class="profile-info">
-        <h2>{{ member.fullName }}</h2>
-        <div class="profile-meta">
-          <span><i class="fas fa-id-card"></i> {{ member.memberId }}</span>
-          <span><i class="fas fa-calendar-alt"></i> Member since {{ member.joinDate | date:'MMMM yyyy' }}</span>
-          <span class="status-badge" [ngClass]="getStatusClass(member.status)">
-            {{ member.status }}
-          </span>
-        </div>
-      </div>
+    <div class="profile-summary-card">
+      <span><strong>Member ID:</strong> {{ member.memberId }}</span>
+      <span><strong>Since:</strong> {{ member.joinDate | date:'MMM yyyy' }}</span>
+      <span class="status-badge" [ngClass]="getStatusClass(member.status)">{{ member.status }}</span>
     </div>
 
-    <!-- Stats Cards -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon shares-icon">
-          <i class="fas fa-coins"></i>
-        </div>
         <div class="stat-content">
-          <span class="stat-label">Share Capital</span>
+          <span class="stat-label">Shares</span>
           <span class="stat-value">{{ formatCurrency(member.shareCapital) }}</span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon borrowed-icon">
-          <i class="fas fa-hand-holding-usd"></i>
-        </div>
         <div class="stat-content">
-          <span class="stat-label">Total Borrowed</span>
+          <span class="stat-label">Borrowed</span>
           <span class="stat-value">{{ formatCurrency(getTotalBorrowed()) }}</span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon active-icon">
-          <i class="fas fa-play-circle"></i>
-        </div>
         <div class="stat-content">
-          <span class="stat-label">Active Loans</span>
-          <span class="stat-value">{{ getActiveLoans().length }}</span>
+          <span class="stat-label">Active</span>
+          <span class="stat-value">{{ getActiveLoans().length }} loan{{ getActiveLoans().length === 1 ? '' : 's' }}</span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon completed-icon">
-          <i class="fas fa-check-circle"></i>
-        </div>
         <div class="stat-content">
           <span class="stat-label">Completed</span>
-          <span class="stat-value">{{ getCompletedLoans().length }}</span>
+          <span class="stat-value">{{ getCompletedLoans().length }} loan{{ getCompletedLoans().length === 1 ? '' : 's' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
-        <i class="fas fa-user"></i> Overview
-      </button>
-      <button [class.active]="activeTab === 'loans'" (click)="setActiveTab('loans')">
-        <i class="fas fa-file-invoice"></i> Loans ({{ memberLoans.length }})
-      </button>
-    </div>
-
-    <!-- Tab Content -->
-    <div class="tab-content">
-      <!-- Overview Tab -->
-      <div *ngIf="activeTab === 'overview'" class="overview-tab">
-        <div class="info-grid">
-          <div class="info-card">
-            <h3>Contact Information</h3>
-            <div class="info-row">
-              <span class="label">Email:</span>
-              <span class="value">{{ member.email }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Phone:</span>
-              <span class="value">{{ member.phone }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Address:</span>
-              <span class="value">{{ member.address || 'Not provided' }}</span>
-            </div>
-          </div>
-
-          <div class="info-card">
-            <h3>Emergency Contact</h3>
-            <div *ngIf="member.emergencyContact; else noEmergency">
-              <div class="info-row">
-                <span class="label">Name:</span>
-                <span class="value">{{ member.emergencyContact.name }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Phone:</span>
-                <span class="value">{{ member.emergencyContact.phone }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Relationship:</span>
-                <span class="value">{{ member.emergencyContact.relationship }}</span>
-              </div>
-            </div>
-            <ng-template #noEmergency>
-              <p class="text-muted">No emergency contact provided</p>
-            </ng-template>
-          </div>
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>CONTACT</h3>
+        <div class="info-row">
+          <span class="label">Email:</span>
+          <span class="value">{{ member.email }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Phone:</span>
+          <span class="value">{{ member.phone }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Address:</span>
+          <span class="value">{{ member.address || 'Not provided' }}</span>
         </div>
       </div>
 
-      <!-- Loans Tab -->
-      <div *ngIf="activeTab === 'loans'" class="loans-tab">
-        <h3>Loan History</h3>
-        
-        <div class="table-container" *ngIf="memberLoans.length > 0">
-          <table class="loans-table">
-            <thead>
-              <tr>
-                <th>Loan ID</th>
-                <th>Amount</th>
-                <th>Purpose</th>
-                <th>Duration</th>
-                <th>Status</th>
-                <th>Applied</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let loan of memberLoans" (click)="viewLoan(loan.id)">
-                <td class="loan-id">{{ loan.loanId }}</td>
-                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                <td class="purpose">{{ loan.purpose }}</td>
-                <td>{{ loan.duration }} mo</td>
-                <td>
-                  <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
-                    {{ loan.status }}
-                  </span>
-                </td>
-                <td>{{ loan.applicationDate | date:'shortDate' }}</td>
-                <td><i class="fas fa-chevron-right"></i></td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="info-card">
+        <h3>EMERGENCY CONTACT</h3>
+        <div *ngIf="member.emergencyContact; else noEmergency">
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span class="value">{{ member.emergencyContact.name }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Phone:</span>
+            <span class="value">{{ member.emergencyContact.phone }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Relation:</span>
+            <span class="value">{{ member.emergencyContact.relationship }}</span>
+          </div>
         </div>
+        <ng-template #noEmergency>
+          <p class="text-muted">No emergency contact provided</p>
+        </ng-template>
+      </div>
+    </div>
 
-        <div *ngIf="memberLoans.length === 0" class="empty-state">
-          <i class="fas fa-file-invoice"></i>
-          <p>No loan applications yet</p>
-          <button class="loan-btn" (click)="applyForLoan()">Apply for Loan</button>
-        </div>
+    <div class="tab-content loans-tab">
+      <div class="section-head">
+        <h3>LOAN HISTORY</h3>
+        <button class="view-all-btn" (click)="viewAllMemberLoans()">View All</button>
+      </div>
+
+      <div class="table-container" *ngIf="memberLoans.length > 0">
+        <table appSortableTable class="loans-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Amount</th>
+              <th>Purpose</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let loan of memberLoans" (click)="viewLoan(loan.id)">
+              <td class="loan-id">{{ loan.loanId }}</td>
+              <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+              <td class="purpose">{{ loan.purpose }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
+                  {{ loan.status }}
+                </span>
+              </td>
+              <td>{{ loan.applicationDate | date:'MMM yyyy' }}</td>
+              <td><i class="fas fa-chevron-right"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="memberLoans.length === 0" class="empty-state">
+        <i class="fas fa-file-invoice"></i>
+        <p>No loan applications yet</p>
+      </div>
+    </div>
+
+    <div class="tab-content loans-tab">
+      <div class="section-head">
+        <h3>REPAYMENT HISTORY</h3>
+      </div>
+
+      <div class="table-container" *ngIf="getRepaymentHistory().length > 0">
+        <table appSortableTable class="loans-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Last Payment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getRepaymentHistory()">
+              <td class="loan-id">{{ item.loanId }}</td>
+              <td class="amount">{{ formatCurrency(item.paidAmount) }}</td>
+              <td>{{ formatCurrency(item.outstandingAmount) }}</td>
+              <td>{{ item.lastPaymentDate | date:'mediumDate' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getRepaymentStatusClass(item.status)">
+                  {{ item.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

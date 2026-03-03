@@ -8,9 +8,7 @@
   <div *ngIf="!isLoading" class="reports-content">
     <!-- Header -->
     <div class="reports-header">
-      <button class="back-btn" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-      </button>
+      <app-back-button (click)="goBack()"></app-back-button>
       <h1>Loan Reports</h1>
       <div class="header-actions">
         <button class="export-btn excel" (click)="exportToExcel()">
@@ -146,7 +144,7 @@
 
     <!-- Reports Table -->
     <div class="table-container">
-      <table class="reports-table">
+      <table appSortableTable class="reports-table">
         <thead>
           <tr>
             <th (click)="setSort('loanId')" class="sortable">
@@ -179,7 +177,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id">{{ loan.id }}</td>
+            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
             <td>
               <div class="employee-info">
                 <span class="name">{{ loan.fullName }}</span>

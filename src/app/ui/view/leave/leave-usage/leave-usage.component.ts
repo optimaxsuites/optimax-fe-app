@@ -1,12 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, EventInput } from '@fullcalendar/core';
+import {
+  CalendarOptions,
+  EventInput,
+  DayCellContentArg,
+} from '@fullcalendar/core';
 import { LeaveServiceService } from '../../../service/leave-service.service';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { Employee, LeaveSettings } from '../../../domain/leave.dto';
+import interactionPlugin from '@fullcalendar/interaction';
+import {
+  Employee,
+  LeaveSettings,
+  PlannedLeave,
+} from '../../../domain/leave.dto';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-leave-usage',
@@ -35,29 +45,54 @@ export class LeaveUsageComponent implements OnInit {
   comment: any;
   attachment: any;
   docUploadStatus: string = 'Upload file';
-  selectedLeave: string = ''; // Added this too
+  selectedLeave: string = '';
   openApplyLeave = false;
+  requestColumns: TableColumn[] = [
+    { header: 'Date', field: 'AppliedOn', sortable: true, className: 'table-item' },
+    { header: 'Date Applied for', field: 'Date', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'LeaveType', sortable: true, className: 'table-item' },
+    {
+      header: 'Net Leave Balance',
+      field: 'NetLeaveBalance',
+      sortable: true,
+      className: 'table-item',
+      formatter: (row) => `${row.NetLeaveBalance ?? 0} day(s)`
+    },
+    { header: 'Requested Duration', field: 'RequestedDuration', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'Status', sortable: true, className: 'table-item' }
+  ];
+  requestActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+  ];
+
+  // Planned leaves
+  plannedLeaves: PlannedLeave[] = [];
+  allowedDateRanges: { start: string; end: string }[] = [];
+  hasPlannedLeaves: boolean = false;
 
   calendarEvents: EventInput[] = [];
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
-    plugins: [dayGridPlugin],
+    plugins: [dayGridPlugin, interactionPlugin],
     events: this.calendarEvents,
+    dayCellClassNames: this.getDayCellClass.bind(this),
+    dayCellDidMount: this.styleDayCell.bind(this),
   };
-  totalDays = 21;
-  usedDays = 6;
-  total = 53;
-  approved = 40;
-  rejected = 3;
-  pending = 15;
-  //End of addition play
+
+  // totalDays = 21;
+  // usedDays = 6;
+  // total = 53;
+  // approved = 40;
+  // rejected = 3;
+  // pending = 15;
+
   constructor(
     private messageService: MessageService,
     private token: RandomTokenService,
     private leaveService: LeaveServiceService,
   ) {}
+
   ngOnInit() {
-    // this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
     this.leaveSettings = this.leaveService.getLeaveSettings();
     this.leaveTypes = this.leaveSettings.leaveTypes
       .filter((leave) => leave.isActive)
@@ -66,12 +101,14 @@ export class LeaveUsageComponent implements OnInit {
     this.allowedLeaveTypes = this.employee.leaveTypes
       .filter((leave) => leave.allocatedDays > leave.daysUsed)
       .map((leave) => leave.typeName);
-    console.log(this.allowedLeaveTypes);
+
     this.today = new Date().toISOString().split('T')[0];
     this.userRegData = this.userInfoRegData;
-    // this.filteredRequests = this.allRequests.filter(
-    //   (request: any) => request.Employee === this.userRegData.fullname,
-    // );
+
+    // Load planned leaves
+    this.plannedLeaves = this.leaveService.loadPlannedLeaves(this.employee.id);
+    this.calculateAllowedDateRanges();
+
     this.filteredRequests = this.leaveService.getEmployeeLeaveRequests(
       this.employee.id,
     );
@@ -79,26 +116,210 @@ export class LeaveUsageComponent implements OnInit {
     this.sortByStatus();
     this.updateCalendarEvents();
   }
-  get remainingDays(): number {
-    return this.totalDays - this.usedDays;
+
+  // ==================== CALENDAR STYLING ====================
+  formatDateLocal(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  getDayCellClass(arg: any): string[] {
+    const dateStr = this.formatDateLocal(arg.date);
+    const isPast = arg.date < new Date(new Date().setHours(0, 0, 0, 0));
+    const isAllowed = this.isDateAllowed(dateStr);
+
+    if (isPast) {
+      return ['fc-day-past'];
+    }
+
+    if (!isAllowed) {
+      return ['fc-day-disabled'];
+    }
+
+    return ['fc-day-allowed'];
   }
 
-  get usedPercentage(): number {
-    return (this.usedDays / this.totalDays) * 100;
+  styleDayCell(arg: any) {
+    const dateStr = this.formatDateLocal(arg.date);
+    const isPast = arg.date < new Date(new Date().setHours(0, 0, 0, 0));
+    const isAllowed = this.isDateAllowed(dateStr);
+
+    if (isPast) {
+      arg.el.style.backgroundColor = '#f5f5f5';
+      arg.el.style.color = '#999';
+      arg.el.style.cursor = 'not-allowed';
+    } else if (!isAllowed) {
+      arg.el.style.backgroundColor = '#fee';
+      arg.el.style.color = '#999';
+      arg.el.style.cursor = 'not-allowed';
+      arg.el.style.textDecoration = 'line-through';
+    } else {
+      arg.el.style.backgroundColor = '#e8f5e9';
+      arg.el.style.cursor = 'pointer';
+    }
   }
+
+  // ==================== PLANNED LEAVE VALIDATION ====================
+
+  calculateAllowedDateRanges() {
+    this.allowedDateRanges = this.plannedLeaves
+      .filter((plan) => plan.status)
+      .map((plan) => ({
+        start: plan.startDate,
+        end: plan.endDate,
+      }));
+
+    this.hasPlannedLeaves = this.allowedDateRanges.length > 0;
+  }
+
+  isDateAllowed(dateString: string): boolean {
+    if (this.allowedDateRanges.length === 0) {
+      return false;
+    }
+
+    // Simple string comparison - no Date objects at all
+    return this.allowedDateRanges.some((range) => {
+      console.log(
+        `Checking if ${dateString} is between ${range.start} and ${range.end} - Result: ${dateString >= range.start && dateString <= range.end}`,
+      );
+      return dateString >= range.start && dateString <= range.end;
+    });
+  }
+
+  // For HTML min attribute
+  getMinAllowedDate(): string {
+    if (this.allowedDateRanges.length === 0) {
+      // Return a future date to disable all past dates
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 10);
+      return futureDate.toISOString().split('T')[0];
+    }
+
+    const dates = this.allowedDateRanges.map((r) => new Date(r.start));
+    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+    return minDate.toISOString().split('T')[0];
+  }
+
+  // For HTML max attribute
+  getMaxAllowedDate(): string {
+    if (this.allowedDateRanges.length === 0) {
+      // Return today to disable all dates
+      return this.today;
+    }
+
+    const dates = this.allowedDateRanges.map((r) => new Date(r.end));
+    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+    return maxDate.toISOString().split('T')[0];
+  }
+
+  // Custom date filter for input
+  isDateDisabled(date: string): boolean {
+    const isPast = new Date(date) < new Date(new Date().setHours(0, 0, 0, 0));
+    if (isPast) return true;
+    return !this.isDateAllowed(date);
+  }
+
+  validateDateRange(): boolean {
+    if (!this.fromDate || !this.toDate) {
+      return false;
+    }
+
+    if (!this.hasPlannedLeaves) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No Planned Leave',
+        detail:
+          'You must plan your leave first before submitting a request. Go to Leave Planning to create a plan.',
+        key: 'tl',
+        life: 5000,
+      });
+      return false;
+    }
+
+    const fromValid = this.isDateAllowed(this.fromDate);
+    const toValid = this.isDateAllowed(this.toDate);
+
+    if (!fromValid || !toValid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid Date Range',
+        detail:
+          'You can only request leave for dates within your approved planned leave periods',
+        key: 'tl',
+        life: 5000,
+      });
+      return false;
+    }
+
+    const start = new Date(this.fromDate);
+    const end = new Date(this.toDate);
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      if (!this.isDateAllowed(dateStr)) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid Date Range',
+          detail:
+            'Your selected range includes dates outside your planned leave periods',
+          key: 'tl',
+          life: 5000,
+        });
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  getFormattedAllowedRanges(): string {
+    if (this.allowedDateRanges.length === 0) {
+      return 'No approved planned leave periods yet';
+    }
+
+    return this.allowedDateRanges
+      .map((range) => `${range.start} to ${range.end}`)
+      .join(', ');
+  }
+
+  // ==================== EXISTING METHODS ====================
+
+  // get remainingDays(): number {
+  //   return this.totalDays - this.usedDays;
+  // }
+
+  // get usedPercentage(): number {
+  //   return (this.usedDays / this.totalDays) * 100;
+  // }
+
   getTotalAllocatedDays(): number {
     return this.employee.leaveTypes.reduce(
       (sum, lt) => sum + lt.allocatedDays,
       0,
     );
   }
+
   getTotalUsedDays(): number {
     return this.employee.leaveTypes.reduce((sum, lt) => sum + lt.daysUsed, 0);
   }
+
   getRemainingDays(): number {
     return this.getTotalAllocatedDays() - this.getTotalUsedDays();
   }
+
   openApplyLeaveModal() {
+    if (!this.hasPlannedLeaves) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Plan Leave First',
+        detail:
+          'You must create and get approval for a leave plan before applying for leave. Go to Leave Planning.',
+        key: 'tl',
+        life: 5000,
+      });
+      return;
+    }
     this.openApplyLeave = true;
   }
 
@@ -117,7 +338,6 @@ export class LeaveUsageComponent implements OnInit {
           this.searchTerm.toLowerCase(),
         );
 
-        // Check if the candidate matches one of the selected leaveType or status (if any)
         const matchesLeaveType =
           this.selectedLeaveType.length === 0 ||
           this.selectedLeaveType.includes(employee.LeaveType);
@@ -125,15 +345,14 @@ export class LeaveUsageComponent implements OnInit {
           this.selectedStatus.length === 0 ||
           this.selectedStatus.includes(employee.Status);
 
-        // Return true if all conditions are met
         return matchesSearchTerm && matchesLeaveType && matchesStatus;
       },
     );
     this.sortByStatus();
     this.updateCalendarEvents();
   }
+
   filterBySelectedStatus() {
-    console.log(this.selectedStatus);
     if (this.selectedStatus.length == 0) {
       this.myRequests = [...this.filteredRequests];
     } else {
@@ -169,20 +388,26 @@ export class LeaveUsageComponent implements OnInit {
     this.sortByStatus();
   }
 
-  viewLRequest(request: any, op: OverlayPanel) {
+  viewLRequest(request: any, op?: OverlayPanel) {
     this.requestInView = request;
     this.openViewRequest = true;
-    op.hide();
+    op?.hide();
   }
-  ////kd added this function
+
+  handleRequestAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewLRequest(event.row);
+    }
+  }
+
   parseDateRange(dateRange: string) {
     const [start, end] = dateRange.split(' to ');
-
     return {
       start: start,
       end: end,
     };
   }
+
   addOneDay(date: string) {
     const d = new Date(date);
     d.setDate(d.getDate() + 1);
@@ -190,37 +415,54 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   updateCalendarEvents() {
-    this.calendarEvents = this.myRequests.map((req: any) => {
-      const { start, end } = this.parseDateRange(req.Date);
-
-      return {
-        title: req.LeaveType,
-        start,
-        end: this.addOneDay(end),
-      };
-    });
-
-    this.calendarOptions = {
-      ...this.calendarOptions,
-      events: this.calendarEvents,
+  this.calendarEvents = this.myRequests.map((req: any) => {
+    const { start, end } = this.parseDateRange(req.Date);
+    
+    // Determine color based on status
+    let backgroundColor = '#3B82F6'; // Default blue
+    let borderColor = '#2563EB';
+    let textColor = '#FFFFFF';
+    
+    if (req.Status.includes('Approved')) {
+      backgroundColor = '#10B981'; // Green
+      borderColor = '#059669';
+    } else if (req.Status.includes('Rejected')) {
+      backgroundColor = '#EF4444'; // Red
+      borderColor = '#DC2626';
+    } else if (req.Status.includes('Pending')) {
+      backgroundColor = '#F59E0B'; // Amber/Yellow
+      borderColor = '#D97706';
+    }
+    
+    return {
+      title: req.LeaveType,
+      start,
+      end: this.addOneDay(end),
+      backgroundColor,
+      borderColor,
+      textColor,
+      extendedProps: {
+        status: req.Status,
+        duration: req.RequestedDuration,
+      }
     };
-  }
+  });
 
-  // apply
+  this.calendarOptions = {
+    ...this.calendarOptions,
+    events: this.calendarEvents,
+  };
+}
 
   getCurrentDateTime(): string {
     const currentDate = new Date();
-
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const day = currentDate.getDate().toString().padStart(2, '0');
-
     const hours = currentDate.getHours();
     const minutes = currentDate.getMinutes().toString().padStart(2, '0');
-
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const formattedHours = (hours % 12 || 12).toString().padStart(2, '0');
-
     return `${year}-${month}-${day}, ${formattedHours}:${minutes} ${ampm}`;
   }
 
@@ -231,12 +473,14 @@ export class LeaveUsageComponent implements OnInit {
       this.docUploadStatus = 'File attached';
     }
   }
+
   resetForm() {
     this.comment = '';
     this.fromDate = '';
     this.toDate = '';
     this.selectedLeave = '';
     this.attachment = null;
+    this.docUploadStatus = 'Upload file';
   }
 
   assignLeave() {
@@ -245,13 +489,18 @@ export class LeaveUsageComponent implements OnInit {
     );
 
     if (this.fromDate && this.toDate && this.selectedLeave) {
+      if (!this.validateDateRange()) {
+        return;
+      }
+
       const from = new Date(this.fromDate);
       const to = new Date(this.toDate);
       const timeDiff = to.getTime() - from.getTime();
-      const dayDiff = timeDiff / (1000 * 3600 * 24) + 1;
+      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
       const createLeaveRequest = (attachmentData: any) => {
         const leaveRequest = {
-          Employee: this.userRegData.fullname,
+          Employee: this.userRegData.fullname || this.employee.name,
           EmployeeId: this.employee.id,
           Date: `${this.fromDate} to ${this.toDate}`,
           LeaveType: this.selectedLeave,
@@ -273,6 +522,7 @@ export class LeaveUsageComponent implements OnInit {
         this.myRequests = [...this.filteredRequests];
 
         this.resetForm();
+        this.openApplyLeave = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Leave',
@@ -332,9 +582,10 @@ export class LeaveUsageComponent implements OnInit {
   preventTyping(event: KeyboardEvent) {
     event.preventDefault();
   }
+
   onFromDateChange() {
     if (this.toDate && this.fromDate > this.toDate) {
-      this.toDate = ''; // reset invalid selection
+      this.toDate = '';
     }
   }
 }

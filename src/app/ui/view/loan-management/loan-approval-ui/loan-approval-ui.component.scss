@@ -32,19 +32,20 @@
     border-left: 4px solid #2E6276; /* customBlue */
 }
 
-.approval-header h1 {
-    font-size: 2.2rem;
-    color: #2E6276; /* customBlue */
-    font-weight: bold;
-    margin: 0;
+.approval-header .back-btn {
+    border: 1px solid #e2e2e2;
+    background: #fff;
+    color: #2E6276;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .search-box input {
-    padding: 10px 15px;
-    border: 1px solid #e2e2e2; /* grayDark */
-    border-radius: 4px;
-    font-size: 14px;
-    width: 300px;
     background-color: white;
     color: #495057; /* textGray */
     transition: all 0.3s ease;
@@ -166,29 +167,29 @@
 }
 
 .loans-table thead {
-    background-color: #2E6276; /* customBlue */
+    background-color: #f4f7f9;
 }
 
 .loans-table th {
-    padding: 15px;
+    padding: 0.75rem 0.9rem;
     text-align: left;
     font-weight: 600;
-    color: white;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: none;
+    color: #224957;
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid #e6edf2;
 }
 
 .loans-table td {
-    padding: 15px;
-    border-bottom: 1px solid #f0f0f0; /* grayLight */
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid #eef2f6;
     color: #495057; /* textGray */
     vertical-align: middle;
 }
 
 .loans-table tr:nth-child(even) {
-    background-color: #f8feff; /* skyBlue */
+    background-color: #f9fbfc;
 }
 
 .loans-table tr:nth-child(odd) {
@@ -201,7 +202,7 @@
 }
 
 .loans-table .clickable-row:hover {
-    background-color: #e3eef0; /* skyBlue2 */
+    background-color: #f8fbfc;
 }
 
 /* Status Badges */
@@ -235,6 +236,91 @@
     border: 1px solid rgba(255, 0, 0, 0.3);
 }
 
+.interest-rate-cell {
+    font-weight: 600;
+    color: #2E6276;
+}
+
+.documents-cell {
+    position: relative;
+
+    .docs-preview-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .docs-count {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(46, 98, 118, 0.1);
+        color: #2E6276;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: help;
+    }
+
+    .docs-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        min-width: 260px;
+        max-width: 360px;
+        background: #ffffff;
+        border: 1px solid #e2e2e2;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        padding: 10px 12px;
+        z-index: 20;
+        display: none;
+
+        .docs-dropdown-title {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #2E6276;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 16px;
+            max-height: 140px;
+            overflow: auto;
+        }
+
+        li {
+            font-size: 12px;
+            color: #495057;
+            line-height: 1.4;
+            margin-bottom: 4px;
+            word-break: break-word;
+
+            .doc-name {
+                display: block;
+                font-weight: 600;
+                color: #2f3b45;
+            }
+
+            .doc-meta {
+                display: block;
+                font-size: 11px;
+                color: #6b7a86;
+            }
+        }
+    }
+
+    .docs-preview-wrap:hover .docs-dropdown {
+        display: block;
+    }
+
+    .docs-empty {
+        color: #8a8a8a;
+        font-size: 12px;
+        font-style: italic;
+    }
+}
+
 /* Action Buttons Container - FIXED */
 td.actions {
     display: flex;
@@ -246,40 +332,30 @@ td.actions {
 
 /* Individual button styling */
 td.actions button {
-    padding: 8px 12px;
+    padding: 4px 8px;
+    background: none;
     border: none;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: color 0.2s ease;
     white-space: nowrap;
-    min-width: 70px;
+    min-width: auto;
     margin: 0; /* Remove any default margins */
+    color: #2E6276;
 }
 
-/* View button */
-td.actions .btn-view {
-    background-color: rgb(101, 199, 231);
-    color: white;
+td.actions button i {
+    color: #2E6276;
 }
 
-td.actions .btn-view:hover {
-    background-color: rgb(66, 145, 177);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
+td.actions button:hover {
+    color: #4291b1;
 }
 
-/* History button */
-td.actions .btn-history {
-    background-color: rgb(101, 199, 231);
-    color: white;
-}
-
-td.actions .btn-history:hover {
-    background-color: rgb(66, 145, 177);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(66, 145, 177, 0.3);
+td.actions button:hover i {
+    color: #4291b1;
 }
 
 /* Remove any leftover approve/reject button styles */

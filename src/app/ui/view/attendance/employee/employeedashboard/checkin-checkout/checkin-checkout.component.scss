@@ -8,6 +8,36 @@
   gap: 1.2rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
 
+  .absent-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .closed-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .completed-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
   .time {
     text-align: center;
 

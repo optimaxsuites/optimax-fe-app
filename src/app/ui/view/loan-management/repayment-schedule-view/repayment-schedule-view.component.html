@@ -78,47 +78,10 @@
   <div class="schedule-table">
     <h3>Monthly Breakdown</h3>
     <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Due Date</th>
-            <th>Principal</th>
-            <th>Interest</th>
-            <th>Total Payment</th>
-            <th>Remaining Balance</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of loan.repaymentSchedule">
-            <td>{{ item.monthNumber }}</td>
-            <td>{{ item.dueDate | date:'mediumDate' }}</td>
-            <td>₦{{ item.principal | number:'1.2-2' }}</td>
-            <td>₦{{ item.interest | number:'1.2-2' }}</td>
-            <td>₦{{ item.totalPayment | number:'1.2-2' }}</td>
-            <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
-            <td>
-              <span class="payment-status" [ngClass]="getStatusClass(item.status)">
-                {{ item.status }}
-              </span>
-              <span *ngIf="item.paymentDate" class="payment-date">
-                Paid: {{ item.paymentDate | date:'shortDate' }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2"><strong>Totals</strong></td>
-            <td><strong>₦{{ getTotalPrincipal() | number:'1.2-2' }}</strong></td>
-            <td><strong>₦{{ getTotalInterest() | number:'1.2-2' }}</strong></td>
-            <td><strong>₦{{ getTotalPayment() | number:'1.2-2' }}</strong></td>
-            <td>-</td>
-            <td>-</td>
-          </tr>
-        </tfoot>
-      </table>
+      <app-table
+        [columns]="repaymentColumns"
+        [rows]="repaymentRows"
+      ></app-table>
     </div>
   </div>
 </div>

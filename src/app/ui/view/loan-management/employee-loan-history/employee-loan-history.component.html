@@ -8,9 +8,7 @@
   <div *ngIf="!isLoading" class="history-content">
     <!-- Header with Back Button -->
     <div class="history-header">
-      <button class="back-btn" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
+      <app-back-button (click)="goBack()"></app-back-button>
       <h1>Loan History: {{ employeeName }}</h1>
       <div class="employee-badge">Employee ID: {{ employeeId }}</div>
     </div>
@@ -33,7 +31,7 @@
 
     <!-- Loans Table -->
     <div class="table-container">
-      <table class="loans-table">
+      <table appSortableTable class="loans-table">
         <thead>
           <tr>
             <th (click)="setSort('loanId')" class="sortable">
@@ -52,6 +50,10 @@
               Amount 
               <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
             </th>
+            <th class="sortable" (click)="setSort('interestRate')">
+              Interest Rate
+              <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
+            </th>
             <th (click)="setSort('totalPaid')" class="sortable">
               Paid 
               <i class="fas" [ngClass]="getSortIcon('totalPaid')"></i>
@@ -69,10 +71,11 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id">{{ loan.id }}</td>
+            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
             <td>{{ loan.dateSubmitted | date:'mediumDate' }}</td>
             <td class="purpose">{{ loan.purpose }}</td>
             <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
+            <td class="interest">{{ loan.interestRate }}%</td>
             <td class="paid">₦{{ loan.totalPaid | number:'1.2-2' }}</td>
             <td class="balance">₦{{ loan.currentBalance | number:'1.2-2' }}</td>
             <td>
@@ -81,13 +84,13 @@
               </span>
             </td>
             <td>
-              <button class="view-btn" (click)="viewLoanDetails(loan.id)">
-                <i class="fas fa-eye"></i> View
+              <button class="view-btn" (click)="viewLoanDetails(loan.id)" title="View" aria-label="View">
+                <i class="fas fa-eye"></i>
               </button>
             </td>
           </tr>
           <tr *ngIf="employeeLoans.length === 0">
-            <td colspan="8" class="no-data">
+            <td colspan="9" class="no-data">
               <i class="fas fa-inbox"></i>
               <p>No loan history found for this employee</p>
             </td>

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { DataService } from '../../../service/data.service';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 interface Allowances {
   housingAllowance: number;
   transportationAllowance: number;
@@ -37,6 +38,43 @@ monthNames = [
 ];
 paySummary: any = {}
 selectedMonth: any;
+  payslipColumns: TableColumn[] = [
+    {
+      header: 'Period',
+      sortable: true,
+      sortField: 'month',
+      className: 'table-item',
+      formatter: (row) => `${this.monthNames[(row?.month || 1) - 1]} ${row?.year ?? ''}`.trim()
+    },
+    {
+      header: 'Total Allowance',
+      className: 'table-item',
+      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalAllowances.toFixed(2)}`
+    },
+    {
+      header: 'Total Bonuses',
+      className: 'table-item',
+      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalBonuses.toFixed(2)}`
+    },
+    {
+      header: 'Total Deductions',
+      className: 'table-item',
+      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalDeductions.toFixed(2)}`
+    },
+    {
+      header: 'Gross Pay',
+      className: 'table-item',
+      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalGross.toFixed(2)}`
+    },
+    {
+      header: 'Net Pay',
+      className: 'table-item',
+      formatter: (row) => `₦${this.calculatePayrollSummary(row).totalNetPayable.toFixed(2)}`
+    }
+  ];
+  payslipActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+  ];
   constructor(private dataService: DataService){
 
   }
@@ -112,9 +150,9 @@ selectedMonth: any;
     return payrollSummary;
   }
 
-  viewPayrollDetails(slip: any, op: any) {
+  viewPayrollDetails(slip: any, op?: any) {
     this.viewSlip = true
-    op.hide();
+    op?.hide?.();
     this.activeSlip = {
       empId:this.data.id,
       name: this.data.name,
@@ -126,4 +164,10 @@ selectedMonth: any;
       ...slip
     }
     }
+
+  handlePayslipAction(event: { actionId: string; row: any }) {
+    if (event.actionId === 'view') {
+      this.viewPayrollDetails(event.row);
+    }
+  }
 }

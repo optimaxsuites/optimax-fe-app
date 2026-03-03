@@ -32,31 +32,10 @@
     <!-- Task Table -->
     <div class="bg-white rounded-xl p-3 border">
       <h3 class="font-semibold mb-2 text-lg">Tasks</h3>
-      <table class="w-full border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="text-left p-2">Title</th>
-            <th class="text-left p-2">Description</th>
-            <th class="text-center p-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let task of project.tasks" class="border-t">
-            <td class="p-2">{{ task.title }}</td>
-            <td class="p-2">{{ task.description || '-' }}</td>
-            <td class="text-center p-2">
-              <span
-                [ngClass]="{
-                  'text-green-600': task.completed,
-                  'text-gray-500': !task.completed
-                }"
-              >
-                {{ task.completed ? '✅ Done' : '⏳ Pending' }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="taskColumns"
+        [rows]="project.tasks"
+      ></app-table>
     </div>
   
     <!-- Notes -->
