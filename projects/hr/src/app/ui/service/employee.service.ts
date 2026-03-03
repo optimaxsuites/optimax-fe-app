@@ -81,7 +81,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/allowanceTypes/${id}`)
+            `/x/api/v2/hr/allowanceTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -89,7 +89,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/bonusTypes/${id}`)
+            `/x/api/v2/hr/bonusTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -97,7 +97,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/deductionsType/${id}`)
+            `/x/api/v2/hr/deductionsType/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -105,7 +105,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/overtimeTypes/${id}`)
+            `/x/api/v2/hr/overtimeTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 

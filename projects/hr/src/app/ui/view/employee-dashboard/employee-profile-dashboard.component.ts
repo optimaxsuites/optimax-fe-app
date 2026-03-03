@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 
@@ -20,6 +20,14 @@ export class EmployeeProfileDashboardComponent {
   saving = false;
   isEditOpen = false;
   editForm: FormGroup;
+  pendingProfilePhotoDataUrl: string | null = null;
+  pendingProfilePhotoName: string | null = null;
+  pendingProfilePhotoFile: File | null = null;
+  private originalProfilePhotoUrl: SafeUrl | string | null = null;
+  private readonly allowanceNameCache = new Map<string, Observable<string>>();
+  private readonly bonusNameCache = new Map<string, Observable<string>>();
+  private readonly deductionNameCache = new Map<string, Observable<string>>();
+  private readonly overtimeNameCache = new Map<string, Observable<string>>();
 
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
@@ -46,32 +54,121 @@ export class EmployeeProfileDashboardComponent {
     alert('date click! ' + arg.dateStr);
   }
 
-  getAllowanceName(id: number): Observable<string> {
-    return this.employeeService.getAllowanceTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
-    );
+  formatDate(value: any): string {
+    if (!value) return '-';
+
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      if (year && month && day) {
+        const safeMonth = Math.max(1, Math.min(12, Number(month)));
+        const date = new Date(
+          Number(year),
+          safeMonth - 1,
+          Number(day),
+          Number(hour),
+          Number(minute),
+          Number(second)
+        );
+        if (!Number.isNaN(date.getTime())) {
+          return this.formatDateValue(date);
+        }
+      }
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return this.formatDateValue(parsed);
+    }
+
+    return String(value);
   }
 
-  getBonusName(id: number): Observable<string> {
-    return this.employeeService.getBonusTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
-    );
+  copyToClipboard(value: string | number | null | undefined, label = 'Value'): void {
+    const text = String(value ?? '').trim();
+    if (!text) return;
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => this.showCopyToast(label))
+        .catch(() => this.fallbackCopy(text, label));
+      return;
+    }
+
+    this.fallbackCopy(text, label);
   }
 
-  getDeductionName(id: number): Observable<string> {
-    return this.employeeService.getDeductionTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
-    );
+  buildTelLink(phone: string | number | null | undefined): string | null {
+    const text = String(phone ?? '').trim();
+    if (!text) return null;
+    const cleaned = text.replace(/[^\d+]/g, '');
+    return cleaned ? `tel:${cleaned}` : null;
   }
 
-  getOvertimeName(id: number): Observable<string> {
-    return this.employeeService.getOverTimeTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
+  buildMailLink(email: string | null | undefined): string | null {
+    const text = String(email ?? '').trim();
+    if (!text) return null;
+    return `mailto:${text}`;
+  }
+
+  getAllowanceName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.allowanceNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getAllowanceTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.allowanceNameCache.set(key, request$);
+    return request$;
+  }
+
+  getBonusName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.bonusNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getBonusTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+    this.bonusNameCache.set(key, request$);
+    return request$;
+  }
+
+  getDeductionName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.deductionNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getDeductionTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+    this.deductionNameCache.set(key, request$);
+    return request$;
+  }
+
+  getOvertimeName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.overtimeNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getOverTimeTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+    this.overtimeNameCache.set(key, request$);
+    return request$;
   }
 
   generateLeaveEvents(leaveDetails: { leavesSpent: any[] }) {
@@ -115,7 +212,11 @@ export class EmployeeProfileDashboardComponent {
         if (this.employeeInView?.level) {
           this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
             next: (salaryData) => {
-              this.employeeInView.salaryDetails = salaryData?.[0];
+              const salaryDetails = salaryData?.[0] ?? {};
+              this.employeeInView.salaryDetails = {
+                ...salaryDetails,
+                netSalaryComputed: this.calculateNetSalary(salaryDetails),
+              };
             },
             error: (err) => console.log(err),
           });
@@ -149,10 +250,22 @@ export class EmployeeProfileDashboardComponent {
   openEdit(): void {
     if (!this.employeeInView) return;
     this.patchEditForm();
+    this.originalProfilePhotoUrl =
+      this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
+    this.pendingProfilePhotoDataUrl = null;
+    this.pendingProfilePhotoName = null;
+    this.pendingProfilePhotoFile = null;
     this.isEditOpen = true;
   }
 
   closeEdit(): void {
+    if (this.pendingProfilePhotoDataUrl && this.originalProfilePhotoUrl) {
+      this.employeeInView.imageUrl = this.originalProfilePhotoUrl;
+      this.employeeProfilePhotoUrl = this.originalProfilePhotoUrl;
+    }
+    this.pendingProfilePhotoDataUrl = null;
+    this.pendingProfilePhotoName = null;
+    this.pendingProfilePhotoFile = null;
     this.isEditOpen = false;
   }
 
@@ -162,8 +275,9 @@ export class EmployeeProfileDashboardComponent {
       return;
     }
 
-    const payload = this.buildUpdatePayload();
-    if (!payload?.id) {
+    const { formData, patch } = this.buildUpdatePayload();
+    const payloadId = formData.get('id');
+    if (!payloadId) {
       this.messageService.add({
         severity: 'error',
         summary: 'Missing employee ID',
@@ -174,10 +288,15 @@ export class EmployeeProfileDashboardComponent {
     }
 
     this.saving = true;
-    this.employeeService.updateEmployee(payload, payload.id).subscribe({
+    this.employeeService.addEmployee(formData).subscribe({
       next: (response) => {
         const updated = response?.data ?? response ?? {};
-        this.employeeInView = { ...this.employeeInView, ...updated, ...payload };
+        this.employeeInView = { ...this.employeeInView, ...updated, ...patch };
+        this.originalProfilePhotoUrl =
+          this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
+        this.pendingProfilePhotoDataUrl = null;
+        this.pendingProfilePhotoName = null;
+        this.pendingProfilePhotoFile = null;
         this.patchEditForm();
         this.messageService.add({
           severity: 'success',
@@ -199,6 +318,46 @@ export class EmployeeProfileDashboardComponent {
         this.saving = false;
       },
     });
+  }
+
+  onProfilePhotoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || !input.files.length) return;
+    const file = input.files[0];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+
+    if (!allowedTypes.includes(file.type)) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid file',
+        detail: 'Please upload a PNG or JPG image.',
+        key: 'global',
+      });
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      if (!result) return;
+      this.pendingProfilePhotoDataUrl = result;
+      this.pendingProfilePhotoName = file.name;
+      this.pendingProfilePhotoFile = file;
+      this.employeeInView.imageUrl = result;
+      this.employeeProfilePhotoUrl = result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearProfilePhotoSelection(): void {
+    this.pendingProfilePhotoDataUrl = null;
+    this.pendingProfilePhotoName = null;
+    this.pendingProfilePhotoFile = null;
+    if (this.originalProfilePhotoUrl) {
+      this.employeeInView.imageUrl = this.originalProfilePhotoUrl;
+      this.employeeProfilePhotoUrl = this.originalProfilePhotoUrl;
+    }
   }
 
   private patchEditForm(): void {
@@ -260,10 +419,9 @@ export class EmployeeProfileDashboardComponent {
     });
   }
 
-  private buildUpdatePayload(): any {
+  private buildUpdatePayload(): { formData: FormData; patch: any } {
     const employee = this.employeeInView || {};
-
-    return {
+    const patch: any = {
       id: employee.id,
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -295,5 +453,97 @@ export class EmployeeProfileDashboardComponent {
       relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
       employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
     };
+
+    const formData = new FormData();
+    const normalizeValue = (value: any) => {
+      if (value === null || value === undefined || value === '') return null;
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'object') {
+        if ('id' in value && value.id !== null && value.id !== undefined) return value.id;
+        if ('name' in value && value.name) return value.name;
+        return JSON.stringify(value);
+      }
+      return value;
+    };
+    const appendField = (key: string, value: any) => {
+      const normalized = normalizeValue(value);
+      if (normalized === null || normalized === undefined || normalized === '') return;
+      formData.append(key, String(normalized));
+    };
+
+    Object.keys(patch).forEach((key) => appendField(key, patch[key]));
+
+    if (this.pendingProfilePhotoFile) {
+      formData.append('profilePhoto', this.pendingProfilePhotoFile, this.pendingProfilePhotoFile.name);
+    }
+
+    return { formData, patch };
+  }
+
+  private fallbackCopy(text: string, label: string): void {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.showCopyToast(label);
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Copy failed',
+        detail: `${label} could not be copied.`,
+        key: 'global',
+      });
+    }
+  }
+
+  private formatDateValue(date: Date): string {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private showCopyToast(label: string): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Copied',
+      detail: `${label} copied to clipboard.`,
+      key: 'global',
+    });
+  }
+
+  private calculateNetSalary(details: any): number {
+    if (!details) return 0;
+    const base = this.toNumber(details.baseSalary);
+    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
+    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
+    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
+    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
+    return base + allowances + bonuses + overtime - deductions;
+  }
+
+  private sumAmounts(items: any, fields: string[]): number {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((total, item) => {
+      if (item === null || item === undefined) return total;
+      if (typeof item === 'number') return total + item;
+      for (const field of fields) {
+        const value = this.toNumber(item?.[field]);
+        if (value !== 0) return total + value;
+      }
+      return total + this.toNumber(item);
+    }, 0);
+  }
+
+  private toNumber(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

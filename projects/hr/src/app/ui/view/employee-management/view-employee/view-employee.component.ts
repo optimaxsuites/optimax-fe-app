@@ -3,7 +3,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../../service/employee.service';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 @Component({
@@ -14,6 +14,10 @@ import { HttpClient } from '@angular/common/http';
 export class ViewEmployeeComponent {
    employeeInView: any; 
   calendarOptions: CalendarOptions = {}
+  private readonly allowanceNameCache = new Map<string, Observable<string>>();
+  private readonly bonusNameCache = new Map<string, Observable<string>>();
+  private readonly deductionNameCache = new Map<string, Observable<string>>();
+  private readonly overtimeNameCache = new Map<string, Observable<string>>();
   handleDateClick(arg: DateClickArg) {
     alert('date click! ' + arg.dateStr)
   }
@@ -57,33 +61,66 @@ export class ViewEmployeeComponent {
 
 
   }
-  getAllowanceName(id: number): Observable<string> {
-    return this.employeeService.getAllowanceTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
+ getAllowanceName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.allowanceNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getAllowanceTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.allowanceNameCache.set(key, request$);
+    return request$;
   }
 
-  getBonusName(id: number): Observable<string> {
-    return this.employeeService.getBonusTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
+  getBonusName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.bonusNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getBonusTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.bonusNameCache.set(key, request$);
+    return request$;
   }
 
-  getDeductionName(id: number): Observable<string>  {
-    return this.employeeService.getDeductionTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
+  getDeductionName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.deductionNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getDeductionTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.deductionNameCache.set(key, request$);
+    return request$;
   }
 
-  getOvertimeName(id: number): Observable<string> {
-    return this.employeeService.getOverTimeTypeById(id).pipe(
-      map((response: any) => response.data?.name || 'Unknown'),
-      catchError(() => of('Unknown'))
+  getOvertimeName(id: number | string): Observable<string> {
+    if (id === null || id === undefined || id === '') return of('Unknown');
+    const key = String(id);
+    const cached = this.overtimeNameCache.get(key);
+    if (cached) return cached;
+
+    const request$ = this.employeeService.getOverTimeTypeById(id as any).pipe(
+      map((response: any) => response?.name || 'Unknown'),
+      catchError(() => of('Unknown')),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.overtimeNameCache.set(key, request$);
+    return request$;
   }
+
   generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {
     return leaveDetails.leavesSpent.map(leave => {
       return {
@@ -94,6 +131,8 @@ export class ViewEmployeeComponent {
       };
     });
   }
+
+
 
   toTitleCaseWithSpace(key: string): string {
     return key

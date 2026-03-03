@@ -195,7 +195,8 @@ export class MenuItemsService {
         code: 'HR_EMP_ME',
         route: this.navigationLink.getLink('employeeDashboardLink'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'fas fa-user-circle'
+        icon: 'fas fa-user-circle',
+        doNotRegisterAsPermission: true
       },
         {
           label: 'Employee Management',

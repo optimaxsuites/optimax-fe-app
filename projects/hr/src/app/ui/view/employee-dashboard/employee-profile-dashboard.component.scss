@@ -67,7 +67,7 @@ p {
 }
 
 .hero-details {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
+  @apply grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3;
 }
 
 .edit-btn {
@@ -84,6 +84,26 @@ p {
 
 .detail-value {
   @apply text-slate-700 font-medium break-words;
+}
+
+.detail-value-row {
+  @apply flex items-center gap-2;
+}
+
+.detail-actions {
+  @apply flex items-center gap-1;
+}
+
+.icon-action-btn {
+  @apply inline-flex items-center justify-center h-7 w-7 rounded-full border border-slate-200 text-slate-500 bg-white hover:text-slate-700 hover:bg-slate-50 transition;
+}
+
+.icon-action-btn:disabled {
+  @apply opacity-40 pointer-events-none;
+}
+
+.icon-action-btn.is-disabled {
+  @apply opacity-40 pointer-events-none;
 }
 
 .info-card {
