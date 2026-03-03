@@ -177,6 +177,11 @@ import { CooperativeMemberDetailComponent } from './ui/view/loan-management/coop
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
 import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
+import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
+import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
+import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
+import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
+import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -293,8 +298,13 @@ import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
-    QueryComponent,
     EmployeeProfileDashboardComponent,
+    CooperativeMemberDashboardComponent,
+    CooperativeMemberLoansComponent,
+    CooperativeLoanProductsComponent,
+    MainDashboardComponent,
+    SortableTableDirective,
+    QueryComponent,
     ],
   imports: [
     // BrowserModule,

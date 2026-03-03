@@ -1,4 +1,6 @@
 <div class="loan-details-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading">
     <div class="spinner"></div>
@@ -8,9 +10,7 @@
   <div *ngIf="!isLoading && loan" class="loan-content">
     <!-- Header -->
     <div class="loan-header">
-      <button class="back-button" (click)="goBack()">
-        ← Back to Applications
-      </button>
+      <app-back-button (click)="goBack()"></app-back-button>
       <h1>Loan Application Details</h1>
     </div>
     
@@ -36,7 +36,7 @@
             </div>
             <div class="info-item">
               <label>Date Submitted:</label>
-              <span>{{ formatDate(loan.dateSubmitted) }}</span>
+              <span>{{ formatDate(loan.submittedAt || loan.dateSubmitted) }}</span>
             </div>
           </div>
         </div>
@@ -73,6 +73,19 @@
               <label>Total Paid:</label>
               <span class="amount">{{ formatCurrency(loan.totalPaid) }}</span>
             </div>
+          </div>
+
+          <div class="documents-section">
+            <label>Supporting Documents:</label>
+            <ul class="documents-list" *ngIf="loan.supportingDocuments && loan.supportingDocuments.length > 0; else noDocuments">
+              <li *ngFor="let document of loan.supportingDocuments" class="document-item">
+                <span class="document-name">{{ document.name }}</span>
+                <span class="document-meta">{{ document.uploadedAt | date:'mediumDate' }}</span>
+              </li>
+            </ul>
+            <ng-template #noDocuments>
+              <p class="documents-empty">No supporting documents uploaded.</p>
+            </ng-template>
           </div>
         </div>
 
@@ -167,8 +180,8 @@
         <div class="action-card">
           <h3>Quick Actions</h3>
           <div class="action-buttons-vertical">
-            <button class="view-history-btn" (click)="viewEmployeeHistory()">
-              <i class="fas fa-history"></i> View Full Loan History
+            <button class="view-history-btn" (click)="viewEmployeeHistory()" title="See History" aria-label="See History">
+              <i class="fas fa-history"></i>
             </button>
             <button *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
               <i class="fas fa-check-circle"></i> Approve Loan
@@ -185,7 +198,7 @@
           <div class="summary-grid">
             <div class="summary-item">
               <span class="label">Submitted:</span>
-              <span class="value">{{ formatDate(loan.dateSubmitted) }}</span>
+              <span class="value">{{ formatDate(loan.submittedAt || loan.dateSubmitted) }}</span>
             </div>
             <div *ngIf="loan.approvedDate" class="summary-item">
               <span class="label">Approved:</span>
@@ -234,8 +247,8 @@
   </div>
   
   <!-- Comment Modal for Approval/Rejection -->
-  <div class="modal-overlay" *ngIf="showCommentModal" (click)="closeCommentModal()">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+  <app-modal *ngIf="showCommentModal" (close)="closeCommentModal()">
+    <div class="modal-container">
       <div class="modal-header">
         <h2>{{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }} Loan Application</h2>
         <button class="close-btn" (click)="closeCommentModal()">
@@ -260,6 +273,27 @@
         </div>
 
         <div class="comment-section">
+          <label for="interestRate" class="comment-label">
+            Interest Rate (%)
+            <span class="required" *ngIf="selectedAction === 'APPROVED'">*</span>
+          </label>
+
+          <input
+            id="interestRate"
+            type="number"
+            [formControl]="interestRateControl"
+            min="0"
+            step="0.1"
+            placeholder="Enter interest rate"
+            [class.error]="interestRateControl.invalid && interestRateControl.touched"
+          >
+
+          <div class="error-message" *ngIf="interestRateControl.invalid && interestRateControl.touched">
+            <small *ngIf="interestRateControl.errors?.['required']">Interest rate is required for approval</small>
+            <small *ngIf="interestRateControl.errors?.['min']">Interest rate cannot be negative</small>
+            <small *ngIf="interestRateControl.errors?.['max']">Interest rate cannot exceed 100%</small>
+          </div>
+
           <label for="comment" class="comment-label">
             {{ selectedAction === 'REJECTED' ? 'Reason for Rejection' : 'Additional Comments (Optional)' }}
             <span class="required" *ngIf="selectedAction === 'REJECTED'">*</span>
@@ -291,17 +325,17 @@
           class="submit-btn" 
           [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
           (click)="submitStatusChange()"
-          [disabled]="selectedAction === 'REJECTED' && commentForm.invalid">
+          [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && interestRateControl.invalid)">
           <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-times-circle': selectedAction === 'REJECTED'}"></i>
           {{ selectedAction === 'APPROVED' ? 'Approve Loan' : 'Reject Loan' }}
         </button>
       </div>
     </div>
-  </div>
+  </app-modal>
   
   <div *ngIf="!isLoading && !loan" class="not-found">
     <h2>Loan Not Found</h2>
     <p>The requested loan could not be found.</p>
-    <button (click)="goBack()" class="back-btn">← Back to Applications</button>
+    <app-back-button (click)="goBack()"></app-back-button>
   </div>
 </div>

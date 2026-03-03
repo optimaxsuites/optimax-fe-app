@@ -1,4 +1,5 @@
 <div class="loan-application-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
   <form [formGroup]="loanRequestForm" (ngSubmit)="onSubmit()">
     <!-- Header -->
     <div class="form-header">
@@ -152,12 +153,40 @@
               </div>
             </div>
           </div>
+
+          <!-- Supporting Documents (Optional) -->
+          <div class="form-field documents-field">
+            <label class="field-label">
+              <span class="label-text">SUPPORTING DOCUMENTS (OPTIONAL):</span>
+            </label>
+            <div class="document-upload-box">
+              <input
+                type="file"
+                id="supportingDocuments"
+                class="form-input"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                (change)="onDocumentsSelected($event)"
+              >
+              <p class="field-hint">Upload any relevant files (ID, payslip, invoices, medical reports, etc.).</p>
+
+              <ul class="uploaded-documents" *ngIf="supportingDocuments.length > 0">
+                <li *ngFor="let document of supportingDocuments; let i = index" class="document-item">
+                  <span class="document-name">{{ document.name }}</span>
+                  <button type="button" class="remove-document" (click)="removeDocument(i)">Remove</button>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Submit Button -->
     <div class="form-actions">
+      <button type="button" class="cancel-button" (click)="onCancel()" [disabled]="isLoading">
+        Cancel Form
+      </button>
       <button type="submit" class="submit-button" [disabled]="!loanRequestForm.valid || isLoading">
         <span *ngIf="!isLoading">Submit Application</span>
         <span *ngIf="isLoading" class="loading">Processing...</span>

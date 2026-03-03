@@ -1,4 +1,6 @@
 <div class="loan-approval-container">
+    <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
     <!-- Add loading indicator -->
     <div *ngIf="isLoading" class="loading">
         Loading applications...
@@ -6,6 +8,7 @@
 
     <div *ngIf="!isLoading">
         <header class="approval-header">
+            <app-back-button (click)="goBack()"></app-back-button>
             <h1>Loan Applications</h1>
             <div class="search-box">
                 <input type="text"

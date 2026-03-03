@@ -106,6 +106,61 @@
     }
   }
 
+  .documents-section {
+    margin-top: 16px;
+    border-top: 1px solid #e3eef0;
+    padding-top: 14px;
+
+    label {
+      display: block;
+      color: #6b7a86;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .documents-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .document-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #f8feff;
+      border: 1px solid #e3eef0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .document-name {
+      font-weight: 600;
+      color: #2f3b45;
+      word-break: break-word;
+    }
+
+    .document-meta {
+      color: #6b7a86;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .documents-empty {
+      margin: 0;
+      color: #6b7a86;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+  }
+
   .status-tracking-card {
     .current-status-section {
       display: flex;
@@ -210,11 +265,15 @@
     }
 
     .view-history-btn {
-      background: #f2f7f9;
+      background: none;
       color: #2E6276;
+      width: auto;
+      align-self: flex-start;
+      padding: 4px 8px;
+      border-radius: 0;
 
       &:hover {
-        background: #e3eef0;
+        color: #4291b1;
       }
     }
 
@@ -547,6 +606,32 @@
           .required {
             color: #FF0000;
             margin-left: 4px;
+          }
+        }
+
+        input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #e3eef0;
+          border-radius: 12px;
+          font-size: 0.95rem;
+          font-family: inherit;
+          transition: all 0.3s ease;
+          margin-bottom: 14px;
+
+          &:focus {
+            outline: none;
+            border-color: #2E6276;
+            box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.1);
+          }
+
+          &.error {
+            border-color: #FF0000;
+          }
+
+          &::placeholder {
+            color: #b8b8b8;
+            font-style: italic;
           }
         }
 

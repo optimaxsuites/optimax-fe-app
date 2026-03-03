@@ -64,6 +64,11 @@ tbody tr {
   justify-content: left;
 }
 
+.opened-label {
+  padding: 6px 12px;
+  font-size: 1.2rem;
+}
+
 button {
   padding: 6px 12px;
   border-radius: 6px;
@@ -83,7 +88,17 @@ button {
   background: #e5e7eb;
 }
 
-/* view button (admin action) */
+// Open button
+.actions button:last-child {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.actions button:last-child:hover {
+  background: #e5e7eb;
+}
+
+/* view button (admin action) 
 .view-btn {
   background: #2563eb;
   color: white;
@@ -99,4 +114,4 @@ button {
 .view-btn:hover {
   background: #1d4ed8;
   transform: translateY(-1px);
-}
+}*/

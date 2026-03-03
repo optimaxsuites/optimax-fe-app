@@ -3,6 +3,7 @@ export interface LoanApplication {
   approvedDate?: string;
   startDate?: string;
   endDate?: string;
+  submittedAt?: string;
   id: string;
   employeeId: string;
   fullName: string;
@@ -21,6 +22,14 @@ export interface LoanApplication {
   statusHistory: StatusChange[];
   repaymentSchedule: RepaymentScheduleItem[];
   paymentHistory: PaymentRecord[];
+  supportingDocuments?: LoanSupportingDocument[];
+}
+
+export interface LoanSupportingDocument {
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
 }
 
 export interface StatusChange {
@@ -29,6 +38,7 @@ export interface StatusChange {
   date: string;
   changedBy?: string;
   notes?: string;
+  interestRate?: number;
 }
 
 export interface RepaymentScheduleItem {
@@ -62,5 +72,6 @@ export interface LoanApplicationFormData {
   monthlyRepaymentAmount: number;
   paymentMode: 'monthly' | 'one_off';
   acknowledgment: boolean;
+  supportingDocuments?: LoanSupportingDocument[];
   submissionDate?: string;
 }

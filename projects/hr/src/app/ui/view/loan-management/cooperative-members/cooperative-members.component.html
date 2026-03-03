@@ -1,4 +1,3 @@
-<p>cooperative-members works!</p>
 <div class="members-container">
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-state">
@@ -9,9 +8,7 @@
   <div *ngIf="!isLoading" class="members-content">
     <!-- Header -->
     <div class="members-header">
-      <button class="back-btn" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
+      <app-back-button (click)="goBack()"></app-back-button>
       <h1><i class="fas fa-users"></i> Cooperative Members</h1>
       <button class="add-btn" (click)="addMember()">
         <i class="fas fa-user-plus"></i> Add Member
@@ -65,7 +62,7 @@
 
     <!-- Table -->
     <div class="table-card">
-      <table class="members-table">
+      <table appSortableTable class="members-table">
         <thead>
           <tr>
             <th (click)="setSort('memberId')" class="sortable">
@@ -83,9 +80,9 @@
               Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
             </th>
             <th (click)="setSort('joinDate')" class="sortable">
-              Joined <i class="fas" [ngClass]="getSortIcon('joinDate')"></i>
+              Date Joined <i class="fas" [ngClass]="getSortIcon('joinDate')"></i>
             </th>
-            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -99,9 +96,51 @@
               <span class="status-badge" [ngClass]="getStatusClass(member.status)">
                 {{ member.status }}
               </span>
+              <select
+                class="status-select"
+                [ngModel]="member.status"
+                (click)="$event.stopPropagation()"
+                (ngModelChange)="updateMemberStatus(member, $event)">
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="SUSPENDED">Suspended</option>
+              </select>
             </td>
             <td>{{ member.joinDate | date:'shortDate' }}</td>
-            <td><i class="fas fa-chevron-right"></i></td>
+            <td>
+              <div class="row-actions" (click)="$event.stopPropagation()">
+                <button class="action-btn" (click)="viewMember(member.id)">
+                  <i class="fas fa-user"></i> Profile
+                </button>
+                <button class="action-btn history-icon-btn" (click)="viewLoanHistory(member.id, $event)" title="See History" aria-label="See History">
+                  <i class="fas fa-history"></i>
+                </button>
+                <button
+                  *ngIf="member.status !== 'INACTIVE'"
+                  class="action-btn inactive"
+                  (click)="markMemberInactive(member, $event)">
+                  <i class="fas fa-user-clock"></i> Inactive
+                </button>
+                <button
+                  *ngIf="member.status === 'INACTIVE'"
+                  class="action-btn activate"
+                  (click)="activateInactiveMember(member, $event)">
+                  <i class="fas fa-user-check"></i> Activate
+                </button>
+                <button
+                  *ngIf="member.status !== 'SUSPENDED'"
+                  class="action-btn suspend"
+                  (click)="suspendMember(member, $event)">
+                  <i class="fas fa-user-slash"></i> Suspend
+                </button>
+                <button
+                  *ngIf="member.status === 'SUSPENDED'"
+                  class="action-btn reactivate"
+                  (click)="reactivateMember(member, $event)">
+                  <i class="fas fa-user-check"></i> Reactivate
+                </button>
+              </div>
+            </td>
           </tr>
           <tr *ngIf="filteredMembers.length === 0">
             <td colspan="8" class="no-data">

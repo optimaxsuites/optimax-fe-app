@@ -1,0 +1,108 @@
+<div class="products-container">
+  <div class="products-header">
+    <button class="back-btn" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <h1>LOAN PRODUCTS</h1>
+    <button class="add-btn" (click)="openAddForm()">
+      <i class="fas fa-plus"></i> Add New Product
+    </button>
+  </div>
+
+  <div class="product-card" *ngFor="let product of products">
+    <div class="product-card-header">
+      <h2>{{ product.name | uppercase }}</h2>
+      <div class="card-actions">
+        <button class="action-btn" (click)="openEditForm(product)">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="action-btn" (click)="toggleProductStatus(product)">
+          <i class="fas" [ngClass]="product.status === 'ACTIVE' ? 'fa-toggle-off' : 'fa-toggle-on'"></i>
+          {{ product.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+        </button>
+      </div>
+    </div>
+
+    <p class="description">{{ product.description }}</p>
+
+    <div class="details-line">
+      <span><strong>Amount:</strong> {{ formatCurrency(product.minAmount) }} - {{ formatCurrency(product.maxAmount) }}</span>
+      <span><strong>Interest:</strong> {{ product.interestRate }}%</span>
+      <span><strong>Duration:</strong> {{ product.minDuration }}-{{ product.maxDuration }}mo</span>
+    </div>
+
+    <div class="details-line">
+      <span><strong>Requires shares:</strong> {{ product.requiresShares ? 'YES' : 'NO' }}</span>
+      <span>
+        <strong>Patronage eligible:</strong>
+        {{ product.patronageEligible ? 'YES (' + product.patronageRate + '%)' : 'NO' }}
+      </span>
+      <span class="status-pill" [class.active]="product.status === 'ACTIVE'" [class.inactive]="product.status === 'INACTIVE'">
+        {{ product.status }}
+      </span>
+    </div>
+  </div>
+
+  <div class="overlay" *ngIf="showProductForm">
+    <div class="form-modal">
+      <h3>{{ editingProductId ? 'Edit Loan Product' : 'Add Loan Product' }}</h3>
+
+      <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="product-form">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" formControlName="name" />
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea rows="2" formControlName="description"></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Min Amount</label>
+            <input type="number" formControlName="minAmount" />
+          </div>
+          <div class="form-group">
+            <label>Max Amount</label>
+            <input type="number" formControlName="maxAmount" />
+          </div>
+          <div class="form-group">
+            <label>Interest Rate (%)</label>
+            <input type="number" step="0.1" formControlName="interestRate" />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select formControlName="status">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Min Duration (mo)</label>
+            <input type="number" formControlName="minDuration" />
+          </div>
+          <div class="form-group">
+            <label>Max Duration (mo)</label>
+            <input type="number" formControlName="maxDuration" />
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <label><input type="checkbox" formControlName="requiresShares" /> Requires shares</label>
+          <label><input type="checkbox" formControlName="patronageEligible" /> Patronage eligible</label>
+        </div>
+
+        <div class="form-group" *ngIf="productForm.get('patronageEligible')?.value">
+          <label>Patronage Rate (%)</label>
+          <input type="number" step="0.1" formControlName="patronageRate" />
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

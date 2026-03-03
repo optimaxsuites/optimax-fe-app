@@ -1,0 +1,24 @@
+<div class="main-dashboard-wrapper">
+  <div class="dashboard-toggle">
+    <label for="dashboard-select" class="toggle-label">Dashboard</label>
+    <div class="dashboard-select-wrap">
+      <select
+        id="dashboard-select"
+        class="dashboard-select"
+        [ngModel]="selectedDashboard"
+        (ngModelChange)="onDashboardChange($event)">
+        <option value="welfare">Welfare Loans</option>
+        <option value="cooperative">Cooperative Loans</option>
+      </select>
+      <i class="fas fa-chevron-down select-icon" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  <div class="dashboard-content" *ngIf="selectedDashboard === 'welfare'">
+    <app-loan-dashboard></app-loan-dashboard>
+  </div>
+
+  <div class="dashboard-content" *ngIf="selectedDashboard === 'cooperative'">
+    <app-cooperative-dashboard></app-cooperative-dashboard>
+  </div>
+</div>

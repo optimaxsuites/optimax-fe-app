@@ -1,9 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+
+interface LoanDashboardAlert {
+  level: 'warning' | 'danger';
+  message: string;
+}
 
 @Component({
   selector: 'app-loan-dashboard',
@@ -15,15 +21,16 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   activeFilter: string = 'ALL'; // 'ALL', 'PENDING', 'ACTIVE'
   
-  dashboardStats: {
-    activeLoans: number;
-    pendingApplications: number;
-    totalBalance: number;
-  } | null = null;
+  dashboardStats = {
+    activeLoans: 0,
+    pendingApplications: 0,
+    totalBalance: 0
+  };
 
   recentLoans: LoanApplication[] = [];
   allLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
+  alerts: LoanDashboardAlert[] = [];
   selectedLoan: LoanApplication | null = null;
 
   recentLoanColumns = [
@@ -54,16 +61,12 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   private loanSubscription!: Subscription;
 
   constructor(
+    private location: Location,
     private router: Router,
     private loanApplicationService: LoanApplicationService
   ) {}
 
   ngOnInit() {
-    this.dashboardStats = {
-      activeLoans: 0,
-      pendingApplications: 0,
-      totalBalance: 0
-    };
     this.loadDashboardData();
     this.setupLoanSubscription();
   }
@@ -74,26 +77,18 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  setupLoanSubscription(): void {
-    this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
-      next: (applications) => {
-        this.allLoans = applications;
-        this.updateDashboardStats();
-        this.applyFilter(); // Apply current filter when data changes
-      },
-      error: (error) => {
-        console.error('Error in loan subscription:', error);
-      }
-    });
-  }
-
   loadDashboardData(): void {
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
-        this.allLoans = applications;
+        // Filter out test data
+        this.allLoans = applications.filter(loan => 
+          !loan.fullName.includes('John Doe') && 
+          !loan.fullName.includes('Jane Doe')
+        );
         this.updateDashboardStats();
-        this.applyFilter(); // Apply current filter when data loads
+        this.applyFilter();
+        this.updateAlerts();
         this.isLoading = false;
       },
       error: (error) => {
@@ -103,15 +98,25 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  setupLoanSubscription(): void {
+    this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
+      next: (applications) => {
+        // Filter out test data
+        this.allLoans = applications.filter(loan => 
+          !loan.fullName.includes('John Doe') && 
+          !loan.fullName.includes('Jane Doe')
+        );
+        this.updateDashboardStats();
+        this.applyFilter();
+        this.updateAlerts();
+      },
+      error: (error) => {
+        console.error('Error in loan subscription:', error);
+      }
+    });
+  }
+
   updateDashboardStats(): void {
-    if (!this.dashboardStats) {
-      this.dashboardStats = {
-        activeLoans: 0,
-        pendingApplications: 0,
-        totalBalance: 0
-      };
-    }
-    
     this.dashboardStats.pendingApplications = this.allLoans.filter(loan => 
       loan.status === 'PENDING'
     ).length;
@@ -125,7 +130,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  // New method to apply filters
   applyFilter(): void {
     let filtered = [...this.allLoans];
     
@@ -155,6 +159,50 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.recentLoans = this.filteredLoans;
   }
 
+  updateAlerts(): void {
+    const nextAlerts: LoanDashboardAlert[] = [];
+
+    const overdueLoansCount = this.allLoans.filter(loan => this.isLoanOverdue(loan)).length;
+    if (overdueLoansCount > 0) {
+      nextAlerts.push({
+        level: 'danger',
+        message: `${overdueLoansCount} active loan${overdueLoansCount > 1 ? 's are' : ' is'} overdue. Immediate review is required.`
+      });
+    }
+
+    const pendingExposure = this.allLoans
+      .filter(loan => loan.status === 'PENDING')
+      .reduce((sum, loan) => sum + loan.loanAmount, 0);
+    const estimatedFundPool = 10000000;
+    const availableFund = Math.max(estimatedFundPool - this.dashboardStats.totalBalance, 0);
+
+    if (availableFund < 1000000 || pendingExposure > availableFund) {
+      nextAlerts.push({
+        level: 'warning',
+        message: `Low welfare fund buffer detected (est. available: ₦${availableFund.toLocaleString()}). Prioritize disbursements and approvals.`
+      });
+    }
+
+    this.alerts = nextAlerts;
+  }
+
+  isLoanOverdue(loan: LoanApplication): boolean {
+    if (loan.status !== 'ACTIVE') {
+      return false;
+    }
+
+    const hasOverdueInstallment = loan.repaymentSchedule?.some(item => item.status === 'OVERDUE');
+    if (hasOverdueInstallment) {
+      return true;
+    }
+
+    if (loan.endDate) {
+      return new Date(loan.endDate).getTime() < Date.now();
+    }
+
+    return false;
+  }
+
   // Filter methods
   showPendingLoans(): void {
     this.activeFilter = 'PENDING';
@@ -169,6 +217,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   showAllLoans(): void {
     this.activeFilter = 'ALL';
     this.applyFilter();
+  }
+
+  manageEmployeeWelfare(): void {
+    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
 
   getStatusClass(status: string): string {
@@ -207,17 +259,21 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   viewLoanDetails(loanId: string) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
-      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()]);
+      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
+        state: { source: 'dashboard' }
+      });
     }
   }
 
   seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()]);
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()], {
+      state: { source: 'admin' }
+    });
   }
 
   searchLoans(event: any) {
     this.searchTerm = event.target.value;
-    this.applyFilter(); // Re-apply filters with new search term
+    this.applyFilter();
   }
 
   viewPendingApprovals() {
@@ -225,13 +281,22 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewActiveLoans() {
-  this.router.navigate(['/admin/hr/loan-management/loans'], { 
-    queryParams: { status: 'ACTIVE' } 
-  });
-}
+    this.router.navigate(['/admin/hr/loan-management/loans'], { 
+      queryParams: { status: 'ACTIVE' } 
+    });
+  }
 
   generateReports() {
-  this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
-}
+    this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
+  }
+
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', uuidV4()]);
+  }
 }
 

@@ -13,10 +13,59 @@
     </span>
   </div>
 
-  <div class="actions">
-    <button class="main-btn" (click)="toggleClock()">
+  <!--<div class="actions">
+    <button *ngIf="!isAbsentToday && isOfficeHours" 
+    class="main-btn" 
+    (click)="toggleClock()" 
+    [disabled]="isAbsentToday">
       {{ status === 'CLOCKED_OUT' ? 'Clock In' : 'Clock Out' }}
     </button>
-  </div>
+    <p *ngIf="!isOfficeHours" class="closed-warning">
+    It isn’t office hours.
+  </p>
+    <p *ngIf="isAbsentToday" class="absent-warning">
+  You have been marked ABSENT for today.
+</p>
+  </div>-->
+  <div class="actions">
+
+    <p *ngIf="hasCompletedToday" class="completed-warning">
+  You have already completed attendance for today.
+</p>
+
+  <!-- BEFORE OPENING -->
+  <p *ngIf="!isAfterOpening" class="closed-warning">
+    It isn’t office hours yet.
+  </p>
+
+  <!-- ABSENT -->
+  <p *ngIf="isAfterOpening && isAbsentToday" class="absent-warning">
+    You have been marked ABSENT for today.
+  </p>
+
+  <!-- CLOCK IN (only during office hours) -->
+  <button
+    *ngIf="status === 'CLOCKED_OUT' 
+           && isWithinOfficeHours 
+           && !isAbsentToday
+           && !hasCompletedToday"
+    class="main-btn"
+    (click)="toggleClock()">
+
+    Clock In
+  </button>
+
+  <!-- CLOCK OUT (allowed anytime after opening) -->
+  <button
+    *ngIf="status === 'CLOCKED_IN' 
+           && isAfterOpening
+           && !hasCompletedToday"
+    class="main-btn"
+    (click)="toggleClock()">
+
+    Clock Out
+  </button>
+
+</div>
 
 </div>

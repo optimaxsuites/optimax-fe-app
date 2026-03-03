@@ -2,7 +2,7 @@
   <!-- Loan Header -->
   <div class="loan-header">
     <div class="loan-title">
-      <h3>Repayment Schedule: {{ loan.id }}</h3>
+      <h3 [title]="loan.id">Repayment Schedule: {{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</h3>
       <span class="loan-purpose">{{ loan.purpose }}</span>
     </div>
     <div class="loan-status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
@@ -39,6 +39,16 @@
       <div class="card-content">
         <span class="label">Remaining Balance</span>
         <span class="value">₦{{ totalRemaining | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon" style="background: #4291b1">
+        <i class="fas fa-percentage"></i>
+      </div>
+      <div class="card-content">
+        <span class="label">Interest Rate</span>
+        <span class="value">{{ loan.interestRate }}%</span>
       </div>
     </div>
 
@@ -132,7 +142,7 @@
       <i class="fas fa-table"></i> View Detailed Breakdown
     </summary>
     <div class="table-container">
-      <table>
+      <table appSortableTable>
         <thead>
           <tr>
             <th>Month</th>

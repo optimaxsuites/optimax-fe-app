@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
@@ -30,6 +32,7 @@ export class LoanApprovalUiComponent implements OnInit {
   loanApplications: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
   isLoading = true;
+  messages: Message[] = [];
 
   loanColumns = [
     { header: 'Application ID', field: 'id' },
@@ -58,6 +61,7 @@ export class LoanApprovalUiComponent implements OnInit {
   ];
 
   constructor(
+    private location: Location,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
     private loanApprovalService: LoanApprovalService
@@ -267,46 +271,95 @@ export class LoanApprovalUiComponent implements OnInit {
 
   // Approve/Reject methods
   approveLoan(applicationId: string): void {
-    if (confirm('Are you sure you want to approve this loan?')) {
-      this.loanApprovalService.approveLoan(applicationId).subscribe({
-        next: () => {
-          alert('Loan approved successfully!');
-          this.loadApplications();
-        },
-        error: (error) => {
-          console.error('Error approving loan:', error);
-          alert('Failed to approve loan');
-        }
-      });
-    }
+    this.loanApprovalService.approveLoan(applicationId).subscribe({
+      next: () => {
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Approved',
+          detail: 'Loan approved successfully.'
+        }];
+        this.loadApplications();
+      },
+      error: (error) => {
+        console.error('Error approving loan:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Approval Failed',
+          detail: 'Failed to approve loan.'
+        }];
+      }
+    });
   }
 
-  rejectLoan(applicationId: string): void {
-    const reason = prompt('Please provide a reason for rejection:');
-    if (reason !== null) {
-      if (reason.trim() === '') {
-        alert('A rejection reason is required.');
-        return;
-      }
-      
-      this.loanApprovalService.rejectLoan(applicationId, reason).subscribe({
-        next: () => {
-          alert('Loan rejected successfully!');
-          this.loadApplications();
-        },
-        error: (error) => {
-          console.error('Error rejecting loan:', error);
-          alert('Failed to reject loan');
-        }
-      });
+  rejectLoan(applicationId: string, reason?: string): void {
+    const rejectionReason = (reason || '').trim();
+    if (!rejectionReason) {
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Reason Required',
+        detail: 'Please provide a rejection reason from the loan details screen.'
+      }];
+      return;
     }
+
+    this.loanApprovalService.rejectLoan(applicationId, rejectionReason).subscribe({
+      next: () => {
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Rejected',
+          detail: 'Loan rejected successfully.'
+        }];
+        this.loadApplications();
+      },
+      error: (error) => {
+        console.error('Error rejecting loan:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Rejection Failed',
+          detail: 'Failed to reject loan.'
+        }];
+      }
+    });
   }
 
   viewLoanDetails(applicationId: string, uuid: string) {
-    this.router.navigate(['/admin/hr/loan-management/loan-details', applicationId, uuid]);
+    this.router.navigate(['/admin/hr/loan-management/loan-details', applicationId, uuid], {
+      state: { source: 'approval' }
+    });
   }
 
   seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()]);
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()], {
+      state: { source: 'admin' }
+    });
+  }
+
+  getDocumentNames(loan: LoanApplication): string {
+    if (!loan.supportingDocuments || loan.supportingDocuments.length === 0) {
+      return '';
+    }
+
+    return loan.supportingDocuments.map((document) => document.name).join(', ');
+  }
+
+  formatFileSize(sizeInBytes: number): string {
+    if (sizeInBytes < 1024) {
+      return `${sizeInBytes} B`;
+    }
+
+    if (sizeInBytes < 1024 * 1024) {
+      return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
 }

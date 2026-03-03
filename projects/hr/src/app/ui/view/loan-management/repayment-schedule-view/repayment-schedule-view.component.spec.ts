@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RepaymentScheduleComponent } from './repayment-schedule-view.component';
+import { RepaymentScheduleViewComponent } from './repayment-schedule-view.component';
 
 describe('RepaymentScheduleViewComponent', () => {
-  let component: RepaymentScheduleComponent;
-  let fixture: ComponentFixture<RepaymentScheduleComponent>;
+  let component: RepaymentScheduleViewComponent;
+  let fixture: ComponentFixture<RepaymentScheduleViewComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [RepaymentScheduleComponent]
+      declarations: [RepaymentScheduleViewComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(RepaymentScheduleComponent);
+    fixture = TestBed.createComponent(RepaymentScheduleViewComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

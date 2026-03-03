@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
-import { LoanApplication, StatusChange } from '../../../service/loan/loan.service';
+import { LoanApplication, StatusChange } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 
@@ -16,11 +18,13 @@ export class LoanDetailsComponent implements OnInit {
   loan: LoanApplication | null = null;
   isLoading: boolean = true;
   canChangeStatus: boolean = true;
+  navigationSource: string = 'approval';
   
   // Comment form for approval/rejection
   commentForm: FormGroup;
   showCommentModal: boolean = false;
   selectedAction: LoanApplication['status'] | '' = '';
+  messages: Message[] = [];
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#ffc107' },
@@ -31,6 +35,7 @@ export class LoanDetailsComponent implements OnInit {
   ];
 
   constructor(
+    private location: Location,
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
@@ -38,11 +43,14 @@ export class LoanDetailsComponent implements OnInit {
     private loanApprovalService: LoanApprovalService
   ) {
     this.commentForm = this.fb.group({
-      comment: ['', Validators.required]
+      comment: ['', Validators.required],
+      interestRate: [0, [Validators.min(0), Validators.max(100)]]
     });
   }
   
   ngOnInit(): void {
+    this.navigationSource = window.history.state?.source || 'approval';
+
     this.route.params.subscribe(params => {
       this.employeeId = params['employeeId'];
       this.loadLoanDetails();
@@ -110,6 +118,18 @@ export class LoanDetailsComponent implements OnInit {
   openCommentModal(action: LoanApplication['status']): void {
     this.selectedAction = action;
     this.commentForm.reset();
+    this.commentForm.patchValue({
+      interestRate: this.loan?.interestRate ?? 0
+    });
+
+    const interestRateControl = this.commentForm.get('interestRate');
+    if (action === 'APPROVED') {
+      interestRateControl?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+    } else {
+      interestRateControl?.setValidators([Validators.min(0), Validators.max(100)]);
+    }
+    interestRateControl?.updateValueAndValidity();
+
     this.showCommentModal = true;
   }
 
@@ -131,28 +151,46 @@ export class LoanDetailsComponent implements OnInit {
       return;
     }
 
+    if (this.selectedAction === 'APPROVED' && this.interestRateControl.invalid) {
+      this.interestRateControl.markAsTouched();
+      return;
+    }
+
     const statusUpdate: StatusChange = {
       status: this.selectedAction,
       notes: this.commentForm.value.comment || '',
       changedBy: sessionStorage.getItem('username') || 'Admin',
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      interestRate: Number(this.commentForm.value.interestRate ?? 0)
     };
 
     this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
       next: () => {
-        alert(`Loan ${this.selectedAction.toLowerCase()} successfully!`);
+        this.messages = [{
+          severity: 'success',
+          summary: 'Status Updated',
+          detail: `Loan ${this.selectedAction.toLowerCase()} successfully.`
+        }];
         this.closeCommentModal();
         this.loadLoanDetails();
       },
       error: (error) => {
         console.error('Error updating status:', error);
-        alert(`Failed to ${this.selectedAction.toLowerCase()} loan`);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Update Failed',
+          detail: `Failed to ${this.selectedAction.toLowerCase()} loan.`
+        }];
       }
     });
   }
 
   get commentControl(): FormControl {
     return this.commentForm.get('comment') as FormControl;
+  }
+
+  get interestRateControl(): FormControl {
+    return this.commentForm.get('interestRate') as FormControl;
   }
 
   approveLoan(): void {
@@ -164,12 +202,19 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
   
   viewEmployeeHistory(): void {
     if (this.loan) {
-      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.loan.employeeId, uuidV4()]);
+      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.loan.employeeId, uuidV4()], {
+        state: { source: 'admin' }
+      });
     }
   }
   

@@ -173,6 +173,11 @@
               font-weight: 600;
             }
 
+            &.interest {
+              color: #2E6276;
+              font-weight: 600;
+            }
+
             &.paid {
               color: #2EB270;
               font-weight: 600;
@@ -225,25 +230,29 @@
             }
 
             .view-btn {
-              background-color: #2E6276;
-              color: white;
+              background: none;
+              color: #2E6276;
               border: none;
-              border-radius: 4px;
-              padding: 6px 12px;
+              border-radius: 0;
+              padding: 4px 8px;
               font-size: 0.85rem;
               cursor: pointer;
               display: inline-flex;
               align-items: center;
-              gap: 6px;
-              transition: all 0.3s ease;
+              gap: 0;
+              transition: color 0.2s ease;
 
               i {
                 font-size: 0.85rem;
+                color: #2E6276;
               }
 
               &:hover {
-                background-color: #4291b1;
-                transform: translateY(-1px);
+                color: #4291b1;
+
+                i {
+                  color: #4291b1;
+                }
               }
             }
           }

@@ -10,12 +10,6 @@
           Monitor and manage employee leave planning
         </p>
       </div>
-      <button
-        (click)="showPolicySettings = true"
-        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover font-medium"
-      >
-       Policy Settings
-      </button>
     </div>
 
     <!-- Filters -->
@@ -216,20 +210,7 @@
       </span>
     </td>
     <td>
-      <div class="flex gap-2" *ngIf="plan.status === 'Planned'">
-        <button
-          (click)="approvePlan(plan)"
-          class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-        >
-          Approve
-        </button>
-        <button
-          (click)="rejectPlan(plan)"
-          class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
-        >
-          Reject
-        </button>
-      </div>
+      
       <span *ngIf="plan.status === 'Approved'" class="text-xs text-green-600">
         ✓ Approved
       </span>
@@ -316,146 +297,5 @@
   </div>
 </div>
 
-<!-- Policy Settings Modal -->
-<!-- Policy Settings Modal -->
-<app-modal *ngIf="showPolicySettings" (close)="showPolicySettings = false">
-  <h3 class="text-2xl font-semibold mb-6 text-gray-800">
-    Planning Policy Settings
-  </h3>
-
-  <div class="space-y-6">
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <p class="text-sm text-blue-800">
-        ⚙️ Configure how employees can plan their leave
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Max Days Per Month
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.maxDaysPerMonth"
-        min="1"
-        max="20"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Maximum days employees can plan in a single month
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Max Planning Months
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.maxPlanningMonths"
-        min="1"
-        max="12"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Number of different months employees can plan for
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Total Allowed Planned Days
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.totalAllowedPlannedDays"
-        min="1"
-        max="365"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Total days across all months (should equal max days × months)
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Emergency Leave Days Allowed
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.emergencyLeaveDaysAllowed"
-        min="0"
-        max="10"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Maximum days for emergency leave requests
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Planning Window (days)
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.planningWindowDays"
-        min="30"
-        max="365"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        How far in advance employees can plan
-      </p>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <input
-        type="checkbox"
-        id="allowPlanEditing"
-        [(ngModel)]="planningPolicy.allowPlanEditing"
-        class="w-4 h-4 text-blue-600 border-gray-300 rounded"
-      />
-      <label for="allowPlanEditing" class="text-sm font-medium text-gray-700">
-        Allow employees to edit approved plans
-      </label>
-    </div>
-
-    <!-- Summary Card -->
-    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <h4 class="font-semibold text-gray-800 mb-2">Policy Summary</h4>
-      <ul class="text-sm text-gray-600 space-y-1">
-        <li>
-          • Employees can plan <strong>{{ planningPolicy.maxDaysPerMonth }} days/month</strong>
-        </li>
-        <li>
-          • For up to <strong>{{ planningPolicy.maxPlanningMonths }} months</strong>
-        </li>
-        <li>
-          • Total: <strong>{{ planningPolicy.totalAllowedPlannedDays }} days</strong>
-        </li>
-        <li>
-          • Emergency leave: <strong>{{ planningPolicy.emergencyLeaveDaysAllowed }} days</strong>
-        </li>
-      </ul>
-    </div>
-
-    <div class="flex justify-end gap-3 pt-4 border-t">
-      <button
-        (click)="showPolicySettings = false"
-        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-      >
-        Cancel
-      </button>
-      <button
-        (click)="savePolicy()"
-        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover"
-      >
-        Save Policy
-      </button>
-    </div>
-  </div>
-</app-modal>
 
 <p-toast position="top-right" key="tl" />

@@ -342,13 +342,16 @@
       min-width: 1400px;
 
       thead {
-        background: #2E6276;
+        background: #f4f7f9;
 
         th {
-          color: white;
-          padding: 12px 8px;
+          color: #224957;
+          padding: 0.75rem 0.9rem;
           text-align: left;
           font-weight: 600;
+          font-size: 0.85rem;
+          letter-spacing: 0.01em;
+          border-bottom: 1px solid #e6edf2;
           white-space: nowrap;
 
           &.sortable {
@@ -361,15 +364,15 @@
               right: 8px;
               top: 50%;
               transform: translateY(-50%);
-              color: rgba(255,255,255,0.7);
+              color: rgba(34, 73, 87, 0.45);
 
               &.fa-sort-up, &.fa-sort-down {
-                color: white;
+                color: #224957;
               }
             }
 
             &:hover {
-              background: #4291b1;
+              background: #eaf1f5;
             }
           }
         }
@@ -377,18 +380,18 @@
 
       tbody {
         tr {
-          border-bottom: 1px solid #e3eef0;
+          border-bottom: 1px solid #eef2f6;
 
           &:nth-child(even) {
-            background: #f8feff;
+            background: #f9fbfc;
           }
 
           &:hover {
-            background: #e3eef0;
+            background: #f8fbfc;
           }
 
           td {
-            padding: 12px 8px;
+            padding: 0.75rem 0.9rem;
             color: #495057;
 
             &.loan-id {

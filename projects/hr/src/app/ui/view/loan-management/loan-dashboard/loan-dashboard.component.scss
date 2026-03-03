@@ -4,6 +4,22 @@
   background-color: #f8feff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+    z-index: 1200;
+
+    .modal-content {
+      width: min(1240px, 100%);
+    }
+  }
+
   .loading-container {
     display: flex;
     justify-content: center;
@@ -54,6 +70,32 @@
     }
   }
 
+  .alerts-section {
+    margin-bottom: 24px;
+    display: grid;
+    gap: 10px;
+
+    .alert-item {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #e3eef0;
+      border-left: 4px solid #FFA500;
+      padding: 12px 14px;
+      color: #2E6276;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      &.danger {
+        border-left-color: #d9534f;
+      }
+
+      &.warning {
+        border-left-color: #FFA500;
+      }
+    }
+  }
+
   .quick-actions {
     margin-bottom: 32px;
 
@@ -81,64 +123,23 @@
         align-items: center;
         justify-content: center;
         min-width: 180px;
+        background: #2E6276;
+        color: white;
 
         i {
           margin-right: 8px;
           font-size: 1.1rem;
-        }
-
-        &:first-child {
-          background-color: #2E6276;
           color: white;
-
-          &:hover {
-            background-color: #4291b1;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
-          }
-
-          &.active-filter {
-            background-color: #1a3f4f;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(46, 98, 118, 0.3);
-            border: 2px solid #B6D6E2;
-          }
         }
 
-        &:nth-child(2) {
-          background-color: #2EB270;
-          color: white;
-
-          &:hover {
-            background-color: #47e797;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(46, 178, 112, 0.2);
-          }
-
-          &.active-filter {
-            background-color: #1f7a4c;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(46, 178, 112, 0.3);
-            border: 2px solid #B6D6E2;
-          }
+        &:hover {
+          background: #4291b1;
+          transform: translateY(-2px);
         }
 
-        &:nth-child(3) {
-          background-color: #B6D6E2;
-          color: #2E6276;
-
-          &:hover {
-            background-color: #9cc6d6;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(182, 214, 226, 0.2);
-          }
-
-          &.active-filter {
-            background-color: #8fb9cc;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(182, 214, 226, 0.3);
-            border: 2px solid #2E6276;
-          }
+        &.active-filter {
+          background: #1a3f4f;
+          border: 2px solid #B6D6E2;
         }
       }
     }
@@ -364,7 +365,7 @@
       button {
         margin-top: 16px;
         padding: 12px 24px;
-        background-color: #2E6276;
+        background: linear-gradient(135deg, #2E6276, #4291b1);
         color: white;
         border: none;
         border-radius: 6px;
@@ -374,7 +375,7 @@
         transition: all 0.3s ease;
         
         &:hover {
-          background-color: #4291b1;
+          background: linear-gradient(135deg, #1a3f4f, #2E6276);
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
         }
@@ -395,15 +396,16 @@
       min-width: 1000px;
 
       thead {
-        background-color: #2E6276;
+        background: #f4f7f9;
         
         th {
-          color: white;
+          color: #224957;
           font-weight: 600;
           text-align: left;
-          padding: 16px 12px;
-          font-size: 0.95rem;
-          border-bottom: 3px solid #4291b1;
+          padding: 0.75rem 0.9rem;
+          font-size: 0.85rem;
+          letter-spacing: 0.01em;
+          border-bottom: 1px solid #e6edf2;
           white-space: nowrap;
 
           &:first-child {
@@ -418,21 +420,19 @@
 
       tbody {
         tr {
-          border-bottom: 1px solid #e3eef0;
+          border-bottom: 1px solid #eef2f6;
           transition: all 0.2s ease;
 
           &:nth-child(even) {
-            background-color: #f8feff;
+            background-color: #f9fbfc;
           }
 
           &:hover {
-            background-color: #e3eef0;
-            transform: scale(1.01);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background-color: #f8fbfc;
           }
 
           td {
-            padding: 16px 12px;
+            padding: 0.75rem 0.9rem;
             color: #495057;
             vertical-align: middle;
 
@@ -514,50 +514,37 @@
         white-space: nowrap;
 
         button {
-          padding: 6px 12px;
+          padding: 4px 8px;
+          background: none;
           border: none;
-          border-radius: 4px;
+          border-radius: 0;
           font-size: 0.85rem;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: color 0.2s ease;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          justify-content: center;
 
           i {
             font-size: 0.85rem;
-            transition: transform 0.2s ease;
+            color: #2E6276;
+          }
+
+          &:hover {
+            color: #4291b1;
+
+            i {
+              color: #4291b1;
+            }
           }
 
           &.btn-view {
-            background-color: rgb(101, 199, 231);
-            color: white;
-
-            &:hover {
-              background-color: #5ab8dd;
-              transform: translateY(-2px);
-              box-shadow: 0 4px 8px rgba(101, 199, 231, 0.3);
-              
-              i {
-                transform: scale(1.1);
-              }
-            }
+            color: #2E6276;
           }
 
           &.btn-history {
-            background-color: #B6D6E2;
             color: #2E6276;
-
-            &:hover {
-              background-color: #9cc6d6;
-              transform: translateY(-2px);
-              box-shadow: 0 4px 8px rgba(182, 214, 226, 0.3);
-              
-              i {
-                transform: scale(1.1);
-              }
-            }
           }
         }
       }

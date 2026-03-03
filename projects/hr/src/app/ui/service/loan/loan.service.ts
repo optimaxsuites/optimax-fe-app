@@ -6,6 +6,7 @@ export interface LoanApplication {
   approvedDate?: string;
   startDate?: string;
   endDate?: string;
+  submittedAt?: string;
   id: string;
   employeeId: string;
   fullName: string;
@@ -24,6 +25,12 @@ export interface LoanApplication {
   statusHistory: StatusChange[];
   repaymentSchedule: RepaymentScheduleItem[];
   paymentHistory: PaymentRecord[];
+  supportingDocuments?: {
+    name: string;
+    size: number;
+    type: string;
+    uploadedAt: string;
+  }[];
 }
 
 export interface StatusChange {
@@ -32,6 +39,7 @@ export interface StatusChange {
   date: string;
   changedBy?: string;
   notes?: string;
+  interestRate?: number;
 }
 
 export interface RepaymentScheduleItem {
@@ -61,7 +69,7 @@ export interface PaymentRecord {
   providedIn: 'root'
 })
 export class LoanService {
-  private storageKey = 'loanApplications';
+  private storageKey = 'loanApplications_v2';
   private applications: LoanApplication[] = [];
   private applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
   
@@ -247,7 +255,9 @@ export class LoanService {
   }
 
   private generateId(): string {
-    return 'LN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    const timestampPart = Date.now().toString(36).toUpperCase().slice(-5);
+    const randomPart = Math.random().toString(36).slice(2, 5).toUpperCase();
+    return `LN-${timestampPart}${randomPart}`;
   }
 
   private loadFromStorage(): void {

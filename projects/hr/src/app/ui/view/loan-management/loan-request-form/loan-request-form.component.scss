@@ -287,6 +287,58 @@
         }
       }
     }
+
+    &.documents-field {
+      .document-upload-box {
+        border: 2px dashed #B6D6E2;
+        border-radius: 12px;
+        padding: 20px;
+        background-color: #f8feff;
+
+        .form-input[type='file'] {
+          height: auto;
+          min-height: 52px;
+          padding: 12px;
+        }
+
+        .uploaded-documents {
+          margin: 12px 0 0;
+          padding: 0;
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          .document-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background-color: white;
+            border: 1px solid #e3eef0;
+          }
+
+          .document-name {
+            color: #2E6276;
+            font-size: 0.9rem;
+            font-weight: 500;
+            word-break: break-word;
+          }
+
+          .remove-document {
+            border: none;
+            background: transparent;
+            color: #d64545;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+          }
+        }
+      }
+    }
   }
 
   .form-actions {
@@ -294,6 +346,33 @@
     padding-top: 32px;
     border-top: 2px solid #B6D6E2;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+
+    .cancel-button {
+      min-width: 180px;
+      padding: 16px 28px;
+      border-radius: 50px;
+      border: 2px solid #2E6276;
+      background: white;
+      color: #2E6276;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover:not(:disabled) {
+        background: #f8feff;
+        transform: translateY(-2px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
 
     .submit-button {
       min-width: 280px;
@@ -376,6 +455,12 @@
     }
 
     .form-actions {
+      flex-direction: column;
+
+      .cancel-button {
+        width: 100%;
+      }
+
       .submit-button {
         width: 100%;
         min-width: auto;

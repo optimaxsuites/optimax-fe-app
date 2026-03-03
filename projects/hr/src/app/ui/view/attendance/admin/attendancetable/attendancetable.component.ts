@@ -70,6 +70,18 @@ export class AttendancetableComponent implements OnInit{
   });
 }
 
+isToday(date: string | null): boolean {
+  if (!date) return false;
+  
+  const today = new Date().toISOString().split('T')[0];
+  return date === today;
+}
+
+openAttendance(record: AttendanceTableRecord) {
+  record.overrideOpen = true;
+  this.attendancetableService.openAttendanceForToday(record.id);
+}
+
   /*ngOnInit(): void {
     this.attendancetableService.attendance$.subscribe(data => {
     this.attendance = data;
@@ -210,7 +222,7 @@ applyFilters() {
   ];
 
   // =========================
-  // 🔥 LATE ARRIVALS
+  // LATE ARRIVALS
   // =========================
   this.lateArrivalsData = data
     .filter(r => r.status === 'LATE')
@@ -221,7 +233,7 @@ applyFilters() {
     }));
 
   // =========================
-  // 🔥 TOP 3 DEPARTMENTS BY PUNCTUALITY
+  // TOP 3 DEPARTMENTS BY PUNCTUALITY
   // =========================
 
   const departmentMap: any = {};

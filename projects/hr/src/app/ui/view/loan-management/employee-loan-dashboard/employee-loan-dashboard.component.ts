@@ -1,6 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router'; 
 import { Subscription } from 'rxjs';
+import { Message } from 'primeng/api';
+import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
@@ -29,6 +32,25 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   allLoans: LoanApplication[] = [];
   private loanSubscription!: Subscription;
   selectedLoanForSchedule: LoanApplication | null = null;
+  messages: Message[] = [];
+
+  historyColumns = [
+    { header: 'Loan ID', field: 'id' },
+    {
+      header: 'Date',
+      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+    },
+    { header: 'Purpose', field: 'purpose' },
+    {
+      header: 'Amount',
+      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+    },
+    {
+      header: 'Status',
+      formatter: (row: LoanApplication) => this.getStatusDisplay(row.status),
+      badgeClass: (row: LoanApplication) => `status-badge status-${this.getStatusClass(row.status)}`
+    }
+  ];
 
   historyColumns = [
     { header: 'Loan ID', field: 'id' },
@@ -49,6 +71,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
+    private location: Location,
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService
@@ -65,13 +88,27 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  private sortLoansByRecent(loans: LoanApplication[]): LoanApplication[] {
+    return [...loans].sort((a, b) => {
+      const timestampA = new Date(a.submittedAt || a.dateSubmitted).getTime();
+      const timestampB = new Date(b.submittedAt || b.dateSubmitted).getTime();
+      const dateDiff = timestampB - timestampA;
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+
+      return b.id.localeCompare(a.id);
+    });
+  }
+
   setupLoanSubscription(): void {
     // Subscribe to loan updates for real-time data
     this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
-        this.allLoans = applications.filter(loan => 
+        const employeeLoans = applications.filter(loan => 
           loan.employeeId === this.employeeId
         );
+        this.allLoans = this.sortLoansByRecent(employeeLoans);
         this.calculateLoanCounts();
       },
       error: (error) => {
@@ -98,7 +135,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
-        this.allLoans = applications;
+        this.allLoans = this.sortLoansByRecent(applications);
         this.calculateLoanCounts();
         this.isLoading = false;
       },
@@ -140,8 +177,12 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleLoanForm(): void {
-    this.showLoanForm = !this.showLoanForm;
+  openLoanFormModal(): void {
+    this.showLoanForm = true;
+  }
+
+  closeLoanFormModal(): void {
+    this.showLoanForm = false;
   }
 
   toggleHistory(): void {
@@ -150,15 +191,33 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   onLoanSubmitted(): void {
     this.showLoanForm = false;
-    alert('Loan request submitted successfully!');
+    this.loadLoanData();
+    this.messages = [{
+      severity: 'success',
+      summary: 'Loan Submitted',
+      detail: 'Your loan request has been submitted successfully.'
+    }];
   }
 
   viewDetailedHistory(): void {
     if (this.uuid) {
-      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, this.uuid]);
+      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, this.uuid], {
+        state: { source: 'employee' }
+      });
     } else {
-      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId]);
+      this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, uuidV4()], {
+        state: { source: 'employee' }
+      });
     }
+  }
+
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
 
   getInitials(name: string): string {
