@@ -583,10 +583,12 @@ private buildEmployeePayload(): {
   guarantors: any[];
 } {
   const employeeMediaId = this.employeeData?.employeeMedia?.id;
+  const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
   const newEmployee: any = {
  
 
    id: this.employeeId,
+    userId: this.employeeData?.userId ?? this.employeeData?.user?.userId ?? storedUserId ?? null,
     firstName:  this.employeeData.firstName,
     lastName:  this.employeeData.lastName,
     email:  this.employeeData.email,
@@ -655,9 +657,18 @@ private buildEmployeePayload(): {
   };
 }
 
-private buildEmployeeFormData():any {
+private buildEmployeeFormData(): FormData {
   const payload = this.buildEmployeePayload();
-  return payload.employee;
+  const employee = payload.employee || {};
+  const formData = new FormData();
+  formData.append('employee', JSON.stringify(employee));
+
+  const profilePhoto = this.basicForm.get('profilePhoto')?.value;
+  if (profilePhoto instanceof File) {
+    formData.append('file', profilePhoto, profilePhoto.name);
+  }
+
+  return formData;
 }
 
 

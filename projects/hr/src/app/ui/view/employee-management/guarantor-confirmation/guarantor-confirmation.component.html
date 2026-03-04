@@ -7,6 +7,15 @@
         <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded">{{ employeeName || 'the employee' }}</span>. 
         Please verify your details below.
       </p>
+      <div class="mt-4 flex items-center justify-center w-full gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+        <div class="h-96 w-96 flex items-center rounded-full overflow-hidden border border-slate-200 bg-white">
+          <img
+            [src]="employeeInView?.imageUrl || employeeProfilePhotoUrl"
+            alt="Employee photo"
+            class="h-full w-full object-cover"
+          />
+        </div>
+      </div>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">

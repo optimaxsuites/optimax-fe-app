@@ -47,7 +47,7 @@ export class EmployeeProfileDashboardComponent {
   }
 
   ngOnInit(): void {
-    this.fetchFirstEmployee();
+    this.fetchEmployeeForCurrentUser();
   }
 
   handleDateClick(arg: DateClickArg) {
@@ -182,6 +182,42 @@ export class EmployeeProfileDashboardComponent {
     });
   }
 
+  private fetchEmployeeForCurrentUser(): void {
+    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+    if (storedUserId) {
+      this.loading = true;
+      this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
+        next: (data) => {
+          const employee = data?.data ?? data ?? null;
+          if (!employee) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'No employee',
+              detail: 'No employee record linked to this user.',
+              key: 'global',
+            });
+            return;
+          }
+          this.applyEmployeeView(employee);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Load failed',
+            detail: 'Unable to fetch employee record for this user.',
+            key: 'global',
+          });
+        },
+        complete: () => {
+          this.loading = false;
+        },
+      });
+      return;
+    }
+
+    this.fetchFirstEmployee();
+  }
+
   private fetchFirstEmployee(): void {
     this.loading = true;
     this.employeeService.getAllEmployee().subscribe({
@@ -195,9 +231,9 @@ export class EmployeeProfileDashboardComponent {
           : [];
 
         const sortedEmployees = this.sortEmployeesLatest(employees);
-        this.employeeInView = sortedEmployees[0];
+        const employee = sortedEmployees[0];
 
-        if (!this.employeeInView) {
+        if (!employee) {
           this.messageService.add({
             severity: 'warn',
             summary: 'No employees',
@@ -207,31 +243,7 @@ export class EmployeeProfileDashboardComponent {
           return;
         }
 
-        this.patchEditForm();
-
-        if (this.employeeInView?.level) {
-          this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
-            next: (salaryData) => {
-              const salaryDetails = salaryData?.[0] ?? {};
-              this.employeeInView.salaryDetails = {
-                ...salaryDetails,
-                netSalaryComputed: this.calculateNetSalary(salaryDetails),
-              };
-            },
-            error: (err) => console.log(err),
-          });
-        }
-
-        this.getEmployeesProfilePhotoUrl(this.employeeInView?.employeeMedia?.mediaNo);
-
-        if (this.employeeInView?.leaveDetails) {
-          this.calendarOptions = {
-            initialView: 'dayGridMonth',
-            plugins: [dayGridPlugin, interactionPlugin],
-            dateClick: (arg) => this.handleDateClick(arg),
-            events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
-          };
-        }
+        this.applyEmployeeView(employee);
       },
       error: () => {
         this.messageService.add({
@@ -245,6 +257,38 @@ export class EmployeeProfileDashboardComponent {
         this.loading = false;
       },
     });
+  }
+
+  private applyEmployeeView(employee: any): void {
+    this.employeeInView = employee;
+    this.patchEditForm();
+
+    if (this.employeeInView?.level) {
+      this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
+        next: (salaryData) => {
+          const salaryDetails = salaryData?.[0] ?? {};
+          this.employeeInView.salaryDetails = {
+            ...salaryDetails,
+            netSalaryComputed: this.calculateNetSalary(salaryDetails),
+          };
+        },
+        error: (err) => console.log(err),
+      });
+    }
+
+    if (this.employeeInView?.imageUrl) {
+      this.employeeProfilePhotoUrl = this.employeeInView.imageUrl;
+    }
+    this.getEmployeesProfilePhotoUrl(this.employeeInView?.employeeMedia?.mediaNo);
+
+    if (this.employeeInView?.leaveDetails) {
+      this.calendarOptions = {
+        initialView: 'dayGridMonth',
+        plugins: [dayGridPlugin, interactionPlugin],
+        dateClick: (arg) => this.handleDateClick(arg),
+        events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
+      };
+    }
   }
 
   openEdit(): void {
@@ -421,8 +465,10 @@ export class EmployeeProfileDashboardComponent {
 
   private buildUpdatePayload(): { formData: FormData; patch: any } {
     const employee = this.employeeInView || {};
+    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
+      userId: employee.userId ?? employee.user?.id ?? storedUserId ?? null,
       firstName: employee.firstName,
       lastName: employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,

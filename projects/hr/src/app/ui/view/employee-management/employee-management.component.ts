@@ -28,8 +28,8 @@ import { EmployeeProfileDashboardComponent } from '../employee-dashboard/employe
 export class EmployeeManagementComponent {
   
   tabsConfig: TabConfig[] = [
-    // { name: 'Basic Information', component: ViewEmployeeComponent },
-    { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
+    { name: 'Basic Information', component: ViewEmployeeComponent },
+    // { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
     { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
     { name: 'Offboarding', component:  EmployeeOffboardingComponent, },

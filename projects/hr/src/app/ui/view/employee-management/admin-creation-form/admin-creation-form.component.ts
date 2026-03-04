@@ -470,7 +470,7 @@ private setProbationValidators(): void {
   const formattedDate = currentDate.toISOString().split('T')[0];
   const employeesFromStorage = localStorage.getItem("employeesList");
   const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-    const newEmployee = {
+    const newEmployee: any = {
  
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
@@ -500,71 +500,71 @@ private setProbationValidators(): void {
     // roleId: this.guarantorForm.get('roleId')?.value,
    
   }
-  const formData = new FormData();
-  formData.append('employee', JSON.stringify(newEmployee));
-  console.log(formData)
-  this.employeeService.addEmployee(formData).subscribe(
-   { next: (data: any) => {
-    console.log(data)
-    const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
+  const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
+  const username = this.basicForm.get('firstName')?.value;
+  const email = this.basicForm.get('email')?.value || username;
+  const password = this.generateRandomPassword();
+  const signupDetails = this.buildSignupDetails(username, password, email);
 
-    if (hasOptiMaxAccess) {
-      const username = this.basicForm.get('firstName')?.value 
-      const password = this.generateRandomPassword();
-      const signupDetails = this.buildSignupDetails(username, password, username);
-      this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
-        next: (userData) => {
-          const roleRequest = {
-            userId: userData.id,
-            appRoleId: this.guarantorForm.get('roleId')?.value
-          };
+  this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
+    next: (userData) => {
+      newEmployee.userId = userData?.id;
+      const formData = new FormData();
+      formData.append('employee', JSON.stringify(newEmployee));
 
-          this.authenticationService.userApplicationRole(roleRequest).subscribe({
-            next: () => {
-              this.finalizeEmployeeCreation(data, shouldRedirect, {
-                username,
-                password,
-                message: 'Employee added and user access created successfully!'
-              });
-            },
-            error: (err) => {
-              console.log(err);
-              this.finalizeEmployeeCreation(data, shouldRedirect, {
-                username,
-                password,
-                severity: 'warn',
-                message: 'Employee created, but role assignment failed. Please assign role in settings.'
-              });
-            }
-          });
+      this.employeeService.addEmployee(formData).subscribe({
+        next: (data: any) => {
+          if (hasOptiMaxAccess) {
+            const roleRequest = {
+              userId: userData.id,
+              appRoleId: this.guarantorForm.get('roleId')?.value
+            };
+
+            this.authenticationService.userApplicationRole(roleRequest).subscribe({
+              next: () => {
+                this.finalizeEmployeeCreation(data, shouldRedirect, {
+                  username,
+                  password,
+                  message: 'Employee added and user access created successfully!'
+                });
+              },
+              error: (err) => {
+                console.log(err);
+                this.finalizeEmployeeCreation(data, shouldRedirect, {
+                  username,
+                  password,
+                  severity: 'warn',
+                  message: 'Employee created, but role assignment failed. Please assign role in settings.'
+                });
+              }
+            });
+          } else {
+            this.finalizeEmployeeCreation(data, shouldRedirect, {
+              message: 'Employee added successfully!'
+            });
+          }
         },
-        error: (error) => {
-          console.log(error);
-          this.finalizeEmployeeCreation(data, shouldRedirect, {
-            severity: 'warn',
-            message: 'Employee created, but user account creation failed. Please create user in settings.'
-          });
+        error: (err) => {
+          this.resetSubmitLoading();
+          const detail = this.errorMessageService.getUserMessage(
+            err,
+            'Failed to create employee. Please try again.'
+          );
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          console.log(err);
         }
       });
-    } else {
-      this.finalizeEmployeeCreation(data, shouldRedirect, {
-        message: 'Employee added successfully!'
-      });
+    },
+    error: (error) => {
+      this.resetSubmitLoading();
+      const detail = this.errorMessageService.getUserMessage(
+        error,
+        'Failed to create user account. Please try again.'
+      );
+      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      console.log(error);
     }
-   },
-   error: (err) => {
-    this.resetSubmitLoading();
-    const detail = this.errorMessageService.getUserMessage(
-      err,
-      'Failed to create employee. Please try again.'
-    );
-    this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-    console.log(err)
-  }
-  },
-   
-  
-  )
+  });
   // employeesList.push(newEmployee);
   // localStorage.setItem("employeesList", JSON.stringify(employeesList));
   if (shouldRedirect) {

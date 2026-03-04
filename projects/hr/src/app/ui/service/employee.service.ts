@@ -38,7 +38,7 @@ export class EmployeeService {
    sendWelcomeEmail(data: any): Observable<any>{
     return this.http
         .post<any>(
-             "https://n8n.royalvilletechnologies.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
+             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
         .pipe(catchError(this.handleError));
   }
 
@@ -52,12 +52,21 @@ export class EmployeeService {
   }
 
 
-  getEmployeeById(id: number): Observable<any>{
+  getEmployeeById(id: number | string): Observable<any>{
     return this.http
         .get<any>(
             this.baseurl +
                 `/x/api/v2/hr/employees/${id}`)
         .pipe(catchError(this.handleError));
+  }
+
+  getEmployeeByUserId(userId: number | string): Observable<any> {
+    return this.http
+      .get<any>(
+        this.baseurl +
+          `/x/api/v2/hr/employees/employee/by/userId/${userId}`
+      )
+      .pipe(catchError(this.handleError));
   }
 
   deleteEmployee(id: number | string): Observable<any> {

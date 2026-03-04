@@ -42,6 +42,10 @@ const routes: Routes = [
     component: AddEmployeeFormComponent,
   },
   {
+    path: 'guarantor/confirm/:token/:uuid',
+    component: GuarantorConfirmationComponent,
+  },
+  {
     path: 'guarantor/confirm/:token',
     component: GuarantorConfirmationComponent,
   },
