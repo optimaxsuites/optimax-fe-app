@@ -900,7 +900,9 @@ export class MenuItemsService {
     map(modules => {
       const allowedCodes = this.getUserPermissions();
 
-      const filterSubmenu = (submenu: any[]) => { return submenu.filter(item => allowedCodes.includes(item.code)); };
+      const filterSubmenu = (submenu: any[]) => {
+        return submenu.filter(item => item.doNotRegisterAsPermission || allowedCodes.includes(item.code));
+      };
 
       return modules
         .map(menu => {
@@ -919,7 +921,7 @@ export class MenuItemsService {
             }
           }
 
-          return allowedCodes.includes(menu.code ?? "") ? menu : null;
+          return menu.doNotRegisterAsPermission || allowedCodes.includes(menu.code ?? "") ? menu : null;
         })
         .filter(Boolean) as MenuItem[];
     })
