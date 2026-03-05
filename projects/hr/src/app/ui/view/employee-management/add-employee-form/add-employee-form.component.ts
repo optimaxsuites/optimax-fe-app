@@ -549,7 +549,7 @@ addNewEmployee(){
           const detail = this.errorMessageService.getUserMessage(
             err,
             'Vetting request could not be sent. Please contact support.'
-          );
+          );``
           this.messageService.add({ severity: 'warn', summary: 'Notice', detail, key: 'tl', life: 4000 });
         }
       });
@@ -564,7 +564,7 @@ addNewEmployee(){
       this.router.navigate([`/admin/hr/me/`+uuidV4()]);
 
       // if (shouldRedirect) {
-      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+        this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
       // }
     },
     error: (err) => {
