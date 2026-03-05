@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import { v4 as uuidV4 } from "uuid"
 
 interface Employee {
   id: number;
@@ -131,7 +132,8 @@ export class AddEmployeeFormComponent {
     private messageService: MessageService,
     private employeeService: EmployeeService, 
     private route: ActivatedRoute,
-    private errorMessageService: ErrorMessageService
+    private errorMessageService: ErrorMessageService,
+    private router: Router
   ) {  }
 
   ngOnInit(): void {
@@ -559,6 +561,7 @@ addNewEmployee(){
       this.guarantorForm.reset()
       this.employeeForm.reset()
       // this.currentTab = 1
+      this.router.navigate([`/admin/hr/me/`+uuidV4()]);
 
       // if (shouldRedirect) {
       //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);

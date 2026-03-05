@@ -136,35 +136,35 @@ const routes: Routes = [
   },
  // Cooperative Routes
   {
-    path: 'admin/hr/cooperative/dashboard/:uuid',
+    path: 'cooperative/dashboard/:uuid',
     component: CooperativeDashboardComponent
   },
   {
-    path: 'admin/hr/cooperative/members/:uuid',
+    path: 'cooperative/members/:uuid',
     component: CooperativeMembersComponent
   },
   {
-    path: 'admin/hr/cooperative/members/:id/:uuid',
+    path: 'cooperative/members/:id/:uuid',
     component: CooperativeMemberDetailComponent
   },
   {
-    path: 'admin/hr/cooperative/members/add/:uuid',
+    path: 'cooperative/members/add/:uuid',
     component: CooperativeMemberFormComponent
   },
   {
-    path: 'admin/hr/cooperative/members/edit/:id/:uuid',
+    path: 'cooperative/members/edit/:id/:uuid',
     component: CooperativeMemberFormComponent
   },
   {
-    path: 'admin/hr/cooperative/loans/:uuid',
+    path: 'cooperative/loans/:uuid',
     component: CooperativeLoansComponent
   },
   {
-    path: 'admin/hr/cooperative/loans/:id/:uuid',
+    path: 'cooperative/loans/:id/:uuid',
     component: CooperativeLoanDetailComponent
   },
   {
-    path: 'admin/hr/cooperative/products/:uuid',
+    path: 'cooperative/products/:uuid',
     component: CooperativeLoanProductsComponent
   },
   // Member routes
