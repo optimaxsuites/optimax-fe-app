@@ -277,14 +277,7 @@ handleDateClick(arg: DateClickArg) {
   }
   fetchEmployees(){
     this.employeeService.getAllEmployee().subscribe({
-      next: data => {
-        const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+      next: (employees) => {
         this.employees = this.sortEmployeesLatest(employees);
         this.uniqueLevels = [
           ...new Set(

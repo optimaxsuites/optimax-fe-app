@@ -221,15 +221,7 @@ export class EmployeeProfileDashboardComponent {
   private fetchFirstEmployee(): void {
     this.loading = true;
     this.employeeService.getAllEmployee().subscribe({
-      next: (data) => {
-        const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
-
+      next: (employees) => {
         const sortedEmployees = this.sortEmployeesLatest(employees);
         const employee = sortedEmployees[0];
 
@@ -314,22 +306,16 @@ export class EmployeeProfileDashboardComponent {
   }
 
   saveEdit(): void {
+    console.log(this.editForm.invalid)
     if (!this.employeeInView || this.editForm.invalid || this.saving) {
       this.editForm.markAllAsTouched();
       return;
     }
 
+    console.log(this.editForm.invalid)
+
+
     const { formData, patch } = this.buildUpdatePayload();
-    const payloadId = formData.get('id');
-    if (!payloadId) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Missing employee ID',
-        detail: 'Unable to update profile.',
-        key: 'global',
-      });
-      return;
-    }
 
     this.saving = true;
     this.employeeService.addEmployee(formData).subscribe({
@@ -468,7 +454,7 @@ export class EmployeeProfileDashboardComponent {
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
-      userId: employee.userId ?? employee.user?.id ?? storedUserId ?? null,
+      userId: employee.userId ?? employee.user?.userId ?? storedUserId ?? null,
       firstName: employee.firstName,
       lastName: employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,
@@ -497,7 +483,7 @@ export class EmployeeProfileDashboardComponent {
       bvn: employee.bvn,
       jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null,
       relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
-      employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
+      // employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
     };
 
     const formData = new FormData();
@@ -511,16 +497,17 @@ export class EmployeeProfileDashboardComponent {
       }
       return value;
     };
-    const appendField = (key: string, value: any) => {
-      const normalized = normalizeValue(value);
-      if (normalized === null || normalized === undefined || normalized === '') return;
-      formData.append(key, String(normalized));
-    };
+    // const appendField = (key: string, value: any) => {
+    //   const normalized = normalizeValue(value);
+    //   if (normalized === null || normalized === undefined || normalized === '') return;
+    // };
 
-    Object.keys(patch).forEach((key) => appendField(key, patch[key]));
+    // Object.keys(patch).forEach((key) => appendField(key, patch[key]));
+      formData.append("employee", JSON.stringify(patch));
+
 
     if (this.pendingProfilePhotoFile) {
-      formData.append('profilePhoto', this.pendingProfilePhotoFile, this.pendingProfilePhotoFile.name);
+      formData.append('file', this.pendingProfilePhotoFile, this.pendingProfilePhotoFile.name);
     }
 
     return { formData, patch };

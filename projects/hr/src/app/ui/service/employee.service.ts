@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
 @Injectable({
@@ -9,6 +9,11 @@ import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/
 export class EmployeeService {
  baseurl = 'https://be.optimaxsuites.com'
  vettingWebhookUrl = 'https://automation.optimaxsuites.com/webhook/a6eb636c-407e-49e1-9810-ee852b4a2a22'
+  private employeesSubject = new BehaviorSubject<any[]>([]);
+  employees$ = this.employeesSubject.asObservable();
+  private employeesLoaded = false;
+  private employeesLoading = false;
+  private employeesRequest$: Observable<any[]> | null = null;
   constructor(private http: HttpClient) { }
 
   addEmployee(data: any): Observable<any>{
@@ -43,12 +48,44 @@ export class EmployeeService {
   }
 
 
-  getAllEmployee(): Observable<any>{
-    return this.http
-        .get<any>(
-            this.baseurl +
-                `/x/api/v2/hr/employees?page=1&size=1200`)
-        .pipe(catchError(this.handleError));
+  getAllEmployee(force = false): Observable<any[]> {
+    if (!force && this.employeesLoaded) {
+      return of(this.employeesSubject.value);
+    }
+
+    if (!force && this.employeesLoading && this.employeesRequest$) {
+      return this.employeesRequest$;
+    }
+
+    this.employeesLoading = true;
+    const request$ = this.http
+      .get<any>(this.baseurl + `/x/api/v2/hr/employees?page=1&size=1200`)
+      .pipe(
+        map((data) => this.normalizeEmployees(data)),
+        tap((employees) => {
+          this.employeesSubject.next(employees);
+          this.employeesLoaded = true;
+        }),
+        catchError(this.handleError),
+        finalize(() => {
+          this.employeesLoading = false;
+          this.employeesRequest$ = null;
+        }),
+        shareReplay(1)
+      );
+
+    this.employeesRequest$ = request$;
+    return request$;
+  }
+
+  ensureEmployeesLoaded(): void {
+    this.getAllEmployee().subscribe({
+      error: () => undefined
+    });
+  }
+
+  refreshEmployees(): Observable<any[]> {
+    return this.getAllEmployee(true);
   }
 
 
@@ -168,5 +205,12 @@ export class EmployeeService {
     }
     return throwError(() => error);
     // 'Something bad happened; please try again later.');
+  }
+
+  private normalizeEmployees(data: any): any[] {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.content)) return data.content;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
   }
 }
