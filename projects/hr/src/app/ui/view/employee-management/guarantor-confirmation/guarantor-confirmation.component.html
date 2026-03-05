@@ -16,10 +16,30 @@
           />
         </div>
       </div>
+      <div class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-700">Do you know this person?</p>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            (click)="chooseAcknowledgment('yes')"
+            class="px-6 py-2.5 rounded-lg border border-customGreen text-customGreen font-semibold hover:bg-emerald-50 transition-all"
+          >
+            Yes, I do
+          </button>
+          <button
+            type="button"
+            (click)="chooseAcknowledgment('no')"
+            class="px-6 py-2.5 rounded-lg border border-rose-500 text-rose-500 font-semibold hover:bg-rose-50 transition-all"
+          >
+            No, I don't
+          </button>
+        </div>
+        <p *ngIf="acknowledgment === null" class="text-xs text-slate-400">Please select an option to continue.</p>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
-      
+    <form *ngIf="acknowledgment === 'yes'" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
+
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-4">Personal Details</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -89,6 +109,43 @@
             {{ submitting ? 'Processing...' : 'Submit Confirmation' }}
           </button>
         </div>
+      </div>
+    </form>
+
+    <form *ngIf="acknowledgment === 'no'" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
+      <section>
+        <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-2">Acknowledgment</h2>
+        <p class="text-sm text-slate-600">
+          You indicated you do not know this employee. Please provide your name and email so we can log your response.
+        </p>
+      </section>
+
+      <section>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+            <input type="text" formControlName="fullName" placeholder="John Doe"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue transition-all outline-none" />
+            <p *ngIf="declineForm.get('fullName')?.touched && declineForm.get('fullName')?.invalid" class="mt-1 text-xs text-red-500">Full name is required.</p>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+            <input type="email" formControlName="email" placeholder="john@example.com"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue transition-all outline-none" />
+            <p *ngIf="declineForm.get('email')?.touched && declineForm.get('email')?.invalid" class="mt-1 text-xs text-red-500">Valid email is required.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-slate-400 italic">All fields marked with (*) are mandatory.</p>
+        <button type="submit"
+          [disabled]="submitting || declineForm.invalid"
+          class="w-full sm:w-auto px-8 py-3.5 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-lg shadow-rose-200 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+          <span *ngIf="submitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          {{ submitting ? 'Processing...' : 'Submit Response' }}
+        </button>
       </div>
     </form>
   </div>

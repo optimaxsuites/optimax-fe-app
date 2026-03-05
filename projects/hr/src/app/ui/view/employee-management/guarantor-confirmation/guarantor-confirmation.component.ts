@@ -16,11 +16,13 @@ export class GuarantorConfirmationComponent {
   uuid = '';
   employeeName = '';
   employeeInView: any;
+  acknowledgment: 'yes' | 'no' | null = null;
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
   loadingEmployee = false;
   submitting = false;
   form!: FormGroup
+  declineForm!: FormGroup
 
 
 
@@ -42,6 +44,10 @@ export class GuarantorConfirmationComponent {
     idCard: [null as File | null, [Validators.required]],
     
   });
+    this.declineForm = this.fb.group({
+      fullName: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+    });
 
   }
 
@@ -68,6 +74,10 @@ export class GuarantorConfirmationComponent {
       this.form.get(controlName)?.setValue(input.files[0] as File);
       this.form.get(controlName)?.updateValueAndValidity();
     }
+  }
+
+  chooseAcknowledgment(value: 'yes' | 'no') {
+    this.acknowledgment = value;
   }
 
   submit(): void {
@@ -108,6 +118,43 @@ export class GuarantorConfirmationComponent {
         const detail = this.errorMessageService.getUserMessage(
           err,
           'Failed to submit confirmation. Please try again.'
+        );
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'global', life: 4000 });
+      }
+    });
+  }
+
+  submitDecline(): void {
+    if (!this.token) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid or missing confirmation link.', key: 'global', life: 4000 });
+      return;
+    }
+
+    this.declineForm.markAllAsTouched();
+    if (this.declineForm.invalid) return;
+
+    this.submitting = true;
+
+    const formData = new FormData();
+    formData.append('token', this.token);
+    formData.append('acknowledgment', 'false');
+    if (this.employeeName) formData.append('employeeName', this.employeeName);
+    if (this.employeeInView?.id) formData.append('employeeId', `${this.employeeInView.id}`);
+    if (this.employeeInView?.email) formData.append('employeeEmail', this.employeeInView.email);
+    formData.append('guarantorName', this.declineForm.get('fullName')?.value || '');
+    formData.append('guarantorEmail', this.declineForm.get('email')?.value || '');
+
+    this.employeeService.submitGuarantorConfirmation(formData).subscribe({
+      next: () => {
+        this.submitting = false;
+        this.messageService.add({ severity: 'success', summary: 'Thank you', detail: 'Your response has been recorded.', key: 'global', life: 4000 });
+        this.declineForm.reset();
+      },
+      error: (err) => {
+        this.submitting = false;
+        const detail = this.errorMessageService.getUserMessage(
+          err,
+          'Failed to submit response. Please try again.'
         );
         this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'global', life: 4000 });
       }
