@@ -80,13 +80,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
         const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
-
+          ? data : []
+          
         this.employeeDirectory = employees
           .map((employee: any) => this.mapEmployeeToProfile(employee))
           .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);

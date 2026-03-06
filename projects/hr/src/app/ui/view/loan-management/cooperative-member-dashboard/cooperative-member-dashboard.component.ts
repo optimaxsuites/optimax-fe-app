@@ -71,12 +71,8 @@ export class CooperativeMemberDashboardComponent implements OnInit {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
         const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+          ? data : []
+          
 
         const userRegDataRaw = sessionStorage.getItem('userRegData');
         const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;

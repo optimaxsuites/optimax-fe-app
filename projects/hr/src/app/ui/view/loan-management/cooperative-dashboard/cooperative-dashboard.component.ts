@@ -602,12 +602,8 @@ export class CooperativeDashboardComponent implements OnInit {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
         const rawEmployees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+          ? data : []
+          
 
         this.employeeDirectory = rawEmployees
           .map((employee: any) => this.mapEmployeeToProfile(employee))
