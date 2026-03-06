@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   HotelserviceService,
   Payment,
@@ -27,6 +27,7 @@ export class PaymentsListComponent implements OnInit {
 
   methods: PaymentMethod[] = [];
   statuses: PaymentStatus[] = [];
+  uuid = '';
 
   // Stats
   get totalCollected(): number {
@@ -46,10 +47,13 @@ export class PaymentsListComponent implements OnInit {
 
   constructor(
     private hotelService: HotelserviceService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.methods = this.hotelService.getPaymentMethods();
     this.statuses = this.hotelService.getPaymentStatuses();
     this.loadData();
@@ -140,7 +144,7 @@ export class PaymentsListComponent implements OnInit {
   }
 
   viewBooking(bookingId: number): void {
-    this.router.navigate(['/hospitality/bookings', bookingId]);
+    this.router.navigate(['/hospitality', this.uuid, 'bookings', bookingId]);
   }
 
   private showToastMessage(message: string, type: 'success' | 'error'): void {

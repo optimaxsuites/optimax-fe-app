@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, tap, catchError, throwError, map } from 'rxjs';
-import { environment } from '../sharedComponent/service/environments/environment.prod';
+import {
+  BehaviorSubject,
+  Observable,
+  of,
+  tap,
+  catchError,
+  throwError,
+  map,
+} from 'rxjs';
+import { environment } from '../sharedComponent/service/environments/environment';
 import { MessageService } from 'primeng/api';
 
 // ────────────────────── Interfaces ──────────────────────
@@ -12,7 +20,7 @@ export interface RoomTypeDTO {
   description?: string;
 }
 
-export interface AdditionalService {
+export interface AdditionalDetail {
   id?: number;
   name: string;
   description?: string;
@@ -73,15 +81,6 @@ export interface Booking {
   guest: Guest | number;
   payment?: number;
   rooms: number[];
-}
-
-export interface BookingDetail {
-  id?: number;
-  totalPrice: number;
-  dateUsed: string;
-  notes?: string;
-  booking: number;
-  additionalService?: number;
 }
 
 export interface Payment {
@@ -156,7 +155,22 @@ export class HotelserviceService {
     if (obj == null) return null;
     if (typeof obj === 'number' || typeof obj === 'string') return obj;
     const target = obj.data || obj;
-    return target.id ?? target.bookingId ?? target.idBooking ?? target.guestId ?? target.idGuest ?? target.idRoom ?? target.roomId ?? target.idGuest ?? null;
+    return (
+      target.id ??
+      target.bookingId ??
+      target.idBooking ??
+      target.guestId ??
+      target.idGuest ??
+      target.idRoom ??
+      target.roomId ??
+      target.room_id ??
+      target.guest_id ??
+      target.id_room ??
+      target.id_guest ??
+      target.customerId ??
+      target.idCustomer ??
+      null
+    );
   }
 
   /** Gets a field value from an object using a prioritized list of possible keys */
@@ -172,55 +186,165 @@ export class HotelserviceService {
   /** Normalizes a booking object from any API shape */
   normalizeBooking(b: any): Booking {
     const raw = b?.data || b || {};
+    console.log(
+      'DEBUG: Hotelservice — Normalizing booking:',
+      JSON.stringify(raw),
+    );
     // Extract guest ID or object
-    let guest = this.getF(raw, ['guest', 'guestId', 'idGuest', 'guest_id', 'id_guest', 'user', 'userId']);
-    
+    let guestRaw = this.getF(raw, [
+      'guest',
+      'guestId',
+      'idGuest',
+      'guest_id',
+      'id_guest',
+      'user',
+      'userId',
+      'customerId',
+      'idCustomer',
+    ]);
+    let guest: Guest | number;
+
+    if (guestRaw && typeof guestRaw === 'object') {
+      const g = guestRaw.data || guestRaw;
+      guest = {
+        ...g,
+        id: this.getId(g),
+        firstName: this.getF(g, ['firstName', 'first_name', 'name']),
+        lastName: this.getF(g, ['lastName', 'last_name', 'surname']),
+        email: this.getF(g, ['email', 'userEmail']),
+        phone: this.getF(g, ['phone', 'phoneNumber', 'idPhone']),
+      } as Guest;
+    } else {
+      guest = Number(guestRaw);
+    }
+
     // Extract room IDs or objects
-    let rooms = this.getF(raw, ['rooms', 'roomIds', 'idRooms', 'room', 'id_room', 'room_ids', 'rooms_ids']);
-    if (rooms && !Array.isArray(rooms)) rooms = [rooms]; 
-    if (!rooms) rooms = [];
+    let roomsRaw = this.getF(raw, [
+      'rooms',
+      'roomIds',
+      'idRooms',
+      'room',
+      'id_room',
+      'room_ids',
+      'rooms_ids',
+      'roomNumbers',
+    ]);
+    if (roomsRaw && !Array.isArray(roomsRaw)) roomsRaw = [roomsRaw];
+    if (!roomsRaw) roomsRaw = [];
+
+    const rooms = roomsRaw
+      .map((r: any) => {
+        if (typeof r === 'object' && r !== null) {
+          return this.getId(r);
+        }
+        return r != null ? Number(r) : null;
+      })
+      .filter((id: any) => id != null && !isNaN(id));
 
     return {
       ...raw,
       id: this.getId(raw),
-      checkinDate: this.getF(raw, ['checkinDate', 'checkInDate', 'idCheckin', 'arrivalDate', 'startDate', 'check_in_date']),
-      checkoutDate: this.getF(raw, ['checkoutDate', 'checkOutDate', 'idCheckout', 'departureDate', 'endDate', 'check_out_date']),
+      checkinDate: this.getF(raw, [
+        'checkinDate',
+        'checkInDate',
+        'idCheckin',
+        'arrivalDate',
+        'startDate',
+        'check_in_date',
+      ]),
+      checkoutDate: this.getF(raw, [
+        'checkoutDate',
+        'checkOutDate',
+        'idCheckout',
+        'departureDate',
+        'endDate',
+        'check_out_date',
+      ]),
       guest: guest,
       rooms: rooms,
-      adults: Number(this.getF(raw, ['adults', 'noOfAdults', 'adultCount', 'no_of_adults']) || raw.adults || 0),
-      children: Number(this.getF(raw, ['children', 'noOfChildren', 'childCount', 'childs', 'no_of_children']) || raw.children || 0),
-      total: Number(this.getF(raw, ['total', 'totalPrice', 'amount', 'id_total', 'total_amount']) || raw.total || 0),
-      subTotal: Number(this.getF(raw, ['subTotal', 'subtotal', 'id_subtotal', 'sub_total']) || raw.subTotal || 0),
-      status: this.getF(raw, ['status', 'bookingStatus', 'id_status', 'state', 'booking_status']) || raw.status
+      adults: Number(
+        this.getF(raw, [
+          'adults',
+          'noOfAdults',
+          'adultCount',
+          'no_of_adults',
+        ]) ||
+          raw.adults ||
+          0,
+      ),
+      children: Number(
+        this.getF(raw, [
+          'children',
+          'noOfChildren',
+          'childCount',
+          'childs',
+          'no_of_children',
+        ]) ||
+          raw.children ||
+          0,
+      ),
+      total: Number(
+        this.getF(raw, [
+          'total',
+          'totalPrice',
+          'amount',
+          'id_total',
+          'total_amount',
+        ]) ||
+          raw.total ||
+          0,
+      ),
+      subTotal: Number(
+        this.getF(raw, ['subTotal', 'subtotal', 'id_subtotal', 'sub_total']) ||
+          raw.subTotal ||
+          0,
+      ),
+      status:
+        this.getF(raw, [
+          'status',
+          'bookingStatus',
+          'id_status',
+          'state',
+          'booking_status',
+        ]) || raw.status,
     };
   }
 
   /** Prepares a booking payload for creation/updating */
   prepareBookingPayload(booking: Booking): any {
     const gId = this.getId(booking.guest);
-    const roomIds = (booking.rooms || []).map(r => this.getId(r)).filter(id => id != null);
+    const roomIds = (booking.rooms || [])
+      .map((r) => this.getId(r))
+      .filter((id) => id != null);
+    const paymentId = this.getId(booking.payment);
 
-    // Revert to Numbers to fix 500 error (Backend expects Long, not Object)
-    // We send multiple variations to ensure the backend captures the link
-    return {
-      ...booking,
-      // Guest variations (as numbers)
+    // Send clean payload - match API documentation schema exactly
+    const payload = {
+      checkinDate: booking.checkinDate,
+      checkoutDate: booking.checkoutDate,
+      adults: String(booking.adults), // API expects strings
+      children: String(booking.children),
+      specialRequests: booking.specialRequests || '',
+      depositAmount: String(booking.depositAmount || 0),
+      subTotal: String(booking.subTotal || 0),
+      taxes: String(booking.taxes || 0),
+      total: String(booking.total || 0),
+      balanceAmount: String(booking.balanceAmount || 0),
+      status: booking.status || 'CONFIRMED',
       guest: gId ? Number(gId) : null,
-      guestId: gId ? Number(gId) : null,
-      idGuest: gId ? Number(gId) : null,
-      
-      // Room variations (as array of numbers)
-      rooms: roomIds.map(id => Number(id)),
-      roomIds: roomIds.map(id => Number(id)),
-      
-      // Ensure numeric types for core fields
-      adults: Number(booking.adults) || 1,
-      children: Number(booking.children) || 0,
-      total: Number(booking.total) || 0,
-      subTotal: Number(booking.subTotal) || 0,
-      depositAmount: Number(booking.depositAmount) || 0,
-      balanceAmount: Number(booking.balanceAmount) || 0
+      payment: paymentId ? Number(paymentId) : null,
+      rooms: roomIds.map((id) => Number(id)),
     };
+
+    console.log(
+      'DEBUG: Prepared booking payload:',
+      JSON.stringify(payload, null, 2),
+    );
+    console.log('DEBUG: Guest ID:', gId);
+    console.log('DEBUG: Room IDs:', roomIds);
+    console.log('DEBUG: Payment ID:', paymentId);
+
+    return payload;
   }
 
   private apiUrl = environment.apiBaseUrl;
@@ -232,14 +356,14 @@ export class HotelserviceService {
   private roomTypes$ = new BehaviorSubject<RoomTypeDTO[]>([]);
   private roomsCache$ = new BehaviorSubject<Room[]>([]);
   private guestsCache$ = new BehaviorSubject<Guest[]>([]);
-  private servicesCache$ = new BehaviorSubject<AdditionalService[]>([]);
+  private additionalDetailsCache$ = new BehaviorSubject<AdditionalDetail[]>([]);
   private bookingsCache$ = new BehaviorSubject<Booking[]>([]);
   private paymentsCache$ = new BehaviorSubject<Payment[]>([]);
 
   private roomTypesLoaded = false;
   private roomsLoaded = false;
   private guestsLoaded = false;
-  private servicesLoaded = false;
+  private additionalDetailsLoaded = false;
   private bookingsLoaded = false;
   private paymentsLoaded = false;
 
@@ -248,8 +372,10 @@ export class HotelserviceService {
 
   constructor(
     private http: HttpClient,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+  ) {
+    this.loadInitialRoomTypes();
+  }
 
   // ══════════════════════════════════════════════════════
   //  INITIALIZATION
@@ -276,14 +402,17 @@ export class HotelserviceService {
   /** Resolve a room type ID to its name */
   getRoomTypeNameById(id: any): string {
     if (id == null) return 'Unknown';
-    
+
     // Handle if ID is an object from API
-    const typeId = typeof id === 'object' ? (id.id || id.bookingId || id.idBooking) : id;
+    const typeId =
+      typeof id === 'object' ? id.id || id.bookingId || id.idBooking : id;
     if (typeId == null) return 'Unknown';
 
     // Try direct map lookup
-    let name = this.roomTypeMap.get(Number(typeId)) || (this.roomTypeMap as any).get(String(typeId));
-    
+    let name =
+      this.roomTypeMap.get(Number(typeId)) ||
+      (this.roomTypeMap as any).get(String(typeId));
+
     // If still not found, try iterate map for loose match
     if (!name) {
       for (const [key, val] of this.roomTypeMap.entries()) {
@@ -293,7 +422,7 @@ export class HotelserviceService {
         }
       }
     }
-    
+
     return name || `Type #${typeId}`;
   }
 
@@ -315,7 +444,7 @@ export class HotelserviceService {
         this.roomTypes$.next(types);
         this.roomTypesLoaded = true;
         this.buildRoomTypeMap(types);
-      })
+      }),
     );
   }
 
@@ -328,7 +457,7 @@ export class HotelserviceService {
         catchError((error) => {
           console.error('Error fetching room types:', error);
           return throwError(() => error);
-        })
+        }),
       );
   }
 
@@ -347,21 +476,28 @@ export class HotelserviceService {
         catchError((error) => {
           console.error('Error creating room type:', error);
           return throwError(() => error);
-        })
+        }),
       );
   }
 
   getRoomType(id: number): Observable<RoomTypeDTO> {
-    return this.http.get<RoomTypeDTO>(`${this.apiUrl}/x/api/v2/hsp/roomTypes/${id}`, {
-      headers: this.headers,
-    });
+    return this.http.get<RoomTypeDTO>(
+      `${this.apiUrl}/x/api/v2/hsp/roomTypes/${id}`,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   updateRoomType(id: number, roomType: RoomTypeDTO): Observable<RoomTypeDTO> {
     return this.http
-      .put<RoomTypeDTO>(`${this.apiUrl}/x/api/v2/hsp/roomTypes/${id}`, roomType, {
-        headers: this.headers,
-      })
+      .put<RoomTypeDTO>(
+        `${this.apiUrl}/x/api/v2/hsp/roomTypes/${id}`,
+        roomType,
+        {
+          headers: this.headers,
+        },
+      )
       .pipe(
         tap(() => {
           const current = this.roomTypes$.getValue();
@@ -375,7 +511,7 @@ export class HotelserviceService {
         catchError((error) => {
           console.error('Error updating room type:', error);
           return throwError(() => error);
-        })
+        }),
       );
   }
 
@@ -386,61 +522,110 @@ export class HotelserviceService {
       })
       .pipe(
         tap(() => {
-          const updated = this.roomTypes$.getValue().filter((rt) => rt.id !== id);
+          const updated = this.roomTypes$
+            .getValue()
+            .filter((rt) => rt.id !== id);
           this.roomTypes$.next(updated);
           this.buildRoomTypeMap(updated);
         }),
         catchError((error) => {
           console.error('Error deleting room type:', error);
           return throwError(() => error);
-        })
+        }),
       );
   }
 
   // ══════════════════════════════════════════════════════
-  //  ADDITIONAL SERVICES
+  //  ADDITIONAL DETAILS (SERVICES)
   // ══════════════════════════════════════════════════════
 
-  getAdditionalServices(): Observable<AdditionalService[]> {
-    if (this.servicesLoaded && this.servicesCache$.getValue().length > 0) {
-      return of(this.servicesCache$.getValue());
+  getAdditionalDetails(): Observable<AdditionalDetail[]> {
+    if (
+      this.additionalDetailsLoaded &&
+      this.additionalDetailsCache$.getValue().length > 0
+    ) {
+      return of(this.additionalDetailsCache$.getValue());
     }
     return this.http
-      .get<AdditionalService[]>(`${this.apiUrl}/x/api/v2/hsp/additionalServices`, {
+      .get<AdditionalDetail[]>(
+        `${this.apiUrl}/x/api/v2/hsp/additionalDetails`,
+        {
+          headers: this.headers,
+        },
+      )
+      .pipe(
+        tap((data) => {
+          this.additionalDetailsCache$.next(data);
+          this.additionalDetailsLoaded = true;
+        }),
+        catchError((err) => {
+          console.error('Error fetching additional details:', err);
+          return throwError(() => err);
+        }),
+      );
+  }
+
+  getAdditionalDetail(id: number): Observable<AdditionalDetail> {
+    return this.http.get<AdditionalDetail>(
+      `${this.apiUrl}/x/api/v2/hsp/additionalDetails/${id}`,
+      {
+        headers: this.headers,
+      },
+    );
+  }
+
+  createAdditionalDetail(
+    service: AdditionalDetail,
+  ): Observable<AdditionalDetail> {
+    return this.http
+      .post<AdditionalDetail>(
+        `${this.apiUrl}/x/api/v2/hsp/additionalDetails`,
+        service,
+        {
+          headers: this.headers,
+        },
+      )
+      .pipe(
+        tap((created) => {
+          this.additionalDetailsCache$.next([
+            ...this.additionalDetailsCache$.getValue(),
+            created,
+          ]);
+        }),
+      );
+  }
+
+  updateAdditionalDetail(
+    id: number,
+    service: AdditionalDetail,
+  ): Observable<AdditionalDetail> {
+    return this.http
+      .put<AdditionalDetail>(
+        `${this.apiUrl}/x/api/v2/hsp/additionalDetails/${id}`,
+        service,
+        {
+          headers: this.headers,
+        },
+      )
+      .pipe(
+        tap(() => {
+          this.additionalDetailsLoaded = false;
+        }),
+      );
+  }
+
+  deleteAdditionalDetail(id: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/x/api/v2/hsp/additionalDetails/${id}`, {
         headers: this.headers,
       })
       .pipe(
-        tap((data) => { this.servicesCache$.next(data); this.servicesLoaded = true; }),
-        catchError((err) => { console.error('Error fetching services:', err); return throwError(() => err); })
+        tap(() => {
+          this.additionalDetailsCache$.next(
+            this.additionalDetailsCache$.getValue().filter((s) => s.id !== id),
+          );
+        }),
       );
-  }
-
-  getAdditionalService(id: number): Observable<AdditionalService> {
-    return this.http.get<AdditionalService>(`${this.apiUrl}/x/api/v2/hsp/additionalServices/${id}`, {
-      headers: this.headers,
-    });
-  }
-
-  createAdditionalService(service: AdditionalService): Observable<AdditionalService> {
-    return this.http.post<AdditionalService>(`${this.apiUrl}/x/api/v2/hsp/additionalServices`, service, {
-      headers: this.headers,
-    }).pipe(tap((created) => {
-      this.servicesCache$.next([...this.servicesCache$.getValue(), created]);
-    }));
-  }
-
-  updateAdditionalService(id: number, service: AdditionalService): Observable<AdditionalService> {
-    return this.http.put<AdditionalService>(`${this.apiUrl}/x/api/v2/hsp/additionalServices/${id}`, service, {
-      headers: this.headers,
-    }).pipe(tap(() => { this.servicesLoaded = false; }));
-  }
-
-  deleteAdditionalService(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/x/api/v2/hsp/additionalServices/${id}`, {
-      headers: this.headers,
-    }).pipe(tap(() => {
-      this.servicesCache$.next(this.servicesCache$.getValue().filter((s) => s.id !== id));
-    }));
   }
 
   // ══════════════════════════════════════════════════════
@@ -448,33 +633,53 @@ export class HotelserviceService {
   // ══════════════════════════════════════════════════════
 
   getServiceCharges(): Observable<ServiceCharge[]> {
-    return this.http.get<ServiceCharge[]>(`${this.apiUrl}/x/api/v2/hsp/serviceCharges`, {
-      headers: this.headers,
-    });
+    return this.http.get<ServiceCharge[]>(
+      `${this.apiUrl}/x/api/v2/hsp/serviceCharges`,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   getServiceCharge(id: number): Observable<ServiceCharge> {
-    return this.http.get<ServiceCharge>(`${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`, {
-      headers: this.headers,
-    });
+    return this.http.get<ServiceCharge>(
+      `${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   createServiceCharge(charge: ServiceCharge): Observable<ServiceCharge> {
-    return this.http.post<ServiceCharge>(`${this.apiUrl}/x/api/v2/hsp/serviceCharges`, charge, {
-      headers: this.headers,
-    });
+    return this.http.post<ServiceCharge>(
+      `${this.apiUrl}/x/api/v2/hsp/serviceCharges`,
+      charge,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
-  updateServiceCharge(id: number, charge: ServiceCharge): Observable<ServiceCharge> {
-    return this.http.put<ServiceCharge>(`${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`, charge, {
-      headers: this.headers,
-    });
+  updateServiceCharge(
+    id: number,
+    charge: ServiceCharge,
+  ): Observable<ServiceCharge> {
+    return this.http.put<ServiceCharge>(
+      `${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`,
+      charge,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   deleteServiceCharge(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`, {
-      headers: this.headers,
-    });
+    return this.http.delete<void>(
+      `${this.apiUrl}/x/api/v2/hsp/serviceCharges/${id}`,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   // ══════════════════════════════════════════════════════
@@ -505,14 +710,15 @@ export class HotelserviceService {
       catchError((err) => {
         console.error('ERROR fetching rooms:', err);
         return throwError(() => err);
-      })
+      }),
     );
   }
 
   private fetchRooms(filters: RoomFilters = {}): Observable<Room[]> {
     let params = new HttpParams();
     if (filters.status) params = params.set('status', filters.status);
-    if (filters.roomTypeId) params = params.set('roomTypeId', filters.roomTypeId.toString());
+    if (filters.roomTypeId)
+      params = params.set('roomTypeId', filters.roomTypeId.toString());
     return this.http.get<Room[]>(`${this.apiUrl}/x/api/v2/hsp/rooms`, {
       headers: this.headers,
       params,
@@ -559,7 +765,7 @@ export class HotelserviceService {
         catchError((error) => {
           console.error('Error creating room:', error);
           return throwError(() => error);
-        })
+        }),
       );
   }
 
@@ -570,17 +776,28 @@ export class HotelserviceService {
         headers: this.headers,
       })
       .pipe(
-        tap(() => { this.roomsLoaded = false; }),
-        catchError((err) => { console.error('Error updating room:', err); return throwError(() => err); })
+        tap(() => {
+          this.roomsLoaded = false;
+        }),
+        catchError((err) => {
+          console.error('Error updating room:', err);
+          return throwError(() => err);
+        }),
       );
   }
 
   deleteRoom(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/x/api/v2/hsp/rooms/${id}`, {
-      headers: this.headers,
-    }).pipe(tap(() => {
-      this.roomsCache$.next(this.roomsCache$.getValue().filter((r) => r.id !== id));
-    }));
+    return this.http
+      .delete<void>(`${this.apiUrl}/x/api/v2/hsp/rooms/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.roomsCache$.next(
+            this.roomsCache$.getValue().filter((r) => r.id !== id),
+          );
+        }),
+      );
   }
 
   // ══════════════════════════════════════════════════════
@@ -592,16 +809,21 @@ export class HotelserviceService {
     if (this.guestsLoaded && this.guestsCache$.getValue().length > 0) {
       return of(this.guestsCache$.getValue());
     }
-    return this.http.get<Guest[]>(`${this.apiUrl}/x/api/v2/hsp/guests`, {
-      headers: this.headers,
-    }).pipe(
-      tap((data) => {
-        console.log('DEBUG: RAW GUESTS FROM API:', data);
-        this.guestsCache$.next(data);
-        this.guestsLoaded = true;
-      }),
-      catchError((err) => { console.error('Error fetching guests:', err); return throwError(() => err); })
-    );
+    return this.http
+      .get<Guest[]>(`${this.apiUrl}/x/api/v2/hsp/guests`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((data) => {
+          console.log('DEBUG: RAW GUESTS FROM API:', data);
+          this.guestsCache$.next(data);
+          this.guestsLoaded = true;
+        }),
+        catchError((err) => {
+          console.error('Error fetching guests:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   searchGuests(query: string): Observable<Guest[]> {
@@ -612,29 +834,43 @@ export class HotelserviceService {
     });
   }
 
-
-
   createGuest(guest: Guest): Observable<Guest> {
-    return this.http.post<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests`, guest, {
-      headers: this.headers,
-    }).pipe(tap((created) => {
-      this.guestsCache$.next([...this.guestsCache$.getValue(), created]);
-    }));
+    return this.http
+      .post<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests`, guest, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((created) => {
+          this.guestsCache$.next([...this.guestsCache$.getValue(), created]);
+        }),
+      );
   }
 
   updateGuest(id: any, guest: Guest): Observable<Guest> {
     const fixedId = this.getId(id);
-    return this.http.put<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${fixedId}`, guest, {
-      headers: this.headers,
-    }).pipe(tap(() => { this.guestsLoaded = false; }));
+    return this.http
+      .put<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${fixedId}`, guest, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.guestsLoaded = false;
+        }),
+      );
   }
 
   deleteGuest(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/x/api/v2/hsp/guests/${id}`, {
-      headers: this.headers,
-    }).pipe(tap(() => {
-      this.guestsCache$.next(this.guestsCache$.getValue().filter((g) => g.id !== id));
-    }));
+    return this.http
+      .delete<void>(`${this.apiUrl}/x/api/v2/hsp/guests/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.guestsCache$.next(
+            this.guestsCache$.getValue().filter((g) => g.id !== id),
+          );
+        }),
+      );
   }
 
   /** Resolve a guest object from ID or Guest reference */
@@ -642,16 +878,25 @@ export class HotelserviceService {
     if (typeof guest === 'object' && guest !== null) {
       return `${guest.title || ''} ${guest.firstName} ${guest.lastName}`.trim();
     }
-    const cached = this.guestsCache$.getValue().find((g) => g.id === guest);
-    return cached ? `${cached.title || ''} ${cached.firstName} ${cached.lastName}`.trim() : `Guest #${guest}`;
+    const cached = this.guestsCache$
+      .getValue()
+      .find((g) => String(this.getId(g)) === String(guest));
+    return cached
+      ? `${cached.title || ''} ${cached.firstName} ${cached.lastName}`.trim()
+      : `Guest #${guest}`;
   }
 
   getGuest(id: number): Observable<Guest> {
-    return this.http.get<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${id}`, {
-      headers: this.headers,
-    }).pipe(
-      catchError((err) => { console.error('Error fetching guest:', err); return throwError(() => err); })
-    );
+    return this.http
+      .get<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        catchError((err) => {
+          console.error('Error fetching guest:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   // ══════════════════════════════════════════════════════
@@ -663,17 +908,22 @@ export class HotelserviceService {
     if (this.bookingsLoaded && this.bookingsCache$.getValue().length > 0) {
       return of(this.bookingsCache$.getValue());
     }
-    return this.http.get<any[]>(`${this.apiUrl}/x/api/v2/hsp/bookings`, {
-      headers: this.headers,
-    }).pipe(
-      map(list => list.map(b => this.normalizeBooking(b))),
-      tap((data) => {
-        console.log('DEBUG: RAW BOOKINGS FROM API:', data);
-        this.bookingsCache$.next(data);
-        this.bookingsLoaded = true;
-      }),
-      catchError((err) => { console.error('Error fetching bookings:', err); return throwError(() => err); })
-    );
+    return this.http
+      .get<any[]>(`${this.apiUrl}/x/api/v2/hsp/bookings`, {
+        headers: this.headers,
+      })
+      .pipe(
+        map((list) => list.map((b) => this.normalizeBooking(b))),
+        tap((data) => {
+          console.log('DEBUG: RAW BOOKINGS FROM API:', data);
+          this.bookingsCache$.next(data);
+          this.bookingsLoaded = true;
+        }),
+        catchError((err) => {
+          console.error('Error fetching bookings:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   refreshBookingsCache(): void {
@@ -681,47 +931,67 @@ export class HotelserviceService {
   }
 
   getBooking(id: number): Observable<Booking> {
-    return this.http.get<any>(`${this.apiUrl}/x/api/v2/hsp/bookings/${id}`, {
-      headers: this.headers,
-    }).pipe(
-      map(res => this.normalizeBooking(res)),
-      catchError((err) => { console.error('Error fetching booking:', err); return throwError(() => err); })
-    );
+    return this.http
+      .get<any>(`${this.apiUrl}/x/api/v2/hsp/bookings/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        map((res) => this.normalizeBooking(res)),
+        catchError((err) => {
+          console.error('Error fetching booking:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   createBooking(booking: Booking): Observable<Booking> {
     const payload = this.prepareBookingPayload(booking);
-    console.log('DEBUG: Creating booking with payload:', JSON.stringify(payload));
-    return this.http.post<any>(`${this.apiUrl}/x/api/v2/hsp/bookings`, payload, {
-      headers: this.headers,
-    }).pipe(
-      map(res => this.normalizeBooking(res)),
-      tap((created) => {
-        this.bookingsCache$.next([...this.bookingsCache$.getValue(), created]);
-      }),
-      catchError((err) => { 
-        console.error('DEBUG: ERROR creating booking:', err);
-        if (err.error) console.error('DEBUG: Error body:', err.error);
-        return throwError(() => err); 
-      })
+    console.log(
+      'DEBUG: Creating booking with payload:',
+      JSON.stringify(payload),
     );
+    return this.http
+      .post<any>(`${this.apiUrl}/x/api/v2/hsp/bookings`, payload, {
+        headers: this.headers,
+      })
+      .pipe(
+        map((res) => this.normalizeBooking(res)),
+        tap((created) => {
+          this.bookingsCache$.next([
+            ...this.bookingsCache$.getValue(),
+            created,
+          ]);
+        }),
+        catchError((err) => {
+          console.error('DEBUG: ERROR creating booking:', err);
+          if (err.error) console.error('DEBUG: Error body:', err.error);
+          return throwError(() => err);
+        }),
+      );
   }
 
   updateBooking(id: any, booking: Booking): Observable<Booking> {
     const fixedId = this.getId(id);
     const payload = this.prepareBookingPayload(booking);
-    console.log(`DEBUG: Updating booking #${fixedId} with payload:`, JSON.stringify(payload));
-    return this.http.put<any>(`${this.apiUrl}/x/api/v2/hsp/bookings/${fixedId}`, payload, {
-      headers: this.headers,
-    }).pipe(
-      map(res => this.normalizeBooking(res)),
-      tap(() => { this.bookingsLoaded = false; }),
-      catchError((err) => { 
-        console.error('DEBUG: ERROR updating booking:', err);
-        if (err.error) console.error('DEBUG: Error body:', err.error);
-        return throwError(() => err); 
-      })
+    console.log(
+      `DEBUG: Updating booking #${fixedId} with payload:`,
+      JSON.stringify(payload),
     );
+    return this.http
+      .put<any>(`${this.apiUrl}/x/api/v2/hsp/bookings/${fixedId}`, payload, {
+        headers: this.headers,
+      })
+      .pipe(
+        map((res) => this.normalizeBooking(res)),
+        tap(() => {
+          this.bookingsLoaded = false;
+        }),
+        catchError((err) => {
+          console.error('DEBUG: ERROR updating booking:', err);
+          if (err.error) console.error('DEBUG: Error body:', err.error);
+          return throwError(() => err);
+        }),
+      );
   }
 
   getBookingsByStatus(status: BookingStatus): Observable<Booking[]> {
@@ -732,71 +1002,64 @@ export class HotelserviceService {
     });
   }
 
-  getCheckInBookings(): Observable<Booking[]> { return this.getBookingsByStatus('CHECKED_IN'); }
-  getCheckOutBookings(): Observable<Booking[]> { return this.getBookingsByStatus('CHECKED_OUT'); }
-  getNoShowBookings(): Observable<Booking[]> { return this.getBookingsByStatus('NO_SHOW'); }
-  getPendingBookings(): Observable<Booking[]> { return this.getBookingsByStatus('PENDING'); }
-  getCancelledBookings(): Observable<Booking[]> { return this.getBookingsByStatus('CANCELLED'); }
-  getConfirmedBookings(): Observable<Booking[]> { return this.getBookingsByStatus('CONFIRMED'); }
+  getCheckInBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('CHECKED_IN');
+  }
+  getCheckOutBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('CHECKED_OUT');
+  }
+  getNoShowBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('NO_SHOW');
+  }
+  getPendingBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('PENDING');
+  }
+  getCancelledBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('CANCELLED');
+  }
+  getConfirmedBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('CONFIRMED');
+  }
 
   deleteBooking(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/x/api/v2/hsp/bookings/${id}`, {
-      headers: this.headers,
-    }).pipe(tap(() => {
-      this.bookingsCache$.next(this.bookingsCache$.getValue().filter((b) => b.id !== id));
-    }));
+    return this.http
+      .delete<void>(`${this.apiUrl}/x/api/v2/hsp/bookings/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.bookingsCache$.next(
+            this.bookingsCache$.getValue().filter((b) => b.id !== id),
+          );
+        }),
+      );
   }
 
   getBookingsByGuest(guestId: number): Observable<Booking[]> {
     const params = new HttpParams().set('guestId', guestId.toString());
-    return this.http.get<Booking[]>(`${this.apiUrl}/x/api/v2/hsp/bookings`, {
-      headers: this.headers,
-      params,
-    }).pipe(catchError((err) => { console.error('Error fetching guest bookings:', err); return throwError(() => err); }));
+    return this.http
+      .get<Booking[]>(`${this.apiUrl}/x/api/v2/hsp/bookings`, {
+        headers: this.headers,
+        params,
+      })
+      .pipe(
+        catchError((err) => {
+          console.error('Error fetching guest bookings:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   getRoomsAvailable(checkin: string, checkout: string): Observable<Room[]> {
     const params = new HttpParams()
       .set('checkin', checkin)
       .set('checkout', checkout);
-    return this.http.get<Room[]>(`${this.apiUrl}/x/api/v2/hsp/rooms/available`, {
-      headers: this.headers,
-      params,
-    }).pipe(catchError(() => this.getRooms()));
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  BOOKING DETAILS
-  // ══════════════════════════════════════════════════════
-
-  getBookingDetails(bookingId: number): Observable<BookingDetail[]> {
-    return this.http.get<BookingDetail[]>(
-      `${this.apiUrl}/x/api/v2/hsp/bookingDetails?booking=${bookingId}`,
-      { headers: this.headers }
-    );
-  }
-
-  createBookingDetail(bookingDetail: BookingDetail): Observable<BookingDetail> {
-    return this.http.post<BookingDetail>(
-      `${this.apiUrl}/x/api/v2/hsp/bookingDetails`,
-      bookingDetail,
-      { headers: this.headers }
-    );
-  }
-
-  updateBookingDetail(id: number, bookingDetail: BookingDetail): Observable<BookingDetail> {
-    return this.http.put<BookingDetail>(
-      `${this.apiUrl}/x/api/v2/hsp/bookingDetails/${id}`,
-      bookingDetail,
-      { headers: this.headers }
-    );
-  }
-
-  deleteBookingDetail(id: number): Observable<void> {
-    return this.http.delete<void>(
-      `${this.apiUrl}/x/api/v2/hsp/bookingDetails/${id}`,
-      { headers: this.headers }
-    );
+    return this.http
+      .get<Room[]>(`${this.apiUrl}/x/api/v2/hsp/rooms/available`, {
+        headers: this.headers,
+        params,
+      })
+      .pipe(catchError(() => this.getRooms()));
   }
 
   // ══════════════════════════════════════════════════════
@@ -808,12 +1071,20 @@ export class HotelserviceService {
     if (this.paymentsLoaded && this.paymentsCache$.getValue().length > 0) {
       return of(this.paymentsCache$.getValue());
     }
-    return this.http.get<Payment[]>(`${this.apiUrl}/x/api/v2/hsp/payments`, {
-      headers: this.headers,
-    }).pipe(
-      tap((data) => { this.paymentsCache$.next(data); this.paymentsLoaded = true; }),
-      catchError((err) => { console.error('Error fetching payments:', err); return throwError(() => err); })
-    );
+    return this.http
+      .get<Payment[]>(`${this.apiUrl}/x/api/v2/hsp/payments`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((data) => {
+          this.paymentsCache$.next(data);
+          this.paymentsLoaded = true;
+        }),
+        catchError((err) => {
+          console.error('Error fetching payments:', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   refreshPaymentsCache(): void {
@@ -821,41 +1092,62 @@ export class HotelserviceService {
   }
 
   getPayment(id: number): Observable<Payment> {
-    return this.http.get<Payment>(`${this.apiUrl}/x/api/v2/hsp/payments/${id}`, {
-      headers: this.headers,
-    });
+    return this.http.get<Payment>(
+      `${this.apiUrl}/x/api/v2/hsp/payments/${id}`,
+      {
+        headers: this.headers,
+      },
+    );
   }
 
   createPayment(payment: Payment): Observable<Payment> {
-    return this.http.post<Payment>(
-      `${this.apiUrl}/x/api/v2/hsp/payments`,
-      payment,
-      { headers: this.headers }
-    ).pipe(tap((created) => {
-      this.paymentsCache$.next([...this.paymentsCache$.getValue(), created]);
-    }));
+    return this.http
+      .post<Payment>(`${this.apiUrl}/x/api/v2/hsp/payments`, payment, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((created) => {
+          this.paymentsCache$.next([
+            ...this.paymentsCache$.getValue(),
+            created,
+          ]);
+        }),
+      );
   }
 
   updatePayment(id: number, payment: Payment): Observable<Payment> {
-    return this.http.put<Payment>(
-      `${this.apiUrl}/x/api/v2/hsp/payments/${id}`,
-      payment,
-      { headers: this.headers }
-    ).pipe(tap(() => { this.paymentsLoaded = false; }));
+    return this.http
+      .put<Payment>(`${this.apiUrl}/x/api/v2/hsp/payments/${id}`, payment, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.paymentsLoaded = false;
+        }),
+      );
   }
 
   deletePayment(id: number): Observable<void> {
-    return this.http.delete<void>(
-      `${this.apiUrl}/x/api/v2/hsp/payments/${id}`,
-      { headers: this.headers }
-    ).pipe(tap(() => {
-      this.paymentsCache$.next(this.paymentsCache$.getValue().filter((p) => p.id !== id));
-    }));
+    return this.http
+      .delete<void>(`${this.apiUrl}/x/api/v2/hsp/payments/${id}`, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap(() => {
+          this.paymentsCache$.next(
+            this.paymentsCache$.getValue().filter((p) => p.id !== id),
+          );
+        }),
+      );
   }
 
   getPaymentsByBooking(bookingId: number): Observable<Payment[]> {
     return this.getPayments().pipe(
-      map((payments) => payments.filter((p) => p.bookingId === bookingId || p.bookingg === bookingId))
+      map((payments) =>
+        payments.filter(
+          (p) => p.bookingId === bookingId || p.bookingg === bookingId,
+        ),
+      ),
     );
   }
 
@@ -866,37 +1158,42 @@ export class HotelserviceService {
   getMaintenanceRequests(): Observable<MaintenainceRequest[]> {
     return this.http.get<MaintenainceRequest[]>(
       `${this.apiUrl}/x/api/v2/hsp/maintenanceRecords`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
   getMaintenanceRequest(id: number): Observable<MaintenainceRequest> {
     return this.http.get<MaintenainceRequest>(
       `${this.apiUrl}/x/api/v2/hsp/maintenanceRecords/${id}`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
-  createMaintenanceRequest(request: MaintenainceRequest): Observable<MaintenainceRequest> {
+  createMaintenanceRequest(
+    request: MaintenainceRequest,
+  ): Observable<MaintenainceRequest> {
     return this.http.post<MaintenainceRequest>(
       `${this.apiUrl}/x/api/v2/hsp/maintenanceRecords`,
       request,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
-  updateMaintenanceRequest(id: number, request: MaintenainceRequest): Observable<MaintenainceRequest> {
+  updateMaintenanceRequest(
+    id: number,
+    request: MaintenainceRequest,
+  ): Observable<MaintenainceRequest> {
     return this.http.put<MaintenainceRequest>(
       `${this.apiUrl}/x/api/v2/hsp/maintenanceRecords/${id}`,
       request,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
   deleteMaintenanceRequest(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/x/api/v2/hsp/maintenanceRecords/${id}`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
@@ -907,37 +1204,42 @@ export class HotelserviceService {
   getHousekeepingRecords(): Observable<HousekeepingRecord[]> {
     return this.http.get<HousekeepingRecord[]>(
       `${this.apiUrl}/x/api/v2/hsp/housekeepingRecords`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
   getHousekeepingRecord(id: number): Observable<HousekeepingRecord> {
     return this.http.get<HousekeepingRecord>(
       `${this.apiUrl}/x/api/v2/hsp/housekeepingRecords/${id}`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
-  createHousekeepingRecord(record: HousekeepingRecord): Observable<HousekeepingRecord> {
+  createHousekeepingRecord(
+    record: HousekeepingRecord,
+  ): Observable<HousekeepingRecord> {
     return this.http.post<HousekeepingRecord>(
       `${this.apiUrl}/x/api/v2/hsp/housekeepingRecords`,
       record,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
-  updateHousekeepingRecord(id: number, record: HousekeepingRecord): Observable<HousekeepingRecord> {
+  updateHousekeepingRecord(
+    id: number,
+    record: HousekeepingRecord,
+  ): Observable<HousekeepingRecord> {
     return this.http.put<HousekeepingRecord>(
       `${this.apiUrl}/x/api/v2/hsp/housekeepingRecords/${id}`,
       record,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
   deleteHousekeepingRecord(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/x/api/v2/hsp/housekeepingRecords/${id}`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
@@ -949,7 +1251,7 @@ export class HotelserviceService {
     return this.http.post(
       `${this.apiUrl}/x/api/v2/hsp/scan/id`,
       { image: imageData },
-      { headers: this.headers }
+      { headers: this.headers },
     );
   }
 
@@ -962,7 +1264,14 @@ export class HotelserviceService {
   }
 
   getBookingStatuses(): BookingStatus[] {
-    return ['CONFIRMED', 'PENDING', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT', 'NO_SHOW'];
+    return [
+      'CONFIRMED',
+      'PENDING',
+      'CANCELLED',
+      'CHECKED_IN',
+      'CHECKED_OUT',
+      'NO_SHOW',
+    ];
   }
 
   getPaymentMethods(): PaymentMethod[] {
@@ -974,7 +1283,14 @@ export class HotelserviceService {
   }
 
   getMaintenanceTasks(): string[] {
-    return ['CLEANING_REQUIRED', 'REPAIR_REQUIRED', 'INSPECTION_REQUIRED', 'DEEP_CLEANING', 'PEST_CONTROL', 'GENERAL_MAINTENANCE'];
+    return [
+      'CLEANING_REQUIRED',
+      'REPAIR_REQUIRED',
+      'INSPECTION_REQUIRED',
+      'DEEP_CLEANING',
+      'PEST_CONTROL',
+      'GENERAL_MAINTENANCE',
+    ];
   }
 
   getMaintenancePriorities(): string[] {
@@ -991,8 +1307,18 @@ export class HotelserviceService {
 
   getCountries(): string[] {
     return [
-      'Nigeria', 'United States', 'United Kingdom', 'Canada', 'Australia',
-      'Germany', 'France', 'Ghana', 'South Africa', 'Kenya', 'Egypt', 'Morocco',
+      'Nigeria',
+      'United States',
+      'United Kingdom',
+      'Canada',
+      'Australia',
+      'Germany',
+      'France',
+      'Ghana',
+      'South Africa',
+      'Kenya',
+      'Egypt',
+      'Morocco',
     ];
   }
 
@@ -1010,7 +1336,10 @@ export class HotelserviceService {
     return date.toISOString().split('T')[0];
   }
 
-  calculateNights(checkinDate: string | null | undefined, checkoutDate: string | null | undefined): number {
+  calculateNights(
+    checkinDate: string | null | undefined,
+    checkoutDate: string | null | undefined,
+  ): number {
     if (!checkinDate || !checkoutDate) return 0;
     const checkin = new Date(checkinDate);
     const checkout = new Date(checkoutDate);

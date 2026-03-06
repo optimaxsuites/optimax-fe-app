@@ -58,13 +58,25 @@ import { AllroomsComponent } from './ui/bookings/allrooms/allrooms.component';
 import { RoomsheroComponent } from './ui/bookings/roomshero/roomshero.component';
 import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.component';
 import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
-import { BookingformComponent } from './ui/bookings/bookingform/bookingform.component';
+
 import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 import { JwtHelperService, JWT_OPTIONS, JwtModule } from '@auth0/angular-jwt';
+import { BookingCreateComponent } from './ui/view/room-management/booking-create/booking-create.component';
+import { BookingDetailComponent } from './ui/view/room-management/booking-detail/booking-detail.component';
+import { BookingRoomFirstComponent } from './ui/view/room-management/booking-room-first/booking-room-first.component';
+import { BookingsListComponent } from './ui/view/room-management/bookings/bookings-list.component';
+import { GuestProfileComponent } from './ui/view/room-management/guest-profile/guest-profile.component';
+import { GuestsListComponent } from './ui/view/room-management/guests/guests-list.component';
+import { HousekeepingComponent } from './ui/view/room-management/housekeeping/housekeeping.component';
+import { PaymentsListComponent } from './ui/view/room-management/payments/payments-list.component';
+import { RoomTypesListComponent } from './ui/view/room-management/room-types/room-types-list.component';
+import { RoomsListComponent } from './ui/view/room-management/rooms/rooms-list.component';
+import { ServiceChargesListComponent } from './ui/view/room-management/service-charges/service-charges-list.component';
+import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -104,8 +116,19 @@ import { JwtHelperService, JWT_OPTIONS, JwtModule } from '@auth0/angular-jwt';
     RoomsheroComponent,
     RoomdesignComponent,
     RoomfooterComponent,
-    BookingformComponent,
     MultipleBookingsComponent,
+    RoomTypesListComponent,
+    RoomsListComponent,
+    ServicesListComponent,
+    ServiceChargesListComponent,
+    GuestsListComponent,
+    GuestProfileComponent,
+    BookingsListComponent,
+    BookingCreateComponent,
+    BookingDetailComponent,
+    BookingRoomFirstComponent,
+    PaymentsListComponent,
+    HousekeepingComponent,
   ],
   imports: [
     BrowserAnimationsModule,

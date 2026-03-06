@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
   HotelserviceService,
@@ -36,12 +36,17 @@ export class BookingsListComponent implements OnInit {
     'CONFIRMED', 'PENDING', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT', 'NO_SHOW',
   ];
 
+  uuid = '';
+
   constructor(
     private hotelService: HotelserviceService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.loadAll();
   }
 
@@ -176,11 +181,15 @@ export class BookingsListComponent implements OnInit {
   get pendingCount(): number { return this.bookings.filter(b => b.status === 'PENDING').length; }
 
   viewBooking(booking: Booking): void {
-    this.router.navigate(['/hospitality/bookings', booking.id]);
+    this.router.navigate(['/hospitality', this.uuid, 'bookings', booking.id]);
   }
 
   createBooking(): void {
-    this.router.navigate(['/hospitality/bookings/create']);
+    this.router.navigate(['/hospitality', this.uuid, 'bookings', 'create']);
+  }
+
+  createRoomFirstBooking(): void {
+    this.router.navigate(['/hospitality', this.uuid, 'bookings', 'room-select']);
   }
 
   checkIn(booking: Booking, event: Event): void {

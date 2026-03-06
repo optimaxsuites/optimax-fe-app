@@ -1,60 +1,98 @@
 /* General styles */
+:host {
+    --tab-bg: #f7f9fc;
+    --tab-border: #e5e7eb;
+    --tab-text: #475467;
+    --tab-text-active: #2E6276;
+    --tab-surface: #ffffff;
+    --tab-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.sales {
+    padding: 12px 16px 0 16px;
+    background: radial-gradient(1200px 300px at 20% -10%, #f0fdf4 0%, transparent 60%),
+                radial-gradient(900px 260px at 90% -20%, #eff6ff 0%, transparent 60%);
+    border-radius: 16px;
+}
+
 .link-wrapper {
     display: flex;
-   
-    padding: 0 16px;
- 
-  }
-  
-  .tab-btn {
-    color: white;
-    border: none;
+    gap: 8px;
+    padding: 8px;
+    background: var(--tab-surface);
+    border: 1px solid var(--tab-border);
+    border-radius: 999px;
+    box-shadow: var(--tab-shadow);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.link-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-btn {
+    border: 1px solid transparent;
     cursor: pointer;
-    font-size: 15px;
-    padding: 12px 24px;
-    border-radius: 4px;
-    @apply text-gray-600
-  }
-  
-  .tab-btn:hover {
-    @apply bg-gray-50 text-gray-700
-  }
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    transition: all 0.2s ease;
+    @apply text-gray-600;
+}
 
-  .active{
-    border-bottom: 2px solid #008000;
-    border-radius: 0px;
-    @apply text-[#008000] 
-  }
-  
-  .settings-tab-menu {
-    position: relative;
-    display: inline-block;
-  }
-  
+.tab-btn:hover {
+    @apply bg-gray-50 text-gray-800;
+}
 
-  
-  .dropdown-item {
+.active {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: var(--tab-text-active);
+    @apply text-customBlue;
+}
+
+.tab-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.tab-label {
+    white-space: nowrap;
+}
+
+.tab-content {
+    padding: 16px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
     display: block;
-    padding: 8px 16px;
+    padding: 10px 16px;
     background-color: white;
     border: none;
     width: 100%;
     text-align: left;
     cursor: pointer;
     font-size: 14px;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  .dropdown-item:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .dropdown-item:last-child {
-    border-bottom: none;
-  }
-  
-  .tab-content {
+    border-bottom: 1px solid #f3f4f6;
+}
 
-    padding: 10px 16px;
-  }
+.dropdown-item:hover {
+    background-color: #f9fafb;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
   

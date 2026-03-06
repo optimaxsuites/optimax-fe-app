@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   HotelserviceService,
   Room,
@@ -22,6 +23,7 @@ export class RoomsListComponent implements OnInit {
   selectedRoom: Room | null = null;
   form!: FormGroup;
   viewMode: 'table' | 'grid' = 'table';
+  uuid = '';
 
   // Filters
   filterStatus: string = '';
@@ -44,6 +46,21 @@ export class RoomsListComponent implements OnInit {
     'CLEANING',
   ];
 
+  suggestedAmenities = [
+    { name: 'WiFi', icon: 'fa-solid fa-wifi' },
+    { name: 'AC', icon: 'fa-solid fa-snowflake' },
+    { name: 'TV', icon: 'fa-solid fa-tv' },
+    { name: 'Breakfast', icon: 'fa-solid fa-mug-hot' },
+    { name: 'Pool', icon: 'fa-solid fa-person-swimming' },
+    { name: 'Gym', icon: 'fa-solid fa-dumbbell' },
+    { name: 'Parking', icon: 'fa-solid fa-car' },
+    { name: 'Bar', icon: 'fa-solid fa-martini-glass-cocktail' },
+    { name: 'Kitchen', icon: 'fa-solid fa-kitchen-set' },
+    { name: 'Workspace', icon: 'fa-solid fa-briefcase' },
+    { name: 'Lounge', icon: 'fa-solid fa-couch' },
+    { name: 'Laundry', icon: 'fa-solid fa-shirt' }
+  ];
+
   // Dummy images for grid view
   dummyImages: string[] = [
     'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop',
@@ -56,10 +73,13 @@ export class RoomsListComponent implements OnInit {
 
   constructor(
     private hotelService: HotelserviceService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.initForm();
     this.loadRooms();
     this.loadRoomTypes();
@@ -213,6 +233,22 @@ export class RoomsListComponent implements OnInit {
     const amenities = [...(this.form.get('amenities')?.value || [])];
     amenities.splice(index, 1);
     this.form.patchValue({ amenities });
+  }
+
+  toggleAmenity(name: string): void {
+    const amenities = [...(this.form.get('amenities')?.value || [])];
+    const index = amenities.indexOf(name);
+    if (index > -1) {
+      amenities.splice(index, 1);
+    } else {
+      amenities.push(name);
+    }
+    this.form.patchValue({ amenities });
+  }
+
+  isAmenitySelected(name: string): boolean {
+    const amenities = this.form.get('amenities')?.value || [];
+    return amenities.includes(name);
   }
 
   saveRoom(): void {

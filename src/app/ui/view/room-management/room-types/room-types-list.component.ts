@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { HotelserviceService, RoomTypeDTO, Room } from '../../../hospitality/hotelservice.service';
 
 @Component({
@@ -15,6 +16,7 @@ export class RoomTypesListComponent implements OnInit {
   isEditing = false;
   selectedRoomType: RoomTypeDTO | null = null;
   form!: FormGroup;
+  uuid = '';
 
   // Toast
   toastMessage = '';
@@ -23,10 +25,13 @@ export class RoomTypesListComponent implements OnInit {
 
   constructor(
     private hotelService: HotelserviceService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.initForm();
     this.loadRoomTypes();
     this.loadRooms();

@@ -1,0 +1,18 @@
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+}
+
+:host {
+  display: block;
+}
+
+.group {
+  &:hover {
+    img {
+      transform: scale(1.05);
+    }
+  }
+}

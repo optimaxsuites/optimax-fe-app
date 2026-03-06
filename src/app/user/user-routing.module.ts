@@ -14,6 +14,8 @@ import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
 import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 
+import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -26,13 +28,16 @@ const routes: Routes = [
   },
 
   {
-    path: 'user/bookings/:uuid',
-    component: HomeComponent,
+    path: 'bookings/:uuid',
+    component: BookingsShellComponent,
+    children: [
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
+      { path: 'home', component: HomeComponent },
+      { path: 'rooms', component: AllroomsComponent },
+      { path: 'booking-form/:id', component: BookingformComponent },
+      { path: 'multiple-rooms', component: MultipleBookingsComponent },
+    ],
   },
-
-  { path: 'user/rooms/:uuid', component: AllroomsComponent },
-  { path: 'user/booking-form/:uuid', component: BookingformComponent },
-  { path: 'user/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
   {
     path: 'services/:uuid',

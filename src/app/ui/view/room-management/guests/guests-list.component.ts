@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HotelserviceService, Guest } from '../../../hospitality/hotelservice.service';
 
 @Component({
@@ -26,13 +26,18 @@ export class GuestsListComponent implements OnInit {
   genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   countries: string[] = [];
 
+  uuid = '';
+
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.countries = this.hotelService.getCountries();
     this.initForm();
     this.loadGuests();
@@ -82,7 +87,7 @@ export class GuestsListComponent implements OnInit {
   }
 
   viewProfile(guest: Guest): void {
-    this.router.navigate(['/hospitality/guests', guest.id]);
+    this.router.navigate(['/hospitality', this.uuid, 'guests', guest.id]);
   }
 
   openCreateDrawer(): void {

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { HotelserviceService, Room as ApiRoom } from '../../hospitality/hotelservice.service';
 
 interface Room {
   id: number;
@@ -35,127 +36,114 @@ export class AllroomsComponent implements OnInit {
   private readonly sampleRooms: Room[] = [
     {
       id: 1,
-      name: 'Studio Apartment',
-      description:
-        'Modern studio apartment with kitchen facilities and city access',
-      price: 183,
-      capacity: 2,
-      size: 28,
-      amenities: ['Free WiFi', 'Air Conditioning', 'TV', 'Mini Bar', 'Safe'],
-      imageUrl:
-        'https://images.unsplash.com/photo-1566669437685-5f63c6a685f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 8.6,
+      name: 'Luxury Penthouse',
+      description: 'Stunning 4-bedroom penthouse with private pool and panoramic views of the Atlantic',
+      price: 450,
+      capacity: 8,
+      size: 450,
+      amenities: ['Private Pool', 'Ocean View', '24/7 Butler', 'Smart Home', 'High-Speed Wi-Fi'],
+      imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800',
+      rating: 9.8,
       available: true,
     },
     {
       id: 2,
-      name: 'Presidential Suite',
-      description:
-        'Contemporary hotel with modern amenities and great connectivity',
-      price: 103,
-      capacity: 1,
-      size: 24,
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'TV',
-        'Free cancellation',
-        'No prepayment',
-      ],
-      imageUrl:
-        'https://images.unsplash.com/photo-1592229505726-ca121043b6ec?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 7.5,
+      name: 'Victoria Island Executive',
+      description: 'Modern executive suite in the heart of VI business district, perfect for the modern traveler',
+      price: 120,
+      capacity: 2,
+      size: 45,
+      amenities: ['Business Center', 'Gym Access', 'Airport Shuttle', 'King Bed', 'Breakfast Included'],
+      imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=800',
+      rating: 9.2,
       available: true,
     },
     {
       id: 3,
-      name: 'Deluxe Room',
-      description: 'Charming boutique hotel in the heart of Amsterdam',
-      price: 245,
-      capacity: 2,
-      size: 35,
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'TV',
-        'Safe',
-        'Private bathroom',
-      ],
-      imageUrl:
-        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 8.9,
+      name: 'Lekki Garden Villa',
+      description: 'Serene garden villa with lush greenery and state-of-the-art entertainment system',
+      price: 280,
+      capacity: 4,
+      size: 120,
+      amenities: ['Private Garden', 'Game Room', 'Chef on Call', 'Secure Parking', 'Ultra-fast Wi-Fi 6'],
+      imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=800',
+      rating: 9.5,
       available: true,
     },
     {
       id: 4,
-      name: 'Deluxe Room',
-      description: 'Luxury accommodation with stunning canal views',
-      price: 320,
-      capacity: 1,
-      size: 40,
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'TV',
-        'Mini Bar',
-        'Safe',
-        'Balcony',
-        'Breakfast Included',
-      ],
-      imageUrl:
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 9.1,
+      name: 'Ikoyi Heritage Suite',
+      description: 'Classic luxury meets modern comfort in this historic Ikoyi residence',
+      price: 350,
+      capacity: 2,
+      size: 85,
+      amenities: ['Clawfoot Tub', 'Vintage Decor', 'Personal Concierge', 'Tea Room', 'Poolside Lounge'],
+      imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
+      rating: 9.6,
       available: true,
     },
     {
       id: 5,
-      name: 'Executive Business Room',
-      description: 'Perfect for business travelers with modern facilities',
-      price: 165,
-      capacity: 1,
-      size: 32,
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'TV',
-        'Free cancellation',
-        'Private bathroom',
-      ],
-      imageUrl:
-        'https://images.unsplash.com/photo-1582719471381-97122a67b73f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 8.2,
+      name: 'Banana Island Retreat',
+      description: 'Exclusive waterfront retreat with unparalleled security and luxury amenities',
+      price: 850,
+      capacity: 6,
+      size: 380,
+      amenities: ['Waterfront', 'Private Yacht Dock', 'Cinema', 'Infinity Pool', 'Helipad Access'],
+      imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
+      rating: 9.9,
       available: true,
     },
     {
       id: 6,
-      name: 'Suites',
-      description: 'Peaceful garden setting with modern comforts',
-      price: 195,
+      name: 'Mainland Cozy Loft',
+      description: 'Chic urban loft for the creative soul, located in the vibrant Ikeja GRA',
+      price: 85,
       capacity: 2,
-      size: 45,
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'TV',
-        'Mini Bar',
-        'Balcony',
-        'No prepayment',
-      ],
-      imageUrl:
-        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      rating: 8.4,
+      size: 35,
+      amenities: ['Creative Workspace', 'Rooftop Bar', 'City View', 'Minimalist Design', 'Coffee Bar'],
+      imageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=800',
+      rating: 8.9,
       available: true,
     },
   ];
 
   rooms: Room[] = [];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private hotelService: HotelserviceService
+  ) {}
 
   ngOnInit(): void {
-    this.rooms = [...this.sampleRooms];
-    this.filteredRooms = [...this.rooms];
-    this.sortRooms();
+    this.loadRooms();
+  }
+
+  loadRooms(): void {
+    this.hotelService.getRooms().subscribe({
+      next: (apiRooms: ApiRoom[]) => {
+        this.rooms = apiRooms.map((room: ApiRoom) => ({
+          id: room.id,
+          name: this.hotelService.getRoomTypeNameById(room.roomType),
+          description: room.description || 'Experience premium luxury in this meticulously designed space.',
+          price: room.rate,
+          capacity: room.maxOccupancy,
+          size: room.floor * 25 + 30, // Dummy size based on floor
+          amenities: room.amenities && room.amenities.length > 0 ? room.amenities : ['Free WiFi', 'Air Conditioning', 'TV'],
+          imageUrl: (room.imageURLs && room.imageURLs.length > 0) ? room.imageURLs[0] : 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
+          rating: 4.5 + (Math.random() * 0.5), // Premium stays get 4.5+ rating
+          available: room.roomStatus === 'AVAILABLE'
+        }));
+        this.filteredRooms = [...this.rooms];
+        this.sortRooms();
+      },
+      error: (err: any) => console.error('Error loading rooms:', err)
+    });
+  }
+
+  viewRoomDetails(room: any): void {
+    // Navigate to booking form (acting as detail page) with room ID as uuid
+    this.router.navigate(['/user/booking-form', room.id]);
   }
 
   getStarRating(rating: number): string {

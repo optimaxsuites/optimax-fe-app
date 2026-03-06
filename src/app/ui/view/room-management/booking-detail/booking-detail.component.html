@@ -75,55 +75,78 @@
                     <div *ngIf="guest" class="flex items-center gap-4">
                         <div
                             class="w-12 h-12 rounded-full bg-customBlue text-white flex items-center justify-center text-lg font-bold shrink-0">
-                            {{ guest.firstName.charAt(0) }}{{ guest.lastName.charAt(0) }}
+                            {{ (guest.firstName || '?').charAt(0) }}{{ (guest.lastName || '?').charAt(0) }}
                         </div>
                         <div class="flex-1">
-                            <p class="text-base font-semibold text-gray-800">{{ guest.title }} {{ guest.firstName }} {{
-                                guest.lastName }}</p>
+                            <p class="text-base font-semibold text-gray-800">
+                                {{ guest.title || '' }} {{ guest.firstName || 'Unknown' }} {{ guest.lastName || 'Guest'
+                                }}
+                            </p>
                             <div class="flex items-center gap-5 mt-1 text-sm text-gray-500">
-                                <span><i class="fa-solid fa-envelope text-gray-400 mr-1.5"></i>{{ guest.email }}</span>
-                                <span><i class="fa-solid fa-phone text-gray-400 mr-1.5"></i>{{ guest.phone }}</span>
+                                <span><i class="fa-solid fa-envelope text-gray-400 mr-1.5"></i>{{ guest.email || 'No
+                                    email' }}</span>
+                                <span><i class="fa-solid fa-phone text-gray-400 mr-1.5"></i>{{ guest.phone || 'No phone'
+                                    }}</span>
                             </div>
-                            <p class="text-sm text-gray-400 mt-1"><i
-                                    class="fa-solid fa-id-card mr-1.5 text-gray-400"></i><span class="font-mono">{{
-                                    guest.idNumber }}</span> · {{ guest.country }}</p>
+                            <p class="text-sm text-gray-400 mt-1">
+                                <i class="fa-solid fa-id-card mr-1.5 text-gray-400"></i>
+                                <span class="font-mono">{{ guest.idNumber || 'No ID' }}</span> · {{ guest.country ||
+                                'N/A' }}
+                            </p>
                         </div>
-                        <a [routerLink]="['/hospitality/guests', guest.id]"
+                        <a *ngIf="guest.id" [routerLink]="['/hospitality', uuid, 'guests', guest.id]"
                             class="text-customBlue text-sm hover:underline font-medium ml-auto">
                             View Profile
                         </a>
                     </div>
-                    <div *ngIf="!guest" class="text-sm text-gray-400">Loading guest info...</div>
+                    <!-- Display raw guest ID if object not loaded -->
+                    <div *ngIf="!guest && booking.guest" class="p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 italic">
+                            Customer: Loading data for Guest #{{ getRoomId(booking.guest) }}...
+                        </p>
+                    </div>
+                    <div *ngIf="!guest && !booking.guest" class="text-sm text-gray-400">No guest assigned to this
+                        booking.</div>
                 </div>
 
-                <!-- Rooms Panel - Enhanced with room type names -->
+                <!-- Rooms Panel -->
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                        <i class="fa-solid fa-door-open text-gray-400 mr-1.5"></i>Room(s)
+                        <i class="fa-solid fa-door-open text-gray-400 mr-1.5"></i>Room(s) Booked
                     </h3>
                     <div class="space-y-3">
                         <div *ngFor="let room of rooms"
-                            class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                            class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                    <i class="fa-solid fa-door-open text-gray-500 text-sm"></i>
+                                <div class="w-10 h-10 bg-customBlue/5 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-door-open text-customBlue text-base"></i>
                                 </div>
                                 <div>
-                                    <span class="text-sm font-medium text-gray-700">Room #{{ room.roomNumber }}</span>
-                                    <span class="text-xs text-gray-400 ml-2">{{ getRoomTypeName(room.roomType) }}</span>
+                                    <p class="text-sm font-bold text-gray-800">Room {{ room.roomNumber || '#' + room.id
+                                        }}</p>
+                                    <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider">
+                                        {{ getRoomTypeName(room.roomType) }} · floor {{ room.floor }}
+                                    </p>
                                 </div>
                             </div>
-                            <span class="text-sm font-medium text-gray-500">Floor {{ room.floor }} · ₦{{ room.rate |
-                                number }}/night</span>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-gray-900">₦{{ room.rate | number }}/night</p>
+                                <p class="text-[10px] font-bold text-customGreen uppercase">Available</p>
+                            </div>
                         </div>
-                        <!-- Fallback if rooms not loaded yet -->
+
+                        <!-- Fallback if full room objects haven't matched yet -->
                         <div *ngIf="rooms.length === 0 && booking.rooms && booking.rooms.length">
                             <div *ngFor="let r of booking.rooms"
-                                class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                    <i class="fa-solid fa-door-open text-gray-500 text-sm"></i>
+                                class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
+                                <div
+                                    class="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300">
+                                    <i class="fa-solid fa-door-open text-base"></i>
                                 </div>
-                                <span class="text-sm font-medium text-gray-700">Room #{{ getRoomId(r) }}</span>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-400 italic">Loading Room #{{ getRoomId(r)
+                                        }}...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -133,21 +156,6 @@
                     </div>
                 </div>
 
-                <!-- Line Items Panel -->
-                <div *ngIf="bookingDetails.length > 0" class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                        <i class="fa-solid fa-concierge-bell text-gray-400 mr-1.5"></i>Additional Services
-                    </h3>
-                    <div class="space-y-2">
-                        <div *ngFor="let d of bookingDetails" class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-700">{{ d.notes || 'Service' }}</p>
-                                <p class="text-xs text-gray-400">{{ d.dateUsed }}</p>
-                            </div>
-                            <span class="text-sm font-semibold text-gray-800">₦{{ d.totalPrice | number }}</span>
-                        </div>
-                    </div>
-                </div>
 
             </div>
 
@@ -157,21 +165,21 @@
                 <!-- Totals -->
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                        <i class="fa-solid fa-receipt text-gray-400 mr-1.5"></i>Charges
+                        <i class="fa-solid fa-receipt text-gray-400 mr-1.5"></i>Charges Breakdown
                     </h3>
-                    <div class="space-y-2">
+                    <div class="space-y-2.5">
                         <div class="flex justify-between text-sm text-gray-600">
-                            <span>Subtotal</span>
-                            <span>₦{{ booking.subTotal | number }}</span>
+                            <span class="font-medium text-gray-400">Accommodation</span>
+                            <span class="font-semibold">₦{{ booking.subTotal | number }}</span>
                         </div>
                         <div *ngIf="booking.taxes && booking.taxes > 0"
                             class="flex justify-between text-sm text-gray-600">
-                            <span>Taxes & Fees</span>
-                            <span>₦{{ booking.taxes | number }}</span>
+                            <span class="font-medium text-gray-400">Taxes</span>
+                            <span class="font-semibold">₦{{ booking.taxes | number }}</span>
                         </div>
                         <div
-                            class="border-t border-gray-100 pt-2 flex justify-between text-base font-bold text-gray-800">
-                            <span>Total</span>
+                            class="border-t border-gray-100 pt-3 flex justify-between text-lg font-black text-gray-900">
+                            <span>Grand Total</span>
                             <span>₦{{ booking.total | number }}</span>
                         </div>
                     </div>
@@ -179,9 +187,15 @@
 
                 <!-- Payments - Enhanced with method badges -->
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                        <i class="fa-solid fa-money-bill-wave text-gray-400 mr-1.5"></i>Payments ({{ payments.length }})
-                    </h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                            <i class="fa-solid fa-money-bill-wave text-gray-400 mr-1.5"></i>Payments
+                        </h3>
+                        <button (click)="showPaymentModal = true"
+                            class="px-3 py-1.5 bg-customGreen/10 text-customGreen text-[11px] font-bold uppercase rounded-lg hover:bg-customGreen/20 transition-all border border-customGreen/20">
+                            + Pay
+                        </button>
+                    </div>
                     <div *ngIf="payments.length > 0" class="space-y-2.5 mb-3">
                         <div *ngFor="let p of payments"
                             class="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
@@ -358,6 +372,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Cancel Booking Modal -->
 <div *ngIf="showCancelModal" class="fixed inset-0 z-50 flex items-center justify-center">

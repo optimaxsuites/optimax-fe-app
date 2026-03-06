@@ -48,12 +48,12 @@ export class NavbarComponent {
   }
 
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
+  onDocumentClick(event: Event): void {
     // Close mobile menu when clicking outside
     const target = event.target as HTMLElement;
     const navbar = target.closest('nav');
     const mobileMenuButton = target.closest(
-      '[aria-label="Toggle navigation menu"]'
+      '[aria-label="Toggle navigation menu"]',
     );
 
     if (!navbar && !mobileMenuButton && this.isMobileMenuOpen) {
