@@ -124,7 +124,6 @@ export class ExpenseFormsModalComponent implements OnInit {
     });
   }
 
-  // ── File drag/drop/upload helpers ──────────────────────────────────────────
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -228,8 +227,6 @@ export class ExpenseFormsModalComponent implements OnInit {
     return baseAmount + baseAmount * taxRate;
   }
 
-  // ── Modals ─────────────────────────────────────────────────────────────────
-
   showCategoryModal = false;
   showMerchantModal = false;
   showTaxModal = false;
@@ -326,7 +323,6 @@ export class ExpenseFormsModalComponent implements OnInit {
   private resetMerchantData() { this.newMerchantData = { name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' }; }
   private resetTaxData()     { this.newTaxData = { name: '', rate: 0, description: '' }; }
 
-  // ── Recurring / Advanced Payment ────────────────────────────────────────────
 
   advancedPaymentData?: RecurringPayment;
   showAdvancedPayment = false;
@@ -341,121 +337,6 @@ export class ExpenseFormsModalComponent implements OnInit {
 
   onAdvancedPaymentCancel() { this.showAdvancedPayment = false; }
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
-
-  submitExpense(form: NgForm): void {
-    if (this.categories.length === 0) {
-      this.messageService.add({ severity: 'error', summary: 'No Categories', detail: 'Please add at least one category.' }); return;
-    }
-    if (this.merchants.length === 0) {
-      this.messageService.add({ severity: 'error', summary: 'No Merchants', detail: 'Please add at least one merchant.' }); return;
-    }
-    if (form.invalid) {
-      form.control.markAllAsTouched();
-      this.messageService.add({ severity: 'error', summary: 'Form Invalid', detail: 'Please fill in all required fields.' }); return;
-    }
-    if (!this.receiptFile) {
-      this.messageService.add({ severity: 'error', summary: 'Missing Receipt', detail: 'Please upload the receipt file.' }); return;
-    }
-    if (this.expenseSummary.paidBy === 'EMPLOYEE' && !this.employeeReceiptFile) {
-      this.messageService.add({ severity: 'error', summary: 'Missing Employee Receipt', detail: 'Please upload the employee receipt file.' }); return;
-    }
-
-    const selectedCategory = this.categories.find(cat => cat.name === this.expenseSummary.category);
-    const selectedMerchant = this.merchants.find(merch => merch.name === this.expenseSummary.merchant);
-    const selectedTax = this.taxRates.find(tax => tax.rate === this.expenseSummary.taxPercentage);
-
-    if (!selectedCategory) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` }); return;
-    }
-    if (!selectedMerchant) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found.` }); return;
-    }
-
-    const apiExpense: any = {
-      name: this.expenseSummary.name || '',
-      description: this.expenseSummary.description || '',
-      eventDate: this.expenseSummary.eventDate || new Date().toISOString().split('T')[0],
-      quantity: this.expenseSummary.quantity || 1,
-      currency: this.selectedCurrency,
-      amount: Number(this.expenseSummary.amount) || 0,
-      status: 'PENDING',
-      paidBy: this.expenseSummary.paidBy?.toUpperCase() || 'EMPLOYEE',
-      receiptReference: this.expenseSummary.receiptReference || '',
-      merchantId: selectedMerchant.id,
-      categoryId: selectedCategory.id,
-      taxId: selectedTax ? selectedTax.id : 1,
-      scheduledPaymentId: 0
-    };
-
-    if (this.advancedPaymentData) {
-      apiExpense.recurringPayment = this.advancedPaymentData;
-    }
-    if (this.billSplitData) {
-      apiExpense.billSplit = this.convertBillSplitToDTO(this.billSplitData);
-    }
-
-    const isNewExpense = !this.expenseSummary.id;
-    const obs = isNewExpense
-      ? this.expenseService.addExpense(apiExpense)
-      : this.expenseService.updateExpense(apiExpense.id, apiExpense);
-
-    obs.subscribe({
-      next: (response: any) => {
-        console.log('Expense saved:', response);
-
-        // ✅ Upload receipts using the saved expense's ID
-        const savedId = String(response.id || this.expenseSummary.id);
-
-        const uploadTasks: Promise<void>[] = [];
-
-        // Upload company receipt
-        if (this.receiptFile) {
-          const companyUpload = this.expenseService
-            .uploadCompanyReceipt(savedId, this.receiptFile)
-            .toPromise()
-            .then(() => console.log('Company receipt uploaded'))
-            .catch(err => console.warn('Company receipt upload failed:', err));
-          uploadTasks.push(companyUpload);
-        }
-
-        // Upload employee receipt if paid by employee
-        if (this.expenseSummary.paidBy?.toUpperCase() === 'EMPLOYEE' && this.employeeReceiptFile) {
-          const employeeUpload = this.expenseService
-            .uploadEmployeeReceipt(savedId, this.employeeReceiptFile)
-            .toPromise()
-            .then(() => console.log('Employee receipt uploaded'))
-            .catch(err => console.warn('Employee receipt upload failed:', err));
-          uploadTasks.push(employeeUpload);
-        }
-
-        // Navigate after all uploads complete (or fail gracefully)
-        Promise.allSettled(uploadTasks).then(() => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Expense Submitted',
-            detail: 'Expense and receipts successfully submitted.'
-          });
-          this.resetForm();
-          form.resetForm();
-          this.advancedPaymentData = undefined;
-          this.billSplitData = undefined;
-          this.showAdvancedPayment = false;
-          this.showBillSplit = false;
-          this.router.navigate(['/expenses']);
-        });
-      },
-      error: (error: any) => {
-        console.error('Error submitting expense:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Submission Failed',
-          detail: error.message || 'An error occurred while submitting the expense.'
-        });
-      }
-    });
-  }
-
   private convertBillSplitToDTO(billSplit: BillSplit | undefined): any {
     if (!billSplit) return undefined;
     return {
@@ -469,7 +350,6 @@ export class ExpenseFormsModalComponent implements OnInit {
     };
   }
 
-  // ── Bill Split ──────────────────────────────────────────────────────────────
 
   billSplitData?: BillSplit;
   showBillSplit = false;
@@ -522,4 +402,104 @@ export class ExpenseFormsModalComponent implements OnInit {
   }
 
   removeBillSplit() { this.billSplitData = undefined; this.showBillSplit = false; }
+
+  submitExpense(form: NgForm): void {
+  if (this.categories.length === 0) {
+    this.messageService.add({ severity: 'error', summary: 'No Categories', detail: 'Please add at least one category.' }); return;
+  }
+  if (this.merchants.length === 0) {
+    this.messageService.add({ severity: 'error', summary: 'No Merchants', detail: 'Please add at least one merchant.' }); return;
+  }
+  if (form.invalid) {
+    form.control.markAllAsTouched();
+    this.messageService.add({ severity: 'error', summary: 'Form Invalid', detail: 'Please fill in all required fields.' }); return;
+  }
+  if (!this.receiptFile) {
+    this.messageService.add({ severity: 'error', summary: 'Missing Receipt', detail: 'Please upload the receipt file.' }); return;
+  }
+  if (this.expenseSummary.paidBy === 'EMPLOYEE' && !this.employeeReceiptFile) {
+    this.messageService.add({ severity: 'error', summary: 'Missing Employee Receipt', detail: 'Please upload the employee receipt file.' }); return;
+  }
+
+  const selectedCategory = this.categories.find(cat => cat.name === this.expenseSummary.category);
+  const selectedMerchant = this.merchants.find(merch => merch.name === this.expenseSummary.merchant);
+  const selectedTax = this.taxRates.find(tax => tax.rate === this.expenseSummary.taxPercentage);
+
+  if (!selectedCategory) {
+    this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` }); return;
+  }
+  if (!selectedMerchant) {
+    this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found.` }); return;
+  }
+
+  //  Convert date to full ISO 8601 LocalDateTime format
+  const eventDate = this.expenseSummary.eventDate 
+    ? new Date(this.expenseSummary.eventDate).toISOString()
+    : new Date().toISOString();
+
+  //  Create expense data object with BOTH fixes
+  const employeeData: any = {
+    name: this.expenseSummary.name || '',
+    description: this.expenseSummary.description || '',
+    eventDate: eventDate,  
+    quantity: this.expenseSummary.quantity || 1,
+    currency: this.selectedCurrency,
+    amount: Number(this.expenseSummary.amount) || 0,
+    status: 'PENDING',
+    paidBy: this.expenseSummary.paidBy?.toUpperCase() || 'EMPLOYEE',
+    receiptReference: this.expenseSummary.receiptReference || '',
+    merchantId: selectedMerchant.id,
+    categoryId: selectedCategory.id,
+    taxId: selectedTax ? selectedTax.id : 1,
+    scheduledPaymentId: null,
+    expenseBy: 41 
+  };
+
+  // Add recurring payment if configured
+  if (this.advancedPaymentData) {
+    employeeData.recurringPayment = this.advancedPaymentData;
+  }
+  
+  // Add bill split if configured
+  if (this.billSplitData) {
+    employeeData.billSplit = this.convertBillSplitToDTO(this.billSplitData);
+  }
+
+  console.log('📤 Expense Data (JSON) - FINAL PAYLOAD:', JSON.stringify(employeeData, null, 2));
+  console.log('📎 Company Receipt File:', this.receiptFile?.name, this.receiptFile?.size);
+  console.log('📎 Employee Receipt File:', this.employeeReceiptFile?.name, this.employeeReceiptFile?.size);
+
+  this.expenseService.addExpense(
+    employeeData, 
+    this.receiptFile || undefined, 
+    this.employeeReceiptFile || undefined
+  ).subscribe({
+    next: (response: any) => {
+      console.log(' Expense created successfully:', response);
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Expense Submitted',
+        detail: 'Expense and receipts successfully submitted.'
+      });
+      
+      this.resetForm();
+      form.resetForm();
+      this.advancedPaymentData = undefined;
+      this.billSplitData = undefined;
+      this.showAdvancedPayment = false;
+      this.showBillSplit = false;
+      this.router.navigate(['/expenses']);
+    },
+    error: (error: any) => {
+      console.error('❌ Error submitting expense:', error);
+      console.error('Error details:', JSON.stringify(error.error, null, 2));
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Submission Failed',
+        detail: error.error?.message || error.message || 'An error occurred while submitting the expense.'
+      });
+    }
+  });
+}
 }
