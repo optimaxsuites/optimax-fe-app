@@ -1,14 +1,10 @@
-<div class="application-container">
-  <div class="application-header">
+<div class="application-container" [class.modal-mode]="isModal">
+  <div class="application-header lm-header-card" *ngIf="!isModal">
     <h1><i class="fas fa-file-invoice"></i> Apply for Loan</h1>
-    <div class="header-actions">
-      <button type="button" class="close-btn" *ngIf="isModal" (click)="goBack()" aria-label="Close">
-        <i class="fas fa-times"></i>
-      </button>
-      <button type="submit" form="cooperativeLoanForm" class="submit-btn" [disabled]="!applicationForm.valid || isSubmitting">
-        {{ isSubmitting ? 'Submitting...' : 'Submit' }}
-      </button>
-    </div>
+  </div>
+
+  <div class="compact-intro" *ngIf="isModal">
+    <p>Complete the fields below to submit a new cooperative loan request.</p>
   </div>
 
   <div class="submit-success" *ngIf="submitSuccessMessage">
@@ -17,158 +13,161 @@
   </div>
 
   <form id="cooperativeLoanForm" [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="application-form">
-    <!-- Member Selection -->
-    <div class="form-section">
-      <h2>Step 1: Select Member</h2>
-      <div class="form-group">
-        <label>Member <span class="required">*</span></label>
-        <select formControlName="memberId">
-          <option value="">-- Select a member --</option>
-          <option *ngFor="let member of members" [value]="member.id">
-            {{ member.fullName }} ({{ member.memberId }})
-          </option>
-        </select>
-        <div class="value-note" *ngIf="selectedMember">
-          Available shares: {{ formatCurrency(selectedMember.shareCapital) }}
-        </div>
-        <div class="error" *ngIf="applicationForm.get('memberId')?.invalid && applicationForm.get('memberId')?.touched">
-          Please select a member
-        </div>
-      </div>
-    </div>
-
-    <!-- Product Selection -->
-    <div class="form-section">
-      <h2>Step 2: Select Product</h2>
-      <div class="form-group">
-        <label>Product <span class="required">*</span></label>
-        <select formControlName="productId">
-          <option value="">-- Select a product --</option>
-          <option *ngFor="let product of products" [value]="product.id">
-            {{ product.name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="product-info" *ngIf="selectedProduct">
-        <p><strong>Description:</strong> {{ selectedProduct.description }}</p>
-        <div class="product-details">
-          <span><strong>Terms:</strong> {{ formatCurrency(selectedProduct.minAmount) }} - {{ formatCurrency(selectedProduct.maxAmount) }} | {{ selectedProduct.minDuration }}-{{ selectedProduct.maxDuration }} months</span>
-          <span><strong>Interest:</strong> {{ selectedProduct.interestRate }}%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loan Details -->
-    <div class="form-section">
-      <h2>Step 3: Loan Details</h2>
-      
-      <div class="form-row">
+    <div class="form-layout">
+      <div class="form-section">
+        <h2>Member</h2>
         <div class="form-group">
-          <label>Amount (₦) <span class="required">*</span></label>
-          <input type="number" formControlName="amount" placeholder="e.g., 100000">
-          <div class="value-note" *ngIf="selectedProduct">
-            Min: {{ formatCurrency(selectedProduct.minAmount) }} | Max: {{ formatCurrency(selectedProduct.maxAmount) }}
+          <label>Member <span class="required">*</span></label>
+          <select formControlName="memberId" [disabled]="eligibleMembers.length === 0">
+            <option value="">-- Select a member --</option>
+            <option *ngFor="let member of eligibleMembers" [value]="member.id">
+              {{ member.fullName }} ({{ member.memberId }})
+            </option>
+          </select>
+          <div class="eligibility-note blocked" *ngIf="eligibleMembers.length === 0">
+            No rank-eligible members available for cooperative loan application.
           </div>
-          <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
-            <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Amount is required</span>
-            <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum is {{ formatCurrency(selectedProduct?.minAmount || 0) }}</span>
-            <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum is {{ formatCurrency(selectedProduct?.maxAmount || 0) }}</span>
-            <span *ngIf="applicationForm.get('amount')?.errors?.['shareLimit']">For share-backed loans, amount cannot exceed member share capital.</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Duration (months) <span class="required">*</span></label>
-          <input type="number" formControlName="duration" placeholder="e.g., 12">
-          <div class="error" *ngIf="applicationForm.get('duration')?.invalid && applicationForm.get('duration')?.touched">
-            <span *ngIf="applicationForm.get('duration')?.errors?.['required']">Duration is required</span>
-            <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedProduct?.minDuration }} months</span>
-            <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedProduct?.maxDuration }} months</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Purpose <span class="required">*</span></label>
-        <textarea formControlName="purpose" rows="3" placeholder="Explain the purpose of this loan..."></textarea>
-      </div>
-
-      <div class="collateral-box" *ngIf="selectedProduct?.requiresShares || selectedMember">
-        <div class="checkbox-group">
-          <input type="checkbox" id="useSharesAsCollateral" formControlName="useSharesAsCollateral" [disabled]="!!selectedProduct?.requiresShares">
-          <label for="useSharesAsCollateral">Use shares as collateral?</label>
-        </div>
-
-        <div class="form-group" *ngIf="applicationForm.get('useSharesAsCollateral')?.value || selectedProduct?.requiresShares">
-          <label>Amount to pledge (₦)</label>
-          <input type="number" formControlName="pledgedSharesAmount" placeholder="e.g., 100000">
           <div class="value-note" *ngIf="selectedMember">
             Available shares: {{ formatCurrency(selectedMember.shareCapital) }}
           </div>
-          <div class="error" *ngIf="applicationForm.get('pledgedSharesAmount')?.invalid && applicationForm.get('pledgedSharesAmount')?.touched">
-            <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['required']">Pledged amount is required.</span>
-            <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['maxShares']">Pledged amount cannot exceed available shares.</span>
-            <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['overAmount']">Pledged amount cannot exceed loan amount.</span>
+          <div class="eligibility-note" *ngIf="selectedMemberEligibility as eligibility" [class.blocked]="!eligibility.canApply">
+            <strong>Rank check ({{ eligibility.rank }}):</strong>
+            {{ eligibility.message }}
+          </div>
+          <div class="error" *ngIf="applicationForm.get('memberId')?.invalid && applicationForm.get('memberId')?.touched">
+            Please select a member
           </div>
         </div>
       </div>
 
-      <!-- Calculation Preview -->
-      <div class="calculation-preview" *ngIf="monthlyRepayment > 0">
-        <h3>Calculation Preview</h3>
-        <div class="calc-grid">
-          <div class="calc-item">
-            <span class="label">Monthly payment:</span>
-            <span class="value">{{ formatCurrency(monthlyRepayment) }}</span>
-          </div>
-          <div class="calc-item">
-            <span class="label">Total Interest:</span>
-            <span class="value">{{ formatCurrency(totalInterest) }}</span>
-          </div>
-          <div class="calc-item total">
-            <span class="label">Total to repay:</span>
-            <span class="value">{{ formatCurrency(totalRepayment) }}</span>
+      <div class="form-section">
+        <h2>Loan Product</h2>
+        <div class="form-group">
+          <label>Product <span class="required">*</span></label>
+          <select formControlName="productId">
+            <option value="">-- Select a product --</option>
+            <option *ngFor="let product of products" [value]="product.id">
+              {{ product.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="product-info" *ngIf="selectedProduct">
+          <p><strong>Description:</strong> {{ selectedProduct.description }}</p>
+          <div class="product-details">
+            <span><strong>Terms:</strong> {{ formatCurrency(selectedProduct.minAmount) }} - {{ formatCurrency(selectedProduct.maxAmount) }} | {{ selectedProduct.minDuration }}-{{ selectedProduct.maxDuration }} months</span>
+            <span><strong>Interest:</strong> {{ selectedProduct.interestRate }}%</span>
           </div>
         </div>
       </div>
 
-      <div class="error submit-error" *ngIf="submitError">
+      <div class="form-section wide">
+        <h2>Loan Details</h2>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₦) <span class="required">*</span></label>
+            <input type="number" formControlName="amount" placeholder="e.g., 100000">
+            <div class="value-note" *ngIf="selectedProduct">
+              Min: {{ formatCurrency(selectedProduct.minAmount) }} | Max: {{ formatCurrency(selectedProduct.maxAmount) }}
+            </div>
+            <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
+              <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Amount is required</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum is {{ formatCurrency(selectedProduct?.minAmount || 0) }}</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum is {{ formatCurrency(selectedProduct?.maxAmount || 0) }}</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['shareLimit']">For share-backed loans, amount cannot exceed member share capital.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Duration (months) <span class="required">*</span></label>
+            <input type="number" formControlName="duration" placeholder="e.g., 12">
+            <div class="error" *ngIf="applicationForm.get('duration')?.invalid && applicationForm.get('duration')?.touched">
+              <span *ngIf="applicationForm.get('duration')?.errors?.['required']">Duration is required</span>
+              <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedProduct?.minDuration }} months</span>
+              <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedProduct?.maxDuration }} months</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Purpose <span class="required">*</span></label>
+          <textarea formControlName="purpose" rows="2" placeholder="Explain the purpose of this loan..."></textarea>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Collateral</h2>
+        <div class="collateral-box" *ngIf="selectedProduct?.requiresShares || selectedMember">
+          <div class="checkbox-group">
+            <input type="checkbox" id="useSharesAsCollateral" formControlName="useSharesAsCollateral" [disabled]="!!selectedProduct?.requiresShares">
+            <label for="useSharesAsCollateral">Use shares as collateral?</label>
+          </div>
+
+          <div class="form-group" *ngIf="applicationForm.get('useSharesAsCollateral')?.value || selectedProduct?.requiresShares">
+            <label>Amount to pledge (₦)</label>
+            <input type="number" formControlName="pledgedSharesAmount" placeholder="e.g., 100000">
+            <div class="value-note" *ngIf="selectedMember">
+              Available shares: {{ formatCurrency(selectedMember.shareCapital) }}
+            </div>
+            <div class="error" *ngIf="applicationForm.get('pledgedSharesAmount')?.invalid && applicationForm.get('pledgedSharesAmount')?.touched">
+              <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['required']">Pledged amount is required.</span>
+              <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['maxShares']">Pledged amount cannot exceed available shares.</span>
+              <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['overAmount']">Pledged amount cannot exceed loan amount.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" *ngIf="monthlyRepayment > 0">
+        <h2>Repayment Preview</h2>
+        <div class="calculation-preview">
+          <div class="calc-grid">
+            <div class="calc-item">
+              <span class="label">Monthly payment</span>
+              <span class="value">{{ formatCurrency(monthlyRepayment) }}</span>
+            </div>
+            <div class="calc-item">
+              <span class="label">Total interest</span>
+              <span class="value">{{ formatCurrency(totalInterest) }}</span>
+            </div>
+            <div class="calc-item total">
+              <span class="label">Total repayment</span>
+              <span class="value">{{ formatCurrency(totalRepayment) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section wide acknowledgement-section">
+        <h2>Acknowledgement</h2>
+        <p class="ack-note">
+          This application will be submitted for admin review and processed under cooperative policy terms.
+        </p>
+        <div class="checkbox-group">
+          <input type="checkbox" id="terms" formControlName="acceptTerms">
+          <label for="terms">I confirm all information is correct.</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="acknowledgement" formControlName="acceptAcknowledgement">
+          <label for="acknowledgement">
+            I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable.
+          </label>
+        </div>
+        <div class="error" *ngIf="applicationForm.get('acceptAcknowledgement')?.invalid && applicationForm.get('acceptAcknowledgement')?.touched">
+          Please acknowledge before submitting.
+        </div>
+      </div>
+
+      <div class="error submit-error wide" *ngIf="submitError">
         {{ submitError }}
-      </div>
-    </div>
-
-    <!-- Terms -->
-    <div class="form-section">
-      <div class="checkbox-group">
-        <input type="checkbox" id="terms" formControlName="acceptTerms">
-        <label for="terms">
-          I confirm all information is correct.
-        </label>
-      </div>
-    </div>
-
-    <!-- Acknowledgement -->
-    <div class="form-section acknowledgement-section">
-      <h2>Acknowledgement</h2>
-      <p class="ack-note">
-        By proceeding, you acknowledge that this application will be submitted for admin review, and any approved disbursement will follow cooperative policy terms.
-      </p>
-      <div class="checkbox-group">
-        <input type="checkbox" id="acknowledgement" formControlName="acceptAcknowledgement">
-        <label for="acknowledgement">
-          I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable.
-        </label>
-      </div>
-      <div class="error" *ngIf="applicationForm.get('acceptAcknowledgement')?.invalid && applicationForm.get('acceptAcknowledgement')?.touched">
-        Please acknowledge before submitting.
       </div>
     </div>
 
     <!-- Submit -->
     <div class="form-actions">
       <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
-      <button type="submit" class="submit-btn" [disabled]="!applicationForm.valid || isSubmitting">
+      <button type="submit" class="submit-btn" [disabled]="!applicationForm.valid || !canSubmitByRank || isSubmitting">
         {{ isSubmitting ? 'Submitting...' : 'Submit' }}
       </button>
     </div>

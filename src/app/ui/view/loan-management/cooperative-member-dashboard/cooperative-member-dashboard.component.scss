@@ -117,6 +117,26 @@
       margin: 2px 0 0;
     }
 
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2E6276, #4291b1);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
     .apply-btn {
       background: #2EB270;
       color: white;
@@ -135,10 +155,171 @@
     }
   }
 
+  .top-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+
+    .apply-btn {
+      background: #2EB270;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover {
+        background: #47e797;
+        transform: translateY(-2px);
+      }
+    }
+  }
+
   .action-message {
     margin: 0 0 14px;
     color: #1e7e4a;
     font-weight: 600;
+  }
+
+  .membership-card {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 18px;
+
+    .membership-card-header {
+      margin-bottom: 10px;
+
+      h2 {
+        margin: 0;
+        color: #2E6276;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+    }
+
+    .rank-line {
+      margin: 0 0 10px;
+      color: #2f3b45;
+    }
+
+    .eligibility-checks {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+
+      p {
+        margin: 0;
+        color: #2f3b45;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pass {
+        color: #2EB270;
+      }
+
+      .hold {
+        color: #FFA500;
+      }
+
+      .fail {
+        color: #d9534f;
+      }
+    }
+
+    .tier-box {
+      border: 1px solid #d7e7ec;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8feff;
+      margin-bottom: 10px;
+
+      p {
+        margin: 0 0 4px;
+        color: #2f3b45;
+      }
+    }
+
+    .rule-block {
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: grid;
+      gap: 8px;
+
+      p {
+        margin: 0;
+        color: #2f3b45;
+      }
+
+      &.invite,
+      &.approval,
+      &.auto {
+        background: #f8feff;
+        border: 1px solid #d7e7ec;
+      }
+
+      &.hold {
+        background: #fff8e6;
+        border: 1px solid #ffe0a6;
+      }
+
+      &.blocked {
+        background: #fff0ef;
+        border: 1px solid #f3c3c0;
+      }
+
+      select {
+        border: 1px solid #d7e7ec;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: inherit;
+      }
+    }
+
+    .auto-approve-badge {
+      color: #2EB270;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 14px;
+      background: #2E6276;
+      color: #fff;
+      cursor: pointer;
+      width: fit-content;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .note-line {
+      margin: 0;
+      color: #2E6276;
+      font-size: 0.9rem;
+    }
+
+    .membership-message {
+      margin: 8px 0 0;
+      color: #2E6276;
+      font-weight: 600;
+    }
   }
 
   .section-title {
@@ -159,11 +340,46 @@
       background: white;
       border-radius: 12px;
       padding: 16px;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 12px;
       border: 1px solid #e3eef0;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 
+      .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        i {
+          font-size: 1.1rem;
+          color: #fff;
+        }
+
+        &.shares-icon {
+          background: #2E6276;
+        }
+
+        &.borrowed-icon {
+          background: #2E6276;
+        }
+
+        &.outstanding-icon {
+          background: #2E6276;
+        }
+
+        &.payment-icon {
+          background: #2E6276;
+        }
+      }
+
       .stat-content {
+        min-width: 0;
+
         .stat-label {
           display: block;
           color: #8a8a8a;
@@ -201,29 +417,52 @@
         margin: 0;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+          color: #2E6276;
+          font-size: 0.95rem;
+        }
       }
 
     }
 
     .status-strip {
       display: flex;
-      gap: 10px;
+      gap: 16px;
       flex-wrap: wrap;
       margin-bottom: 14px;
 
       .status-pill {
-        border: 1px solid #d9e7eb;
-        background: #fff;
-        color: #2E6276;
-        border-radius: 999px;
-        padding: 8px 14px;
-        font-size: 0.9rem;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 180px;
+        background: #2E6276;
+        color: #fff;
+
+        i {
+          color: #fff;
+        }
+
+        &:hover {
+          background: #4291b1;
+          transform: translateY(-2px);
+        }
 
         &.active {
-          background: #2E6276;
-          border-color: #2E6276;
+          background: #1a3f4f;
+          border: 2px solid #B6D6E2;
           color: #fff;
         }
       }
@@ -334,8 +573,8 @@
             }
 
             .icon-btn {
-              border: 1px solid #d7e7ec;
-              background: #fff;
+              border: none;
+              background: transparent;
               color: #2E6276;
               border-radius: 6px;
               padding: 6px 10px;
@@ -440,6 +679,14 @@
       gap: 12px;
       text-align: center;
       h1 { font-size: 1.5rem; }
+
+      .header-actions {
+        align-items: center;
+      }
+    }
+
+    .top-actions {
+      justify-content: center;
     }
     .stats-grid { grid-template-columns: 1fr; }
 

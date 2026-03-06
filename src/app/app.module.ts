@@ -179,6 +179,7 @@ import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/c
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
 import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
 import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
+import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
 import { QueryComponent } from './ui/view/query/query.component';
 @NgModule({
@@ -301,6 +302,7 @@ import { QueryComponent } from './ui/view/query/query.component';
     CooperativeMemberLoansComponent,
     CooperativeLoanProductsComponent,
     MainDashboardComponent,
+    EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
     QueryComponent,
     ],

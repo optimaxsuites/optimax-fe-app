@@ -11,6 +11,16 @@ interface LoanDashboardAlert {
   message: string;
 }
 
+interface LoanRecentActivity {
+  id: string;
+  type: 'PAYMENT_MILESTONE' | 'MONTHLY_PAYMENT' | 'OVERDUE_PAYMENT';
+  level: 'success' | 'info' | 'warning';
+  message: string;
+  loanId: string;
+  employeeId: string;
+  occurredAt: string;
+}
+
 @Component({
   selector: 'app-loan-dashboard',
   templateUrl: './loan-dashboard.component.html',
@@ -31,7 +41,9 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   allLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
   alerts: LoanDashboardAlert[] = [];
+  recentActivities: LoanRecentActivity[] = [];
   selectedLoan: LoanApplication | null = null;
+  showLoanDetailsModal = false;
 
   recentLoanColumns = [
     { header: 'Loan ID', field: 'id' },
@@ -89,6 +101,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         this.updateDashboardStats();
         this.applyFilter();
         this.updateAlerts();
+        this.updateRecentActivities();
         this.isLoading = false;
       },
       error: (error) => {
@@ -109,6 +122,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         this.updateDashboardStats();
         this.applyFilter();
         this.updateAlerts();
+        this.updateRecentActivities();
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
@@ -186,6 +200,115 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.alerts = nextAlerts;
   }
 
+  updateRecentActivities(): void {
+    const activities: LoanRecentActivity[] = [];
+    const now = Date.now();
+
+    this.allLoans.forEach((loan) => {
+      const paidRatio = loan.loanAmount > 0 ? (loan.totalPaid || 0) / loan.loanAmount : 0;
+
+      if (paidRatio >= 0.5 && (loan.status === 'ACTIVE' || loan.status === 'APPROVED' || loan.status === 'COMPLETED')) {
+        activities.push({
+          id: `${loan.id}-milestone`,
+          type: 'PAYMENT_MILESTONE',
+          level: 'success',
+          message: `${loan.fullName} has paid off ${Math.round(paidRatio * 100)}% of their loan balance.`,
+          loanId: loan.id,
+          employeeId: loan.employeeId,
+          occurredAt: this.getLatestPaymentDate(loan) || loan.approvedDate || loan.dateSubmitted
+        });
+      }
+
+      const latestPaymentDate = this.getLatestPaymentDate(loan);
+      if (latestPaymentDate) {
+        activities.push({
+          id: `${loan.id}-payment`,
+          type: 'MONTHLY_PAYMENT',
+          level: 'info',
+          message: `${loan.fullName} just made their monthly installment.`,
+          loanId: loan.id,
+          employeeId: loan.employeeId,
+          occurredAt: latestPaymentDate
+        });
+      }
+
+      const overdueInstallmentDate = this.getOverdueInstallmentDate(loan, now);
+      if (overdueInstallmentDate) {
+        activities.push({
+          id: `${loan.id}-overdue`,
+          type: 'OVERDUE_PAYMENT',
+          level: 'warning',
+          message: `${loan.fullName}'s payment for this month is overdue.`,
+          loanId: loan.id,
+          employeeId: loan.employeeId,
+          occurredAt: overdueInstallmentDate
+        });
+      }
+    });
+
+    const sortedActivities = activities
+      .sort((first, second) => new Date(second.occurredAt).getTime() - new Date(first.occurredAt).getTime())
+      .slice(0, 10);
+
+    this.recentActivities = sortedActivities.length > 0
+      ? sortedActivities
+      : this.getMockRecentActivities();
+  }
+
+  getActivityRelativeTime(activityDate: string): string {
+    const eventTime = new Date(activityDate).getTime();
+    const diffMs = Date.now() - eventTime;
+
+    if (!Number.isFinite(diffMs) || diffMs < 0) {
+      return 'just now';
+    }
+
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    if (diffMinutes < 1) {
+      return 'just now';
+    }
+
+    if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    }
+
+    return new Date(activityDate).toLocaleDateString();
+  }
+
+  getActivityIcon(activityType: LoanRecentActivity['type']): string {
+    switch (activityType) {
+      case 'PAYMENT_MILESTONE':
+        return 'fa-chart-line';
+      case 'MONTHLY_PAYMENT':
+        return 'fa-credit-card';
+      case 'OVERDUE_PAYMENT':
+        return 'fa-exclamation-circle';
+      default:
+        return 'fa-info-circle';
+    }
+  }
+
+  getActivityLevelClass(level: LoanRecentActivity['level']): string {
+    switch (level) {
+      case 'success':
+        return 'activity-success';
+      case 'warning':
+        return 'activity-warning';
+      default:
+        return 'activity-info';
+    }
+  }
+
   isLoanOverdue(loan: LoanApplication): boolean {
     if (loan.status !== 'ACTIVE') {
       return false;
@@ -201,6 +324,75 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     return false;
+  }
+
+  private getLatestPaymentDate(loan: LoanApplication): string | null {
+    const payments = loan.paymentHistory || [];
+    if (payments.length === 0) {
+      return null;
+    }
+
+    return [...payments]
+      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime())[0]
+      .date;
+  }
+
+  private getOverdueInstallmentDate(loan: LoanApplication, now: number): string | null {
+    if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') {
+      return null;
+    }
+
+    const schedule = loan.repaymentSchedule || [];
+    const overdueItem = schedule.find((item) => {
+      if (item.status === 'OVERDUE') {
+        return true;
+      }
+
+      if (item.status !== 'PENDING') {
+        return false;
+      }
+
+      return new Date(item.dueDate).getTime() < now;
+    });
+
+    return overdueItem?.dueDate || null;
+  }
+
+  private getMockRecentActivities(): LoanRecentActivity[] {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000)).toISOString();
+    const threeHoursAgo = new Date(now.getTime() - (3 * 60 * 60 * 1000)).toISOString();
+    const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
+
+    return [
+      {
+        id: 'mock-activity-1',
+        type: 'PAYMENT_MILESTONE',
+        level: 'success',
+        message: 'Eseose Odion has paid off 50% of their loan balance.',
+        loanId: 'LN-MOCK001',
+        employeeId: 'EMP-123',
+        occurredAt: oneHourAgo
+      },
+      {
+        id: 'mock-activity-2',
+        type: 'MONTHLY_PAYMENT',
+        level: 'info',
+        message: 'Chisom Ada just made their monthly installment.',
+        loanId: 'LN-MOCK002',
+        employeeId: 'EMP-204',
+        occurredAt: threeHoursAgo
+      },
+      {
+        id: 'mock-activity-3',
+        type: 'OVERDUE_PAYMENT',
+        level: 'warning',
+        message: "Peter Obi's payment for this month is overdue.",
+        loanId: 'LN-MOCK003',
+        employeeId: 'EMP-078',
+        occurredAt: yesterday
+      }
+    ];
   }
 
   // Filter methods
@@ -259,10 +451,21 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   viewLoanDetails(loanId: string) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
-      this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
-        state: { source: 'dashboard' }
-      });
+      this.selectedLoan = loan;
+      this.showLoanDetailsModal = true;
     }
+  }
+
+  closeLoanDetailsModal(): void {
+    this.showLoanDetailsModal = false;
+    this.selectedLoan = null;
+  }
+
+  openApprovalForm(loan: LoanApplication): void {
+    this.closeLoanDetailsModal();
+    this.router.navigate(['/admin/hr/loan-management/loan-details', loan.id, uuidV4()], {
+      state: { source: 'dashboard-modal' }
+    });
   }
 
   seeLoanHistory(employeeId: string) {
@@ -287,7 +490,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   generateReports() {
-    this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
+    this.router.navigate(['/admin/hr/loan-management/reports']);
   }
 
   goBack(): void {

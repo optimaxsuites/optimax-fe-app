@@ -3,12 +3,6 @@
     <div class="attendance-card">
       <!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->
       <app-attendancefilter (filtersChange)="onFiltersChange($event)"></app-attendancefilter>
-        <app-table
-          [columns]="attendanceColumns"
-          [rows]="attendance"
-          [actions]="attendanceActions"
-          (actionClick)="handleAttendanceAction($event)"
-        ></app-table>
         <table class="attendance-table">
   <thead> 
     

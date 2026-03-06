@@ -15,7 +15,7 @@
 
   <div *ngIf="!isLoading" class="loans-content">
     <!-- Header -->
-    <div class="loans-header">
+    <div class="loans-header lm-header-card">
       <h1><i class="fas fa-file-invoice"></i> Loan Applications</h1>
       <div class="header-actions">
         <select class="status-select" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
@@ -68,7 +68,7 @@
             <th (click)="setSort('applicationDate')" class="sortable">
               Date <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i>
             </th>
-            <th>Action</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -82,7 +82,7 @@
               </span>
             </td>
             <td>{{ getRelativeDate(loan.applicationDate) }}</td>
-            <td>
+            <td class="actions-col">
               <button class="table-action" *ngIf="loan.status === 'PENDING'" (click)="reviewLoan(loan.id)">
                 Review
               </button>

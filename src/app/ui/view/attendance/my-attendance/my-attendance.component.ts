@@ -292,32 +292,6 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   currentTime: string = '';
   currentRecord: AttendanceRecord | null = null;
   history: AttendanceRecord[] = [];
-  historyColumns = [
-    { header: 'Date', field: 'date' },
-    {
-      header: 'Clock In',
-      formatter: (row: AttendanceRecord) => row.clockIn || '-'
-    },
-    {
-      header: 'Clock Out',
-      formatter: (row: AttendanceRecord) => row.clockOut || '-'
-    },
-    {
-      header: 'Duration',
-      formatter: (row: AttendanceRecord) => row.duration || '-'
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: AttendanceRecord) => {
-        if (row.status === 'On Time') return 'bg-green-100 text-green-700';
-        if (row.status === 'Late') return 'bg-yellow-100 text-yellow-700';
-        if (row.status === 'Absent') return 'bg-gray-100 text-gray-500';
-        if (row.status === 'Present') return 'bg-blue-100 text-blue-700';
-        return '';
-      }
-    }
-  ];
   private sub = new Subscription();
 
   constructor(private attendanceService: AttendanceService, private confirmationService: ConfirmationService, private messageService: MessageService) {}

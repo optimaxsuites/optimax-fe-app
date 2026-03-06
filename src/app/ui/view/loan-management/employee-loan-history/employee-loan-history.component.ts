@@ -17,6 +17,8 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   filteredLoans: LoanApplication[] = [];
   isLoading: boolean = true;
   viewSource: 'admin' | 'employee' = 'admin';
+  selectedLoanForDetails: LoanApplication | null = null;
+  showLoanDetailsModal: boolean = false;
   
   // Sorting properties
   sortField: string = 'dateSubmitted';
@@ -149,10 +151,21 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
   
-  viewLoanDetails(loanId: string): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
-      state: { source: this.viewSource === 'employee' ? 'employee-history' : 'admin-history' }
+  viewLoanDetails(loan: LoanApplication): void {
+    if (this.viewSource === 'employee') {
+      this.selectedLoanForDetails = loan;
+      this.showLoanDetailsModal = true;
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan-management/loan-details', loan.id, uuidV4()], {
+      state: { source: 'admin-history' }
     });
+  }
+
+  closeLoanDetailsModal(): void {
+    this.showLoanDetailsModal = false;
+    this.selectedLoanForDetails = null;
   }
   
   getStatusClass(status: string): string {

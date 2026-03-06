@@ -7,9 +7,11 @@
 
   <div *ngIf="!isLoading" class="reports-content">
     <!-- Header -->
-    <div class="reports-header">
-      <app-back-button (click)="goBack()"></app-back-button>
-      <h1>Loan Reports</h1>
+    <div class="reports-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1>Loan Reports</h1>
+      </div>
       <div class="header-actions">
         <button class="export-btn excel" (click)="exportToExcel()">
           <i class="fas fa-file-excel"></i> Excel
@@ -36,7 +38,7 @@
       </div>
       <div class="summary-card">
         <div class="card-icon amount">
-          <i class="fas fa-hand-holding-usd"></i>
+          <i class="fas fa-naira-sign"></i>
         </div>
         <div class="card-content">
           <span class="label">Total Amount</span>
@@ -54,7 +56,7 @@
       </div>
       <div class="summary-card">
         <div class="card-icon balance">
-          <i class="fas fa-hourglass-half"></i>
+          <i class="fas fa-naira-sign"></i>
         </div>
         <div class="card-content">
           <span class="label">Total Balance</span>
@@ -65,29 +67,26 @@
 
     <!-- Status Breakdown -->
     <div class="status-breakdown">
-      <div class="status-chip pending" (click)="filters.status='PENDING'; applyFilters()">
+      <div class="status-chip pending" [class.active-filter]="filters.status === 'PENDING'" (click)="filters.status='PENDING'; applyFilters()">
         <span class="count">{{ summaryStats.pendingCount }}</span>
         <span class="label">Pending</span>
       </div>
-      <div class="status-chip active" (click)="filters.status='ACTIVE'; applyFilters()">
+      <div class="status-chip active" [class.active-filter]="filters.status === 'ACTIVE'" (click)="filters.status='ACTIVE'; applyFilters()">
         <span class="count">{{ summaryStats.activeCount }}</span>
         <span class="label">Active</span>
       </div>
-      <div class="status-chip completed" (click)="filters.status='COMPLETED'; applyFilters()">
+      <div class="status-chip completed" [class.active-filter]="filters.status === 'COMPLETED'" (click)="filters.status='COMPLETED'; applyFilters()">
         <span class="count">{{ summaryStats.completedCount }}</span>
         <span class="label">Completed</span>
       </div>
-      <div class="status-chip approved" (click)="filters.status='APPROVED'; applyFilters()">
+      <div class="status-chip approved" [class.active-filter]="filters.status === 'APPROVED'" (click)="filters.status='APPROVED'; applyFilters()">
         <span class="count">{{ getStatusCount('APPROVED') }}</span>
         <span class="label">Approved</span>
       </div>
-      <div class="status-chip rejected" (click)="filters.status='REJECTED'; applyFilters()">
+      <div class="status-chip rejected" [class.active-filter]="filters.status === 'REJECTED'" (click)="filters.status='REJECTED'; applyFilters()">
         <span class="count">{{ getStatusCount('REJECTED') }}</span>
         <span class="label">Rejected</span>
       </div>
-      <button class="clear-chip" (click)="filters.status=''; applyFilters()" *ngIf="filters.status">
-        <i class="fas fa-times"></i> Clear
-      </button>
     </div>
 
     <!-- Filters Section -->
@@ -172,7 +171,7 @@
             <th (click)="setSort('dateSubmitted')" class="sortable">
               Date <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
             </th>
-            <th>Actions</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -195,10 +194,12 @@
               </span>
             </td>
             <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
-            <td>
-              <button class="view-btn" (click)="viewLoanDetails(loan.id)" title="View Details">
-                <i class="fas fa-eye"></i>
-              </button>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button class="btn-view" (click)="viewLoanDetails(loan.id)" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="filteredLoans.length === 0">

@@ -89,3 +89,68 @@ export interface CooperativeStats {
   totalFund: number;
   loanPortfolio: number;
 }
+
+export type CooperativeStaffRank = 'JUNIOR' | 'MID' | 'SENIOR' | 'EXEC';
+
+export type CooperativeEmploymentType = 'PERMANENT' | 'CONTRACT' | 'INTERN';
+
+export type CooperativeMembershipTier = 'STANDARD' | 'GOLD' | 'EXECUTIVE';
+
+export interface CooperativeEmployeeProfile {
+  employeeId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  department?: string;
+  rank: CooperativeStaffRank;
+  employmentType: CooperativeEmploymentType;
+  employmentStartDate: string;
+  onProbation?: boolean;
+  probationEndDate?: string;
+  hasActiveDisciplinaryIssue?: boolean;
+  managerId?: string;
+}
+
+export interface CooperativeMembershipTierPolicy {
+  tier: CooperativeMembershipTier;
+  maxLoan: number;
+  minShares: number;
+  votingRights: 'FULL' | 'LIMITED' | 'NONE';
+}
+
+export interface CooperativeMembershipEligibility {
+  canApply: boolean;
+  canBeInvited: boolean;
+  requiresInvite: boolean;
+  requiresManagerApproval: boolean;
+  autoApprove: boolean;
+  isOnHold: boolean;
+  isBlocked: boolean;
+  rank: CooperativeStaffRank;
+  tenureMonths: number;
+  probationCompleted: boolean;
+  policy: CooperativeMembershipTierPolicy;
+  message: string;
+}
+
+export type CooperativeMembershipRequestSource = 'SELF' | 'ADMIN_INVITE';
+
+export interface CooperativeMembershipApplication {
+  employee: CooperativeEmployeeProfile;
+  source: CooperativeMembershipRequestSource;
+  requestedTier?: CooperativeMembershipTier;
+  note?: string;
+}
+
+export interface CooperativeMembershipActionResult {
+  success: boolean;
+  status:
+    | 'AUTO_APPROVED'
+    | 'PENDING_MANAGER_APPROVAL'
+    | 'INVITE_REQUIRED'
+    | 'ON_HOLD'
+    | 'REJECTED';
+  message: string;
+  eligibility: CooperativeMembershipEligibility;
+  member?: CooperativeMember;
+}

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 
 @Component({

@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AttendanceStats } from '../../../../../shared-component/models/models';
+import { AttendanceStats } from '../../../../../domain/attendance/attendashboard.dto';
 
 @Component({
   selector: 'app-stats-cards',

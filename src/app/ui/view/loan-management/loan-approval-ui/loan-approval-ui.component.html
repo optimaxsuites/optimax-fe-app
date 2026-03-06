@@ -7,9 +7,11 @@
     </div>
 
     <div *ngIf="!isLoading">
-        <header class="approval-header">
-            <app-back-button (click)="goBack()"></app-back-button>
-            <h1>Loan Applications</h1>
+        <header class="approval-header lm-header-card">
+            <div class="header-left">
+                <app-back-button (click)="goBack()"></app-back-button>
+                <h1>Loan Applications</h1>
+            </div>
             <div class="search-box">
                 <input type="text"
                        placeholder="Search by employee name or ID..."

@@ -33,14 +33,22 @@
 
   .reports-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 12px;
     margin-bottom: 24px;
     padding: 20px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border: 1px solid #e3eef0;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
 
     .back-btn {
       background: none;
@@ -70,6 +78,7 @@
     .header-actions {
       display: flex;
       gap: 10px;
+      margin-left: auto;
 
       .export-btn {
         padding: 8px 16px;
@@ -87,21 +96,21 @@
         }
 
         &.excel {
-          background: #1D6F42;
+          background: #2E6276;
           color: white;
 
           &:hover {
-            background: #248b52;
+            background: #4291b1;
             transform: translateY(-2px);
           }
         }
 
         &.csv {
-          background: #FFA500;
+          background: #2E6276;
           color: white;
 
           &:hover {
-            background: #ffb52e;
+            background: #4291b1;
             transform: translateY(-2px);
           }
         }
@@ -149,9 +158,9 @@
         }
 
         &.total { background: #2E6276; }
-        &.amount { background: #2EB270; }
-        &.paid { background: #FFA500; }
-        &.balance { background: #FF6B6B; }
+        &.amount { background: #2E6276; }
+        &.paid { background: #2E6276; }
+        &.balance { background: #2E6276; }
       }
 
       .card-content {
@@ -173,62 +182,61 @@
 
   .status-breakdown {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
     margin-bottom: 24px;
 
     .status-chip {
-      padding: 8px 16px;
-      border-radius: 30px;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
-      border: 2px solid transparent;
+      min-width: 180px;
+      background: #2E6276;
+      color: #fff;
 
       &:hover {
+        background: #4291b1;
         transform: translateY(-2px);
-        filter: brightness(0.95);
       }
 
       .count {
-        font-weight: 700;
-        font-size: 1.2rem;
+        font-weight: 600;
+        font-size: 1rem;
       }
 
       .label {
-        font-size: 0.9rem;
+        font-size: 1rem;
       }
 
       &.pending {
-        background: rgba(255, 165, 0, 0.15);
-        color: #b87c00;
-        border-color: rgba(255, 165, 0, 0.3);
+        background: #2E6276;
       }
 
       &.active {
-        background: rgba(46, 98, 118, 0.15);
-        color: #1e4a5a;
-        border-color: rgba(46, 98, 118, 0.3);
+        background: #2E6276;
       }
 
       &.completed {
-        background: rgba(46, 178, 112, 0.15);
-        color: #1e7e4a;
-        border-color: rgba(46, 178, 112, 0.3);
+        background: #2E6276;
       }
 
       &.approved {
-        background: rgba(101, 199, 231, 0.15);
-        color: #004a6d;
-        border-color: rgba(101, 199, 231, 0.3);
+        background: #2E6276;
       }
 
       &.rejected {
-        background: rgba(233, 55, 55, 0.15);
-        color: #b30000;
-        border-color: rgba(233, 55, 55, 0.3);
+        background: #2E6276;
+      }
+
+      &.active-filter {
+        background: #1a3f4f;
+        border: 2px solid #B6D6E2;
       }
     }
 
@@ -457,19 +465,37 @@
               }
             }
 
-            .view-btn {
+            .action-buttons {
+              display: flex;
+              gap: 8px;
+              white-space: nowrap;
+            }
+
+            .btn-view {
+              padding: 4px 8px;
               background: none;
               border: none;
+              border-radius: 0;
+              font-size: 0.85rem;
+              font-weight: 500;
               color: #2E6276;
-              font-size: 1.2rem;
               cursor: pointer;
-              padding: 4px 8px;
-              border-radius: 4px;
-              transition: all 0.3s ease;
+              transition: color 0.2s ease;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
 
               &:hover {
-                background: #2E6276;
-                color: white;
+                color: #4291b1;
+              }
+
+              i {
+                font-size: 0.85rem;
+                color: #2E6276;
+              }
+
+              &:hover i {
+                color: #4291b1;
               }
             }
           }
@@ -501,6 +527,36 @@
           }
         }
       }
+    }
+  }
+
+  .reports-header .header-actions .export-btn,
+  .status-breakdown .clear-chip,
+  .filters-section .filters-grid .filter-actions .reset-btn,
+  .reports-table tbody .no-data .reset-btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+    background: #2E6276;
+    color: #fff;
+
+    i {
+      margin-right: 8px;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    &:hover {
+      background: #4291b1;
+      transform: translateY(-2px);
     }
   }
 }

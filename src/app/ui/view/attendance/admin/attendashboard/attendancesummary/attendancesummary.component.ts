@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 
 @Component({
   selector: 'app-attendancesummary',

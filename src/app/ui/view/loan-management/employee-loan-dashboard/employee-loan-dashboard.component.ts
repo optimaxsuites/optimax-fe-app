@@ -4,8 +4,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
-import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -20,6 +21,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   
   showHistory: boolean = true;
   showLoanForm: boolean = false;
+  showPaymentForm: boolean = false;
   
   loanCounts = {
     pending: 0,
@@ -32,7 +34,23 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   allLoans: LoanApplication[] = [];
   private loanSubscription!: Subscription;
   selectedLoanForSchedule: LoanApplication | null = null;
+  selectedLoanForDetails: LoanApplication | null = null;
+  showLoanDetailsModal: boolean = false;
   messages: Message[] = [];
+  payableLoans: LoanApplication[] = [];
+  selectedPaymentLoanId = '';
+  autoMonthlyAmount = 0;
+  selectedPaymentMethod = '';
+  paymentReference = '';
+  paymentNarration = '';
+  bankName = '';
+  accountName = '';
+  accountNumber = '';
+  cardHolderName = '';
+  cardLast4 = '';
+  cashReceiverName = '';
+  payrollCycle = '';
+  paymentFormError = '';
 
   historyColumns = [
     { header: 'Loan ID', field: 'id' },
@@ -56,7 +74,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     private location: Location,
     private route: ActivatedRoute,
     private router: Router,
-    private loanApplicationService: LoanApplicationService
+    private loanApplicationService: LoanApplicationService,
+    private loanRepaymentService: LoanRepaymentService
   ) {}
 
   ngOnInit(): void {
@@ -91,6 +110,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           loan.employeeId === this.employeeId
         );
         this.allLoans = this.sortLoansByRecent(employeeLoans);
+        this.refreshPayableLoans();
         this.calculateLoanCounts();
       },
       error: (error) => {
@@ -118,6 +138,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
         this.allLoans = this.sortLoansByRecent(applications);
+        this.refreshPayableLoans();
         this.calculateLoanCounts();
         this.isLoading = false;
       },
@@ -161,6 +182,68 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   openLoanFormModal(): void {
     this.showLoanForm = true;
+  }
+
+  openPaymentFormModal(): void {
+    this.resetPaymentForm();
+    this.refreshPayableLoans();
+    this.showPaymentForm = true;
+  }
+
+  closePaymentFormModal(): void {
+    this.showPaymentForm = false;
+    this.resetPaymentForm();
+  }
+
+  onPaymentLoanSelect(loanId: string): void {
+    this.selectedPaymentLoanId = loanId;
+    this.autoMonthlyAmount = this.getDueAmountForLoan(loanId);
+    this.paymentFormError = '';
+  }
+
+  submitPayment(): void {
+    this.paymentFormError = '';
+
+    if (!this.selectedPaymentLoanId) {
+      this.paymentFormError = 'Please select a loan ID to pay.';
+      return;
+    }
+
+    if (!this.selectedPaymentMethod) {
+      this.paymentFormError = 'Please select a payment method.';
+      return;
+    }
+
+    if (this.autoMonthlyAmount <= 0) {
+      this.paymentFormError = 'No payable installment found for the selected loan.';
+      return;
+    }
+
+    if (!this.validateMethodSpecificDetails()) {
+      return;
+    }
+
+    this.loanRepaymentService.recordPayment(this.selectedPaymentLoanId, {
+      amount: this.autoMonthlyAmount,
+      paymentMethod: this.selectedPaymentMethod,
+      date: new Date().toISOString(),
+      referenceNumber: this.paymentReference || undefined,
+      notes: this.paymentNarration || undefined,
+      receivedBy: this.cashReceiverName || undefined
+    }).subscribe({
+      next: () => {
+        this.messages = [{
+          severity: 'success',
+          summary: 'Payment Recorded',
+          detail: `Payment of ${this.formatCurrency(this.autoMonthlyAmount)} was recorded successfully.`
+        }];
+        this.closePaymentFormModal();
+        this.loadLoanData();
+      },
+      error: () => {
+        this.paymentFormError = 'Unable to process payment right now. Please try again.';
+      }
+    });
   }
 
   closeLoanFormModal(): void {
@@ -240,11 +323,95 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  viewLoanDetails(loan: LoanApplication): void {
+    this.selectedLoanForDetails = loan;
+    this.showLoanDetailsModal = true;
+  }
+
+  closeLoanDetailsModal(): void {
+    this.showLoanDetailsModal = false;
+    this.selectedLoanForDetails = null;
+  }
+
   viewRepaymentSchedule(loan: LoanApplication): void {
     this.selectedLoanForSchedule = loan;
   }
 
   closeRepaymentSchedule(): void {
     this.selectedLoanForSchedule = null;
+  }
+
+  private refreshPayableLoans(): void {
+    this.payableLoans = this.allLoans.filter(loan =>
+      (loan.status === 'ACTIVE' || loan.status === 'APPROVED') && loan.currentBalance > 0
+    );
+  }
+
+  private getDueAmountForLoan(loanId: string): number {
+    const loan = this.allLoans.find(item => item.id === loanId);
+    if (!loan) {
+      return 0;
+    }
+
+    const pendingInstallment = [...(loan.repaymentSchedule || [])]
+      .filter((item: RepaymentScheduleItem) => item.status === 'PENDING' || item.status === 'OVERDUE')
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+
+    if (pendingInstallment?.totalPayment) {
+      return Number(pendingInstallment.totalPayment.toFixed(2));
+    }
+
+    if (loan.monthlyRepayment > 0) {
+      return Number(loan.monthlyRepayment.toFixed(2));
+    }
+
+    return 0;
+  }
+
+  private validateMethodSpecificDetails(): boolean {
+    switch (this.selectedPaymentMethod) {
+      case 'BANK_TRANSFER':
+        if (!this.bankName || !this.accountName || !this.accountNumber) {
+          this.paymentFormError = 'Enter bank name, account name and account number.';
+          return false;
+        }
+        return true;
+      case 'CARD':
+        if (!this.cardHolderName || !this.cardLast4) {
+          this.paymentFormError = 'Enter card holder name and last 4 digits.';
+          return false;
+        }
+        return true;
+      case 'CASH':
+        if (!this.cashReceiverName) {
+          this.paymentFormError = 'Enter cash receiver name.';
+          return false;
+        }
+        return true;
+      case 'PAYROLL_DEDUCTION':
+        if (!this.payrollCycle) {
+          this.paymentFormError = 'Select payroll deduction cycle.';
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  private resetPaymentForm(): void {
+    this.selectedPaymentLoanId = '';
+    this.autoMonthlyAmount = 0;
+    this.selectedPaymentMethod = '';
+    this.paymentReference = '';
+    this.paymentNarration = '';
+    this.bankName = '';
+    this.accountName = '';
+    this.accountNumber = '';
+    this.cardHolderName = '';
+    this.cardLast4 = '';
+    this.cashReceiverName = '';
+    this.payrollCycle = '';
+    this.paymentFormError = '';
   }
 }

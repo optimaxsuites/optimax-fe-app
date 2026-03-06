@@ -3,7 +3,15 @@ import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeStats, CooperativeLoan, CooperativeMember, CooperativeNotification } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { EmployeeService } from '../../../service/employee.service';
+import {
+  CooperativeStats,
+  CooperativeLoan,
+  CooperativeMember,
+  CooperativeNotification,
+  CooperativeEmployeeProfile,
+  CooperativeMembershipEligibility
+} from '../../../service/loan/cooperative-loan/cooperative.types';
 
 interface DashboardActivity {
   icon: string;
@@ -25,6 +33,11 @@ interface MemberPatronageRow {
   patronageAmount: number;
   distributionMethod: PatronageDistributionMethod;
   hasActiveLoan: boolean;
+}
+
+interface InviteCandidateRow {
+  employee: CooperativeEmployeeProfile;
+  eligibility: CooperativeMembershipEligibility;
 }
 
 @Component({
@@ -52,6 +65,12 @@ export class CooperativeDashboardComponent implements OnInit {
   isLoading = true;
   showApplicationModal = false;
   prefillMemberId: string | null = null;
+  showLoanSummaryModal = false;
+  selectedLoanForSummary: CooperativeLoan | null = null;
+  employeeDirectory: CooperativeEmployeeProfile[] = [];
+  inviteCandidates: InviteCandidateRow[] = [];
+  selectedInviteEmployeeIds = new Set<string>();
+  inviteMessage = '';
 
   private allLoans: CooperativeLoan[] = [];
   private allMembers: CooperativeMember[] = [];
@@ -59,6 +78,7 @@ export class CooperativeDashboardComponent implements OnInit {
   constructor(
     private location: Location,
     private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -75,6 +95,7 @@ export class CooperativeDashboardComponent implements OnInit {
 
     this.loadDashboard();
     this.loadNotifications();
+    this.loadEmployeeDirectory();
   }
 
   get unreadNotificationCount(): number {
@@ -116,8 +137,17 @@ export class CooperativeDashboardComponent implements OnInit {
         .slice(0, 5);
 
       this.refreshDashboardSignals();
+      this.refreshInviteCandidates();
       this.isLoading = false;
     });
+  }
+
+  get inviteCandidatesCount(): number {
+    return this.inviteCandidates.length;
+  }
+
+  get isAllInviteCandidatesSelected(): boolean {
+    return this.inviteCandidates.length > 0 && this.selectedInviteEmployeeIds.size === this.inviteCandidates.length;
   }
 
   loadNotifications(): void {
@@ -272,7 +302,39 @@ export class CooperativeDashboardComponent implements OnInit {
   }
 
   viewLoan(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/loans/${id}/${uuidV4()}`]);
+    const loan = this.allLoans.find(item => item.id === id);
+    if (!loan) {
+      return;
+    }
+
+    this.selectedLoanForSummary = loan;
+    this.showLoanSummaryModal = true;
+  }
+
+  closeLoanSummaryModal(): void {
+    this.showLoanSummaryModal = false;
+    this.selectedLoanForSummary = null;
+  }
+
+  getSelectedLoanMemberName(): string {
+    if (!this.selectedLoanForSummary) {
+      return '';
+    }
+
+    return this.getMemberName(this.selectedLoanForSummary.memberId);
+  }
+
+  getSelectedLoanProductName(): string {
+    if (!this.selectedLoanForSummary) {
+      return '';
+    }
+
+    return this.cooperativeService.getProductById(this.selectedLoanForSummary.productId)?.name || 'N/A';
+  }
+
+  openCooperativeApprovalForm(loan: CooperativeLoan): void {
+    this.closeLoanSummaryModal();
+    this.router.navigate([`/admin/hr/cooperative/loans/${loan.id}/${uuidV4()}`]);
   }
 
   reviewPendingApprovals(): void {
@@ -291,6 +353,44 @@ export class CooperativeDashboardComponent implements OnInit {
     this.router.navigate(['/admin/hr/cooperative/loans', uuidV4()], {
       queryParams: { status: 'DEFAULTED' }
     });
+  }
+
+  toggleInviteSelection(employeeId: string): void {
+    if (this.selectedInviteEmployeeIds.has(employeeId)) {
+      this.selectedInviteEmployeeIds.delete(employeeId);
+      return;
+    }
+
+    this.selectedInviteEmployeeIds.add(employeeId);
+  }
+
+  isInviteSelected(employeeId: string): boolean {
+    return this.selectedInviteEmployeeIds.has(employeeId);
+  }
+
+  selectAllInviteCandidates(): void {
+    if (this.isAllInviteCandidatesSelected) {
+      this.selectedInviteEmployeeIds.clear();
+      return;
+    }
+
+    this.selectedInviteEmployeeIds = new Set(this.inviteCandidates.map(item => item.employee.employeeId));
+  }
+
+  inviteSelectedCandidates(): void {
+    if (this.selectedInviteEmployeeIds.size === 0) {
+      this.inviteMessage = 'Select at least one employee to invite.';
+      return;
+    }
+
+    const selectedRows = this.inviteCandidates.filter(item => this.selectedInviteEmployeeIds.has(item.employee.employeeId));
+    const successfulInvites = selectedRows
+      .map(item => this.cooperativeService.inviteEmployee(item.employee))
+      .filter(result => result.success).length;
+
+    this.inviteMessage = `${successfulInvites} invite(s) processed successfully.`;
+    this.selectedInviteEmployeeIds.clear();
+    this.refreshInviteCandidates();
   }
 
   runPatronageCalculator(): void {
@@ -482,8 +582,133 @@ export class CooperativeDashboardComponent implements OnInit {
     return this.allMembers.find(member => member.id === memberId)?.fullName || memberId;
   }
 
+  getInviteTenureLabel(employee: CooperativeEmployeeProfile): string {
+    const startDate = new Date(employee.employmentStartDate);
+    const now = new Date();
+    let months = (now.getFullYear() - startDate.getFullYear()) * 12;
+    months += now.getMonth() - startDate.getMonth();
+    if (now.getDate() < startDate.getDate()) {
+      months -= 1;
+    }
+
+    return `${Math.max(months, 0)}mo`;
+  }
+
   formatCurrency(amount: number): string {
     return this.cooperativeService.formatCurrency(amount);
+  }
+
+  private loadEmployeeDirectory(): void {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        const rawEmployees = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        this.employeeDirectory = rawEmployees
+          .map((employee: any) => this.mapEmployeeToProfile(employee))
+          .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
+
+        this.refreshInviteCandidates();
+      },
+      error: () => {
+        this.employeeDirectory = [];
+        this.refreshInviteCandidates();
+      }
+    });
+  }
+
+  private refreshInviteCandidates(): void {
+    const memberEmails = new Set(this.allMembers.map(member => member.email.toLowerCase()));
+    this.inviteCandidates = this.employeeDirectory
+      .map(employee => ({
+        employee,
+        eligibility: this.cooperativeService.checkMembershipEligibility(employee)
+      }))
+      .filter(item =>
+        item.employee.rank === 'JUNIOR' &&
+        item.eligibility.canBeInvited &&
+        !memberEmails.has(item.employee.email.toLowerCase())
+      );
+  }
+
+  private mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
+    const firstName = String(employee?.firstName || '').trim();
+    const lastName = String(employee?.lastName || '').trim();
+    const fallbackName = String(employee?.fullName || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim() || fallbackName;
+    const email = String(employee?.email || employee?.workEmail || '').trim();
+
+    if (!fullName || !email) {
+      return null;
+    }
+
+    const employeeId = String(employee?.id ?? employee?.employeeId ?? employee?.staffId ?? '');
+    if (!employeeId) {
+      return null;
+    }
+
+    const departmentName =
+      String(employee?.department?.name || employee?.department || employee?.unit || '').trim() || 'Unassigned';
+
+    const levelName = String(employee?.level?.name || employee?.level || employee?.jobTitle || '').trim();
+    const employmentTypeName = String(
+      employee?.employmentType?.name || employee?.employmentType || employee?.jobType?.name || employee?.jobType || ''
+    ).trim();
+
+    const employmentStartDate =
+      employee?.employementStartDate || employee?.employmentStartDate || employee?.hireDate || employee?.createdAt;
+
+    return {
+      employeeId,
+      fullName,
+      email,
+      phone: String(employee?.phone || '').trim(),
+      department: departmentName,
+      rank: this.mapRank(levelName),
+      employmentType: this.mapEmploymentType(employmentTypeName),
+      employmentStartDate: employmentStartDate || new Date().toISOString(),
+      onProbation: Boolean(employee?.onProbation),
+      probationEndDate: employee?.probationEndDate,
+      hasActiveDisciplinaryIssue: Boolean(employee?.hasActiveDisciplinaryIssue || employee?.disciplinaryCaseOpen),
+      managerId: String(employee?.supervisor?.id || employee?.supervisor || employee?.managerId || '').trim() || undefined
+    };
+  }
+
+  private mapRank(value: string): CooperativeEmployeeProfile['rank'] {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes('executive') || normalized.includes('exec') || normalized.includes('director')) {
+      return 'EXEC';
+    }
+
+    if (normalized.includes('senior') || normalized.includes('manager') || normalized.includes('lead') || normalized.includes('head')) {
+      return 'SENIOR';
+    }
+
+    if (normalized.includes('mid') || normalized.includes('associate') || normalized.includes('level 2') || normalized.includes('level 3')) {
+      return 'MID';
+    }
+
+    return 'JUNIOR';
+  }
+
+  private mapEmploymentType(value: string): CooperativeEmployeeProfile['employmentType'] {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes('intern')) {
+      return 'INTERN';
+    }
+
+    if (normalized.includes('contract')) {
+      return 'CONTRACT';
+    }
+
+    return 'PERMANENT';
   }
 
   goBack(): void {

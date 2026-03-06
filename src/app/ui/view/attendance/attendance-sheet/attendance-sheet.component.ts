@@ -90,20 +90,6 @@ export class AttendanceSheetsComponent {
   viewDetail: boolean = false;
   selectedId: number  = 0
 
-  attendanceColumns = [
-    { header: 'Name', field: 'name' },
-    { header: 'Department', field: 'department' },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: any) =>
-        row.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-    },
-    { header: 'Clock In', field: 'clockIn' },
-    { header: 'Clock Out', field: 'clockOut' },
-    { header: 'Action', formatter: () => 'View' }
-  ];
-
   constructor(
     private attendanceService: AttendanceService,
     private router: Router

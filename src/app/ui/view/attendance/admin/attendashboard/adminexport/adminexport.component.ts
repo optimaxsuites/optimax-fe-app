@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';

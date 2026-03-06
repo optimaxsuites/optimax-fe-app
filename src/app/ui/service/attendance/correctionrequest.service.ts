@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { CorrectionRequest } from '../../shared-component/models/correctionrequest.model';
+import { CorrectionRequest } from '../../domain/attendance/correctionrequest.dto';
 
 @Injectable({
   providedIn: 'root'

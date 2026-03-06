@@ -30,6 +30,13 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-left: 4px solid #2E6276; /* customBlue */
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
 }
 
 .approval-header .back-btn {

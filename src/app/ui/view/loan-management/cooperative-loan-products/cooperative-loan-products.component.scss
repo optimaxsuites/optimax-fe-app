@@ -9,6 +9,13 @@
     align-items: center;
     margin-bottom: 18px;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     .back-btn {
       background: #fff;
       color: #2E6276;

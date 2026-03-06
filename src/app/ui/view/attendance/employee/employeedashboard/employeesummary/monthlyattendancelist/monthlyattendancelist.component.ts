@@ -21,8 +21,8 @@ export class MonthlyAttendanceListComponent {
 
 
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
-import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
+import { AttendancetableService } from '../../../../../../service/attendance/attendancetable.service';
+import { AttendanceTableRecord } from '../../../../../../domain/attendance/attendancetable.dto';
 
 @Component({
   selector: 'app-monthlyattendancelist',

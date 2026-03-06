@@ -25,6 +25,12 @@ export class LoanDetailsComponent implements OnInit {
   showCommentModal: boolean = false;
   selectedAction: LoanApplication['status'] | '' = '';
   messages: Message[] = [];
+  suggestedInterestRate = 0;
+  approvalPreview = {
+    monthlyRepayment: 0,
+    totalRepayment: 0,
+    totalInterest: 0
+  };
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#ffc107' },
@@ -118,13 +124,15 @@ export class LoanDetailsComponent implements OnInit {
   openCommentModal(action: LoanApplication['status']): void {
     this.selectedAction = action;
     this.commentForm.reset();
+    this.suggestedInterestRate = this.loan ? this.loanApprovalService.determineInterestRate(this.loan) : 0;
     this.commentForm.patchValue({
-      interestRate: this.loan?.interestRate ?? 0
+      interestRate: action === 'APPROVED' ? this.suggestedInterestRate : this.loan?.interestRate ?? 0
     });
 
     const interestRateControl = this.commentForm.get('interestRate');
     if (action === 'APPROVED') {
       interestRateControl?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+      this.updateApprovalPreview(Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate));
     } else {
       interestRateControl?.setValidators([Validators.min(0), Validators.max(100)]);
     }
@@ -138,6 +146,21 @@ export class LoanDetailsComponent implements OnInit {
     this.showCommentModal = false;
     this.selectedAction = '';
     this.commentForm.reset();
+    this.suggestedInterestRate = 0;
+    this.approvalPreview = {
+      monthlyRepayment: 0,
+      totalRepayment: 0,
+      totalInterest: 0
+    };
+  }
+
+  onInterestRateInput(): void {
+    if (this.selectedAction !== 'APPROVED') {
+      return;
+    }
+
+    const currentRate = Number(this.commentForm.value.interestRate ?? 0);
+    this.updateApprovalPreview(currentRate);
   }
 
   // Submit status change with comment
@@ -161,7 +184,9 @@ export class LoanDetailsComponent implements OnInit {
       notes: this.commentForm.value.comment || '',
       changedBy: sessionStorage.getItem('username') || 'Admin',
       date: new Date().toISOString(),
-      interestRate: Number(this.commentForm.value.interestRate ?? 0)
+      interestRate: this.selectedAction === 'APPROVED'
+        ? Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate)
+        : Number(this.commentForm.value.interestRate ?? 0)
     };
 
     this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
@@ -236,7 +261,33 @@ export class LoanDetailsComponent implements OnInit {
     switch(mode) {
       case 'monthly': return 'Monthly Installments';
       case 'one_off': return 'One-off Payment';
-      default: return mode || 'Not specified';
+      default: return this.toTitleCase((mode || '').replace(/_/g, ' ')) || 'Not specified';
     }
+  }
+
+  getPurposeDisplay(purpose?: string | null): string {
+    return this.toTitleCase((purpose || '').replace(/_/g, ' ')) || 'N/A';
+  }
+
+  private toTitleCase(value: string): string {
+    return value
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+      .join(' ');
+  }
+
+  private updateApprovalPreview(interestRate: number): void {
+    if (!this.loan) {
+      return;
+    }
+
+    this.approvalPreview = this.loanApprovalService.calculateRepaymentBreakdown(
+      this.loan.loanAmount,
+      this.loan.repaymentPeriod,
+      Number.isFinite(interestRate) ? interestRate : 0,
+      this.loan.paymentMode
+    );
   }
 }

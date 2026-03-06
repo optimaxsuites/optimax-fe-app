@@ -29,6 +29,13 @@
     align-items: center;
     margin-bottom: 24px;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     h1 {
       color: #2E6276;
       font-size: 2rem;

@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { DepartmentHeatmap } from '../../../../../shared-component/models/models';
+import { DepartmentHeatmap } from '../../../../../domain/attendance/attendashboard.dto';
 
 @Component({
   selector: 'app-heatmap',

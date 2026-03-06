@@ -1,9 +1,9 @@
 import { Component, inject, OnInit, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
+import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { Observable, switchMap } from 'rxjs';
-import { MOCK_ATTENDANCE } from '../../../../shared-component/models/attendancetable.mock';
+import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetable.mock';
 //import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
 
 @Component({
@@ -17,42 +17,6 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
-  attendanceColumns = [
-    { header: 'ID', field: 'id' },
-    {
-      header: 'Employee',
-      formatter: (row: AttendanceTableRecord) => (row as any).employee || (row as any).employeeName || ''
-    },
-    { header: 'Department', field: 'department' },
-    {
-      header: 'Date',
-      formatter: (row: AttendanceTableRecord) => row.date || '-'
-    },
-    {
-      header: 'In',
-      formatter: (row: AttendanceTableRecord) => (row as any).checkIn || '-'
-    },
-    {
-      header: 'Out',
-      formatter: (row: AttendanceTableRecord) => (row as any).checkOut || '-'
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: AttendanceTableRecord) => {
-        if (row.status === 'PRESENT') return 'status present';
-        if (row.status === 'LATE') return 'status late';
-        if (row.status === 'ABSENT') return 'status absent';
-        return 'status';
-      }
-    },
-    { header: 'Hours', field: 'hours' }
-  ];
-
-  attendanceActions = [
-    { id: 'correct', label: 'Correct', className: 'correct-btn' }
-  ];
- 
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -121,12 +85,6 @@ openAttendance(record: AttendanceTableRecord) {
     alert('Invalid status. Use PRESENT, LATE, or ABSENT.');
   }
 }*/
-
-  handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
-    // if (event.actionId === 'correct') {
-    //   this.manualCorrection(event.row);
-    // }
-  }
 
 filters: any = {};
 

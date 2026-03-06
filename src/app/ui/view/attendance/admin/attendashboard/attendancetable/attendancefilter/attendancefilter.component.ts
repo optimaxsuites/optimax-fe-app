@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 //import { Router, ActivatedRoute } from '@angular/router';
-import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
+import { AttendancetableService } from '../../../../../../service/attendance/attendancetable.service';
+import { AttendanceTableRecord } from '../../../../../../domain/attendance/attendancetable.dto';
 
 @Component({
   selector: 'app-attendancefilter',

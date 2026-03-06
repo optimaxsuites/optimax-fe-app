@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { LateArrival } from '../../../../../shared-component/models/models';
+import { LateArrival } from '../../../../../domain/attendance/attendashboard.dto';
 
 @Component({
   selector: 'app-late-arrivals',

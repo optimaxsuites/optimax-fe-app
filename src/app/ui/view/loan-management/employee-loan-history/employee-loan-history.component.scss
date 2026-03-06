@@ -43,6 +43,13 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border: 1px solid #e3eef0;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     .back-btn {
       background: none;
       border: 1px solid #e3eef0;
