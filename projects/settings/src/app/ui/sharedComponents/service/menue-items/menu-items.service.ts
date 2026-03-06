@@ -426,14 +426,6 @@ export class MenuItemsService {
           description: 'Manage hotel room types, availability, rates, and reservations.'
         },
         {
-          label: 'Shortlets',
-          code: 'HOP_SHTLT',
-          route: this.navigationLink.getLink('shortletLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-plus',
-          description: 'Handle listings, bookings, and operations for short-term rental accommodations.'
-        },
-        {
           label: 'Services',
           code: 'HOP_SERV',
           route: this.navigationLink.getLink('serviceLink'),
@@ -442,21 +434,46 @@ export class MenuItemsService {
           description: 'Manage add-on services such as laundry, room service, or extra amenities.'
         },
         {
-          label: 'Rooms Checkout',
+          label: 'Guests',
+          code: 'HOP_GUEST',
+          route: this.navigationLink.getLink('guestLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
+        },
+        {
+          label: 'Payment',
+          code: 'HOP_PAY',
+          route: this.navigationLink.getLink('payLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
+        },
+        {
+          label: 'House Keeping',
+          code: 'HOP_PAY',
+          route: this.navigationLink.getLink('HKLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
+        },
+        {
+          label: 'Booking',
+          code: 'HOP_Book',
+          route: this.navigationLink.getLink('bookingLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-cog',
+          description: 'Manage hotel room types, availability, rates, and reservations.'
+        },
+        {
+          label: 'E-Booking',
           code: 'HOP_RM_CHK',
-          route: this.navigationLink.getLink('roomsCheckoutLink'),
+          route: this.navigationLink.getLink('eBookingLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'pi pi-credit-card',
           description: 'Handle billing and checkout process for room guests.'
         },
-        {
-          label: 'Services Checkout',
-          code: 'HOP_SR_CHK',
-          route: this.navigationLink.getLink('servicesCheckoutLink'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-credit-card',
-          description: 'Process payments and billing for hospitality service usage.'
-        }
+       
       ]
     },    
     {

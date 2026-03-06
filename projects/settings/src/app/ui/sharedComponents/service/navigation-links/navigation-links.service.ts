@@ -59,11 +59,14 @@ export class NavigationLinksService {
 
 
 // hospitality ================================================================================================================
-    this.links['roomLink'] = '/admin/hospitality/' +uuidV4();
-    this.links['serviceLink'] = '/admin/hospitality/service/' +uuidV4();
-    this.links['shortletLink'] = '/admin/hospitality/shortlet/' +uuidV4();
+    this.links['roomLink'] = '/admin/hospitality/rooms/' +uuidV4();
+    this.links['serviceLink'] = '/admin/hospitality/services/' +uuidV4();
+    this.links['guestLink'] = '/admin/hospitality/guests/' +uuidV4();
+    this.links['payLink'] = '/admin/hospitality/payments/' +uuidV4();
+    this.links['HKLink'] = '/admin/hospitality/housekeeping/' +uuidV4();
+    this.links['bookingLink'] = '/user/hospitality/bookings/' +uuidV4();
     this.links['roomsCheckoutLink'] = '/user/hospitality/checkout/' +uuidV4();
-    this.links['servicesCheckoutLink'] = '/user/hospitality/services/' +uuidV4();
+    this.links['eBookingLink'] = '/user/hospitality/e-bookings/home/' +uuidV4();
 
     
 
