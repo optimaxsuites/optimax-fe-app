@@ -16,8 +16,8 @@
 
 /* Custom css */
 @import "assets/theme/theme.scss";
-@import "../projects/POS/src/styles.scss";
-@import "assets/layout/layout.css";
+// @import "../projects/POS/src/styles.scss";
+// @import "assets/layout/layout.css";
 
 // QUILL CSS
 @import "../node_modules/quill/dist/quill.core.css";
@@ -62,12 +62,25 @@ $ERP-FE-theme: mat.define-light-theme(
 }
 
 *{
-  font-size: 12px !important;
+  font-size: 12px ;
   font-family: "Roboto Slab", serif;
   list-style: none;
   outline: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover,
+a:focus,
+a:active,
+a:visited {
+  color: inherit;
   text-decoration: none;
 }
+
 
 
 .my-outlined-dialog {
