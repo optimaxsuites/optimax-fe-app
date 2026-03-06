@@ -3,6 +3,70 @@
   min-height: 100vh;
   background-color: #f8feff;
 
+  .payment-form-modal {
+    display: grid;
+    gap: 12px;
+
+    .form-section-block {
+      display: grid;
+      gap: 6px;
+
+      label {
+        color: #2E6276;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      input,
+      select,
+      textarea {
+        border: 1px solid #d7e7ec;
+        border-radius: 6px;
+        padding: 9px 10px;
+        font-family: inherit;
+      }
+    }
+
+    .payment-error {
+      background: rgba(217, 83, 79, 0.08);
+      border: 1px solid rgba(217, 83, 79, 0.2);
+      color: #b30000;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .payment-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+
+      .cancel-btn,
+      .pay-btn {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .cancel-btn {
+        background: #d7e7ec;
+        color: #2f3b45;
+      }
+
+      .pay-btn {
+        background: #2EB270;
+        color: #fff;
+
+        &:hover {
+          background: #47e797;
+        }
+      }
+    }
+  }
+
   .loading-container {
     display: flex;
     flex-direction: column;
@@ -32,8 +96,7 @@
   }
 
   .dashboard-content {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
   }
 
   .welcome-header {
@@ -45,16 +108,17 @@
     background: white;
     border-radius: 12px;
     border: 1px solid #e3eef0;
+    border-left: 4px solid #2E6276;
 
     h1 {
       color: #2E6276;
-      font-size: 2rem;
-      margin: 0;
+      font-size: 1.8rem !important;
+      margin: 0 0 4px 0 !important;
     }
 
     .member-id {
       color: #8a8a8a;
-      margin: 0;
+      margin: 2px 0 0;
     }
 
     .user-avatar {
@@ -71,25 +135,43 @@
   }
 
   .quick-actions-panel {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 24px;
 
     .quick-action-btn {
       border: none;
       background: #2E6276;
       color: white;
-      padding: 12px;
+      padding: 14px 28px;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      min-width: 180px;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s ease;
 
       &:hover {
         background: #4291b1;
+        transform: translateY(-2px);
+      }
+
+      i {
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      &.new-loan-btn {
+        background: #2EB270;
+
+        &:hover {
+          background: #47e797;
+        }
       }
     }
   }
@@ -124,19 +206,19 @@
         }
 
         &.pending-icon {
-          background: linear-gradient(135deg, #FFA500, #ffb52e);
+          background: #2E6276;
         }
 
         &.active-icon {
-          background: linear-gradient(135deg, #2E6276, #4291b1);
+          background: #2E6276;
         }
 
         &.rejected-icon {
-          background: linear-gradient(135deg, #e93737, #f26b6b);
+          background: #2E6276;
         }
 
         &.completed-icon {
-          background: linear-gradient(135deg, #2EB270, #47e797);
+          background: #2E6276;
         }
       }
 
@@ -214,6 +296,11 @@
           text-align: left;
           color: #2E6276;
           font-weight: 600;
+
+          &.actions-col {
+            text-align: center;
+            width: 110px;
+          }
         }
       }
 
@@ -226,6 +313,14 @@
 
         td {
           padding: 12px 8px;
+
+          &.actions-col {
+            text-align: center;
+
+            .table-actions {
+              justify-content: center;
+            }
+          }
 
           &.loan-id {
             font-family: monospace;
@@ -275,8 +370,8 @@
           }
 
           .btn-view-schedule {
-            border: 1px solid #e3eef0;
-            background: #fff;
+            border: none;
+            background: transparent;
             color: #2E6276;
             border-radius: 4px;
             padding: 4px 8px;
@@ -285,6 +380,12 @@
             &:hover {
               background: #f8feff;
             }
+          }
+
+          .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
           }
         }
       }
@@ -323,7 +424,7 @@
     }
 
     .quick-actions-panel {
-      grid-template-columns: 1fr;
+      gap: 12px;
     }
   }
 }

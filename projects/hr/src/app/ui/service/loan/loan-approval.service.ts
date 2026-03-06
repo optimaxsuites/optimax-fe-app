@@ -28,9 +28,16 @@ export class LoanApprovalService {
     const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy || 'Admin';
     const date = typeof statusOrUpdate === 'string' ? new Date().toISOString() : statusOrUpdate.date || new Date().toISOString();
     const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
+    let effectiveInterestRate = application.interestRate;
 
     if (interestRate !== undefined && Number.isFinite(interestRate)) {
-      application.interestRate = Number(interestRate.toFixed(2));
+      effectiveInterestRate = Number(interestRate.toFixed(2));
+    } else if (status === 'APPROVED') {
+      effectiveInterestRate = this.determineInterestRate(application);
+    }
+
+    if (Number.isFinite(effectiveInterestRate)) {
+      application.interestRate = Number(effectiveInterestRate.toFixed(2));
     }
 
     // Update application
@@ -108,6 +115,70 @@ export class LoanApprovalService {
     const all = this.storageService.getAllApplications();
     const pending = all.filter(app => app.status === 'PENDING');
     return of(pending);
+  }
+
+  determineInterestRate(loan: Pick<LoanApplication, 'paymentMode' | 'repaymentPeriod'>): number {
+    if (loan.paymentMode === 'one_off') {
+      return 5;
+    }
+
+    const tenureMonths = loan.repaymentPeriod || 0;
+
+    if (tenureMonths <= 3) {
+      return 4.5;
+    }
+
+    if (tenureMonths <= 6) {
+      return 6;
+    }
+
+    if (tenureMonths <= 12) {
+      return 8.5;
+    }
+
+    return 10.5;
+  }
+
+  calculateRepaymentBreakdown(
+    loanAmount: number,
+    months: number,
+    interestRate: number,
+    paymentMode?: 'monthly' | 'one_off'
+  ): { monthlyRepayment: number; totalRepayment: number; totalInterest: number } {
+    if (paymentMode === 'one_off') {
+      const totalInterest = loanAmount * (interestRate / 100);
+      const totalRepayment = loanAmount + totalInterest;
+
+      return {
+        monthlyRepayment: Number(totalRepayment.toFixed(2)),
+        totalRepayment: Number(totalRepayment.toFixed(2)),
+        totalInterest: Number(totalInterest.toFixed(2))
+      };
+    }
+
+    if (!months || months <= 0) {
+      return {
+        monthlyRepayment: 0,
+        totalRepayment: 0,
+        totalInterest: 0
+      };
+    }
+
+    const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
+    const monthlyPayment = monthlyInterestRate > 0
+      ? loanAmount *
+        (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
+        (Math.pow(1 + monthlyInterestRate, months) - 1)
+      : loanAmount / months;
+
+    const totalRepayment = monthlyPayment * months;
+    const totalInterest = totalRepayment - loanAmount;
+
+    return {
+      monthlyRepayment: Number(monthlyPayment.toFixed(2)),
+      totalRepayment: Number(totalRepayment.toFixed(2)),
+      totalInterest: Number(totalInterest.toFixed(2))
+    };
   }
 
   private generateRepaymentSchedule(

@@ -4,7 +4,13 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeMember, CooperativeLoanProduct } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { EmployeeService } from '../../../service/employee.service';
+import {
+  CooperativeMember,
+  CooperativeLoanProduct,
+  CooperativeEmployeeProfile,
+  CooperativeMembershipEligibility
+} from '../../../service/loan/cooperative-loan/cooperative.types';
 
 
 
@@ -21,9 +27,12 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   applicationForm!: FormGroup;
   members: CooperativeMember[] = [];
+  eligibleMembers: CooperativeMember[] = [];
   products: CooperativeLoanProduct[] = [];
   selectedProduct?: CooperativeLoanProduct;
   selectedMember?: CooperativeMember;
+  employeeDirectory: CooperativeEmployeeProfile[] = [];
+  selectedMemberEligibility?: CooperativeMembershipEligibility;
   
   // Calculated values
   monthlyRepayment = 0;
@@ -38,7 +47,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -52,15 +62,44 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
 
     this.loadData();
+    this.loadEmployeeDirectory();
     this.initForm();
   }
 
   loadData(): void {
     this.cooperativeService.getMembers().subscribe(members => {
       this.members = members.filter(m => m.status === 'ACTIVE');
+      this.refreshEligibleMembers();
       this.tryApplyPrefillMember();
+      this.resolveSelectedMemberEligibility();
     });
     this.products = this.cooperativeService.getProducts().filter(p => p.status === 'ACTIVE');
+  }
+
+  loadEmployeeDirectory(): void {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        const employees = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        this.employeeDirectory = employees
+          .map((employee: any) => this.mapEmployeeToProfile(employee))
+          .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
+
+        this.refreshEligibleMembers();
+        this.resolveSelectedMemberEligibility();
+      },
+      error: () => {
+        this.employeeDirectory = [];
+        this.refreshEligibleMembers();
+        this.resolveSelectedMemberEligibility();
+      }
+    });
   }
 
   tryApplyPrefillMember(): void {
@@ -68,7 +107,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return;
     }
 
-    const matchedMember = this.members.find(member =>
+    const matchedMember = this.eligibleMembers.find(member =>
       member.id === this.prefillMemberParam || member.memberId === this.prefillMemberParam
     );
 
@@ -96,7 +135,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
 
     this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
-      this.selectedMember = this.members.find(member => member.id === memberId);
+      this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
+      this.resolveSelectedMemberEligibility();
       this.validateShareEligibility();
       this.validatePledgedShares();
     });
@@ -237,6 +277,11 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return false;
     }
 
+    if (!this.selectedMemberEligibility || !this.selectedMemberEligibility.canApply) {
+      this.submitError = this.selectedMemberEligibility?.message || 'Selected member is not eligible to apply based on rank policy.';
+      return false;
+    }
+
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const duration = Number(this.applicationForm.get('duration')?.value || 0);
     const useSharesAsCollateral = Boolean(this.applicationForm.get('useSharesAsCollateral')?.value);
@@ -286,7 +331,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.calculateRepayment();
     this.submitSuccessMessage = '';
 
-    if (!this.applicationForm.valid || !this.selectedProduct || !this.validateBeforeSubmit()) {
+    if (!this.applicationForm.valid || !this.selectedProduct || !this.canSubmitByRank || !this.validateBeforeSubmit()) {
       return;
     }
 
@@ -336,5 +381,136 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return this.cooperativeService.formatCurrency(amount);
+  }
+
+  get canSubmitByRank(): boolean {
+    return !!this.selectedMemberEligibility?.canApply;
+  }
+
+  private refreshEligibleMembers(): void {
+    if (this.members.length === 0) {
+      this.eligibleMembers = [];
+      return;
+    }
+
+    const profileByEmail = new Map(
+      this.employeeDirectory.map(employee => [employee.email.toLowerCase(), employee])
+    );
+    const profileByName = new Map(
+      this.employeeDirectory.map(employee => [employee.fullName.toLowerCase(), employee])
+    );
+    const profileById = new Map(
+      this.employeeDirectory.map(employee => [employee.employeeId, employee])
+    );
+
+    this.eligibleMembers = this.members.filter(member => {
+      const matchedEmployee =
+        profileById.get(member.id) ||
+        profileByEmail.get(member.email.toLowerCase()) ||
+        profileByName.get(member.fullName.toLowerCase());
+
+      if (!matchedEmployee) {
+        return false;
+      }
+
+      return this.cooperativeService.checkMembershipEligibility(matchedEmployee).canApply;
+    });
+
+    const selectedMemberId = this.applicationForm?.get('memberId')?.value;
+    if (selectedMemberId && !this.eligibleMembers.some(member => member.id === selectedMemberId)) {
+      this.applicationForm.patchValue({ memberId: '' }, { emitEvent: false });
+      this.selectedMember = undefined;
+      this.selectedMemberEligibility = undefined;
+    }
+  }
+
+  private resolveSelectedMemberEligibility(): void {
+    if (!this.selectedMember) {
+      this.selectedMemberEligibility = undefined;
+      return;
+    }
+
+    const matchedEmployee = this.employeeDirectory.find(employee =>
+      employee.employeeId === this.selectedMember?.id ||
+      employee.email.toLowerCase() === this.selectedMember?.email.toLowerCase() ||
+      employee.fullName.toLowerCase() === this.selectedMember?.fullName.toLowerCase()
+    );
+
+    if (!matchedEmployee) {
+      this.selectedMemberEligibility = {
+        canApply: false,
+        canBeInvited: false,
+        requiresInvite: false,
+        requiresManagerApproval: false,
+        autoApprove: false,
+        isOnHold: false,
+        isBlocked: true,
+        rank: 'JUNIOR',
+        tenureMonths: 0,
+        probationCompleted: false,
+        policy: {
+          tier: 'STANDARD',
+          maxLoan: 0,
+          minShares: 0,
+          votingRights: 'NONE'
+        },
+        message: 'Unable to validate rank eligibility for this member. Please update employee profile details first.'
+      };
+      return;
+    }
+
+    this.selectedMemberEligibility = this.cooperativeService.checkMembershipEligibility(matchedEmployee);
+  }
+
+  private mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
+    const firstName = String(employee?.firstName || '').trim();
+    const lastName = String(employee?.lastName || '').trim();
+    const fallbackName = String(employee?.fullName || employee?.name || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim() || fallbackName;
+    const email = String(employee?.email || employee?.workEmail || '').trim();
+
+    if (!fullName || !email) {
+      return null;
+    }
+
+    const employeeId = String(employee?.id ?? employee?.employeeId ?? employee?.staffId ?? '').trim();
+    if (!employeeId) {
+      return null;
+    }
+
+    const levelName = String(employee?.level?.name || employee?.level || employee?.jobTitle || '').trim().toLowerCase();
+    const employmentTypeName = String(
+      employee?.employmentType?.name || employee?.employmentType || employee?.jobType?.name || employee?.jobType || ''
+    ).trim().toLowerCase();
+
+    return {
+      employeeId,
+      fullName,
+      email,
+      phone: String(employee?.phone || '').trim(),
+      department: String(employee?.department?.name || employee?.department || '').trim(),
+      rank: levelName.includes('executive') || levelName.includes('exec') || levelName.includes('director')
+        ? 'EXEC'
+        : levelName.includes('senior') || levelName.includes('manager') || levelName.includes('lead') || levelName.includes('head')
+        ? 'SENIOR'
+        : levelName.includes('mid') || levelName.includes('associate') || levelName.includes('level 2') || levelName.includes('level 3')
+        ? 'MID'
+        : 'JUNIOR',
+      employmentType: employmentTypeName.includes('intern')
+        ? 'INTERN'
+        : employmentTypeName.includes('contract')
+        ? 'CONTRACT'
+        : 'PERMANENT',
+      employmentStartDate:
+        employee?.employementStartDate ||
+        employee?.employmentStartDate ||
+        employee?.hireDate ||
+        employee?.createdAt ||
+        new Date().toISOString(),
+      onProbation: Boolean(employee?.onProbation),
+      probationEndDate: employee?.probationEndDate,
+      hasActiveDisciplinaryIssue: Boolean(employee?.hasActiveDisciplinaryIssue || employee?.disciplinaryCaseOpen),
+      managerId: String(employee?.supervisor?.id || employee?.supervisor || employee?.managerId || '').trim() || undefined
+    };
   }
 }

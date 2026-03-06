@@ -206,6 +206,19 @@ app-cooperative-loans {
     background: #f8fbfc;
   }
 
+  thead th.actions-col,
+  tbody td.actions-col {
+    text-align: center;
+    width: 110px;
+    white-space: nowrap;
+  }
+
+  tbody td.actions-col .table-actions,
+  tbody td.actions-col .action-buttons,
+  tbody td.actions-col .row-actions {
+    justify-content: center;
+  }
+
   td[colspan],
   .no-data,
   .empty-state {
@@ -265,5 +278,160 @@ app-loan-dashboard {
     table tbody td {
       padding: 0.55rem 0.7rem;
     }
+  }
+}
+
+/* Loan Management standard header card design */
+app-loan-dashboard .lm-header-card,
+app-cooperative-dashboard .lm-header-card,
+app-cooperative-member-dashboard .lm-header-card,
+app-loan-reports .lm-header-card,
+app-cooperative-loans .lm-header-card,
+app-cooperative-members .lm-header-card,
+app-cooperative-member-detail .lm-header-card,
+app-loan-approval-ui .lm-header-card,
+app-employee-dashboard .lm-header-card,
+app-employee-history .lm-header-card,
+app-loan-details .lm-header-card,
+app-cooperative-member-form .lm-header-card,
+app-cooperative-loan-detail .lm-header-card,
+app-cooperative-loan-products .lm-header-card,
+app-cooperative-member-loans .lm-header-card,
+app-loan-request-form .lm-header-card,
+app-cooperative-loan-application .lm-header-card {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px;
+  margin-bottom: 24px !important;
+  padding: 20px !important;
+  background: #fff !important;
+  border: 1px solid #e3eef0 !important;
+  border-left: 4px solid #2E6276 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+app-loan-dashboard .lm-header-card h1,
+app-cooperative-dashboard .lm-header-card h1,
+app-cooperative-member-dashboard .lm-header-card h1,
+app-loan-reports .lm-header-card h1,
+app-cooperative-loans .lm-header-card h1,
+app-cooperative-members .lm-header-card h1,
+app-cooperative-member-detail .lm-header-card h1,
+app-loan-approval-ui .lm-header-card h1,
+app-employee-dashboard .lm-header-card h1,
+app-employee-history .lm-header-card h1,
+app-loan-details .lm-header-card h1,
+app-cooperative-member-form .lm-header-card h1,
+app-cooperative-loan-detail .lm-header-card h1,
+app-cooperative-loan-products .lm-header-card h1,
+app-cooperative-member-loans .lm-header-card h1,
+app-loan-request-form .lm-header-card h1,
+app-cooperative-loan-application .lm-header-card h1 {
+  color: #2E6276 !important;
+  font-size: 2.2rem !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+app-loan-dashboard .lm-header-card h1 i,
+app-cooperative-dashboard .lm-header-card h1 i,
+app-cooperative-member-dashboard .lm-header-card h1 i,
+app-loan-reports .lm-header-card h1 i,
+app-cooperative-loans .lm-header-card h1 i,
+app-cooperative-members .lm-header-card h1 i,
+app-cooperative-member-detail .lm-header-card h1 i,
+app-loan-approval-ui .lm-header-card h1 i,
+app-employee-dashboard .lm-header-card h1 i,
+app-employee-history .lm-header-card h1 i,
+app-loan-details .lm-header-card h1 i,
+app-cooperative-member-form .lm-header-card h1 i,
+app-cooperative-loan-detail .lm-header-card h1 i,
+app-cooperative-loan-products .lm-header-card h1 i,
+app-cooperative-member-loans .lm-header-card h1 i,
+app-loan-request-form .lm-header-card h1 i,
+app-cooperative-loan-application .lm-header-card h1 i {
+  color: #39ba78 !important;
+}
+
+app-loan-dashboard .lm-header-card h1:not(:has(i))::before,
+app-cooperative-dashboard .lm-header-card h1:not(:has(i))::before,
+app-cooperative-member-dashboard .lm-header-card h1:not(:has(i))::before,
+app-loan-reports .lm-header-card h1:not(:has(i))::before,
+app-cooperative-loans .lm-header-card h1:not(:has(i))::before,
+app-cooperative-members .lm-header-card h1:not(:has(i))::before,
+app-cooperative-member-detail .lm-header-card h1:not(:has(i))::before,
+app-loan-approval-ui .lm-header-card h1:not(:has(i))::before,
+app-employee-dashboard .lm-header-card h1:not(:has(i))::before,
+app-employee-history .lm-header-card h1:not(:has(i))::before,
+app-loan-details .lm-header-card h1:not(:has(i))::before,
+app-cooperative-member-form .lm-header-card h1:not(:has(i))::before,
+app-cooperative-loan-detail .lm-header-card h1:not(:has(i))::before,
+app-cooperative-loan-products .lm-header-card h1:not(:has(i))::before,
+app-cooperative-member-loans .lm-header-card h1:not(:has(i))::before,
+app-loan-request-form .lm-header-card h1:not(:has(i))::before,
+app-cooperative-loan-application .lm-header-card h1:not(:has(i))::before {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  content: "\f4be";
+  color: #39ba78;
+  font-size: 0.92em;
+}
+
+/* Loan management card icon subtle gradients */
+app-loan-dashboard .stat-card .card-icon,
+app-cooperative-dashboard .stat-card .stat-icon,
+app-cooperative-member-dashboard .stat-card .stat-icon,
+app-employee-dashboard .stat-card .stat-icon,
+app-loan-reports .summary-card .card-icon {
+  background: linear-gradient(135deg, #3a7187 0%, #5aa4c0 60%, #8fc4d8 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 9px rgba(46, 98, 118, 0.13);
+}
+
+@media (max-width: 768px) {
+  app-loan-dashboard .lm-header-card,
+  app-cooperative-dashboard .lm-header-card,
+  app-cooperative-member-dashboard .lm-header-card,
+  app-loan-reports .lm-header-card,
+  app-cooperative-loans .lm-header-card,
+  app-cooperative-members .lm-header-card,
+  app-cooperative-member-detail .lm-header-card,
+  app-loan-approval-ui .lm-header-card,
+  app-employee-dashboard .lm-header-card,
+  app-employee-history .lm-header-card,
+  app-loan-details .lm-header-card,
+  app-cooperative-member-form .lm-header-card,
+  app-cooperative-loan-detail .lm-header-card,
+  app-cooperative-loan-products .lm-header-card,
+  app-cooperative-member-loans .lm-header-card,
+  app-loan-request-form .lm-header-card,
+  app-cooperative-loan-application .lm-header-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 16px !important;
+  }
+
+  app-loan-dashboard .lm-header-card h1,
+  app-cooperative-dashboard .lm-header-card h1,
+  app-cooperative-member-dashboard .lm-header-card h1,
+  app-loan-reports .lm-header-card h1,
+  app-cooperative-loans .lm-header-card h1,
+  app-cooperative-members .lm-header-card h1,
+  app-cooperative-member-detail .lm-header-card h1,
+  app-loan-approval-ui .lm-header-card h1,
+  app-employee-dashboard .lm-header-card h1,
+  app-employee-history .lm-header-card h1,
+  app-loan-details .lm-header-card h1,
+  app-cooperative-member-form .lm-header-card h1,
+  app-cooperative-loan-detail .lm-header-card h1,
+  app-cooperative-loan-products .lm-header-card h1,
+  app-cooperative-member-loans .lm-header-card h1,
+  app-loan-request-form .lm-header-card h1,
+  app-cooperative-loan-application .lm-header-card h1 {
+    font-size: 1.6rem !important;
   }
 }

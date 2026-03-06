@@ -1,16 +1,25 @@
 <div class="main-dashboard-wrapper">
   <div class="dashboard-toggle">
-    <label for="dashboard-select" class="toggle-label">Dashboard</label>
-    <div class="dashboard-select-wrap">
-      <select
-        id="dashboard-select"
-        class="dashboard-select"
-        [ngModel]="selectedDashboard"
-        (ngModelChange)="onDashboardChange($event)">
-        <option value="welfare">Welfare Loans</option>
-        <option value="cooperative">Cooperative Loans</option>
-      </select>
-      <i class="fas fa-chevron-down select-icon" aria-hidden="true"></i>
+    <label class="toggle-label">Dashboards</label>
+    <div class="dashboard-switch" role="tablist" aria-label="Dashboard selector">
+      <button
+        type="button"
+        class="switch-btn"
+        [class.active]="selectedDashboard === 'welfare'"
+        (click)="onDashboardChange('welfare')"
+        role="tab"
+        [attr.aria-selected]="selectedDashboard === 'welfare'">
+        Welfare Dashboard
+      </button>
+      <button
+        type="button"
+        class="switch-btn"
+        [class.active]="selectedDashboard === 'cooperative'"
+        (click)="onDashboardChange('cooperative')"
+        role="tab"
+        [attr.aria-selected]="selectedDashboard === 'cooperative'">
+        Cooperative Dashboard
+      </button>
     </div>
   </div>
 

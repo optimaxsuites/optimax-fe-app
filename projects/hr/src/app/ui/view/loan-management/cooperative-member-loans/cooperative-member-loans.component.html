@@ -5,7 +5,7 @@
   </div>
 
   <div *ngIf="!isLoading" class="content">
-    <div class="page-header">
+    <div class="page-header lm-header-card">
       <div>
         <h1>My Loans</h1>
         <p *ngIf="member">{{ member.fullName }} · {{ member.memberId }}</p>
@@ -40,7 +40,7 @@
             <th>Monthly</th>
             <th>Status</th>
             <th>Date</th>
-            <th></th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -52,7 +52,7 @@
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
             </td>
             <td>{{ loan.applicationDate | date:'mediumDate' }}</td>
-            <td>
+            <td class="actions-col">
               <button class="view-btn" (click)="viewLoanDetails(loan.id)">View</button>
             </td>
           </tr>

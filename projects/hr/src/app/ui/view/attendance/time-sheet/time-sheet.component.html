@@ -1,28 +1,45 @@
 <div class="timesheet-container table-item">
   <h2>Employee Timesheet</h2>
 
-  <app-table tableClass="timesheet-table" [columns]="timeSheetColumns" [rows]="days">
-    <ng-template appTableBody let-day>
-      <td>{{ day }}</td>
-      <td>
-        <select [(ngModel)]="projectAssignments[day]">
-          <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
-        </select>
-      </td>
-      <td>
-        <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
-      </td>
-      <td>{{ day === 'Friday' ? '08:30' : '08:30' }}</td>
-      <td>{{ day === 'Friday' ? '14:30' : '17:30' }}</td>
-      <td>
-        <input type="time" [(ngModel)]="actualClockInTimes[day]" placeholder="Clock-in Time">
-      </td>
-      <td>
-        <input type="time" [(ngModel)]="actualClockOutTimes[day]" placeholder="Clock-out Time">
-      </td>
-      <td>{{ calculateHoursWorked(day) | number: '1.2-2' }}</td>
-    </ng-template>
-  </app-table>
+  <table class="timesheet-table">
+    <thead>
+      <tr>
+        <th>Day</th>
+        <th>Project</th>
+        <th>Task</th>
+        <th>Resumption Time</th>
+        <th>Closing Time</th>
+        <th>Actual Clock-In</th>
+        <th>Actual Clock-Out</th>
+        <th>Hours Worked</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let day of days">
+        <td>{{ day }}</td>
+
+        <td>
+          <select [(ngModel)]="projectAssignments[day]">
+            <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
+          </select>
+        </td>
+
+        <td>
+          <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
+        </td>
+
+        <td>{{ day === 'Friday' ? '08:30' : '08:30' }}</td>
+        <td>{{ day === 'Friday' ? '14:30' : '17:30' }}</td>
+        <td>
+          <input type="time" [(ngModel)]="actualClockInTimes[day]" placeholder="Clock-in Time">
+        </td>
+        <td>
+          <input type="time" [(ngModel)]="actualClockOutTimes[day]" placeholder="Clock-out Time">
+        </td>
+        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }}</td>
+      </tr>
+    </tbody>
+  </table>
 
   <div class="signature-section">
     <h3>Employee Signature</h3>

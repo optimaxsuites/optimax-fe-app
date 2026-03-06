@@ -7,9 +7,11 @@
 
   <div *ngIf="!isLoading" class="members-content">
     <!-- Header -->
-    <div class="members-header">
-      <app-back-button (click)="goBack()"></app-back-button>
-      <h1><i class="fas fa-users"></i> Cooperative Members</h1>
+    <div class="members-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-users"></i> Cooperative Members</h1>
+      </div>
       <button class="add-btn" (click)="addMember()">
         <i class="fas fa-user-plus"></i> Add Member
       </button>
@@ -82,7 +84,7 @@
             <th (click)="setSort('joinDate')" class="sortable">
               Date Joined <i class="fas" [ngClass]="getSortIcon('joinDate')"></i>
             </th>
-            <th>Actions</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -107,7 +109,7 @@
               </select>
             </td>
             <td>{{ member.joinDate | date:'shortDate' }}</td>
-            <td>
+            <td class="actions-col">
               <div class="row-actions" (click)="$event.stopPropagation()">
                 <button class="action-btn" (click)="viewMember(member.id)">
                   <i class="fas fa-user"></i> Profile

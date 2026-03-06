@@ -9,7 +9,7 @@
 
   <div *ngIf="!isLoading && loan" class="detail-content">
     <!-- Header -->
-    <div class="detail-header">
+    <div class="detail-header lm-header-card">
       <h1>
         Loan Details: {{ loan.loanId }}
         <span class="status-badge" [ngClass]="getStatusClass(loan.status)">

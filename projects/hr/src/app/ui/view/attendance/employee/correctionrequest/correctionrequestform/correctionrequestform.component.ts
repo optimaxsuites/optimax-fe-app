@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CorrectionRequest } from '../../../../../shared-component/models/correctionrequest.model';
+import { CorrectionRequest } from '../../../../../domain/attendance/correctionrequest.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({

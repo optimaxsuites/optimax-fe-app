@@ -9,7 +9,7 @@
   
   <div *ngIf="!isLoading && loan" class="loan-content">
     <!-- Header -->
-    <div class="loan-header">
+    <div class="loan-header lm-header-card">
       <app-back-button (click)="goBack()"></app-back-button>
       <h1>Loan Application Details</h1>
     </div>
@@ -184,10 +184,10 @@
               <i class="fas fa-history"></i>
             </button>
             <button *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
-              <i class="fas fa-check-circle"></i> Approve Loan
+              <i class="fas fa-check-circle"></i> Approve
             </button>
             <button *ngIf="loan.status === 'PENDING'" class="reject-btn" (click)="rejectLoan()">
-              <i class="fas fa-times-circle"></i> Reject Loan
+              <i class="fas fa-times-circle"></i> Reject
             </button>
           </div>
         </div>
@@ -278,13 +278,18 @@
             <span class="required" *ngIf="selectedAction === 'APPROVED'">*</span>
           </label>
 
+          <div class="interest-rate-hint" *ngIf="selectedAction === 'APPROVED'">
+            Auto-calculated from repayment mode and tenure. Suggested rate: <strong>{{ suggestedInterestRate }}%</strong>
+          </div>
+
           <input
             id="interestRate"
             type="number"
             [formControl]="interestRateControl"
             min="0"
             step="0.1"
-            placeholder="Enter interest rate"
+            placeholder="Auto-calculated interest rate"
+            (input)="onInterestRateInput()"
             [class.error]="interestRateControl.invalid && interestRateControl.touched"
           >
 
@@ -292,6 +297,21 @@
             <small *ngIf="interestRateControl.errors?.['required']">Interest rate is required for approval</small>
             <small *ngIf="interestRateControl.errors?.['min']">Interest rate cannot be negative</small>
             <small *ngIf="interestRateControl.errors?.['max']">Interest rate cannot exceed 100%</small>
+          </div>
+
+          <div class="approval-preview" *ngIf="selectedAction === 'APPROVED' && !interestRateControl.invalid">
+            <div class="preview-row">
+              <span>Estimated Installment:</span>
+              <strong>{{ formatCurrency(approvalPreview.monthlyRepayment) }}</strong>
+            </div>
+            <div class="preview-row">
+              <span>Total Repayable:</span>
+              <strong>{{ formatCurrency(approvalPreview.totalRepayment) }}</strong>
+            </div>
+            <div class="preview-row interest">
+              <span>Total Interest:</span>
+              <strong>{{ formatCurrency(approvalPreview.totalInterest) }}</strong>
+            </div>
           </div>
 
           <label for="comment" class="comment-label">
@@ -327,7 +347,7 @@
           (click)="submitStatusChange()"
           [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && interestRateControl.invalid)">
           <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-times-circle': selectedAction === 'REJECTED'}"></i>
-          {{ selectedAction === 'APPROVED' ? 'Approve Loan' : 'Reject Loan' }}
+          {{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }}
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { AttendashboardService } from '../../../../service/attendance/attendashboard.service';
-import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
+import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 
 @Component({

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CorrectionrequestService } from '../../../../service/attendance/correctionrequest.service';
-import { CorrectionRequest } from '../../../../shared-component/models/correctionrequest.model';
+import { CorrectionRequest } from '../../../../domain/attendance/correctionrequest.dto';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
 
 @Component({
@@ -11,16 +11,6 @@ import { AttendancetableService } from '../../../../service/attendance/attendanc
 export class AdminCorrectionsComponent implements OnInit {
   requests: CorrectionRequest[] = [];
   rejectReason: { [id: string]: string } = {};
-  adminCorrectionColumns = [
-    {
-      header: 'Employee',
-      formatter: (row: CorrectionRequest) => row.employeeName || 'Employee'
-    },
-    { header: 'Date', field: 'date' },
-    { header: 'Issue', field: 'issueType' },
-    { header: 'Status', field: 'status' },
-    { header: 'Action', field: 'action' }
-  ];
 
   constructor(
     private correctionService: CorrectionrequestService,

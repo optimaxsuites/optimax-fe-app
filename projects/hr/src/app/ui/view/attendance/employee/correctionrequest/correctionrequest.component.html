@@ -12,13 +12,35 @@
   </div>
 
   <!-- Requests Table -->
-  <app-table
-    *ngIf="requests.length > 0"
-    [columns]="requestColumns"
-    [rows]="requests"
-    [actions]="requestActions"
-    (actionClick)="handleRequestAction($event)"
-  ></app-table>
+  <table *ngIf="requests.length > 0">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Issue Type</th>
+        <th>Status</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let req of requests">
+        <td>{{ req.date | date:'mediumDate' }}</td>
+        <td>{{ getIssueLabel(req.issueType) }}</td>
+        <td>
+          <span class="status" [ngClass]="req.status.toLowerCase()">
+            {{ req.status }}
+          </span>
+        </td>
+        <td>
+          {{ req.description }}
+
+          <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
+            Rejection Reason: {{ req.rejectionReason }}
+          </div>          
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
   <!-- Modal Form -->
   <app-correctionrequestform

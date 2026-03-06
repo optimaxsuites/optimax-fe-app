@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { AttendanceTableRecord } from '../../shared-component/models/attendancetable.model';
-import { MOCK_ATTENDANCE } from '../../shared-component/models/attendancetable.mock';
+import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
+import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
 import { OfficeHoursService } from './office-hours.service';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';

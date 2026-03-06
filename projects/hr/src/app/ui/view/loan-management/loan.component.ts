@@ -12,7 +12,7 @@ import { MainDashboardComponent } from './main-dashboard-component/main-dashboar
 export class LoanComponent {
   tabsConfig: TabConfig[] = [
     {
-      name: 'See Dashboards',
+      name: 'Admin Dashboards',
       component: MainDashboardComponent,
       icon: 'fas fa-chart-line'
     },

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { OfficeHours } from '../../shared-component/models/office-hours.model';
+import { OfficeHours } from '../../domain/attendance/office-hours.dto';
 
 const DEFAULT_OFFICE_HOURS: OfficeHours = {
   openingTime: '09:00',
