@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   HotelserviceService,
@@ -8,7 +8,7 @@ import {
   Room,
   RoomStatus,
   RoomTypeDTO,
-  AdditionalService,
+  AdditionalDetail,
   Booking,
   BookingStatus,
   Payment,
@@ -16,7 +16,7 @@ import {
 } from '../../../hospitality/hotelservice.service';
 
 interface ServiceItem {
-  service: AdditionalService;
+  service: AdditionalDetail;
   quantity: number;
 }
 
@@ -50,9 +50,6 @@ export class BookingRoomFirstComponent implements OnInit {
   // Step 3 — Dates & Details
   datesForm!: FormGroup;
 
-  // Step 4 — Services + Payment
-  additionalServices: AdditionalService[] = [];
-  selectedServices: ServiceItem[] = [];
   paymentForm!: FormGroup;
   paymentMethods: { key: PaymentMethod; label: string; icon: string; color: string }[] = [
     { key: 'CASH', label: 'Cash', icon: 'fa-solid fa-money-bill-wave', color: 'border-green-500 bg-green-50 text-green-700' },
@@ -63,6 +60,7 @@ export class BookingRoomFirstComponent implements OnInit {
   batchPayments: { method: PaymentMethod; amount: number; reference?: string; note?: string }[] = [];
 
   submitting = false;
+  uuid = '';
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
@@ -79,15 +77,17 @@ export class BookingRoomFirstComponent implements OnInit {
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.countries = this.hotelService.getCountries();
     this.initForms();
     this.loadRooms();
     this.loadGuests();
-    this.loadServices();
     this.hotelService.getRoomTypes().subscribe(rt => (this.roomTypes = rt));
   }
 
@@ -149,9 +149,6 @@ export class BookingRoomFirstComponent implements OnInit {
     this.hotelService.getGuests().subscribe({ next: (g) => { this.guests = g; this.filteredGuests = g; } });
   }
 
-  loadServices(): void {
-    this.hotelService.getAdditionalServices().subscribe({ next: (s) => (this.additionalServices = s) });
-  }
 
   applyRoomFilter(): void {
     this.filteredRooms = this.allRooms.filter(r => {
@@ -215,20 +212,6 @@ export class BookingRoomFirstComponent implements OnInit {
     });
   }
 
-  // Service helpers
-  getServiceQty(service: AdditionalService): number {
-    return this.selectedServices.find(s => s.service.id === service.id)?.quantity ?? 0;
-  }
-
-  adjustServiceQty(service: AdditionalService, delta: number): void {
-    const idx = this.selectedServices.findIndex(s => s.service.id === service.id);
-    if (idx >= 0) {
-      this.selectedServices[idx].quantity += delta;
-      if (this.selectedServices[idx].quantity <= 0) this.selectedServices.splice(idx, 1);
-    } else if (delta > 0) {
-      this.selectedServices.push({ service, quantity: 1 });
-    }
-  }
 
   // Totals
   get nights(): number {
@@ -236,8 +219,7 @@ export class BookingRoomFirstComponent implements OnInit {
     return this.hotelService.calculateNights(checkinDate, checkoutDate) || 0;
   }
   get roomSubtotal(): number { return this.selectedRooms.reduce((s, r) => s + r.rate * (this.nights || 1), 0); }
-  get serviceSubtotal(): number { return this.selectedServices.reduce((s, i) => s + i.service.price * i.quantity, 0); }
-  get grandTotal(): number { return this.roomSubtotal + this.serviceSubtotal; }
+  get grandTotal(): number { return this.roomSubtotal; }
 
   get changeDue(): number {
     const overpaid = this.totalBatchAmount - this.grandTotal;
@@ -285,20 +267,6 @@ export class BookingRoomFirstComponent implements OnInit {
   }
 
   private processDetailsAndPayments(booking: Booking): void {
-    const checkinDate = this.datesForm.value.checkinDate;
-    
-    // 1. Create Services (BookingDetails)
-    const detailCalls = this.selectedServices.map(item => 
-      this.hotelService.createBookingDetail({
-        totalPrice: item.service.price * item.quantity,
-        dateUsed: checkinDate,
-        notes: `x${item.quantity} ${item.service.name}`,
-        booking: booking.id!,
-        additionalService: item.service.id
-      })
-    );
-
-    // 2. Create Payments
     const paymentCalls = this.batchPayments.map(p => 
       this.hotelService.createPayment({
         bookingId: booking.id!,
@@ -311,26 +279,22 @@ export class BookingRoomFirstComponent implements OnInit {
       })
     );
 
-    const allCalls = [...detailCalls, ...paymentCalls];
-    if (allCalls.length === 0) {
+    if (paymentCalls.length === 0) {
       this.onCreated(booking);
       return;
     }
 
-    forkJoin(allCalls).subscribe({
+    forkJoin(paymentCalls).subscribe({
       next: () => {
         const bId = this.hotelService.getId(booking);
         this.hotelService.updateBooking(bId, { ...booking, status: 'CONFIRMED' }).subscribe({
           next: (confirmed) => this.onCreated(confirmed),
-          error: () => {
-            this.showToastMessage('Details saved but failed to confirm booking', 'error');
-            this.onCreated(booking);
-          }
+          error: () => this.onCreated(booking)
         });
       },
       error: (err: any) => {
-        console.error('Error creating associated records:', err);
-        this.showToastMessage('Booking created (Pending), but some details/payments failed', 'error');
+        console.error('Error creating payments:', err);
+        this.showToastMessage('Booking created, but payments failed', 'error');
         setTimeout(() => this.onCreated(booking), 2000);
       }
     });
@@ -344,7 +308,7 @@ export class BookingRoomFirstComponent implements OnInit {
       return;
     }
     this.showToastMessage('Booking created successfully!', 'success');
-    setTimeout(() => this.router.navigate(['/hospitality/bookings', bId]), 1200);
+    setTimeout(() => this.router.navigate(['/hospitality', this.uuid, 'bookings', bId]), 1200);
   }
 
   addToBatch(): void {
@@ -372,6 +336,10 @@ export class BookingRoomFirstComponent implements OnInit {
 
   selectMethod(method: PaymentMethod): void {
     this.paymentForm.patchValue({ paymentMethod: method });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/hospitality', this.uuid, 'bookings']);
   }
 
   showToastMessage(msg: string, type: 'success' | 'error'): void {

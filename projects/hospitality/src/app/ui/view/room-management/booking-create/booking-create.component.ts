@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   HotelserviceService,
   Guest,
   Room,
-  AdditionalService,
+  AdditionalDetail,
   Booking,
   BookingStatus,
   Payment,
@@ -14,7 +14,7 @@ import {
 } from '../../../hospitality/hotelservice.service';
 
 interface ServiceItem {
-  service: AdditionalService;
+  service: AdditionalDetail;
   quantity: number;
 }
 
@@ -23,7 +23,7 @@ interface ServiceItem {
   templateUrl: './booking-create.component.html',
 })
 export class BookingCreateComponent implements OnInit {
-  step = 1; // 1-4
+  step = 1; // 1-3
 
   // Step 1 — Guest
   guests: Guest[] = [];
@@ -43,21 +43,43 @@ export class BookingCreateComponent implements OnInit {
   loadingRooms = false;
   roomsLoaded = false;
 
-  // Step 3 — Services
-  additionalServices: AdditionalService[] = [];
-  selectedServices: ServiceItem[] = [];
-
-  // Step 4 — Payment
+  // Step 3 — Payment
   paymentForm!: FormGroup;
-  paymentMethods: { key: PaymentMethod; label: string; icon: string; color: string }[] = [
-    { key: 'CASH', label: 'Cash', icon: 'fa-solid fa-money-bill-wave', color: 'border-green-500 bg-green-50 text-green-700' },
-    { key: 'CARD', label: 'Card', icon: 'fa-solid fa-credit-card', color: 'border-blue-500 bg-blue-50 text-blue-700' },
-    { key: 'TRANSFER', label: 'Transfer', icon: 'fa-solid fa-building-columns', color: 'border-purple-500 bg-purple-50 text-purple-700' },
+  paymentMethods: {
+    key: PaymentMethod;
+    label: string;
+    icon: string;
+    color: string;
+  }[] = [
+    {
+      key: 'CASH',
+      label: 'Cash',
+      icon: 'fa-solid fa-money-bill-wave',
+      color: 'border-green-500 bg-green-50 text-green-700',
+    },
+    {
+      key: 'CARD',
+      label: 'Card',
+      icon: 'fa-solid fa-credit-card',
+      color: 'border-blue-500 bg-blue-50 text-blue-700',
+    },
+    {
+      key: 'TRANSFER',
+      label: 'Transfer',
+      icon: 'fa-solid fa-building-columns',
+      color: 'border-purple-500 bg-purple-50 text-purple-700',
+    },
   ];
 
-  batchPayments: { method: PaymentMethod; amount: number; reference?: string; note?: string }[] = [];
+  batchPayments: {
+    method: PaymentMethod;
+    amount: number;
+    reference?: string;
+    note?: string;
+  }[] = [];
 
   submitting = false;
+  uuid = '';
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
@@ -66,14 +88,18 @@ export class BookingCreateComponent implements OnInit {
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    this.uuid =
+      this.route.snapshot.paramMap.get('uuid') ||
+      this.route.parent?.snapshot.paramMap.get('uuid') ||
+      '';
     this.countries = this.hotelService.getCountries();
     this.initForms();
     this.loadGuests();
-    this.loadServices();
   }
 
   initForms(): void {
@@ -89,7 +115,9 @@ export class BookingCreateComponent implements OnInit {
     });
 
     const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000)
+      .toISOString()
+      .split('T')[0];
     this.datesForm = this.fb.group({
       checkinDate: [today, Validators.required],
       checkoutDate: [tomorrow, Validators.required],
@@ -115,19 +143,13 @@ export class BookingCreateComponent implements OnInit {
     });
   }
 
-  loadServices(): void {
-    this.hotelService.getAdditionalServices().subscribe({
-      next: (data) => (this.additionalServices = data),
-    });
-  }
-
   filterGuests(): void {
     const q = this.guestSearchQuery.toLowerCase();
     this.filteredGuests = this.guests.filter(
       (g) =>
         g.firstName.toLowerCase().includes(q) ||
         g.lastName.toLowerCase().includes(q) ||
-        g.email.toLowerCase().includes(q)
+        g.email.toLowerCase().includes(q),
     );
   }
 
@@ -182,38 +204,15 @@ export class BookingCreateComponent implements OnInit {
     return this.selectedRooms.some((r) => r.id === room.id);
   }
 
-  getServiceQty(service: AdditionalService): number {
-    const item = this.selectedServices.find((s) => s.service.id === service.id);
-    return item?.quantity ?? 0;
-  }
-
-  adjustServiceQty(service: AdditionalService, delta: number): void {
-    const idx = this.selectedServices.findIndex((s) => s.service.id === service.id);
-    if (idx >= 0) {
-      this.selectedServices[idx].quantity += delta;
-      if (this.selectedServices[idx].quantity <= 0) {
-        this.selectedServices.splice(idx, 1);
-      }
-    } else if (delta > 0) {
-      this.selectedServices.push({ service, quantity: 1 });
-    }
-  }
-
   get roomSubtotal(): number {
     const { checkinDate, checkoutDate } = this.datesForm.value;
-    const nights = this.hotelService.calculateNights(checkinDate, checkoutDate) || 1;
+    const nights =
+      this.hotelService.calculateNights(checkinDate, checkoutDate) || 1;
     return this.selectedRooms.reduce((sum, r) => sum + r.rate * nights, 0);
   }
 
-  get serviceSubtotal(): number {
-    return this.selectedServices.reduce(
-      (sum, item) => sum + item.service.price * item.quantity,
-      0
-    );
-  }
-
   get grandTotal(): number {
-    return this.roomSubtotal + this.serviceSubtotal;
+    return this.roomSubtotal;
   }
 
   get changeDue(): number {
@@ -247,7 +246,7 @@ export class BookingCreateComponent implements OnInit {
       method,
       amount,
       reference: this.paymentForm.get('reference')?.value,
-      note: this.paymentForm.get('notes')?.value
+      note: this.paymentForm.get('notes')?.value,
     });
 
     // Reset amount but keep method?
@@ -284,10 +283,24 @@ export class BookingCreateComponent implements OnInit {
       this.showToastMessage('Please select a guest first', 'error');
       return;
     }
+
+    if (this.selectedRooms.length === 0) {
+      this.showToastMessage('Please select at least one room', 'error');
+      return;
+    }
+
     this.submitting = true;
 
-    const { checkinDate, checkoutDate, adults, children, specialRequests } = this.datesForm.value;
+    const { checkinDate, checkoutDate, adults, children, specialRequests } =
+      this.datesForm.value;
     const deposit = this.totalBatchAmount;
+
+    // Ensure room IDs are numbers
+    const roomIds = this.selectedRooms.map((r) => Number(r.id));
+
+    console.log('DEBUG: Selected guest ID:', guestId);
+    console.log('DEBUG: Selected rooms:', this.selectedRooms);
+    console.log('DEBUG: Room IDs (as numbers):', roomIds);
 
     const booking: Booking = {
       checkinDate,
@@ -301,15 +314,23 @@ export class BookingCreateComponent implements OnInit {
       balanceAmount: Math.max(0, this.grandTotal - deposit),
       status: 'CONFIRMED' as BookingStatus,
       guest: Number(guestId),
-      rooms: this.selectedRooms.map((r) => r.id),
+      rooms: roomIds,
+      // payment will be created after booking is created
     };
 
-    console.log('DEBUG: BookingCreate payload:', JSON.stringify(booking));
+    console.log(
+      'DEBUG: Booking object before sending:',
+      JSON.stringify(booking, null, 2),
+    );
 
     this.hotelService.createBooking(booking).subscribe({
       next: (created) => {
-        // Create line items for services + payments
-        this.processDetailsAndPayments(created);
+        console.log(
+          'DEBUG: Booking created response:',
+          JSON.stringify(created, null, 2),
+        );
+        // Create line items for payments
+        this.processPayments(created);
       },
       error: () => {
         this.submitting = false;
@@ -318,56 +339,48 @@ export class BookingCreateComponent implements OnInit {
     });
   }
 
-  private processDetailsAndPayments(booking: Booking): void {
-    const checkinDate = this.datesForm.value.checkinDate;
-    
-    // 1. Create Services (BookingDetails)
-    const detailCalls = this.selectedServices.map(item => 
-      this.hotelService.createBookingDetail({
-        totalPrice: item.service.price * item.quantity,
-        dateUsed: checkinDate,
-        notes: `x${item.quantity} ${item.service.name}`,
-        booking: booking.id!,
-        additionalService: item.service.id
-      })
-    );
+  private processPayments(booking: Booking): void {
+    const bId = this.hotelService.getId(booking);
+    if (!bId) {
+      this.onBookingCreated(booking);
+      return;
+    }
 
-    // 2. Create Payments
-    const paymentCalls = this.batchPayments.map(p => 
+    // Create payment records
+    const paymentCalls = this.batchPayments.map((p) =>
       this.hotelService.createPayment({
-        bookingId: booking.id!,
+        bookingId: bId,
         amountPaid: p.amount,
         method: p.method,
         status: 'COMPLETED',
         paidOn: this.hotelService.formatDate(new Date()),
         reference: p.reference || '',
-        note: p.note || ''
-      })
+        note: p.note || '',
+      }),
     );
 
-    const allCalls = [...detailCalls, ...paymentCalls];
-    if (allCalls.length === 0) {
+    if (paymentCalls.length === 0) {
       this.onBookingCreated(booking);
       return;
     }
 
-    forkJoin(allCalls).subscribe({
+    forkJoin(paymentCalls).subscribe({
       next: () => {
-        // All payments/details created, now CONFIRM the booking
-        const bId = this.hotelService.getId(booking);
-        this.hotelService.updateBooking(bId, { ...booking, status: 'CONFIRMED' }).subscribe({
-          next: (confirmed) => this.onBookingCreated(confirmed),
-          error: () => {
-             this.showToastMessage('Details saved but failed to confirm booking', 'error');
-             this.onBookingCreated(booking);
-          }
-        });
+        this.hotelService
+          .updateBooking(bId, { ...booking, status: 'CONFIRMED' })
+          .subscribe({
+            next: (confirmed) => this.onBookingCreated(confirmed),
+            error: () => this.onBookingCreated(booking),
+          });
       },
       error: (err: any) => {
-        console.error('Error creating associated records:', err);
-        this.showToastMessage('Booking created (Pending), but some details/payments failed', 'error');
+        console.error('Error creating payments:', err);
+        this.showToastMessage(
+          'Booking created, but payment records failed',
+          'error',
+        );
         setTimeout(() => this.onBookingCreated(booking), 2000);
-      }
+      },
     });
   }
 
@@ -375,11 +388,21 @@ export class BookingCreateComponent implements OnInit {
     this.submitting = false;
     const bId = this.hotelService.getId(booking);
     if (!bId) {
-       this.showToastMessage('Booking might not have been recorded correctly', 'error');
-       return;
+      this.showToastMessage(
+        'Booking might not have been recorded correctly',
+        'error',
+      );
+      return;
     }
     this.showToastMessage('Booking created successfully!', 'success');
-    setTimeout(() => this.router.navigate(['/hospitality/bookings', bId]), 1200);
+    setTimeout(
+      () => this.router.navigate(['/hospitality', this.uuid, 'bookings', bId]),
+      1200,
+    );
+  }
+
+  goBack(): void {
+    this.router.navigate(['/hospitality', this.uuid, 'bookings']);
   }
 
   showToastMessage(message: string, type: 'success' | 'error'): void {

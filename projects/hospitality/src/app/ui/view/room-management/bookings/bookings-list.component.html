@@ -18,12 +18,12 @@
         </div>
         <!-- Split "New Booking" button -->
         <div class="flex items-stretch rounded-lg shadow-sm overflow-hidden border border-customBlue">
-            <button routerLink="/hospitality/bookings/create"
+            <button (click)="createBooking()"
                 class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors border-r border-blue-500">
                 <i class="fa-solid fa-user-plus"></i>
                 Guest-First
             </button>
-            <button routerLink="/hospitality/bookings/room-select"
+            <button (click)="createRoomFirstBooking()"
                 class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors">
                 <i class="fa-solid fa-door-open"></i>
                 Room-First

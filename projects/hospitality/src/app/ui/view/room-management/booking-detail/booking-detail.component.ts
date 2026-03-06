@@ -4,10 +4,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   HotelserviceService,
   Booking,
-  BookingDetail,
   BookingStatus,
   Guest,
   Room,
+  AdditionalDetail,
   Payment,
   PaymentMethod,
 } from '../../../hospitality/hotelservice.service';
@@ -18,11 +18,11 @@ import {
 })
 export class BookingDetailComponent implements OnInit {
   booking: Booking | null = null;
-  bookingDetails: BookingDetail[] = [];
   payments: Payment[] = [];
   guest: Guest | null = null;
   rooms: Room[] = [];
   loading = false;
+  uuid = '';
 
   showPaymentModal = false;
   showCancelModal = false;
@@ -32,17 +32,52 @@ export class BookingDetailComponent implements OnInit {
 
   // Multi-payment: visual method selection
   selectedMethod: PaymentMethod = 'CASH';
-  paymentMethods: { key: PaymentMethod; label: string; icon: string; color: string }[] = [
-    { key: 'CASH', label: 'Cash', icon: 'fa-solid fa-money-bill-wave', color: 'border-green-500 bg-green-50 text-green-700' },
-    { key: 'CARD', label: 'Card', icon: 'fa-solid fa-credit-card', color: 'border-blue-500 bg-blue-50 text-blue-700' },
-    { key: 'TRANSFER', label: 'Transfer', icon: 'fa-solid fa-building-columns', color: 'border-purple-500 bg-purple-50 text-purple-700' },
-    { key: 'POS', label: 'POS', icon: 'fa-solid fa-cash-register', color: 'border-amber-500 bg-amber-50 text-amber-700' },
-    { key: 'ONLINE', label: 'Online', icon: 'fa-solid fa-globe', color: 'border-cyan-500 bg-cyan-50 text-cyan-700' },
+  paymentMethods: {
+    key: PaymentMethod;
+    label: string;
+    icon: string;
+    color: string;
+  }[] = [
+    {
+      key: 'CASH',
+      label: 'Cash',
+      icon: 'fa-solid fa-money-bill-wave',
+      color: 'border-green-500 bg-green-50 text-green-700',
+    },
+    {
+      key: 'CARD',
+      label: 'Card',
+      icon: 'fa-solid fa-credit-card',
+      color: 'border-blue-500 bg-blue-50 text-blue-700',
+    },
+    {
+      key: 'TRANSFER',
+      label: 'Transfer',
+      icon: 'fa-solid fa-building-columns',
+      color: 'border-purple-500 bg-purple-50 text-purple-700',
+    },
+    {
+      key: 'POS',
+      label: 'POS',
+      icon: 'fa-solid fa-cash-register',
+      color: 'border-amber-500 bg-amber-50 text-amber-700',
+    },
+    {
+      key: 'ONLINE',
+      label: 'Online',
+      icon: 'fa-solid fa-globe',
+      color: 'border-cyan-500 bg-cyan-50 text-cyan-700',
+    },
   ];
 
   // Multi-payment / POS-style: local queue
-  batchPayments: { method: PaymentMethod; amount: number; reference?: string; note?: string }[] = [];
-  
+  batchPayments: {
+    method: PaymentMethod;
+    amount: number;
+    reference?: string;
+    note?: string;
+  }[] = [];
+
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
   showToast = false;
@@ -51,7 +86,7 @@ export class BookingDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private hotelService: HotelserviceService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) {}
 
   ngOnInit(): void {
@@ -60,31 +95,44 @@ export class BookingDetailComponent implements OnInit {
       reference: [''],
       notes: [''],
     });
+
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.uuid =
+      this.route.snapshot.paramMap.get('uuid') ||
+      this.route.parent?.snapshot.paramMap.get('uuid') ||
+      '';
     if (id) this.loadBooking(id);
   }
 
   loadBooking(id: number): void {
     this.loading = true;
-    
+
     this.hotelService.getBooking(id).subscribe({
       next: (b) => {
         console.log('DEBUG: Fetched Booking:', JSON.stringify(b));
 
         // IF guest or rooms are missing, try enrichment
-        if (b.guest === null || !b.rooms || b.rooms.length === 0) {
-          console.warn('DEBUG: Incomplete booking data, attempting enrichment from list...');
+        if (!b.guest || !b.rooms || b.rooms.length === 0) {
+          console.warn(
+            'DEBUG: Incomplete booking data, attempting enrichment from list...',
+            { guest: b.guest, rooms: b.rooms },
+          );
           this.hotelService.getBookings().subscribe({
             next: (list) => {
-              const enriched = list.find(x => String(this.hotelService.getId(x)) === String(id));
+              const enriched = list.find(
+                (x) => String(this.hotelService.getId(x)) === String(id),
+              );
               if (enriched) {
-                console.log('DEBUG: Enriched from list:', JSON.stringify(enriched));
+                console.log(
+                  'DEBUG: Enriched from list:',
+                  JSON.stringify(enriched),
+                );
                 if (b.guest === null) b.guest = enriched.guest;
                 if (!b.rooms || b.rooms.length === 0) b.rooms = enriched.rooms;
               }
               this.finalizeBookingLoad(b);
             },
-            error: () => this.finalizeBookingLoad(b)
+            error: () => this.finalizeBookingLoad(b),
           });
         } else {
           this.finalizeBookingLoad(b);
@@ -106,48 +154,95 @@ export class BookingDetailComponent implements OnInit {
 
   loadRelated(booking: Booking): void {
     const bId = this.hotelService.getId(booking);
-    console.log('DEBUG: loadRelated — booking:', JSON.stringify(booking), 'bId:', bId);
+    console.log(
+      'DEBUG: loadRelated — booking:',
+      JSON.stringify(booking),
+      'bId:',
+      bId,
+    );
 
     if (bId) {
-      this.hotelService.getBookingDetails(bId).subscribe({
-        next: (d) => (this.bookingDetails = d),
-        error: (err) => console.error('DEBUG: Failed to fetch booking details:', err),
-      });
+      // Load payments
       this.hotelService.getPaymentsByBooking(bId).subscribe({
         next: (p) => (this.payments = p),
         error: (err) => console.error('DEBUG: Failed to fetch payments:', err),
       });
     }
-    
-    // Guest — fetch from API or extract nested object
+
+    // Guest — prioritize embedded object, then fetch by ID
     const guestData = booking.guest;
-    if (guestData != null) {
-      // Special check: is it already a full Guest object embedded?
+    if (guestData) {
       if (typeof guestData === 'object' && (guestData as Guest).firstName) {
         this.guest = guestData as Guest;
       } else {
-        const guestId = this.hotelService.getId(guestData);
-        if (guestId) {
-          this.hotelService.getGuest(Number(guestId)).subscribe({
+        const guestId = Number(this.hotelService.getId(guestData));
+        if (!isNaN(guestId) && guestId > 0) {
+          this.hotelService.getGuest(guestId).subscribe({
             next: (g) => {
               this.guest = g;
-              console.log('DEBUG: loadRelated — fetched guest:', JSON.stringify(g));
+              console.log(
+                'DEBUG: loadRelated — fetched guest:',
+                JSON.stringify(g),
+              );
             },
-            error: (err) => console.error('DEBUG: Failed to fetch guest by id', guestId, err),
+            error: (err) =>
+              console.error('DEBUG: Failed to fetch guest by id', guestId, err),
           });
         }
       }
     }
-    
-    // Rooms — resolve IDs or full objects
-    if (booking.rooms && booking.rooms.length) {
+
+    // Rooms — resolve IDs to full objects for room number and details
+    if (
+      booking.rooms &&
+      Array.isArray(booking.rooms) &&
+      booking.rooms.length > 0
+    ) {
+      console.log(
+        'DEBUG: loadRelated — resolving rooms for IDs:',
+        booking.rooms,
+      );
       this.hotelService.getRooms().subscribe({
         next: (allRooms) => {
-          const roomIds = booking.rooms.map(rOrId => String(this.hotelService.getId(rOrId)));
-          this.rooms = allRooms.filter((r) => roomIds.includes(String(this.hotelService.getId(r))));
-          console.log('DEBUG: loadRelated — matched rooms:', this.rooms.length);
+          const bookingRoomIds = booking.rooms.map((rOrId) =>
+            String(this.hotelService.getId(rOrId)),
+          );
+          console.log(
+            'DEBUG: loadRelated — all available rooms:',
+            allRooms.length,
+          );
+
+          this.rooms = allRooms.filter((r) => {
+            const rId = String(this.hotelService.getId(r));
+            const rNum = String(r.roomNumber);
+            return (
+              bookingRoomIds.includes(rId) || bookingRoomIds.includes(rNum)
+            );
+          });
+
+          console.log(
+            'DEBUG: loadRelated — matched rooms:',
+            this.rooms.length,
+            'Matched Rooms:',
+            this.rooms,
+          );
+
+          // If we found fewer rooms than expected, some IDs might be invalid or missing from cache
+          if (this.rooms.length < bookingRoomIds.length) {
+            console.warn(
+              'DEBUG: Some rooms could not be matched from master list. Expected:',
+              bookingRoomIds.length,
+              'Found:',
+              this.rooms.length,
+              'Searching for IDs:',
+              bookingRoomIds,
+              'Available IDs:',
+              allRooms.map((r) => this.hotelService.getId(r)),
+            );
+          }
         },
-        error: (err) => console.error('DEBUG: Failed to fetch rooms list for matching:', err),
+        error: (err) =>
+          console.error('DEBUG: Failed to fetch rooms list for matching:', err),
       });
     }
   }
@@ -177,15 +272,15 @@ export class BookingDetailComponent implements OnInit {
   addToBatch(): void {
     const amount = this.paymentForm.value.amount;
     if (amount <= 0) return;
-    
+
     this.batchPayments.push({
       method: this.selectedMethod,
       amount: amount,
       reference: this.paymentForm.value.reference,
-      note: this.paymentForm.value.notes
+      note: this.paymentForm.value.notes,
     });
-    
-    // Reset amount but keep other info or reset all? 
+
+    // Reset amount but keep other info or reset all?
     // Usually in POS you reset amount to enter next part of split.
     this.paymentForm.patchValue({ amount: 0 });
   }
@@ -196,7 +291,7 @@ export class BookingDetailComponent implements OnInit {
 
   submitBatchPayments(): void {
     if (!this.booking?.id) return;
-    
+
     // If nothing in batch, check if amount in input
     if (this.batchPayments.length === 0 && this.paymentForm.value.amount > 0) {
       this.addPayment(); // Fallback to single payment
@@ -206,7 +301,7 @@ export class BookingDetailComponent implements OnInit {
     if (this.batchPayments.length === 0) return;
 
     this.submittingPayment = true;
-    
+
     // Sequential submission
     const processNext = (index: number) => {
       if (index >= this.batchPayments.length) {
@@ -230,7 +325,7 @@ export class BookingDetailComponent implements OnInit {
         error: () => {
           this.showToastMessage('Some payments failed to record', 'error');
           this.finishBatch();
-        }
+        },
       });
     };
 
@@ -285,7 +380,10 @@ export class BookingDetailComponent implements OnInit {
 
         if (newStatus === 'CHECKED_OUT') {
           this.createHousekeepingOnCheckout();
-          this.showToastMessage('Guest checked out! Housekeeping task created.', 'success');
+          this.showToastMessage(
+            'Guest checked out! Housekeeping task created.',
+            'success',
+          );
         } else if (newStatus === 'CHECKED_IN') {
           this.showToastMessage('Guest checked in!', 'success');
         } else {
@@ -313,25 +411,29 @@ export class BookingDetailComponent implements OnInit {
       }
 
       // Create maintenance record
-      this.hotelService.createMaintenanceRequest({
-        tasks: 'CLEANING_REQUIRED',
-        reasons: ['Guest checkout'],
-        startDate: today,
-        notes: `Auto-created on checkout of booking #${this.booking.id}`,
-        completed: false,
-        priority: 'HIGH',
-        dueDate: today,
-        completedAt: '',
-        room: roomId,
-      } as any).subscribe();
+      this.hotelService
+        .createMaintenanceRequest({
+          tasks: 'CLEANING_REQUIRED',
+          reasons: ['Guest checkout'],
+          startDate: today,
+          notes: `Auto-created on checkout of booking #${this.booking.id}`,
+          completed: false,
+          priority: 'HIGH',
+          dueDate: today,
+          completedAt: '',
+          room: roomId,
+        } as any)
+        .subscribe();
 
       // Create housekeeping record
-      this.hotelService.createHousekeepingRecord({
-        status: 'PENDING',
-        lastCleaned: today,
-        notes: `Checkout cleaning for booking #${this.booking.id}`,
-        room: roomId,
-      }).subscribe();
+      this.hotelService
+        .createHousekeepingRecord({
+          status: 'PENDING',
+          lastCleaned: today,
+          notes: `Checkout cleaning for booking #${this.booking.id}`,
+          room: roomId,
+        })
+        .subscribe();
     }
 
     this.hotelService.refreshRoomsCache();
@@ -394,11 +496,14 @@ export class BookingDetailComponent implements OnInit {
 
   getNights(): number {
     if (!this.booking) return 0;
-    return this.hotelService.calculateNights(this.booking.checkinDate, this.booking.checkoutDate);
+    return this.hotelService.calculateNights(
+      this.booking.checkinDate,
+      this.booking.checkoutDate,
+    );
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality/bookings']);
+    this.router.navigate(['/hospitality', this.uuid, 'bookings']);
   }
 
   showToastMessage(message: string, type: 'success' | 'error'): void {

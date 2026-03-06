@@ -20,6 +20,7 @@ export class GuestProfileComponent implements OnInit {
   activeTab: 'details' | 'bookings' = 'details';
   showEditDrawer = false;
   form!: FormGroup;
+  uuid = '';
 
   titles = ['Mr', 'Mrs', 'Miss', 'Ms', 'Dr', 'Prof'];
   genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
@@ -43,6 +44,8 @@ export class GuestProfileComponent implements OnInit {
     this.initForm();
     this.loadRooms();
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     if (id) this.loadGuest(id);
   }
 
@@ -106,11 +109,11 @@ export class GuestProfileComponent implements OnInit {
   }
 
   viewBooking(booking: Booking): void {
-    this.router.navigate(['/hospitality/bookings', booking.id]);
+    this.router.navigate(['/hospitality', this.uuid, 'bookings', booking.id]);
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality/guests']);
+    this.router.navigate(['/hospitality', this.uuid, 'guests']);
   }
 
   getStatusColor(status: BookingStatus): string {

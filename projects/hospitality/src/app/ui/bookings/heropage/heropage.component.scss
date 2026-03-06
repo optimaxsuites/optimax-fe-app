@@ -1,12 +1,12 @@
-.animation-delay-1000 {
-  animation-delay: 1s;
+@keyframes slow-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
 }
-.animation-delay-2000 {
-  animation-delay: 2s;
+
+.animate-slow-zoom {
+  animation: slow-zoom 30s ease-in-out infinite alternate;
 }
-.animation-delay-3000 {
-  animation-delay: 3s;
-}
-.animation-delay-4000 {
-  animation-delay: 4s;
+
+:host {
+  display: block;
 }

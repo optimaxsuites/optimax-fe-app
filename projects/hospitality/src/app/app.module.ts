@@ -58,7 +58,7 @@ import { AllroomsComponent } from './ui/bookings/allrooms/allrooms.component';
 import { RoomsheroComponent } from './ui/bookings/roomshero/roomshero.component';
 import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.component';
 import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
-import { BookingformComponent } from './ui/bookings/bookingform/bookingform.component';
+
 import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -116,20 +116,19 @@ import { ServicesListComponent } from './ui/view/room-management/services/servic
     RoomsheroComponent,
     RoomdesignComponent,
     RoomfooterComponent,
-    BookingformComponent,
     MultipleBookingsComponent,
-      RoomTypesListComponent,
-        RoomsListComponent,
-        ServicesListComponent,
-        ServiceChargesListComponent,
-        GuestsListComponent,
-        GuestProfileComponent,
-        BookingsListComponent,
-        BookingCreateComponent,
-        BookingDetailComponent,
-        BookingRoomFirstComponent,
-        PaymentsListComponent,
-        HousekeepingComponent,
+    RoomTypesListComponent,
+    RoomsListComponent,
+    ServicesListComponent,
+    ServiceChargesListComponent,
+    GuestsListComponent,
+    GuestProfileComponent,
+    BookingsListComponent,
+    BookingCreateComponent,
+    BookingDetailComponent,
+    BookingRoomFirstComponent,
+    PaymentsListComponent,
+    HousekeepingComponent,
   ],
   imports: [
     // BrowserAnimationsModule,

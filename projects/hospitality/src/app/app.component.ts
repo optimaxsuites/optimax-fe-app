@@ -3,6 +3,7 @@ import { AuthenticationService } from './ui/sharedComponent/service/auth-service
 import { HotelserviceService } from './ui/hospitality/hotelservice.service';
 import { environment } from './ui/sharedComponent/service/environments/environment';
 import { Router } from '@angular/router';
+import { NavigationLinksService } from './ui/sharedComponent/service/navigation-links/navigation-links.service';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +16,8 @@ export class AppComponent implements OnInit {
   constructor(
     private authenticationService: AuthenticationService,
     private hotelService: HotelserviceService,
-    private router: Router
+    private router: Router,
+    private navigationLinksService: NavigationLinksService
   ) {
     this.userLoginAction();
   }
@@ -40,10 +42,11 @@ export class AppComponent implements OnInit {
             this.loadInitParam(data);
             this.hotelService.loadInitialRoomTypes();
             
-            // Redirect to hospitality if at the root path or room selection
+            // Redirect to hospitality only if at root/auth paths, NOT on guest pages
             const currentUrl = this.router.url;
-            if (currentUrl === '/' || currentUrl.includes('/user/auth/')) {
-              this.router.navigate(['/hospitality']);
+            const isGuestPage = currentUrl.startsWith('/bookings') || currentUrl.startsWith('/user/rooms') || currentUrl.startsWith('/user/booking-form');
+            if (!isGuestPage && (currentUrl === '/' || currentUrl === '/hospitality' || currentUrl.includes('/user/auth/'))) {
+              this.router.navigateByUrl(this.navigationLinksService.getLink('hospitalityLink'));
             }
           }
         },

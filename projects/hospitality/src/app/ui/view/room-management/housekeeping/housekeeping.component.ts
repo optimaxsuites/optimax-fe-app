@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   HotelserviceService,
   MaintenainceRequest,
@@ -46,13 +47,17 @@ export class HousekeepingComponent implements OnInit {
   showToast = false;
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
+  uuid = '';
 
   constructor(
     private hotelService: HotelserviceService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.tasks = this.hotelService.getMaintenanceTasks();
     this.priorities = this.hotelService.getMaintenancePriorities();
 

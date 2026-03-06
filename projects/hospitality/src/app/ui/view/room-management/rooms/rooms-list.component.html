@@ -326,18 +326,34 @@
                 <!-- Amenities -->
                 <div class="mt-4">
                     <label class="block text-xs font-medium text-gray-600 mb-1.5">Amenities</label>
+
+                    <!-- Suggestions -->
+                    <div
+                        class="flex flex-wrap gap-2 mb-4 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
+                        <p class="w-full text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Suggestions
+                        </p>
+                        <button *ngFor="let s of suggestedAmenities" type="button" (click)="toggleAmenity(s.name)"
+                            [ngClass]="isAmenitySelected(s.name) ? 'bg-customBlue text-white border-customBlue' : 'bg-white text-gray-600 border-gray-200 hover:border-customBlue'"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition-all">
+                            <i [class]="s.icon"
+                                [ngClass]="isAmenitySelected(s.name) ? 'text-white' : 'text-gray-400'"></i>
+                            {{ s.name }}
+                        </button>
+                    </div>
+
                     <div class="flex gap-2 mb-2">
                         <input [(ngModel)]="amenityInput" [ngModelOptions]="{standalone: true}"
-                            (keyup.enter)="addAmenity()" type="text" placeholder="e.g. WiFi, TV, AC..."
+                            (keyup.enter)="addAmenity()" type="text" placeholder="Custom amenity..."
                             class="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-customBlue outline-none" />
                         <button type="button" (click)="addAmenity()"
                             class="px-4 py-2.5 bg-customBlue text-white rounded-lg text-sm hover:bg-customBlueHover transition-colors">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
+
                     <div class="flex flex-wrap gap-2">
                         <span *ngFor="let a of form.get('amenities')?.value; let ai = index"
-                            class="inline-flex items-center gap-1.5 bg-customBlue/10 text-customBlue text-xs px-3 py-1 rounded-full">
+                            class="inline-flex items-center gap-1.5 bg-customBlue/10 text-customBlue text-xs px-3 py-1 rounded-full border border-customBlue/20">
                             {{ a }}
                             <button type="button" (click)="removeAmenity(ai)"
                                 class="hover:text-red-500 transition-colors">

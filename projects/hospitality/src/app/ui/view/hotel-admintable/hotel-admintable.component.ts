@@ -1,6 +1,7 @@
 // hotel-admintable.component.ts
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { PrimeNGConfig } from 'primeng/api';
 import {
@@ -79,18 +80,22 @@ export class HotelAdmintableComponent implements OnInit {
 
   // Image management
   previewImages: string[] = [];
+  uuid = '';
 
   constructor(
     private messageService: MessageService,
     private primengConfig: PrimeNGConfig,
     private hotelService: HotelserviceService,
     private confirmationService: ConfirmationService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private route: ActivatedRoute
   ) {
     this.initializeForms();
   }
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
+                this.route.parent?.snapshot.paramMap.get('uuid') || '';
     this.primengConfig.ripple = true;
     this.loadRooms();
     this.loadRoomTypes();
