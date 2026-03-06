@@ -489,7 +489,7 @@ export class ExpenseFormsModalComponent implements OnInit {
       this.billSplitData = undefined;
       this.showAdvancedPayment = false;
       this.showBillSplit = false;
-      this.router.navigate(['/expenses']);
+      this.router.navigate(['admin/expenses/expense/59af6dcd-78d7-46f7-b1d4-f6d3a027561f']);
     },
     error: (error: any) => {
       console.error('❌ Error submitting expense:', error);
