@@ -171,6 +171,14 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+  getNOKByEmployeeId(id: any) {
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/nextOfKins/getNextOfKinByEmployeeId/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
 
   addGuarantor(data: any) {
     return this.http

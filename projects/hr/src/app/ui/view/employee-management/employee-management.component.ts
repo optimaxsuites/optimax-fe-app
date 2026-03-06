@@ -375,13 +375,21 @@ handleDateClick(arg: DateClickArg) {
  
 
   viewThisEmployee(employee: any){
-    console.log(employee)
-    localStorage.setItem('employeeInView', JSON.stringify(employee))
 
-    this.viewEmployee = true
-    this.employeeInView = employee
-    
-    
+    if (employee) {
+      // this.employeeInView = JSON.parse(employee);
+
+      localStorage.setItem('employeeInView', JSON.stringify(employee))
+        this.viewEmployee = true
+
+
+      this.employeeService.getNOKByEmployeeId(employee.id).subscribe((res: any) => {
+        employee.nextOfKin = res;
+        localStorage.setItem('employeeInView', JSON.stringify(employee))
+
+        this.employeeInView = employee
+      })
+    }    
     }    
 
   deleteEmployee(employee: any, event: Event) {

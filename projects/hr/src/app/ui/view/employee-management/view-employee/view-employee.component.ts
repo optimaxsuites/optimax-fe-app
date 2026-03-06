@@ -6,6 +6,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-view-employee',
   templateUrl: './view-employee.component.html',
@@ -24,7 +25,7 @@ export class ViewEmployeeComponent {
 
   employeeProfilePhotoUrl: SafeUrl | string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 
-  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient){}
+  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService){}
   
   ngOnInit(): void {
     const employee = localStorage.getItem("employeeInView");
@@ -152,5 +153,130 @@ export class ViewEmployeeComponent {
       console.log(this.employeeProfilePhotoUrl)
       },
     });
+  }
+
+   copyToClipboard(value: string | number | null | undefined, label = 'Value'): void {
+    const text = String(value ?? '').trim();
+    if (!text) return;
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => this.showCopyToast(label))
+        .catch(() => this.fallbackCopy(text, label));
+      return;
+    }
+
+    this.fallbackCopy(text, label);
+  }
+
+  buildTelLink(phone: string | number | null | undefined): string | null {
+    const text = String(phone ?? '').trim();
+    if (!text) return null;
+    const cleaned = text.replace(/[^\d+]/g, '');
+    return cleaned ? `tel:${cleaned}` : null;
+  }
+
+  buildMailLink(email: string | null | undefined): string | null {
+    const text = String(email ?? '').trim();
+    if (!text) return null;
+    return `mailto:${text}`;
+  }
+
+    private fallbackCopy(text: string, label: string): void {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.showCopyToast(label);
+    } catch {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Copy failed',
+        detail: `${label} could not be copied.`,
+        key: 'global',
+      });
+    }
+  }
+
+  private formatDateValue(date: Date): string {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private showCopyToast(label: string): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Copied',
+      detail: `${label} copied to clipboard.`,
+      key: 'global',
+    });
+  }
+
+  formatDate(value: any): string {
+    if (!value) return '-';
+
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+      if (year && month && day) {
+        const safeMonth = Math.max(1, Math.min(12, Number(month)));
+        const date = new Date(
+          Number(year),
+          safeMonth - 1,
+          Number(day),
+          Number(hour),
+          Number(minute),
+          Number(second)
+        );
+        if (!Number.isNaN(date.getTime())) {
+          return this.formatDateValue(date);
+        }
+      }
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return this.formatDateValue(parsed);
+    }
+
+    return String(value);
+  }
+
+
+  private calculateNetSalary(details: any): number {
+    if (!details) return 0;
+    const base = this.toNumber(details.baseSalary);
+    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
+    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
+    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
+    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
+    return base + allowances + bonuses + overtime - deductions;
+  }
+
+  private sumAmounts(items: any, fields: string[]): number {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((total, item) => {
+      if (item === null || item === undefined) return total;
+      if (typeof item === 'number') return total + item;
+      for (const field of fields) {
+        const value = this.toNumber(item?.[field]);
+        if (value !== 0) return total + value;
+      }
+      return total + this.toNumber(item);
+    }, 0);
+  }
+
+  private toNumber(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

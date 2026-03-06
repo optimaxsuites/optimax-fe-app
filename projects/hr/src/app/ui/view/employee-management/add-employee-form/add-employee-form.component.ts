@@ -564,7 +564,7 @@ addNewEmployee(){
       this.router.navigate([`/admin/hr/me/`+uuidV4()]);
 
       // if (shouldRedirect) {
-        this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+        // this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
       // }
     },
     error: (err) => {
