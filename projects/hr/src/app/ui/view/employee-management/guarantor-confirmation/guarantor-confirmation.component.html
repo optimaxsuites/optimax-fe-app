@@ -4,15 +4,26 @@
       <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Guarantor Confirmation</h1>
       <p class="mt-2 text-slate-500">
         You have been nominated as a guarantor for 
-        <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded">{{ employeeName || 'the employee' }}</span>. 
+        <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded capitalize">{{ employeeName || 'the employee' }}</span>. 
         Please verify your details below.
       </p>
       <div class="mt-4 flex items-center justify-center w-full gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
-        <div class="h-96 w-96 flex items-center rounded-full overflow-hidden border border-slate-200 bg-white">
+        <div class="relative h-96 w-96 flex items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-white">
+          <div
+            *ngIf="imageLoading || loadingEmployee"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-100/90 text-slate-500"
+          >
+            <span class="h-10 w-10 rounded-full border-4 border-slate-300 border-t-customBlue animate-spin"></span>
+            <span class="text-sm font-medium">Loading image...</span>
+          </div>
           <img
-            [src]="employeeInView?.imageUrl || employeeProfilePhotoUrl"
+            [src]="employeeImageSrc"
             alt="Employee photo"
-            class="h-full w-full object-cover"
+            (load)="onEmployeeImageLoad()"
+            (error)="onEmployeeImageError()"
+            class="h-full w-full object-cover transition-opacity duration-200"
+            [class.opacity-0]="imageLoading || loadingEmployee"
+            [class.opacity-100]="!imageLoading && !loadingEmployee"
           />
         </div>
       </div>

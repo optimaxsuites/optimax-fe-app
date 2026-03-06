@@ -54,6 +54,8 @@ export class AddEmployeeFormComponent {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
+  readonly maxProfilePhotoSizeInMb = 0.5;
+  readonly maxProfilePhotoSizeInBytes = this.maxProfilePhotoSizeInMb * 1024 * 1024;
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
@@ -304,19 +306,25 @@ export class AddEmployeeFormComponent {
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
     const file = control.value;
-
-
     if (!file) {
       return null; 
     }
+
     if(file instanceof File){
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      console.log(file)
       if (!allowedTypes.includes(file.type )) {
         return { invalidFileType: true };
-      }else{
-       return null
       }
+
+      if (file.size > this.maxProfilePhotoSizeInBytes) {
+        return {
+          fileTooLarge: {
+            maxSizeInMb: this.maxProfilePhotoSizeInMb
+          }
+        };
+      }
+
+      return null;
     }
     else if(typeof(file) == "string"){
       return null;
@@ -726,9 +734,18 @@ private buildEmployeeFormData(): FormData {
   onProfilePhotoChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
-      this.previewImageFile(input.files[0])
       const file = input.files[0];
-      this.basicForm.get('profilePhoto')?.setValue(file)
+      const profilePhotoControl = this.basicForm.get('profilePhoto');
+      profilePhotoControl?.setValue(file);
+      profilePhotoControl?.markAsTouched();
+      profilePhotoControl?.updateValueAndValidity();
+
+      if (profilePhotoControl?.invalid) {
+        input.value = '';
+        return;
+      }
+
+      this.previewImageFile(file);
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 
@@ -785,6 +802,10 @@ private buildEmployeeFormData(): FormData {
   
     if (control?.hasError('invalidFileType')) {
       return `${this.toTitleCaseWithSpace(controlName)} must be a valid image file (PNG, JPG, JPEG).`;
+    }
+
+    if (control?.hasError('fileTooLarge')) {
+      return `${this.toTitleCaseWithSpace(controlName)} must not be more than ${this.maxProfilePhotoSizeInMb} MB.`;
     }
   
     return '';

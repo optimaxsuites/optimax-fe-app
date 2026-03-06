@@ -52,7 +52,8 @@
 
       <div class="mb-4">
       <label for="profilePhoto" class="block text-[13px] font-medium">Profile Photo <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input type="file" (change)="onProfilePhotoChange($event)" formControlName="profilePhoto" id="profilePhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <input type="file" accept="image/png,image/jpeg,.jpg" (change)="onProfilePhotoChange($event)" formControlName="profilePhoto" id="profilePhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small class="text-gray-500">PNG, JPG, or JPEG only. Maximum file size: {{ maxProfilePhotoSizeInMb }} MB.</small>
       <small *ngIf="basicForm.get('profilePhoto')?.touched && basicForm.get('profilePhoto')?.invalid" class="text-red-600">
         {{ getErrorMessage(basicForm.get("profilePhoto"),'profilePhoto') }}
       </small>
