@@ -28,7 +28,7 @@ export class ApprovedVendorComponent {
   // currentAction: VendorAction | null = null;
 
   // dialog state (optional)
-  actionDialogVisible = false;
+  displayVendorDialog = false;
   actionComment = '';
 
   columns = [
@@ -115,11 +115,11 @@ export class ApprovedVendorComponent {
         break;
 
       case 'revalidate':
-        this.openAction(v); // or whatever fits your flow
+        this.openAction(v);
         break;
 
       case 'suspend':
-        this.openAction(v); // or create 'Suspend' if you have it
+        this.openAction(v);
         break;
 
       default:
@@ -149,19 +149,18 @@ export class ApprovedVendorComponent {
     }, 300);
   }
 
-  // used by your "View" button (same handler name as pending table for consistency)
   reviewVendor(v: any): void {
-    // Navigate to your vendor detail page (adjust route to match your app)
-    this.router.navigate(['admin/procurement/vendor-management', v.id, 'review']);
+          this.selectedVendor = v;
+    this.displayVendorDialog = true;
+    // this.router.navigate(['admin/procurement/vendor-management', v.id, 'review']);
   }
 
   openAction(v: any): void {
     this.selectedVendor = v;
     this.actionComment = '';
-    this.actionDialogVisible = true;
+    this.displayVendorDialog = true;
   }
 
-  // optional helper if you add pagination controls later
   onPageChange(event: any): void {
     // PrimeNG paginator emits { first, rows, page, pageCount }
     this.query.page = (event.page ?? 0) + 1;

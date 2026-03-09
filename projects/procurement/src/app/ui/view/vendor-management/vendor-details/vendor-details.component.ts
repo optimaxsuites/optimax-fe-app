@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, input, Input, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { VendorService } from '../../../service/vendor/vendor.service';
 import { VendorComplianceService } from '../../../service/vendor/vendor-compliance.service';
@@ -10,6 +10,7 @@ import { VendorComplianceDocumentDto } from '../../../domain/vendor.compliance.d
   templateUrl: './vendor-details.component.html',
 })
 export class VendorDetailsComponent implements OnInit {
+  @Input() vendor!: any;
 approveVendor() {
 throw new Error('Method not implemented.');
 }
@@ -20,7 +21,7 @@ rejectVendor() {
 throw new Error('Method not implemented.');
 }
   loading = false;
-  vendor?: any;
+  // vendor?: any;
 
   // @Input() vendor: any; 
 

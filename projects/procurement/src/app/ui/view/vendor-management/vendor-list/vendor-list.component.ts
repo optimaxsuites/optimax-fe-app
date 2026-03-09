@@ -12,7 +12,9 @@ import { VendorRegistrationService } from '../../../service/vendor/vendor-regist
 import { MessageService } from 'primeng/api';
 
 @Component({
+  selector: 'app-vendor-list',
   templateUrl: './vendor-list.component.html',
+  styleUrl: './vendor-list.component.scss',
   providers: [MessageService],
 })
 export class VendorListComponent implements OnInit {
@@ -52,7 +54,7 @@ export class VendorListComponent implements OnInit {
       field: 'status',
       formatter: (row: any) => row.status ?? '__',
       badgeClass: (row: any) =>
-        'px-2 py-1 rounded-full text-xs font-medium inline-flex items-center ' +
+        'px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center ' +
         this.statusBadgeClass(row.status),
     },
   ];
@@ -63,6 +65,8 @@ export class VendorListComponent implements OnInit {
     { id: 'resendInvite', label: 'Resend Invite', icon: 'pi pi-refresh' },
     { id: 'delete', label: 'Delete', icon: 'pi pi-trash', className: 'danger' },
   ];
+
+
 
   query: any = { q: '', status: null as string | null };
 
@@ -85,36 +89,40 @@ export class VendorListComponent implements OnInit {
 
   ngOnInit(): void {
     // TODO: load categories from API if you have endpoint
-    this.fetchInvitedAndInProgress();
+    this.fetchInvited();
     // this.displayVendorForm = true;
   }
 
+  onTabChange(event: { value: any }) {
+    // Update content based on selected tab
+    console.log('Selected Tab: ', event.value);
+  }
+
   applyFilters(): void {
-  const q = (this.query.q || '').trim().toLowerCase();
-  const status = this.query.status; // optional dropdown filter
+    const q = (this.query.q || '').trim().toLowerCase();
+    const status = this.query.status; // optional dropdown filter
 
-  this.filteredVendors = this.vendors.filter((v: any) => {
-    // Status filter (optional)
-    if (status && v.status !== status) return false;
+    this.filteredVendors = this.vendors.filter((v: any) => {
+      // Status filter (optional)
+      if (status && v.status !== status) return false;
 
-    // Text search filter
-    if (!q) return true;
+      // Text search filter
+      if (!q) return true;
 
-    const haystack = [
-      v.id,
-      v.legalName,
-      v.email,
-      v.registrationToken,
-      v.status
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+      const haystack = [
+        v.id,
+        v.legalName,
+        v.email,
+        v.registrationToken,
+        v.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-    return haystack.includes(q);
-  });
-}
-
+      return haystack.includes(q);
+    });
+  }
 
   openItem($event: any) {
     throw new Error('Method not implemented.');
@@ -163,13 +171,10 @@ export class VendorListComponent implements OnInit {
     throw new Error('Method not implemented.');
   }
 
-  fetchInvitedAndInProgress(): void {
+  fetchInvited(): void {
     const data = JSON.parse(localStorage.getItem('vendors') || '[]');
 
-    this.vendors = data.filter(
-      (v: any) =>
-        v.status === 'Invited' || v.status === 'RegistrationInProgress',
-    );
+    this.vendors = data.filter((v: any) => v.status === 'Invited');
 
     this.applyFilters();
   }
@@ -179,7 +184,7 @@ export class VendorListComponent implements OnInit {
     const page = (event.page ?? 0) + 1;
     this.query.page = page;
     this.query.pageSize = event.rows ?? this.query.pageSize;
-    this.fetchInvitedAndInProgress();
+    this.fetchInvited();
   }
 
   open(v: VendorDto) {
@@ -313,12 +318,12 @@ export class VendorListComponent implements OnInit {
 
     this.displayVendorForm = false;
 
-    this.fetchInvitedAndInProgress();
+    this.fetchInvited();
 
     console.log('Vendor saved locally:', payload);
   }
 
-    private readonly statusClasses: Record<string, string> = {
+  private readonly statusClasses: Record<string, string> = {
     Draft: 'bg-gray-100 text-gray-700 ring-1 ring-gray-200',
     Inactive: 'bg-gray-200 text-gray-700 ring-1 ring-gray-300',
     Cancelled: 'bg-gray-300 text-gray-900 ring-1 ring-gray-400',

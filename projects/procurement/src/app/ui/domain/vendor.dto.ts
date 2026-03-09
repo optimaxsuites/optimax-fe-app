@@ -7,7 +7,8 @@ export enum VendorStatus {
   PendingRegistration = 'PendingRegistration',
   PendingApproval = 'PendingApproval',
   RegistrationInProgress = 'RegistrationInProgress',
-  AiFlagged = 'AiFlagged'
+  AiFlagged = 'AiFlagged',
+  Draft = "Draft"
 }
 
 export interface VendorContactDto {
@@ -18,6 +19,10 @@ export interface VendorContactDto {
 }
 
 export interface VendorDto {
+  reason: any;
+  rejectedBy: string;
+  rejectedAt: string;
+  audit: any;
   aiStatus: string;
   approvedAt: string | number | Date;
   approvedBy: string;

@@ -1,2 +1,85 @@
+<!-- <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> -->
 
-<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>
+<div class="card">
+  <div class="">
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <div>
+          <div class="text-xl font-bold text-slate-900">Vendors Management</div>
+          <div class="text-sm text-slate-500">
+            Manage supplier master data, compliance, and approvals.
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <!-- <app-button
+          text="Add Vendor"
+          class="btn-navigate"
+          (click)="openForm()"
+        ></app-button> -->
+      </ng-template>
+    </p-toolbar>
+
+    <div class="p-4 mb-4">
+      <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="text-sm">
+          <label class="font-medium text-slate-600">Search</label>
+          <span class="p-input-icon-right w-full">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              class="w-full border p-2"
+              placeholder="Name, email, code..."
+            />
+          </span>
+        </div>
+      </div> -->
+      <div class="flex justify-end">
+        <div class="w-1/6">
+          <!-- <p-dropdown
+          [options]="tabOptions"
+          [(ngModel)]="selectedTab"
+          placeholder="Select Tab"
+          (onChange)="onTabChange($event)"
+          class="w-full"
+        >
+        </p-dropdown> -->
+          <select
+            [(ngModel)]="selectedTab"
+            (change)="onTabChange($event)"
+            class="w-full border p-2"
+          >
+            <option *ngFor="let tab of tabOptions" [value]="tab.value">
+              {{ tab.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <p-tabView>
+      <p-tabPanel header="Vendor List" *ngIf="selectedTab === 'Vendor List'">
+        <app-vendor-list></app-vendor-list>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Pending Approval"
+        *ngIf="selectedTab === 'Pending Approval'"
+      >
+        <app-vendor-approval></app-vendor-approval>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Approved Vendor"
+        *ngIf="selectedTab === 'Approved Vendor'"
+      >
+        <app-approved-vendor></app-approved-vendor>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Rejected Vendor"
+        *ngIf="selectedTab === 'Rejected Vendor'"
+      >
+        <app-rejected-vendor></app-rejected-vendor>
+      </p-tabPanel>
+    </p-tabView>
+  </div>
+</div>
