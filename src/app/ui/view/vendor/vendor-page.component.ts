@@ -11,22 +11,38 @@ import { RejectedVendorComponent } from '../vendor-management/rejected-vendor/re
   styleUrl: './vendor-page.component.scss'
 })
 export class VendorPageComponent {
-  tabsConfig: TabConfig[] = [
-  { name: 'Vendor List',  component: VendorListComponent },
-  { name: 'Pending Approval',  component: VendorApprovalComponent },
-    { name: 'Approved Vendor',  component: ApprovedVendorComponent },
-      { name: 'Rejected Vendor',  component: RejectedVendorComponent },
-    // { 
-    //   name: 'LPO', 
-    //   component: null, 
-    //   hasDropdown: true,
-    //   dropdownOptions: [
-    //     { label: 'Incoming', action: 'incoming', component: IncomingComponent},
-    //     { label: 'Outgoing', action: 'outgoing',  component: OutgoingComponent}
-    //   ]
-    // },
-    // { name: 'Proforma Invoice', component: ProformaInvoiceComponent },
-    // { name: 'Invoice', component: InvoiceComponent },
-    // { name: 'Dispatch Note', component: DispatchNoteComponent }
-  ];
+  // tabsConfig: TabConfig[] = [
+  // { name: 'Vendor List',  component: VendorListComponent },
+  // { name: 'Pending Approval',  component: VendorApprovalComponent },
+  //   { name: 'Approved Vendor',  component: ApprovedVendorComponent },
+  //     { name: 'Rejected Vendor',  component: RejectedVendorComponent },
+  //   // { 
+  //   //   name: 'LPO', 
+  //   //   component: null, 
+  //   //   hasDropdown: true,
+  //   //   dropdownOptions: [
+  //   //     { label: 'Incoming', action: 'incoming', component: IncomingComponent},
+  //   //     { label: 'Outgoing', action: 'outgoing',  component: OutgoingComponent}
+  //   //   ]
+  //   // },
+  //   // { name: 'Proforma Invoice', component: ProformaInvoiceComponent },
+  //   // { name: 'Invoice', component: InvoiceComponent },
+  //   // { name: 'Dispatch Note', component: DispatchNoteComponent }
+  // ];
+
+
+
+      tabOptions = [
+      { label: 'Vendor List', value: 'Vendor List' },
+      { label: 'Pending Approval', value: 'Pending Approval' },
+      { label: 'Approved Vendor', value: 'Approved Vendor' },
+      { label: 'Rejected Vendor', value: 'Rejected Vendor' },
+    ];
+  
+    selectedTab: string = 'Vendor List';
+
+      onTabChange(event: Event) {
+    // Update content based on selected tab
+    console.log('Selected Tab: ', event);
+  }
 }

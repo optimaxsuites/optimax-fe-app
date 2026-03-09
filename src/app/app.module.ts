@@ -101,6 +101,8 @@ import { RejectedVendorComponent } from './ui/view/vendor-management/rejected-ve
 import { TableComponent } from './ui/sharedComponent/view/table/table.component';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
+import { SelectButtonModule } from "primeng/selectbutton";
+// import { SelectModule } from 'primeng/select';
 
 
 @NgModule({
@@ -139,6 +141,7 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     ApprovedVendorComponent,
     RejectedVendorComponent,
     TableComponent,
+    
   ],
   imports: [
     BrowserModule,
@@ -200,8 +203,9 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     DialogModule,
     NgChartsModule,
     NgApexchartsModule,
-    
-  ],
+    SelectButtonModule,
+    // SelectModule
+],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

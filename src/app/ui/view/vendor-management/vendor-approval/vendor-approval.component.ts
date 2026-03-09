@@ -2,9 +2,17 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { VendorApprovalService } from '../../../service/vendor/vendor-approval.service';
 import { VendorDto, VendorStatus } from '../../../domain/vendor.dto';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import {
+  addVendorAuditEvent,
+  VendorAuditEventType,
+} from '../../../domain/vendor-audit.util';
 
 @Component({
+  selector: 'app-vendor-approval',
   templateUrl: './vendor-approval.component.html',
+  styleUrl: './vendor-approval.component.scss',
+  providers: [MessageService],
 })
 export class VendorApprovalComponent implements OnInit {
   loading = false;
@@ -40,14 +48,16 @@ export class VendorApprovalComponent implements OnInit {
 
     {
       header: 'Submitted On',
-      field: 'createdAt',
+      field: 'submittedOn',
       sortable: true,
       formatter: (row: any) =>
-        new Date(row.createdAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        }),
+        row.submittedOn
+          ? new Date(row.submittedOn).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : 'Not Submitted',
     },
 
     {
@@ -132,8 +142,14 @@ export class VendorApprovalComponent implements OnInit {
       const data = JSON.parse(localStorage.getItem('vendors') || '[]');
 
       this.vendors = data.filter(
-        (v: any) => v.status === 'Submitted' || v.status === 'UnderReview',
+        (v: any) =>
+          v.status === 'Submitted' ||
+          v.status === 'UnderReview' ||
+          v.status === 'Draft' ||
+          v.status === 'RegistrationInProgress',
       );
+
+      console.log(this.vendors);
 
       this.loading = false;
     }, 300);
@@ -178,6 +194,49 @@ export class VendorApprovalComponent implements OnInit {
   //   // refresh UI
   //   // this.vendors = [...updated];
   // }
+
+  // approveVendor(v: VendorDto): void {
+  //   const key = 'vendors';
+
+  //   const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+  //   const now = new Date().toISOString();
+
+  //   const updated = vendors.map((x) => {
+  //     if (x.id === v.id) {
+  //       return {
+  //         ...x,
+  //         status: VendorStatus.Approved,
+  //         approvedAt: now,
+  //         approvedBy: 'Admin',
+  //       };
+  //     }
+
+  //     // Sync approval when AI is approved
+  //     const isAIApproved = (x as any).aiStatus === 'AIApproved' || x.aiStatus === 'AIApproved';
+
+  //     if (isAIApproved  && x.status !== VendorStatus.Approved) {
+  //       return {
+  //         ...x,
+  //         status: VendorStatus.Approved,
+  //         approvedAt: now,
+  //         approvedBy: 'System',
+  //       };
+  //     }
+
+  //     return x;
+  //   });
+
+  //   localStorage.setItem(key, JSON.stringify(updated));
+
+  //   // ✅ fetch back and show only UnderReview
+  //   this.vendors = this.getVendorsFromStorage().filter(
+  //     (x) => x.status === VendorStatus.UnderReview,
+  //   );
+
+  //   // ✅ if using OnPush change detection
+  //   this.cdr?.markForCheck?.();
+  // }
+
   approveVendor(v: VendorDto): void {
     const key = 'vendors';
 
@@ -186,22 +245,47 @@ export class VendorApprovalComponent implements OnInit {
 
     const updated = vendors.map((x) => {
       if (x.id === v.id) {
-        return {
-          ...x,
-          status: VendorStatus.Approved,
-          approvedAt: now,
-          approvedBy: 'Admin', // replace with real user later
-        };
+        // If manual approval (Admin)
+        if (x.status !== VendorStatus.Approved) {
+          const fromStatus = x.status;
+
+          // Set status and approval timestamp
+          x.status = VendorStatus.Approved;
+          x.approvedAt = now;
+          x.approvedBy = 'Admin'; // You can dynamically set this if you have auth context
+
+          // Add to audit
+          x = addVendorAuditEvent(x, {
+            type: VendorAuditEventType.Approved,
+            fromStatus,
+            toStatus: VendorStatus.Approved,
+            actorId: 'admin-id', // Add dynamic actor ID if needed
+            actorName: 'Admin', // Replace with dynamic actor name if needed
+          });
+        }
+
+        return x;
       }
 
-      // Auto sync: AIApproved → Approved
-      if (x.aiStatus === 'AIApproved' && x.status !== VendorStatus.Approved) {
-        return {
-          ...x,
-          status: VendorStatus.Approved,
-          approvedAt: now,
-          approvedBy: 'System',
-        };
+      // Sync approval when AI is approved (auto-approve case)
+      const isAIApproved =
+        (x as any).aiStatus === 'AIApproved' || x.aiStatus === 'AIApproved';
+
+      if (isAIApproved && x.status !== VendorStatus.Approved) {
+        const fromStatus = x.status;
+
+        x.status = VendorStatus.Approved;
+        x.approvedAt = now;
+        x.approvedBy = 'System'; // Set the system as approver for AI approvals
+
+        // Add to audit log
+        x = addVendorAuditEvent(x, {
+          type: VendorAuditEventType.Approved,
+          fromStatus,
+          toStatus: VendorStatus.Approved,
+          actorId: 'system-id', // Optional: If you need a system ID
+          actorName: 'System', // System automatically approves
+        });
       }
 
       return x;
@@ -209,12 +293,12 @@ export class VendorApprovalComponent implements OnInit {
 
     localStorage.setItem(key, JSON.stringify(updated));
 
-    // ✅ fetch back and show only UnderReview
+    // Fetch back the updated vendors and filter only UnderReview
     this.vendors = this.getVendorsFromStorage().filter(
       (x) => x.status === VendorStatus.UnderReview,
     );
 
-    // ✅ if using OnPush change detection
+    // Ensure change detection if you're using OnPush
     this.cdr?.markForCheck?.();
   }
 
@@ -222,43 +306,106 @@ export class VendorApprovalComponent implements OnInit {
     return JSON.parse(localStorage.getItem('vendors') ?? '[]');
   }
 
+  // rejectVendor(v: VendorDto): void {
+  //   const key = 'vendors';
+
+  //   const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+  //   const now = new Date().toISOString();
+
+  //   const updated = vendors.map((x) => {
+  //     if (x.id === v.id) {
+  //       return {
+  //         ...x,
+  //         status: VendorStatus.Rejected,
+  //         rejectedAt: now,
+  //         rejectedBy: 'Admin', // replace with real user later
+  //       };
+  //     }
+
+  //     // Auto sync: AIApproved → Approved
+  //     if (x.aiStatus === 'AIApproved' && x.status !== VendorStatus.Approved) {
+  //       return {
+  //         ...x,
+  //         status: VendorStatus.AiFlagged,
+  //         rejectedAt: now,
+  //         rejectedBy: 'System',
+  //       };
+  //     }
+
+  //     return x;
+  //   });
+
+  //   localStorage.setItem(key, JSON.stringify(updated));
+
+  //   // ✅ fetch back and show only UnderReview
+  //   this.vendors = this.getVendorsFromStorage().filter(
+  //     (x) => x.status === VendorStatus.UnderReview,
+  //   );
+
+  //   // ✅ if using OnPush change detection
+  //   this.cdr?.markForCheck?.();
+  // }
+
   rejectVendor(v: VendorDto): void {
     const key = 'vendors';
-
     const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
     const now = new Date().toISOString();
+    // const r = reason?.trim() || 'No reason provided'; // If reason is empty, fallback to 'No reason provided'
 
     const updated = vendors.map((x) => {
       if (x.id === v.id) {
-        return {
-          ...x,
-          status: VendorStatus.Rejected,
-          rejectedAt: now,
-          rejectedBy: 'Admin', // replace with real user later
-        };
+        // Manual rejection by Admin
+        if (x.status !== VendorStatus.Rejected) {
+          const fromStatus = x.status;
+
+          x.status = VendorStatus.Rejected;
+          x.rejectedAt = now;
+          x.rejectedBy = 'Admin'; // Replace with actual user ID and name
+
+          // Add to audit log
+          x = addVendorAuditEvent(x, {
+            type: VendorAuditEventType.Rejected,
+            fromStatus,
+            toStatus: VendorStatus.Rejected,
+            reason: v.reason?.trim() || 'No reason provided',
+            actorId: 'admin-id', // Replace with actual user ID (if you have auth)
+            actorName: 'Admin', // Replace with actual user name
+          });
+        }
+        return x;
       }
 
-      // Auto sync: AIApproved → Approved
+      // Auto sync: AI approval → flagged status change
       if (x.aiStatus === 'AIApproved' && x.status !== VendorStatus.Approved) {
-        return {
-          ...x,
-          status: VendorStatus.AiFlagged,
-          rejectedAt: now,
-          rejectedBy: 'System',
-        };
+        const fromStatus = x.status;
+
+        x.status = VendorStatus.AiFlagged;
+        x.rejectedAt = now;
+        x.rejectedBy = 'System'; // System is responsible for this action
+
+        // Add to audit log
+        x = addVendorAuditEvent(x, {
+          type: VendorAuditEventType.Rejected,
+          fromStatus,
+          toStatus: VendorStatus.AiFlagged,
+          reason: v.reason?.trim() || 'Auto-flagged by AI',
+          actorId: 'system-id', // Replace with system ID if you want
+          actorName: 'System',
+        });
       }
 
       return x;
     });
 
+    // Save the updated vendor data back to localStorage
     localStorage.setItem(key, JSON.stringify(updated));
 
-    // ✅ fetch back and show only UnderReview
+    // ✅ Fetch back the updated vendors and filter only UnderReview
     this.vendors = this.getVendorsFromStorage().filter(
       (x) => x.status === VendorStatus.UnderReview,
     );
 
-    // ✅ if using OnPush change detection
+    // ✅ If using OnPush change detection
     this.cdr?.markForCheck?.();
   }
 
@@ -281,14 +428,14 @@ export class VendorApprovalComponent implements OnInit {
   }
 
   reviewVendor(v: any): void {
-    this.router.navigate([
-      '/admin/procurement/vendor-management',
-      v.id,
-      'review',
-    ]);
+    // this.router.navigate([
+    //   '/admin/procurement/vendor-management',
+    //   v.id,
+    //   'review',
+    // ]);
 
-    //   this.selectedVendor = v;
-    // this.displayVendorDialog = true;
+    this.selectedVendor = v;
+    this.displayVendorDialog = true;
   }
 
   private readonly statusClasses: Record<string, string> = {
