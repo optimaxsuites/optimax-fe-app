@@ -1,63 +1,90 @@
-/* Tabs Section (Using reconciliation-kanban styling) */
-.tabs-section {
+/* General styles */
+:host {
+   --tab-bg: #f7f9fc;
+  --tab-border: #e5e7eb;
+  --tab-text: #475467;
+  --tab-text-active: #4291b1;
+  --tab-accent: #D6FFFE;
+  --tab-surface: #ffffff;
+  --tab-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.sales {
+  padding: 12px 16px 0 16px;
+  background: radial-gradient(1200px 300px at 20% -10%, #e9f7f5 0%, transparent 60%),
+    radial-gradient(900px 260px at 90% -20%, #eef2ff 0%, transparent 60%);
+  border-radius: 16px;
+}
+
+.link-wrapper {
   display: flex;
   gap: 8px;
-  padding: 16px 32px;
-  background-color: #ffffff;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 8px;
+  background: var(--tab-surface);
+  border: 1px solid var(--tab-border);
+  border-radius: 999px;
+  box-shadow: var(--tab-shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.link-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
-  padding: 10px 24px;
-  border: none;
-  background-color: transparent;
-  color: #4a5568;
-  font-size: 14px;
-  font-weight: 600; /* Bold text */
-  border-radius: 6px;
+  color: var(--tab-text);
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  display: flex;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 999px;
+  display: inline-flex;
   align-items: center;
-  gap: 8px; /* Space between icon and text */
+  gap: 8px;
+  background: transparent;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease,
+    transform 180ms ease;
+  @apply text-gray-600;
+}
+
+.tab-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+  transform: translateY(-1px);
+}
+
+.active {
+  border-color: rgba(20, 184, 166, 0.35);
+  background: #ecfeff;
+  color: var(--tab-text-active);
+  @apply text-[#0f766e];
+}
+
+.settings-tab-menu {
+  position: relative;
+  display: inline-block;
 }
 
 .tab-icon {
   font-size: 16px;
+  line-height: 1;
+  color: currentColor;
 }
 
-.tab-btn:hover {
-  background-color: #edf2f7;
-  color: #2d3748;
+.tab-label {
+  white-space: nowrap;
 }
 
-.tab-btn.active {
-  background-color: #2EB270;
-  color: #ffffff;
+.tab-caret {
+  font-size: 11px;
+  opacity: 0.7;
 }
 
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 3px;
-  background-color: #2EB270;
-  border-radius: 3px 3px 0 0;
-}
-
-/* Dropdown menu positioning */
-.relative {
-  position: relative;
-}
-
-/* Dropdown styling */
 .dropdown-item {
   display: block;
-  padding: 8px 16px;
+  padding: 10px 12px;
   background-color: white;
   border: none;
   width: 100%;
@@ -65,50 +92,30 @@
   cursor: pointer;
   font-size: 14px;
   border-bottom: 1px solid #e0e0e0;
+  transition: background 150ms ease, color 150ms ease;
 }
 
 .dropdown-item:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fafc;
+  color: #0f766e;
 }
 
 .dropdown-item:last-child {
   border-bottom: none;
 }
 
-/* Tab content */
 .tab-content {
-  padding: 10px 16px;
+  padding: 12px 4px 4px 4px;
+  animation: tabFadeIn 220ms ease;
 }
 
-/* OLD STYLES (commented for reference) */
-/* 
-.link-wrapper {
-    display: flex;
-    padding: 0 16px;
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
-.tab-btn {
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 15px;
-    padding: 12px 24px;
-    border-radius: 4px;
-    @apply text-gray-600
-}
-
-.tab-btn:hover {
-    @apply bg-gray-50 text-gray-700
-}
-
-.active{
-    border-bottom: 2px solid #008000;
-    border-radius: 0px;
-    @apply text-[#008000] 
-}
-
-.settings-tab-menu {
-    position: relative;
-    display: inline-block;
-}
-*/

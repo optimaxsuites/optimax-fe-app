@@ -1,4 +1,4 @@
-import { Component, Input, Type } from '@angular/core';
+import { Component, Input, OnInit, Type } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
 import { CommonModule } from '@angular/common';
 
@@ -6,10 +6,10 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
-  standalone: true,
-  imports: [CommonModule],
+  // standalone: true,
+  // imports: [CommonModule],
 })
-export class NavTabComponent {
+export class NavTabComponent implements OnInit {
   @Input() tabsConfig: TabConfig[] = [];
 
   isDropdownOpen = false;
