@@ -250,7 +250,7 @@ export class MenuItemsService {
           description: 'Process employee salaries, bonuses, deductions, and payslips.'
         },
         {
-          label: 'Advance',
+          label: 'Contribution and Loans',
           code: 'HR_ADVANCE',
           route: this.navigationLink.getLink('advance'),
           roles: ['ROLE_USER'],
