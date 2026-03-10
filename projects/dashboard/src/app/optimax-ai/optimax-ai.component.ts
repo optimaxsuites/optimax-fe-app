@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgClass } from "../../../node_modules/@angular/common/index";
+// import { NgClass } from "../../../node_modules/@angular/common/index";
 
 interface ChatSession {
   id: string;

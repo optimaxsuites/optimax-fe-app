@@ -38,11 +38,11 @@ const routes: Routes = [
 //   component: CommunicationComponent
 // },
 {
-  path: 'dashboard/optimaxai:uuid',
+  path: 'optimaxai/:uuid',
   component: OptimaxaiComponent
 },
 {
-  path: 'dashboard/analytics/:uuid',
+  path: 'analytics/:uuid',
   component: AnalyticsComponent
 }
 ];
