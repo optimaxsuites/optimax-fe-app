@@ -3,6 +3,8 @@ import { DashboardService } from '../ui/services/dashboard.service';
 import { SalesPerformanceResponse } from '../ui/models/interface/dashboard.models';
 import { formatISO, subDays } from 'date-fns';
 import { SideModalComponent } from '../ui/sharedComponent/view/side-modal/side-modal.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-generaldashboard',

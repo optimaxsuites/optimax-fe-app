@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
+import { CommonModule } from '@angular/common';
 // import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 // import { loadSalesData } from '../app/dashboard-overview/dashboard-overview.component'
 @Component({
