@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { VendorService } from '../../../service/vendor/vendor.service';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { VendorDto } from '../../../domain/vendor.dto';
+import { VendorDto, VendorStatus } from '../../../domain/vendor.dto';
 
 type VendorAction = 'Reinvite' | 'Archive';
 
@@ -34,12 +34,17 @@ export class RejectedVendorComponent implements OnInit {
     },
     {
       header: 'Business Name',
-      field: 'legalName',
+      field: 'companyProfile.legalName',
+      sortable: true,
+    },
+        {
+      header: 'Registration Token',
+      field: 'token',
       sortable: true,
     },
     {
       header: 'Email',
-      field: 'email',
+      field: 'companyProfile.companyEmail',
       sortable: true,
     },
     {
@@ -57,7 +62,7 @@ export class RejectedVendorComponent implements OnInit {
       header: 'Rejected By',
       field: 'rejectedBy',
       sortable: true,
-      formatter: (row: any) => row.approvedBy ?? '-',
+      formatter: (row: any) => row.rejectedBy ?? '-',
     },
     {
       header: 'Status',
@@ -81,16 +86,19 @@ export class RejectedVendorComponent implements OnInit {
       label: 'Reinvite',
       icon: 'pi pi-refresh',
     },
-    {
-      id: 'archive',
-      label: 'Archive',
-      icon: 'pi pi-ban',
-    },
+    // {
+    //   id: 'archive',
+    //   label: 'Archive',
+    //   icon: 'pi pi-ban',
+    // },
   ];
+  selectedVendor: any;
+  displayVendorDialog: boolean = false;
 
   constructor(
     private vendorService: VendorService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
   ) {}
@@ -107,8 +115,8 @@ export class RejectedVendorComponent implements OnInit {
         this.reviewVendor(v);
         break;
 
-      case 'revalidate':
-        this.openAction(v); // or whatever fits your flow
+      case 'reinvite':
+        this.reinviteVendor(v); // or whatever fits your flow
         break;
 
       case 'suspend':
@@ -140,10 +148,65 @@ export class RejectedVendorComponent implements OnInit {
     }, 300);
   }
 
+  reinviteVendor(v: VendorDto): void {
+  if (!v || v.status !== VendorStatus.Rejected) return;
+
+  this.confirmationService.confirm({
+    header: 'Confirm Reinvite',
+    message: `Are you sure you want to reinvite "${v.companyProfile?.legalName ?? 'this vendor'}"? This will move the vendor back to UnderReview.`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Yes, Reinvite',
+    rejectLabel: 'Cancel',
+    acceptButtonStyleClass: 'p-button-sm',
+    rejectButtonStyleClass: 'p-button-text p-button-sm',
+    accept: () => {
+      const key = 'vendors';
+      const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+      const now = new Date().toISOString();
+
+      const updated = vendors.map((x) => {
+        if (x.id === v.id) {
+          return {
+            ...x,
+            status: VendorStatus.UnderReview,
+            // rejectionReason: undefined,
+            // rejectedAt: undefined,
+            // rejectedBy: undefined,
+            // lastUpdatedAt: now,
+          };
+        }
+
+        return x;
+      });
+
+      localStorage.setItem(key, JSON.stringify(updated));
+
+      this.vendors = this.getVendorsFromStorage().filter(
+        (x) => x.status === VendorStatus.UnderReview
+      );
+
+      this.cdr?.markForCheck?.();
+      this.fetchRejected()
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Vendor Reinvited',
+        detail: `${v.companyProfile?.legalName ?? 'Vendor'} moved to UnderReview.`,
+      });
+    },
+  });
+}
+
+  private getVendorsFromStorage(): VendorDto[] {
+    return JSON.parse(localStorage.getItem('vendors') ?? '[]');
+  }
+
   reviewVendor(v: any): void {
+        this.selectedVendor = v;
+    this.displayVendorDialog = true;
     // Route to your vendor review/details component
     // Change the route to match your app routing
-    this.router.navigate(['admin/procurement/vendor-management', v.id, 'review']);
+    // this.router.navigate(['admin/procurement/vendor-management', v.id, 'review']);
   }
 
   openAction($event: { actionId: string; row: any }): void {

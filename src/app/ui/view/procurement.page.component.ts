@@ -21,8 +21,8 @@ export class ProcurementPageComponent {
   tabsConfig: TabConfig[] = [
 
 
-  { name: 'PR List',  component: PurchaseReqManagementComponent },
-  { name: 'PR Approval',  component: PrApprovalInboxComponent },
+  { icon: 'pi pi-list', name: 'PR List',  component: PurchaseReqManagementComponent },
+  { icon: 'pi pi-check-circle', name: 'PR Approval',  component: PrApprovalInboxComponent },
 
 
 

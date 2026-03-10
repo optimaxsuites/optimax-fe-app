@@ -40,13 +40,18 @@ export class ApprovedVendorComponent {
     },
     {
       header: 'Business Name',
-      field: 'legalName',
+      field: 'companyProfile.legalName',
       sortable: true,
       // formatter: (row: VendorDto) => row.legalName,
     },
+        {
+      header: 'Registration Token',
+      field: 'token',
+      sortable: true,
+    },
     {
       header: 'Email',
-      field: 'email',
+      field: 'companyProfile.companyEmail',
       sortable: true,
       // formatter: (row: VendorDto) => row.email,
     },
@@ -84,16 +89,16 @@ export class ApprovedVendorComponent {
       label: 'View',
       icon: 'pi pi-eye',
     },
-    {
-      id: 'revalidate',
-      label: 'Re-validate',
-      icon: 'pi pi-refresh',
-    },
-    {
-      id: 'suspend',
-      label: 'Suspend',
-      icon: 'pi pi-ban',
-    },
+    // {
+    //   id: 'revalidate',
+    //   label: 'Re-validate',
+    //   icon: 'pi pi-refresh',
+    // },
+    // {
+    //   id: 'suspend',
+    //   label: 'Suspend',
+    //   icon: 'pi pi-ban',
+    // },
   ];
 
   constructor(

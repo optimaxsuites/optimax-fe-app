@@ -12,23 +12,23 @@ export class VendorComplianceService {
 
   constructor(private db: VendorLocalDbService) {}
 
-  getVendorDocuments(
-    vendorId: string,
-  ): Observable<VendorComplianceDocumentDto[]> {
-    return this.db.getVendorDocuments(this.tenantId, vendorId);
-  }
+  // getVendorDocuments(
+  //   vendorId: string,
+  // ): Observable<VendorComplianceDocumentDto[]> {
+  //   return this.db.getVendorDocuments(this.tenantId, vendorId);
+  // }
 
-  uploadDocument(
-    req: UploadComplianceDocumentRequestDto,
-  ): Observable<VendorComplianceDocumentDto> {
-    return this.db.uploadDocument(this.tenantId, req);
-  }
+  // uploadDocument(
+  //   req: UploadComplianceDocumentRequestDto,
+  // ): Observable<VendorComplianceDocumentDto> {
+  //   return this.db.uploadDocument(this.tenantId, req);
+  // }
 
-  approveDocument(documentId: string, reviewerNote?: string): Observable<void> {
-    return this.db.approveDocument(this.tenantId, documentId, reviewerNote);
-  }
+  // approveDocument(documentId: string, reviewerNote?: string): Observable<void> {
+  //   return this.db.approveDocument(this.tenantId, documentId, reviewerNote);
+  // }
 
-  rejectDocument(documentId: string, reviewerNote: string): Observable<void> {
-    return this.db.rejectDocument(this.tenantId, documentId, reviewerNote);
-  }
+  // rejectDocument(documentId: string, reviewerNote: string): Observable<void> {
+  //   return this.db.rejectDocument(this.tenantId, documentId, reviewerNote);
+  // }
 }

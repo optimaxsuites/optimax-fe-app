@@ -11,19 +11,19 @@ import { VendorComplianceDocumentDto } from '../../../domain/vendor.compliance.d
 })
 export class VendorDetailsComponent implements OnInit {
   @Input() vendor!: any;
-approveVendor() {
-throw new Error('Method not implemented.');
-}
-requestChanges() {
-throw new Error('Method not implemented.');
-}
-rejectVendor() {
-throw new Error('Method not implemented.');
-}
+  approveVendor() {
+    throw new Error('Method not implemented.');
+  }
+  requestChanges() {
+    throw new Error('Method not implemented.');
+  }
+  rejectVendor() {
+    throw new Error('Method not implemented.');
+  }
   loading = false;
   // vendor?: any;
 
-  // @Input() vendor: any; 
+  // @Input() vendor: any;
 
   docsLoading = false;
   documents: VendorComplianceDocumentDto[] = [];
@@ -34,46 +34,46 @@ throw new Error('Method not implemented.');
     private complianceService: VendorComplianceService,
   ) {}
 
-ngOnInit(): void {
-  const id = this.route.snapshot.paramMap.get('id');
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
 
-  if (!id) {
-    console.error('Vendor ID not provided.');
-    return;
-  }
-
-  this.loadVendor(id);
-  this.loadDocs(id);
-}
-
-loadVendor(id: string) {
-  this.loading = true;
-
-  try {
-    const data = JSON.parse(localStorage.getItem('vendors') || '[]');
-
-    const vendor = data.find((v: any) => v.id === id);
-
-    if (!vendor) {
-      console.error('Vendor not found.');
-      this.loading = false;
+    if (!id) {
+      console.error('Vendor ID not provided.');
       return;
     }
 
-    this.vendor = vendor;
-  } catch (err) {
-    console.error('Error loading vendor from localStorage:', err);
+    this.loadVendor(id);
+    this.loadDocs(id);
   }
 
-  this.loading = false;
-}
+  loadVendor(id: string) {
+    this.loading = true;
 
-loadDocs(id: string) {
-  const data = JSON.parse(localStorage.getItem('vendors') || '[]');
-  const vendor = data.find((v: any) => v.id === id);
+    try {
+      const data = JSON.parse(localStorage.getItem('vendors') || '[]');
 
-  this.documents = vendor?.documents || [];
-}
+      const vendor = data.find((v: any) => v.id === id);
+
+      if (!vendor) {
+        console.error('Vendor not found.');
+        this.loading = false;
+        return;
+      }
+
+      this.vendor = vendor;
+    } catch (err) {
+      console.error('Error loading vendor from localStorage:', err);
+    }
+
+    this.loading = false;
+  }
+
+  loadDocs(id: string) {
+    const data = JSON.parse(localStorage.getItem('vendors') || '[]');
+    const vendor = data.find((v: any) => v.id === id);
+
+    this.documents = vendor?.documents || [];
+  }
 
   uploadDoc(evt: {
     documentType: string;
@@ -82,36 +82,41 @@ loadDocs(id: string) {
     file: File;
   }) {
     const vendorId = this.vendor?.id;
-  if (!vendorId) return;
+    if (!vendorId) return;
 
-    this.complianceService
-      .uploadDocument({
-        vendorId,
-        documentType: evt.documentType,
-        issuedDate: evt.issuedDate,
-        expiryDate: evt.expiryDate,
-        file: evt.file,
-      })
-      .subscribe({
-        next: () => this.loadDocs(vendorId),
-      });
+    // this.complianceService
+    //   .uploadDocument({
+    //     vendorId,
+    //     documentType: evt.documentType,
+    //     issuedDate: evt.issuedDate,
+    //     expiryDate: evt.expiryDate,
+    //     file: evt.file,
+    //   })
+    //   .subscribe({
+    //     next: () => this.loadDocs(vendorId),
+    //   });
   }
 
-approveDoc(docId: string) {
-  const vendorId = this.vendor?.id;
-  if (!vendorId) return;
-
-  this.complianceService.approveDocument(docId).subscribe({
-    next: () => this.loadDocs(vendorId),
-  });
+  viewDocument(doc: any): void {
+  if (!doc?.fileDataUrl) return;
+  window.open(doc.fileDataUrl, '_blank');
 }
 
-rejectDoc(docId: string) {
-  const vendorId = this.vendor?.id;
-  if (!vendorId) return;
+  approveDoc(docId: string) {
+    const vendorId = this.vendor?.id;
+    if (!vendorId) return;
 
-  this.complianceService.rejectDocument(docId, 'Document rejected').subscribe({
-    next: () => this.loadDocs(vendorId),
-  });
-}
+    // this.complianceService.approveDocument(docId).subscribe({
+    //   next: () => this.loadDocs(vendorId),
+    // });
+  }
+
+  rejectDoc(docId: string) {
+    const vendorId = this.vendor?.id;
+    if (!vendorId) return;
+
+    // this.complianceService.rejectDocument(docId, 'Document rejected').subscribe({
+    //   next: () => this.loadDocs(vendorId),
+    // });
+  }
 }
