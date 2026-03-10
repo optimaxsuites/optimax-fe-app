@@ -445,7 +445,7 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
             err,
             'Failed to save guarantor details. Please try again.'
           );
-          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          // this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
           pending -= 1;
           if (pending === 0) onComplete?.(hadError);
         }

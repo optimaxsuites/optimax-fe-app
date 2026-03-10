@@ -15,6 +15,9 @@ export class NavigationLinksService {
 
   private generateLinks(): void {
     this.links['dashboardLink'] = '/admin/dashboard/' + uuidV4();
+    this.links['optimaXAILink'] = '/admin/dashboard/optimaxai/' + uuidV4();
+    this.links['analyticsLink'] = '/admin/dashboard/analytics/' + uuidV4();
+
     this.links['userRegistrationLink'] = '/admin/settings/user-reg/' + uuidV4();
     this.links['salesLink'] = '/admin/sales/' +uuidV4();
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
@@ -137,6 +140,8 @@ this.links['vendorLink'] = '/admin/procurement/vendor-portal/dashboard/' +uuidV4
 this.links['rfqLink'] = '/admin/procurement/vendor-portal/rfqs/' +uuidV4();
 this.links['quotationLink'] = '/admin/procurement/vendor-portal/quotations/' +uuidV4();
 this.links['lpoLink'] = '/admin/procurement/vendor-portal/lpo/' +uuidV4();
+
+
 
 
 
