@@ -312,7 +312,7 @@ export class ExpenseService {
 
     return this.http.post<Expense>(this.expenseUrl, formData, { headers }).pipe(
       tap((response) => {
-        console.log('✅ Expense created successfully:', response);
+        console.log(' Expense created successfully:', response);
         this.loadExpenses();
       }),
       catchError(this.handleError)
@@ -431,6 +431,42 @@ export class ExpenseService {
 
   addTaxRate(tax: TaxDTO): Observable<TaxDTO> {
     return this.http.post<TaxDTO>(this.taxUrl, tax, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ============================================================================
+  // FIX: Image 401 Unauthorized Error
+  // ============================================================================
+  // Problem: <img src="url"> doesn't send authentication headers
+  // Solution: Fetch image as blob with auth headers, then display
+  // ============================================================================
+
+  /**
+   * Fetch receipt image with authentication
+   * Returns blob that can be displayed in <img> tag
+   * 
+   * WHY THIS WORKS:
+   * Before (❌ Fails):
+   *   <img src="https://api.com/image/abc">
+   *   → Browser makes request WITHOUT auth headers
+   *   → Backend returns 401 Unauthorized
+   *
+   * After (✅ Works):
+   *   1. Angular fetches image WITH auth headers using HttpClient
+   *   2. Converts response to Blob
+   *   3. Creates blob URL: blob:http://localhost:4200/abc-123
+   *   4. Sets <img src="blob:...">
+   *   5. Browser displays image from memory
+   * 
+   * @param url The image URL to fetch
+   * @returns Observable<Blob> The image data as a blob
+   */
+  getReceiptImage(url: string): Observable<Blob> {
+    return this.http.get(url, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    }).pipe(
       catchError(this.handleError)
     );
   }

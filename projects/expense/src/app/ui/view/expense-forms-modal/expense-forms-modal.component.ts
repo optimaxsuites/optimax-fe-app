@@ -185,8 +185,8 @@ export class ExpenseFormsModalComponent implements OnInit {
     console.log('Applying filters...');
   }
 
-  cancelExpenses() { this.router.navigate(['/expense/:uuid']); }
-  goBack()         { this.router.navigate(['/expense/:uuid']); }
+  cancelExpenses() { this.router.navigate(['/admin/expenses']); }
+  goBack()         { this.router.navigate(['/admin/expenses']); }
 
   saveExpenseToLocalStorage(expense: any): void {
     let expenses = JSON.parse(localStorage.getItem('expenses') || '[]');

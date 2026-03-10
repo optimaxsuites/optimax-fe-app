@@ -14,59 +14,31 @@ import { MobileCheckoutComponent } from './ui/view/mobile-checkout/mobile-checko
 
 
 const routes: Routes = [
-  //  { path: ':uuid'},
-  // {
-  //   path: 'expenses',
-  //   component: ExpensesComponent,
-  // },
-   {
-    path: '',
-    redirectTo: 'expense/34567whr4567yhsdzr56',
-    pathMatch: 'full',
+
+  { path: '', redirectTo: 'admin/expenses', pathMatch: 'full' },
+
+  {
+    path: 'admin/expenses',
+    children: [
+      // default child when someone lands on /admin/expenses
+      { path: '', redirectTo: 'expense/34567whr4567yhsdzr56', pathMatch: 'full' },
+
+      { path: 'expense/:uuid', component: ExpensesComponent },
+      { path: 'expensesForm', component: ExpenseFormsModalComponent },
+      { path: 'reimbursement/:uuid', component: ReimbursementComponent },
+      { path: 'advance/:uuid', component: DisbursementComponent },
+      { path: 'report/:uuid', component: ApprovalReportsComponent },
+      { path: 'tax-report/:uuid', component: TaxReportComponent },
+      { path: 'mobile/checkout/:uuid', component: MobileCheckoutComponent },
+      { path: 'expensesApproval/:id', component: ExpenseApprovalComponent },
+      { path: 'uploadReciept', component: UploadRecieptComponent },
+      { path: 'Addperdiem', component: AddPerDiemComponent },
+      { path: 'expense-summary', component: ExpenseSummaryComponent },
+    ],
   },
-   { path: 'expense/:uuid',
-        component: ExpensesComponent,
-      },
-      {
-        path: 'expensesForm',
-        component: ExpenseFormsModalComponent,
-      },
-      {
-       path: 'reimbursement/:uuid',
-       component: ReimbursementComponent,
-      },
-       {
-        path: 'advance/:uuid',
-        component: DisbursementComponent,
-      },
-      {
-        path: 'report/:uuid',
-        component: ApprovalReportsComponent,
-      },
-      {
-        path: 'admin/tax-report/:uuid',
-        component: TaxReportComponent,
-      },
-      {
-        path: 'mobile/checkout/:uuid',
-        component: MobileCheckoutComponent,
-      },
-      {
-        path: 'expensesApproval/:id',
-        component: ExpenseApprovalComponent,
-      },
-      {
-        path: 'uploadReciept',
-        component: UploadRecieptComponent,
-      },
-      {
-        path: 'Addperdiem',
-        component: AddPerDiemComponent,
-      },
-      {
-        path:'expense-summary',
-        component:ExpenseSummaryComponent
-      }
+
+  // catch-all goes back to the expense base
+  { path: '**', redirectTo: 'admin/expenses' },
 ];
 
 @NgModule({

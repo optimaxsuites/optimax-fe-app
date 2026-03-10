@@ -1,7 +1,8 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -137,6 +138,7 @@ export class ExpenseTableComponent implements OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private cdr: ChangeDetectorRef,
+    private http: HttpClient,
   ) {}
 
   getExpenseCount(): number {
@@ -455,27 +457,40 @@ export class ExpenseTableComponent implements OnInit {
     this.companyReceiptLoading = false;
     this.employeeReceiptLoading = false;
 
-    console.log(' Full Expense Object:', this.selectedExpense);
-    console.log('Company Receipt:', this.selectedExpense.companyReceipt);
-    console.log(' Employee Receipt:', this.selectedExpense.expenseReceipt);
-
-    // Always convert the raw file path to a proper web-accessible URL
     if (this.selectedExpense.companyReceipt?.url) {
-      const rawUrl = this.selectedExpense.companyReceipt.url;
-      this.companyReceiptUrl = this.convertToWebUrl(rawUrl);
-      console.log(' Company Receipt - Raw URL:', rawUrl);
-      console.log(' Company Receipt - Web URL:', this.companyReceiptUrl);
-    } else {
-      console.warn(' No company receipt URL found');
+      const apiUrl = this.convertToWebUrl(this.selectedExpense.companyReceipt.url);
+      this.companyReceiptLoading = true;
+      this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
+        next: (blob) => {
+          if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl);
+          this.companyReceiptUrl = URL.createObjectURL(blob);
+          this.companyReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Failed to load company receipt thumbnail:', err);
+          this.companyReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
     }
 
     if (this.selectedExpense.expenseReceipt?.url) {
-      const rawUrl = this.selectedExpense.expenseReceipt.url;
-      this.employeeReceiptUrl = this.convertToWebUrl(rawUrl);
-      console.log(' Employee Receipt - Raw URL:', rawUrl);
-      console.log(' Employee Receipt - Web URL:', this.employeeReceiptUrl);
-    } else {
-      console.warn(' No employee receipt URL found');
+      const apiUrl = this.convertToWebUrl(this.selectedExpense.expenseReceipt.url);
+      this.employeeReceiptLoading = true;
+      this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
+        next: (blob) => {
+          if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
+          this.employeeReceiptUrl = URL.createObjectURL(blob);
+          this.employeeReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Failed to load employee receipt thumbnail:', err);
+          this.employeeReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
     }
 
     this.isModalOpen2 = true;
@@ -616,7 +631,7 @@ export class ExpenseTableComponent implements OnInit {
     const categoryId = expense.categoryId || expense.category?.id;
     const taxId = expense.taxId || (expense.tax as TaxDTO)?.id || 1;
 
-
+    // Handle date format (may be array or string)
     let eventDate = expense.eventDate;
     if (Array.isArray(eventDate)) {
       const [year, month, day, hour = 0, minute = 0, second = 0] =
@@ -638,7 +653,7 @@ export class ExpenseTableComponent implements OnInit {
       quantity: expense.quantity || 1,
       currency: expense.currency,
       amount: Number(expense.amount) || 0,
-      status: newStatus, 
+      status: newStatus, // This is what changes
       paidBy:
         typeof expense.paidBy === 'string'
           ? expense.paidBy
@@ -665,9 +680,12 @@ export class ExpenseTableComponent implements OnInit {
       return;
     }
 
+    // Build complete update payload with APPROVED status
     const payload = this.buildUpdatePayload(request, ExpenseStatus.APPROVED);
+
     console.log(' Approve payload:', JSON.stringify(payload, null, 2));
 
+    // Use existing updateExpense endpoint
     this.expenseService.updateExpense(request.id, payload).subscribe({
       next: () => {
         this.messageService.add({
@@ -677,7 +695,7 @@ export class ExpenseTableComponent implements OnInit {
         });
         this.loadExpenses();
 
-        // If detail modal is open, refresh the selected expense so the badge updates
+        // Refresh modal if open
         if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
           this.selectedExpense = {
             ...this.selectedExpense,
@@ -698,6 +716,7 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
+
   reject(request: Expense): void {
     const merchantId = request.merchantId || request.merchant?.id;
     const categoryId = request.categoryId || request.category?.id;
@@ -712,7 +731,9 @@ export class ExpenseTableComponent implements OnInit {
       return;
     }
 
+    // Build complete update payload with REJECTED status
     const payload = this.buildUpdatePayload(request, ExpenseStatus.REJECTED);
+
     console.log('❌ Reject payload:', JSON.stringify(payload, null, 2));
 
     this.expenseService.updateExpense(request.id, payload).subscribe({
@@ -852,8 +873,13 @@ export class ExpenseTableComponent implements OnInit {
     this.selectedExpense.eventDate = (event.target as HTMLInputElement).value;
   }
 
-  openReceiptModal(url: string, title: string): void {
-    if (!url) {
+  // Original API URL kept separately for the "Open in New Tab" button
+  receiptApiUrl = '';
+  // Blob URL created from the authenticated fetch — revoked on close
+  private receiptBlobUrl: string | null = null;
+
+  openReceiptModal(apiUrl: string, title: string): void {
+    if (!apiUrl) {
       this.messageService.add({
         severity: 'warn',
         summary: 'No Receipt',
@@ -861,35 +887,59 @@ export class ExpenseTableComponent implements OnInit {
       });
       return;
     }
-    console.log('Opening receipt modal:', { url, title });
-    this.receiptModalUrl = url;
+
+    this.receiptApiUrl = apiUrl;
     this.receiptModalTitle = title;
+    this.receiptModalUrl = '';
     this.receiptImageLoading = true;
     this.receiptImageError = '';
     this.showReceiptModal = true;
+
+
+    this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        if (this.receiptBlobUrl) {
+          URL.revokeObjectURL(this.receiptBlobUrl);
+        }
+        this.receiptBlobUrl = URL.createObjectURL(blob);
+        this.receiptModalUrl = this.receiptBlobUrl;
+        this.receiptImageLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to fetch receipt:', err);
+        this.receiptImageLoading = false;
+        this.receiptImageError =
+          'The receipt could not be loaded. Use "Open in New Tab" to view it directly.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  /** Closes receipt modal */
+
   closeReceiptModal(): void {
     this.showReceiptModal = false;
+    if (this.receiptBlobUrl) {
+      URL.revokeObjectURL(this.receiptBlobUrl);
+      this.receiptBlobUrl = null;
+    }
     this.receiptModalUrl = '';
+    this.receiptApiUrl = '';
     this.receiptModalTitle = '';
     this.receiptImageLoading = false;
     this.receiptImageError = '';
   }
 
-  
   onReceiptImageLoad(): void {
     this.receiptImageLoading = false;
-    console.log('Receipt image loaded successfully');
   }
 
-  /** Handle image load error — show a download link as fallback */
+  /** Blob loaded fine but the element couldn't render it (e.g. it's a PDF) */
   onReceiptImageError(event: any): void {
     this.receiptImageLoading = false;
     this.receiptImageError =
-      'The receipt image could not be loaded. It may require authentication or be a PDF. Use "Open in New Tab" to view it.';
-    console.error('Receipt image load error. URL was:', this.receiptModalUrl);
+      'Preview unavailable for this file type. Use "Open in New Tab" to download it.';
+    console.error('Receipt render error. Blob URL was:', this.receiptModalUrl);
   }
 
   onReceiptThumbnailError(event: any, type: 'company' | 'employee'): void {
@@ -902,6 +952,7 @@ export class ExpenseTableComponent implements OnInit {
     );
   }
 
+
   private convertToWebUrl(path: string): string {
     if (!path) return '';
 
@@ -910,15 +961,12 @@ export class ExpenseTableComponent implements OnInit {
       return path;
     }
 
-    // Strip the server-side filesystem prefix
-    let cleanPath = path.replace(/^\/opt\/optimax/, '');
 
-    // Ensure the path starts with /
-    if (!cleanPath.startsWith('/')) {
-      cleanPath = '/' + cleanPath;
-    }
+    const parts = path.split('/');
+    const filename = parts[parts.length - 1]; // Get last part
 
-    return `https://be.optimaxsuites.com${cleanPath}`;
+
+    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${filename}`;
   }
 
   formatEventDate(eventDate: any): string | Date {

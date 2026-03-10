@@ -80,6 +80,7 @@ import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-spli
 import { JWT_OPTIONS, JwtHelperService, JwtModule } from '@auth0/angular-jwt';
 import { MessageService } from 'primeng/api';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
+import { SafeUrlPipe } from './ui/sharedComponent/safe-url.pipe';
 
 @NgModule({
   declarations: [
@@ -95,7 +96,8 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
     RecurringPaymentModalComponent,
     TaxReportComponent,
     MobileCheckoutComponent,
-    BillSplittingModalComponent
+    BillSplittingModalComponent,
+    SafeUrlPipe
   ],
   imports: [
     // BrowserModule,

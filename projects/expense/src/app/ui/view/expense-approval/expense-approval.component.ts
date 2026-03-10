@@ -1,9 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ExpenseService, Expense } from '../../service/expense.service';
-import { CommonModule } from '@angular/common';
-import { Injectable } from '@angular/core';
-
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-expense-approval',
@@ -11,35 +9,37 @@ import { Injectable } from '@angular/core';
   styleUrls: ['./expense-approval.component.scss'],
 })
 export class ExpenseApprovalComponent implements OnInit {
-  
-  expense: any; 
-  expenses: Expense[] = []; // This will hold the array of expenses
 
+  expense: any;
+  expenses: Expense[] = [];
   expenseId: string | null = null;
+  dropdownOpen = false;
 
-  dropdownOpen = false; 
+  // ── File Preview Modal ──────────────────────────────────────────
+  showFileModal = false;
+  fileModalUrl = '';
+  fileModalTitle = '';
+  fileModalLoading = false;
+  fileModalError = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private expenseService: ExpenseService
+    private expenseService: ExpenseService,
+    private sanitizer: DomSanitizer
   ) {}
 
-
-  
   ngOnInit(): void {
     const expenseId = this.route.snapshot.paramMap.get('id');
     console.log('Route param id:', expenseId);
-
     if (expenseId) {
       this.expenseId = expenseId;
       this.fetchExpenseById(expenseId);
     }
   }
-  fetchExpenseById(id: string): void {
-    // Get expenses from local storage
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
 
-    // Find the expense by ID
+  fetchExpenseById(id: string): void {
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
     this.expense = expenses.find((exp: { id: string }) => exp.id === id);
 
     if (this.expense) {
@@ -48,15 +48,16 @@ export class ExpenseApprovalComponent implements OnInit {
       console.log('Expense not found in local storage');
     }
   }
-  goBack(){
-    this.router.navigate(['/admin/expenses/:uuid']);
+
+  goBack(): void {
+    this.router.navigate(['/admin/expenses']);
   }
-  
+
   approveExpense(): void {
     if (this.expense) {
       this.expense.status = 'Approved';
       this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/expenses']); 
+      this.router.navigate(['/admin/expenses']);
     }
   }
 
@@ -64,25 +65,25 @@ export class ExpenseApprovalComponent implements OnInit {
     if (this.expense) {
       this.expense.status = 'Rejected';
       this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/expenses']);
+      this.router.navigate(['/admin/expenses']);
     }
   }
 
   downloadExpense(): void {
-    // Implement download logic here (e.g., convert to PDF and download)
+    // Implement download logic here
   }
 
   emailExpense(): void {
-    // Implement email logic here (e.g., send the expense as an attachment)
+    // Implement email logic here
   }
 
   exportExpense(): void {
-    // Implement export logic here (e.g., export the expense details as a PDF)
+    // Implement export as PDF logic here
   }
 
   editExpense(): void {
     if (this.expense) {
-      this.router.navigate(['/expensesForm'], {
+      this.router.navigate(['/admin/expenses/expensesForm'], {
         queryParams: { id: this.expense.id }
       });
     }
@@ -92,12 +93,75 @@ export class ExpenseApprovalComponent implements OnInit {
     this.dropdownOpen = !this.dropdownOpen;
   }
 
-  downloadFile(fileName: string | undefined): void {
-    if (!fileName) return;
-    
-    // Logic to download the file, e.g., creating a URL or triggering a download
-    console.log(`Downloading file: ${fileName}`);
-    // You could use FileSaver.js or a similar library to handle the download.
+  // ── Receipt URL Helpers ────────────────────────────────────────
+
+  /**
+   * Converts a raw file path (e.g. /opt/optimax/media/.../dEIC46E4ORK)
+   * or a plain filename into a full web-accessible URL using the
+   * expenses images endpoint — exactly the same logic as expense-table.
+   */
+  getReceiptWebUrl(path: string | undefined): string {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const filename = path.split('/').pop() || path;
+    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${filename}`;
   }
-  
+
+  /** Returns just the last segment of a path for display purposes. */
+  getFileName(path: string | undefined): string {
+    if (!path) return '';
+    return path.split('/').pop() || path;
+  }
+
+  // ── File Preview Modal Logic ───────────────────────────────────
+
+  openFileModal(url: string, title: string): void {
+    if (!url) return;
+    this.fileModalUrl = url;
+    this.fileModalTitle = title;
+    this.fileModalLoading = true;
+    this.fileModalError = '';
+    this.showFileModal = true;
+    // Prevent body scroll while modal is open
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeFileModal(): void {
+    this.showFileModal = false;
+    this.fileModalUrl = '';
+    this.fileModalTitle = '';
+    this.fileModalLoading = false;
+    this.fileModalError = '';
+    document.body.style.overflow = '';
+  }
+
+  onFileModalLoad(): void {
+    this.fileModalLoading = false;
+  }
+
+  onFileModalError(): void {
+    this.fileModalLoading = false;
+    this.fileModalError =
+      'The file could not be loaded — it may require additional authentication. ' +
+      'Use "Open in New Tab" to view it directly.';
+  }
+
+  /** Returns true if the URL looks like an image (jpg / png / gif / webp). */
+  isImageUrl(url: string): boolean {
+    const lower = (url || '').toLowerCase().split('?')[0];
+    return /\.(jpe?g|png|gif|webp|bmp|svg)$/.test(lower);
+  }
+
+  /** Returns true if the URL looks like a PDF. */
+  isPdfUrl(url: string): boolean {
+    return (url || '').toLowerCase().split('?')[0].endsWith('.pdf');
+  }
+
+  /**
+   * Sanitizes an iframe src URL so Angular doesn't block it.
+   * Used for PDF previews inside the modal.
+   */
+  sanitizeUrl(url: string): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
 }

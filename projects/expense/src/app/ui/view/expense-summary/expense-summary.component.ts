@@ -100,7 +100,8 @@ export class ExpenseSummaryComponent {
   }
   
   goBack(){
-    this.router.navigate(['/expense/:uuid']);
+    // jump back to the main expense landing instead of a bogus placeholder
+    this.router.navigate(['/admin/expenses']);
   }
 
 confirmDelete(expense: Expense): void {
