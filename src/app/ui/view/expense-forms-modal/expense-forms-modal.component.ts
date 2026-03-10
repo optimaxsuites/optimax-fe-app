@@ -3,6 +3,8 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NgForm } from '@angular/forms';
+import { Location } from '@angular/common';
+// import { RecurringPaymentModalComponent } from "../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component";
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment.model';
@@ -60,7 +62,8 @@ export class ExpenseFormsModalComponent implements OnInit {
     private expenseService: ExpenseService,
     private router: Router,
     private route: ActivatedRoute,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -182,8 +185,8 @@ export class ExpenseFormsModalComponent implements OnInit {
     console.log('Applying filters...');
   }
 
-  cancelExpenses() { this.router.navigate(['/expense/:uuid']); }
-  goBack()         { this.router.navigate(['/expense/:uuid']); }
+  cancelExpenses() { this.router.navigate(['/admin/expenses']); }
+  goBack()         { this.router.navigate(['/admin/expenses']); }
 
   saveExpenseToLocalStorage(expense: any): void {
     let expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
@@ -486,7 +489,7 @@ export class ExpenseFormsModalComponent implements OnInit {
       this.billSplitData = undefined;
       this.showAdvancedPayment = false;
       this.showBillSplit = false;
-      this.router.navigate(['/expenses']);
+      this.router.navigate(['admin/expenses/expense/59af6dcd-78d7-46f7-b1d4-f6d3a027561f']);
     },
     error: (error: any) => {
       console.error('❌ Error submitting expense:', error);
