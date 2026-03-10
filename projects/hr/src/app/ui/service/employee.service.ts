@@ -188,10 +188,10 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
-  sendOnboardingVetting(payload: any): Observable<any> {
+  sendOnboardingVetting(payload: any, data: any): Observable<any> {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
-      .post<any>(this.vettingWebhookUrl, payload, { context })
+      .post<any>(this.vettingWebhookUrl, {payload, data}, { context })
       .pipe(catchError(this.handleError));
   }
 

@@ -84,7 +84,7 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
     {
-    path: 'guarantor/confirm/:token/:uuid',
+    path: 'guarantor/confirm/:token/:uuid/:name/:mediaNO',
     component: GuarantorConfirmationComponent,
   },
   {

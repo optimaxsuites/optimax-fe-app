@@ -552,7 +552,7 @@ addNewEmployee(){
         vettingPayload.employee.id = data.id;
         vettingPayload.employeeId = data.id;
       }
-      this.employeeService.sendOnboardingVetting(vettingPayload).subscribe({
+      this.employeeService.sendOnboardingVetting(vettingPayload, data).subscribe({
         error: (err) => {
           const detail = this.errorMessageService.getUserMessage(
             err,

@@ -82,13 +82,14 @@ nav::-webkit-scrollbar-thumb:hover {
     // box-sizing: border-box;
     border-radius: 14px;
     transition: all 0.2s ease;
+    min-width: 0; // allow flex children to shrink (prevents overflow)
     i{
       @apply w-5
     }
     span{
-    font-size: 1.05em;
-
-      @apply text-nowrap w-32
+      font-size: 1.05em;
+      // Prevent long labels from escaping the sidebar
+      @apply min-w-0 flex-1 truncate;
     }
   }
 

@@ -15,6 +15,7 @@ export class GuarantorConfirmationComponent implements OnDestroy {
   token = '';
   uuid = '';
   employeeName = '';
+  mediaNo = '';
   employeeInView: any;
   acknowledgment: 'yes' | 'no' | null = null;
   readonly defaultEmployeeProfilePhotoUrl =
@@ -55,17 +56,25 @@ export class GuarantorConfirmationComponent implements OnDestroy {
     this.route.paramMap.subscribe((params) => {
       this.token = params.get('token') || '';
       this.uuid = params.get('uuid') || '';
-      if (this.uuid) {
-        this.fetchEmployee(this.uuid);
+      this.mediaNo = params.get('mediaNO') || '';
+      const nameFromParam = params.get('name') || '';
+      if (nameFromParam) {
+        this.employeeName = nameFromParam.split('-').join(' ');
       }
+      if (this.mediaNo) {
+        // this.fetchEmployee(this.uuid);
+        this.getEmployeesProfilePhotoUrl(this.mediaNo);
+      }
+
+      
     });
 
-    this.route.queryParamMap.subscribe((params) => {
-      const employeeFromQuery = params.get('employee') || '';
-      if (employeeFromQuery) {
-        this.employeeName = employeeFromQuery;
-      }
-    });
+    // this.route.queryParamMap.subscribe((params) => {
+    //   const employeeFromQuery = params.get('employee') || '';
+    //   if (employeeFromQuery) {
+    //     this.employeeName = employeeFromQuery;
+    //   }
+    // });
   }
 
   onFileChange(event: Event, controlName: 'signature' | 'passportPhoto' | 'idCard') {
