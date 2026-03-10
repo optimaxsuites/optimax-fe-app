@@ -6,7 +6,7 @@ import { VendorStatus } from '../../../domain/vendor.dto';
   templateUrl: './vendor-status-badge.component.html',
 })
 export class VendorStatusBadgeComponent {
-  @Input() status: VendorStatus | string = VendorStatus.Pending;
+  @Input() status: VendorStatus | string = VendorStatus.Draft;
 
 get cls(): string {
   const s = String(this.status);
@@ -17,8 +17,8 @@ get cls(): string {
   if (s === VendorStatus.Rejected)
     return 'bg-red-50 text-red-700 ring-red-200';
 
-  if (s === VendorStatus.Inactive)
-    return 'bg-slate-50 text-slate-600 ring-slate-200';
+  // if (s === VendorStatus.Inactive)
+  //   return 'bg-slate-50 text-slate-600 ring-slate-200';
 
   if (s === VendorStatus.PendingRegistration)
     return 'bg-blue-50 text-blue-700 ring-blue-200';

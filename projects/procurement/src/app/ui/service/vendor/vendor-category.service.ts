@@ -7,7 +7,7 @@ import { VendorLocalDbService } from './vendor-local-db.service';
 export class VendorCategoryService {
   constructor(private db: VendorLocalDbService) {}
 
-  getAll(): Observable<VendorCategoryDto[]> {
-    return this.db.getCategories();
-  }
+  // getAll(): Observable<VendorCategoryDto[]> {
+  //   return this.db.getCategories();
+  // }
 }

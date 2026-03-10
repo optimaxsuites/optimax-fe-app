@@ -1,3 +1,12 @@
+
+<p-confirmDialog
+  class="table-item"
+  icon="pi pi-exclamation-triangle"
+  styleClass="custom-confirm-dialog"
+></p-confirmDialog>
+
+<p-toast class="table-item"></p-toast>
+
 <app-table
   [rows]="vendors"
   [columns]="columns"
@@ -11,3 +20,15 @@
   (actionClick)="onAction($event)"
 >
 </app-table>
+
+
+<app-large-side-modal
+  *ngIf="displayVendorDialog"
+  [header]="'Vendor Details'"
+  [subheader]="
+    'Supplier master data, onboarding submission, AI validation and compliance documents.'
+  "
+  (close)="displayVendorDialog = false"
+>
+  <app-vendor-details [vendor]="selectedVendor"></app-vendor-details>
+</app-large-side-modal>

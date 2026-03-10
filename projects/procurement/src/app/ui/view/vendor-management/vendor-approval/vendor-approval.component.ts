@@ -3,10 +3,10 @@ import { VendorApprovalService } from '../../../service/vendor/vendor-approval.s
 import { VendorDto, VendorStatus } from '../../../domain/vendor.dto';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import {
-  addVendorAuditEvent,
-  VendorAuditEventType,
-} from '../../../domain/vendor-audit.util';
+// import {
+//   addVendorAuditEvent,
+//   VendorAuditEventType,
+// } from '../../../domain/vendor-audit.util';
 
 @Component({
   selector: 'app-vendor-approval',
@@ -19,32 +19,38 @@ export class VendorApprovalComponent implements OnInit {
   vendors: VendorDto[] = [];
 
   actionDialog = false;
-  selected?: VendorDto;
+  selected?: any;
   action: 'Approve' | 'Reject' | 'RequestChanges' = 'Approve';
-  reason = '';
+
   selectedVendor: any;
   displayVendorDialog: boolean = false;
+
+  rejectDialogVisible = false;
+selectedVendorForRejection: VendorDto | null = null;
+  rejectionReason!: string;
+
 
   columns = [
     { header: 'Vendor Id', field: 'id', sortable: true },
 
-    {
-      header: 'Business Name',
-      field: 'legalName',
-      sortable: true,
-      // Optional: show vendorCode under the name (text version)
-      formatter: (row: any) =>
-        row.vendorCode
-          ? `${row.legalName} (#${row.vendorCode})`
-          : row.legalName,
-    },
+{
+  header: 'Business Name',
+  field: 'companyProfile.legalName',
+  sortable: true,
+  formatter: (row: VendorDto) => {
+    const name = row.companyProfile?.legalName ?? '—';
+    const id = row.companyProfile?.id;
+
+    return id ? `${name} (#${id})` : name;
+  },
+},
 
     {
       header: 'Registration Token',
-      field: 'registrationToken',
+      field: 'token',
       sortable: true,
     },
-    { header: 'Email', field: 'email', sortable: true },
+    { header: 'Email', field: 'companyProfile.companyEmail', sortable: true },
 
     {
       header: 'Submitted On',
@@ -90,18 +96,19 @@ export class VendorApprovalComponent implements OnInit {
       className: 'success',
     },
     { id: 'reject', label: 'Reject', icon: 'pi pi-times', className: 'danger' },
-    {
-      id: 'requestChanges',
-      label: 'Request Changes',
-      icon: 'pi pi-send',
-      className: 'warning',
-    },
+    // {
+    //   id: 'requestChanges',
+    //   label: 'Request Changes',
+    //   icon: 'pi pi-send',
+    //   className: 'warning',
+    // },
   ];
 
   constructor(
     private approval: VendorApprovalService,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private messageService: MessageService,
   ) {}
 
   ngOnInit(): void {
@@ -121,11 +128,11 @@ export class VendorApprovalComponent implements OnInit {
         break;
 
       case 'reject':
-        this.rejectVendor(v);
+        this.openRejectDialog(v);
         break;
 
       case 'requestChanges':
-        this.openAction(v, 'RequestChanges');
+        // this.openAction(v, 'RequestChanges');
         break;
 
       default:
@@ -144,9 +151,7 @@ export class VendorApprovalComponent implements OnInit {
       this.vendors = data.filter(
         (v: any) =>
           v.status === 'Submitted' ||
-          v.status === 'UnderReview' ||
-          v.status === 'Draft' ||
-          v.status === 'RegistrationInProgress',
+          v.status === 'UnderReview'
       );
 
       console.log(this.vendors);
@@ -155,12 +160,12 @@ export class VendorApprovalComponent implements OnInit {
     }, 300);
   }
 
-  openAction(v: any, action: 'Approve' | 'Reject' | 'RequestChanges') {
-    this.selected = v;
-    this.action = action;
-    this.reason = '';
-    this.actionDialog = true;
-  }
+  // openAction(v: any, action: 'Approve' | 'Reject' | 'RequestChanges') {
+  //   this.selected = v;
+  //   this.action = action;
+  //   this.reason = '';
+  //   this.actionDialog = true;
+  // }
 
   // approveVendor(v: VendorDto): void {
   //   const key = 'vendors';
@@ -255,13 +260,13 @@ export class VendorApprovalComponent implements OnInit {
           x.approvedBy = 'Admin'; // You can dynamically set this if you have auth context
 
           // Add to audit
-          x = addVendorAuditEvent(x, {
-            type: VendorAuditEventType.Approved,
-            fromStatus,
-            toStatus: VendorStatus.Approved,
-            actorId: 'admin-id', // Add dynamic actor ID if needed
-            actorName: 'Admin', // Replace with dynamic actor name if needed
-          });
+          // x = addVendorAuditEvent(x, {
+          //   type: VendorAuditEventType.Approved,
+          //   fromStatus,
+          //   toStatus: VendorStatus.Approved,
+          //   actorId: 'admin-id', // Add dynamic actor ID if needed
+          //   actorName: 'Admin', // Replace with dynamic actor name if needed
+          // });
         }
 
         return x;
@@ -272,20 +277,20 @@ export class VendorApprovalComponent implements OnInit {
         (x as any).aiStatus === 'AIApproved' || x.aiStatus === 'AIApproved';
 
       if (isAIApproved && x.status !== VendorStatus.Approved) {
-        const fromStatus = x.status;
+        // const fromStatus = x.status;
 
         x.status = VendorStatus.Approved;
         x.approvedAt = now;
         x.approvedBy = 'System'; // Set the system as approver for AI approvals
 
         // Add to audit log
-        x = addVendorAuditEvent(x, {
-          type: VendorAuditEventType.Approved,
-          fromStatus,
-          toStatus: VendorStatus.Approved,
-          actorId: 'system-id', // Optional: If you need a system ID
-          actorName: 'System', // System automatically approves
-        });
+        // x = addVendorAuditEvent(x, {
+        //   type: VendorAuditEventType.Approved,
+        //   fromStatus,
+        //   toStatus: VendorStatus.Approved,
+        //   actorId: 'system-id', // Optional: If you need a system ID
+        //   actorName: 'System', // System automatically approves
+        // });
       }
 
       return x;
@@ -346,85 +351,142 @@ export class VendorApprovalComponent implements OnInit {
   //   this.cdr?.markForCheck?.();
   // }
 
-  rejectVendor(v: VendorDto): void {
-    const key = 'vendors';
-    const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
-    const now = new Date().toISOString();
-    // const r = reason?.trim() || 'No reason provided'; // If reason is empty, fallback to 'No reason provided'
+  // rejectVendor(v: VendorDto): void {
+  //   const key = 'vendors';
+  //   const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+  //   const now = new Date().toISOString();
+  //   // const r = reason?.trim() || 'No reason provided'; // If reason is empty, fallback to 'No reason provided'
 
-    const updated = vendors.map((x) => {
-      if (x.id === v.id) {
-        // Manual rejection by Admin
-        if (x.status !== VendorStatus.Rejected) {
-          const fromStatus = x.status;
+  //   const updated = vendors.map((x) => {
+  //     if (x.id === v.id) {
+  //       // Manual rejection by Admin
+  //       if (x.status !== VendorStatus.Rejected) {
+  //         // const fromStatus = x.status;
 
-          x.status = VendorStatus.Rejected;
-          x.rejectedAt = now;
-          x.rejectedBy = 'Admin'; // Replace with actual user ID and name
+  //         x.status = VendorStatus.Rejected;
+  //         x.rejectedAt = now;
+  //         x.rejectedBy = 'Admin'; // Replace with actual user ID and name
 
-          // Add to audit log
-          x = addVendorAuditEvent(x, {
-            type: VendorAuditEventType.Rejected,
-            fromStatus,
-            toStatus: VendorStatus.Rejected,
-            reason: v.reason?.trim() || 'No reason provided',
-            actorId: 'admin-id', // Replace with actual user ID (if you have auth)
-            actorName: 'Admin', // Replace with actual user name
-          });
-        }
-        return x;
-      }
+  //         // Add to audit log
+  //         // x = addVendorAuditEvent(x, {
+  //         //   type: VendorAuditEventType.Rejected,
+  //         //   fromStatus,
+  //         //   toStatus: VendorStatus.Rejected,
+  //         //   reason: v.reason?.trim() || 'No reason provided',
+  //         //   actorId: 'admin-id', // Replace with actual user ID (if you have auth)
+  //         //   actorName: 'Admin', // Replace with actual user name
+  //         // });
+  //       }
+  //       return x;
+  //     }
 
-      // Auto sync: AI approval → flagged status change
-      if (x.aiStatus === 'AIApproved' && x.status !== VendorStatus.Approved) {
-        const fromStatus = x.status;
+  //     // Auto sync: AI approval → flagged status change
+  //     if (x.aiStatus === 'AIApproved' && x.status !== VendorStatus.Approved) {
+  //       // const fromStatus = x.status;
 
-        x.status = VendorStatus.AiFlagged;
+  //       x.status = VendorStatus.PendingApproval;
+  //       x.rejectedAt = now;
+  //       x.rejectedBy = 'System'; // System is responsible for this action
+
+  //       // Add to audit log
+  //       // x = addVendorAuditEvent(x, {
+  //       //   type: VendorAuditEventType.Rejected,
+  //       //   fromStatus,
+  //       //   toStatus: VendorStatus.PendingApproval,
+  //       //   reason: v.reason?.trim() || 'Auto-flagged by AI',
+  //       //   actorId: 'system-id', // Replace with system ID if you want
+  //       //   actorName: 'System',
+  //       // });
+  //     }
+
+  //     return x;
+  //   });
+
+  //   // Save the updated vendor data back to localStorage
+  //   localStorage.setItem(key, JSON.stringify(updated));
+
+  //   // ✅ Fetch back the updated vendors and filter only UnderReview
+  //   this.vendors = this.getVendorsFromStorage().filter(
+  //     (x) => x.status === VendorStatus.UnderReview,
+  //   );
+
+  //   // ✅ If using OnPush change detection
+  //   this.cdr?.markForCheck?.();
+  // }
+
+  openRejectDialog(v: VendorDto): void {
+  this.selectedVendorForRejection = v;
+  this.rejectionReason = v.rejectionReason || '';
+  this.rejectDialogVisible = true;
+}
+
+closeRejectDialog(): void {
+  this.rejectDialogVisible = false;
+  this.selectedVendorForRejection = null;
+  this.rejectionReason = '';
+}
+
+confirmRejectVendor(): void {
+  if (!this.selectedVendorForRejection) return;
+
+  const reason = this.rejectionReason.trim();
+  if (!reason) return;
+
+  this.rejectVendor(this.selectedVendorForRejection, reason);
+  this.closeRejectDialog();
+}
+
+rejectVendor(v: VendorDto, reason: string): void {
+  const key = 'vendors';
+  const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+  const now = new Date().toISOString();
+
+  const updated = vendors.map((x) => {
+    if (x.id === v.id) {
+      if (x.status !== VendorStatus.Rejected) {
+        x.status = VendorStatus.Rejected;
         x.rejectedAt = now;
-        x.rejectedBy = 'System'; // System is responsible for this action
-
-        // Add to audit log
-        x = addVendorAuditEvent(x, {
-          type: VendorAuditEventType.Rejected,
-          fromStatus,
-          toStatus: VendorStatus.AiFlagged,
-          reason: v.reason?.trim() || 'Auto-flagged by AI',
-          actorId: 'system-id', // Replace with system ID if you want
-          actorName: 'System',
-        });
+        x.rejectedBy = 'Admin';
+        x.rejectionReason = reason.trim();
+        x.lastUpdatedAt = now;
       }
-
       return x;
-    });
+    }
 
-    // Save the updated vendor data back to localStorage
-    localStorage.setItem(key, JSON.stringify(updated));
+    return x;
+  });
 
-    // ✅ Fetch back the updated vendors and filter only UnderReview
-    this.vendors = this.getVendorsFromStorage().filter(
-      (x) => x.status === VendorStatus.UnderReview,
-    );
+  localStorage.setItem(key, JSON.stringify(updated));
 
-    // ✅ If using OnPush change detection
-    this.cdr?.markForCheck?.();
-  }
+  this.vendors = this.getVendorsFromStorage().filter(
+    (x) => x.status === VendorStatus.UnderReview
+  );
+
+  this.cdr?.markForCheck?.();
+
+  this.messageService.add({
+    severity: 'success',
+    summary: 'Vendor Rejected',
+    detail: `${v.companyProfile?.legalName ?? 'Vendor'} was rejected successfully.`
+  });
+}
 
   submitAction() {
     const vendorId = this.selected?.id;
     if (!vendorId) return; // or show toast: "Select a vendor first"
 
-    this.approval
-      .actOnVendor({
-        vendorId,
-        action: this.action,
-        reason: this.reason?.trim() || undefined,
-      })
-      .subscribe({
-        next: () => {
-          this.actionDialog = false;
-          this.fetch();
-        },
-      });
+    // this.approval
+    //   .actOnVendor({
+    //     vendorId,
+    //     action: this.action,
+    //     reason: this.reason?.trim() || undefined,
+    //   })
+      // .subscribe({
+      //   next: () => {
+      //     this.actionDialog = false;
+      //     this.fetch();
+      //   },
+      // });
   }
 
   reviewVendor(v: any): void {
