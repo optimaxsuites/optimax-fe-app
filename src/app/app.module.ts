@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+
 ////primeng
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
@@ -50,6 +51,9 @@ import { HTTP_INTERCEPTORS, HttpClient, HttpClientModule } from '@angular/common
 // import { AuthInterceptor } from './ui/services/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from './ui/sharedComponent/service/auth-service/auth0-shim';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
+import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
+import { CommunicationComponent } from './communication/communication.component';
+import { AnalyticsComponent } from './analytics/analytics.component';
 
 
 @NgModule({
@@ -64,6 +68,9 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
     GeneraldashboardComponent,
     HrDashboardComponent,
      SideModalComponent,
+     OptimaxaiComponent,
+     CommunicationComponent,
+     AnalyticsComponent,
     
   ],
   imports: [

@@ -5,6 +5,9 @@ import { EmployeePayslipsListComponent } from './ui/view/employee-payslips-list/
 import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
 import { GeneraldashboardComponent } from './generaldashboard/generaldashboard.component';
 import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
+import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
+import { CommunicationComponent } from './communication/communication.component';
+import { AnalyticsComponent } from './analytics/analytics.component';
 const routes: Routes = [
   {
     path:'',
@@ -29,7 +32,19 @@ const routes: Routes = [
   {
     path: ':uuid',
     component: GeneraldashboardComponent,
-  }
+  },
+//   {
+//   path: 'dashboard/communication/:uuid',
+//   component: CommunicationComponent
+// },
+{
+  path: 'dashboard/optimaxai:uuid',
+  component: OptimaxaiComponent
+},
+{
+  path: 'dashboard/analytics/:uuid',
+  component: AnalyticsComponent
+}
 ];
 
 @NgModule({

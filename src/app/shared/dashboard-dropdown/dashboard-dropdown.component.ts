@@ -16,6 +16,9 @@ export class DashboardDropdownComponent implements OnInit {
     { name: 'POS', route: '/POS/86b1650f-670f-4692-bf4f-332f45c033b9' },
     { name: 'HR', route: '/HR/86b1650f-670f-4692-bf4f-332f45c033b9' },
     { name: 'General', route: '/86b1650f-670f-4692-bf4f-332f45c033b9' },
+  //   { name: 'Communication', route: '/dashboard/communication' },
+  // { name: 'OptimaXAI', route: '/dashboard/optimaxai' },
+  // { name: 'Analytics', route: '/dashboard/analytics' },
     // { name: 'Kitchen' },
     // { name: 'Accounting' },
   ];
