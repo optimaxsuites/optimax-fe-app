@@ -16,6 +16,7 @@
       <th>Status</th>
       <th>Hours</th>
       <th>Actions</th>
+      <th>Modified By</th>
     </tr>
   </thead>
  
@@ -42,7 +43,7 @@
     <td>{{ record.hours }}</td>
 
     <td class="actions">
-        <button class="view-btn">View</button> <!--(click)=""-->
+        <!--<button class="view-btn">View</button> (click)=""-->
         <button
   *ngIf="isToday(record.date) && 
   record.status === 'ABSENT' &&
@@ -57,6 +58,13 @@
   class="opened-label">
   Opened
 </span>
+<button class="modify-btn" (click)="openModifyForm(record)">
+  Modify
+</button>
+    </td>
+    <td>
+      {{ record.overriddenBy?.adminName || '-'}} <span><br></span>
+      <span *ngIf="record.overrideReason">Reason for modification: </span>{{ record.overrideReason || '-' }}
     </td>
 
   </tr>
@@ -82,6 +90,101 @@
     </tr>-->
   </tbody>
 </table>
+
+<!-- Backdrop -->
+<div class="modal-backdrop" *ngIf="editingRecord"></div>
+
+<!-- Modal -->
+<div class="modal-card" *ngIf="editingRecord">
+
+  <div class="modal-header">
+    <h3>Modify Attendance</h3>
+    <button class="close-btn" (click)="cancelEdit()">×</button>
+  </div>
+  <p class="employee-info">
+  {{ editingRecord.employee }} — {{ editingRecord.date }}
+</p>
+
+  <div class="form-group">
+    <label>Status</label>
+    <select [(ngModel)]="editStatus">
+      <option value="PRESENT">Present</option>
+      <option value="LATE">Late</option>
+      <option value="ABSENT">Absent</option>
+      <option value="ON_LEAVE">On Leave</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Check-In Time</label>
+    <input type="time" [(ngModel)]="editCheckIn">
+  </div>
+
+  <div class="form-group">
+    <label>Reason for Modification</label>
+    <textarea
+      rows="3"
+      [(ngModel)]="editReason"
+      required
+      #reasonField="ngModel">
+    </textarea>
+
+    <span class="error"
+      *ngIf="reasonField.invalid && reasonField.touched">
+      Reason for modification is required.
+    </span>
+  </div>
+
+  <div class="actions">
+    <button class="cancel-btn" (click)="cancelEdit()">Cancel</button>
+
+    <button
+      class="submit-btn"
+      (click)="saveModification()"
+      [disabled]="!editReason.trim()">
+      Save Changes
+    </button>
+  </div>
+
+</div>
+
+<!--<div class="modify-modal" *ngIf="editingRecord">
+
+  <div class="modify-card">
+
+    <h3>Modify Attendance</h3>
+
+    <div class="form-group">
+      <label>Status</label>
+      <select [(ngModel)]="editStatus">
+        <option value="PRESENT">PRESENT</option>
+        <option value="LATE">LATE</option>
+        <option value="ABSENT">ABSENT</option>
+        <option value="ON_LEAVE">ON_LEAVE</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Check In Time</label>
+      <input type="time" [(ngModel)]="editCheckIn">
+    </div>
+
+    <div class="form-group">
+      <label>Override Reason</label>
+      <textarea [(ngModel)]="editReason" required #reasonField="ngModel"></textarea>
+    </div>
+    <div class="error" *ngIf="reasonField.invalid && reasonField.touched">
+  Reason for modification is required.
+</div>
+
+    <div class="form-actions">
+      <button (click)="saveModification()" [disabled]="!editReason.trim()">Save</button>
+      <button (click)="cancelEdit()">Cancel</button>
+    </div>
+
+  </div>
+
+</div>-->
 
     </div>
 </div>

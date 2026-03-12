@@ -8,4 +8,9 @@ export interface AttendanceTableRecord {
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
   hours?: number;
   overrideOpen?: boolean;
+  overrideReason?: string;
+  overriddenBy?: {
+    adminId: string;
+    adminName: string;
+  }
 }

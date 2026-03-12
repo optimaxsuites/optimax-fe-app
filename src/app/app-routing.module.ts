@@ -47,7 +47,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'admin/hr/loan/uu',
+    redirectTo: 'leave/uu',
     pathMatch: 'full',
   },
   {
@@ -96,35 +96,35 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-approval/:uuid',
     component: LoanApprovalUiComponent,
   },
-   {
+  {
     path: 'admin/hr/loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
-   {
+  {
     path: 'query/:uuid',
     component: QueryComponent,
   },
   // {
-//   path: 'admin/hr/loan-management.loan-details/:loanId',
-//   component: LoanDetailsComponent
-//  },
+  //   path: 'admin/hr/loan-management.loan-details/:loanId',
+  //   component: LoanDetailsComponent
+  //  },
   {
     path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
     component: LoanDetailsComponent,
   },
   {
     path: 'admin/hr/loan-management/employee-loan-history/:employeeId',
-    component: EmployeeLoanHistoryComponent
+    component: EmployeeLoanHistoryComponent,
   },
   {
     path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
-    component: EmployeeLoanHistoryComponent
+    component: EmployeeLoanHistoryComponent,
   },
   {
-  path: 'admin/hr/loan-management/reports',
-  component: LoanReportsComponent
+    path: 'admin/hr/loan-management/reports',
+    component: LoanReportsComponent,
   },
- // Cooperative Routes
+  // Cooperative Routes
   {
     path: 'admin/hr/cooperative/dashboard/:uuid',
     component: CooperativeDashboardComponent
@@ -183,7 +183,7 @@ const routes: Routes = [
   //   component: EmployeeManagementComponent,
   // },
   {
- path: 'recruitment/:uuid',
+    path: 'recruitment/:uuid',
     component: RecruitmentComponent,
   },
 

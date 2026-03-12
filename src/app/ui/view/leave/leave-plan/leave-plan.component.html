@@ -97,13 +97,13 @@
                 <td class="text-sm">{{ plan.notes || "-" }}</td>
                 <td>
   <div class="flex gap-2">
-    <button
+    <!-- <button
       *ngIf="canEditPlan(plan)"
       (click)="convertToRequest(plan)"
       class="px-3 py-1 bg-customBlue text-white rounded hover:bg-customBlueHover text-xs"
     >
       Convert
-    </button>
+    </button> -->
     <button
       *ngIf="canEditPlan(plan)"
       (click)="cancelPlan(plan)"
@@ -111,9 +111,9 @@
     >
       Cancel
     </button>
-    <span *ngIf="plan.status === 'Approved'" class="text-xs text-gray-500">
-      🔒 Approved (locked)
-    </span>
+    <!-- <span *ngIf="plan.status === 'Approved'" class="text-xs text-gray-500">
+       Approved 
+    </span> -->
   </div>
 </td>
               </tr>
@@ -186,7 +186,7 @@
           </div>
 
           <!-- Plans by Leave Type -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <!-- <div class="bg-white rounded-lg border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">
               Plans by Leave Type
             </h3>
@@ -204,7 +204,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 
@@ -246,7 +246,7 @@
         </div>
 
         <!-- Planning Limits Card -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <!-- <div class="bg-white rounded-lg border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">
             Planning Limits
           </h3>
@@ -299,9 +299,9 @@
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
 <!-- Add after Planning Limits Card in right column -->
-<div class="bg-white rounded-lg border border-gray-200 p-6">
+<!-- <div class="bg-white rounded-lg border border-gray-200 p-6">
   <h3 class="text-lg font-semibold text-gray-800 mb-4">
     Monthly Breakdown
   </h3>
@@ -329,9 +329,9 @@
   <p class="text-sm text-gray-500 text-center py-4" *ngIf="monthlyPlanSummary.length === 0">
     No plans yet
   </p>
-</div>
+</div> -->
         <!-- Quick Actions Card -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <!-- <div class="bg-white rounded-lg border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
           <div class="space-y-3">
             <div class="flex justify-between items-center">
@@ -353,7 +353,7 @@
               </span>
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -129,18 +128,18 @@ import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboa
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
 import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
 import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
-import { AttendancetableComponent } from './ui/view/attendance/admin/attendancetable/attendancetable.component';
-import { AttendancefilterComponent } from './ui/view/attendance/admin/attendancetable/attendancefilter/attendancefilter.component';
-import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendancesummary/attendancesummary.component';
+import { AttendancetableComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancetable.component';
+import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
+import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendashboard/attendancesummary/attendancesummary.component';
 import { OfficeHoursComponent } from './ui/view/attendance/admin/attendashboard/office-hours/office-hours.component';
 import { EmployeedashboardComponent } from './ui/view/attendance/employee/employeedashboard/employeedashboard.component';
 import { TodaySummaryComponent } from './ui/view/attendance/employee/employeedashboard/today-summary/today-summary.component';
 import { CheckinCheckoutComponent } from './ui/view/attendance/employee/employeedashboard/checkin-checkout/checkin-checkout.component';
-import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeesummary/employeesummary.component';
-import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeesummary/monthlysummary/monthlysummary.component';
+import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/employeesummary.component';
+import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
 import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
 import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
-import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
+import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
 import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
@@ -182,6 +181,7 @@ import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard
 import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
 import { QueryComponent } from './ui/view/query/query.component';
+import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -305,7 +305,8 @@ import { QueryComponent } from './ui/view/query/query.component';
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
     QueryComponent,
-    ],
+    LeaveTimelineComponent,
+  ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
@@ -382,7 +383,7 @@ import { QueryComponent } from './ui/view/query/query.component';
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
-    MessageService
+    MessageService,
   ],
   bootstrap: [AppHrComponent],
 })

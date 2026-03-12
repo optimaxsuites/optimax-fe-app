@@ -1,21 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, EventInput } from '@fullcalendar/core';
-import dayGridPlugin from '@fullcalendar/daygrid';
 import { LeaveServiceService } from '../../../service/leave-service.service';
-import { Employee, LeavePlanningPolicy } from '../../../domain/leave.dto';
+import { PlannedLeave } from '../../../domain/leave.dto';
 import { MessageService } from 'primeng/api';
 
-interface PlannedLeave {
-  id: string;
-  employeeId: string;
-  employeeName: string;
+interface DepartmentRisk {
   department: string;
-  startDate: string;
-  endDate: string;
-  leaveType: string;
-  workingDays: number;
-  status: string;
+  totalEmployees: number;
+  employeesPlanning: number;
+  totalDays: number;
+  riskLevel: 'Low' | 'Medium' | 'High';
+  congestionPeriods: { date: string; count: number }[];
 }
 
 interface ConflictData {
@@ -23,33 +17,32 @@ interface ConflictData {
   department: string;
   period: string;
   days: number;
+  status: string;
   riskLevel: 'Low' | 'Medium' | 'High';
+  planId: string;
 }
 
 @Component({
   selector: 'app-leave-planning-dashboard',
   templateUrl: './leave-planning-dashboard.component.html',
-  styleUrl: './leave-planning-dashboard.component.scss',
+  styleUrls: ['./leave-planning-dashboard.component.scss'],
   providers: [MessageService],
 })
 export class LeavePlanningDashboardComponent implements OnInit {
   // Filters
   selectedDepartment: string = '';
   selectedLeaveType: string = '';
-  selectedMonth: Date = new Date();
+  selectedStatus: string = '';
+  selectedMonth: Date | null = null;
 
-  departments: string[] = [
-    'Engineering',
-    'Sales',
-    'Marketing',
-    'HR',
-    'Finance',
-  ];
+  departments: string[] = [];
   leaveTypes: string[] = [];
+  statuses: string[] = ['Planned', 'Pending', 'Approved', 'Rejected'];
 
   // Data
   allPlannedLeaves: PlannedLeave[] = [];
   filteredPlannedLeaves: PlannedLeave[] = [];
+  departmentRisks: DepartmentRisk[] = [];
   conflicts: ConflictData[] = [];
 
   // Analytics
@@ -57,34 +50,6 @@ export class LeavePlanningDashboardComponent implements OnInit {
   employeesPlanning = 0;
   highCongestionDays = 0;
   departmentsAtRisk = 0;
-
-  // Policy Settings
-  planningMode: 'Annual' | 'Rolling' | 'Custom' = 'Rolling';
-  planningModes: ('Annual' | 'Rolling' | 'Custom')[] = [
-    'Annual',
-    'Rolling',
-    'Custom',
-  ];
-  planningWindowDays = 90;
-  maxDaysPerPlan = 14;
-  totalAllowedPlannedDays = 30;
-  emergencyLeaveEnabled = true;
-
-  // Calendar
-  calendarEvents: EventInput[] = [];
-  calendarOptions: CalendarOptions = {
-    initialView: 'dayGridMonth',
-    plugins: [dayGridPlugin],
-    events: this.calendarEvents,
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth',
-    },
-    height: 'auto',
-  };
-
-
 
   constructor(
     private messageService: MessageService,
@@ -96,59 +61,98 @@ export class LeavePlanningDashboardComponent implements OnInit {
   }
 
   loadData() {
+    this.departments = this.leaveService.getDepartments();
+    
     const leaveSettings = this.leaveService.getLeaveSettings();
     this.leaveTypes = leaveSettings.leaveTypes
       .filter((lt) => lt.isActive)
       .map((lt) => lt.typeName);
 
     this.loadPlannedLeaves();
-    this.calculateAnalytics();
-    this.detectConflicts();
-    this.updateCalendarEvents();
+    this.calculateDepartmentRisks();
+    this.applyFilters();
   }
 
   loadPlannedLeaves() {
-    const stored = localStorage.getItem('plannedLeaves');
-    if (stored) {
-      const allPlans = JSON.parse(stored);
-      const employees = this.leaveService.getAllEmployees();
-
-      this.allPlannedLeaves = allPlans.map((plan: any) => {
-        const employee = employees.find((e) => e.id === plan.employeeId);
-        return {
-          ...plan,
-          employeeName: employee?.name || 'Unknown',
-          department: this.getRandomDepartment(), // Mock department
-        };
-      });
-
-      this.applyFilters();
-    } else {
-      this.allPlannedLeaves = [];
-      this.filteredPlannedLeaves = [];
-    }
+    // Get ALL planned leaves (admin view)
+    this.allPlannedLeaves = this.leaveService.getAllPlannedLeaves();
+    this.filteredPlannedLeaves = [...this.allPlannedLeaves];
   }
 
   applyFilters() {
     this.filteredPlannedLeaves = this.allPlannedLeaves.filter((plan) => {
       const matchesDept =
         !this.selectedDepartment || plan.department === this.selectedDepartment;
+      
       const matchesType =
         !this.selectedLeaveType || plan.leaveType === this.selectedLeaveType;
 
-      // Month filter
-      const planStart = new Date(plan.startDate);
-      const matchesMonth =
-        !this.selectedMonth ||
-        (planStart.getMonth() === this.selectedMonth.getMonth() &&
-          planStart.getFullYear() === this.selectedMonth.getFullYear());
+      const matchesStatus =
+        !this.selectedStatus || plan.status === this.selectedStatus;
 
-      return matchesDept && matchesType && matchesMonth;
+      // Month filter
+      let matchesMonth = true;
+      if (this.selectedMonth) {
+        const planStart = new Date(plan.startDate);
+        matchesMonth =
+          planStart.getMonth() === this.selectedMonth.getMonth() &&
+          planStart.getFullYear() === this.selectedMonth.getFullYear();
+      }
+
+      return matchesDept && matchesType && matchesStatus && matchesMonth;
     });
 
     this.calculateAnalytics();
     this.detectConflicts();
-    this.updateCalendarEvents();
+  }
+
+  calculateDepartmentRisks() {
+    const allEmployees = this.leaveService.getAllEmployees();
+    
+    this.departmentRisks = this.departments.map(dept => {
+      const deptEmployees = allEmployees.filter(e => e.department === dept);
+      const deptPlans = this.allPlannedLeaves.filter(
+        p => p.department === dept && (p.status === 'Planned' || p.status === 'Pending' || p.status === 'Approved')
+      );
+
+      const uniqueEmployees = new Set(deptPlans.map(p => p.employeeId));
+      const totalDays = deptPlans.reduce((sum, p) => sum + p.workingDays, 0);
+
+      // Calculate congestion (dates with 2+ people off)
+      const dateCounts = new Map<string, number>();
+      deptPlans.forEach(plan => {
+        const start = new Date(plan.startDate);
+        const end = new Date(plan.endDate);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          dateCounts.set(dateStr, (dateCounts.get(dateStr) || 0) + 1);
+        }
+      });
+
+      const congestionPeriods = Array.from(dateCounts.entries())
+        .filter(([_, count]) => count >= 2)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5); // Top 5 congestion periods
+
+      // Calculate risk level
+      const percentage = deptEmployees.length > 0 
+        ? (uniqueEmployees.size / deptEmployees.length) * 100 
+        : 0;
+      
+      let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
+      if (percentage >= 50) riskLevel = 'High';
+      else if (percentage >= 30) riskLevel = 'Medium';
+
+      return {
+        department: dept,
+        totalEmployees: deptEmployees.length,
+        employeesPlanning: uniqueEmployees.size,
+        totalDays,
+        riskLevel,
+        congestionPeriods,
+      };
+    }).filter(risk => risk.totalEmployees > 0); // Only show departments with employees
   }
 
   calculateAnalytics() {
@@ -178,23 +182,15 @@ export class LeavePlanningDashboardComponent implements OnInit {
       (count) => count >= 3,
     ).length;
 
-    // Calculate departments at risk (>30% of team planned on same period)
-    const deptCounts = new Map<string, Set<string>>();
-    this.filteredPlannedLeaves.forEach((plan) => {
-      if (!deptCounts.has(plan.department)) {
-        deptCounts.set(plan.department, new Set());
-      }
-      deptCounts.get(plan.department)!.add(plan.employeeId);
-    });
-
-    this.departmentsAtRisk = Array.from(deptCounts.values()).filter(
-      (employees) => employees.size >= 2, // Mock: 2+ people = risk
+    // Departments at risk (>30% of team planning)
+    this.departmentsAtRisk = this.departmentRisks.filter(
+      risk => risk.riskLevel === 'High' || risk.riskLevel === 'Medium'
     ).length;
   }
 
   detectConflicts() {
     this.conflicts = this.filteredPlannedLeaves.map((plan) => {
-      // Calculate risk based on overlapping leaves
+      // Calculate risk based on overlapping leaves in same department
       const overlapping = this.filteredPlannedLeaves.filter(
         (other) =>
           other.department === plan.department &&
@@ -212,11 +208,13 @@ export class LeavePlanningDashboardComponent implements OnInit {
       else if (overlapping >= 1) riskLevel = 'Medium';
 
       return {
-        employee: plan.employeeName,
-        department: plan.department,
+        employee: plan.employeeName || 'Unknown',
+        department: plan.department || 'Unknown',
         period: `${plan.startDate} to ${plan.endDate}`,
         days: plan.workingDays,
+        status: plan.status,
         riskLevel,
+        planId: plan.id,
       };
     });
   }
@@ -227,69 +225,61 @@ export class LeavePlanningDashboardComponent implements OnInit {
     start2: string,
     end2: string,
   ): boolean {
-    const s1 = new Date(start1);
-    const e1 = new Date(end1);
-    const s2 = new Date(start2);
-    const e2 = new Date(end2);
-
-    return s1 <= e2 && s2 <= e1;
+    return start1 <= end2 && start2 <= end1;
   }
 
-  updateCalendarEvents() {
-    const departmentColors: any = {
-      Engineering: '#3B82F6',
-      Sales: '#10B981',
-      Marketing: '#F59E0B',
-      HR: '#8B5CF6',
-      Finance: '#EC4899',
-    };
+  // Approve/Reject Plans
+  approvePlan(planId: string) {
+    const plan = this.allPlannedLeaves.find(p => p.id === planId);
+    if (!plan) return;
 
-    this.calendarEvents = this.filteredPlannedLeaves.map((plan) => ({
-      title: `${plan.employeeName} - ${plan.leaveType}`,
-      start: plan.startDate,
-      end: this.addOneDay(plan.endDate),
-      backgroundColor: departmentColors[plan.department] || '#6B7280',
-      borderColor: departmentColors[plan.department] || '#6B7280',
-    }));
+    // if (!confirm(`Approve ${plan.employeeName}'s plan for ${plan.workingDays} days?`)) {
+    //   return;
+    // }
 
-    this.calendarOptions = {
-      ...this.calendarOptions,
-      events: this.calendarEvents,
-    };
+    this.leaveService.approvePlannedLeave(planId);
+    this.loadData();
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Plan Approved',
+      detail: `${plan.employeeName}'s leave plan approved`,
+      key: 'tl',
+      life: 3000,
+    });
   }
 
-  addOneDay(date: string): string {
-    const d = new Date(date);
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  }
+  rejectPlan(planId: string) {
+    const plan = this.allPlannedLeaves.find(p => p.id === planId);
+    if (!plan) return;
 
-  getRandomDepartment(): string {
-    return this.departments[
-      Math.floor(Math.random() * this.departments.length)
-    ];
-  }
+    // if (!confirm(`Reject ${plan.employeeName}'s plan for ${plan.workingDays} days?`)) {
+    //   return;
+    // }
 
+    this.leaveService.rejectPlannedLeave(planId);
+    this.loadData();
+
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Plan Rejected',
+      detail: `${plan.employeeName}'s leave plan rejected`,
+      key: 'tl',
+      life: 3000,
+    });
+  }
 
   getDepartmentStats() {
-    const deptMap = new Map<string, number>();
-
-    this.filteredPlannedLeaves.forEach((plan) => {
-      deptMap.set(
-        plan.department,
-        (deptMap.get(plan.department) || 0) + plan.workingDays,
-      );
-    });
-
-    const totalDays = this.totalPlannedDays || 1; // Avoid division by zero
-
-    return this.departments
-      .map((dept) => ({
-        name: dept,
-        days: deptMap.get(dept) || 0,
-        percentage: ((deptMap.get(dept) || 0) / totalDays) * 100,
-      }))
-      .filter((d) => d.days > 0);
+    return this.departmentRisks.map(risk => ({
+      name: risk.department,
+      days: risk.totalDays,
+      percentage: this.totalPlannedDays > 0 
+        ? (risk.totalDays / this.totalPlannedDays) * 100 
+        : 0,
+      employeesPlanning: risk.employeesPlanning,
+      totalEmployees: risk.totalEmployees,
+      riskLevel: risk.riskLevel,
+    }));
   }
 
   getLeaveTypeStats() {
@@ -299,7 +289,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
       typeMap.set(plan.leaveType, (typeMap.get(plan.leaveType) || 0) + 1);
     });
 
-    const totalCount = this.filteredPlannedLeaves.length || 1; // Avoid division by zero
+    const totalCount = this.filteredPlannedLeaves.length || 1;
 
     return Array.from(typeMap.entries()).map(([name, count]) => ({
       name,
@@ -320,27 +310,12 @@ export class LeavePlanningDashboardComponent implements OnInit {
   }
 
   getMostActiveDepartment(): string {
-    if (this.filteredPlannedLeaves.length === 0) return '-';
+    if (this.departmentRisks.length === 0) return '-';
 
-    const deptCounts = new Map<string, number>();
-
-    this.filteredPlannedLeaves.forEach((plan) => {
-      deptCounts.set(
-        plan.department,
-        (deptCounts.get(plan.department) || 0) + 1,
-      );
-    });
-
-    let maxDept = '';
-    let maxCount = 0;
-
-    deptCounts.forEach((count, dept) => {
-      if (count > maxCount) {
-        maxCount = count;
-        maxDept = dept;
-      }
-    });
-
-    return maxDept || '-';
+    const sorted = [...this.departmentRisks].sort((a, b) => b.totalDays - a.totalDays);
+    return sorted[0]?.department || '-';
   }
+  getStatusCount(status: string): number {
+  return this.filteredPlannedLeaves.filter(plan => plan.status === status).length;
+}
 }
