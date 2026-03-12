@@ -1,13 +1,14 @@
 <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
   <div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-t-2xl border-b border-slate-100 p-8 shadow-sm">
-      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Guarantor Confirmation</h1>
-      <p class="mt-2 text-slate-500">
+    <div *ngIf="securityState === 'valid'" class="bg-white rounded-t-2xl border-b border-slate-100 p-8 shadow-sm">
+      <h1  class="text-3xl font-extrabold text-slate-900 tracking-tight">Guarantor Confirmation</h1>
+      <p   class="mt-2 text-slate-500">
         You have been nominated as a guarantor for 
         <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded capitalize">{{ employeeName || 'the employee' }}</span>. 
         Please verify your details below.
       </p>
-      <div class="mt-4 flex items-center justify-center w-full gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+  
+      <div   class="mt-4 flex items-center justify-center w-full gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
         <div class="relative h-96 w-96 flex items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-white">
           <div
             *ngIf="imageLoading || loadingEmployee"
@@ -27,7 +28,7 @@
           />
         </div>
       </div>
-      <div class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
+      <div  class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
         <p class="text-sm font-semibold text-slate-700">Do you know this person?</p>
         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
@@ -49,7 +50,39 @@
       </div>
     </div>
 
-    <form *ngIf="acknowledgment === 'yes'" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
+        <div
+        *ngIf="securityState !== 'valid'"
+        class="mt-6 rounded-xl border p-4"
+        [ngClass]="{
+          'border-slate-200 bg-slate-50 text-slate-700': securityState === 'checking',
+          'border-rose-200 bg-rose-50 text-rose-800': securityState !== 'checking'
+        }"
+      >
+        <div class="flex items-start gap-3">
+          <span
+            *ngIf="securityState === 'checking'"
+            class="mt-0.5 h-5 w-5 rounded-full border-2 border-slate-300 border-t-customBlue animate-spin"
+          ></span>
+          <div class="space-y-1">
+            <p class="text-sm font-semibold">
+              {{
+                securityTitle ||
+                  (securityState === 'checking' ? 'Validating link...' : 'Unable to continue')
+              }}
+            </p>
+            <p class="text-sm">
+              {{
+                securityDetail ||
+                  (securityState === 'checking'
+                    ? 'Please wait while we verify your confirmation link.'
+                    : 'Please request a new confirmation link from HR.')
+              }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'yes'" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
 
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-4">Personal Details</h2>
@@ -123,7 +156,7 @@
       </div>
     </form>
 
-    <form *ngIf="acknowledgment === 'no'" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'no'" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-2">Acknowledgment</h2>
         <p class="text-sm text-slate-600">
