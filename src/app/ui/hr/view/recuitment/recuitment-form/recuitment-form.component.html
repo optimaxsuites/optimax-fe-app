@@ -15,47 +15,97 @@
           <input type="text" id="jobTitle" placeholder="Job Title" class="editInput" name="jobTitle" [(ngModel)]="jobData.title" required>
           <!-- Job Category -->
           <label for="jobCategory">Category: <span style="color: red;">*</span></label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Category"
-            [(ngModel)]="jobData.category"
-            [items]="jobCategories">
-          </ng-select>
+          <div class="dropdown-with-add">
+            <ng-select
+              bindLabel="name"
+              placeholder="Select Category"
+              [(ngModel)]="jobData.category"
+              [items]="jobCategories">
+            </ng-select>
+            <button
+              pButton
+              type="button"
+              class="add-dropdown-btn"
+              icon="pi pi-plus"
+              (click)="openAddDropdown('category')"
+              title="Add category">
+            </button>
+          </div>
           <!-- Job Type -->
           <label for="jobType">Job Type: <span style="color: red;">*</span></label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Job Type"
-            [(ngModel)]="jobData.employmentType"
-            [items]="jobTypes">
-          </ng-select>
+          <div class="dropdown-with-add">
+            <ng-select
+              bindLabel="name"
+              placeholder="Select Job Type"
+              [(ngModel)]="jobData.employmentType"
+              [items]="jobTypes">
+            </ng-select>
+            <button
+              pButton
+              type="button"
+              class="add-dropdown-btn"
+              icon="pi pi-plus"
+              (click)="openAddDropdown('employmentType')"
+              title="Add job type">
+            </button>
+          </div>
           <!-- Job Location -->
           <label for="jobLocation">Location:</label>
           <input type="text" id="jobLocation" placeholder="Location" class="editInput" name="jobLocation" [(ngModel)]="jobData.location" required>
           <!-- Experience -->
           <label for="experience">Experience:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Experience Year"
-            [(ngModel)]="jobData.experience"
-            [items]="experienceLevels">
-          </ng-select>
+          <div class="dropdown-with-add">
+            <ng-select
+              bindLabel="name"
+              placeholder="Select Experience Year"
+              [(ngModel)]="jobData.experience"
+              [items]="experienceLevels">
+            </ng-select>
+            <button
+              pButton
+              type="button"
+              class="add-dropdown-btn"
+              icon="pi pi-plus"
+              (click)="openAddDropdown('experience')"
+              title="Add experience level">
+            </button>
+          </div>
           <!-- Qualification -->
           <label for="qualification">Qualification:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Qualification"
-            [(ngModel)]="jobData.qualification"
-            [items]="jobQualification">
-          </ng-select>
+          <div class="dropdown-with-add">
+            <ng-select
+              bindLabel="name"
+              placeholder="Select Qualification"
+              [(ngModel)]="jobData.qualification"
+              [items]="jobQualification">
+            </ng-select>
+            <button
+              pButton
+              type="button"
+              class="add-dropdown-btn"
+              icon="pi pi-plus"
+              (click)="openAddDropdown('qualification')"
+              title="Add qualification">
+            </button>
+          </div>
           <!-- specification -->
           <label for="specification">Specification:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Specification"
-            [(ngModel)]="jobData.specification"
-            [items]="jobSpecifications">
-          </ng-select>
+          <div class="dropdown-with-add">
+            <ng-select
+              bindLabel="name"
+              placeholder="Select Specification"
+              [(ngModel)]="jobData.specification"
+              [items]="jobSpecifications">
+            </ng-select>
+            <button
+              pButton
+              type="button"
+              class="add-dropdown-btn"
+              icon="pi pi-plus"
+              (click)="openAddDropdown('specification')"
+              title="Add specification">
+            </button>
+          </div>
           <div class="input-container-100 d-flex gap-2">
             <div class="input-container-50">
               <!-- Posted Date -->
@@ -151,5 +201,30 @@
   </div>
   <div class="btn-container">
     <app-button text="Save" class="btn-save" (click)="saveCustomiseInputs()"></app-button>
+  </div>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddDropdownModal" (close)="closeAddDropdown()">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add {{ addDropdownTitle }}</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="closeAddDropdown()">Cancel</button>
+    </div>
+  </div>
+  <br>
+
+  <div class="input-container-100">
+    <label for="newDropdownItem">Name:</label>
+    <input
+      type="text"
+      id="newDropdownItem"
+      class="editInput mb-4"
+      [(ngModel)]="newDropdownValue"
+      (keydown.enter)="addDropdownValue()"
+      placeholder="Enter name" />
+  </div>
+
+  <div class="btn-container-btn">
+    <app-button text="Add" class="btn-save" (click)="addDropdownValue()"></app-button>
   </div>
 </app-side-modal>

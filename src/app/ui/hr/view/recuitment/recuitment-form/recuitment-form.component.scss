@@ -28,3 +28,22 @@
   bottom: 0;
   margin-bottom: 1rem;
 }
+
+.dropdown-with-add{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdown-with-add ng-select{
+  flex: 1;
+}
+
+.add-dropdown-btn{
+  min-width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}

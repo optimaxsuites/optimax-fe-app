@@ -4,6 +4,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
+type DropdownKind = 'category' | 'employmentType' | 'experience' | 'qualification' | 'specification';
+
 @Component({
   selector: 'app-recuitment-form',
   templateUrl: './recuitment-form.component.html',
@@ -16,6 +18,9 @@ export class RecuitmentFormComponent {
   @Input() jobData: JobDTO = {};
   @Input() isEdit?: boolean; 
   openSideModal?: boolean;
+  openAddDropdownModal = false;
+  addDropdownKind: DropdownKind = 'category';
+  newDropdownValue = '';
   customField: CustomField = {};
   customFieldList: CustomField[] = [];
 
@@ -39,7 +44,7 @@ export class RecuitmentFormComponent {
     { value: 'textarea', label: 'Textarea' },
   ];
 
-  jobCategories = [
+  jobCategories: string[] = [
     'Accounting',
     'Administration',
     'Advertising',
@@ -117,7 +122,7 @@ export class RecuitmentFormComponent {
     'Writing and Editing'
   ];
 
-  jobTypes = [
+  jobTypes: string[] = [
     'Full-time',
     'Part-time',
     'Contract',
@@ -131,20 +136,20 @@ export class RecuitmentFormComponent {
     'Flexible'
   ];
 
-  experienceLevels = [
+  experienceLevels: string[] = [
     '0-1 Year',
     '2-4 Years',
     '5+ Years'
   ];
 
-  jobSpecifications = [
+  jobSpecifications: string[] = [
     'On-site',
     'Remote',
     'Hybrid',
     'Flexible'
   ];
 
-  jobQualification = [
+  jobQualification: string[] = [
     'High School Diploma',
     'Associate\'s Degree',
     'Bachelor\'s Degree',
@@ -177,11 +182,174 @@ export class RecuitmentFormComponent {
   }
 
   ngOnInit() {
+    this.restoreDropdownOptions();
     if (!this.jobData.postedDate) {
       this.getTodayDate(); // Set today's date if not already set
     }
 
     console.log("Check if isEdit is working",this.isEdit)
+  }
+
+  get addDropdownTitle(): string {
+    switch (this.addDropdownKind) {
+      case 'category':
+        return 'Category';
+      case 'employmentType':
+        return 'Job Type';
+      case 'experience':
+        return 'Experience';
+      case 'qualification':
+        return 'Qualification';
+      case 'specification':
+        return 'Specification';
+      default:
+        return 'Item';
+    }
+  }
+
+  openAddDropdown(kind: DropdownKind) {
+    this.addDropdownKind = kind;
+    this.newDropdownValue = '';
+    this.openAddDropdownModal = true;
+  }
+
+  closeAddDropdown() {
+    this.openAddDropdownModal = false;
+    this.newDropdownValue = '';
+  }
+
+  addDropdownValue() {
+    const value = (this.newDropdownValue || '').trim();
+    if (!value) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Missing name',
+        detail: 'Please enter a name.',
+      });
+      return;
+    }
+
+    const list = this.getDropdownList(this.addDropdownKind);
+    const exists = list.some((item) => item.trim().toLowerCase() === value.toLowerCase());
+    if (exists) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Already exists',
+        detail: `"${value}" already exists in ${this.addDropdownTitle}.`,
+      });
+      this.setJobDataField(this.addDropdownKind, value);
+      this.closeAddDropdown();
+      return;
+    }
+
+    list.push(value);
+    this.persistDropdownList(this.addDropdownKind, list);
+    this.setJobDataField(this.addDropdownKind, value);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Added',
+      detail: `"${value}" added to ${this.addDropdownTitle}.`,
+    });
+
+    this.closeAddDropdown();
+  }
+
+  private restoreDropdownOptions() {
+    this.jobCategories = this.readStoredOptions('recruitment.jobCategories', this.jobCategories);
+    this.jobTypes = this.readStoredOptions('recruitment.jobTypes', this.jobTypes);
+    this.experienceLevels = this.readStoredOptions('recruitment.experienceLevels', this.experienceLevels);
+    this.jobQualification = this.readStoredOptions('recruitment.jobQualification', this.jobQualification);
+    this.jobSpecifications = this.readStoredOptions('recruitment.jobSpecifications', this.jobSpecifications);
+  }
+
+  private readStoredOptions(storageKey: string, fallback: string[]): string[] {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return fallback;
+      const cleaned = parsed
+        .filter((v) => typeof v === 'string')
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+
+      // Keep stable order while removing duplicates (case-insensitive)
+      const seen = new Set<string>();
+      const unique: string[] = [];
+      for (const item of cleaned) {
+        const key = item.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(item);
+        }
+      }
+      return unique.length > 0 ? unique : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private persistDropdownList(kind: DropdownKind, list: string[]) {
+    try {
+      localStorage.setItem(this.getDropdownStorageKey(kind), JSON.stringify(list));
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  private getDropdownStorageKey(kind: DropdownKind): string {
+    switch (kind) {
+      case 'category':
+        return 'recruitment.jobCategories';
+      case 'employmentType':
+        return 'recruitment.jobTypes';
+      case 'experience':
+        return 'recruitment.experienceLevels';
+      case 'qualification':
+        return 'recruitment.jobQualification';
+      case 'specification':
+        return 'recruitment.jobSpecifications';
+      default:
+        return 'recruitment.dropdown';
+    }
+  }
+
+  private getDropdownList(kind: DropdownKind): string[] {
+    switch (kind) {
+      case 'category':
+        return this.jobCategories;
+      case 'employmentType':
+        return this.jobTypes;
+      case 'experience':
+        return this.experienceLevels;
+      case 'qualification':
+        return this.jobQualification;
+      case 'specification':
+        return this.jobSpecifications;
+      default:
+        return [];
+    }
+  }
+
+  private setJobDataField(kind: DropdownKind, value: string) {
+    switch (kind) {
+      case 'category':
+        this.jobData.category = value;
+        break;
+      case 'employmentType':
+        this.jobData.employmentType = value;
+        break;
+      case 'experience':
+        this.jobData.experience = value;
+        break;
+      case 'qualification':
+        this.jobData.qualification = value;
+        break;
+      case 'specification':
+        this.jobData.specification = value;
+        break;
+    }
   }
 
   onDeleteCustomiseInput(index: number): void {
@@ -372,7 +540,6 @@ export class RecuitmentFormComponent {
 
 
 }
-
 
 
 
