@@ -20,7 +20,8 @@ export class AttendanceComponent {
   tabsConfig: TabConfig[] = [
     { name: 'Admin Dashboard', 
     component: AttendashboardComponent,
-    icon: 'fa-solid fa-chart-line'},
+    icon: 'fa-solid fa-chart-line',
+    role: 'ROLE_ADMIN'},
     /*{ name: 'Corrections', 
       component: AdminCorrectionsComponent,
     icon: 'fa-solid fa-pen-to-square'},*/

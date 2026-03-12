@@ -56,7 +56,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'loan/uu',
+    redirectTo: 'leave/uu',
     pathMatch: 'full',
   },
   // {
@@ -110,7 +110,7 @@ const routes: Routes = [
     path: 'loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
-   {
+  {
     path: 'query/:uuid',
     component: QueryComponent,
   },
@@ -134,7 +134,7 @@ const routes: Routes = [
   path: 'loan-management/reports/:uuid',
   component: LoanReportsComponent
   },
- // Cooperative Routes
+  // Cooperative Routes
   {
     path: 'cooperative/dashboard/:uuid',
     component: CooperativeDashboardComponent
@@ -193,7 +193,7 @@ const routes: Routes = [
   //   component: EmployeeManagementComponent,
   // },
   {
- path: 'recruitment/:uuid',
+    path: 'recruitment/:uuid',
     component: RecruitmentComponent,
   },
 

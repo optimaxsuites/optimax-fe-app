@@ -5,7 +5,8 @@ import { OfficeHours } from '../../domain/attendance/office-hours.dto';
 const DEFAULT_OFFICE_HOURS: OfficeHours = {
   openingTime: '09:00',
   closingTime: '17:00',
-  absentTime: '10:00' // default auto-absent time
+  absentTime: '10:00',
+  latenessGracePeriod: '09:15'
 };
 
 @Injectable({ providedIn: 'root' })
@@ -35,7 +36,8 @@ export class OfficeHoursService {
   return {
     openingTime: parsed.openingTime ?? DEFAULT_OFFICE_HOURS.openingTime,
     closingTime: parsed.closingTime ?? DEFAULT_OFFICE_HOURS.closingTime,
-    absentTime: parsed.absentTime ?? DEFAULT_OFFICE_HOURS.absentTime
+    absentTime: parsed.absentTime ?? DEFAULT_OFFICE_HOURS.absentTime,
+    latenessGracePeriod: parsed.latenessGracePeriod ?? DEFAULT_OFFICE_HOURS.latenessGracePeriod
   };
   }
 

@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -189,6 +188,8 @@ import { AttendancetableComponent } from './ui/view/attendance/admin/attendashbo
 import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/employeesummary.component';
 import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
 import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
+// import { QueryComponent } from './ui/view/query/query.component';
+import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -312,8 +313,9 @@ import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeed
     MainDashboardComponent,
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
-    QueryComponent
-    ],
+    QueryComponent,
+    LeaveTimelineComponent,
+  ],
   imports: [
     // BrowserModule,
     // BrowserAnimationsModule,
@@ -390,7 +392,7 @@ import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeed
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
-    MessageService
+    MessageService,
   ],
   bootstrap: [AppHrComponent],
 })

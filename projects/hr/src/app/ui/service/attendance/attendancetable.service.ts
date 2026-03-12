@@ -22,61 +22,6 @@ export class AttendancetableService {
   }, 60000); // every minute
   }
 
-  /*clockAction(
-  employeeId: string,
-  employeeName: string,
-  department: string,
-  action: 'IN' | 'OUT'
-) {
-
-  const now = new Date();
-  const officeHours = this.officeHoursService.getOfficeHours();
-
-  const opening = this.convertToDateTime(officeHours.openingTime);
-  const closing = this.convertToDateTime(officeHours.closingTime);
-
-  let status = 'PRESENT';
-
-  if (action === 'IN') {
-    if (now > opening) {
-      status = 'LATE';
-    } else {
-      status = 'PRESENT';
-    }
-  }
-
-  if (action === 'OUT') {
-    if (now > closing) {
-      status = 'OVERTIME';
-    }
-  }
-
-  // Save attendance record
-  this.saveAttendanceRecord({
-    employeeId,
-    employeeName,
-    department,
-    time: now,
-    action,
-    status
-  });
-}
-
-private convertToDateTime(time: string): Date {
-  const [hours, minutes] = time.split(':').map(Number);
-  const now = new Date();
-
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    hours,
-    minutes,
-    0
-  );
-}*/
-
-
 clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
 if (this.hasCompletedToday(employeeid)) {
   return; // Block further clocking
@@ -107,6 +52,7 @@ if (this.hasCompletedToday(employeeid)) {
 
   const opening = this.convertToDateTime(officeHours.openingTime);
   const closing = this.convertToDateTime(officeHours.closingTime);
+  const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod)
 
   /*if (action === 'IN') {
     record.checkIn = now.toLocaleTimeString();
@@ -123,7 +69,7 @@ if (this.hasCompletedToday(employeeid)) {
 
   record.checkIn = now.toLocaleTimeString();
 
-  // 🔥 If admin opened attendance, never mark late
+  // If admin opened attendance, never mark late
   if (record.overrideOpen) {
     record.status = 'PRESENT';
 
@@ -132,12 +78,19 @@ if (this.hasCompletedToday(employeeid)) {
 
   } else {
 
+    const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
+
+     if (now <= graceTime) {
+      record.status = 'PRESENT';
+    } else {
+      record.status = 'LATE';
+    }
     // Normal Late / Present logic
-    if (now > opening) {
+    /*if (now > opening) {
       record.status = 'LATE';
     } else {
       record.status = 'PRESENT';
-    }
+    }*/
 
   }
 }
@@ -225,8 +178,8 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
 }
 
 private registeredEmployees = [
-  { id: '001', name: 'Chrisha Okorocha', department: 'Engineering' },
-  { id: '002', name: 'John Doe', department: 'HR' }
+  { id: '001', name: 'Chrisha Okorocha', department: 'Engineering' }
+  //{ id: '002', name: 'John Doe', department: 'HR' }
 ];
 
 private lastAbsentRunDate: string | null = null;
@@ -381,154 +334,32 @@ hasCompletedToday(employeeId: string): boolean {
   return !!(todayRecord?.checkIn && todayRecord?.checkOut);
 }
 
+overrideAttendance(
+  employeeId: string,
+  date: string,
+  newStatus: AttendanceTableRecord['status'],
+  newCheckIn: string | null,
+  reason: string,
+  admin: { adminId: string; adminName: string }
+) {
 
-}
+  const data = [...this.attendanceSubject.value];
 
-
-/*import { HttpClient, HttpParams } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { Observable, of, map } from 'rxjs';
-import { AttendanceTableRecord } from '../../shared-component/models/attendancetable.model';
-import { MOCK_ATTENDANCE } from '../../shared-component/models/attendancetable.mock';
-import { OfficeHoursService } from './office-hours.service';
-
-@Injectable({ providedIn: 'root' })
-export class AttendancetableService {
-  
-  private http = inject(HttpClient);
-  private officeHoursService = inject(OfficeHoursService);
-
-  getAttendance(filters?: any): Observable<AttendanceTableRecord[]> {
-  return of(MOCK_ATTENDANCE).pipe(
-    map(records => records.map(r => this.applyAttendanceStatus(r))),
-    map(records => this.applyFilters(records, filters))
+  const record = data.find(
+    r => r.id === employeeId && r.date === date
   );
+
+  if (!record) return;
+
+  record.status = newStatus;
+  record.checkIn = newCheckIn;
+
+  record.overrideReason = reason;
+
+  record.overriddenBy = admin;
+
+  this.attendanceSubject.next(data);
 }
 
-private applyFilters(records: AttendanceTableRecord[], filters?: any): AttendanceTableRecord[] {
-  if (!filters) return records;
 
-  return records.filter(r => {
-
-    // Month filter (YYYY-MM)
-    if (filters.month && r.date && !r.date.startsWith(filters.month)) {
-      return false;
-    }
-
-    // Date range
-    if (filters.dateFrom && r.date && r.date < filters.dateFrom) {
-      return false;
-    }
-
-    if (filters.dateTo && r.date && r.date > filters.dateTo) {
-      return false;
-    }
-
-    // Employee ID
-    if (filters.id && !r.id.toLowerCase().includes(filters.id.toLowerCase())) {
-      return false;
-    }
-
-    // Employee name
-    if (filters.employee && !r.employee.toLowerCase().includes(filters.employee.toLowerCase())) {
-      return false;
-    }
-
-    // Department
-    if (filters.department && r.department !== filters.department) {
-      return false;
-    }
-
-    // Status
-    if (filters.status && r.status !== filters.status) {
-      return false;
-    }
-
-    return true;
-  });
 }
-
- /* getAttendance(filters?: any): Observable<AttendanceTableRecord[]> {
-    const source$ = !filters
-      ? of(MOCK_ATTENDANCE)
-      : this.http.get<AttendanceTableRecord[]>('/api/attendance', { params: this.buildParams(filters) });
-
-    return source$.pipe(
-      map(records => records.map(r => this.applyAttendanceStatus(r)))
-    );
-  }*///ignore this, continue down
-
-  /*private buildParams(filters: any): HttpParams {
-    let params = new HttpParams();
-
-    Object.keys(filters).forEach(key => {
-      const value = filters[key];
-
-      if (value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0)) {
-        if (Array.isArray(value)) {
-          value.forEach((v: string) => {
-            params = params.append(key, v);
-          });
-        } else {
-          params = params.set(key, value);
-        }
-      }
-    });
-
-    return params;
-  }
-
-      private applyAttendanceStatus(record: AttendanceTableRecord): AttendanceTableRecord {
-    const { openingTime, closingTime } = this.officeHoursService.getOfficeHours();
-
-    const toDate = (time: string) => new Date(`1970-01-01T${time}`);
-
-    const openTime = toDate(openingTime);
-    const closeTime = toDate(closingTime);
-
-    let status: AttendanceTableRecord['status']='PRESENT';
-
-    if (!record.checkIn) {
-      status = 'ABSENT';
-    } else {
-    const checkInTime = toDate(record.checkIn);
-
-    if (checkInTime > openTime) {
-      status = 'LATE';
-    }
-  } if (record.checkOut) {
-      const checkOutTime = toDate(record.checkOut);
-
-      if (checkOutTime > closeTime) {
-        status = 'OVERTIME';
-      }
-    }
-
-  return { ...record, status }; }}*/
-
-  
-
-    
-    // ✅ If backend is not ready, return mock data
-    /*if (!filters) {
-      return of(MOCK_ATTENDANCE);
-    }
-
-    let params = new HttpParams();
-
-    Object.keys(filters).forEach(key => {
-      const value = filters[key];
-
-      if (value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0)) {
-        if (Array.isArray(value)) {
-          value.forEach((v: string) => {
-            params = params.append(key, v);
-          });
-        } else {
-          params = params.set(key, value);
-        }
-      }
-    });
-
-    return this.http.get<AttendanceTableRecord[]>('/api/attendance', { params });
-  } */

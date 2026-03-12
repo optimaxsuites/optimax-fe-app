@@ -18,9 +18,9 @@
       <span>Hours</span>
     </div>
 
+    <ng-container *ngFor="let record of filteredData">
     <div 
       class="table-row"
-      *ngFor="let record of filteredData"
       [ngClass]="record.status.toLowerCase()"
     >
       <span>{{ record.date | date:'MMM d, yyyy' }}</span>
@@ -29,6 +29,17 @@
       <span>{{ record.checkOut || '--' }}</span>
       <span>{{ record.hours || 0 }}h</span>
     </div>
+
+    <!-- Override info -->
+<div 
+  class="override-info"
+  *ngIf="record.overrideReason"
+>
+  Modified by {{ record.overriddenBy?.adminName }}
+  — Reason: {{ record.overrideReason }}
+</div>
+
+</ng-container>
 
     <div class="empty" *ngIf="filteredData.length === 0">
       No attendance records for this month.

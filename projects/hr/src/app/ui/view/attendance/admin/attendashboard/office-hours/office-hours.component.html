@@ -17,14 +17,20 @@
     </div>
 
     <div class="hour-item">
-      <span class="label">Closing Time</span>
-      <span class="value">{{ form.value.closingTime }}</span>
-    </div>
+  <span class="label">Late Time</span>
+  <span class="value">{{ form.value.latenessGracePeriod }}</span>
+</div>
 
     <div class="hour-item">
   <span class="label">Absent After</span>
   <span class="value">{{ form.value.absentTime }}</span>
 </div>
+
+    <div class="hour-item">
+      <span class="label">Closing Time</span>
+      <span class="value">{{ form.value.closingTime }}</span>
+    </div>
+
   </div>
 
   <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
@@ -33,14 +39,26 @@
       <input type="time" formControlName="openingTime" />
     </div>
 
+       <div class="input-group">
+  <label>Late Time</label>
+  <input type="time" formControlName="latenessGracePeriod" />
+</div>
+
+       <div class="input-group">
+  <label>Mark Absent After</label>
+  <input type="time" formControlName="absentTime" />
+</div>
+
     <div class="input-group">
       <label>Closing Time</label>
       <input type="time" formControlName="closingTime" />
     </div>
 
-    <div class="input-group">
-  <label>Mark Absent After</label>
-  <input type="time" formControlName="absentTime" />
+    <div class="error" *ngIf="form.errors?.['invalidOfficeHours'] && form.touched">
+  Please ensure:
+  <br>• Grace period is after Opening Time
+  <br>• Absent Time is after Grace Period
+  <br>• Closing Time is after Absent Time
 </div>
 
     <div class="actions">

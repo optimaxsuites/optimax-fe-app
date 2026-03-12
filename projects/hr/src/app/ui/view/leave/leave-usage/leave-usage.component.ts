@@ -164,7 +164,7 @@ export class LeaveUsageComponent implements OnInit {
 
   calculateAllowedDateRanges() {
     this.allowedDateRanges = this.plannedLeaves
-      .filter((plan) => plan.status)
+      .filter((plan) => plan.status == 'Approved')
       .map((plan) => ({
         start: plan.startDate,
         end: plan.endDate,
@@ -415,44 +415,44 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   updateCalendarEvents() {
-  this.calendarEvents = this.myRequests.map((req: any) => {
-    const { start, end } = this.parseDateRange(req.Date);
-    
-    // Determine color based on status
-    let backgroundColor = '#3B82F6'; // Default blue
-    let borderColor = '#2563EB';
-    let textColor = '#FFFFFF';
-    
-    if (req.Status.includes('Approved')) {
-      backgroundColor = '#10B981'; // Green
-      borderColor = '#059669';
-    } else if (req.Status.includes('Rejected')) {
-      backgroundColor = '#EF4444'; // Red
-      borderColor = '#DC2626';
-    } else if (req.Status.includes('Pending')) {
-      backgroundColor = '#F59E0B'; // Amber/Yellow
-      borderColor = '#D97706';
-    }
-    
-    return {
-      title: req.LeaveType,
-      start,
-      end: this.addOneDay(end),
-      backgroundColor,
-      borderColor,
-      textColor,
-      extendedProps: {
-        status: req.Status,
-        duration: req.RequestedDuration,
-      }
-    };
-  });
+    this.calendarEvents = this.myRequests.map((req: any) => {
+      const { start, end } = this.parseDateRange(req.Date);
 
-  this.calendarOptions = {
-    ...this.calendarOptions,
-    events: this.calendarEvents,
-  };
-}
+      // Determine color based on status
+      let backgroundColor = '#3B82F6'; // Default blue
+      let borderColor = '#2563EB';
+      let textColor = '#FFFFFF';
+
+      if (req.Status.includes('Approved')) {
+        backgroundColor = '#10B981'; // Green
+        borderColor = '#059669';
+      } else if (req.Status.includes('Rejected')) {
+        backgroundColor = '#EF4444'; // Red
+        borderColor = '#DC2626';
+      } else if (req.Status.includes('Pending')) {
+        backgroundColor = '#F59E0B'; // Amber/Yellow
+        borderColor = '#D97706';
+      }
+
+      return {
+        title: req.LeaveType,
+        start,
+        end: this.addOneDay(end),
+        backgroundColor,
+        borderColor,
+        textColor,
+        extendedProps: {
+          status: req.Status,
+          duration: req.RequestedDuration,
+        },
+      };
+    });
+
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      events: this.calendarEvents,
+    };
+  }
 
   getCurrentDateTime(): string {
     const currentDate = new Date();

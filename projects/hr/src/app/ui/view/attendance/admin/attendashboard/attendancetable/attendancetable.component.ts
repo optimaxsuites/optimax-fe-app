@@ -55,6 +55,12 @@ export class AttendancetableComponent implements OnInit{
     { id: 'correct', label: 'Correct', className: 'correct-btn' }
   ];
  
+
+  editingRecord: AttendanceTableRecord | null = null;
+
+editStatus: AttendanceTableRecord['status'] = 'PRESENT';
+editCheckIn: string | null = null;
+editReason = '';
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -204,129 +210,48 @@ applyFilters() {
   filters: this.filters});
 }
 
-/*calculateDashboardData() {
+openModifyForm(record: AttendanceTableRecord) {
 
-  const data = this.filteredAttendance;
+  this.editingRecord = record;
 
-  // =========================
-  // HEATMAP (Status Count)
-  // =========================
-  const present = data.filter(r => r.status === 'PRESENT').length;
-  const absent = data.filter(r => r.status === 'ABSENT').length;
-  const late = data.filter(r => r.status === 'LATE').length;
-  const onLeave = data.filter(r => r.status === 'ON_LEAVE').length;
+  this.editStatus = record.status;
+  this.editCheckIn = record.checkIn;
+  this.editReason = record.overrideReason ?? '';
+}
 
-  this.heatmapData = [
-    { department: 'Present', attendance: present },
-    { department: 'Absent', attendance: absent },
-    { department: 'Late', attendance: late },
-    { department: 'On Leave', attendance: onLeave }
-  ];
+cancelEdit() {
+  this.editingRecord = null;
+}
 
-  // =========================
-  // LATE ARRIVALS
-  // =========================
-  this.lateArrivalsData = data
-    .filter(r => r.status === 'LATE')
-    .map(r => ({
-      id: r.id,
-      name: r.employee,
-      time: r.checkIn
-    }));
+saveModification() {
 
-  // =========================
-  // TOP 3 DEPARTMENTS BY PUNCTUALITY
-  // =========================
+  if (!this.editingRecord) return;
 
-  const departmentMap: any = {};
-
-  data.forEach(record => {
-    if (!departmentMap[record.department]) {
-      departmentMap[record.department] = {
-        total: 0,
-        present: 0
-      };
-    }
-
-    departmentMap[record.department].total++;
-
-    if (record.status === 'PRESENT') {
-      departmentMap[record.department].present++;
-    }
-  });
-
-  const punctualityRates = Object.keys(departmentMap).map(dept => {
-    const deptData = departmentMap[dept];
-    const rate = (deptData.present / deptData.total) * 100;
-
-    return {
-      department: dept,
-      rate: Number(rate.toFixed(1))
-    };
-  });
-
-  const topThree = punctualityRates
-    .sort((a, b) => b.rate - a.rate)
-    .slice(0, 3);
-
-  this.statsData = topThree;
-}*/
-
-/*applyFilters() {
-  this.filteredAttendance = this.attendance.filter(record => {
-
-    const recordDate = record.date ?? ''; //fallback if daste is null
-
-    if (this.filters.dateFrom && recordDate < this.filters.dateFrom) return false;
-    if (this.filters.dateTo && recordDate > this.filters.dateTo) return false;
-
-    if (this.filters.employee &&
-        !record.employee.toLowerCase().includes(this.filters.employee.toLowerCase())) {
-      return false;
-    }
-
-    if (this.filters.departments?.length &&
-        !this.filters.departments.includes(record.department)) {
-      return false;
-    }
-
-    if (this.filters.statuses?.length &&
-        !this.filters.statuses.includes(record.status)) {
-      return false;
-    }
-
-    return true;
-  });
-}*/
-
-    /*private route = inject(ActivatedRoute);
-  private attendancetableService = inject(AttendancetableService);
-
-  attendance$!: Observable<AttendanceTableRecord[]>;
-
-    filters = {
-    dateFrom: '',
-    dateTo: '',
-    employeeId: '',
-    departments: [],
-    statuses: []
-  };
-
-  ngOnInit(): void {
-    
-    this.attendance$ = this.route.queryParams.pipe(
-      switchMap(params => this.attendancetableService.getAttendance(params))
-    );
-    const today = new Date().toISOString().split('T')[0];
-    this.filters.dateFrom = today;
-    this.filters.dateTo = today;
-
-    this.loadAttendance(); // fetch today's data by default
+    if (!this.editReason || !this.editReason.trim()) {
+    alert('Reason for modification is required.');
+    return;
   }
 
-  loadAttendance() {
-    console.log('Loading attendance with filters:', this.filters);
-    // call API here later
-  }*/
- 
+  const admin = {
+    adminId: 'ADMIN001',
+    adminName: 'HR Admin'
+  };
+
+  this.attendancetableService.overrideAttendance(
+    this.editingRecord.id,
+    this.editingRecord.date!,
+    this.editStatus,
+    this.editCheckIn,
+    this.editReason,
+    admin
+  );
+
+  this.editingRecord = null;
+
+  if (this.editReason.trim().length < 5) {
+  alert('Reason must be at least 5 characters.');
+  return;
+}
+}
+
 }

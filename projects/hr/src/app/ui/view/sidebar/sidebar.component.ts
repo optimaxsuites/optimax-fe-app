@@ -6,24 +6,29 @@ import { MenuItem } from '../../domain/menuItem.dto';
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
   menuItems: MenuItem[] = [];
   role: string | null = null;
 
-  constructor(private menuService: MenuService,  private router: Router) {}
+  constructor(
+    private menuService: MenuService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.role = sessionStorage.getItem('role'); // Retrieve role from session storage
-    console.log("role = ", this.role)
+    console.log('role = ', this.role);
     if (this.role) {
-      this.menuItems = this.menuService.getMenuItemsForRole(this.role).map(item => ({
-        ...item,
-        open: false
-      }));
+      this.menuItems = this.menuService
+        .getMenuItemsForRole(this.role)
+        .map((item) => ({
+          ...item,
+          open: false,
+        }));
     }
-    this.router.events.subscribe(event => {
+    this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.updateActiveState();
       }
@@ -31,9 +36,11 @@ export class SidebarComponent {
   }
 
   updateActiveState(): void {
-    this.menuItems.forEach(item => {
+    this.menuItems.forEach((item) => {
       if (item.submenu) {
-        item.open = item.submenu.some(subItem => this.router.isActive(subItem.route!, false));
+        item.open = item.submenu.some((subItem) =>
+          this.router.isActive(subItem.route!, false),
+        );
       }
     });
   }
@@ -41,7 +48,7 @@ export class SidebarComponent {
   toggleSubMenu(item: MenuItem): void {
     if (item.submenu) {
       const willOpen = !item.open;
-      this.menuItems.forEach(menuItem => {
+      this.menuItems.forEach((menuItem) => {
         if (menuItem.submenu) {
           menuItem.open = false;
         }
@@ -51,4 +58,3 @@ export class SidebarComponent {
     }
   }
 }
-

@@ -7,6 +7,7 @@ import { LeaveUsageComponent } from './leave-usage/leave-usage.component';
 import { LeavePolicyComponent } from './leave-policy/leave-policy.component';
 import { LeavePlanComponent } from './leave-plan/leave-plan.component';
 import { LeavePlanningDashboardComponent } from './leave-planning-dashboard/leave-planning-dashboard.component';
+import { LeaveTimelineComponent } from './leave-timeline/leave-timeline.component';
 
 @Component({
   selector: 'app-leave',
@@ -29,12 +30,17 @@ export class LeaveComponent {
   icon: 'fa fa-calendar-check' 
 },
 { 
-  name: 'Leave Planning Dashboard', 
-  component: LeavePlanningDashboardComponent, 
-  icon: 'fa fa-chart-line' 
+  name: 'Plan Dashboard', 
+  component: LeaveTimelineComponent, 
+ icon: 'fa fa-chart-line' 
 },
+// { 
+//   name: 'Leave Planning Dashboard', 
+//   component: LeavePlanningDashboardComponent, 
+//   icon: 'fa fa-chart-line' 
+// },
 { 
-  name: 'My Leave Usage', 
+  name: 'My Leave', 
   component: LeaveUsageComponent, 
   icon: 'fa fa-chart-pie' 
 },

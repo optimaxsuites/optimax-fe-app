@@ -151,20 +151,20 @@ export class LeavePlanComponent implements OnInit {
   }
 
   calculateWorkingDays() {
-  if (!this.selectedStartDate || !this.selectedEndDate) {
-    this.workingDays = 0;
-    return;
+    if (!this.selectedStartDate || !this.selectedEndDate) {
+      this.workingDays = 0;
+      return;
+    }
+
+    const start = new Date(this.selectedStartDate);
+    const end = new Date(this.selectedEndDate);
+
+    // Calculate total days including weekends
+    const timeDiff = end.getTime() - start.getTime();
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+
+    this.workingDays = days;
   }
-
-  const start = new Date(this.selectedStartDate);
-  const end = new Date(this.selectedEndDate);
-  
-  // Calculate total days including weekends
-  const timeDiff = end.getTime() - start.getTime();
-  const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
-
-  this.workingDays = days;
-}
 
   // submitPlan() {
   //   // Validation
@@ -235,63 +235,45 @@ export class LeavePlanComponent implements OnInit {
   //   this.closePlanModal();
   // }
 
-  convertToRequest(plan: PlannedLeave) {
-    if (plan.status !== 'Planned') {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Invalid Action',
-        detail: 'Only planned leaves can be converted to requests',
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    // Create actual leave request
-    const leaveRequest = {
-      Employee: this.employee.name,
-      EmployeeId: this.employee.id,
-      Date: `${plan.startDate} to ${plan.endDate}`,
-      LeaveType: plan.leaveType,
-      NetLeaveBalance: this.getTotalRemainingDays(),
-      RequestedDuration: `${plan.workingDays}.00 day(s)`,
-      Status: `Pending Approval (${plan.workingDays}.00 day(s))`,
-      RequestComment: plan.notes || 'Converted from leave plan',
-      AppliedOn: this.getCurrentDateTime(),
-      ApprovalComment: '',
-      Id: this.token.getRandomToken(),
-      Attachment: null,
-    };
-
-    this.leaveService.createLeaveRequest(leaveRequest);
-
-    // Update plan status
-    plan.status = 'Pending';
-    this.leaveService.savePlannedLeaves(this.plannedLeaves, this.employee.id);
-    this.updateCalendarEvents();
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Request Created',
-      detail: 'Leave plan converted to request successfully',
-      key: 'tl',
-      life: 3000,
-    });
-  }
-
-  // cancelPlan(plan: PlannedLeave) {
-  //   if (!confirm(`Cancel this planned leave (${plan.workingDays} days)?`)) {
+  // convertToRequest(plan: PlannedLeave) {
+  //   if (plan.status !== 'Planned') {
+  //     this.messageService.add({
+  //       severity: 'warn',
+  //       summary: 'Invalid Action',
+  //       detail: 'Only planned leaves can be converted to requests',
+  //       key: 'tl',
+  //       life: 3000,
+  //     });
   //     return;
   //   }
 
-  //   this.plannedLeaves = this.plannedLeaves.filter((p) => p.id !== plan.id);
+  //   // Create actual leave request
+  //   const leaveRequest = {
+  //     Employee: this.employee.name,
+  //     EmployeeId: this.employee.id,
+  //     Date: `${plan.startDate} to ${plan.endDate}`,
+  //     LeaveType: plan.leaveType,
+  //     NetLeaveBalance: this.getTotalRemainingDays(),
+  //     RequestedDuration: `${plan.workingDays}.00 day(s)`,
+  //     Status: `Pending Approval (${plan.workingDays}.00 day(s))`,
+  //     RequestComment: plan.notes || 'Converted from leave plan',
+  //     AppliedOn: this.getCurrentDateTime(),
+  //     ApprovalComment: '',
+  //     Id: this.token.getRandomToken(),
+  //     Attachment: null,
+  //   };
+
+  //   this.leaveService.createLeaveRequest(leaveRequest);
+
+  //   // Update plan status
+  //   plan.status = 'Pending';
   //   this.leaveService.savePlannedLeaves(this.plannedLeaves, this.employee.id);
   //   this.updateCalendarEvents();
 
   //   this.messageService.add({
-  //     severity: 'info',
-  //     summary: 'Plan Cancelled',
-  //     detail: 'Planned leave cancelled',
+  //     severity: 'success',
+  //     summary: 'Request Created',
+  //     detail: 'Leave plan converted to request successfully',
   //     key: 'tl',
   //     life: 3000,
   //   });
@@ -352,7 +334,12 @@ export class LeavePlanComponent implements OnInit {
 
   getTotalPlannedDays(): number {
     return this.plannedLeaves
-      .filter((p) => p.status === 'Planned')
+      .filter(
+        (p) =>
+          p.status === 'Planned' ||
+          p.status === 'Pending' ||
+          p.status === 'Approved',
+      )
       .reduce((sum, p) => sum + p.workingDays, 0);
   }
 
@@ -446,14 +433,16 @@ export class LeavePlanComponent implements OnInit {
     this.employee = this.leaveService.getEmployeeById('EMP-001');
     this.leaveSettings = this.leaveService.getLeaveSettings();
     this.planningPolicy = this.leaveService.getLeavePlanningPolicy();
-    
+
     this.leaveTypes = this.leaveSettings.leaveTypes
       .filter((leave) => leave.isActive)
       .map((leave) => leave.typeName);
-    
+
     this.plannedLeaves = this.leaveService.loadPlannedLeaves(this.employee.id);
-    this.monthlyPlanSummary = this.leaveService.getMonthlyPlanSummary(this.employee.id);
-    
+    this.monthlyPlanSummary = this.leaveService.getMonthlyPlanSummary(
+      this.employee.id,
+    );
+
     this.updateCalendarEvents();
     this.updatePolicyValues();
   }
@@ -497,7 +486,10 @@ export class LeavePlanComponent implements OnInit {
     }
 
     // Check monthly limit
-    const remainingForMonth = this.leaveService.getRemainingDaysForMonth(this.employee.id, month);
+    const remainingForMonth = this.leaveService.getRemainingDaysForMonth(
+      this.employee.id,
+      month,
+    );
     if (this.workingDays > remainingForMonth) {
       this.messageService.add({
         severity: 'error',
@@ -511,7 +503,10 @@ export class LeavePlanComponent implements OnInit {
 
     // Check total planned days
     const totalPlanned = this.getTotalPlannedDays();
-    if (totalPlanned + this.workingDays > this.planningPolicy.totalAllowedPlannedDays) {
+    if (
+      totalPlanned + this.workingDays >
+      this.planningPolicy.totalAllowedPlannedDays
+    ) {
       this.messageService.add({
         severity: 'error',
         summary: 'Total Limit Exceeded',
@@ -552,9 +547,8 @@ export class LeavePlanComponent implements OnInit {
   }
 
   canEditPlan(plan: PlannedLeave): boolean {
-    if (plan.status === 'Approved' && !this.planningPolicy.allowPlanEditing) {
-      return false;
-    }
+    // Only allow editing/canceling of "Planned" status
+    // Approved, Pending, Rejected cannot be edited by employee
     return plan.status === 'Planned';
   }
 
@@ -570,11 +564,11 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
-    if (!confirm(`Cancel this planned leave (${plan.workingDays} days)?`)) {
-      return;
-    }
+    // if (!confirm(`Cancel this planned leave (${plan.workingDays} days)?`)) {
+    //   return;
+    // }
 
-    this.plannedLeaves = this.plannedLeaves.filter(p => p.id !== plan.id);
+    this.plannedLeaves = this.plannedLeaves.filter((p) => p.id !== plan.id);
     this.leaveService.savePlannedLeaves(this.plannedLeaves, this.employee.id);
     this.loadData();
 
@@ -589,8 +583,12 @@ export class LeavePlanComponent implements OnInit {
 
   // Emergency Leave
   submitEmergencyLeave() {
-    if (!this.emergencyLeaveForm.startDate || !this.emergencyLeaveForm.endDate || 
-        !this.emergencyLeaveForm.leaveType || !this.emergencyLeaveForm.reason) {
+    if (
+      !this.emergencyLeaveForm.startDate ||
+      !this.emergencyLeaveForm.endDate ||
+      !this.emergencyLeaveForm.leaveType ||
+      !this.emergencyLeaveForm.reason
+    ) {
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -604,7 +602,8 @@ export class LeavePlanComponent implements OnInit {
     // Calculate days
     const start = new Date(this.emergencyLeaveForm.startDate);
     const end = new Date(this.emergencyLeaveForm.endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+    const days =
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
 
     // Check emergency leave limit
     if (days > this.planningPolicy.emergencyLeaveDaysAllowed) {

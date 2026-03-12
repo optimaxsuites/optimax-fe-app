@@ -178,9 +178,9 @@ export class LeavePolicyComponent implements OnInit {
   deleteLeaveType(id: string): void {
     const leaveType = this.leaveSettings.leaveTypes.find((l) => l.id === id);
 
-    if (!confirm(`Are you sure you want to delete "${leaveType?.typeName}"?`)) {
-      return;
-    }
+    // if (!confirm(`Are you sure you want to delete "${leaveType?.typeName}"?`)) {
+    //   return;
+    // }
 
     this.leaveSettings.leaveTypes = this.leaveSettings.leaveTypes.filter(
       (l) => l.id !== id,
@@ -232,9 +232,9 @@ export class LeavePolicyComponent implements OnInit {
   resetAllLeave(): void {
     const year = new Date().getFullYear();
 
-    if (!confirm(`Reset ALL employees' leave balances for ${year}?`)) {
-      return;
-    }
+    // if (!confirm(`Reset ALL employees' leave balances for ${year}?`)) {
+    //   return;
+    // }
 
     this.messageService.add({
       severity: 'success',
