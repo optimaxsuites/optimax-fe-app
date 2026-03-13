@@ -23,6 +23,7 @@ import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loa
 import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
 import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
+import { LoanDisbursementUiComponent } from './ui/view/loan-management/loan-disbursement-ui/loan-disbursement-ui.component';
 import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
 import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
 import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
@@ -31,7 +32,7 @@ import { CooperativeMemberDetailComponent } from './ui/view/loan-management/coop
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
-import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
+import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { QueryComponent } from './ui/view/query/query.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 
@@ -97,6 +98,10 @@ const routes: Routes = [
     component: LoanApprovalUiComponent,
   },
   {
+    path: 'admin/hr/loan-management/loan-disbursement/:uuid',
+    component: LoanDisbursementUiComponent,
+  },
+   {
     path: 'admin/hr/loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
@@ -154,8 +159,8 @@ const routes: Routes = [
     component: CooperativeLoanDetailComponent
   },
   {
-    path: 'admin/hr/cooperative/products/:uuid',
-    component: CooperativeLoanProductsComponent
+    path: 'admin/hr/cooperative/groups/:uuid',
+    component: CooperativeLoanGroupsComponent
   },
   // Member routes
 {

@@ -17,38 +17,79 @@ export interface CooperativeMember {
   updatedAt: string;
 }
 
-export interface CooperativeLoanProduct {
+export interface CooperativeLoanGroup {
   id: string;
   name: string;
   description: string;
+  minEligibleSalary?: number;
+  monthlyContributionAmount: number;
+  maxBorrowingPercentage: number;
   minAmount: number;
   maxAmount: number;
   interestRate: number;
   minDuration: number;
   maxDuration: number;
+  minMemberTenureMonths?: number;
   requiresShares: boolean;
+  requiresGuarantors?: boolean;
+  minimumGuarantors?: number;
+  quickDisbursement?: boolean;
   patronageEligible: boolean;
   patronageRate: number;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
+export interface CooperativeGroupMembership {
+  id: string;
+  memberId: string;
+  groupId: string;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED';
+  monthlyContributionAmount: number;
+  totalContribution: number;
+  joinedAt: string;
+  lastContributionDate?: string;
+}
+
+export type CooperativeGuarantorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+
+export interface CooperativeLoanGuarantor {
+  memberId: string;
+  guaranteedAmount: number;
+  status: CooperativeGuarantorStatus;
+  requestedAt: string;
+  decidedAt?: string;
+  note?: string;
+}
+
+export type CooperativeLoanApplicationStage =
+  | 'PENDING_GUARANTOR_APPROVAL'
+  | 'READY_FOR_ADMIN_REVIEW'
+  | 'UNDER_ADMIN_REVIEW'
+  | 'INFO_REQUESTED';
+
 export interface CooperativeLoan {
   id: string;
   loanId: string;
   memberId: string;
-  productId: string;
+  groupId?: string;
   amount: number;
   purpose: string;
   duration: number;
   interestRate: number;
   monthlyRepayment: number;
   totalRepayment: number;
+  totalPrincipalPaid?: number;
+  totalInterestPaid?: number;
+  outstandingPrincipal?: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED';
+  applicationStage?: CooperativeLoanApplicationStage;
   applicationDate: string;
+  guarantors?: CooperativeLoanGuarantor[];
   useSharesAsCollateral?: boolean;
   pledgedSharesAmount?: number;
   fundsReserved?: boolean;
   adminRequestNote?: string;
+  infoRequestedDate?: string;
   approvedDate?: string;
   disbursementDate?: string;
   completionDate?: string;
@@ -60,7 +101,15 @@ export interface CooperativeLoan {
 
 export interface CooperativeNotification {
   id: string;
-  type: 'LOAN_PENDING_APPROVAL' | 'LOAN_STATUS_UPDATE' | 'LOAN_CHANGE_REQUESTED' | 'LOAN_REPAYMENT_REMINDER' | 'LOAN_DEFAULTED';
+  type:
+    | 'LOAN_PENDING_APPROVAL'
+    | 'LOAN_STATUS_UPDATE'
+    | 'LOAN_CHANGE_REQUESTED'
+    | 'LOAN_REPAYMENT_REMINDER'
+    | 'LOAN_DEFAULTED'
+    | 'GUARANTOR_REQUEST'
+    | 'GUARANTOR_STATUS_UPDATE'
+    | 'LOAN_INFO_REQUESTED';
   recipient: 'ADMIN' | 'MEMBER';
   title: string;
   message: string;
@@ -76,6 +125,12 @@ export interface CooperativeRepayment {
   amount: number;
   dueDate: string;
   paidDate?: string;
+  receiptNumber?: string;
+  principalComponent?: number;
+  interestComponent?: number;
+  lateFeeAmount?: number;
+  reminderSentAt?: string;
+  creditReportedAt?: string;
   paymentMethod?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
   status: 'PENDING' | 'PAID' | 'OVERDUE';
 }
@@ -100,6 +155,7 @@ export interface CooperativeEmployeeProfile {
   employeeId: string;
   fullName: string;
   email: string;
+  monthlySalary?: number;
   phone?: string;
   department?: string;
   rank: CooperativeStaffRank;

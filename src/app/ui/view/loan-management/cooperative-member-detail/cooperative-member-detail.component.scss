@@ -32,8 +32,9 @@
   }
 
   .detail-content {
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
   }
 
   .detail-header {
@@ -46,11 +47,19 @@
     border-radius: 12px;
     padding: 16px 20px;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     h1 {
       color: #2E6276;
       margin: 0;
-      font-size: 1.2rem;
-      letter-spacing: 0.4px;
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
     }
 
     .header-actions {
@@ -68,6 +77,10 @@
       .edit-btn {
         background: #2E6276;
         color: #fff;
+
+        &:hover {
+          background: #4291b1;
+        }
       }
 
       .loan-btn {
@@ -87,6 +100,20 @@
     align-items: center;
     gap: 18px;
     flex-wrap: wrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8feff;
+      border: 1px solid #d7e7ec;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #2f3b45;
+      font-weight: 600;
+      font-size: 0.84rem;
+    }
 
     .status-badge {
       padding: 4px 10px;
@@ -114,25 +141,68 @@
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 16px;
     margin-bottom: 20px;
 
     .stat-card {
       background: white;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid #e3eef0;
-      padding: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      .stat-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          color: #fff;
+          font-size: 1.1rem;
+        }
+
+        &.shares-icon {
+          background: #2E6276;
+        }
+
+        &.borrowed-icon {
+          background: #2E6276;
+        }
+
+        &.active-icon {
+          background: #2E6276;
+        }
+
+        &.completed-icon {
+          background: #2E6276;
+        }
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      }
 
       .stat-content {
         .stat-label {
-          color: #8a8a8a;
-          font-size: 0.82rem;
+          color: #6b7280;
+          font-size: 0.8rem;
           text-transform: uppercase;
+          letter-spacing: 0.02em;
+          font-weight: 600;
+          margin-bottom: 4px;
         }
 
         .stat-value {
           color: #2E6276;
-          font-size: 1.2rem;
+          font-size: 1.35rem;
           font-weight: 700;
         }
       }
@@ -148,29 +218,46 @@
     .info-card {
       background: white;
       border: 1px solid #e3eef0;
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
       h3 {
-        margin: 0 0 12px;
+        margin: 0 0 14px;
         color: #2E6276;
-        font-size: 0.95rem;
-        letter-spacing: 0.4px;
+        font-size: 0.92rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #edf3f4;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+          color: #2E6276;
+          font-size: 0.9rem;
+        }
       }
 
       .info-row {
         display: flex;
         gap: 8px;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+        align-items: flex-start;
 
         .label {
-          min-width: 80px;
-          color: #8a8a8a;
+          min-width: 92px;
+          color: #6b7280;
           font-weight: 600;
+          font-size: 0.86rem;
         }
 
         .value {
           color: #2f3b45;
+          font-weight: 500;
+          font-size: 0.9rem;
+          word-break: break-word;
         }
       }
     }
@@ -179,9 +266,10 @@
   .tab-content {
     background: white;
     border: 1px solid #e3eef0;
-    border-radius: 10px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
     .section-head {
       display: flex;
@@ -192,15 +280,29 @@
       h3 {
         margin: 0;
         color: #2E6276;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+          color: #2E6276;
+        }
       }
 
       .view-all-btn {
         background: #2E6276;
         color: #fff;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 8px 12px;
+        font-weight: 700;
         cursor: pointer;
+
+        &:hover {
+          background: #4291b1;
+        }
       }
     }
 
@@ -212,25 +314,31 @@
         border-collapse: collapse;
 
         thead {
-          background: #f8feff;
+          background: #f4f7f9;
 
           th {
             text-align: left;
-            padding: 10px 8px;
-            color: #2E6276;
+            padding: 0.75rem 0.9rem;
+            color: #224957;
             font-weight: 600;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #e6edf2;
           }
         }
 
         tbody tr {
-          border-bottom: 1px solid #e3eef0;
+          border-bottom: 1px solid #eef2f6;
+
+          &:nth-child(even) {
+            background: #f9fbfc;
+          }
 
           &:hover {
-            background: #f8feff;
+            background: #f8fbfc;
           }
 
           td {
-            padding: 10px 8px;
+            padding: 0.75rem 0.9rem;
 
             &.loan-id {
               font-family: monospace;

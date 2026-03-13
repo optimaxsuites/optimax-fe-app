@@ -4,6 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { CooperativeLoan, CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-employee-history',
@@ -17,6 +19,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   filteredLoans: LoanApplication[] = [];
   isLoading: boolean = true;
   viewSource: 'admin' | 'employee' = 'admin';
+  historyMode: 'advance' | 'cooperative' = 'advance';
+  currentUuid: string = uuidV4();
+  cooperativeMember: CooperativeMember | null = null;
+  private cooperativeLoanByCode = new Map<string, CooperativeLoan>();
   selectedLoanForDetails: LoanApplication | null = null;
   showLoanDetailsModal: boolean = false;
   
@@ -28,19 +34,28 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     private location: Location,
     private route: ActivatedRoute,
     private router: Router,
-    private loanApplicationService: LoanApplicationService
+    private loanApplicationService: LoanApplicationService,
+    private cooperativeService: CooperativeService
   ) {}
   
   ngOnInit(): void {
     this.viewSource = window.history.state?.source === 'employee' ? 'employee' : 'admin';
+    this.historyMode = window.history.state?.cooperative ? 'cooperative' : 'advance';
+    this.currentUuid = window.history.state?.uuid || this.currentUuid;
 
     this.route.params.subscribe(params => {
       this.employeeId = params['employeeId'];
+      this.currentUuid = params['uuid'] || this.currentUuid;
       this.loadEmployeeHistory();
     });
   }
   
   loadEmployeeHistory(): void {
+    if (this.historyMode === 'cooperative') {
+      this.loadCooperativeHistory();
+      return;
+    }
+
     this.isLoading = true;
     this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
       next: (applications) => {
@@ -60,6 +75,99 @@ export class EmployeeLoanHistoryComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private loadCooperativeHistory(): void {
+    this.isLoading = true;
+    const member = this.cooperativeService.getMemberById(this.employeeId);
+
+    if (!member) {
+      this.employeeLoans = [];
+      this.filteredLoans = [];
+      this.employeeName = 'Cooperative Member';
+      this.isLoading = false;
+      return;
+    }
+
+    this.cooperativeMember = member;
+    this.employeeName = member.fullName;
+    const cooperativeLoans = this.cooperativeService
+      .getLoansByMember(member.id)
+      .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+
+    this.cooperativeLoanByCode.clear();
+    cooperativeLoans.forEach(loan => {
+      this.cooperativeLoanByCode.set(loan.loanId, loan);
+    });
+
+    this.employeeLoans = cooperativeLoans.map(loan => this.mapCooperativeLoanToLoanApplication(loan, member));
+    this.filteredLoans = [...this.employeeLoans];
+    this.applySort();
+    this.isLoading = false;
+  }
+
+  private mapCooperativeLoanToLoanApplication(loan: CooperativeLoan, member: CooperativeMember): LoanApplication {
+    const repayments = this.cooperativeService
+      .getRepaymentsByLoanId(loan.id)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+    const totalPaid = repayments
+      .filter(item => item.status === 'PAID')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const currentBalance = repayments
+      .filter(item => item.status !== 'PAID')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    let remainingBalance = Number(loan.totalRepayment || 0);
+    const repaymentSchedule = repayments.map((item, index) => {
+      const totalPayment = Number(item.amount || 0);
+      const principal = Number(item.principalComponent || Math.max(totalPayment - Number(item.interestComponent || 0), 0));
+      const interest = Number(item.interestComponent || 0);
+      remainingBalance = Math.max(Number((remainingBalance - totalPayment).toFixed(2)), 0);
+
+      return {
+        monthNumber: index + 1,
+        dueDate: item.dueDate,
+        principal,
+        interest,
+        totalPayment,
+        remainingBalance,
+        status: item.status,
+        paymentDate: item.paidDate,
+        paidAmount: item.status === 'PAID' ? totalPayment : 0
+      };
+    });
+
+    return {
+      id: loan.loanId,
+      employeeId: member.memberId,
+      fullName: member.fullName,
+      department: member.address || 'Cooperative',
+      loanAmount: Number(loan.amount || 0),
+      paymentMode: 'monthly',
+      status: loan.status === 'DEFAULTED' ? 'ACTIVE' : loan.status,
+      dateSubmitted: loan.applicationDate,
+      purpose: loan.purpose,
+      repaymentPeriod: Number(loan.duration || 0),
+      monthlyRepayment: Number(loan.monthlyRepayment || 0),
+      acknowledgment: true,
+      interestRate: Number(loan.interestRate || 0),
+      currentBalance,
+      totalPaid,
+      statusHistory: [],
+      repaymentSchedule,
+      paymentHistory: repayments
+        .filter((item: CooperativeRepayment) => item.status === 'PAID' && !!item.paidDate)
+        .map((item: CooperativeRepayment, index: number) => ({
+          id: item.receiptNumber || `CPAY-${loan.loanId}-${index + 1}`,
+          date: item.paidDate as string,
+          amount: Number(item.amount || 0),
+          paymentMethod: item.paymentMethod || 'BANK_TRANSFER',
+          referenceNumber: item.receiptNumber,
+          receivedBy: 'System'
+        }))
+    };
   }
   
   // Sorting method
@@ -143,6 +251,18 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
   
   goBack(): void {
+    if (this.historyMode === 'cooperative' && this.viewSource === 'employee') {
+      this.router.navigate(['/member/cooperative/dashboard', this.currentUuid]);
+      return;
+    }
+
+    if (this.historyMode === 'cooperative' && this.viewSource === 'admin') {
+      this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+        queryParams: { dashboard: 'cooperative' }
+      });
+      return;
+    }
+
     if (window.history.length > 1) {
       this.location.back();
       return;
@@ -152,6 +272,16 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   }
   
   viewLoanDetails(loan: LoanApplication): void {
+    if (this.historyMode === 'cooperative' && this.viewSource === 'admin') {
+      const cooperativeLoan = this.cooperativeLoanByCode.get(loan.id);
+      if (cooperativeLoan) {
+        this.router.navigate(['/admin/hr/cooperative/loans', cooperativeLoan.id, this.currentUuid], {
+          queryParams: { dashboard: 'cooperative' }
+        });
+        return;
+      }
+    }
+
     if (this.viewSource === 'employee') {
       this.selectedLoanForDetails = loan;
       this.showLoanDetailsModal = true;

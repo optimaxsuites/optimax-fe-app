@@ -10,6 +10,7 @@ import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooper
   styleUrls: ['./cooperative-member-form.component.scss']
 })
 export class CooperativeMemberFormComponent implements OnInit {
+  currentUuid = uuidV4();
   memberForm!: FormGroup;
   isEdit = false;
   memberId?: string;
@@ -25,6 +26,11 @@ export class CooperativeMemberFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
+
     this.initForm();
     this.loadNextMemberId();
     this.checkEditMode();
@@ -127,7 +133,9 @@ export class CooperativeMemberFormComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/members', uuidV4()]);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   cancel(): void {

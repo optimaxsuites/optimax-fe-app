@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { LoanPayrollBridgeService } from '../../../service/loan/loan-payroll-bridge.service';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -60,6 +61,35 @@ interface PayrollSettings {
   styleUrl: './employee-payroll.component.scss'
 })
 export class EmployeePayrollComponent {
+private readonly loanPayrollBridgeService = inject(LoanPayrollBridgeService);
+isApplyingLoanDeductions = false;
+loanDeductionSyncMessage = '';
+autoApplyLoanDeductions = true;
+    async applyLoanDeductionsToPayroll(period: { month: string; year: number }) {
+        this.isApplyingLoanDeductions = true;
+        this.loanDeductionSyncMessage = 'Applying loan deductions...';
+        try {
+            const payrollRows = this.getCurrentPayrollRows();
+            const result = await this.loanPayrollBridgeService.postPayrollLoanDeductions(payrollRows, period);
+            this.loanDeductionSyncMessage = `Loan deductions applied: ${result.applied}, skipped: ${result.skipped}, failed: ${result.failed}`;
+            if (result.errors.length > 0) {
+                this.loanDeductionSyncMessage += '\nErrors: ' + result.errors.join('; ');
+            }
+        } catch (error) {
+            this.loanDeductionSyncMessage = 'Error applying loan deductions.';
+        } finally {
+            this.isApplyingLoanDeductions = false;
+        }
+    }
+
+    getCurrentPayrollRows() {
+        // Example: return current payroll employees for the selected period
+        // Replace with actual logic as needed
+        const currentPeriod = this.payrollRecords.find(
+            (payroll) => payroll.year == this.selectedYear && payroll.month == (this.monthNames.indexOf(this.selectedMonth) + 1)
+        );
+        return currentPeriod?.employeesPayroll || [];
+    }
 payType: string[] = [];
 selectedPayType: string[] = [];
 department: string[] = [];
@@ -1712,6 +1742,14 @@ ngOnInit(){
       deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
     }
 
+        const loanDeductions = this.loanPayrollBridgeService.getLoanDeductionsForEmployee(employee);
+        loanDeductions.forEach((deduction) => {
+            deductions.push({
+                amount: deduction.amount,
+                reason: deduction.reason
+            });
+        });
+
     const totalAllowances = this.sumAllowances(allowances);
     const totalBonuses = this.sumBonuses(bonuses);
     const totalDeductions = this.sumDeductions(deductions);
@@ -1728,12 +1766,13 @@ ngOnInit(){
       overtimeHours: overtime.overtimeHours,
       overtimePay: overtime.overtimePay,
       deductions,
+    loanDeductions,
       grossPay,
       totalDeductions,
       netPayable
     };
   }
-  handlePeriodChange(){
+    handlePeriodChange(autoSyncLoanDeductions = true){
     const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
     const currentPayroll = this.payrollRecords.find(
         (payroll) => payroll.year == this.selectedYear && payroll.month == monthIndex
@@ -1757,6 +1796,10 @@ ngOnInit(){
         this.currentPayroll = [];
       }
       this.payrollSumary = this.calculatePayrollSummary();
+
+            if (autoSyncLoanDeductions && this.autoApplyLoanDeductions && this.currentPayroll.length > 0) {
+                void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: false });
+            }
   }
    
     filterEmployee() {
@@ -1884,11 +1927,64 @@ ngOnInit(){
     this.handlePeriodChange();
   }
 
+    onAutoLoanApplyToggle(): void {
+        if (!this.autoApplyLoanDeductions || !this.selectedMonth || !this.selectedYear) {
+            return;
+        }
+
+        if (this.currentPayroll.length > 0) {
+            void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: true });
+        }
+    }
+
   viewSummary(){
     this.payrollSumary = this.calculatePayrollSummary()
 
     this.openSummary = true
   }
+
+        async applyLoanDeductionsToLoans(): Promise<void> {
+            await this.syncLoanDeductions({ refreshAfterSync: true, showNoDataMessage: true });
+        }
+
+        private async syncLoanDeductions(options: { refreshAfterSync: boolean; showNoDataMessage: boolean }): Promise<void> {
+        if (this.isApplyingLoanDeductions) {
+            return;
+        }
+
+        if (!this.currentPayroll.length || !this.selectedMonth || !this.selectedYear) {
+                        if (options.showNoDataMessage) {
+                            this.loanDeductionSyncMessage = 'No payroll period selected for loan deduction posting.';
+                        }
+            return;
+        }
+
+        this.isApplyingLoanDeductions = true;
+                if (options.showNoDataMessage) {
+                    this.loanDeductionSyncMessage = '';
+                }
+
+        try {
+            const result = await this.loanPayrollBridgeService.postPayrollLoanDeductions(this.currentPayroll, {
+                month: this.selectedMonth,
+                year: Number(this.selectedYear)
+            });
+
+                        if (options.showNoDataMessage || result.applied > 0 || result.failed > 0) {
+                            this.loanDeductionSyncMessage = `Loan deductions sync complete: ${result.applied} applied, ${result.skipped} skipped, ${result.failed} failed.`;
+                        }
+
+                        if (options.refreshAfterSync) {
+                            this.handlePeriodChange(false);
+                        }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unexpected error while syncing loan deductions.';
+            this.loanDeductionSyncMessage = `Loan deductions sync failed: ${message}`;
+        } finally {
+            this.isApplyingLoanDeductions = false;
+        }
+    }
+
   calculatePayrollSummary() {
     const payrollSummary = {
       totalSalary: 0,

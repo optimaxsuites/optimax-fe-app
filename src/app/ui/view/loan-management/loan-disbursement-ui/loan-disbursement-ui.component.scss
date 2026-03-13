@@ -1,0 +1,195 @@
+.loan-disbursement-container {
+  padding: 24px;
+  min-height: 100vh;
+  background: #f8feff;
+  font-family: Arial, sans-serif;
+
+  .loading-state,
+  .empty-state {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 10px;
+    padding: 22px;
+    color: #2E6276;
+  }
+
+  .empty-state {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+
+    i {
+      font-size: 2rem;
+      color: #2EB270;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .disbursement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #2E6276;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .queue-count {
+      color: #2E6276;
+      font-weight: 700;
+      background: #eaf5f8;
+      border: 1px solid #d4e7ee;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 16px;
+  }
+
+  .table-card,
+  .form-card {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  h2 {
+    margin: 0 0 10px;
+    color: #2E6276;
+    font-size: 1rem;
+    text-transform: uppercase;
+  }
+
+  ::ng-deep .table-card .pick-btn {
+    border: 1px solid #d4e7ee;
+    background: #fff;
+    color: #2E6276;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  ::ng-deep .table-card .pick-btn:hover {
+    background: #f4fafc;
+  }
+
+  .note {
+    margin: 0 0 10px;
+    color: #495057;
+    background: #f5fbff;
+    border: 1px solid #dcecf4;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.86rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #2E6276;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    input,
+    select {
+      border: 1px solid #d4e7ee;
+      border-radius: 6px;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+    }
+  }
+
+  .checklist {
+    margin-top: 12px;
+    border: 1px solid #dcecf4;
+    border-radius: 8px;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+
+    h3 {
+      margin: 0;
+      color: #2E6276;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: #495057;
+      font-size: 0.88rem;
+    }
+  }
+
+  .actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cancel-btn {
+      background: #eef4f7;
+      color: #2E6276;
+    }
+
+    .disburse-btn {
+      background: #2EB270;
+      color: #fff;
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .loan-disbursement-container {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

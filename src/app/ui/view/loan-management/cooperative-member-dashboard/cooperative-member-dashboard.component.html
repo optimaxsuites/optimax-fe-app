@@ -1,4 +1,66 @@
 <div class="member-dashboard-container">
+  <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
+    <div class="cooperative-loan-details" *ngIf="selectedLoanForDetails as loan">
+      <div class="modal-header">
+        <h2>Loan Details</h2>
+        <div class="header-actions">
+          <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+          <button class="close-btn" type="button" (click)="closeLoanDetailsModal()" aria-label="Close loan details">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <p class="subtitle">A concise view of your cooperative loan information.</p>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="label">Loan ID</span>
+          <span class="value">{{ loan.loanId }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Status</span>
+          <span class="value">{{ loan.status }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Applied On</span>
+          <span class="value">{{ loan.applicationDate | date:'mediumDate' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Duration</span>
+          <span class="value">{{ loan.duration }} months</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Amount</span>
+          <span class="value">{{ formatCurrency(loan.amount) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Interest Rate</span>
+          <span class="value">{{ loan.interestRate }}%</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Monthly Repayment</span>
+          <span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Outstanding Balance</span>
+          <span class="value">{{ formatCurrency(getOutstandingAmount(loan)) }}</span>
+        </div>
+        <div class="detail-item full">
+          <span class="label">Purpose</span>
+          <span class="value">{{ loan.purpose }}</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" type="button" (click)="openFullLoanDetailsFromModal()">
+          <i class="fas fa-arrow-right"></i>
+          View Full Loan Page
+        </button>
+      </div>
+    </div>
+  </app-side-modal>
+
   <app-modal *ngIf="showPaymentModal" [header]="'Make Payment'" (close)="closePaymentModal()">
     <div class="modal-content payment-modal">
       <h3>Make Payment</h3>
@@ -31,6 +93,8 @@
   <app-modal *ngIf="showApplicationModal" [header]="'New Cooperative Loan Application'" (close)="closeApplicationModal()">
     <app-cooperative-loan-application
       [isModal]="true"
+      [isSelfService]="true"
+      [prefillMemberId]="member?.id || currentMemberId"
       (formCancelled)="closeApplicationModal()"
       (applicationSubmitted)="onApplicationSubmitted()">
     </app-cooperative-loan-application>
@@ -44,12 +108,6 @@
 
   <div *ngIf="!isLoading" class="dashboard-content">
     <div *ngIf="member">
-    <div class="top-actions">
-      <button class="apply-btn" (click)="applyForLoan()">
-        <i class="fas fa-plus"></i> Apply for Loan
-      </button>
-    </div>
-
     <!-- Welcome Header -->
     <div class="welcome-header lm-header-card">
       <div>
@@ -61,70 +119,68 @@
         <div class="user-avatar">{{ getInitials(member.fullName) }}</div>
       </div>
     </div>
+
+    <div class="quick-actions-panel">
+      <button class="quick-action-btn apply-btn" (click)="applyForLoan()" [disabled]="!canApplyForLoan" [title]="canApplyForLoan ? 'Apply for a loan' : 'Junior staff cannot apply'">
+        <i class="fas fa-plus"></i>
+        Apply for New Loan
+      </button>
+      <button class="quick-action-btn" (click)="openQuickPaymentModal()">
+        <i class="fas fa-credit-card"></i>
+        Make Payment
+      </button>
+      <button class="quick-action-btn" (click)="toggleLoanHistory()">
+        <i class="fas fa-history"></i>
+        {{ showLoanHistory ? 'Hide Loan History' : 'Loan History' }}
+      </button>
+      <button class="quick-action-btn" (click)="viewFullLoanHistory()">
+        <i class="fas fa-list"></i>
+        Full Loan History
+      </button>
     </div>
-
-    <div class="membership-card">
-      <div class="membership-card-header">
-        <h2><i class="fas fa-id-badge"></i> Membership Application</h2>
-      </div>
-
-      <div class="membership-body" *ngIf="membershipEligibility as eligibility">
-        <p class="rank-line">Your Rank: <strong>{{ eligibility.rank }}</strong></p>
-
-        <div class="eligibility-checks">
-          <p><i class="fas" [ngClass]="currentEmployeeProfile.employmentType === 'PERMANENT' ? 'fa-check-circle pass' : 'fa-times-circle fail'"></i> Employment type: {{ currentEmployeeProfile.employmentType }}</p>
-          <p><i class="fas" [ngClass]="eligibility.tenureMonths >= 12 ? 'fa-check-circle pass' : 'fa-hourglass-half hold'"></i> Tenure: {{ eligibility.tenureMonths }} month(s)</p>
-          <p><i class="fas" [ngClass]="eligibility.probationCompleted ? 'fa-check-circle pass' : 'fa-hourglass-half hold'"></i> Probation: {{ eligibility.probationCompleted ? 'Completed' : 'Not completed' }}</p>
-        </div>
-
-        <div class="tier-box" *ngIf="showTierOnApply">
-          <p><strong>Membership Tier:</strong> {{ eligibility.policy.tier }}</p>
-          <p>• Max loan: <strong>{{ formatCurrency(eligibility.policy.maxLoan) }}</strong></p>
-          <p>• Min shares: <strong>{{ formatCurrency(eligibility.policy.minShares) }}</strong></p>
-          <p>• Voting rights: <strong>{{ eligibility.policy.votingRights }}</strong></p>
-        </div>
-
-        <div class="rule-block invite" *ngIf="eligibility.requiresInvite">
-          <i class="fas fa-info-circle"></i>
-          <div>
-            <p>Membership is by invitation only for your rank.</p>
-            <button type="button" class="action-btn" (click)="requestInvite()" [disabled]="hasMembership">Request Admin Invite</button>
-          </div>
-        </div>
-
-        <div class="rule-block approval" *ngIf="eligibility.requiresManagerApproval">
-          <p>Your application will be sent to your manager for approval.</p>
-          <select [(ngModel)]="selectedManager" [disabled]="hasMembership">
-            <option value="" disabled>Select manager</option>
-            <option *ngFor="let manager of managers" [value]="manager.id">{{ manager.name }}</option>
-          </select>
-          <button type="button" class="action-btn" (click)="submitMembershipApplication()" [disabled]="hasMembership">Apply for Membership</button>
-        </div>
-
-        <div class="rule-block auto" *ngIf="eligibility.autoApprove">
-          <div class="auto-approve-badge"><i class="fas fa-check-circle"></i> You qualify for auto-approval!</div>
-          <button type="button" class="action-btn" (click)="submitMembershipApplication()" [disabled]="hasMembership">Activate Membership</button>
-        </div>
-
-        <div class="rule-block hold" *ngIf="eligibility.isOnHold">
-          <i class="fas fa-hourglass-half"></i>
-          <p>{{ eligibility.message }}</p>
-        </div>
-
-        <div class="rule-block blocked" *ngIf="eligibility.isBlocked">
-          <i class="fas fa-ban"></i>
-          <p>{{ eligibility.message }}</p>
-        </div>
-
-        <p class="note-line" *ngIf="!eligibility.isOnHold && !eligibility.isBlocked">{{ eligibility.message }}</p>
-      </div>
-
-      <p class="membership-message" *ngIf="membershipMessage">{{ membershipMessage }}</p>
     </div>
 
     <div *ngIf="member">
 
     <p class="action-message" *ngIf="actionMessage">{{ actionMessage }}</p>
+
+    <div class="membership-card">
+      <div class="membership-card-header">
+        <h2><i class="fas fa-user-cog"></i> Membership Role Preview</h2>
+        <div class="role-switcher">
+          <label for="rolePreviewSelect">Switch Role</label>
+          <select
+            id="rolePreviewSelect"
+            [ngModel]="selectedPreviewRole"
+            (ngModelChange)="onPreviewRoleChange($event)">
+            <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
+          </select>
+          <span class="preview-mode-badge">Preview Mode</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-updates-card" *ngIf="memberStatusUpdates.length > 0">
+      <h2 class="section-title">Application Status Updates</h2>
+      <div class="updates-list">
+        <div class="update-item" *ngFor="let update of memberStatusUpdates">
+          <div class="update-head">
+            <strong>{{ update.title }}</strong>
+            <span class="time">{{ update.createdAt | date:'short' }}</span>
+          </div>
+          <p>
+            {{ getMessageWithoutActivationLink(update.message) }}
+            <a
+              *ngIf="getActivationLinkFromMessage(update.message) as activationLink"
+              href="#"
+              class="activation-link"
+              (click)="openActivationLink($event, activationLink)">
+              Activate Membership
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
 
     <!-- Stats Cards -->
     <h2 class="section-title">My Financial Snapshot</h2>
@@ -145,7 +201,7 @@
         </div>
         <div class="stat-content">
           <span class="stat-label">Borrowed</span>
-          <span class="stat-value">{{ formatCurrency(totalBorrowed) }}</span>
+          <span class="stat-value">{{ formatCurrency(personalTotalBorrowed) }}</span>
         </div>
       </div>
 
@@ -155,7 +211,7 @@
         </div>
         <div class="stat-content">
           <span class="stat-label">Outstanding</span>
-          <span class="stat-value">{{ formatCurrency(outstandingBalance) }}</span>
+          <span class="stat-value">{{ formatCurrency(personalOutstandingBalance) }}</span>
         </div>
       </div>
 
@@ -165,17 +221,44 @@
         </div>
         <div class="stat-content">
           <span class="stat-label">Next Payment</span>
-          <span class="stat-value" *ngIf="nextPayment">{{ formatCurrency(nextPayment.amount) }}</span>
-          <span class="stat-value" *ngIf="!nextPayment">₦0</span>
-          <span class="stat-sub" *ngIf="nextPayment">{{ nextPayment.dueDate | date:'mediumDate' }}</span>
+          <span class="stat-value" *ngIf="personalNextPayment">{{ formatCurrency(personalNextPayment.amount) }}</span>
+          <span class="stat-value" *ngIf="!personalNextPayment">₦0</span>
+          <span class="stat-sub" *ngIf="personalNextPayment">{{ personalNextPayment.dueDate | date:'mediumDate' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-updates-card" *ngIf="memberGroups.length > 0">
+      <h2 class="section-title">My Loan Groups</h2>
+      <div class="group-switcher-row">
+        <label for="groupDashboardSelect">View Group Dashboard</label>
+        <select id="groupDashboardSelect" [ngModel]="selectedGroupId" (ngModelChange)="setGroupDashboard($event)">
+          <option value="ALL">All Groups</option>
+          <option *ngFor="let group of memberGroups" [value]="group.membership.groupId || group.membership.groupId">
+            {{ group.groupName }}
+          </option>
+        </select>
+      </div>
+      <div class="updates-list">
+        <div class="update-item" *ngFor="let group of memberGroups">
+          <div class="update-head">
+            <strong>{{ group.groupName }}</strong>
+            <span class="time">{{ formatCurrency(group.membership.monthlyContributionAmount) }}/month</span>
+          </div>
+          <p>
+            Total contribution: <strong>{{ formatCurrency(group.membership.totalContribution) }}</strong>
+            <span class="separator">|</span>
+            Max borrowable: <strong>{{ formatCurrency(group.maxBorrowable) }}</strong>
+          </p>
         </div>
       </div>
     </div>
 
     <!-- My Loans Section -->
-    <div class="loans-section">
+    <div class="loans-section" *ngIf="showLoanHistory">
       <div class="section-header">
         <h2><i class="fas fa-file-invoice-dollar"></i> My Loans</h2>
+        <span class="selected-group-label">{{ selectedGroupName }}</span>
       </div>
 
       <div class="status-strip">
@@ -232,16 +315,39 @@
               <td *ngIf="loanStatusFilter === 'ACTIVE'">{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
               <td class="actions-col">
                 <button class="icon-btn" (click)="viewLoanDetails(loan.id)"><i class="fas fa-eye"></i></button>
+                <button class="icon-btn" (click)="viewRepaymentHistory(loan.id)" title="View Repayment History" aria-label="View Repayment History">
+                  <i class="fas fa-history"></i>
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <div class="repayment-history-block" *ngIf="selectedRepaymentHistoryLoan as historyLoan">
+        <div class="history-head">
+          <h3><i class="fas fa-history"></i> Repayment History - {{ historyLoan.loanId }}</h3>
+          <button class="icon-btn" (click)="closeRepaymentHistory()" title="Close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <app-employee-repayment-schedule
+          *ngIf="selectedRepaymentScheduleLoan as scheduleLoan; else noRepaymentHistory"
+          [loan]="scheduleLoan">
+        </app-employee-repayment-schedule>
+
+        <ng-template #noRepaymentHistory>
+          <div class="empty-state compact">
+            <p>No repayment records found for this loan yet.</p>
+          </div>
+        </ng-template>
+      </div>
+
       <div *ngIf="filteredLoansByStatus.length === 0" class="empty-state">
         <i class="fas fa-smile"></i>
         <p>No {{ loanStatusFilter.toLowerCase() }} loans yet.</p>
-        <button class="apply-btn" (click)="applyForLoan()">Apply for a Loan</button>
+        <button class="apply-btn" (click)="applyForLoan()" [disabled]="!canApplyForLoan" [title]="canApplyForLoan ? 'Apply for a loan' : 'Junior staff cannot apply'">Apply for a Loan</button>
       </div>
     </div>
 

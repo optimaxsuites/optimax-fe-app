@@ -65,30 +65,6 @@
       </div>
     </div>
 
-    <!-- Status Breakdown -->
-    <div class="status-breakdown">
-      <div class="status-chip pending" [class.active-filter]="filters.status === 'PENDING'" (click)="filters.status='PENDING'; applyFilters()">
-        <span class="count">{{ summaryStats.pendingCount }}</span>
-        <span class="label">Pending</span>
-      </div>
-      <div class="status-chip active" [class.active-filter]="filters.status === 'ACTIVE'" (click)="filters.status='ACTIVE'; applyFilters()">
-        <span class="count">{{ summaryStats.activeCount }}</span>
-        <span class="label">Active</span>
-      </div>
-      <div class="status-chip completed" [class.active-filter]="filters.status === 'COMPLETED'" (click)="filters.status='COMPLETED'; applyFilters()">
-        <span class="count">{{ summaryStats.completedCount }}</span>
-        <span class="label">Completed</span>
-      </div>
-      <div class="status-chip approved" [class.active-filter]="filters.status === 'APPROVED'" (click)="filters.status='APPROVED'; applyFilters()">
-        <span class="count">{{ getStatusCount('APPROVED') }}</span>
-        <span class="label">Approved</span>
-      </div>
-      <div class="status-chip rejected" [class.active-filter]="filters.status === 'REJECTED'" (click)="filters.status='REJECTED'; applyFilters()">
-        <span class="count">{{ getStatusCount('REJECTED') }}</span>
-        <span class="label">Rejected</span>
-      </div>
-    </div>
-
     <!-- Filters Section -->
     <div class="filters-section">
       <h3>Filter Reports</h3>

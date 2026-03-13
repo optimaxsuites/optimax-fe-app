@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
+import { Subscription } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
 import {
@@ -45,7 +46,8 @@ interface InviteCandidateRow {
   templateUrl: './cooperative-dashboard.component.html',
   styleUrls: ['./cooperative-dashboard.component.scss']
 })
-export class CooperativeDashboardComponent implements OnInit {
+export class CooperativeDashboardComponent implements OnInit, OnDestroy {
+  currentUuid = uuidV4();
   stats!: CooperativeStats;
   recentLoans: CooperativeLoan[] = [];
   recentMembers: CooperativeMember[] = [];
@@ -63,17 +65,17 @@ export class CooperativeDashboardComponent implements OnInit {
   patronageRows: MemberPatronageRow[] = [];
   patronageMessage = '';
   isLoading = true;
-  showApplicationModal = false;
-  prefillMemberId: string | null = null;
   showLoanSummaryModal = false;
   selectedLoanForSummary: CooperativeLoan | null = null;
   employeeDirectory: CooperativeEmployeeProfile[] = [];
   inviteCandidates: InviteCandidateRow[] = [];
   selectedInviteEmployeeIds = new Set<string>();
   inviteMessage = '';
+  showInviteMembersModal = false;
 
   private allLoans: CooperativeLoan[] = [];
   private allMembers: CooperativeMember[] = [];
+  private readonly subscriptions = new Subscription();
 
   constructor(
     private location: Location,
@@ -84,18 +86,22 @@ export class CooperativeDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe(params => {
-      const openApplication = params.get('openApplication');
-      this.prefillMemberId = params.get('memberId');
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
 
-      if (openApplication === 'true') {
-        this.showApplicationModal = true;
-      }
-    });
+    this.subscriptions.add(this.route.queryParamMap.subscribe(params => {
+      void params;
+    }));
 
     this.loadDashboard();
     this.loadNotifications();
     this.loadEmployeeDirectory();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   get unreadNotificationCount(): number {
@@ -120,7 +126,7 @@ export class CooperativeDashboardComponent implements OnInit {
         .slice(0, 5);
 
       this.pendingApprovals = loans
-        .filter(loan => loan.status === 'PENDING')
+        .filter(loan => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
         .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime())
         .slice(0, 5);
 
@@ -146,24 +152,32 @@ export class CooperativeDashboardComponent implements OnInit {
     return this.inviteCandidates.length;
   }
 
+  get selectedInviteCount(): number {
+    return this.selectedInviteEmployeeIds.size;
+  }
+
+  get inviteActionLabel(): string {
+    return this.selectedInviteCount === 1 ? 'Invite Member' : 'Invite Members';
+  }
+
   get isAllInviteCandidatesSelected(): boolean {
     return this.inviteCandidates.length > 0 && this.selectedInviteEmployeeIds.size === this.inviteCandidates.length;
   }
 
   loadNotifications(): void {
-    this.cooperativeService.getNotifications().subscribe(notifications => {
+    this.subscriptions.add(this.cooperativeService.getNotifications().subscribe(notifications => {
       this.notifications = [...notifications]
         .filter(notification => notification.type === 'LOAN_PENDING_APPROVAL')
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
-    });
+    }));
 
-    this.cooperativeService.getNotificationsObservable().subscribe(notifications => {
+    this.subscriptions.add(this.cooperativeService.getNotificationsObservable().subscribe(notifications => {
       this.notifications = [...notifications]
         .filter(notification => notification.type === 'LOAN_PENDING_APPROVAL')
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
-    });
+    }));
   }
 
   refreshDashboardSignals(): void {
@@ -178,10 +192,10 @@ export class CooperativeDashboardComponent implements OnInit {
     const latestLoan = this.recentLoans[0];
     if (latestLoan) {
       const member = memberMap.get(latestLoan.memberId);
-      const product = this.cooperativeService.getProductById(latestLoan.productId);
+      const group = latestLoan.groupId ? this.cooperativeService.getGroupById(latestLoan.groupId) : undefined;
       activities.push({
         icon: 'fas fa-file-signature',
-        message: `${member?.fullName || 'A member'} applied for ${this.formatCurrency(latestLoan.amount)} (${product?.name || 'Loan'})`,
+        message: `${member?.fullName || 'A member'} applied for ${this.formatCurrency(latestLoan.amount)} (${group?.name || 'Loan'})`,
         time: this.getRelativeTime(latestLoan.applicationDate)
       });
     }
@@ -281,24 +295,15 @@ export class CooperativeDashboardComponent implements OnInit {
   }
 
   navigateTo(path: string): void {
-    if (path === 'apply') {
-      this.showApplicationModal = true;
-      return;
-    }
-
-    this.router.navigate([`/admin/hr/cooperative/${path}/${uuidV4()}`]);
-  }
-
-  closeApplicationModal(): void {
-    this.showApplicationModal = false;
-  }
-
-  onApplicationSubmitted(): void {
-    this.loadDashboard();
+    this.router.navigate([`/admin/hr/cooperative/${path}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   viewMember(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/members/${id}/${uuidV4()}`]);
+    this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   viewLoan(id: string): void {
@@ -324,35 +329,59 @@ export class CooperativeDashboardComponent implements OnInit {
     return this.getMemberName(this.selectedLoanForSummary.memberId);
   }
 
-  getSelectedLoanProductName(): string {
+  getSelectedLoangroupName(): string {
     if (!this.selectedLoanForSummary) {
       return '';
     }
 
-    return this.cooperativeService.getProductById(this.selectedLoanForSummary.productId)?.name || 'N/A';
+    return this.selectedLoanForSummary && this.selectedLoanForSummary.groupId
+      ? this.cooperativeService.getGroupById(this.selectedLoanForSummary.groupId)?.name || 'N/A'
+      : 'N/A';
   }
 
   openCooperativeApprovalForm(loan: CooperativeLoan): void {
     this.closeLoanSummaryModal();
-    this.router.navigate([`/admin/hr/cooperative/loans/${loan.id}/${uuidV4()}`]);
-  }
-
-  reviewPendingApprovals(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', uuidV4()], {
-      queryParams: { status: 'PENDING' }
+    this.router.navigate([`/admin/hr/cooperative/loans/${loan.id}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
     });
   }
 
+  openCooperativeLoanHistory(loan: CooperativeLoan): void {
+    this.closeLoanSummaryModal();
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', loan.memberId, this.currentUuid], {
+      state: { source: 'admin', cooperative: true, uuid: this.currentUuid }
+    });
+  }
+
+  reviewPendingApprovals(): void {
+    this.manageLoans();
+  }
+
   disburseLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', uuidV4()], {
-      queryParams: { status: 'APPROVED' }
+    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+      queryParams: { status: 'APPROVED', mode: 'disburse', dashboard: 'cooperative' }
     });
   }
 
   reviewDefaultedLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', uuidV4()], {
-      queryParams: { status: 'DEFAULTED' }
+    this.manageLoans();
+  }
+
+  manageLoans(): void {
+    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
     });
+  }
+
+  openInviteMembersModal(): void {
+    this.refreshInviteCandidates();
+    this.inviteMessage = '';
+    this.selectedInviteEmployeeIds.clear();
+    this.showInviteMembersModal = true;
+  }
+
+  closeInviteMembersModal(): void {
+    this.showInviteMembersModal = false;
   }
 
   toggleInviteSelection(employeeId: string): void {
@@ -388,7 +417,7 @@ export class CooperativeDashboardComponent implements OnInit {
       .map(item => this.cooperativeService.inviteEmployee(item.employee))
       .filter(result => result.success).length;
 
-    this.inviteMessage = `${successfulInvites} invite(s) processed successfully.`;
+    this.inviteMessage = `${successfulInvites} invite(s) processed successfully. Congratulations messages with activation links were delivered to selected employee account updates.`;
     this.selectedInviteEmployeeIds.clear();
     this.refreshInviteCandidates();
   }
@@ -567,7 +596,9 @@ export class CooperativeDashboardComponent implements OnInit {
   }
 
   goToPendingApproval(loanId: string): void {
-    this.router.navigate([`/admin/hr/cooperative/loans/${loanId}/${uuidV4()}`]);
+    this.router.navigate([`/admin/hr/cooperative/loans/${loanId}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   openNotification(notification: CooperativeNotification): void {
@@ -575,7 +606,9 @@ export class CooperativeDashboardComponent implements OnInit {
       this.cooperativeService.markNotificationAsRead(notification.id);
     }
 
-    this.router.navigate([`/admin/hr/cooperative/loans/${notification.loanId}/${uuidV4()}`]);
+    this.router.navigate([`/admin/hr/cooperative/loans/${notification.loanId}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   getMemberName(memberId: string): string {
@@ -712,11 +745,8 @@ export class CooperativeDashboardComponent implements OnInit {
   }
 
   goBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    this.router.navigate(['/admin/hr/loan/uu']);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 }

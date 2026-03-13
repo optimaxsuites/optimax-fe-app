@@ -54,7 +54,7 @@
             ]
           },
           "configurations": {
-            "production": {
+            "groupion": {
               "budgets": [
                 {
                   "type": "initial",
@@ -75,13 +75,13 @@
               "sourceMap": true
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "groupion"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": {
-              "buildTarget": "ERP-HR:build:production"
+            "groupion": {
+              "buildTarget": "ERP-HR:build:groupion"
             },
             "development": {
               "buildTarget": "ERP-HR:build:development"

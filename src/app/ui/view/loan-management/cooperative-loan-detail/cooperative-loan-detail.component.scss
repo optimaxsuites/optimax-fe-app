@@ -34,6 +34,13 @@
     border-radius: 12px;
     padding: 16px 18px;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -48,19 +55,6 @@
         font-weight: 700;
         cursor: pointer;
       }
-
-      .back-btn {
-        background: white;
-        border: 1px solid #e3eef0;
-        color: #2E6276;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        &:hover { background: #f0f0f0; }
-      }
     }
 
     h1 {
@@ -70,17 +64,22 @@
       display: flex;
       align-items: center;
       gap: 10px;
+
+      i {
+        color: #FFA500;
+      }
     }
 
     .status-badge {
       padding: 6px 16px;
       border-radius: 20px;
       font-weight: 600;
-      &.status-pending { background: rgba(255,165,0,0.1); color: #b87c00; }
-      &.status-approved { background: rgba(46,178,112,0.1); color: #1e7e4a; }
-      &.status-rejected { background: rgba(233,55,55,0.1); color: #b30000; }
-      &.status-active { background: rgba(46,98,118,0.1); color: #1e4a5a; }
-      &.status-completed { background: rgba(128,128,128,0.1); color: #4d4d4d; }
+      &.status-pending { background-color: rgba(231, 222, 101, 0.2); color: #8f8500; border: 1px solid rgba(231, 222, 101, 0.3); }
+      &.status-approved { background-color: rgba(46, 178, 112, 0.1); color: #1e7e4a; border: 1px solid rgba(46, 178, 112, 0.3); }
+      &.status-rejected { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+      &.status-active { background-color: rgba(46, 98, 118, 0.1); color: #1e4a5a; border: 1px solid rgba(46, 98, 118, 0.3); }
+      &.status-completed { background-color: rgba(128, 128, 128, 0.1); color: #4d4d4d; border: 1px solid rgba(128, 128, 128, 0.3); }
+      &.status-defaulted { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
     }
   }
 
@@ -226,8 +225,9 @@
     gap: 10px;
 
     li {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
       align-items: center;
       padding: 10px;
       border: 1px solid #e3eef0;
@@ -244,9 +244,39 @@
       background: rgba(46, 178, 112, 0.12);
       color: #1e7e4a;
 
-      &.pending {
+      &.status-pending {
         background: rgba(255, 165, 0, 0.12);
         color: #b87c00;
+      }
+
+      &.status-rejected,
+      &.status-expired {
+        background: rgba(233, 55, 55, 0.12);
+        color: #b30000;
+      }
+    }
+
+    .guarantor-actions {
+      display: flex;
+      gap: 6px;
+
+      button {
+        border: none;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .approve-btn {
+        background: #2EB270;
+        color: #fff;
+      }
+
+      .reject-btn {
+        background: #d9534f;
+        color: #fff;
       }
     }
   }

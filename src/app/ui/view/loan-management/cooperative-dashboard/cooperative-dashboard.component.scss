@@ -163,6 +163,22 @@
         font-weight: 600;
         word-break: break-word;
       }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+
+        &.status-pending { background-color: rgba(231, 222, 101, 0.2); color: #8f8500; border: 1px solid rgba(231, 222, 101, 0.3); }
+        &.status-approved { background-color: rgba(255, 165, 0, 0.16); color: #b86200; border: 1px solid rgba(255, 165, 0, 0.35); }
+        &.status-rejected { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+        &.status-active { background-color: rgba(56, 189, 248, 0.16); color: #1e4a8f; border: 1px solid rgba(56, 189, 248, 0.35); }
+        &.status-completed { background-color: rgba(46, 178, 112, 0.1); color: #1e7e4a; border: 1px solid rgba(46, 178, 112, 0.3); }
+        &.status-defaulted { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+      }
     }
 
     .modal-actions {
@@ -570,8 +586,38 @@
     border: 1px solid #e3eef0;
   }
 
-  .pending-card {
-    margin-bottom: 24px;
+  .invite-members-modal {
+    .invite-subtitle {
+      margin: 0 0 12px;
+      color: #495057;
+      font-size: 0.92rem;
+    }
+
+    .invite-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+
+      .quick-action-btn {
+        border: none;
+        background: #2E6276;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover {
+          background: #4291b1;
+        }
+      }
+    }
+
+    .invite-message {
+      margin: 12px 0 0;
+      color: #2E6276;
+      font-weight: 600;
+    }
   }
 
   .invite-card {
@@ -810,10 +856,12 @@
               font-size: 0.8rem;
               font-weight: 600;
 
-              &.status-pending { background: rgba(255,165,0,0.1); color: #b87c00; }
-              &.status-approved { background: rgba(46,178,112,0.1); color: #1e7e4a; }
-              &.status-active { background: rgba(46,98,118,0.1); color: #1e4a5a; }
-              &.status-completed { background: rgba(128,128,128,0.1); color: #4d4d4d; }
+              &.status-pending { background-color: rgba(231, 222, 101, 0.2); color: #8f8500; border: 1px solid rgba(231, 222, 101, 0.3); }
+              &.status-approved { background-color: rgba(255, 165, 0, 0.16); color: #b86200; border: 1px solid rgba(255, 165, 0, 0.35); }
+              &.status-rejected { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+              &.status-active { background-color: rgba(56, 189, 248, 0.16); color: #1e4a8f; border: 1px solid rgba(56, 189, 248, 0.35); }
+              &.status-completed { background-color: rgba(46, 178, 112, 0.1); color: #1e7e4a; border: 1px solid rgba(46, 178, 112, 0.3); }
+              &.status-defaulted { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
             }
 
             .icon-btn {

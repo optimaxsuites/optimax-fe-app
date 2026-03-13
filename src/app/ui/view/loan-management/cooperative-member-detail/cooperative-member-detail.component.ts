@@ -18,6 +18,7 @@ interface RepaymentHistoryItem {
   styleUrls: ['./cooperative-member-detail.component.scss']
 })
 export class CooperativeMemberDetailComponent implements OnInit {
+  currentUuid = uuidV4();
   member!: CooperativeMember;
   memberLoans: CooperativeLoan[] = [];
   isLoading = true;
@@ -31,6 +32,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const id = params['id'];
+      this.currentUuid = params['uuid'] || this.currentUuid;
       this.loadMember(id);
     });
 
@@ -49,30 +51,27 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   editMember(): void {
-    this.router.navigate(['/admin/hr/cooperative/members/edit', this.member.id, uuidV4()]);
-  }
-
-  applyForLoan(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', uuidV4()], {
-      queryParams: {
-        openApplication: true,
-        memberId: this.member.id
-      }
+    this.router.navigate(['/admin/hr/cooperative/members/edit', this.member.id, this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
     });
   }
 
   viewAllMemberLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', uuidV4()], {
-      queryParams: { memberId: this.member.id }
+    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+      queryParams: { memberId: this.member.id, dashboard: 'cooperative' }
     });
   }
 
   viewLoan(id: string): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', id, uuidV4()]);
+    this.router.navigate(['/admin/hr/cooperative/loans', id, this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/members', uuidV4()]);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   formatCurrency(amount: number): string {

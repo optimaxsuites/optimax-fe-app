@@ -28,7 +28,7 @@ export class SearchbarComponent {
     this.fuse.setCollection(this.listToSearch);
   }
 
-  searchProducts(searchValue: string) {
+  searchgroups(searchValue: string) {
     if (!searchValue.trim()) {
       this.listToUpdate = this.listToSearch; 
       this.listToUpdateChange.emit(this.listToUpdate);

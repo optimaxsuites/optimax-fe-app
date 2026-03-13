@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -10,6 +11,7 @@ import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooper
   styleUrls: ['./cooperative-members.component.scss']
 })
 export class CooperativeMembersComponent implements OnInit {
+  currentUuid = uuidV4();
   members: CooperativeMember[] = [];
   filteredMembers: CooperativeMember[] = [];
   isLoading = true;
@@ -30,10 +32,16 @@ export class CooperativeMembersComponent implements OnInit {
 
   constructor(
     private cooperativeService: CooperativeService,
+    private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
+
     this.loadMembers();
   }
 
@@ -134,13 +142,15 @@ export class CooperativeMembersComponent implements OnInit {
   }
 
   viewMember(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/members/${id}/${uuidV4()}`]);
+    this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   viewLoanHistory(memberId: string, event: Event): void {
     event.stopPropagation();
-    this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${uuidV4()}`], {
-      queryParams: { tab: 'loans' }
+    this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${this.currentUuid}`], {
+      queryParams: { tab: 'loans', dashboard: 'cooperative' }
     });
   }
 
@@ -194,11 +204,15 @@ export class CooperativeMembersComponent implements OnInit {
   }
 
   addMember(): void {
-    this.router.navigate(['/admin/hr/cooperative/members/add', uuidV4()]);
+    this.router.navigate(['/admin/hr/cooperative/members/add', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', uuidV4()]);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   formatCurrency(amount: number): string {

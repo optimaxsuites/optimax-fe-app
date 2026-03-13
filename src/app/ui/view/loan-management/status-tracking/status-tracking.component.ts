@@ -12,11 +12,11 @@ export class StatusTrackingComponent {
   @Input() canChangeStatus: boolean = false;
   
   statusOptions = [
-    { value: 'PENDING', label: 'Pending', color: '#ffc107' },
-    { value: 'APPROVED', label: 'Approved', color: '#28a745' },
+    { value: 'PENDING', label: 'Pending', color: '#8f8500' },
+    { value: 'APPROVED', label: 'Approved', color: '#b86200' },
     { value: 'REJECTED', label: 'Rejected', color: '#dc3545' },
-    { value: 'ACTIVE', label: 'Active', color: '#17a2b8' },
-    { value: 'COMPLETED', label: 'Completed', color: '#6c757d' }
+    { value: 'ACTIVE', label: 'Active', color: '#1e4a8f' },
+    { value: 'COMPLETED', label: 'Completed', color: '#1e7e4a' }
   ];
 
   getStatusColor(status: string): string {

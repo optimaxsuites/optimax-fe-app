@@ -5,11 +5,11 @@
       <button
         type="button"
         class="switch-btn"
-        [class.active]="selectedDashboard === 'welfare'"
-        (click)="onDashboardChange('welfare')"
+        [class.active]="selectedDashboard === 'advance'"
+        (click)="onDashboardChange('advance')"
         role="tab"
-        [attr.aria-selected]="selectedDashboard === 'welfare'">
-        Welfare Dashboard
+        [attr.aria-selected]="selectedDashboard === 'advance'">
+        Advance Loans Dashboard
       </button>
       <button
         type="button"
@@ -23,7 +23,7 @@
     </div>
   </div>
 
-  <div class="dashboard-content" *ngIf="selectedDashboard === 'welfare'">
+  <div class="dashboard-content" *ngIf="selectedDashboard === 'advance'">
     <app-loan-dashboard></app-loan-dashboard>
   </div>
 
