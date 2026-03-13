@@ -85,9 +85,12 @@ export class LoanApplicationService {
     paymentMode?: 'monthly' | 'one_off'
   ): any[] {
     if (paymentMode === 'one_off') {
+      const oneOffDueDate = new Date();
+      oneOffDueDate.setMonth(oneOffDueDate.getMonth() + 1);
+      oneOffDueDate.setDate(15);
       return [{
         monthNumber: 1,
-        dueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+        dueDate: oneOffDueDate.toISOString().split('T')[0],
         principal: loanAmount,
         interest: 0,
         totalPayment: loanAmount,
@@ -111,6 +114,7 @@ export class LoanApplicationService {
       
       const dueDate = new Date();
       dueDate.setMonth(dueDate.getMonth() + i);
+      dueDate.setDate(15);
       
       schedule.push({
         monthNumber: i,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -10,7 +11,8 @@ import { CooperativeLoan, CooperativeMember } from '../../../service/loan/cooper
   styleUrls: ['./cooperative-member-loans.component.scss']
 })
 export class CooperativeMemberLoansComponent implements OnInit {
-  currentMemberId = '1';
+  currentUuid = uuidV4();
+  currentMemberId = '';
   member?: CooperativeMember;
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
@@ -19,19 +21,72 @@ export class CooperativeMemberLoansComponent implements OnInit {
 
   constructor(
     private cooperativeService: CooperativeService,
+    private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
+
     this.loadLoans();
   }
 
   loadLoans(): void {
     this.isLoading = true;
-    this.member = this.cooperativeService.getMemberById(this.currentMemberId);
-    this.loans = this.member ? this.cooperativeService.getLoansByMember(this.member.id) : [];
-    this.applyFilters();
+
+    this.cooperativeService.getMembers().subscribe({
+      next: (members) => {
+        this.currentMemberId = this.resolveCurrentMemberId(members);
+        this.member = members.find(item => item.id === this.currentMemberId || item.memberId === this.currentMemberId);
+        this.redirectToSharedHistory(this.member?.id || this.currentMemberId || '1');
+      },
+      error: () => {
+        this.member = this.cooperativeService.getMemberById(this.currentMemberId || '1');
+        this.redirectToSharedHistory(this.member?.id || this.currentMemberId || '1');
+      }
+    });
+  }
+
+  private redirectToSharedHistory(memberId: string): void {
     this.isLoading = false;
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', memberId, this.currentUuid], {
+      state: { source: 'employee', cooperative: true, uuid: this.currentUuid },
+      replaceUrl: true
+    });
+  }
+
+  private resolveCurrentMemberId(members: CooperativeMember[]): string {
+    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+    const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
+    const userRegRaw = sessionStorage.getItem('userRegData');
+    const userRegData = userRegRaw ? JSON.parse(userRegRaw) : null;
+    const regEmail = String(userRegData?.email || '').trim().toLowerCase();
+
+    const matched = members.find(member => {
+      const memberId = String(member.id || '').trim();
+      const memberCode = String(member.memberId || '').trim();
+      const memberEmail = String(member.email || '').trim().toLowerCase();
+      const memberName = String(member.fullName || '').trim().toLowerCase();
+
+      if (sessionUserId && (memberId === sessionUserId || memberCode === sessionUserId)) {
+        return true;
+      }
+
+      if (regEmail && memberEmail === regEmail) {
+        return true;
+      }
+
+      if (sessionUsername && (memberEmail === sessionUsername || memberName === sessionUsername)) {
+        return true;
+      }
+
+      return false;
+    });
+
+    return matched?.id || members[0]?.id || '1';
   }
 
   applyFilters(): void {
@@ -51,11 +106,11 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   viewLoanDetails(id: string): void {
-    this.router.navigate(['/member/cooperative/loans', id, uuidV4()]);
+    this.router.navigate(['/member/cooperative/loans', id, this.currentUuid]);
   }
 
   goBack(): void {
-    this.router.navigate(['/member/cooperative/dashboard', uuidV4()]);
+    this.router.navigate(['/member/cooperative/dashboard', this.currentUuid]);
   }
 
   formatCurrency(amount: number): string {

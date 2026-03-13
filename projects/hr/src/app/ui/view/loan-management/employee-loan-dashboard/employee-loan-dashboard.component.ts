@@ -51,6 +51,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   cashReceiverName = '';
   payrollCycle = '';
   paymentFormError = '';
+  applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; date: string; message: string }> = [];
 
   historyColumns = [
     { header: 'Loan ID', field: 'id' },
@@ -112,6 +113,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.allLoans = this.sortLoansByRecent(employeeLoans);
         this.refreshPayableLoans();
         this.calculateLoanCounts();
+        this.refreshApplicationUpdates();
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
@@ -140,6 +142,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.allLoans = this.sortLoansByRecent(applications);
         this.refreshPayableLoans();
         this.calculateLoanCounts();
+        this.refreshApplicationUpdates();
         this.isLoading = false;
       },
       error: (error) => {
@@ -315,7 +318,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   getStatusClass(status: string): string {
     switch(status) {
       case 'PENDING': return 'pending';
-      case 'APPROVED': return 'active';
+      case 'APPROVED': return 'approved';
       case 'ACTIVE': return 'active';
       case 'REJECTED': return 'rejected';
       case 'COMPLETED': return 'completed';
@@ -413,5 +416,23 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.cashReceiverName = '';
     this.payrollCycle = '';
     this.paymentFormError = '';
+  }
+
+  private refreshApplicationUpdates(): void {
+    const updates = this.allLoans
+      .flatMap(loan =>
+        (loan.statusHistory || [])
+          .filter(item => item.status !== 'PENDING')
+          .map(item => ({
+            loanId: loan.id,
+            status: item.status,
+            date: item.date,
+            message: item.notes || `Loan ${loan.id} status updated to ${item.status}.`
+          }))
+      )
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
+    this.applicationUpdates = updates;
   }
 }

@@ -8,7 +8,7 @@ export interface departmentDTO {
   [key: string]: any;
 }
 
-export interface WelfareDTO {
+export interface AdvanceLoanDTO {
   id: number;
   user: userDTO;
   purpose: string;

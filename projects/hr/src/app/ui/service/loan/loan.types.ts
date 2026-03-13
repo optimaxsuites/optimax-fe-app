@@ -1,6 +1,7 @@
 // loan.types.ts
 export interface LoanApplication {
   approvedDate?: string;
+  disbursementDate?: string;
   startDate?: string;
   endDate?: string;
   submittedAt?: string;
@@ -52,6 +53,11 @@ export interface RepaymentScheduleItem {
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'SKIPPED';
   paymentDate?: string;
   paidAmount?: number;
+  paymentMethod?: string;
+  receiptNumber?: string;
+  reminderSentAt?: string;
+  lateFeeAmount?: number;
+  creditReportedAt?: string;
 }
 
 export interface PaymentRecord {

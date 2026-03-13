@@ -24,7 +24,7 @@ export interface CooperativeLoanDTO {
   employeeID: employeeDTO;
   department: departmentDTO;
   memberID: string;
-  productID: string;
+  groupID: string;
   amount: number;
   purpose: string;
   interestRate: number;

@@ -39,10 +39,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatPaginatorModule } from '@angular/material/paginator';
@@ -167,6 +167,7 @@ import { StatusTrackingComponent } from './ui/view/loan-management/status-tracki
 import { LoanComponent } from './ui/view/loan-management/loan.component';
 import { EmployeeRepaymentScheduleComponent } from './ui/view/loan-management/employee-repayment-schedule/employee-repayment-schedule.component';
 import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
+import { LoanDisbursementUiComponent } from './ui/view/loan-management/loan-disbursement-ui/loan-disbursement-ui.component';
 import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
 import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
 import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
@@ -178,7 +179,7 @@ import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
-import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
+import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
 import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
@@ -261,20 +262,14 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     StatsCardsComponent,
     HeatmapComponent,
     LateArrivalsComponent,
-    AttendancetableComponent,
-    AttendancefilterComponent,
-    AttendancesummaryComponent,
     AttendanceDetailsComponent,
     AttendanceSheetsComponent,
     OfficeHoursComponent,
     EmployeedashboardComponent,
     TodaySummaryComponent,
     CheckinCheckoutComponent,
-    EmployeesummaryComponent,
-    MonthlysummaryComponent,
     CorrectionrequestComponent,
     CorrectionrequestformComponent,
-    MonthlyattendancelistComponent,
     AdminCorrectionsComponent,
     ProjectComponent,
     ProjectDetailComponent,
@@ -299,6 +294,7 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     LoanComponent,
     EmployeeRepaymentScheduleComponent,
     LoanReportsComponent,
+    LoanDisbursementUiComponent,
     CooperativeDashboardComponent,
     CooperativeLoansComponent,
     CooperativeLoanDetailComponent,
@@ -309,7 +305,7 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
-    CooperativeLoanProductsComponent,
+    CooperativeLoanGroupsComponent,
     MainDashboardComponent,
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
@@ -364,8 +360,6 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     MatTooltipModule,
     MatButtonModule,
     MatDividerModule,
-    MatTooltip,
-    MatTabGroup,
     MatMenuModule,
     PasswordModule,
     ButtonModule,

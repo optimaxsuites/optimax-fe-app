@@ -3,10 +3,10 @@
     type="text"
     class="search-input"
     placeholder="Search..."
-    (input)="searchProducts(search.value)"
+    (input)="searchgroups(search.value)"
     #search
-    aria-label="Search Products"
+    aria-label="Search groups"
   />
-  <i class="fa-solid fa-search" (click)="searchProducts(search.value)"></i>
+  <i class="fa-solid fa-search" (click)="searchgroups(search.value)"></i>
   <i class="fa-solid fa-x" (click)="clearSearchText(search)"></i>
 </div>

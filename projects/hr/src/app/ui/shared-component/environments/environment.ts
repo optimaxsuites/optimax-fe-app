@@ -1,7 +1,7 @@
 
 
 export const environment = {
-    production: false,
+    groupion: false,
     baseUrl: "https://be.optimaxsuites.com",
     apiBaseUrl: "https://be.optimaxsuites.com",
     env: "development",

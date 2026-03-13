@@ -56,7 +56,13 @@ export class LoanApprovalService {
     switch(status) {
       case 'APPROVED':
         application.approvedDate = new Date().toISOString().split('T')[0];
-        application.startDate = new Date().toISOString().split('T')[0];
+        application.disbursementDate = undefined;
+        break;
+      case 'ACTIVE':
+        if (!application.startDate) {
+          application.startDate = new Date().toISOString().split('T')[0];
+        }
+        application.disbursementDate = new Date().toISOString().split('T')[0];
         application.repaymentSchedule = this.generateRepaymentSchedule(
           application.loanAmount,
           application.repaymentPeriod,
@@ -68,12 +74,9 @@ export class LoanApprovalService {
           : 0;
 
         application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
-        const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
-        application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
-        break;
-      case 'ACTIVE':
-        if (!application.startDate) {
-          application.startDate = new Date().toISOString().split('T')[0];
+        {
+          const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
+          application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
         }
         break;
       case 'COMPLETED':
@@ -190,10 +193,13 @@ export class LoanApprovalService {
     if (paymentMode === 'one_off') {
       const oneOffInterest = loanAmount * (interestRate / 100);
       const oneOffTotal = loanAmount + oneOffInterest;
+      const oneOffDueDate = new Date();
+      oneOffDueDate.setMonth(oneOffDueDate.getMonth() + 1);
+      oneOffDueDate.setDate(15);
 
       return [{
         monthNumber: 1,
-        dueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+        dueDate: oneOffDueDate.toISOString().split('T')[0],
         principal: parseFloat(loanAmount.toFixed(2)),
         interest: parseFloat(oneOffInterest.toFixed(2)),
         totalPayment: parseFloat(oneOffTotal.toFixed(2)),
@@ -224,6 +230,7 @@ export class LoanApprovalService {
 
       const dueDate = new Date();
       dueDate.setMonth(dueDate.getMonth() + month);
+      dueDate.setDate(15);
 
       schedule.push({
         monthNumber: month,

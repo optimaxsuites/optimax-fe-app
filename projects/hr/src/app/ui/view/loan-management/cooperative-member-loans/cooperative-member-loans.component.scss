@@ -38,12 +38,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
 }
 
 .page-header h1 {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
+  color: #2E6276;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  i {
+    color: #FFA500;
+  }
 }
 
 .page-header p {
@@ -107,23 +122,39 @@
 }
 
 .status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background-color: rgba(231, 222, 101, 0.2);
+  color: #8f8500;
+  border: 1px solid rgba(231, 222, 101, 0.3);
+}
+
+.status-approved {
+  background-color: rgba(46, 178, 112, 0.1);
+  color: #1e7e4a;
+  border: 1px solid rgba(46, 178, 112, 0.3);
+}
+
+.status-rejected {
+  background-color: rgba(233, 55, 55, 0.1);
+  color: #b30000;
+  border: 1px solid rgba(233, 55, 55, 0.3);
 }
 
 .status-active {
-  background: #dbeafe;
-  color: #1e40af;
+  background-color: rgba(46, 98, 118, 0.1);
+  color: #1e4a5a;
+  border: 1px solid rgba(46, 98, 118, 0.3);
 }
 
 .status-completed {
-  background: #dcfce7;
-  color: #166534;
+  background-color: rgba(128, 128, 128, 0.1);
+  color: #4d4d4d;
+  border: 1px solid rgba(128, 128, 128, 0.3);
 }
 
 .status-defaulted {
-  background: #fee2e2;
-  color: #991b1b;
+  background-color: rgba(233, 55, 55, 0.1);
+  color: #b30000;
+  border: 1px solid rgba(233, 55, 55, 0.3);
 }
 
 .view-btn {

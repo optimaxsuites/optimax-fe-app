@@ -80,17 +80,62 @@
         }
       }
     }
+
+    .lifecycle-table-wrap {
+      margin-top: 14px;
+
+      h4 {
+        margin: 0 0 8px;
+        color: #2E6276;
+        font-size: 0.95rem;
+      }
+
+      .lifecycle-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th,
+        td {
+          border: 1px solid #e3eef0;
+          padding: 8px;
+          font-size: 0.82rem;
+        }
+
+        th {
+          background: #f8feff;
+          color: #2E6276;
+          text-align: left;
+        }
+      }
+    }
   }
 
-  .loading-container {
+  .loading-state {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 400px;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #B6D6E2;
+      border-top: 3px solid #2E6276;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
     
     p {
       color: #2E6276;
       font-size: 1.2rem;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
     }
   }
 
@@ -207,6 +252,12 @@
         &:hover {
           background: #4291b1;
           transform: translateY(-2px);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
         }
 
         &.active-filter {
@@ -563,9 +614,9 @@
         }
 
         &.status-approved {
-          background-color: rgba(46, 178, 112, 0.1);
-          color: #1e7e4a;
-          border: 1px solid rgba(46, 178, 112, 0.3);
+          background-color: rgba(255, 165, 0, 0.16);
+          color: #b86200;
+          border: 1px solid rgba(255, 165, 0, 0.35);
         }
 
         &.status-rejected {
@@ -575,15 +626,15 @@
         }
 
         &.status-active {
-          background-color: rgba(46, 98, 118, 0.1);
-          color: #1e4a5a;
-          border: 1px solid rgba(46, 98, 118, 0.3);
+          background-color: rgba(56, 189, 248, 0.16);
+          color: #1e4a8f;
+          border: 1px solid rgba(56, 189, 248, 0.35);
         }
 
         &.status-completed {
-          background-color: rgba(128, 128, 128, 0.1);
-          color: #4d4d4d;
-          border: 1px solid rgba(128, 128, 128, 0.3);
+          background-color: rgba(46, 178, 112, 0.1);
+          color: #1e7e4a;
+          border: 1px solid rgba(46, 178, 112, 0.3);
         }
       }
 

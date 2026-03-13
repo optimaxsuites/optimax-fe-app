@@ -1,6 +1,6 @@
 <div class="application-container" [class.modal-mode]="isModal">
   <div class="application-header lm-header-card" *ngIf="!isModal">
-    <h1><i class="fas fa-file-invoice"></i> Apply for Loan</h1>
+    <h1><i class="fas fa-file-invoice"></i> Apply to Loan Group</h1>
   </div>
 
   <div class="compact-intro" *ngIf="isModal">
@@ -15,48 +15,54 @@
   <form id="cooperativeLoanForm" [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="application-form">
     <div class="form-layout">
       <div class="form-section">
-        <h2>Member</h2>
-        <div class="form-group">
-          <label>Member <span class="required">*</span></label>
-          <select formControlName="memberId" [disabled]="eligibleMembers.length === 0">
-            <option value="">-- Select a member --</option>
-            <option *ngFor="let member of eligibleMembers" [value]="member.id">
-              {{ member.fullName }} ({{ member.memberId }})
-            </option>
-          </select>
-          <div class="eligibility-note blocked" *ngIf="eligibleMembers.length === 0">
-            No rank-eligible members available for cooperative loan application.
-          </div>
-          <div class="value-note" *ngIf="selectedMember">
-            Available shares: {{ formatCurrency(selectedMember.shareCapital) }}
-          </div>
-          <div class="eligibility-note" *ngIf="selectedMemberEligibility as eligibility" [class.blocked]="!eligibility.canApply">
-            <strong>Rank check ({{ eligibility.rank }}):</strong>
-            {{ eligibility.message }}
-          </div>
-          <div class="error" *ngIf="applicationForm.get('memberId')?.invalid && applicationForm.get('memberId')?.touched">
-            Please select a member
-          </div>
+        <h2>Applicant</h2>
+        <div class="fixed-member-box" *ngIf="selectedMember">
+          <p><strong>Applicant:</strong> {{ selectedMember.fullName }} ({{ selectedMember.memberId }})</p>
+          <p><strong>Email:</strong> {{ selectedMember.email }}</p>
+          <p><strong>Available shares:</strong> {{ formatCurrency(selectedMember.shareCapital) }}</p>
+          <p><strong>Membership tenure:</strong> {{ getMemberTenureMonths(selectedMember.id) }} month(s)</p>
         </div>
-      </div>
-
-      <div class="form-section">
-        <h2>Loan Product</h2>
-        <div class="form-group">
-          <label>Product <span class="required">*</span></label>
-          <select formControlName="productId">
-            <option value="">-- Select a product --</option>
-            <option *ngFor="let product of products" [value]="product.id">
-              {{ product.name }}
-            </option>
-          </select>
+        <div class="eligibility-note" *ngIf="selectedMemberEligibility as eligibility" [class.blocked]="!eligibility.canApply">
+          <strong>Rank check ({{ eligibility.rank }}):</strong>
+          {{ eligibility.message }}
+        </div>
+        <div class="eligibility-note blocked" *ngIf="!selectedMember">
+          Select a member to view eligible loan groups.
         </div>
 
-        <div class="product-info" *ngIf="selectedProduct">
-          <p><strong>Description:</strong> {{ selectedProduct.description }}</p>
-          <div class="product-details">
-            <span><strong>Terms:</strong> {{ formatCurrency(selectedProduct.minAmount) }} - {{ formatCurrency(selectedProduct.maxAmount) }} | {{ selectedProduct.minDuration }}-{{ selectedProduct.maxDuration }} months</span>
-            <span><strong>Interest:</strong> {{ selectedProduct.interestRate }}%</span>
+        <div class="form-group">
+          <label>Group <span class="required">*</span></label>
+          <select formControlName="groupId" [disabled]="!selectedMember || qualifiedGroups.length === 0">
+            <option value="">-- Select a group --</option>
+            <option *ngFor="let group of qualifiedGroups" [value]="group.id">
+              {{ group.name }}
+            </option>
+          </select>
+          <div class="eligibility-note blocked" *ngIf="selectedMember && qualifiedGroups.length === 0">
+            No loan groups available for this member's salary/tenure profile.
+          </div>
+        </div>
+
+        <div class="group-info" *ngIf="selectedGroup">
+          <p><strong>Description:</strong> {{ selectedGroup.description }}</p>
+          <div class="group-details">
+            <span><strong>Terms:</strong> {{ formatCurrency(selectedGroup.minAmount) }} - {{ formatCurrency(selectedGroup.maxAmount) }} | {{ selectedGroup.minDuration }}-{{ selectedGroup.maxDuration }} months</span>
+            <span><strong>Interest:</strong> {{ selectedGroup.interestRate }}%</span>
+            <span><strong>Min tenure:</strong> {{ selectedGroup.minMemberTenureMonths }} month(s)</span>
+            <span><strong>Monthly contribution:</strong> {{ formatCurrency(selectedGroup.monthlyContributionAmount) }}</span>
+            <span><strong>Max borrowing:</strong> {{ selectedGroup.maxBorrowingPercentage }}% of contribution</span>
+            <span><strong>Guarantors:</strong> {{ selectedGroup.requiresGuarantors ? selectedGroup.minimumGuarantors : 0 }}</span>
+          </div>
+
+          <div class="group-details">
+            <span><strong>Joined group:</strong> {{ isSelectedGroupJoined ? 'YES' : 'NO' }}</span>
+            <span><strong>Max borrowable now:</strong> {{ formatCurrency(maxBorrowableAmount) }}</span>
+          </div>
+
+          <div class="group-details" *ngIf="!isSelectedGroupJoined">
+            <button type="button" class="apply-btn" (click)="applyToSelectedGroup()" [disabled]="!canApplyToSelectedGroup">
+              Apply To Join Group
+            </button>
           </div>
         </div>
       </div>
@@ -68,13 +74,13 @@
           <div class="form-group">
             <label>Amount (₦) <span class="required">*</span></label>
             <input type="number" formControlName="amount" placeholder="e.g., 100000">
-            <div class="value-note" *ngIf="selectedProduct">
-              Min: {{ formatCurrency(selectedProduct.minAmount) }} | Max: {{ formatCurrency(selectedProduct.maxAmount) }}
+            <div class="value-note" *ngIf="selectedGroup">
+              Min: {{ formatCurrency(selectedGroup.minAmount) }} | Max: {{ formatCurrency(selectedGroup.maxAmount) }}
             </div>
             <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
               <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Amount is required</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum is {{ formatCurrency(selectedProduct?.minAmount || 0) }}</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum is {{ formatCurrency(selectedProduct?.maxAmount || 0) }}</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum is {{ formatCurrency(selectedGroup?.minAmount || 0) }}</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum is {{ formatCurrency(selectedGroup?.maxAmount || 0) }}</span>
               <span *ngIf="applicationForm.get('amount')?.errors?.['shareLimit']">For share-backed loans, amount cannot exceed member share capital.</span>
             </div>
           </div>
@@ -84,8 +90,8 @@
             <input type="number" formControlName="duration" placeholder="e.g., 12">
             <div class="error" *ngIf="applicationForm.get('duration')?.invalid && applicationForm.get('duration')?.touched">
               <span *ngIf="applicationForm.get('duration')?.errors?.['required']">Duration is required</span>
-              <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedProduct?.minDuration }} months</span>
-              <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedProduct?.maxDuration }} months</span>
+              <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedGroup?.minDuration }} months</span>
+              <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedGroup?.maxDuration }} months</span>
             </div>
           </div>
         </div>
@@ -98,13 +104,13 @@
 
       <div class="form-section">
         <h2>Collateral</h2>
-        <div class="collateral-box" *ngIf="selectedProduct?.requiresShares || selectedMember">
+        <div class="collateral-box" *ngIf="selectedGroup?.requiresShares || selectedMember">
           <div class="checkbox-group">
-            <input type="checkbox" id="useSharesAsCollateral" formControlName="useSharesAsCollateral" [disabled]="!!selectedProduct?.requiresShares">
+            <input type="checkbox" id="useSharesAsCollateral" formControlName="useSharesAsCollateral" [disabled]="!!selectedGroup?.requiresShares">
             <label for="useSharesAsCollateral">Use shares as collateral?</label>
           </div>
 
-          <div class="form-group" *ngIf="applicationForm.get('useSharesAsCollateral')?.value || selectedProduct?.requiresShares">
+          <div class="form-group" *ngIf="applicationForm.get('useSharesAsCollateral')?.value || selectedGroup?.requiresShares">
             <label>Amount to pledge (₦)</label>
             <input type="number" formControlName="pledgedSharesAmount" placeholder="e.g., 100000">
             <div class="value-note" *ngIf="selectedMember">
@@ -116,6 +122,40 @@
               <span *ngIf="applicationForm.get('pledgedSharesAmount')?.errors?.['overAmount']">Pledged amount cannot exceed loan amount.</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="form-section" *ngIf="selectedGroup?.requiresGuarantors">
+        <h2>Guarantors</h2>
+        <p class="ack-note">Add at least {{ requiredGuarantorCount }} guarantor(s). Each guarantor will receive a pending approval request.</p>
+
+        <div formArrayName="guarantors" class="guarantor-grid">
+          <div class="guarantor-row" *ngFor="let guarantor of guarantorsArray.controls; let i = index" [formGroupName]="i">
+            <select formControlName="memberId">
+              <option value="">Select guarantor</option>
+              <option *ngFor="let candidate of guarantorCandidates" [value]="candidate.id">
+                {{ candidate.fullName }} ({{ candidate.memberId }})
+              </option>
+            </select>
+            <input type="number" formControlName="guaranteedAmount" placeholder="Guaranteed amount" min="1" />
+            <span class="pending-chip">Pending</span>
+            <button type="button" class="remove-mini" (click)="removeGuarantor(i)" [disabled]="guarantorsArray.length <= requiredGuarantorCount">Remove</button>
+          </div>
+        </div>
+
+        <button type="button" class="add-mini" (click)="addGuarantor()">Add Guarantor</button>
+        <div class="value-note">Total guaranteed: {{ formatCurrency(totalGuaranteedAmount) }}</div>
+        <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['minimumGuarantors']">
+          Minimum guarantors not met.
+        </div>
+        <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['duplicateGuarantor']">
+          Duplicate guarantors are not allowed.
+        </div>
+        <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['selfGuarantee']">
+          Borrowing member cannot be selected as guarantor.
+        </div>
+        <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['insufficientCoverage']">
+          Guaranteed total must cover the loan amount.
         </div>
       </div>
 
@@ -135,6 +175,13 @@
               <span class="label">Total repayment</span>
               <span class="value">{{ formatCurrency(totalRepayment) }}</span>
             </div>
+          </div>
+
+          <div class="patronage-preview" *ngIf="selectedGroup">
+            <span><strong>Patronage eligibility:</strong> {{ selectedGroup.patronageEligible ? 'YES' : 'NO' }}</span>
+            <span *ngIf="selectedGroup.patronageEligible">
+              {{ selectedGroup.patronageRate }}% refund estimate: {{ formatCurrency(estimatedAnnualPatronageRefund) }}/year
+            </span>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
-import { LoanApplication } from '../../../service/loan/loan.types';
+import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 
 interface LoanDashboardAlert {
@@ -136,7 +136,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ).length;
     
     this.dashboardStats.activeLoans = this.allLoans.filter(loan => 
-      loan.status === 'ACTIVE' || loan.status === 'APPROVED'
+      loan.status === 'ACTIVE'
     ).length;
     
     this.dashboardStats.totalBalance = this.allLoans.reduce((total, loan) => {
@@ -151,7 +151,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (this.activeFilter === 'PENDING') {
       filtered = filtered.filter(loan => loan.status === 'PENDING');
     } else if (this.activeFilter === 'ACTIVE') {
-      filtered = filtered.filter(loan => loan.status === 'ACTIVE' || loan.status === 'APPROVED');
+      filtered = filtered.filter(loan => loan.status === 'ACTIVE');
     }
     
     // Apply search filter if exists
@@ -193,7 +193,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (availableFund < 1000000 || pendingExposure > availableFund) {
       nextAlerts.push({
         level: 'warning',
-        message: `Low welfare fund buffer detected (est. available: ₦${availableFund.toLocaleString()}). Prioritize disbursements and approvals.`
+        message: `Low advance loan fund buffer detected (est. available: ₦${availableFund.toLocaleString()}). Prioritize disbursements and approvals.`
       });
     }
 
@@ -411,7 +411,14 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.applyFilter();
   }
 
-  manageEmployeeWelfare(): void {
+  openDisbursementCenter(loanId?: string): void {
+    const queryParams = loanId ? { loanId } : undefined;
+    this.router.navigate(['/admin/hr/loan-management/loan-disbursement', uuidV4()], {
+      queryParams
+    });
+  }
+
+  manageEmployeeAdvanceLoans(): void {
     this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
 
@@ -461,6 +468,57 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.selectedLoan = null;
   }
 
+  getOverdueInstallmentsCount(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).filter(item => item.status === 'OVERDUE').length;
+  }
+
+  getReminderSentCount(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).filter(item => !!item.reminderSentAt).length;
+  }
+
+  getCreditReportedCount(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).filter(item => !!item.creditReportedAt).length;
+  }
+
+  getLateFeesTotal(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).reduce((sum, item) => sum + Number(item.lateFeeAmount || 0), 0);
+  }
+
+  getLifecycleInstallmentsPreview(loan: LoanApplication): RepaymentScheduleItem[] {
+    return [...(loan.repaymentSchedule || [])]
+      .sort((a, b) => a.monthNumber - b.monthNumber)
+      .slice(0, 6);
+  }
+
+  getInstallmentLifecycleLabel(item: RepaymentScheduleItem): string {
+    if (item.status === 'PAID') {
+      return 'Paid';
+    }
+
+    if (item.status === 'OVERDUE') {
+      return `Overdue (${this.getOverdueDays(item)}d)`;
+    }
+
+    if (item.reminderSentAt) {
+      return 'Grace Reminder Sent';
+    }
+
+    return 'Upcoming';
+  }
+
+  private getOverdueDays(item: RepaymentScheduleItem): number {
+    if (item.status !== 'OVERDUE') {
+      return 0;
+    }
+
+    const dueDate = new Date(item.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return Math.max(Math.floor((today.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)), 0);
+  }
+
   openApprovalForm(loan: LoanApplication): void {
     this.closeLoanDetailsModal();
     this.router.navigate(['/admin/hr/loan-management/loan-details', loan.id, uuidV4()], {
@@ -500,6 +558,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
+  }
+
+  get approvedLoansCount(): number {
+    return this.allLoans.filter(loan => loan.status === 'APPROVED').length;
   }
 }
 

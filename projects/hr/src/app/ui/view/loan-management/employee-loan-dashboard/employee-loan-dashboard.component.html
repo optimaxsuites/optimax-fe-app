@@ -86,9 +86,9 @@
   </app-side-modal>
 
   <!-- Loading State -->
-  <div class="loading-container" *ngIf="isLoading">
-    <div class="loading-spinner"></div>
-    <p>Loading your loan dashboard...</p>
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading your dashboard...</p>
   </div>
 
   <div *ngIf="!isLoading" class="dashboard-content">
@@ -116,9 +116,27 @@
         Loan History
       </button>
       <button class="quick-action-btn" (click)="viewDetailedHistory()">
-        <i class="fas fa-history"></i>
+        <i class="fas fa-list"></i>
         Full History
       </button>
+    </div>
+
+    <div class="card status-updates-card" *ngIf="applicationUpdates.length > 0">
+      <div class="card-header">
+        <h2><i class="fas fa-bell"></i> Application Status Updates</h2>
+        <span class="history-subtitle">Latest updates on your requests</span>
+      </div>
+
+      <div class="updates-list">
+        <div class="update-item" *ngFor="let update of applicationUpdates">
+          <div class="update-topline">
+            <span class="loan-code">{{ update.loanId }}</span>
+            <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
+          </div>
+          <p>{{ update.message }}</p>
+          <span class="time">{{ update.date | date:'medium' }}</span>
+        </div>
+      </div>
     </div>
 
     <div class="stats-grid">
@@ -139,14 +157,14 @@
       <div class="stat-card">
         <div class="stat-icon rejected-icon"><i class="fas fa-ban"></i></div>
         <div class="stat-content">
-          <span class="stat-label">Rejected</span>
+          <span class="stat-label">Rejected Applications</span>
           <span class="stat-value">{{ loanCounts.rejected }}</span>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon completed-icon"><i class="fas fa-flag-checkered"></i></div>
         <div class="stat-content">
-          <span class="stat-label">Completed</span>
+          <span class="stat-label">Completed Payments</span>
           <span class="stat-value">{{ loanCounts.completed }}</span>
           <span class="stat-sub">Total requests: {{ getTotalRequests() }}</span>
         </div>

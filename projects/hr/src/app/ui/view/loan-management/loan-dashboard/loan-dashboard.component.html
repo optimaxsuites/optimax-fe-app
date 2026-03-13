@@ -12,7 +12,37 @@
                 <div class="detail-item"><span class="label">Interest Rate</span><span class="value">{{ loan.interestRate || 0 }}%</span></div>
                 <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span></div>
                 <div class="detail-item"><span class="label">Outstanding</span><span class="value">{{ formatCurrency(loan.currentBalance) }}</span></div>
+                <div class="detail-item"><span class="label">Overdue Installments</span><span class="value">{{ getOverdueInstallmentsCount(loan) }}</span></div>
+                <div class="detail-item"><span class="label">Grace Reminders</span><span class="value">{{ getReminderSentCount(loan) }}</span></div>
+                <div class="detail-item"><span class="label">Late Fees</span><span class="value">{{ formatCurrency(getLateFeesTotal(loan)) }}</span></div>
+                <div class="detail-item"><span class="label">Credit Flags</span><span class="value">{{ getCreditReportedCount(loan) }}</span></div>
                 <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
+            </div>
+
+            <div class="lifecycle-table-wrap" *ngIf="loan.repaymentSchedule?.length">
+                <h4>Repayment Lifecycle (First 6 Installments)</h4>
+                <table appSortableTable class="lifecycle-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Due Date</th>
+                            <th>Due Amount</th>
+                            <th>Late Fee</th>
+                            <th>Lifecycle</th>
+                            <th>Credit Report</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of getLifecycleInstallmentsPreview(loan)">
+                            <td>{{ item.monthNumber }}</td>
+                            <td>{{ item.dueDate | date:'mediumDate' }}</td>
+                            <td>{{ formatCurrency(item.totalPayment) }}</td>
+                            <td>{{ formatCurrency(item.lateFeeAmount || 0) }}</td>
+                            <td>{{ getInstallmentLifecycleLabel(item) }}</td>
+                            <td>{{ item.creditReportedAt ? 'Reported' : 'Not Reported' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div class="modal-actions" *ngIf="loan.status === 'PENDING'">
@@ -24,9 +54,10 @@
         </div>
     </app-modal>
 
-    <!-- Loading state -->
-    <div *ngIf="isLoading" class="loading-container">
-        <p>Loading dashboard...</p>
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your dashboard...</p>
     </div>
 
     <div *ngIf="!isLoading">
@@ -51,33 +82,14 @@
         <section class="quick-actions">
             <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
             <div class="action-buttons">
-                <button 
-                    class="btn-primary" 
-                    [class.active-filter]="activeFilter === 'PENDING'"
-                    (click)="showPendingLoans()">
-                    <i class="fas fa-hourglass-half"></i>
-                    Pending Approvals
-                </button>
-                
-                <button 
-                    class="btn-primary" 
-                    [class.active-filter]="activeFilter === 'ACTIVE'"
-                    (click)="showActiveLoans()">
-                    <i class="fas fa-check-circle"></i>
-                    Active Loans
-                </button>
-                
-                <button 
-                    class="btn-primary" 
-                    [class.active-filter]="activeFilter === 'ALL'"
-                    (click)="showAllLoans()">
-                    <i class="fas fa-list"></i>
-                    All Loans
+                <button class="btn-primary" (click)="manageEmployeeAdvanceLoans()">
+                    <i class="fas fa-clipboard"></i>
+                    Manage Advance Loans
                 </button>
 
-                <button class="btn-primary" (click)="manageEmployeeWelfare()">
-                    <i class="fas fa-clipboard"></i>
-                    Manage Welfare
+                <button class="btn-primary" (click)="openDisbursementCenter()" [disabled]="approvedLoansCount === 0">
+                    <i class="pi pi-wallet"></i>
+                    Disburse Loans
                 </button>
 
                 <button class="btn-primary" (click)="generateReports()">
@@ -179,6 +191,13 @@
                                 <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
                                 <td class="actions-col">
                                     <div class="action-buttons">
+                                        <button class="btn-view"
+                                                *ngIf="loan.status === 'APPROVED'"
+                                            (click)="openDisbursementCenter(loan.id)"
+                                                title="Disburse"
+                                                aria-label="Disburse">
+                                            <i class="fas fa-money-check-alt"></i>
+                                        </button>
                                         <button class="btn-view" 
                                                 (click)="viewLoanDetails(loan.id)"
                                                 title="View"

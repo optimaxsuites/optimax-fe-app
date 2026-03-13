@@ -78,7 +78,7 @@ export class AddEmployeeFormComponent {
     "Legal",
     "Procurement",
     "Administration",
-    "Product Development",
+    "group Development",
     "Research & Development",
     "Quality Assurance",
     "Public Relations",

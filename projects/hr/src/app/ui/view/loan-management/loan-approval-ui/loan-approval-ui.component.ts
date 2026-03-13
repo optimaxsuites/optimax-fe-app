@@ -194,6 +194,11 @@ export class LoanApprovalUiComponent implements OnInit {
     this.applyFilters();
   }
 
+  applyStatusFromCard(status: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED'): void {
+    this.filters.status = status;
+    this.applyFilters();
+  }
+
   // NEW: Sorting method
   sortData(data: LoanApplication[]): LoanApplication[] {
     return [...data].sort((a, b) => {
@@ -257,8 +262,21 @@ export class LoanApprovalUiComponent implements OnInit {
       case 'APPROVED': return 'status-approved';
       case 'PENDING': return 'status-pending';
       case 'REJECTED': return 'status-rejected';
+      case 'ACTIVE': return 'status-active';
+      case 'COMPLETED': return 'status-completed';
       default: return 'status-default';
     }
+  }
+
+  get statusCounts() {
+    return {
+      pending: this.loanApplications.filter(loan => loan.status === 'PENDING').length,
+      approved: this.loanApplications.filter(loan => loan.status === 'APPROVED').length,
+      rejected: this.loanApplications.filter(loan => loan.status === 'REJECTED').length,
+      active: this.loanApplications.filter(loan => loan.status === 'ACTIVE').length,
+      completed: this.loanApplications.filter(loan => loan.status === 'COMPLETED').length,
+      total: this.loanApplications.length
+    };
   }
 
   // Get sort icon class

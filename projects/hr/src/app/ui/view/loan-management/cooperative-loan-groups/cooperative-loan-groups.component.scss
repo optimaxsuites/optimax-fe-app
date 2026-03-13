@@ -1,9 +1,9 @@
-.products-container {
+.groups-container {
   padding: 24px;
   min-height: 100vh;
   background: #f8feff;
 
-  .products-header {
+  .groups-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,14 +46,14 @@
     }
   }
 
-  .product-card {
+  .group-card {
     background: #fff;
     border: 1px solid #e3eef0;
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 14px;
 
-    .product-card-header {
+    .group-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -112,6 +112,33 @@
     }
   }
 
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+
+    .summary-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+      h2 {
+        margin: 0;
+        font-size: 1rem;
+        color: #2E6276;
+      }
+
+      span {
+        color: #5b6670;
+        font-size: 0.84rem;
+      }
+    }
+
+  }
+
   .overlay {
     position: fixed;
     inset: 0;
@@ -127,12 +154,56 @@
       border-radius: 10px;
       padding: 18px;
 
+      &.details-modal {
+        width: min(860px, 96vw);
+
+        .details-grid {
+          margin-top: 12px;
+        }
+
+        .detail-row {
+          background: #f6fbfc;
+          border: 1px solid #e3eef0;
+          border-radius: 6px;
+          padding: 8px 10px;
+          color: #2f3b45;
+          font-size: 0.9rem;
+        }
+
+        .member-list {
+          margin-top: 14px;
+
+          h4 {
+            margin: 0 0 8px;
+            color: #2E6276;
+          }
+
+          p {
+            margin: 0;
+            color: #5b6670;
+          }
+
+          .member-row {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr;
+            gap: 10px;
+            background: #f9fcfd;
+            border: 1px solid #e3eef0;
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            color: #2f3b45;
+          }
+        }
+      }
+
       h3 {
         margin: 0 0 12px;
         color: #2E6276;
       }
 
-      .product-form {
+      .group-form {
         .form-group {
           margin-bottom: 10px;
 
@@ -194,16 +265,20 @@
 }
 
 @media (max-width: 768px) {
-  .products-container {
+  .groups-container {
     padding: 16px;
 
-    .products-header {
+    .groups-header {
       flex-direction: column;
       align-items: flex-start;
       gap: 10px;
     }
 
-    .overlay .form-modal .product-form .form-grid {
+    .overlay .form-modal .group-form .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .overlay .form-modal.details-modal .member-list .member-row {
       grid-template-columns: 1fr;
     }
   }

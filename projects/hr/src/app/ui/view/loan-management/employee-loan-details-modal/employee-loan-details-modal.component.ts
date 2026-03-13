@@ -75,6 +75,7 @@ export class EmployeeLoanDetailsModalComponent {
   getStatusClass(status: string | undefined): string {
     switch (status) {
       case 'APPROVED':
+        return 'status-approved';
       case 'ACTIVE':
         return 'status-active';
       case 'PENDING':
