@@ -38,6 +38,7 @@ import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
+import { VendorProfileFormComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 
 const routes: Routes = [
   {
@@ -234,6 +235,10 @@ const routes: Routes = [
   {
     path: 'subscription/:id',
     component: PaymentComponent
+  },
+
+  {
+    path: 'vendor-profile-creation', component: VendorProfileFormComponent
   },
 
   {
