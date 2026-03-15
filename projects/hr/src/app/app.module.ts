@@ -191,6 +191,7 @@ import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/em
 import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
 // import { QueryComponent } from './ui/view/query/query.component';
 import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
+import { JopOpeningsComponent } from './ui/view/recruitment/job-opening/jop.openings.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -317,6 +318,7 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     AttendancetableComponent,
     AttendancefilterComponent,
     AttendancesummaryComponent,
+    JopOpeningsComponent
   ],
   imports: [
     // BrowserModule,

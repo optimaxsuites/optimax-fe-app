@@ -215,7 +215,7 @@ import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-li
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEmployeeFormComponent } from './ui/hr/view/employee/add-employee-form/add-employee-form.component';
-import { JopOpeningsComponent } from './jop.openings.component';
+// import { JopOpeningsComponent } from './jop.openings.component';
 import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/hr/view/interview/scheduled-interview/appointment-letter/appointment-letter.component';
 import { EmployeesComponent } from './ui/hr/view/employee/employees/employees.component';
@@ -471,7 +471,7 @@ const dbConfig: DBConfig = {
     EmployeesComponent,
     EmployeeManagementComponent,
     AddEmployeeFormComponent,
-    JopOpeningsComponent,
+    // JopOpeningsComponent,
     OfferLetterComponent,
     AppointmentLetterComponent,
     NotificationComponent,

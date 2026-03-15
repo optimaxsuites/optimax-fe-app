@@ -1,0 +1,60 @@
+<!-- <router-outlet></router-outlet> -->
+<div class="career-container">
+  <header class="career-header text-center py-10 bg-gray-50">
+    <h1 class="text-4xl font-bold text-gray-800">Join Our Team</h1>
+    <p class="text-gray-600 mt-2">Help us build the future of civic innovation.</p>
+  </header>
+
+  <div class="filters-wrapper max-w-6xl mx-auto px-4 my-8 flex gap-4">
+    <input type="text" placeholder="Search roles..." class="search-input" (input)="filterJobs($event)">
+    <ng-select [items]="jobCategories" bindLabel="name" placeholder="Category" class="filter-select" (change)="filterJobs($event)"></ng-select>
+  </div>
+
+  <div class="job-list max-w-6xl mx-auto px-4 space-y-4">
+    <div *ngFor="let job of filteredVacancies" class="job-card p-6 border rounded-xl shadow-sm hover:shadow-md transition-all flex justify-between items-center bg-white">
+      <div>
+        <h3 class="text-xl font-bold text-customBlue">{{ job.jobTitle }}</h3>
+        <div class="flex gap-3 text-sm text-gray-500 mt-2">
+          <span><i class="fas fa-briefcase me-1"></i> {{ job.jobType?.name }}</span>
+          <span><i class="fas fa-location-dot me-1"></i> {{ job.location }}</span>
+          <span><i class="fas fa-clock me-1"></i> Posted {{ job.jobPostedDate | date }}</span>
+        </div>
+      </div>
+      <button class="btn-apply px-6 py-2 bg-customBlue text-white rounded-lg font-semibold" (click)="openApplyModal(job)">
+        View & Apply
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-side-modal *ngIf="showApplyModal" (close)="showApplyModal = false">
+  <div class="p-6">
+    <h2 class="text-2xl font-bold">{{ selectedJob?.jobTitle }}</h2>
+    <p class="text-gray-500 mb-4">{{ selectedJob?.location }} | {{ selectedJob?.jobType?.name }}</p>
+    
+    <hr class="my-4">
+    
+    <div class="job-description mb-6" [innerHTML]="selectedJob?.companyOverview"></div>
+
+    <h3 class="font-bold text-lg mb-3">Apply for this position</h3>
+    <form class="space-y-4" (ngSubmit)="submitApplication()">
+      <div>
+        <label>Full Name *</label>
+        <input type="text" class="editInput w-full" [(ngModel)]="application.fullName" name="fullName" required>
+      </div>
+      <div>
+        <label>Email Address *</label>
+        <input type="email" class="editInput w-full" [(ngModel)]="application.email" name="email" required>
+      </div>
+      
+      <div *ngFor="let field of selectedJob?.jobVacancyCustomFields">
+        <label>{{ field.label }} {{ field.required ? '*' : '' }}</label>
+        <input [type]="field.type" class="editInput w-full" [(ngModel)]="application.customData[field.label]" [name]="field.label" [required]="field.required">
+      </div>
+
+      <div class="pt-4">
+        <button type="submit" class="btn-navigate w-full">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</app-side-modal>

@@ -25,7 +25,7 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 // import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 // import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { AuthGuard } from './ui/auth/service/auth.guard';
-import { JopOpeningsComponent } from './jop.openings.component';
+// import { JopOpeningsComponent } from './jop.openings.component';
 import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
 import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
@@ -37,6 +37,7 @@ import { TenantsComponent } from './ui/tenants/tenants.component';
 import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
+import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
 
 const routes: Routes = [
   {
@@ -242,6 +243,7 @@ const routes: Routes = [
       {
         path:'job-posting',
         component: CareerJobPostingComponent,
+        // canActivateChild: [ChildUuidGuard]
       },
       {
         path: 'job-posting/:id',
@@ -249,10 +251,10 @@ const routes: Routes = [
       }   
     ]
   },
-  {
-    path: 'job-application',
-    component: JopOpeningsComponent, 
-  },
+  // {
+  //   path: 'job-application',
+  //   component: JopOpeningsComponent, 
+  // },
   {
     path:'unauthorized',
     component: UnauthourizedComponent
