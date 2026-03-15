@@ -242,19 +242,19 @@ const routes: Routes = [
   },
 
   {
-    path: 'career',
+    path: 'careers',
     component: JopOpeningsComponent, 
-    children:[
-      {
-        path:'job-posting',
-        component: CareerJobPostingComponent,
-        // canActivateChild: [ChildUuidGuard]
-      },
-      {
-        path: 'job-posting/:id',
-        component: JobApplicationFormComponent,
-      }   
-    ]
+    // children:[
+    //   {
+    //     path:'job-posting',
+    //     component: CareerJobPostingComponent,
+    //     // canActivateChild: [ChildUuidGuard]
+    //   },
+    //   {
+    //     path: 'job-posting/:id',
+    //     component: JobApplicationFormComponent,
+    //   }   
+    // ]
   },
   // {
   //   path: 'job-application',
