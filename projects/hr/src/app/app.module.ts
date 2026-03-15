@@ -192,6 +192,12 @@ import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeed
 // import { QueryComponent } from './ui/view/query/query.component';
 import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
 import { JopOpeningsComponent } from './ui/view/recruitment/job-opening/jop.openings.component';
+import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
+import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
+import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
+import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
+import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -318,8 +324,14 @@ import { JopOpeningsComponent } from './ui/view/recruitment/job-opening/jop.open
     AttendancetableComponent,
     AttendancefilterComponent,
     AttendancesummaryComponent,
-    JopOpeningsComponent
+    JopOpeningsComponent,
+    WorkscheduleShiftsComponent,
+    ShiftListComponent,
+    ShiftFormComponent,
+    ShiftAssignmentComponent,
+    ShiftCalendarComponent,
   ],
+
   imports: [
     // BrowserModule,
     // BrowserAnimationsModule,

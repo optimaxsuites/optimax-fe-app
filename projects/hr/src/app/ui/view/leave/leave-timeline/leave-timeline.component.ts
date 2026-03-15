@@ -155,7 +155,7 @@ export class LeaveTimelineComponent implements OnInit {
       });
     }
     
-    console.log('📆 Generated', this.timelineDays.length, 'days for', this.getMonthYearLabel());
+    console.log(' Generated', this.timelineDays.length, 'days for', this.getMonthYearLabel());
   }
 
   buildDepartmentGroups() {

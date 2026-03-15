@@ -37,6 +37,7 @@ import { CooperativeMemberLoansComponent } from './ui/view/loan-management/coope
 // import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
+import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 
 const routes: Routes = [
   {
@@ -46,6 +47,10 @@ const routes: Routes = [
   {
     path: 'guarantor/confirm/:token/:uuid',
     component: GuarantorConfirmationComponent,
+  },
+  {
+    path: 'workschedule-shifts/:uuid',
+    component: WorkscheduleShiftsComponent,
   },
   {
     path: 'guarantor/confirm/:token',
@@ -58,7 +63,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'leave/uu',
+    redirectTo: 'workschedule-shifts/uu',
     pathMatch: 'full',
   },
   // {

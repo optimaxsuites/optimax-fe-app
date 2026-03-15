@@ -27,27 +27,27 @@ export class LeaveComponent {
 { 
   name: 'Leave Plan', 
   component: LeavePlanComponent, 
-  icon: 'fa fa-calendar-check' 
+  icon: 'fa fa-calendar-plus'   // planning future leave
 },
 { 
   name: 'Plan Dashboard', 
   component: LeaveTimelineComponent, 
- icon: 'fa fa-chart-line' 
+  icon: 'fa fa-calendar-alt'    // timeline / overview
 },
-// { 
-//   name: 'Leave Planning Dashboard', 
-//   component: LeavePlanningDashboardComponent, 
-//   icon: 'fa fa-chart-line' 
-// },
+{ 
+  name: 'Plan Requests', 
+  component: LeavePlanningDashboardComponent, 
+  icon: 'fa fa-tasks'           // requests awaiting action
+},
 { 
   name: 'My Leave', 
   component: LeaveUsageComponent, 
-  icon: 'fa fa-chart-pie' 
+  icon: 'fa fa-user-clock'      // personal leave tracking
 },
 { 
   name: 'Leave Requests', 
   component: LeaveRequestComponent, 
-  icon: 'fa fa-file-alt' 
+  icon: 'fa fa-envelope-open-text' // submitted requests
 },
 // { 
 //   name: 'Assign Leave', 
@@ -57,7 +57,7 @@ export class LeaveComponent {
 { 
   name: 'Leave Policy', 
   component: LeavePolicyComponent, 
-  icon: 'fa fa-balance-scale' 
+  icon: 'fa fa-book'            // rules / policy
 },
 
 

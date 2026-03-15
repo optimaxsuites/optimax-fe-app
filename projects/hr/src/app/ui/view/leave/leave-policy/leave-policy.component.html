@@ -53,14 +53,14 @@
               (click)="toggleAutomaticApproval()"
               [ngClass]="{
                 'bg-teal-600': leaveSettings.automaticApproval,
-                'bg-gray-300': !leaveSettings.automaticApproval
+                'bg-gray-300': !leaveSettings.automaticApproval,
               }"
               class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none"
             >
               <span
                 [ngClass]="{
                   'translate-x-7': leaveSettings.automaticApproval,
-                  'translate-x-1': !leaveSettings.automaticApproval
+                  'translate-x-1': !leaveSettings.automaticApproval,
                 }"
                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
               ></span>
@@ -98,14 +98,14 @@
               (click)="toggleLevelBasedAllocation()"
               [ngClass]="{
                 'bg-teal-600': leaveSettings.useLevelBasedAllocation,
-                'bg-gray-300': !leaveSettings.useLevelBasedAllocation
+                'bg-gray-300': !leaveSettings.useLevelBasedAllocation,
               }"
               class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none"
             >
               <span
                 [ngClass]="{
                   'translate-x-7': leaveSettings.useLevelBasedAllocation,
-                  'translate-x-1': !leaveSettings.useLevelBasedAllocation
+                  'translate-x-1': !leaveSettings.useLevelBasedAllocation,
                 }"
                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
               ></span>
@@ -127,7 +127,7 @@
                 (click)="openAllocationMatrix()"
                 class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md text-sm font-medium transition-colors"
               >
-                 Configure Allocation Matrix
+                Configure Allocation Matrix
               </button>
             </div>
           </div>
@@ -161,27 +161,33 @@
           </div>
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30">
+            <div
+              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
+            >
               <p class="text-xs text-customBlue font-medium">Max Days/Month</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
                 {{ planningPolicy.maxDaysPerMonth }}
               </p>
             </div>
-            <div class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30">
-              <p class="text-xs text-customBlue font-medium">
-                Planning Months
-              </p>
+            <div
+              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
+            >
+              <p class="text-xs text-customBlue font-medium">Planning Months</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
                 {{ planningPolicy.maxPlanningMonths }}
               </p>
             </div>
-            <div class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30">
+            <div
+              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
+            >
               <p class="text-xs text-customBlue font-medium">Total Allowed</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
                 {{ planningPolicy.totalAllowedPlannedDays }}
               </p>
             </div>
-            <div class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30">
+            <div
+              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
+            >
               <p class="text-xs text-customBlue font-medium">Emergency Days</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
                 {{ planningPolicy.emergencyLeaveDaysAllowed }}
@@ -200,8 +206,8 @@
               <p class="text-base text-gray-600">
                 {{
                   leaveSettings.useLevelBasedAllocation
-                    ? 'Configure leave types (allocations set in matrix)'
-                    : 'Each leave type has its own allocated days per year'
+                    ? "Configure leave types (allocations set in matrix)"
+                    : "Each leave type has its own allocated days per year"
                 }}
               </p>
             </div>
@@ -210,7 +216,7 @@
               (click)="showAddForm = !showAddForm"
               class="px-4 py-2 bg-customBlue hover:bg-customBlue/90 text-white rounded-md text-sm font-medium transition-colors"
             >
-              {{ showAddForm ? 'Cancel' : '+ Add Leave Type' }}
+              {{ showAddForm ? "Cancel" : "+ Add Leave Type" }}
             </button>
           </div>
 
@@ -281,16 +287,16 @@
                 <span
                   [ngClass]="{
                     'bg-teal-100 text-teal-800': leaveType.isActive,
-                    'bg-gray-100 text-gray-600': !leaveType.isActive
+                    'bg-gray-100 text-gray-600': !leaveType.isActive,
                   }"
                   class="px-3 py-1 text-sm font-semibold rounded-full"
                 >
-                  {{ leaveType.isActive ? 'Active' : 'Inactive' }}
+                  {{ leaveType.isActive ? "Active" : "Inactive" }}
                 </span>
                 <span
                   [ngClass]="{
                     'text-gray-800': leaveType.isActive,
-                    'text-gray-500': !leaveType.isActive
+                    'text-gray-500': !leaveType.isActive,
                   }"
                   class="font-medium text-base min-w-[150px]"
                 >
@@ -350,10 +356,7 @@
                   </button>
                 </div>
 
-                <div
-                  *ngIf="editingLeaveId === leaveType.id"
-                  class="flex gap-2"
-                >
+                <div *ngIf="editingLeaveId === leaveType.id" class="flex gap-2">
                   <button
                     (click)="saveLeaveDays(leaveType)"
                     class="px-3 py-1 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-md transition-colors"
@@ -374,11 +377,11 @@
                     'bg-gray-200 hover:bg-gray-300 text-gray-800':
                       leaveType.isActive,
                     'bg-teal-600 hover:bg-teal-700 text-white':
-                      !leaveType.isActive
+                      !leaveType.isActive,
                   }"
                   class="px-3 py-1 text-sm rounded-md transition-colors"
                 >
-                  {{ leaveType.isActive ? 'Deactivate' : 'Activate' }}
+                  {{ leaveType.isActive ? "Deactivate" : "Activate" }}
                 </button>
 
                 <button
@@ -409,7 +412,7 @@
         <!-- Info Card -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-5">
           <h4 class="font-semibold text-blue-900 mb-3">
-           How Leave Settings Work
+            How Leave Settings Work
           </h4>
           <ul class="text-sm text-blue-800 space-y-2">
             <li *ngIf="!leaveSettings.useLevelBasedAllocation">
@@ -421,16 +424,12 @@
             <li *ngIf="leaveSettings.useLevelBasedAllocation">
               • Higher levels typically get more leave days
             </li>
-            <li>
-              • Employees get full allocation for each active leave type
-            </li>
+            <li>• Employees get full allocation for each active leave type</li>
             <li>• Annual Leave, Sick Leave, etc. have independent balances</li>
             <li *ngIf="!leaveSettings.useLevelBasedAllocation">
               • Total = {{ totalAllocatedDays }} days across all types
             </li>
-            <li>
-              • Automatic approval respects each type's remaining balance
-            </li>
+            <li>• Automatic approval respects each type's remaining balance</li>
           </ul>
         </div>
 
@@ -440,7 +439,7 @@
           class="bg-white rounded-lg border border-gray-200 p-5"
         >
           <h4 class="font-semibold text-gray-800 mb-3">
-            📊 Active Leave Types Summary
+            Active Leave Types Summary
           </h4>
           <div class="space-y-2">
             <div
@@ -468,7 +467,7 @@
           class="bg-white rounded-lg border border-gray-200 p-5"
         >
           <h4 class="font-semibold text-gray-800 mb-3">
-             Employee Levels Summary
+            Employee Levels Summary
           </h4>
           <div class="space-y-2">
             <div
@@ -492,7 +491,7 @@
         <!-- Planning Policy Summary -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
           <h4 class="font-semibold text-gray-800 mb-3">
-           Planning Policy Summary
+            Planning Policy Summary
           </h4>
           <div class="space-y-3 text-sm">
             <div class="flex justify-between items-center">
@@ -526,7 +525,9 @@
                 [class.text-green-600]="planningPolicy.allowPlanEditing"
                 [class.text-red-600]="!planningPolicy.allowPlanEditing"
               >
-                {{ planningPolicy.allowPlanEditing ? 'Allowed' : 'Not Allowed' }}
+                {{
+                  planningPolicy.allowPlanEditing ? "Allowed" : "Not Allowed"
+                }}
               </span>
             </div>
           </div>
@@ -544,7 +545,7 @@
 
   <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
     <p class="text-sm text-blue-800">
-       Configure how many days each level receives for each leave type
+      Configure how many days each level receives for each leave type
     </p>
   </div>
 
