@@ -20,6 +20,8 @@ export interface VendorDto {
   documents: VendorUploadedDocumentDto[];
   invitedOn: string;
   acceptsTerms: boolean;
+
+  password: string;
 }
 
 export interface VendorDocumentTypeDto {

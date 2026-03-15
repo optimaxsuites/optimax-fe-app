@@ -66,7 +66,7 @@ export class VendorListComponent implements OnInit {
 
   actions = [
     { id: 'view', label: 'View', icon: 'pi pi-eye' },
-    { id: 'edit', label: 'Edit', icon: 'pi pi-pencil' },
+    // { id: 'edit', label: 'Edit', icon: 'pi pi-pencil' },
     // { id: 'resendInvite', label: 'Resend Invite', icon: 'pi pi-refresh' },
     { id: 'delete', label: 'Delete', icon: 'pi pi-trash', className: 'danger' },
   ];
@@ -220,7 +220,7 @@ export class VendorListComponent implements OnInit {
     const data = JSON.parse(localStorage.getItem('vendors') || '[]');
 
     this.vendors = data.filter((v: any) => v.status === 'Invited' ||
-      v.status === 'RegistrationInProgress');
+      v.status === 'RegistrationInProgress' || v.status === 'Draft');
 
     this.applyFilters();
   }

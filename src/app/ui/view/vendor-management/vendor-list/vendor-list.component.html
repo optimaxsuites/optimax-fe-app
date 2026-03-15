@@ -3,13 +3,13 @@
 
 
 
-<div class="btn-wrapper mb-5">
+<!-- <div class="btn-wrapper mb-5">
   <app-button
     text="Add Vendor"
     class="btn-navigate"
     (click)="openForm()"
   ></app-button>
-</div>
+</div> -->
 
 <app-table
   [columns]="columns"
@@ -24,7 +24,7 @@
   (selectionChange)="selectVendor = $event"
 ></app-table>
 
-<app-large-side-modal
+<!-- <app-large-side-modal
   *ngIf="displayVendorForm!"
  [header]="isEditMode ? 'Edit Vendor' : 'Add Vendor'"
   [subheader]="
@@ -156,7 +156,7 @@
       </div>
     </form>
   </div>
-</app-large-side-modal>
+</app-large-side-modal> -->
 
 <!-- <app-large-side-modal
   *ngIf="displayVendorView && selectedVendor"
