@@ -311,6 +311,12 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     SortableTableDirective,
     QueryComponent,
     LeaveTimelineComponent,
+    MonthlyattendancelistComponent,
+    EmployeesummaryComponent,
+    MonthlysummaryComponent,
+    AttendancetableComponent,
+    AttendancefilterComponent,
+    AttendancesummaryComponent,
   ],
   imports: [
     // BrowserModule,

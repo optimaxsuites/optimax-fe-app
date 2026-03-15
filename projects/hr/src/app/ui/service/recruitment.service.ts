@@ -20,10 +20,26 @@ export class RecruitmentService {
     .pipe(catchError(this.handleError));
   }
 
+  addJobCategory(data: { name: string; code: string; description: string }): Observable<any>{
+    return this.http
+        .post<any>(
+          this.getBaseApiUrl() +
+                `/x/api/v2/hr/jobCategories`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   getJobTypes(){
     return this.http
     .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/jobTypes")
     .pipe(catchError(this.handleError));
+  }
+
+  addJobType(data: { name: string; code: string; description: string }): Observable<any>{
+    return this.http
+        .post<any>(
+          this.getBaseApiUrl() +
+                `/x/api/v2/hr/jobTypes`, data)
+        .pipe(catchError(this.handleError));
   }
 
   getJobVacancyExperiences(){
@@ -32,16 +48,40 @@ export class RecruitmentService {
     .pipe(catchError(this.handleError));
   }
 
+  addJobVacancyExperience(data: { name: string; code: string; description: string }): Observable<any>{
+    return this.http
+        .post<any>(
+          this.getBaseApiUrl() +
+                `/x/api/v2/hr/jobVacancyExperiences`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   getJobVacancyQualifications(){
     return this.http
     .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/jobVacancyQualifications")
     .pipe(catchError(this.handleError));
   }
 
+  addJobVacancyQualification(data: { name: string; code: string; description: string }): Observable<any>{
+    return this.http
+        .post<any>(
+          this.getBaseApiUrl() +
+                `/x/api/v2/hr/jobVacancyQualifications`, data)
+        .pipe(catchError(this.handleError));
+  } 
+
   getJobVacancySpecifications(){
     return this.http
     .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/jobVacancySpecifications")
     .pipe(catchError(this.handleError));
+  }
+
+  addJobVacancySpecification(data: { name: string; code: string; description: string }): Observable<any>{
+    return this.http
+        .post<any>(
+          this.getBaseApiUrl() +
+                `/x/api/v2/hr/jobVacancySpecifications`, data)
+        .pipe(catchError(this.handleError));
   }
 
   addJobVacncyCustomFieldss(data: JobPostingCustomFieldDTO): Observable<any>{

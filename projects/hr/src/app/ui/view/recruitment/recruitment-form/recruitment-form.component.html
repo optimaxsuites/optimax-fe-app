@@ -20,26 +20,34 @@
             <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px] form-input" name="jobTitle" [(ngModel)]="jobData.jobTitle" required>
             
             <!-- Job Category -->
-            <label for="jobCategory">Category: <span style="color: red;">*</span></label>
-            <ng-select 
+            
+            <label for="jobCategory">Category: <span style="color: red;">*</span></label> 
+            <div class="flex items-center w-full">
+              <ng-select 
               bindLabel="name"
               bindValue="id"
               placeholder="Select Category"
-              class="form-select"
+              class="w-full"
               [(ngModel)]="jobData.jobCategory"
               [items]="jobCategories">
             </ng-select>
+               <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Category')"></i>
+            </div>
+            
             
             <!-- Job Type -->
             <label for="jobType">Job Type: <span style="color: red;">*</span></label>
+            <div class="flex items-center w-full">
             <ng-select 
               bindLabel="name"
               bindValue="id"
               placeholder="Select Job Type"
-              class="form-select"
+              class="w-full"
               [(ngModel)]="jobData.jobType"
               [items]="jobTypes">
             </ng-select>
+             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Job Type')"></i>
+            </div>
             
             <!-- Job Location -->
             <label for="jobLocation">Location:</label>
@@ -47,36 +55,46 @@
             
             <!-- Experience -->
             <label for="experience">Experience:</label>
+            <div class="flex items-center w-full">
             <ng-select 
               bindLabel="name"
               bindValue="id"
               placeholder="Select Experience Year"
-              class="form-select"
+             class="w-full"
               [(ngModel)]="jobData.jobVacancyExperience"
               [items]="jobExperienceLevels">
             </ng-select>
+             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Experience')"></i>
+            </div>
             
             <!-- Qualification -->
             <label for="qualification">Qualification:</label>
+            <div class="flex items-center w-full">
             <ng-select 
               bindLabel="name"
               bindValue="id"
               placeholder="Select Qualification"
-              class="form-select"
+             class="w-full"
               [(ngModel)]="jobData.qualifications"
               [items]="jobQualification">
             </ng-select>
+             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Qualification')"></i>
+            </div>
             
             <!-- specification -->
             <label for="specification">Specification:</label>
+            <div class="flex items-center w-full">
             <ng-select 
               bindLabel="name"
               bindValue="id"
               placeholder="Select Specification"
-              class="form-select"
+             class="w-full"
               [(ngModel)]="jobData.jobVacancySpecification"
               [items]="jobSpecifications">
             </ng-select>
+             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Specification')"></i>
+            </div>
+            
           </div>
           
           <div class="form-row">
@@ -182,7 +200,7 @@
             <span>{{ input.label }} - {{ input.type }} - {{ input.required ? 'Required' : 'Optional' }}</span>
           </div>
           <!-- <div class="ist-card-left"> -->
-            <div class="">
+            <div class="list-card-right flex gap-2">
               <button pButton icon="fas fa-pen-to-square" (click)="onEditCustomInput(i)" class="icon-edit" title="Edit"></button>
               <button pButton icon="fas fa-trash-can" (click)="onDeleteCustomiseInput(i)" class="icon-delete" title="Delete"></button>
             </div>
@@ -195,4 +213,32 @@
     <app-button text="Save" class="btn-navigate" (click)="saveCustomiseInputs()"></app-button>
   </div>
   <div></div>
+</app-side-modal>
+
+
+<app-side-modal *ngIf="showMetadataModal" (close)="showMetadataModal = false">
+  <div class="modal-header">
+    <h2 class="font-semibold">Add New {{ activeMetadataType }}</h2>
+  </div>
+
+  <div class="form-fields space-y-4 mt-4">
+    <div>
+      <label>Name: <span style="color: red;">*</span></label>
+      <input type="text" class="editInput h-[36px] w-full" [(ngModel)]="metadataPayload.name" placeholder="Enter name">
+    </div>
+
+    <div>
+      <label>Code:</label>
+      <input type="text" class="editInput h-[36px] w-full" [(ngModel)]="metadataPayload.code" placeholder="Enter code (e.g., CAT-01)">
+    </div>
+
+    <div>
+      <label>Description:</label>
+      <textarea class="editInput w-full" rows="3" [(ngModel)]="metadataPayload.description" placeholder="Enter description"></textarea>
+    </div>
+  </div>
+
+  <div class="btn-container mt-6">
+    <app-button text="Save {{ activeMetadataType }}" class="btn-navigate" (click)="saveMetadata()"></app-button>
+  </div>
 </app-side-modal>
