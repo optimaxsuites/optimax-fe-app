@@ -6,6 +6,7 @@ import { VendorRegistrationComponent } from './ui/view/vendor-management/vendor-
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { RfqComponent } from './ui/view/vendor-portal/rfq/rfq.component';
 import { VendorDetailsComponent } from './ui/view/vendor-management/vendor-details/vendor-details.component';
+import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 
 const routes: Routes = [
   { path: 'pr-management/:uuid', component: ProcurementPageComponent },
@@ -19,6 +20,10 @@ const routes: Routes = [
   {
     path: 'vendor-management/:id/review',
     component: VendorDetailsComponent
+  },
+
+  {
+    path: 'vendor-profile-creation', component: VendorProfileFormComponent
   }
 ];
 

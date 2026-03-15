@@ -11,40 +11,11 @@
           </div>
         </div>
       </ng-template>
-
-      <ng-template pTemplate="right">
-        <!-- <app-button
-          text="Add Vendor"
-          class="btn-navigate"
-          (click)="openForm()"
-        ></app-button> -->
-      </ng-template>
     </p-toolbar>
 
     <div class="p-4 mb-4">
-      <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="text-sm">
-          <label class="font-medium text-slate-600">Search</label>
-          <span class="p-input-icon-right w-full">
-            <i class="pi pi-search"></i>
-            <input
-              pInputText
-              class="w-full border p-2"
-              placeholder="Name, email, code..."
-            />
-          </span>
-        </div>
-      </div> -->
       <div class="flex justify-end">
         <div class="w-1/6">
-          <!-- <p-dropdown
-          [options]="tabOptions"
-          [(ngModel)]="selectedTab"
-          placeholder="Select Tab"
-          (onChange)="onTabChange($event)"
-          class="w-full"
-        >
-        </p-dropdown> -->
           <select
             [(ngModel)]="selectedTab"
             (change)="onTabChange($event)"
@@ -58,7 +29,7 @@
       </div>
     </div>
 
-    <p-tabView>
+    <!-- <p-tabView>
       <p-tabPanel header="Vendor List" *ngIf="selectedTab === 'Vendor List'">
         <app-vendor-list></app-vendor-list>
       </p-tabPanel>
@@ -80,6 +51,24 @@
       >
         <app-rejected-vendor></app-rejected-vendor>
       </p-tabPanel>
-    </p-tabView>
+    </p-tabView> -->
+
+    <div class="px-4">
+      <div *ngIf="selectedTab === 'Vendor List'">
+        <app-vendor-list></app-vendor-list>
+      </div>
+
+      <div *ngIf="selectedTab === 'Pending Approval'">
+        <app-vendor-approval></app-vendor-approval>
+      </div>
+
+      <div *ngIf="selectedTab === 'Approved Vendor'">
+        <app-approved-vendor></app-approved-vendor>
+      </div>
+
+      <div *ngIf="selectedTab === 'Rejected Vendor'">
+        <app-rejected-vendor></app-rejected-vendor>
+      </div>
+    </div>
   </div>
 </div>

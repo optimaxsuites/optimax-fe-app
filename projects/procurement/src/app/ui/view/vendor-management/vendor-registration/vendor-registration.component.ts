@@ -107,6 +107,8 @@ export class VendorRegistrationComponent implements OnInit {
       documents: [],
       invitedOn: now,
       acceptsTerms: false,
+
+      password: '',
     };
   }
 

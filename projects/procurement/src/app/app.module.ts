@@ -102,6 +102,7 @@ import { TableComponent } from './ui/sharedComponent/view/table/table.component'
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { SelectButtonModule } from "primeng/selectbutton";
+import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 // import { SelectModule } from 'primeng/select';
 
 
@@ -141,6 +142,7 @@ import { SelectButtonModule } from "primeng/selectbutton";
     ApprovedVendorComponent,
     RejectedVendorComponent,
     TableComponent,
+    VendorProfileFormComponent,
     
   ],
   imports: [
