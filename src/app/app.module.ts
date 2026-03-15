@@ -182,7 +182,12 @@ import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard
 import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
 import { QueryComponent } from './ui/view/query/query.component';
-import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
+import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
+import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
+import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
+import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
+import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -301,8 +306,12 @@ import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-tim
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
     QueryComponent,
-    LeaveTimelineComponent,
-  ],
+    WorkscheduleShiftsComponent,
+    ShiftListComponent,
+    ShiftFormComponent,
+    ShiftAssignmentComponent,
+    ShiftCalendarComponent,
+    ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

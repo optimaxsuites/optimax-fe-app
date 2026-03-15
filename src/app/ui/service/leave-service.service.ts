@@ -265,10 +265,10 @@ export class LeaveServiceService {
   }
 
   private initEmployees(): Employee[] {
-    const stored = localStorage.getItem(this.EMPLOYEES_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    // const stored = localStorage.getItem(this.EMPLOYEES_KEY);
+    // if (stored) {
+    //   return JSON.parse(stored);
+    // }
 
     const settings = this.getLeaveSettings();
     const useLevelBased = settings.useLevelBasedAllocation;
@@ -387,7 +387,7 @@ export class LeaveServiceService {
       },
     ];
 
-    localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(employees));
+    // localStorage.setItem(this.EMPLOYEES_KEY, JSON.stringify(employees));
     return employees;
   }
 

@@ -72,7 +72,7 @@
     </div>
 
     <!-- Analytics Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white rounded-lg p-6 border">
         <div class="flex items-start space-x-3">
           <div class="w-1 h-16 bg-customBlue rounded-full"></div>
@@ -124,14 +124,14 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 gap-6">
-      <!-- Department Risk Analysis -->
-      <div class="bg-white rounded-lg border border-gray-200 p-6">
+      
+      <!-- <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">
-           Department Risk Analysis
+          Department Risk Analysis
         </h2>
 
         <div class="space-y-4">
@@ -149,8 +149,8 @@
                   employees planning leave
                   <span class="text-gray-500">
                     ({{
-                      ((risk.employeesPlanning / risk.totalEmployees) * 100
-                        | number : "1.0-0")
+                      (risk.employeesPlanning / risk.totalEmployees) * 100
+                        | number: "1.0-0"
                     }}%)
                   </span>
                 </p>
@@ -159,7 +159,7 @@
                 [ngClass]="{
                   'bg-green-100 text-green-800': risk.riskLevel === 'Low',
                   'bg-yellow-100 text-yellow-800': risk.riskLevel === 'Medium',
-                  'bg-red-100 text-red-800': risk.riskLevel === 'High'
+                  'bg-red-100 text-red-800': risk.riskLevel === 'High',
                 }"
                 class="px-3 py-1 rounded-full text-sm font-semibold"
               >
@@ -181,7 +181,7 @@
                   [ngClass]="{
                     'text-green-600': risk.riskLevel === 'Low',
                     'text-yellow-600': risk.riskLevel === 'Medium',
-                    'text-red-600': risk.riskLevel === 'High'
+                    'text-red-600': risk.riskLevel === 'High',
                   }"
                 >
                   {{
@@ -225,9 +225,9 @@
         </div>
       </div>
 
-      <!-- Charts Row -->
+      
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Department Distribution Chart -->
+        
         <div class="bg-white rounded-lg border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">
             Planning by Department
@@ -248,7 +248,7 @@
                       'bg-green-100 text-green-800': dept.riskLevel === 'Low',
                       'bg-yellow-100 text-yellow-800':
                         dept.riskLevel === 'Medium',
-                      'bg-red-100 text-red-800': dept.riskLevel === 'High'
+                      'bg-red-100 text-red-800': dept.riskLevel === 'High',
                     }"
                     class="px-2 py-0.5 rounded-full text-xs font-medium"
                   >
@@ -265,7 +265,7 @@
                     'bg-green-500': dept.name === 'Sales',
                     'bg-orange-500': dept.name === 'Marketing',
                     'bg-purple-500': dept.name === 'HR',
-                    'bg-pink-500': dept.name === 'Finance'
+                    'bg-pink-500': dept.name === 'Finance',
                   }"
                 ></div>
               </div>
@@ -280,7 +280,7 @@
           </div>
         </div>
 
-        <!-- Leave Type Distribution Chart -->
+        
         <div class="bg-white rounded-lg border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">
             Planning by Leave Type
@@ -307,13 +307,13 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Leave Plans Table (All Employees with Approve/Reject) -->
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-gray-800">
-             All Employee Leave Plans
+            All Employee Leave Plans
           </h2>
           <div class="flex gap-2 text-sm">
             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
@@ -382,7 +382,7 @@
                     'bg-purple-100 text-purple-800':
                       conflict.department === 'HR',
                     'bg-pink-100 text-pink-800':
-                      conflict.department === 'Finance'
+                      conflict.department === 'Finance',
                   }"
                 >
                   {{ conflict.department }}
@@ -398,7 +398,7 @@
                       conflict.status === 'Pending',
                     'bg-green-100 text-green-800':
                       conflict.status === 'Approved',
-                    'bg-red-100 text-red-800': conflict.status === 'Rejected'
+                    'bg-red-100 text-red-800': conflict.status === 'Rejected',
                   }"
                   class="px-2 py-1 rounded-full text-xs font-medium"
                 >
@@ -408,11 +408,10 @@
               <td>
                 <span
                   [ngClass]="{
-                    'bg-green-100 text-green-800':
-                      conflict.riskLevel === 'Low',
+                    'bg-green-100 text-green-800': conflict.riskLevel === 'Low',
                     'bg-yellow-100 text-yellow-800':
                       conflict.riskLevel === 'Medium',
-                    'bg-red-100 text-red-800': conflict.riskLevel === 'High'
+                    'bg-red-100 text-red-800': conflict.riskLevel === 'High',
                   }"
                   class="px-2 py-1 rounded-full text-xs font-medium"
                 >
@@ -471,37 +470,8 @@
           </ng-template>
         </p-table>
       </div>
-
-      <!-- Summary Stats -->
-      <div class="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">
-          Planning Summary
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="text-center">
-            <p class="text-sm text-gray-600 mb-1">Total Plans</p>
-            <p class="text-3xl font-bold text-gray-800">
-              {{ filteredPlannedLeaves.length }}
-            </p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-600 mb-1">Avg. Plan Duration</p>
-            <p class="text-3xl font-bold text-gray-800">
-              {{ getAveragePlanDuration() }}
-              <span class="text-sm text-gray-500">days</span>
-            </p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-600 mb-1">Most Active Dept.</p>
-            <p class="text-3xl font-bold text-gray-800">
-              {{ getMostActiveDepartment() }}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
-<app-leave-timeline></app-leave-timeline>
 
 <p-toast position="top-right" key="tl" />

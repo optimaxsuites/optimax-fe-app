@@ -34,12 +34,16 @@ import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/c
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { QueryComponent } from './ui/view/query/query.component';
-import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
+import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 
 const routes: Routes = [
   {
     path: 'user/onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
+  },
+  {
+    path: 'workschedule-shifts/:uuid',
+    component: WorkscheduleShiftsComponent,
   },
   {
     path: 'guarantor/confirm/:token',
@@ -48,7 +52,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'leave/uu',
+    redirectTo: 'workschedule-shifts/uu',
     pathMatch: 'full',
   },
   {
