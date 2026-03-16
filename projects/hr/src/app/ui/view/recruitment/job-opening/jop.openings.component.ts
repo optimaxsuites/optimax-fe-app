@@ -112,4 +112,18 @@ export class JopOpeningsComponent implements OnInit {
     console.log('Application payload:', payload);
     this.showApplyModal = false;
   }
+
+  // Inside your component class
+
+    onCustomFileChange(event: any, label: string) {
+      const file = event.target.files[0];
+      if (file) {
+        this.application.customData[label] = file;
+      }
+    }
+
+    // Update your main file handler for the default CV as well
+    onMainFileChange(event: any) {
+      this.application.file = event.target.files[0];
+    }
 }

@@ -227,11 +227,53 @@
                name="file" required>
       </div>
 
-      <div *ngFor="let field of selectedJob?.jobVacancyCustomFields">
+      <!-- <div *ngFor="let field of selectedJob?.jobVacancyCustomFields">
         <label class="modal-label">{{ field.label }} {{ field.required ? '*' : '' }}</label>
         <input [type]="field.type" class="modal-input"
                [(ngModel)]="application.customData[field.label]"
                [name]="field.label" [required]="field.required">
+      </div> -->
+
+      <div *ngFor="let field of selectedJob?.jobVacancyCustomFields; let i = index">
+        <label class="modal-label">{{field.type === 'file' ? 'Upload' : ''}} {{ field.label }} {{ field.required ? '*' : '' }}</label>
+
+        <div [ngSwitch]="field.type">
+          <textarea *ngSwitchCase="'textarea'" 
+                    class="modal-input" 
+                    [(ngModel)]="application.customData[field.label]"
+                    [name]="'custom_' + i" 
+                    [required]="field.required" 
+                    rows="4">
+          </textarea>
+
+          <input *ngSwitchCase="'file'" 
+                type="file" 
+                class="modal-input" 
+                [name]="'custom_' + i" 
+                (change)="onCustomFileChange($event, field.label)"
+                [required]="field.required">
+
+          <input *ngSwitchCase="'number'" 
+                type="number" 
+                class="modal-input" 
+                [(ngModel)]="application.customData[field.label]"
+                [name]="'custom_' + i" 
+                [required]="field.required">
+
+          <input *ngSwitchCase="'url'" 
+                type="url" 
+                class="modal-input" 
+                [(ngModel)]="application.customData[field.label]"
+                [name]="'custom_' + i" 
+                [required]="field.required">
+
+          <input *ngSwitchDefault 
+                [type]="field.type" 
+                class="modal-input" 
+                [(ngModel)]="application.customData[field.label]"
+                [name]="'custom_' + i" 
+                [required]="field.required">
+        </div>
       </div>
 
       <div class="pt-2">
