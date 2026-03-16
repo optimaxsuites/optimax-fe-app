@@ -1,55 +1,138 @@
-import { employeeDTO } from '../employee.dto';
+import { Employee } from './cooperative-member.dto';
 
-export interface userDTO {
-  [key: string]: any;
+export interface CooperativeLoanGuarantorEntry {
+  memberId: string;
+  guaranteedAmount: number;
+  status: string;
+  requestedAt: string;
+  decidedAt?: string;
+  note?: string;
 }
 
-export interface departmentDTO {
-  [key: string]: any;
-}
-
-export type CooperativeLoanStatusDTO =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'ACTIVE'
-  | 'COMPLETED'
-  | 'DEFAULTED';
-
-export type CooperativeLoanModeOfPaymentDTO = 'monthly' | 'one_off';
-
-export interface CooperativeLoanDTO {
-  id: number;
-  user: userDTO;
-  employeeID: employeeDTO;
-  department: departmentDTO;
-  memberID: string;
-  groupID: string;
+export interface CooperativeLoan {
+  id: string | number;
+  loanCode: string;
+  cooperativeMemberId: string | number;
+  cooperativeGroupId: string | number;
   amount: number;
   purpose: string;
-  interestRate: number;
   repaymentAmount: number;
-  requestDate: Date;
-  modeOfPayment: CooperativeLoanModeOfPaymentDTO;
   repaymentTime: number;
-  status: CooperativeLoanStatusDTO;
+  modeOfPayment: string;
+  requestDate: string;
+  approvedDate: string;
+  disbursedDate: string;
+  completedDate: string;
+  rejectedDate: string;
+  status: string;
   adminComment: string;
-  useSharesAsCollateral?: boolean;
-  pledgedSharesAmount?: number;
+  applicationStage?: string;
+  guarantors: CooperativeLoanGuarantorEntry[];
+  guarantorApproval?: boolean;
+  totalPaid: number;
+  totalPrincipalPaid: number;
+  totalInterestPaid: number;
+  outstandingPrincipal: number;
+  paymentHistory: PaymentHistory[];
+  statusHistory: StatusHistory[];
+  loanId?: string;
+  memberId?: string;
+  groupId?: string;
+  duration?: number;
+  interestRate?: number;
+  monthlyRepayment?: number;
+  totalRepayment?: number;
+  applicationDate?: string;
+  disbursementDate?: string;
+  completionDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  adminRequestNote?: string;
+  rejectionReason?: string;
+  infoRequestedDate?: string;
+  defaultedDate?: string;
+  fundsReserved?: boolean;
+  legacyGuarantor?: Guarantor;
 }
 
-export interface CooperativeLoanApprovalDTO {
-  loanId: number;
-  approvedBy: userDTO;
-  status: Exclude<CooperativeLoanStatusDTO, 'PENDING'>;
-  adminComment?: string;
+export interface Guarantor {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  relationshipId: number;
+  dob: string;
+  idNumber: string;
+  yearsKnown: number;
+  signature: string;
+  passportPhoto: string;
+  idCard: string;
+  employee: Employee;
+  guarantorMedia: GuarantorMedia;
+  guarantorPhoto: GuarantorPhoto;
+  guarantorSignature: GuarantorSignature;
 }
 
-export interface CooperativeLoanRepaymentDTO {
-  loanId: number;
+export interface GuarantorMedia {
+  id: number;
+  name: string;
+  mediaNo: string;
+}
+
+export interface GuarantorPhoto {
+  id: number;
+  name: string;
+  mediaNo: string;
+}
+
+export interface GuarantorSignature {
+  id: number;
+  name: string;
+  mediaNo: string;
+}
+
+export interface PaymentHistory {
+  id: number;
+  cooperativeLoan: CooperativeLoan;
+  installmentNo: number;
+  paidAt: string;
   amount: number;
-  paymentDate: Date;
-  modeOfPayment: CooperativeLoanModeOfPaymentDTO;
-  recordedBy: userDTO;
-  referenceNumber?: string;
+  paymentMethod: string;
+  referenceNumber: string;
+  interest: number;
+  remainingBalance: number;
+  status: string;
+  lateFeeAmount: number;
+  totalPayment: number;
+  notes: string;
+  receiptNumber: string;
+}
+
+export interface StatusHistory {
+  id: number;
+  status: string;
+  changedAt: string;
+  changedBy: ChangedBy;
+  notes: string;
+  overrideOpen: boolean;
+  overrideBy: ChangedBy;
+  overrideReason: string;
+  statusBeforeOverride: string;
+}
+
+export interface ChangedBy {
+  id: number;
+  fullname: string;
+  userId: number;
+  email: string;
+  phoneNumber: string;
+  username: string;
+  clientType: string;
+  gender: string;
+  accountId: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
 }

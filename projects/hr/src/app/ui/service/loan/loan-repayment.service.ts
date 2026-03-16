@@ -1,8 +1,9 @@
 // loan-repayment.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, PaymentRecord } from './loan.types';
-import { LoanStorageService } from './loan-storage.service';
+import { LoanApplicationService } from './loan-application.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,98 +14,110 @@ export class LoanRepaymentService {
   private readonly creditReportDays = 30;
   private readonly lateFeeRate = 0.02;
   
-  constructor(private storageService: LoanStorageService) {}
+  constructor(private loanApplicationService: LoanApplicationService) {}
 
   // Get repayment schedule for a loan
   getRepaymentSchedule(loanId: string): Observable<RepaymentScheduleItem[]> {
-    const loan = this.storageService.getApplicationById(loanId);
-    if (!loan) {
-      return of([]);
-    }
+    return this.loanApplicationService.getApplicationById(loanId).pipe(
+      switchMap((loan) => {
+        if (!loan) {
+          return of([]);
+        }
 
-    this.refreshRepaymentLifecycle(loan);
-    this.storageService.updateApplication(loan);
-    return of(loan.repaymentSchedule || []);
+        this.refreshRepaymentLifecycle(loan);
+        return this.loanApplicationService.saveApplication(loan).pipe(
+          map((savedLoan) => savedLoan.repaymentSchedule || [])
+        );
+      })
+    );
   }
 
   // Record a payment
   recordPayment(loanId: string, payment: Partial<PaymentRecord>): Observable<LoanApplication> {
-    const loan = this.storageService.getApplicationById(loanId);
-    
-    if (!loan) {
-      return throwError(() => new Error('Loan not found'));
-    }
+    return this.loanApplicationService.getApplicationById(loanId).pipe(
+      switchMap((loan) => {
+        if (!loan) {
+          return throwError(() => new Error('Loan not found'));
+        }
 
-    if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') {
-      return throwError(() => new Error('Payments can only be recorded for approved or active loans'));
-    }
+        if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') {
+          return throwError(() => new Error('Payments can only be recorded for approved or active loans'));
+        }
 
-    this.refreshRepaymentLifecycle(loan);
+        this.refreshRepaymentLifecycle(loan);
 
-    const nextDue = this.getNextOpenInstallment(loan);
-    if (!nextDue) {
-      return throwError(() => new Error('No payable installment found for this loan'));
-    }
+        const nextDue = this.getNextOpenInstallment(loan);
+        if (!nextDue) {
+          return throwError(() => new Error('No payable installment found for this loan'));
+        }
 
-    const paidAmount = Number(payment.amount || 0);
-    if (paidAmount <= 0) {
-      return throwError(() => new Error('Payment amount must be greater than zero'));
-    }
+        const paidAmount = Number(payment.amount || 0);
+        if (paidAmount <= 0) {
+          return throwError(() => new Error('Payment amount must be greater than zero'));
+        }
 
-    if (paidAmount < nextDue.totalPayment) {
-      return throwError(() => new Error('Payment amount cannot be less than the due installment amount'));
-    }
+        if (paidAmount < nextDue.totalPayment) {
+          return throwError(() => new Error('Payment amount cannot be less than the due installment amount'));
+        }
 
-    const paymentDate = payment.date || new Date().toISOString();
-    const receiptNumber = this.generateReceiptNumber(loan.id);
+        const paymentDate = payment.date || new Date().toISOString();
+        const receiptNumber = this.generateReceiptNumber(loan.id);
+        const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalPayment, 0));
+        const principalPaid = this.roundCurrency((nextDue.principal || 0) + extraAmount);
+        const interestPaid = this.roundCurrency(nextDue.interest || 0);
 
-    const paymentRecord: PaymentRecord = {
-      id: receiptNumber,
-      date: paymentDate,
-      amount: paidAmount,
-      paymentMethod: payment.paymentMethod || 'Bank Transfer',
-      referenceNumber: payment.referenceNumber || receiptNumber,
-      receivedBy: payment.receivedBy || 'System',
-      notes: payment.notes
-    };
+        const paymentRecord: PaymentRecord = {
+          id: receiptNumber,
+          date: paymentDate,
+          amount: paidAmount,
+          principalAmount: principalPaid,
+          interestPaid,
+          lateFeeAmount: Number(nextDue.lateFeeAmount || 0),
+          remainingBalance: this.roundCurrency(Math.max((loan.currentBalance || 0) - paidAmount, 0)),
+          paymentMethod: payment.paymentMethod || 'BANK_TRANSFER',
+          referenceNumber: payment.referenceNumber || receiptNumber,
+          installmentNo: nextDue.monthNumber,
+          receiptNumber,
+          receivedBy: payment.receivedBy || 'System',
+          notes: payment.notes
+        };
 
-    // Add payment record
-    loan.paymentHistory.push(paymentRecord);
+        loan.paymentHistory = [...(loan.paymentHistory || []), paymentRecord];
 
-    // Apply payment to the next due installment and allow extra amount to reduce principal balance.
-    const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalPayment, 0));
-    const principalPaid = this.roundCurrency((nextDue.principal || 0) + extraAmount);
-    const interestPaid = this.roundCurrency(nextDue.interest || 0);
+        nextDue.status = 'PAID';
+        nextDue.paymentDate = paymentDate;
+        nextDue.paidAmount = paidAmount;
+        nextDue.paymentMethod = paymentRecord.paymentMethod;
+        nextDue.receiptNumber = receiptNumber;
 
-    nextDue.status = 'PAID';
-    nextDue.paymentDate = paymentDate;
-    nextDue.paidAmount = paidAmount;
-    nextDue.paymentMethod = paymentRecord.paymentMethod;
-    nextDue.receiptNumber = receiptNumber;
+        loan.totalPaid = this.roundCurrency((loan.totalPaid || 0) + paidAmount);
+        loan.totalPrincipalPaid = this.roundCurrency((loan.totalPrincipalPaid || 0) + principalPaid);
+        loan.totalInterestPaid = this.roundCurrency((loan.totalInterestPaid || 0) + interestPaid);
+        loan.currentBalance = this.roundCurrency(Math.max((loan.currentBalance || 0) - paidAmount, 0));
+        loan.outstandingPrincipal = this.roundCurrency(
+          Math.max((loan.outstandingPrincipal ?? loan.loanAmount) - principalPaid, 0)
+        );
 
-    loan.totalPaid = this.roundCurrency((loan.totalPaid || 0) + paidAmount);
-    loan.currentBalance = this.roundCurrency(Math.max((loan.currentBalance || 0) - paidAmount, 0));
+        this.updateFutureRemainingBalances(loan);
 
-    this.updateFutureRemainingBalances(loan);
+        const hasOpenInstallments = loan.repaymentSchedule.some(item => item.status === 'PENDING' || item.status === 'OVERDUE');
+        if (!hasOpenInstallments || loan.currentBalance <= 0) {
+          loan.status = 'COMPLETED';
+          loan.currentBalance = 0;
+          loan.outstandingPrincipal = 0;
+          loan.endDate = new Date().toISOString().split('T')[0];
+          loan.statusHistory.push({
+            status: 'COMPLETED',
+            date: new Date().toISOString(),
+            changedBy: 'System',
+            notes: 'Loan marked completed after full repayment.'
+          });
+        }
 
-    const hasOpenInstallments = loan.repaymentSchedule.some(item => item.status === 'PENDING' || item.status === 'OVERDUE');
-    if (!hasOpenInstallments || loan.currentBalance <= 0) {
-      loan.status = 'COMPLETED';
-      loan.currentBalance = 0;
-      loan.endDate = new Date().toISOString().split('T')[0];
-      loan.statusHistory.push({
-        status: 'COMPLETED',
-        date: new Date().toISOString(),
-        changedBy: 'System',
-        notes: 'Loan marked completed after full repayment.'
-      });
-    }
-
-    this.refreshRepaymentLifecycle(loan);
-    
-    // Save changes
-    this.storageService.updateApplication(loan);
-    return of({...loan});
+        this.refreshRepaymentLifecycle(loan);
+        return this.loanApplicationService.saveApplication(loan);
+      })
+    );
   }
 
   private refreshRepaymentLifecycle(loan: LoanApplication): void {
@@ -183,20 +196,24 @@ export class LoanRepaymentService {
 
   // Get payment history for a loan
   getPaymentHistory(loanId: string): Observable<PaymentRecord[]> {
-    const loan = this.storageService.getApplicationById(loanId);
-    return of(loan?.paymentHistory || []);
+    return this.loanApplicationService.getApplicationById(loanId).pipe(
+      map((loan) => loan?.paymentHistory || [])
+    );
   }
 
   // Check if loan is overdue
   isLoanOverdue(loanId: string): Observable<boolean> {
-    const loan = this.storageService.getApplicationById(loanId);
-    if (!loan) return of(false);
+    return this.loanApplicationService.getApplicationById(loanId).pipe(
+      switchMap((loan) => {
+        if (!loan) {
+          return of(false);
+        }
 
-    this.refreshRepaymentLifecycle(loan);
-    this.storageService.updateApplication(loan);
-
-    const hasOverdue = loan.repaymentSchedule.some(item => item.status === 'OVERDUE');
-    
-    return of(hasOverdue);
+        this.refreshRepaymentLifecycle(loan);
+        return this.loanApplicationService.saveApplication(loan).pipe(
+          map((savedLoan) => savedLoan.repaymentSchedule.some(item => item.status === 'OVERDUE'))
+        );
+      })
+    );
   }
 }

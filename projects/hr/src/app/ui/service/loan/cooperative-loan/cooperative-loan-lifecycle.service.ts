@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { CooperativeLoan, CooperativeLoanGuarantor, CooperativeNotification } from './cooperative.types';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { CooperativeLoanGuarantor, CooperativeNotification } from './cooperative.types';
 
 export interface CooperativeLoanLifecycleContext {
   loans: CooperativeLoan[];
@@ -21,29 +22,29 @@ export class CooperativeLoanLifecycleService {
     context: CooperativeLoanLifecycleContext,
     loan: Omit<CooperativeLoan, 'id' | 'loanId' | 'createdAt' | 'updatedAt'>
   ): CooperativeLoan {
-    const normalizedGuarantors: CooperativeLoanGuarantor[] = (loan.guarantors || []).map(item => ({
+    const normalizedGuarantors: CooperativeLoanGuarantor[] = (loan['guarantors'] || []).map((item: any) => ({
       memberId: String(item.memberId || '').trim(),
       guaranteedAmount: Number(item.guaranteedAmount || 0),
       status: item.status || 'PENDING',
       requestedAt: item.requestedAt || new Date().toISOString(),
       decidedAt: item.decidedAt,
       note: item.note
-    })).filter(item => !!item.memberId && item.guaranteedAmount > 0);
+    })).filter((item: CooperativeLoanGuarantor) => !!item.memberId && item.guaranteedAmount > 0);
 
-    const initialStage = loan.status === 'PENDING'
-      ? normalizedGuarantors.some(item => item.status === 'PENDING')
+    const initialStage = loan['status'] === 'PENDING'
+      ? normalizedGuarantors.some((item: CooperativeLoanGuarantor) => item.status === 'PENDING')
         ? 'PENDING_GUARANTOR_APPROVAL'
         : 'READY_FOR_ADMIN_REVIEW'
-      : loan.applicationStage;
+      : loan['applicationStage'];
 
     const newLoan: CooperativeLoan = {
       ...loan,
-      groupId: String(loan.groupId || loan.groupId || ''),
+      groupId: String(loan['groupId'] || loan['groupId'] || ''),
       id: context.generateNextInternalLoanId(),
       loanId: context.generateNextPublicLoanCode(),
-      totalPrincipalPaid: Number(loan.totalPrincipalPaid || 0),
-      totalInterestPaid: Number(loan.totalInterestPaid || 0),
-      outstandingPrincipal: Number(loan.outstandingPrincipal ?? loan.amount ?? 0),
+      totalPrincipalPaid: Number(loan['totalPrincipalPaid'] || 0),
+      totalInterestPaid: Number(loan['totalInterestPaid'] || 0),
+      outstandingPrincipal: Number(loan['outstandingPrincipal'] ?? loan['amount'] ?? 0),
       applicationStage: initialStage,
       guarantors: normalizedGuarantors,
       createdAt: new Date().toISOString(),
@@ -166,7 +167,7 @@ export class CooperativeLoanLifecycleService {
       title: 'Additional Information Requested',
       message: `Admin requested updates on loan ${loan.loanId}: ${loan.adminRequestNote}`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId: String(loan.memberId || loan.cooperativeMemberId || ''),
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -224,7 +225,7 @@ export class CooperativeLoanLifecycleService {
       title: 'Guarantor Update',
       message: `A guarantor responded ${decision} for loan ${loan.loanId}.`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId: String(loan.memberId || loan.cooperativeMemberId || ''),
       createdAt: new Date().toISOString(),
       read: false
     });

@@ -63,7 +63,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'workschedule-shifts/uu',
+    redirectTo: 'loan/uu',
     pathMatch: 'full',
   },
   // {
@@ -240,7 +240,7 @@ const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'admin/hr/loan/uu',
+    redirectTo: 'loan/uu',
   },
 ];
 @NgModule({

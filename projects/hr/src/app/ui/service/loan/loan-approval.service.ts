@@ -1,96 +1,106 @@
 // loan-approval.service.ts
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange } from './loan.types';
-import { LoanStorageService } from './loan-storage.service';
+import { LoanApplicationService } from './loan-application.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoanApprovalService {
   
-  constructor(private storageService: LoanStorageService) {}
+  constructor(private loanApplicationService: LoanApplicationService) {}
 
   // Update application status with optional comment
   updateApplicationStatus(
     loanId: string,
     statusOrUpdate: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING' | StatusChange
   ): Observable<LoanApplication> {
-    const application = this.storageService.getApplicationById(loanId);
-    
-    if (!application) {
-      throw new Error('Application not found');
-    }
-
-    const oldStatus = application.status;
-    const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
-    const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
-    const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy || 'Admin';
-    const date = typeof statusOrUpdate === 'string' ? new Date().toISOString() : statusOrUpdate.date || new Date().toISOString();
-    const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
-    let effectiveInterestRate = application.interestRate;
-
-    if (interestRate !== undefined && Number.isFinite(interestRate)) {
-      effectiveInterestRate = Number(interestRate.toFixed(2));
-    } else if (status === 'APPROVED') {
-      effectiveInterestRate = this.determineInterestRate(application);
-    }
-
-    if (Number.isFinite(effectiveInterestRate)) {
-      application.interestRate = Number(effectiveInterestRate.toFixed(2));
-    }
-
-    // Update application
-    application.status = status;
-    
-    // Add to status history
-    application.statusHistory.push({
-      status: status,
-      date: date,
-      changedBy: changedBy,
-      notes: notes || `Status changed from ${oldStatus} to ${status}`,
-      interestRate: application.interestRate
-    });
-    
-    // Handle special cases
-    switch(status) {
-      case 'APPROVED':
-        application.approvedDate = new Date().toISOString().split('T')[0];
-        application.disbursementDate = undefined;
-        break;
-      case 'ACTIVE':
-        if (!application.startDate) {
-          application.startDate = new Date().toISOString().split('T')[0];
+    return this.loanApplicationService.getApplicationById(loanId).pipe(
+      switchMap((application) => {
+        if (!application) {
+          return throwError(() => new Error('Application not found'));
         }
-        application.disbursementDate = new Date().toISOString().split('T')[0];
-        application.repaymentSchedule = this.generateRepaymentSchedule(
-          application.loanAmount,
-          application.repaymentPeriod,
-          application.interestRate,
-          application.paymentMode
-        );
-        application.monthlyRepayment = application.repaymentSchedule.length > 0
-          ? application.repaymentSchedule[0].totalPayment
-          : 0;
 
-        application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
-        {
-          const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
-          application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
+        const oldStatus = application.status;
+        const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
+        const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
+        const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy || 'Admin';
+        const date = typeof statusOrUpdate === 'string' ? new Date().toISOString() : statusOrUpdate.date || new Date().toISOString();
+        const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
+        let effectiveInterestRate = application.interestRate;
+
+        if (interestRate !== undefined && Number.isFinite(interestRate)) {
+          effectiveInterestRate = Number(interestRate.toFixed(2));
+        } else if (status === 'APPROVED') {
+          effectiveInterestRate = this.determineInterestRate(application);
         }
-        break;
-      case 'COMPLETED':
-        application.endDate = new Date().toISOString().split('T')[0];
-        application.currentBalance = 0;
-        break;
-      case 'REJECTED':
-        application.endDate = new Date().toISOString().split('T')[0];
-        break;
-    }
-    
-    // Save changes
-    this.storageService.updateApplication(application);
-    return of({...application});
+
+        if (Number.isFinite(effectiveInterestRate)) {
+          application.interestRate = Number(effectiveInterestRate.toFixed(2));
+        }
+
+        application.status = status;
+        application.adminComment = notes || application.adminComment || '';
+        application.statusHistory = [...(application.statusHistory || []), {
+          status,
+          date,
+          changedBy,
+          notes: notes || `Status changed from ${oldStatus} to ${status}`,
+          interestRate: application.interestRate
+        }];
+
+        switch(status) {
+          case 'APPROVED':
+            application.approvedDate = new Date().toISOString().split('T')[0];
+            application.disbursementDate = undefined;
+            break;
+          case 'ACTIVE':
+            if (!application.startDate) {
+              application.startDate = new Date().toISOString().split('T')[0];
+            }
+            application.disbursementDate = new Date().toISOString().split('T')[0];
+            application.repaymentSchedule = this.generateRepaymentSchedule(
+              application.loanAmount,
+              application.repaymentPeriod,
+              application.interestRate,
+              application.paymentMode
+            );
+            application.monthlyRepayment = application.repaymentSchedule.length > 0
+              ? application.repaymentSchedule[0].totalPayment
+              : 0;
+            application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
+            application.totalInterestPaid = application.paymentHistory.reduce(
+              (sum, payment) => sum + Number(payment.interestPaid || 0),
+              0
+            );
+            application.totalPrincipalPaid = application.paymentHistory.reduce(
+              (sum, payment) => sum + Number(payment.principalAmount || 0),
+              0
+            );
+            {
+              const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
+              application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
+              application.outstandingPrincipal = Math.max(
+                application.loanAmount - Number(application.totalPrincipalPaid || 0),
+                0
+              );
+            }
+            break;
+          case 'COMPLETED':
+            application.endDate = new Date().toISOString().split('T')[0];
+            application.currentBalance = 0;
+            application.outstandingPrincipal = 0;
+            break;
+          case 'REJECTED':
+            application.endDate = new Date().toISOString().split('T')[0];
+            break;
+        }
+
+        return this.loanApplicationService.saveApplication(application);
+      })
+    );
   }
 
   // Approve loan (convenience method)
@@ -115,9 +125,9 @@ export class LoanApprovalService {
 
   // Get pending applications
   getPendingApplications(): Observable<LoanApplication[]> {
-    const all = this.storageService.getAllApplications();
-    const pending = all.filter(app => app.status === 'PENDING');
-    return of(pending);
+    return this.loanApplicationService.getAllApplications().pipe(
+      switchMap((applications) => of(applications.filter((application) => application.status === 'PENDING')))
+    );
   }
 
   determineInterestRate(loan: Pick<LoanApplication, 'paymentMode' | 'repaymentPeriod'>): number {

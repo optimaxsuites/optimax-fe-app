@@ -41,9 +41,9 @@
           <strong>Duration:</strong> {{ loan.duration }} months
         </div>
         <div class="top-line">
-          <strong>Monthly:</strong> {{ formatCurrency(loan.monthlyRepayment) }}
+          <strong>Monthly:</strong> {{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}
           <span class="separator">|</span>
-          <strong>Total repay:</strong> {{ formatCurrency(loan.totalRepayment) }}
+          <strong>Total repay:</strong> {{ formatCurrency(loan.totalRepayment || 0) }}
         </div>
         <div class="top-line purpose-line">
           <strong>Purpose:</strong> {{ loan.purpose }}
@@ -106,7 +106,7 @@
           <span>Loan Summary: {{ formatCurrency(loan.amount) }} at {{ loan.interestRate }}% for {{ loan.duration }} months</span>
         </div>
         <div class="loan-summary-line monthly">
-          <span>Monthly payment: {{ formatCurrency(loan.monthlyRepayment) }}</span>
+          <span>Monthly payment: {{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span>
         </div>
 
         <div class="progress-wrap">

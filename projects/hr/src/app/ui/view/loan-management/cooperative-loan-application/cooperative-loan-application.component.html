@@ -22,10 +22,6 @@
           <p><strong>Available shares:</strong> {{ formatCurrency(selectedMember.shareCapital) }}</p>
           <p><strong>Membership tenure:</strong> {{ getMemberTenureMonths(selectedMember.id) }} month(s)</p>
         </div>
-        <div class="eligibility-note" *ngIf="selectedMemberEligibility as eligibility" [class.blocked]="!eligibility.canApply">
-          <strong>Rank check ({{ eligibility.rank }}):</strong>
-          {{ eligibility.message }}
-        </div>
         <div class="eligibility-note blocked" *ngIf="!selectedMember">
           Select a member to view eligible loan groups.
         </div>
@@ -39,7 +35,7 @@
             </option>
           </select>
           <div class="eligibility-note blocked" *ngIf="selectedMember && qualifiedGroups.length === 0">
-            No loan groups available for this member's salary/tenure profile.
+            No active loan groups are available yet.
           </div>
         </div>
 
@@ -98,7 +94,22 @@
 
         <div class="form-group">
           <label>Purpose <span class="required">*</span></label>
-          <textarea formControlName="purpose" rows="2" placeholder="Explain the purpose of this loan..."></textarea>
+          <select #purposeTypeSelect formControlName="purposeType" (change)="onPurposeTypeChange(purposeTypeSelect.value)">
+            <option value="">-- Select purpose --</option>
+            <option value="school_fees">School Fees</option>
+            <option value="renovation">Renovation</option>
+            <option value="medical">Medical Emergency</option>
+            <option value="vehicle">Vehicle Purchase/Repair</option>
+            <option value="business">Business Capital</option>
+            <option value="other">Other</option>
+          </select>
+          <div *ngIf="showOtherPurpose">
+            <textarea formControlName="purpose" rows="2" placeholder="Please specify your loan purpose..."></textarea>
+          </div>
+          <div *ngIf="!showOtherPurpose && applicationForm.get('purposeType')?.value">
+            <input type="hidden" formControlName="purpose">
+            <span class="purpose-preview">Purpose: {{ getPurposeLabel(applicationForm.get('purposeType')?.value) }}</span>
+          </div>
         </div>
       </div>
 
@@ -140,6 +151,23 @@
             <input type="number" formControlName="guaranteedAmount" placeholder="Guaranteed amount" min="1" />
             <span class="pending-chip">Pending</span>
             <button type="button" class="remove-mini" (click)="removeGuarantor(i)" [disabled]="guarantorsArray.length <= requiredGuarantorCount">Remove</button>
+            <div class="guarantor-contact-info" *ngIf="guarantor.get('memberId')?.value && guarantorContacts[guarantor.get('memberId')?.value]">
+              <div *ngFor="let contact of guarantorContacts[guarantor.get('memberId')?.value]">
+                <div class="contact-details">
+                  <strong>{{ contact.fullName }}</strong><br>
+                  <span>Email: {{ contact.email }}</span><br>
+                  <span>Phone: {{ contact.phone }}</span><br>
+                  <span>Address: {{ contact.address }}</span><br>
+                  <span>Relationship: {{ contact.relationshipId }}</span><br>
+                  <span>ID Number: {{ contact.idNumber }}</span><br>
+                  <span>Years Known: {{ contact.yearsKnown }}</span><br>
+                </div>
+                <div class="guarantor-actions">
+                  <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)">Approve</button>
+                  <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)">Reject</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -212,11 +240,34 @@
     </div>
 
     <!-- Submit -->
-    <div class="form-actions">
+    <div class="form-actions" *ngIf="!showConfirmation">
       <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
-      <button type="submit" class="submit-btn" [disabled]="!applicationForm.valid || !canSubmitByRank || isSubmitting">
+      <button type="submit" class="submit-btn" [disabled]!="!applicationForm.valid || isSubmitting">
         {{ isSubmitting ? 'Submitting...' : 'Submit' }}
       </button>
+    </div>
+
+    <!-- Confirmation Step -->
+    <div class="confirmation-modal" *ngIf="showConfirmation">
+      <div class="confirmation-content">
+        <h2>Confirm Loan Application</h2>
+        <ul>
+          <li><strong>Applicant:</strong> {{ confirmationDetails.memberName }}</li>
+          <li><strong>Group:</strong> {{ confirmationDetails.groupName }}</li>
+          <li><strong>Amount:</strong> {{ formatCurrency(confirmationDetails.amount) }}</li>
+          <li><strong>Duration:</strong> {{ confirmationDetails.duration }} month(s)</li>
+          <li><strong>Purpose:</strong> {{ confirmationDetails.purpose ? confirmationDetails.purpose : getPurposeLabel(applicationForm.get('purposeType')?.value) }}</li>
+          <li><strong>Monthly Repayment:</strong> {{ formatCurrency(confirmationDetails.monthlyRepayment) }}</li>
+          <li><strong>Total Repayment:</strong> {{ formatCurrency(confirmationDetails.totalRepayment) }}</li>
+          <li><strong>Total Interest:</strong> {{ formatCurrency(confirmationDetails.totalInterest) }}</li>
+        </ul>
+        <div class="confirmation-actions">
+          <button type="button" class="cancel-btn" (click)="showConfirmation = false">Back</button>
+          <button type="button" class="submit-btn" (click)="confirmSubmit()" [disabled]!="isSubmitting">
+            {{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}
+          </button>
+        </div>
+      </div>
     </div>
   </form>
 </div>

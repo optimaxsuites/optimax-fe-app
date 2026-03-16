@@ -135,25 +135,25 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id" [title]="loan.loanId">{{ loan.loanId.length > 11 ? (loan.loanId | slice:0:11) + '...' : loan.loanId }}</td>
-            <td>{{ getMemberName(loan.memberId) }}</td>
+            <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
+            <td>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</td>
             <td class="amount">{{ formatCurrency(loan.amount) }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
                 {{ loan.status }}
               </span>
             </td>
-            <td>{{ getRelativeDate(loan.applicationDate) }}</td>
+            <td>{{ getRelativeDate(loan.requestDate || loan.applicationDate || '') }}</td>
             <td>{{ getStageLabel(loan) }}</td>
             <td [title]="loan.purpose">{{ loan.purpose.length > 44 ? (loan.purpose | slice:0:44) + '...' : loan.purpose }}</td>
             <td class="actions-col">
-              <button class="table-action" *ngIf="loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'" (click)="reviewLoan(loan.id)">
+              <button class="table-action" *ngIf="loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'" (click)="reviewLoan(loan.id.toString())">
                 Review
               </button>
-              <button class="table-action disburse" *ngIf="loan.status === 'APPROVED'" (click)="openDisbursementModal(loan.id)">
+              <button class="table-action disburse" *ngIf="loan.status === 'APPROVED'" (click)="openDisbursementModal(loan.id.toString())">
                 Disburse
               </button>
-              <button class="table-action" *ngIf="loan.status !== 'PENDING' || loan.applicationStage !== 'READY_FOR_ADMIN_REVIEW'" (click)="viewLoan(loan.id)">
+              <button class="table-action" *ngIf="loan.status !== 'PENDING' || loan.applicationStage !== 'READY_FOR_ADMIN_REVIEW'" (click)="viewLoan(loan.id.toString())">
                 View
               </button>
             </td>
@@ -181,7 +181,7 @@
             <select [(ngModel)]="selectedDisbursementLoanId" (ngModelChange)="onDisbursementLoanChange()">
               <option value="" disabled>Select approved loan</option>
               <option *ngFor="let approvedLoan of approvedLoans" [value]="approvedLoan.id">
-                {{ approvedLoan.loanId }} - {{ getMemberName(approvedLoan.memberId) }}
+                {{ approvedLoan.loanCode || approvedLoan.loanId }} - {{ getMemberName(approvedLoan.memberId || approvedLoan.cooperativeMemberId) }}
               </option>
             </select>
           </label>

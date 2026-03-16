@@ -22,7 +22,11 @@ export class AuthenticationService {
   ) {  }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token =
+      sessionStorage.getItem('Token') ||
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('Token') ||
+      localStorage.getItem('token');
 
     if (!token || this.jwtHelper.isTokenExpired(token)) {
       return false;
@@ -34,6 +38,8 @@ export class AuthenticationService {
   logout(): void {
     sessionStorage.removeItem("username");
     sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("Token");
 
     //added by yomi
     sessionStorage.removeItem("userInfoRegData");

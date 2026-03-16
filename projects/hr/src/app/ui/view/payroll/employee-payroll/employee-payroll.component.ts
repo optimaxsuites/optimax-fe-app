@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
-import { LoanPayrollBridgeService } from '../../../service/loan/loan-payroll-bridge.service';
+import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
+import { firstValueFrom } from 'rxjs';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -61,7 +62,7 @@ interface PayrollSettings {
   styleUrl: './employee-payroll.component.scss'
 })
 export class EmployeePayrollComponent {
-private readonly loanPayrollBridgeService = inject(LoanPayrollBridgeService);
+private readonly payrollLoanDeductionService = inject(PayrollLoanDeductionService);
 isApplyingLoanDeductions = false;
 loanDeductionSyncMessage = '';
 autoApplyLoanDeductions = true;
@@ -70,11 +71,10 @@ autoApplyLoanDeductions = true;
         this.loanDeductionSyncMessage = 'Applying loan deductions...';
         try {
             const payrollRows = this.getCurrentPayrollRows();
-            const result = await this.loanPayrollBridgeService.postPayrollLoanDeductions(payrollRows, period);
-            this.loanDeductionSyncMessage = `Loan deductions applied: ${result.applied}, skipped: ${result.skipped}, failed: ${result.failed}`;
-            if (result.errors.length > 0) {
-                this.loanDeductionSyncMessage += '\nErrors: ' + result.errors.join('; ');
-            }
+            // Convert month string to number (1-12)
+            const monthIndex = this.monthNames.indexOf(period.month) + 1;
+            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(payrollRows, monthIndex, period.year));
+            this.loanDeductionSyncMessage = `Loan deductions processed for ${Array.isArray(result) ? result.length : 0} employees.`;
         } catch (error) {
             this.loanDeductionSyncMessage = 'Error applying loan deductions.';
         } finally {
@@ -1730,49 +1730,50 @@ ngOnInit(){
     return deductions.reduce((sum, deduction) => sum + (deduction.amount || 0), 0);
   }
 
-  private applyPayrollRules(employee: any): any {
-    const payType = this.resolvePayType(employee);
-    const basePay = this.calculateBasePay(employee, payType);
-    const attendancePenalty = this.calculateAttendancePenalty(employee, basePay, payType);
-    const overtime = this.calculateOvertimePay(employee, basePay, payType);
-    const bonuses = (employee.bonuses || []).map((bonus: any) => ({ ...bonus }));
-    const allowances = { ...(employee.allowances || {}) };
-    const deductions = (employee.deductions || []).map((deduction: any) => ({ ...deduction }));
-    if (attendancePenalty > 0) {
-      deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
-    }
+    private async applyPayrollRules(employee: any): Promise<any> {
+        const payType = this.resolvePayType(employee);
+        const basePay = this.calculateBasePay(employee, payType);
+        const attendancePenalty = this.calculateAttendancePenalty(employee, basePay, payType);
+        const overtime = this.calculateOvertimePay(employee, basePay, payType);
+        const bonuses = (employee.bonuses || []).map((bonus: any) => ({ ...bonus }));
+        const allowances = { ...(employee.allowances || {}) };
+        const deductions = (employee.deductions || []).map((deduction: any) => ({ ...deduction }));
+        if (attendancePenalty > 0) {
+            deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
+        }
 
-        const loanDeductions = this.loanPayrollBridgeService.getLoanDeductionsForEmployee(employee);
-        loanDeductions.forEach((deduction) => {
+        const loanDeductions = await this.payrollLoanDeductionService.getLoanDeductionsForEmployee(employee, this.selectedMonth, this.selectedYear);
+        loanDeductions.forEach((deduction: { amount: number; reason: string }) => {
             deductions.push({
                 amount: deduction.amount,
                 reason: deduction.reason
             });
         });
 
-    const totalAllowances = this.sumAllowances(allowances);
-    const totalBonuses = this.sumBonuses(bonuses);
-    const totalDeductions = this.sumDeductions(deductions);
-    const grossPay = basePay + totalAllowances + totalBonuses + overtime.overtimePay;
-    const netPayable = grossPay - totalDeductions;
+        const totalAllowances = this.sumAllowances(allowances);
+        const totalBonuses = this.sumBonuses(bonuses);
+        const totalDeductions = this.sumDeductions(deductions);
+        const grossPay = basePay + totalAllowances + totalBonuses + overtime.overtimePay;
+        const netPayable = grossPay - totalDeductions;
 
-    return {
-      ...employee,
-      payType,
-      basePay,
-      basePayLabel: this.getBasePayLabel(payType),
-      attendanceSummary: this.getAttendanceSummary(employee),
-      attendancePenalty,
-      overtimeHours: overtime.overtimeHours,
-      overtimePay: overtime.overtimePay,
-      deductions,
-    loanDeductions,
-      grossPay,
-      totalDeductions,
-      netPayable
-    };
-  }
-    handlePeriodChange(autoSyncLoanDeductions = true){
+        return {
+            ...employee,
+            payType,
+            basePay,
+            basePayLabel: this.getBasePayLabel(payType),
+            attendanceSummary: this.getAttendanceSummary(employee),
+            attendancePenalty,
+            overtimeHours: overtime.overtimeHours,
+            overtimePay: overtime.overtimePay,
+            deductions,
+            totalAllowances,
+            totalBonuses,
+            totalDeductions,
+            grossPay,
+            netPayable
+        };
+    }
+    async handlePeriodChange(autoSyncLoanDeductions = true){
     const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
     const currentPayroll = this.payrollRecords.find(
         (payroll) => payroll.year == this.selectedYear && payroll.month == monthIndex
@@ -1780,26 +1781,25 @@ ngOnInit(){
 
       console.log(this.selectedYear, this.selectedMonth)
 
-    if (currentPayroll) {
-        const normalizedPayroll = currentPayroll.employeesPayroll.map(emp => this.applyPayrollRules(emp));
-        this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
-        this.department = Array.from(new Set(normalizedPayroll.map(emp => emp.department)));
-        this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
-        this.filteredEmployeePayroll = [...normalizedPayroll];
-        this.currentPayroll = [...normalizedPayroll];
-      } else {
-     
-        this.payType = [];
-        this.department = [];
-        this.level = [];
-        this.filteredEmployeePayroll = [];
-        this.currentPayroll = [];
-      }
-      this.payrollSumary = this.calculatePayrollSummary();
-
-            if (autoSyncLoanDeductions && this.autoApplyLoanDeductions && this.currentPayroll.length > 0) {
-                void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: false });
+        if (currentPayroll) {
+                const normalizedPayroll = await Promise.all(currentPayroll.employeesPayroll.map(emp => this.applyPayrollRules(emp)));
+                this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
+                this.department = Array.from(new Set(normalizedPayroll.map(emp => emp.department)));
+                this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
+                this.filteredEmployeePayroll = [...normalizedPayroll];
+                this.currentPayroll = [...normalizedPayroll];
+            } else {
+                this.payType = [];
+                this.department = [];
+                this.level = [];
+                this.filteredEmployeePayroll = [];
+                this.currentPayroll = [];
             }
+            this.payrollSumary = this.calculatePayrollSummary();
+
+                        if (autoSyncLoanDeductions && this.autoApplyLoanDeductions && this.currentPayroll.length > 0) {
+                                void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: false });
+                        }
   }
    
     filterEmployee() {
@@ -1965,14 +1965,12 @@ ngOnInit(){
                 }
 
         try {
-            const result = await this.loanPayrollBridgeService.postPayrollLoanDeductions(this.currentPayroll, {
-                month: this.selectedMonth,
-                year: Number(this.selectedYear)
-            });
+            // Use getLoanDeductionsForPayroll for batch deduction
 
-                        if (options.showNoDataMessage || result.applied > 0 || result.failed > 0) {
-                            this.loanDeductionSyncMessage = `Loan deductions sync complete: ${result.applied} applied, ${result.skipped} skipped, ${result.failed} failed.`;
-                        }
+            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(this.currentPayroll, this.selectedMonth, Number(this.selectedYear)));
+            if (options.showNoDataMessage || (Array.isArray(result) && result.length > 0)) {
+                this.loanDeductionSyncMessage = `Loan deductions sync complete: ${Array.isArray(result) ? result.length : 0} employees processed.`;
+            }
 
                         if (options.refreshAfterSync) {
                             this.handlePeriodChange(false);

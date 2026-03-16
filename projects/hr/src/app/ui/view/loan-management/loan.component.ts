@@ -12,18 +12,19 @@ import { MainDashboardComponent } from './main-dashboard-component/main-dashboar
 export class LoanComponent {
   tabsConfig: TabConfig[] = [
     {
-      name: 'Admin Dashboards',
+      name: 'See Dashboards',
       component: MainDashboardComponent,
       icon: 'fas fa-chart-line'
     },
-    { name: 'My Loans',
+    {
+      name: 'My Loans',
       component: EmployeeDashboardComponent,
       icon: 'fas fa-user'
     },
-    { name: 'My Membership',
+    {
+      name: 'My Membership',
       component: CooperativeMemberDashboardComponent,
       icon: 'fas fa-user-tie'
     },
-
   ];
 }

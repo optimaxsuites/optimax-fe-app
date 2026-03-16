@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
 
 export interface CooperativeGroupContext {
@@ -12,6 +14,13 @@ export interface CooperativeGroupContext {
   providedIn: 'root'
 })
 export class CooperativeGroupService {
+    private groupUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeGroups';
+
+    constructor(private http: HttpClient) {}
+
+    createCooperativeGroup(payload: any): Observable<any> {
+      return this.http.post(this.groupUrl, payload);
+    }
   getEligibleGroupsForMember(
     context: CooperativeGroupContext,
     memberId: string,

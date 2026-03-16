@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import {
-  CooperativeLoan,
   CooperativeLoanGroup,
   CooperativeMember,
   CooperativeNotification,
@@ -47,16 +47,18 @@ export class CooperativeNotificationService {
   }
 
   createPendingApprovalNotification(context: CooperativeNotificationContext, loan: CooperativeLoan): void {
-    const member = context.getMemberById(loan.memberId);
-    const group = loan.groupId ? context.getGroupById(loan.groupId) : undefined;
+    const memberId = this.getLoanMemberId(loan);
+    const member = context.getMemberById(memberId);
+    const groupId = this.getLoanGroupId(loan);
+    const group = groupId ? context.getGroupById(groupId) : undefined;
     context.notifications.unshift({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'LOAN_PENDING_APPROVAL',
       recipient: 'ADMIN',
       title: 'Loan Pending Approval',
-      message: `${member?.fullName || 'Member'} submitted ${context.formatCurrency(loan.amount)} for ${group?.name || 'loan group'} (${loan.loanId}) and is ready for admin review.`,
+      message: `${member?.fullName || 'Member'} submitted ${context.formatCurrency(loan.amount)} for ${group?.name || 'loan group'} (${this.getLoanCode(loan)}) and is ready for admin review.`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId,
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -82,6 +84,7 @@ export class CooperativeNotificationService {
     title: string,
     message: string
   ): void {
+    const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'LOAN_STATUS_UPDATE',
@@ -89,27 +92,40 @@ export class CooperativeNotificationService {
       title,
       message,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId,
       createdAt: new Date().toISOString(),
       read: false
     });
   }
 
   createGuarantorNotifications(context: CooperativeNotificationContext, loan: CooperativeLoan): void {
-    (loan.guarantors || []).forEach((guarantor: CooperativeLoanGuarantor) => {
-      if (guarantor.status !== 'PENDING') {
+    (loan.guarantors || []).forEach((guarantor) => {
+      const normalizedGuarantor: CooperativeLoanGuarantor = {
+        memberId: String(guarantor.memberId || ''),
+        guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
+        status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
+        requestedAt: guarantor.requestedAt || new Date().toISOString(),
+        decidedAt: guarantor.decidedAt,
+        note: guarantor.note
+      };
+
+      if (!normalizedGuarantor.memberId) {
         return;
       }
 
-      const guarantorMember = context.getMemberById(guarantor.memberId);
+      if (normalizedGuarantor.status !== 'PENDING') {
+        return;
+      }
+
+      const guarantorMember = context.getMemberById(normalizedGuarantor.memberId);
       context.notifications.unshift({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         type: 'GUARANTOR_REQUEST',
         recipient: 'MEMBER',
         title: 'Guarantor Request',
-        message: `You were requested as guarantor for loan ${loan.loanId} (${context.formatCurrency(guarantor.guaranteedAmount)}).`,
+        message: `You were requested as guarantor for loan ${this.getLoanCode(loan)} (${context.formatCurrency(normalizedGuarantor.guaranteedAmount)}).`,
         loanId: loan.id,
-        memberId: guarantorMember?.id || guarantor.memberId,
+        memberId: guarantorMember?.id || normalizedGuarantor.memberId,
         createdAt: new Date().toISOString(),
         read: false
       });
@@ -121,40 +137,54 @@ export class CooperativeNotificationService {
     repayment: CooperativeRepayment,
     message: string
   ): void {
-    const loan = context.getLoanById(repayment.loanId);
+    const loan = context.getLoanById(String(repayment.loanId));
     if (!loan) {
       return;
     }
 
+    const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'LOAN_REPAYMENT_REMINDER',
       recipient: 'MEMBER',
       title: 'Repayment Reminder',
-      message: `${message} Loan ${loan.loanId} installment due ${new Date(repayment.dueDate).toDateString()}.`,
+      message: `${message} Loan ${this.getLoanCode(loan)} installment due ${new Date(repayment.dueDate).toDateString()}.`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId,
       createdAt: new Date().toISOString(),
       read: false
     });
   }
 
   createCreditReportNotification(context: CooperativeNotificationContext, repayment: CooperativeRepayment): void {
-    const loan = context.getLoanById(repayment.loanId);
+    const loan = context.getLoanById(String(repayment.loanId));
     if (!loan) {
       return;
     }
 
+    const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'LOAN_STATUS_UPDATE',
       recipient: 'MEMBER',
       title: 'Credit Bureau Alert',
-      message: `Loan ${loan.loanId} has exceeded delinquency threshold and is flagged for credit bureau reporting.`,
+      message: `Loan ${this.getLoanCode(loan)} has exceeded delinquency threshold and is flagged for credit bureau reporting.`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId,
       createdAt: new Date().toISOString(),
       read: false
     });
+  }
+
+  private getLoanMemberId(loan: CooperativeLoan): string {
+    return String(loan.memberId || loan.cooperativeMemberId || '');
+  }
+
+  private getLoanGroupId(loan: CooperativeLoan): string {
+    return String(loan.groupId || loan.cooperativeGroupId || '');
+  }
+
+  private getLoanCode(loan: CooperativeLoan): string {
+    return String(loan.loanCode || loan.loanId || loan.id || '');
   }
 }

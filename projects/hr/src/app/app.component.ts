@@ -74,6 +74,9 @@ export class AppHrComponent {
       data.accessToken.indexOf(';'),
     );
     sessionStorage.setItem('Token', token);
+    sessionStorage.setItem('token', token);
+    localStorage.setItem('Token', token);
+    localStorage.setItem('token', token);
     localStorage.setItem('Token2', token);
     sessionStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('accessToken2', data.accessToken);

@@ -3,7 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeLoan, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
+import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-loans',
@@ -96,9 +97,9 @@ export class CooperativeLoansComponent implements OnInit {
     const search = this.searchTerm.trim().toLowerCase();
     if (search) {
       results = results.filter(loan => {
-        const memberName = this.getMemberName(loan.memberId).toLowerCase();
+        const memberName = this.getMemberName(loan.cooperativeMemberId).toLowerCase();
         return (
-          loan.loanId.toLowerCase().includes(search) ||
+          loan.loanCode.toLowerCase().includes(search) ||
           memberName.includes(search) ||
           loan.status.toLowerCase().includes(search) ||
           String(loan.purpose || '').toLowerCase().includes(search)
@@ -124,8 +125,8 @@ export class CooperativeLoansComponent implements OnInit {
 
       switch(this.sortField) {
         case 'loanId':
-          valueA = a.loanId;
-          valueB = b.loanId;
+          valueA = a.loanCode || a.loanId || '';
+          valueB = b.loanCode || b.loanId || '';
           break;
         case 'amount':
           valueA = a.amount;
@@ -136,8 +137,8 @@ export class CooperativeLoansComponent implements OnInit {
           valueB = b.status;
           break;
         case 'applicationDate':
-          valueA = new Date(a.applicationDate).getTime();
-          valueB = new Date(b.applicationDate).getTime();
+          valueA = new Date(a.requestDate || a.applicationDate || 0).getTime();
+          valueB = new Date(b.requestDate || b.applicationDate || 0).getTime();
           break;
         default:
           return 0;
@@ -197,17 +198,17 @@ export class CooperativeLoansComponent implements OnInit {
     this.applyFilters();
   }
 
-  viewLoan(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/loans/${id}/${this.currentUuid}`], {
+  viewLoan(id: string | number): void {
+    this.router.navigate([`/admin/hr/cooperative/loans/${String(id)}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
-  openDisbursementModal(loanId?: string): void {
+  openDisbursementModal(loanId?: string | number): void {
     this.showDisbursementModal = true;
-    const targetLoanId = loanId && this.approvedLoans.some(item => item.id === loanId)
-      ? loanId
-      : this.approvedLoans[0]?.id || '';
+    const targetLoanId = loanId && this.approvedLoans.some(item => String(item.id) === String(loanId))
+      ? String(loanId)
+      : String(this.approvedLoans[0]?.id || '');
 
     this.selectedDisbursementLoanId = targetLoanId;
     this.disbursementRecipientType = 'BORROWER';
@@ -232,7 +233,7 @@ export class CooperativeLoansComponent implements OnInit {
       return;
     }
 
-    const updated = this.cooperativeService.disburseLoan(this.selectedDisbursementLoan.id);
+    const updated = this.cooperativeService.disburseLoan(String(this.selectedDisbursementLoan.id));
     if (!updated) {
       return;
     }
@@ -243,8 +244,8 @@ export class CooperativeLoansComponent implements OnInit {
     this.applyFilters();
   }
 
-  reviewLoan(id: string): void {
-    this.router.navigate([`/admin/hr/cooperative/loans/${id}/${this.currentUuid}`], {
+  reviewLoan(id: string | number): void {
+    this.router.navigate([`/admin/hr/cooperative/loans/${String(id)}/${this.currentUuid}`], {
       queryParams: { mode: 'review', dashboard: 'cooperative' }
     });
   }
@@ -287,9 +288,14 @@ export class CooperativeLoansComponent implements OnInit {
     return 'Under Admin Review';
   }
 
-  getMemberName(memberId: string): string {
-    const member = this.members.find(item => item.id === memberId);
-    return member?.fullName || memberId;
+  getMemberName(memberId: string | number | undefined): string {
+    if (memberId === undefined || memberId === null || memberId === '') {
+      return 'Unknown member';
+    }
+
+    const normalizedMemberId = String(memberId);
+    const member = this.members.find(item => item.id === normalizedMemberId || item.memberId === normalizedMemberId);
+    return member?.fullName || normalizedMemberId;
   }
 
   getRelativeDate(dateValue: string): string {
@@ -359,11 +365,11 @@ export class CooperativeLoansComponent implements OnInit {
   get approvedLoans(): CooperativeLoan[] {
     return this.loans
       .filter(item => item.status === 'APPROVED')
-      .sort((a, b) => new Date(b.approvedDate || b.updatedAt).getTime() - new Date(a.approvedDate || a.updatedAt).getTime());
+      .sort((a, b) => new Date(b.approvedDate || b.requestDate || b.applicationDate || 0).getTime() - new Date(a.approvedDate || a.requestDate || a.applicationDate || 0).getTime());
   }
 
   get selectedDisbursementLoan(): CooperativeLoan | undefined {
-    return this.approvedLoans.find(item => item.id === this.selectedDisbursementLoanId);
+    return this.approvedLoans.find(item => String(item.id) === this.selectedDisbursementLoanId);
   }
 
   get canDisburseSelectedLoan(): boolean {
@@ -388,7 +394,7 @@ export class CooperativeLoansComponent implements OnInit {
       return '-';
     }
 
-    return this.getMemberName(this.selectedDisbursementLoan.memberId);
+    return this.getMemberName(this.selectedDisbursementLoan.cooperativeMemberId || this.selectedDisbursementLoan.memberId);
   }
 
   private syncDisbursementFields(): void {

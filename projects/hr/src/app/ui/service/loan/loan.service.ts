@@ -1,273 +1,428 @@
-// loan.service.ts - UPDATED
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, of } from 'rxjs';
-
-export interface LoanApplication {
-  approvedDate?: string;
-  startDate?: string;
-  endDate?: string;
-  submittedAt?: string;
-  id: string;
-  employeeId: string;
-  fullName: string;
-  department: string;
-  loanAmount: number;
-  paymentMode?: 'monthly' | 'one_off';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
-  dateSubmitted: string;
-  purpose: string;
-  repaymentPeriod: number;
-  monthlyRepayment: number;
-  acknowledgment: boolean;
-  interestRate: number;
-  currentBalance: number;
-  totalPaid: number;
-  statusHistory: StatusChange[];
-  repaymentSchedule: RepaymentScheduleItem[];
-  paymentHistory: PaymentRecord[];
-  supportingDocuments?: {
-    name: string;
-    size: number;
-    type: string;
-    uploadedAt: string;
-  }[];
-}
-
-export interface StatusChange {
-  id?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
-  date: string;
-  changedBy?: string;
-  notes?: string;
-  interestRate?: number;
-}
-
-export interface RepaymentScheduleItem {
-  id?: string;
-  monthNumber: number;
-  dueDate: string;
-  principal: number;
-  interest: number;
-  totalPayment: number;
-  remainingBalance: number;
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'SKIPPED';
-  paymentDate?: string;
-  paidAmount?: number;
-}
-
-export interface PaymentRecord {
-  id?: string;
-  date: string;
-  amount: number;
-  paymentMethod: string;
-  referenceNumber?: string;
-  receivedBy?: string;
-  notes?: string;
-}
+import { HttpClient } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import {
+  AdvanceLoan,
+  AdvanceLoanPaymentHistory,
+  AdvanceLoanRepaymentSchedule,
+  AdvanceLoanStats,
+  AdvanceLoanStatusHistory,
+  AdvanceLoanUser
+} from '../../domain/loan/advance-loan.dto';
+import {
+  LoanApplication,
+  LoanApplicationFormData,
+  PaymentRecord,
+  RepaymentScheduleItem,
+  StatusChange
+} from './loan.types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoanService {
-  private storageKey = 'loanApplications_v2';
-  private applications: LoanApplication[] = [];
-  private applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
-  
-  constructor() {
-    this.loadFromStorage();
-    // Initialize with some sample data if empty
-    if (this.applications.length === 0) {
-      this.initializeSampleData();
+  private readonly standardLoanUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/advanceLoans';
+
+  constructor(private http: HttpClient) {}
+
+  getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
+    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl);
+  }
+
+  getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
+    return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`);
+  }
+
+  createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
+    return this.http.post<AdvanceLoan>(this.standardLoanUrl, payload);
+  }
+
+  updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
+    return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, payload);
+  }
+
+  getAdvanceLoanStats(payload: any): Observable<AdvanceLoanStats> {
+    return this.http.post<AdvanceLoanStats>(`${this.standardLoanUrl}/stats`, payload);
+  }
+
+  getApplicationByIdFromBackend(id: number | string): Observable<any> {
+    return this.http.get<any>(`${this.standardLoanUrl}/${id}`);
+  }
+
+  updateApplicationOnBackend(id: number | string, payload: any): Observable<any> {
+    return this.http.put<any>(`${this.standardLoanUrl}/${id}`, payload);
+  }
+
+  postLoanStats(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.standardLoanUrl}/stats`, payload);
+  }
+
+  getAllApplicationsFromBackend(): Observable<any[]> {
+    return this.http.get<any[]>(this.standardLoanUrl);
+  }
+
+  listLoanApplications(): Observable<LoanApplication[]> {
+    return this.getAllAdvanceLoans().pipe(
+      map((loans) => loans.map((loan) => this.toLoanApplication(loan)))
+    );
+  }
+
+  getLoanApplicationByIdentifier(identifier: string): Observable<LoanApplication | undefined> {
+    return this.getAdvanceLoanByIdentifier(identifier).pipe(
+      map((loan) => loan ? this.toLoanApplication(loan) : undefined)
+    );
+  }
+
+  createLoanApplication(formData: LoanApplicationFormData, employeeNumericId: number): Observable<LoanApplication> {
+    return this.createAdvanceLoan(this.toCreatePayload(formData, employeeNumericId)).pipe(
+      map((loan) => this.toLoanApplication(loan))
+    );
+  }
+
+  saveLoanApplication(application: LoanApplication): Observable<LoanApplication> {
+    const identifier = application.backendId ? String(application.backendId) : application.id;
+
+    return this.getAdvanceLoanByIdentifier(identifier).pipe(
+      switchMap((sourceLoan) => {
+        if (!sourceLoan) {
+          return throwError(() => new Error('Loan not found on backend'));
+        }
+
+        return this.updateAdvanceLoan(
+          Number(sourceLoan.id),
+          this.toUpdatePayload(application, sourceLoan)
+        );
+      }),
+      map((loan) => this.toLoanApplication(loan))
+    );
+  }
+
+  private getAdvanceLoanByIdentifier(identifier: string): Observable<AdvanceLoan | undefined> {
+    const numericId = this.parseNumericId(identifier);
+
+    if (numericId !== null) {
+      return this.getAdvanceLoanById(numericId).pipe(
+        map((loan) => loan),
+        catchError(() =>
+          this.getAllAdvanceLoans().pipe(
+            map((loans) => this.findAdvanceLoanByIdentifier(loans, identifier))
+          )
+        )
+      );
     }
-    this.applicationsSubject.next(this.applications);
+
+    return this.getAllAdvanceLoans().pipe(
+      map((loans) => this.findAdvanceLoanByIdentifier(loans, identifier))
+    );
   }
 
-  // Initialize with sample data
-  private initializeSampleData(): void {
-    const sampleData: LoanApplication[] = [
-      {
-        id: 'LN-001',
-        employeeId: 'EMP-123',
-        fullName: 'Eseose Odion',
-        department: 'IT',
-        loanAmount: 50000,
-        paymentMode: 'monthly',
-        status: 'PENDING',
-        dateSubmitted: new Date().toISOString().split('T')[0],
-        purpose: 'Medical Emergency',
-        repaymentPeriod: 12,
-        monthlyRepayment: 4166.67,
-        acknowledgment: true,
-        interestRate: 5.5,
-        currentBalance: 50000,
-        totalPaid: 0,
-        statusHistory: [{
-          status: 'PENDING',
-          date: new Date().toISOString().split('T')[0],
-          notes: 'Loan application submitted'
-        }],
-        repaymentSchedule: this.generateRepaymentSchedule(50000, 12, 5.5),
-        paymentHistory: []
-      }
-    ];
-    
-    this.applications = sampleData;
-    this.saveToStorage();
+  private findAdvanceLoanByIdentifier(loans: AdvanceLoan[], identifier: string): AdvanceLoan | undefined {
+    const normalizedIdentifier = String(identifier || '').trim();
+    return loans.find((loan) =>
+      String(loan.id) === normalizedIdentifier ||
+      String(loan.loanCode || '').trim() === normalizedIdentifier
+    );
   }
 
-  // Submit a new loan application
-  submitLoanApplication(formData: any): Observable<LoanApplication> {
-    const newApplication: LoanApplication = {
-      id: this.generateId(),
-      employeeId: 'EMP-123', // This should come from auth service in real app
-      fullName: 'Eseose Odion', // This should come from auth service
-      department: 'IT', // This should come from auth service
-      loanAmount: formData.loanAmount,
-      paymentMode: formData.paymentMode,
+  private toLoanApplication(loan: AdvanceLoan): LoanApplication {
+    const repaymentSchedule = (loan.repaymentSchedule || []).map((item, index) =>
+      this.toRepaymentScheduleItem(item, index)
+    );
+    const paymentHistory = (loan.paymentHistory || []).map((item, index) =>
+      this.toPaymentRecord(item, index)
+    );
+    const statusHistory = (loan.statusHistory || []).map((item) => this.toStatusChange(item));
+    const employee = loan.employee;
+
+    return {
+      backendId: Number(loan.id),
+      loanCode: String(loan.loanCode || loan.id),
+      id: String(loan.loanCode || loan.id),
+      approvedDate: loan.approvedDate || undefined,
+      disbursementDate: loan.disbursedDate || undefined,
+      startDate: loan.disbursedDate || undefined,
+      endDate: loan.completedDate || loan.rejectedDate || undefined,
+      submittedAt: loan.requestDate || undefined,
+      adminComment: loan.adminComment || '',
+      employeeId: String(employee?.id ?? ''),
+      fullName: this.getEmployeeFullName(employee),
+      department: employee?.department?.name || '',
+      loanAmount: Number(loan.amount || 0),
+      paymentMode: this.fromBackendPaymentMode(loan.modeOfPayment),
+      status: this.toLoanStatus(loan.status),
+      dateSubmitted: loan.requestDate || new Date().toISOString(),
+      purpose: loan.purpose || '',
+      repaymentPeriod: Number(loan.repaymentTime || repaymentSchedule.length || 0),
+      monthlyRepayment: Number(loan.repaymentAmount || repaymentSchedule[0]?.totalPayment || 0),
+      acknowledgment: true,
+      interestRate: this.deriveInterestRate(loan),
+      currentBalance: Number(loan.currentBalance || 0),
+      totalPaid: Number(loan.totalPaid || 0),
+      totalPrincipalPaid: Number(loan.totalPrincipalPaid || 0),
+      totalInterestPaid: Number(loan.totalInterestPaid || 0),
+      outstandingPrincipal: Number(loan.outstandingPrincipal || 0),
+      statusHistory,
+      repaymentSchedule,
+      paymentHistory,
+      supportingDocuments: []
+    };
+  }
+
+  private toRepaymentScheduleItem(item: AdvanceLoanRepaymentSchedule, index: number): RepaymentScheduleItem {
+    return {
+      id: String(item.id || index + 1),
+      monthNumber: Number(item.installmentNo || index + 1),
+      dueDate: item.dueDate,
+      principal: Number(item.principalAmount || 0),
+      interest: Number(item.interestAmount || 0),
+      totalPayment: Number(item.totalAmount || 0),
+      remainingBalance: Number(item.remainingBalance || 0),
+      status: this.toRepaymentStatus(item.status),
+      paidAmount: Number(item.paidAmount || 0)
+    };
+  }
+
+  private toPaymentRecord(item: AdvanceLoanPaymentHistory, index: number): PaymentRecord {
+    return {
+      id: String(item.id || index + 1),
+      date: item.paidAt,
+      amount: Number(item.totalAmount || 0),
+      principalAmount: Number(item.principalAmount || 0),
+      interestPaid: Number(item.interestPaid || 0),
+      lateFeeAmount: Number(item.lateFeeAmount || 0),
+      remainingBalance: Number(item.remainingBalance || 0),
+      paymentMethod: item.paymentMethod || 'BANK_TRANSFER',
+      referenceNumber: item.referenceNumber || '',
+      installmentNo: Number(item.installmentNo || 0),
+      notes: item.notes || '',
+      receiptNumber: item.receiptNumber || '',
+      receivedBy: 'System'
+    };
+  }
+
+  private toStatusChange(item: AdvanceLoanStatusHistory): StatusChange {
+    return {
+      id: String(item.id || ''),
+      status: this.toLoanStatus(item.status),
+      date: item.changedAt,
+      changedBy: this.getUserDisplayName(item.changedBy),
+      notes: item.notes || '',
+      interestRate: Number((item as any).interestRate || 0)
+    };
+  }
+
+  private toCreatePayload(formData: LoanApplicationFormData, employeeNumericId: number): any {
+    return {
+      id: 0,
+      loanCode: '',
+      employeeId: employeeNumericId,
+      amount: formData.loanAmount,
+      purpose: formData.loanPurpose === 'other' ? formData.otherPurpose || 'Other' : formData.loanPurpose,
+      repaymentAmount: formData.monthlyRepaymentAmount,
+      repaymentTime: formData.repaymentPeriod,
+      modeOfPayment: this.toBackendPaymentMode(formData.paymentMode),
+      requestDate: new Date().toISOString(),
+      approvedDate: '',
+      approvedBy: 0,
+      disbursedDate: '',
+      disbursedBy: 0,
+      completedDate: '',
+      rejectedDate: '',
+      rejectedBy: 0,
       status: 'PENDING',
-      dateSubmitted: new Date().toISOString().split('T')[0],
-      purpose: formData.loanPurpose,
-      repaymentPeriod: formData.repaymentPeriod,
-      monthlyRepayment: formData.monthlyRepaymentAmount,
-      acknowledgment: formData.acknowledgment,
-      interestRate: 5.5,
+      adminComment: '',
       currentBalance: formData.loanAmount,
       totalPaid: 0,
-      statusHistory: [{
-        status: 'PENDING',
-        date: new Date().toISOString().split('T')[0],
-        notes: 'Loan application submitted'
-      }],
-      repaymentSchedule: this.generateRepaymentSchedule(formData.loanAmount, formData.repaymentPeriod, 5.5),
-      paymentHistory: []
+      totalPrincipalPaid: 0,
+      totalInterestPaid: 0,
+      outstandingPrincipal: formData.loanAmount,
+      statusBeforeOverride: 'PENDING',
+      repaymentSchedule: [],
+      paymentHistory: [],
+      statusHistory: []
     };
-    
-    this.applications.push(newApplication);
-    this.saveToStorage();
-    this.applicationsSubject.next([...this.applications]);
-    
-    return of(newApplication);
   }
 
-  // Get applications as observable for live updates
-  getApplicationsObservable(): Observable<LoanApplication[]> {
-    return this.applicationsSubject.asObservable();
+  private toUpdatePayload(application: LoanApplication, sourceLoan: AdvanceLoan): any {
+    return {
+      id: Number(sourceLoan.id),
+      loanCode: sourceLoan.loanCode || application.loanCode || application.id,
+      employeeId: Number(sourceLoan.employee?.id || this.parseNumericId(application.employeeId) || 0),
+      amount: application.loanAmount,
+      purpose: application.purpose,
+      repaymentAmount: application.monthlyRepayment,
+      repaymentTime: application.repaymentPeriod,
+      modeOfPayment: this.toBackendPaymentMode(application.paymentMode),
+      requestDate: sourceLoan.requestDate || application.dateSubmitted,
+      approvedDate: application.approvedDate || sourceLoan.approvedDate || '',
+      approvedBy: sourceLoan.approvedBy?.id || 0,
+      disbursedDate: application.disbursementDate || sourceLoan.disbursedDate || '',
+      disbursedBy: sourceLoan.disbursedBy?.id || 0,
+      completedDate: application.status === 'COMPLETED' ? application.endDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || '',
+      rejectedDate: application.status === 'REJECTED' ? application.endDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || '',
+      rejectedBy: sourceLoan.rejectedBy?.id || 0,
+      status: application.status,
+      adminComment: application.adminComment || sourceLoan.adminComment || this.getLatestStatusNote(application),
+      currentBalance: application.currentBalance,
+      totalPaid: application.totalPaid,
+      totalPrincipalPaid: Number(application.totalPrincipalPaid || sourceLoan.totalPrincipalPaid || 0),
+      totalInterestPaid: Number(application.totalInterestPaid || sourceLoan.totalInterestPaid || 0),
+      outstandingPrincipal: Number(application.outstandingPrincipal || sourceLoan.outstandingPrincipal || application.currentBalance || 0),
+      statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
+      repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
+        id: this.resolveNumericId(sourceLoan.repaymentSchedule?.[index]?.id),
+        installmentNo: item.monthNumber,
+        dueDate: item.dueDate,
+        principalAmount: item.principal,
+        interestAmount: item.interest,
+        totalAmount: item.totalPayment,
+        paidAmount: Number(item.paidAmount || 0),
+        remainingBalance: item.remainingBalance,
+        status: item.status
+      })),
+      paymentHistory: (application.paymentHistory || []).map((item, index) => ({
+        id: this.resolveNumericId(sourceLoan.paymentHistory?.[index]?.id),
+        loanId: Number(sourceLoan.id),
+        paidAt: item.date,
+        principalAmount: Number(item.principalAmount || 0),
+        interestPaid: Number(item.interestPaid || 0),
+        lateFeeAmount: Number(item.lateFeeAmount || 0),
+        totalAmount: item.amount,
+        remainingBalance: Number(item.remainingBalance || application.currentBalance || 0),
+        paymentMethod: item.paymentMethod,
+        referenceNumber: item.referenceNumber || '',
+        installmentNo: Number(item.installmentNo || 0),
+        notes: item.notes || '',
+        receiptNumber: item.receiptNumber || item.id || ''
+      })),
+      statusHistory: (application.statusHistory || []).map((item, index) => ({
+        id: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.id),
+        status: item.status,
+        changedAt: item.date,
+        changedBy: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.changedBy),
+        notes: item.notes || '',
+        overrideOpen: false,
+        overrideBy: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.overrideBy),
+        overrideReason: sourceLoan.statusHistory?.[index]?.overrideReason || '',
+        statusBeforeOverride: sourceLoan.statusHistory?.[index]?.statusBeforeOverride || sourceLoan.statusBeforeOverride || application.status
+      })),
+      interestRate: application.interestRate
+    };
   }
 
-  // Update application status
-  updateApplicationStatus(
-    loanId: string,
-    statusOrUpdate: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING' | StatusChange
-  ): Observable<LoanApplication> {
-    const application = this.applications.find(app => app.id === loanId);
-    if (application) {
-      const oldStatus = application.status;
-      const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
-      const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
-      const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy;
-      const date = typeof statusOrUpdate === 'string' ? new Date().toISOString().split('T')[0] : statusOrUpdate.date;
-
-      application.status = status;
-      
-      // Add to status history
-      application.statusHistory.push({
-        status: status,
-        date: date,
-        changedBy: changedBy,
-        notes: notes ?? `Status changed from ${oldStatus} to ${status}`
-      });
-      
-      // Handle special cases
-      switch(status) {
-        case 'APPROVED':
-          application.approvedDate = new Date().toISOString().split('T')[0];
-          application.startDate = new Date().toISOString().split('T')[0];
-          break;
-        case 'ACTIVE':
-          if (!application.startDate) {
-            application.startDate = new Date().toISOString().split('T')[0];
-          }
-          break;
-        case 'COMPLETED':
-          application.endDate = new Date().toISOString().split('T')[0];
-          application.currentBalance = 0;
-          break;
-        case 'REJECTED':
-          application.endDate = new Date().toISOString().split('T')[0];
-          break;
-      }
-      
-      this.saveToStorage();
-      this.applicationsSubject.next([...this.applications]);
-      return of({...application});
+  private parseNumericId(value: string | number | undefined | null): number | null {
+    const rawValue = String(value ?? '').trim();
+    if (!rawValue || !/^\d+$/.test(rawValue)) {
+      return null;
     }
-    throw new Error('Application not found');
+
+    const numericValue = Number(rawValue);
+    return Number.isFinite(numericValue) ? numericValue : null;
   }
 
-  // Get all applications
-  getAllApplications(): Observable<LoanApplication[]> {
-    return of([...this.applications]);
-  }
-
-  // Get application by ID
-  getApplicationById(id: string): Observable<LoanApplication | undefined> {
-    return of(this.applications.find(app => app.id === id));
-  }
-
-  // Get applications by employee ID
-  getApplicationsByEmployeeId(employeeId: string): Observable<LoanApplication[]> {
-    const employeeLoans = this.applications.filter(app => app.employeeId === employeeId);
-    return of([...employeeLoans]);
-  }
-
-  // Private helper methods
-  private generateRepaymentSchedule(loanAmount: number, months: number, interestRate: number): RepaymentScheduleItem[] {
-    const schedule: RepaymentScheduleItem[] = [];
-    const monthlyInterestRate = interestRate / 100 / 12;
-    const today = new Date();
-    
-    const monthlyPayment = loanAmount * 
-      (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / 
-      (Math.pow(1 + monthlyInterestRate, months) - 1);
-    
-    let remainingBalance = loanAmount;
-    
-    for (let i = 1; i <= months; i++) {
-      const interest = remainingBalance * monthlyInterestRate;
-      const principal = monthlyPayment - interest;
-      remainingBalance -= principal;
-      
-      const dueDate = new Date(today);
-      dueDate.setMonth(dueDate.getMonth() + i);
-      
-      schedule.push({
-        monthNumber: i,
-        dueDate: dueDate.toISOString().split('T')[0],
-        principal: parseFloat(principal.toFixed(2)),
-        interest: parseFloat(interest.toFixed(2)),
-        totalPayment: parseFloat(monthlyPayment.toFixed(2)),
-        remainingBalance: parseFloat(remainingBalance.toFixed(2)),
-        status: 'PENDING'
-      });
+  private resolveNumericId(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
     }
-    
-    return schedule;
+
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      const nestedId = Number((value as { id?: unknown }).id);
+      return Number.isFinite(nestedId) ? nestedId : 0;
+    }
+
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : 0;
   }
 
-  private generateId(): string {
-    const timestampPart = Date.now().toString(36).toUpperCase().slice(-5);
-    const randomPart = Math.random().toString(36).slice(2, 5).toUpperCase();
-    return `LN-${timestampPart}${randomPart}`;
+  private getEmployeeFullName(employee?: AdvanceLoan['employee']): string {
+    if (!employee) {
+      return 'Employee';
+    }
+
+    const fullName = [employee.firstName, employee.lastName]
+      .map((part) => String(part || '').trim())
+      .filter(Boolean)
+      .join(' ');
+
+    return fullName || 'Employee';
   }
 
-  private loadFromStorage(): void {
-    const stored = localStorage.getItem(this.storageKey);
-    if (stored) {
-      this.applications = JSON.parse(stored);
+  private getUserDisplayName(user: AdvanceLoanUser | number | undefined): string {
+    if (!user) {
+      return 'System';
+    }
+
+    if (typeof user === 'number') {
+      return user > 0 ? `User ${user}` : 'System';
+    }
+
+    return user.fullname || user.username || user.email || 'System';
+  }
+
+  private getLatestStatusNote(application: LoanApplication): string {
+    const latestHistory = [...(application.statusHistory || [])]
+      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime())[0];
+    return latestHistory?.notes || '';
+  }
+
+  private toBackendPaymentMode(paymentMode?: string): 'MONTHLY' | 'ONE_OFF' {
+    return paymentMode === 'one_off' ? 'ONE_OFF' : 'MONTHLY';
+  }
+
+  private fromBackendPaymentMode(paymentMode?: string): 'monthly' | 'one_off' {
+    return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'one_off' : 'monthly';
+  }
+
+  private toLoanStatus(status?: string): LoanApplication['status'] {
+    const normalizedStatus = String(status || '').toUpperCase();
+
+    switch (normalizedStatus) {
+      case 'APPROVED':
+      case 'REJECTED':
+      case 'ACTIVE':
+      case 'COMPLETED':
+        return normalizedStatus;
+      default:
+        return 'PENDING';
     }
   }
 
-  private saveToStorage(): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.applications));
+  private toRepaymentStatus(status?: string): RepaymentScheduleItem['status'] {
+    const normalizedStatus = String(status || '').toUpperCase();
+
+    switch (normalizedStatus) {
+      case 'PAID':
+      case 'OVERDUE':
+      case 'SKIPPED':
+        return normalizedStatus;
+      default:
+        return 'PENDING';
+    }
+  }
+
+  private deriveInterestRate(loan: AdvanceLoan): number {
+    const explicitRate = Number((loan as any).interestRate);
+    if (Number.isFinite(explicitRate) && explicitRate > 0) {
+      return Number(explicitRate.toFixed(2));
+    }
+
+    const principal = Number(loan.amount || 0);
+    const tenureMonths = Number(loan.repaymentTime || 0);
+    if (principal <= 0 || tenureMonths <= 0 || !loan.repaymentSchedule?.length) {
+      return 0;
+    }
+
+    const totalInterest = loan.repaymentSchedule.reduce(
+      (sum, item) => sum + Number(item.interestAmount || 0),
+      0
+    );
+
+    if (totalInterest <= 0) {
+      return 0;
+    }
+
+    const annualizedRate = ((totalInterest / principal) * 100 * 12) / tenureMonths;
+    return Number(annualizedRate.toFixed(2));
   }
 }

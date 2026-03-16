@@ -47,15 +47,15 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id">{{ loan.loanId }}</td>
+            <td class="loan-id">{{ loan.loanCode }}</td>
             <td>{{ formatCurrency(loan.amount) }}</td>
-            <td>{{ formatCurrency(loan.monthlyRepayment) }}</td>
+            <td>{{ formatCurrency(loan.repaymentAmount) }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
             </td>
-            <td>{{ loan.applicationDate | date:'mediumDate' }}</td>
+            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
             <td class="actions-col">
-              <button class="view-btn" (click)="viewLoanDetails(loan.id)">View</button>
+              <button class="view-btn" (click)="viewLoanDetails(loan.id.toString())">View</button>
             </td>
           </tr>
         </tbody>

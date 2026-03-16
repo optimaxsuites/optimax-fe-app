@@ -67,37 +67,6 @@ export type CooperativeLoanApplicationStage =
   | 'UNDER_ADMIN_REVIEW'
   | 'INFO_REQUESTED';
 
-export interface CooperativeLoan {
-  id: string;
-  loanId: string;
-  memberId: string;
-  groupId?: string;
-  amount: number;
-  purpose: string;
-  duration: number;
-  interestRate: number;
-  monthlyRepayment: number;
-  totalRepayment: number;
-  totalPrincipalPaid?: number;
-  totalInterestPaid?: number;
-  outstandingPrincipal?: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED';
-  applicationStage?: CooperativeLoanApplicationStage;
-  applicationDate: string;
-  guarantors?: CooperativeLoanGuarantor[];
-  useSharesAsCollateral?: boolean;
-  pledgedSharesAmount?: number;
-  fundsReserved?: boolean;
-  adminRequestNote?: string;
-  infoRequestedDate?: string;
-  approvedDate?: string;
-  disbursementDate?: string;
-  completionDate?: string;
-  defaultedDate?: string;
-  rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface CooperativeNotification {
   id: string;
@@ -113,7 +82,7 @@ export interface CooperativeNotification {
   recipient: 'ADMIN' | 'MEMBER';
   title: string;
   message: string;
-  loanId: string;
+  loanId: string | number;
   memberId: string;
   createdAt: string;
   read: boolean;
@@ -121,7 +90,7 @@ export interface CooperativeNotification {
 
 export interface CooperativeRepayment {
   id: string;
-  loanId: string;
+  loanId: string | number;
   amount: number;
   dueDate: string;
   paidDate?: string;

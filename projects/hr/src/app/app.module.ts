@@ -197,6 +197,7 @@ import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-cale
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 
 @NgModule({
   declarations: [
@@ -318,6 +319,7 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
     SortableTableDirective,
     QueryComponent,
     LeaveTimelineComponent,
+    JoinCooperativeGroupComponent,
     MonthlyattendancelistComponent,
     EmployeesummaryComponent,
     MonthlysummaryComponent,

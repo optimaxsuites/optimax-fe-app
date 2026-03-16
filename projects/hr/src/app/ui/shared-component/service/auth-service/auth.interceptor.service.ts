@@ -22,23 +22,20 @@ export class AuthInterceptor implements HttpInterceptor {
         ) {
             return next.handle(request);
         }
-        const accessToken = sessionStorage.getItem("Token");
-//  
+        const accessToken =
+            sessionStorage.getItem('Token') ||
+            sessionStorage.getItem('token') ||
+            localStorage.getItem('Token') ||
+            localStorage.getItem('token');
 
+        if (!accessToken) {
+            return next.handle(request);
+        }
 
-
-        const _request = request.clone({
-            headers: request.headers.set(
-                "Authorization",
-                `Bearer ${accessToken}`
-            ),
-
+        const authorizedRequest = request.clone({
+            headers: request.headers.set('Authorization', `Bearer ${accessToken}`),
         });
-        // console.log("na request", _request)
 
-
-
-
-        return next.handle(_request);
+        return next.handle(authorizedRequest);
     }
 }

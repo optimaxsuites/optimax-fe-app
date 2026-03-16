@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 interface LoanDashboardAlert {
   level: 'warning' | 'danger';
@@ -75,7 +76,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private location: Location,
     private router: Router,
-    private loanApplicationService: LoanApplicationService
+    private loanApplicationService: LoanApplicationService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit() {
@@ -94,15 +96,33 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
         // Filter out test data
-        this.allLoans = applications.filter(loan => 
+        const filteredLoans = applications.filter(loan => 
           !loan.fullName.includes('John Doe') && 
           !loan.fullName.includes('Jane Doe')
         );
-        this.updateDashboardStats();
-        this.applyFilter();
-        this.updateAlerts();
-        this.updateRecentActivities();
-        this.isLoading = false;
+        // Fetch employee details for each loan
+        const employeeIds = filteredLoans.map(loan => loan.employeeId);
+        Promise.all(employeeIds.map(id => this.employeeService.getEmployeeById(Number(id)).toPromise()))
+          .then(employeeDetails => {
+            this.allLoans = filteredLoans.map((loan, idx) => ({
+              ...loan,
+              fullName: employeeDetails[idx]?.fullName || loan.fullName,
+              department: employeeDetails[idx]?.department || loan.department
+            }));
+            this.updateDashboardStats();
+            this.applyFilter();
+            this.updateAlerts();
+            this.updateRecentActivities();
+            this.isLoading = false;
+          })
+          .catch(() => {
+            this.allLoans = filteredLoans;
+            this.updateDashboardStats();
+            this.applyFilter();
+            this.updateAlerts();
+            this.updateRecentActivities();
+            this.isLoading = false;
+          });
       },
       error: (error) => {
         console.error('Error loading dashboard data:', error);

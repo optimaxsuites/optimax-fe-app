@@ -1,6 +1,7 @@
 <div class="main-dashboard-wrapper">
   <div class="dashboard-toggle">
-    <label class="toggle-label">Dashboards</label>
+    <label class="toggle-label">See Dashboards</label>
+    <p class="dashboard-copy">Use the buttons below to switch between the advance loan and cooperative loan admin dashboards.</p>
     <div class="dashboard-switch" role="tablist" aria-label="Dashboard selector">
       <button
         type="button"
@@ -23,11 +24,11 @@
     </div>
   </div>
 
-  <div class="dashboard-content" *ngIf="selectedDashboard === 'advance'">
+  <section class="dashboard-section" *ngIf="selectedDashboard === 'advance'">
     <app-loan-dashboard></app-loan-dashboard>
-  </div>
+  </section>
 
-  <div class="dashboard-content" *ngIf="selectedDashboard === 'cooperative'">
+  <section class="dashboard-section" *ngIf="selectedDashboard === 'cooperative'">
     <app-cooperative-dashboard></app-cooperative-dashboard>
-  </div>
+  </section>
 </div>

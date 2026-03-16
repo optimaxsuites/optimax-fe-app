@@ -2,17 +2,17 @@
   <app-modal *ngIf="showLoanSummaryModal" [header]="'Co-operative Loan Details'" (close)="closeLoanSummaryModal()">
     <div class="cooperative-loan-modal" *ngIf="selectedLoanForSummary as loan">
       <div class="details-grid">
-        <div class="detail-item"><span class="label">Loan ID</span><span class="value">{{ loan.loanId }}</span></div>
+        <div class="detail-item"><span class="label">Loan ID</span><span class="value">{{ loan.loanCode || loan.loanId }}</span></div>
         <div class="detail-item"><span class="label">Member</span><span class="value">{{ getSelectedLoanMemberName() }}</span></div>
         <div class="detail-item"><span class="label">group</span><span class="value">{{ getSelectedLoangroupName() }}</span></div>
         <div class="detail-item"><span class="label">Status</span><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></div>
-        <div class="detail-item"><span class="label">Applied On</span><span class="value">{{ loan.applicationDate | date:'medium' }}</span></div>
+        <div class="detail-item"><span class="label">Applied On</span><span class="value">{{ (loan.requestDate || loan.applicationDate) | date:'medium' }}</span></div>
         <div class="detail-item"><span class="label">Approved On</span><span class="value">{{ loan.approvedDate ? (loan.approvedDate | date:'medium') : 'N/A' }}</span></div>
         <div class="detail-item"><span class="label">Amount</span><span class="value">{{ formatCurrency(loan.amount) }}</span></div>
         <div class="detail-item"><span class="label">Interest Rate</span><span class="value">{{ loan.interestRate }}%</span></div>
         <div class="detail-item"><span class="label">Duration</span><span class="value">{{ loan.duration }} months</span></div>
-        <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span></div>
-        <div class="detail-item"><span class="label">Total Repayment</span><span class="value">{{ formatCurrency(loan.totalRepayment) }}</span></div>
+        <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span></div>
+        <div class="detail-item"><span class="label">Total Repayment</span><span class="value">{{ formatCurrency(loan.totalRepayment || 0) }}</span></div>
         <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
         <div class="detail-item full" *ngIf="loan.adminRequestNote"><span class="label">Admin Comment</span><span class="value">{{ loan.adminRequestNote }}</span></div>
         <div class="detail-item full" *ngIf="loan.rejectionReason"><span class="label">Rejection Reason</span><span class="value">{{ loan.rejectionReason }}</span></div>
@@ -338,11 +338,11 @@
             </thead>
             <tbody>
               <tr *ngFor="let loan of recentLoans">
-                <td class="loan-id" [title]="loan.loanId">{{ loan.loanId.length > 11 ? (loan.loanId | slice:0:11) + '...' : loan.loanId }}</td>
+                <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
                 <td class="amount">{{ formatCurrency(loan.amount) }}</td>
                 <td><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></td>
-                <td>{{ loan.applicationDate | date:'shortDate' }}</td>
-                <td class="actions-col"><button class="icon-btn" (click)="viewLoan(loan.id)"><i class="pi pi-eye"></i></button></td>
+                <td>{{ (loan.requestDate || loan.applicationDate) | date:'shortDate' }}</td>
+                <td class="actions-col"><button class="icon-btn" (click)="viewLoan(loan.id.toString())"><i class="pi pi-eye"></i></button></td>
               </tr>
             </tbody>
           </table>

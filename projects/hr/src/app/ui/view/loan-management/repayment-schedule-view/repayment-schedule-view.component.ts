@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.service';
+import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 
 @Component({
   selector: 'app-repayment-schedule-view',
