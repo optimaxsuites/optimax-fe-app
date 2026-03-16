@@ -373,9 +373,9 @@
                             <i class="fa-solid fa-file-invoice text-3xl text-gray-400 group-hover:text-customGreen"></i>
                         </div>
                         <p class="text-lg font-semibold text-gray-700 mb-1">Drag & drop your statement here</p>
-                        <p class="text-sm text-gray-500 mb-6">Supports PDF, Excel (.xlsx), or CSV</p>
+                        <p class="text-sm text-gray-500 mb-6">Supports PDF, Excel (.xlsx), CSV, or Word (.docx)</p>
 
-                        <input type="file" #fileInput (change)="onFileSelected($event)" accept=".csv,.xlsx,.xls,.pdf"
+                        <input type="file" #fileInput (change)="onFileSelected($event)" accept=".csv,.xlsx,.xls,.pdf,.docx,.doc"
                             class="hidden">
                         <button (click)="fileInput.click()"
                             class="bg-white border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm">
@@ -397,10 +397,62 @@
                     </ng-template>
                 </div>
 
-                <div class="bg-blue-50 p-4 rounded-lg flex gap-3 items-start">
+                <!-- ── File Preview Panel ───────────────────────────────── -->
+                <div *ngIf="showFilePreview && !isProcessingFile" class="mt-4">
+
+                    <!-- PDF Preview via ng2-pdf-viewer -->
+                    <div *ngIf="fileType === 'pdf' && pdfSrc"
+                        class="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-100">
+                            <i class="fa-solid fa-file-pdf text-red-500"></i>
+                            <span class="text-sm font-semibold text-red-700">PDF Preview – {{ selectedFile?.name }}</span>
+                        </div>
+                        <div class="max-h-64 overflow-y-auto flex justify-center p-2">
+                            <pdf-viewer
+                                [src]="pdfSrc"
+                                [render-text]="true"
+                                [original-size]="false"
+                                [page]="1"
+                                style="display:block; width:100%; height:240px;">
+                            </pdf-viewer>
+                        </div>
+                    </div>
+
+                    <!-- DOCX Preview via Mammoth HTML -->
+                    <div *ngIf="fileType === 'docx' && docxHtml"
+                        class="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 border-b border-blue-100">
+                            <i class="fa-solid fa-file-word text-blue-600"></i>
+                            <span class="text-sm font-semibold text-blue-700">Word Preview – {{ selectedFile?.name }}</span>
+                        </div>
+                        <div class="max-h-56 overflow-y-auto p-4 text-sm text-gray-700 prose prose-sm max-w-none"
+                            [innerHTML]="docxHtml">
+                        </div>
+                    </div>
+
+                    <!-- Excel / CSV detected columns badge -->
+                    <div *ngIf="fileType === 'excel' || fileType === 'csv'"
+                        class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                        <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-table-cells-large text-customGreen"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-green-800">{{ selectedFile?.name }}</p>
+                            <p class="text-xs text-green-700">
+                                <span class="font-semibold">{{ currentStatement?.totalRows ?? 0 }}</span> rows ·
+                                <span class="font-semibold">{{ availableColumns.length }}</span> columns detected
+                            </p>
+                        </div>
+                        <i class="fa-solid fa-check-circle text-customGreen ml-auto text-xl"></i>
+                    </div>
+
+                </div>
+                <!-- ────────────────────────────────────────────────────── -->
+
+                <div class="bg-blue-50 p-4 rounded-lg flex gap-3 items-start mt-4">
                     <i class="fa-solid fa-circle-info text-customBlue mt-0.5"></i>
                     <p class="text-sm text-blue-800">For best results, ensure your statement has clear headers for Date,
-                        Description, and Amount.</p>
+                        Description, and Amount. PDF and Word files will be previewed for visual review.</p>
                 </div>
             </div>
         </div>
@@ -451,16 +503,40 @@
                     </select>
                 </div>
 
-                <!-- Amount Mapping -->
+                <!-- Amount Mapping (Single Column) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center border-b border-gray-100 pb-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Amount <span
-                                class="text-red-500">*</span></label>
-                        <p class="text-xs text-gray-500">The value of the transaction.</p>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Single Amount Column</label>
+                        <p class="text-xs text-gray-500">Use if all transactions are in one column.</p>
                     </div>
                     <select [(ngModel)]="fieldMapping.amountColumn"
                         class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue">
-                        <option value="" disabled>Select Column</option>
+                        <option value="">(None)</option>
+                        <option *ngFor="let col of availableColumns" [value]="col.value">{{ col.label }}</option>
+                    </select>
+                </div>
+
+                <!-- Debit/Credit Separate Columns -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center border-b border-gray-100 pb-4 bg-gray-50/50 p-2 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Debit Column (OUT)</label>
+                        <p class="text-xs text-gray-500">Column for withdrawals/expenses.</p>
+                    </div>
+                    <select [(ngModel)]="fieldMapping.debitColumn"
+                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue">
+                        <option value="">(None)</option>
+                        <option *ngFor="let col of availableColumns" [value]="col.value">{{ col.label }}</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center border-b border-gray-100 pb-4 bg-gray-50/50 p-2 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Credit Column (IN)</label>
+                        <p class="text-xs text-gray-500">Column for deposits/income.</p>
+                    </div>
+                    <select [(ngModel)]="fieldMapping.creditColumn"
+                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue">
+                        <option value="">(None)</option>
                         <option *ngFor="let col of availableColumns" [value]="col.value">{{ col.label }}</option>
                     </select>
                 </div>
@@ -478,11 +554,24 @@
                     </select>
                 </div>
 
+                <!-- Balance Mapping (Optional) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center border-b border-gray-100 pb-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Running Balance</label>
+                        <p class="text-xs text-gray-500">Optional column for current balance.</p>
+                    </div>
+                    <select [(ngModel)]="fieldMapping.balanceColumn"
+                        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue">
+                        <option value="">(None)</option>
+                        <option *ngFor="let col of availableColumns" [value]="col.value">{{ col.label }}</option>
+                    </select>
+                </div>
+
                 <!-- Type Mapping (Optional) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Type (Debit/Credit)</label>
-                        <p class="text-xs text-gray-500">Column indicating if money is in/out.</p>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Type Indicator (Dr/Cr)</label>
+                        <p class="text-xs text-gray-500">Column indicating in/out status.</p>
                     </div>
                     <select [(ngModel)]="fieldMapping.debitCreditColumn"
                         class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue">
@@ -573,6 +662,7 @@
                             <th class="p-4">Date</th>
                             <th class="p-4">Description</th>
                             <th class="p-4 text-right">Amount</th>
+                            <th *ngIf="fieldMapping.balanceColumn" class="p-4 text-right">Balance</th>
                             <th class="p-4">Ref</th>
                             <th class="p-4 text-center">Type</th>
                             <th class="p-4">Status</th>
@@ -601,6 +691,9 @@
                             </td>
                             <td class="p-4 text-right font-bold text-gray-900 font-mono">
                                 {{ formatCurrency(row.amount) }}
+                            </td>
+                            <td *ngIf="fieldMapping.balanceColumn" class="p-4 text-right text-gray-500 font-mono">
+                                {{ formatCurrency(row.balance || 0) }}
                             </td>
                             <td class="p-4 text-gray-500">{{ row.reference || '-' }}</td>
                             <td class="p-4 text-center">

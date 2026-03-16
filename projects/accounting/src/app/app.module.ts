@@ -112,6 +112,7 @@ import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-
 import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ConfirmationService } from 'primeng/api';
+import { PdfViewerModule } from 'ng2-pdf-viewer';
 
 @NgModule({
   declarations: [
@@ -219,6 +220,7 @@ import { ConfirmationService } from 'primeng/api';
     TooltipModule,
     FileUploadModule,
     ToggleButtonModule,
+    PdfViewerModule,
   ],
   providers: [
     MessageService,
