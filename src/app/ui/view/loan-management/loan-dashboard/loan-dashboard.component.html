@@ -19,7 +19,7 @@
                 <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
             </div>
 
-            <div class="lifecycle-table-wrap" *ngIf="loan.repaymentSchedule?.length">
+            <div class="lifecycle-table-wrap" *ngIf="loan.repaymentSchedule.length">
                 <h4>Repayment Lifecycle (First 6 Installments)</h4>
                 <table appSortableTable class="lifecycle-table">
                     <thead>

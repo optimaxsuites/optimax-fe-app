@@ -20,7 +20,6 @@ export class NavTabComponent {
   #sessionStorageCacheKey = '';
 
   ngOnInit(): void {
-    // this.selectedTab = this.tabsConfig[0]?.name
     this.user_role = sessionStorage.getItem('role');
     this.#sessionStorageCacheKey = this.tabsConfig
       .map((tab) => tab.name)
@@ -35,9 +34,16 @@ export class NavTabComponent {
       : this.tabsConfig[0]?.name;
 
     const cachedTabName = sessionStorage.getItem(this.#sessionStorageCacheKey);
-    if (cachedTabName) {
+    const isCachedTabAccessible = this.tabsConfig.some(
+      (tab) => tab.name === cachedTabName && (!tab.role || tab.role === this.user_role)
+    );
+
+    if (cachedTabName && isCachedTabAccessible) {
       this.selectedTab = cachedTabName;
+      return;
     }
+
+    this.#cacheSelectedTab(this.selectedTab);
   }
 
   toggleDropdown(tabName: string) {

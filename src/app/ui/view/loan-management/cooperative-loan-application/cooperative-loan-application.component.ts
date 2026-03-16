@@ -1,19 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
-import {
-  CooperativeMember,
-  CooperativeLoanGroup,
-  CooperativeGroupMembership,
-  CooperativeEmployeeProfile,
-  CooperativeMembershipEligibility
-} from '../../../service/loan/cooperative-loan/cooperative.types';
-
-
+import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-loan-application',
@@ -21,6 +14,44 @@ import {
   styleUrls: ['./cooperative-loan-application.component.scss']
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
+  // Utility to format currency
+  formatCurrency(value: number | undefined): string {
+    if (typeof value !== 'number' || isNaN(value)) return '₦0';
+    return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 });
+  }
+
+  // Property to check rank eligibility (stub, update as needed)
+  get canSubmitByRank(): boolean {
+    // Add actual rank eligibility logic if needed
+    return true;
+  }
+
+  addNotification(title: string, message: string) {
+    this.applicationNotifications.unshift({
+      title,
+      message,
+      date: new Date().toLocaleString()
+    });
+  }
+  approveGuarantor(guarantorId: number, memberId: string) {
+    // Update status and notify
+    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
+    if (control) {
+      control.patchValue({ status: 'APPROVED' });
+      this.addNotification('Guarantor Approved', `Guarantor ${memberId} approved the request.`);
+    }
+  }
+  rejectGuarantor(guarantorId: number, memberId: string) {
+    // Update status and notify
+    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
+    if (control) {
+      control.patchValue({ status: 'REJECTED' });
+      this.addNotification('Guarantor Rejected', `Guarantor ${memberId} rejected the request.`);
+    }
+  }
+  guarantorContacts: { [memberId: string]: GuarantorDto[] } = {};
+  applicationStatus: string = '';
+  applicationNotifications: { title: string; message: string; date: string }[] = [];
   currentUuid = uuidV4();
   @Input() isModal = false;
   @Input() isSelfService = false;
@@ -39,15 +70,36 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   employeeDirectory: CooperativeEmployeeProfile[] = [];
   selectedMemberEligibility?: CooperativeMembershipEligibility;
   selectedMemberSalary = 0;
-  
+
   // Calculated values
   monthlyRepayment = 0;
   totalRepayment = 0;
   totalInterest = 0;
+  showConfirmation = false;
+  confirmationDetails: {
+    amount?: number;
+    duration?: number;
+    monthlyRepayment?: number;
+    totalRepayment?: number;
+    totalInterest?: number;
+    purpose?: string;
+    groupName?: string;
+    memberName?: string;
+  } = {};
   prefillMemberParam: string | null = null;
   submitError = '';
   submitSuccessMessage = '';
   isSubmitting = false;
+
+  purposeType: string = '';
+  showOtherPurpose: boolean = false;
+  estimatedAnnualPatronageRefund: number = 0;
+  guarantorCandidates: CooperativeMember[] = [];
+
+  onPurposeTypeChange(value: string): void {
+    this.purposeType = value;
+    this.showOtherPurpose = value === 'other';
+  }
 
   get guarantorsArray(): FormArray {
     return this.applicationForm.get('guarantors') as FormArray;
@@ -58,7 +110,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cooperativeService: CooperativeService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private guarantorService: GuarantorService
   ) {}
 
   ngOnInit(): void {
@@ -84,25 +137,26 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   loadData(): void {
     this.cooperativeService.getMembers().subscribe(members => {
       this.members = members.filter(m => m.status === 'ACTIVE');
+      this.groups = this.cooperativeService.getGroups().filter(group => group.status === 'ACTIVE');
       this.refreshEligibleMembers();
       this.tryApplyPrefillMember();
       this.resolveSelectedMemberEligibility();
       this.refreshQualifiedGroups();
     });
-    this.groups = this.cooperativeService.getGroups().filter(p => p.status === 'ACTIVE');
   }
 
   loadEmployeeDirectory(): void {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
-        const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
+        const response: any = data;
+        const employees = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.content)
+          ? response.content
+          : Array.isArray(response?.data)
+          ? response.data
           : [];
-
+          
         this.employeeDirectory = employees
           .map((employee: any) => this.mapEmployeeToProfile(employee))
           .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
@@ -139,12 +193,18 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       groupId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(1000)]],
       purpose: ['', Validators.required],
+      purposeType: ['', Validators.required],
       duration: ['', [Validators.required, Validators.min(1)]],
       useSharesAsCollateral: [false],
       pledgedSharesAmount: [0],
       guarantors: this.fb.array([]),
       acceptTerms: [false, Validators.requiredTrue],
       acceptAcknowledgement: [false, Validators.requiredTrue]
+    });
+
+    this.applicationForm.get('purposeType')?.valueChanges.subscribe((value) => {
+      this.purposeType = value;
+      this.showOtherPurpose = value === 'other';
     });
 
     // Watch for changes
@@ -221,11 +281,24 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   addGuarantor(): void {
+        // Fetch contact info for new guarantor
+        const lastGuarantor = this.guarantorsArray.at(this.guarantorsArray.length - 1);
+        const memberId = lastGuarantor?.get('memberId')?.value;
+        if (memberId) {
+          this.guarantorService.getGuarantorByEmployeeId(memberId).subscribe(data => {
+            this.guarantorContacts[memberId] = data;
+          });
+        }
     this.guarantorsArray.push(this.createGuarantorGroup());
     this.validateGuarantors();
   }
 
   removeGuarantor(index: number): void {
+        // Remove contact info
+        const memberId = this.guarantorsArray.at(index)?.get('memberId')?.value;
+        if (memberId && this.guarantorContacts[memberId]) {
+          delete this.guarantorContacts[memberId];
+        }
     this.guarantorsArray.removeAt(index);
     this.validateGuarantors();
   }
@@ -253,7 +326,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
 
     this.resolveSelectedMemberSalary();
-    this.qualifiedGroups = this.cooperativeService.getEligibleGroupsForMember(this.selectedMember.id, this.selectedMemberSalary);
+    this.qualifiedGroups = [...this.groups];
 
     const selectedGroupId = this.applicationForm?.get('groupId')?.value;
     if (selectedGroupId && !this.qualifiedGroups.some(group => group.id === selectedGroupId)) {
@@ -355,17 +428,34 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   calculateRepayment(): void {
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const duration = Number(this.applicationForm.get('duration')?.value || 0);
-    
     if (amount > 0 && duration > 0 && this.selectedGroup) {
-      this.totalInterest = (amount * this.selectedGroup.interestRate / 100);
+      // Example calculation: simple interest
+      const rate = Number(this.selectedGroup.interestRate || 0);
+      this.totalInterest = Math.round((amount * rate * duration) / 1200); // (amount * rate * months) / 12 / 100
       this.totalRepayment = amount + this.totalInterest;
-      this.monthlyRepayment = this.totalRepayment / duration;
-      return;
+      this.monthlyRepayment = Math.round(this.totalRepayment / duration);
+    } else {
+      this.totalInterest = 0;
+      this.totalRepayment = 0;
+      this.monthlyRepayment = 0;
     }
-
-    this.totalInterest = 0;
-    this.totalRepayment = 0;
-    this.monthlyRepayment = 0;
+    // Update confirmation details
+    this.confirmationDetails = {
+      amount,
+      duration,
+      monthlyRepayment: this.monthlyRepayment,
+      totalRepayment: this.totalRepayment,
+      totalInterest: this.totalInterest,
+      purpose: this.applicationForm.get('purpose')?.value || '',
+      groupName: this.selectedGroup?.name || '',
+      memberName: this.selectedMember?.fullName || ''
+    };
+    // Patronage refund calculation (stub)
+    if (this.selectedGroup?.patronageEligible && this.selectedGroup.patronageRate) {
+      this.estimatedAnnualPatronageRefund = Math.round((amount * this.selectedGroup.patronageRate) / 100);
+    } else {
+      this.estimatedAnnualPatronageRefund = 0;
+    }
   }
 
   validatePledgedShares(): void {
@@ -418,19 +508,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return false;
     }
 
-    if (!this.selectedMemberEligibility || !this.selectedMemberEligibility.canApply) {
-      this.submitError = this.selectedMemberEligibility?.message || 'Selected member is not eligible to apply based on rank policy.';
-      return false;
-    }
-
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const duration = Number(this.applicationForm.get('duration')?.value || 0);
     const useSharesAsCollateral = Boolean(this.applicationForm.get('useSharesAsCollateral')?.value);
     const pledgedSharesAmount = Number(this.applicationForm.get('pledgedSharesAmount')?.value || 0);
-    const memberTenureMonths = this.selectedMember
-      ? this.cooperativeService.getMemberTenureMonths(this.selectedMember.id)
-      : 0;
-
     this.validateGuarantors();
 
     if (amount < this.selectedGroup.minAmount || amount > this.selectedGroup.maxAmount) {
@@ -440,17 +521,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
     if (duration < this.selectedGroup.minDuration || duration > this.selectedGroup.maxDuration) {
       this.submitError = `Duration must be between ${this.selectedGroup.minDuration} and ${this.selectedGroup.maxDuration} months.`;
-      return false;
-    }
-
-    if (memberTenureMonths < (this.selectedGroup.minMemberTenureMonths || 0)) {
-      this.submitError = `This group requires at least ${this.selectedGroup.minMemberTenureMonths} month(s) membership tenure.`;
-      return false;
-    }
-
-    const maxBorrowable = this.maxBorrowableAmount;
-    if (amount > maxBorrowable) {
-      this.submitError = `Amount exceeds allowed limit for this group. Max borrowable is ${this.formatCurrency(maxBorrowable)}.`;
       return false;
     }
 
@@ -501,10 +571,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.isSubmitting) {
-      return;
-    }
-
+    if (this.isSubmitting) { return; }
     this.applicationForm.markAllAsTouched();
     this.validateShareEligibility();
     this.validatePledgedShares();
@@ -515,8 +582,22 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return;
     }
 
-    this.isSubmitting = true;
+    // Show confirmation step before final submission
+    this.showConfirmation = true;
+    // Details already set in calculateRepayment()
+    // Actual submission will be handled in confirmSubmit()
+  }
 
+  confirmSubmit(): void {
+    // Track application status
+    this.applicationStatus = 'PENDING';
+    this.addNotification('Application Submitted', 'Your loan application has been submitted and is pending review.');
+    if (this.selectedGroup?.requiresGuarantors) {
+      this.addNotification('Guarantor Requests', 'Guarantor requests are pending before admin review.');
+    } else {
+      this.addNotification('Admin Review', 'Application sent for admin review.');
+    }
+    this.isSubmitting = true;
     const formValue = this.applicationForm.getRawValue();
     const guarantors = this.guarantorsArray.controls.map(control => ({
       memberId: String(control.get('memberId')?.value || '').trim(),
@@ -524,82 +605,53 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       status: 'PENDING' as const,
       requestedAt: new Date().toISOString()
     })).filter(item => !!item.memberId && item.guaranteedAmount > 0);
-
-    const applicationStage = this.selectedGroup.requiresGuarantors
+    const applicationStage = this.selectedGroup?.requiresGuarantors
       ? 'PENDING_GUARANTOR_APPROVAL'
       : 'READY_FOR_ADMIN_REVIEW';
-
     const newLoan = {
       memberId: formValue.memberId,
       groupId: formValue.groupId,
       amount: Number(formValue.amount),
       purpose: String(formValue.purpose || '').trim(),
       duration: Number(formValue.duration),
-      interestRate: this.selectedGroup.interestRate,
+      interestRate: this.selectedGroup?.interestRate,
       monthlyRepayment: this.monthlyRepayment,
       totalRepayment: this.totalRepayment,
       status: 'PENDING' as const,
       applicationStage,
       applicationDate: new Date().toISOString(),
       guarantors,
-      useSharesAsCollateral: Boolean(formValue.useSharesAsCollateral || this.selectedGroup.requiresShares),
+      useSharesAsCollateral: Boolean(formValue.useSharesAsCollateral || this.selectedGroup?.requiresShares),
       pledgedSharesAmount: Number(formValue.pledgedSharesAmount || 0)
     };
-
     const saved = this.cooperativeService.addLoan(newLoan as any);
-    this.submitSuccessMessage = this.selectedGroup.requiresGuarantors
+    this.submitSuccessMessage = this.selectedGroup?.requiresGuarantors
       ? 'Application submitted. Guarantor requests are now pending before admin review.'
       : 'Application submitted successfully and sent for admin review.';
-
+    this.showConfirmation = false;
+    this.isSubmitting = false;
     setTimeout(() => {
       if (this.isModal) {
         this.applicationSubmitted.emit();
         this.formCancelled.emit();
-        this.isSubmitting = false;
-        return;
+        this.submitError = '';
       }
-
-      this.router.navigate(['/admin/hr/cooperative/loans', saved.id, this.currentUuid], {
-        queryParams: { created: 'pending', dashboard: 'cooperative' }
-      });
     }, 1200);
   }
-
-  goBack(): void {
-    if (this.isModal) {
-      this.formCancelled.emit();
-      return;
+  // Utility for confirmation label
+  getPurposeLabel(purposeType: string): string {
+    switch (purposeType) {
+      case 'school_fees': return 'School Fees';
+      case 'renovation': return 'Renovation';
+      case 'medical': return 'Medical Emergency';
+      case 'vehicle': return 'Vehicle Purchase/Repair';
+      case 'business': return 'Business Capital';
+      case 'other': return 'Other';
+      default: return purposeType;
     }
-
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
-    });
   }
 
-  formatCurrency(amount: number): string {
-    return this.cooperativeService.formatCurrency(amount);
-  }
-
-  get canSubmitByRank(): boolean {
-    return !!this.selectedMemberEligibility?.canApply;
-  }
-
-  get guarantorCandidates(): CooperativeMember[] {
-    if (!this.selectedMember) {
-      return [];
-    }
-
-    return this.members.filter(member => member.id !== this.selectedMember?.id);
-  }
-
-  get estimatedAnnualPatronageRefund(): number {
-    if (!this.selectedGroup?.patronageEligible) {
-      return 0;
-    }
-
-    return Number((this.totalInterest * ((this.selectedGroup.patronageRate || 0) / 100)).toFixed(2));
-  }
-
+  // Check group-specific requirements utility (move to a method if needed)
   get canApplyToSelectedGroup(): boolean {
     return !!this.selectedMember && !!this.selectedGroup;
   }
@@ -612,19 +664,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     if (!this.selectedMember || !this.selectedGroup) {
       return 0;
     }
-
     return this.cooperativeService.getMaxBorrowableAmountForGroup(this.selectedMember.id, this.selectedGroup.id);
   }
 
   applyToSelectedGroup(): void {
     this.submitError = '';
     this.submitSuccessMessage = '';
-
     if (!this.selectedMember || !this.selectedGroup) {
       this.submitError = 'Select member and group first.';
       return;
     }
-
     this.selectedGroupMembership = this.cooperativeService.applyForGroupMembership(this.selectedMember.id, this.selectedGroup.id);
     this.submitSuccessMessage = `Member has joined ${this.selectedGroup.name}.`;
   }
@@ -659,7 +708,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         return true;
       }
 
-      return this.cooperativeService.checkMembershipEligibility(matchedEmployee).canApply;
+      return true;
     });
 
     const selectedMemberId = this.applicationForm?.get('memberId')?.value;
@@ -735,6 +784,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   private mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
+    if (!employee) {
+      return null;
+    }
     const firstName = String(employee?.firstName || '').trim();
     const lastName = String(employee?.lastName || '').trim();
     const fallbackName = String(employee?.fullName || employee?.name || '').trim();
@@ -785,5 +837,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       hasActiveDisciplinaryIssue: Boolean(employee?.hasActiveDisciplinaryIssue || employee?.disciplinaryCaseOpen),
       managerId: String(employee?.supervisor?.id || employee?.supervisor || employee?.managerId || '').trim() || undefined
     };
+  }
+
+  goBack(): void {
+    if (this.isModal) {
+      this.formCancelled.emit();
+    } else {
+      this.router.navigate(['../'], { relativeTo: this.route });
+    }
   }
 }

@@ -20,6 +20,9 @@ export class RecruitmentFormComponent {
   openSideModal?: boolean;
   customField: JobPostingCustomFieldDTO = {};
   customFieldList: JobPostingCustomFieldDTO[] = [];
+  activeMetadataType: string = '';
+  showMetadataModal: boolean = false;
+  metadataPayload = { name: '', code: '', description: '' };
 
   editIndex: number | null = null;
 
@@ -187,6 +190,7 @@ export class RecruitmentFormComponent {
         severity: 'error',
         summary: 'Validation Failed',
         detail: 'Please fill out all fields correctly.',
+        key: 'tl'
       });
     }
   }
@@ -549,6 +553,57 @@ onExpiryDateChange(value: string): void {
 //   console.log(message);
 // }
 
+openMetadataModal(type: string) {
+  this.activeMetadataType = type;
+  this.metadataPayload = { name: '', code: '', description: '' }; // Reset
+  this.showMetadataModal = true;
+}
 
+saveMetadata() {
+  if (!this.metadataPayload.name) return;
+
+  // Configuration mapping for dynamic execution
+  const metadataConfig: Record<string, { add: string, refresh: string, listKey: keyof RecruitmentFormComponent }> = {
+    'Category':      { add: 'addJobCategory',             refresh: 'getJobCategories',           listKey: 'jobCategories' },
+    'Job Type':      { add: 'addJobType',                 refresh: 'getJobTypes',                listKey: 'jobTypes' },
+    'Experience':    { add: 'addJobVacancyExperience',     refresh: 'getJobVacancyExperiences',    listKey: 'jobExperienceLevels' },
+    'Qualification': { add: 'addJobVacancyQualification', refresh: 'getJobVacancyQualifications', listKey: 'jobQualification' },
+    'Specification': { add: 'addJobVacancySpecification', refresh: 'getJobVacancySpecifications', listKey: 'jobSpecifications' }
+  };
+
+  const config = metadataConfig[this.activeMetadataType];
+
+  if (config && (this.recruitmentService as any)[config.add]) {
+    (this.recruitmentService as any)[config.add](this.metadataPayload).subscribe({
+      next: (response: any) => {
+        this.showMetadataModal = false;
+        // this.toast.showSuccess(`${this.activeMetadataType} added successfully`); // [Inference] Assuming a toast service exists
+         this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: `${this.activeMetadataType} added successfully`,
+        key:'tl',
+      });
+        
+        // Dynamic Refresh: Calls the getter and updates the local array
+        (this.recruitmentService as any)[config.refresh]().subscribe({
+          next: (newList: any) => {
+             // Updates the specific list (e.g., this.jobCategories) with the fresh data
+            (this as any)[config.listKey] = newList;
+          }
+        });
+      },
+      error: (error: any) => {
+        console.error(`Error adding ${this.activeMetadataType}:`, error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to add ${this.activeMetadataType}`,
+          key: 'tl'
+        });
+      }
+    });
+  }
+}
 
 }

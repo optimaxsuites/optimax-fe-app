@@ -5,7 +5,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeLoan, CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
+import { CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
   selector: 'app-employee-history',
@@ -35,13 +37,15 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService
   ) {}
   
   ngOnInit(): void {
     this.viewSource = window.history.state?.source === 'employee' ? 'employee' : 'admin';
     this.historyMode = window.history.state?.cooperative ? 'cooperative' : 'advance';
     this.currentUuid = window.history.state?.uuid || this.currentUuid;
+    this.employeeName = window.history.state?.employeeName || this.employeeName;
 
     this.route.params.subscribe(params => {
       this.employeeId = params['employeeId'];
@@ -57,18 +61,29 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     }
 
     this.isLoading = true;
-    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
+    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
       next: (applications) => {
-        this.employeeLoans = applications;
-        this.filteredLoans = [...applications];
-        
-        if (this.employeeLoans.length > 0) {
-          this.employeeName = this.employeeLoans[0].fullName;
-        }
-        
-        // Apply initial sorting
-        this.applySort();
-        this.isLoading = false;
+        // Fetch employee details for this employeeId
+        this.employeeService.getEmployeeById(Number(this.employeeId)).toPromise()
+          .then(employee => {
+            this.employeeLoans = applications.map(loan => ({
+              ...loan,
+              fullName: employee?.fullName || loan.fullName,
+              department: employee?.department || loan.department
+            }));
+            this.filteredLoans = [...this.employeeLoans];
+            this.employeeName = employee?.fullName || (this.employeeLoans[0]?.fullName ?? '');
+            // Apply initial sorting
+            this.applySort();
+            this.isLoading = false;
+          })
+          .catch(() => {
+            this.employeeLoans = applications;
+            this.filteredLoans = [...applications];
+            this.employeeName = this.employeeLoans[0]?.fullName ?? '';
+            this.applySort();
+            this.isLoading = false;
+          });
       },
       error: (error) => {
         console.error('Error loading employee history:', error);
@@ -93,11 +108,11 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     this.employeeName = member.fullName;
     const cooperativeLoans = this.cooperativeService
       .getLoansByMember(member.id)
-      .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+      .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
 
     this.cooperativeLoanByCode.clear();
     cooperativeLoans.forEach(loan => {
-      this.cooperativeLoanByCode.set(loan.loanId, loan);
+      this.cooperativeLoanByCode.set(loan.loanCode, loan);
     });
 
     this.employeeLoans = cooperativeLoans.map(loan => this.mapCooperativeLoanToLoanApplication(loan, member));
@@ -108,7 +123,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
 
   private mapCooperativeLoanToLoanApplication(loan: CooperativeLoan, member: CooperativeMember): LoanApplication {
     const repayments = this.cooperativeService
-      .getRepaymentsByLoanId(loan.id)
+      .getRepaymentsByLoanId(loan.id.toString())
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const totalPaid = repayments
@@ -119,7 +134,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       .filter(item => item.status !== 'PAID')
       .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-    let remainingBalance = Number(loan.totalRepayment || 0);
+    let remainingBalance = Number(loan.repaymentAmount || 0);
     const repaymentSchedule = repayments.map((item, index) => {
       const totalPayment = Number(item.amount || 0);
       const principal = Number(item.principalComponent || Math.max(totalPayment - Number(item.interestComponent || 0), 0));
@@ -139,20 +154,31 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       };
     });
 
+    // Only allow valid status values
+    const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'COMPLETED'];
+    let mappedStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' = 'PENDING';
+    if (loan.status === 'DEFAULTED') {
+      mappedStatus = 'ACTIVE';
+    } else if (allowedStatuses.includes(loan.status)) {
+      mappedStatus = loan.status as typeof mappedStatus;
+    } else {
+      mappedStatus = 'PENDING';
+    }
+
     return {
-      id: loan.loanId,
+      id: loan.loanCode,
       employeeId: member.memberId,
       fullName: member.fullName,
       department: member.address || 'Cooperative',
       loanAmount: Number(loan.amount || 0),
       paymentMode: 'monthly',
-      status: loan.status === 'DEFAULTED' ? 'ACTIVE' : loan.status,
-      dateSubmitted: loan.applicationDate,
+      status: mappedStatus,
+      dateSubmitted: loan.requestDate,
       purpose: loan.purpose,
-      repaymentPeriod: Number(loan.duration || 0),
-      monthlyRepayment: Number(loan.monthlyRepayment || 0),
+      repaymentPeriod: Number(loan.repaymentTime || 0),
+      monthlyRepayment: Number(loan.repaymentAmount || 0),
       acknowledgment: true,
-      interestRate: Number(loan.interestRate || 0),
+      interestRate: 0, // Not present in DTO, set as needed
       currentBalance,
       totalPaid,
       statusHistory: [],
@@ -160,7 +186,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       paymentHistory: repayments
         .filter((item: CooperativeRepayment) => item.status === 'PAID' && !!item.paidDate)
         .map((item: CooperativeRepayment, index: number) => ({
-          id: item.receiptNumber || `CPAY-${loan.loanId}-${index + 1}`,
+          id: item.receiptNumber || `CPAY-${loan.loanCode}-${index + 1}`,
           date: item.paidDate as string,
           amount: Number(item.amount || 0),
           paymentMethod: item.paymentMethod || 'BANK_TRANSFER',

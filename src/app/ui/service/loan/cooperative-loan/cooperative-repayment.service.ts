@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { CooperativeLoan, CooperativeNotification, CooperativeRepayment } from './cooperative.types';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { CooperativeNotification, CooperativeRepayment } from './cooperative.types';
 
 export interface CooperativeRepaymentContext {
   loans: CooperativeLoan[];
@@ -21,30 +22,32 @@ export interface CooperativeRepaymentContext {
   providedIn: 'root'
 })
 export class CooperativeRepaymentService {
-  getRepaymentsByLoanId(context: CooperativeRepaymentContext, loanId: string): CooperativeRepayment[] {
-    this.ensureRepaymentScheduleForLoan(context, loanId);
-    this.refreshOverdueStatuses(context, loanId);
+  getRepaymentsByLoanId(context: CooperativeRepaymentContext, loanId: string | number): CooperativeRepayment[] {
+    const normalizedLoanId = String(loanId);
+    this.ensureRepaymentScheduleForLoan(context, normalizedLoanId);
+    this.refreshOverdueStatuses(context, normalizedLoanId);
 
     return context.repayments
-      .filter(item => item.loanId === loanId)
+      .filter(item => String(item.loanId) === normalizedLoanId)
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .map(item => ({ ...item }));
   }
 
   recordRepayment(
     context: CooperativeRepaymentContext,
-    loanId: string,
+    loanId: string | number,
     payload: { amount: number; paymentMethod: CooperativeRepayment['paymentMethod']; paidDate?: string }
   ): CooperativeRepayment | undefined {
-    const loan = context.loans.find(item => item.id === loanId);
+    const normalizedLoanId = String(loanId);
+    const loan = context.loans.find(item => String(item.id) === normalizedLoanId);
     if (!loan || loan.status !== 'ACTIVE') {
       return undefined;
     }
 
-    this.refreshOverdueStatuses(context, loanId);
+    this.refreshOverdueStatuses(context, normalizedLoanId);
 
     const openRepayments = context.repayments
-      .filter(item => item.loanId === loanId && item.status !== 'PAID')
+      .filter(item => String(item.loanId) === normalizedLoanId && item.status !== 'PAID')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const nextDue = openRepayments[0];
@@ -73,7 +76,7 @@ export class CooperativeRepaymentService {
       amount: paidAmount,
       paidDate: paymentTimestamp,
       paymentMethod,
-      receiptNumber: this.generateReceiptNumber(loan.loanId)
+      receiptNumber: this.generateReceiptNumber(this.getLoanCode(loan))
     };
 
     for (let index = 0; index < openRepayments.length && remainingPayment > 0; index++) {
@@ -89,7 +92,7 @@ export class CooperativeRepaymentService {
         remainingPayment = this.roundCurrency(remainingPayment - installmentAmount);
         installment.paidDate = paymentTimestamp;
         installment.paymentMethod = paymentMethod;
-        installment.receiptNumber = this.generateReceiptNumber(loan.loanId);
+        installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
         installment.status = 'PAID';
 
         principalPaidTotal += scheduledPrincipal;
@@ -113,7 +116,7 @@ export class CooperativeRepaymentService {
       if (installment.amount === 0) {
         installment.paidDate = paymentTimestamp;
         installment.paymentMethod = paymentMethod;
-        installment.receiptNumber = this.generateReceiptNumber(loan.loanId);
+        installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
         installment.status = 'PAID';
       }
       principalPaidTotal += principalReduction;
@@ -128,7 +131,7 @@ export class CooperativeRepaymentService {
     );
     loan.updatedAt = paymentTimestamp;
 
-    const remainingOpen = context.repayments.some(item => item.loanId === loanId && item.status !== 'PAID');
+    const remainingOpen = context.repayments.some(item => String(item.loanId) === normalizedLoanId && item.status !== 'PAID');
     if (!remainingOpen) {
       loan.status = 'COMPLETED';
       loan.completionDate = new Date().toISOString();
@@ -138,7 +141,7 @@ export class CooperativeRepaymentService {
       context.createMemberStatusNotification(
         loan,
         'Loan Completed',
-        `All repayments for loan ${loan.loanId} are received. Your loan is now completed.`
+        `All repayments for loan ${this.getLoanCode(loan)} are received. Your loan is now completed.`
       );
     }
 
@@ -146,23 +149,25 @@ export class CooperativeRepaymentService {
     return recordedRepayment;
   }
 
-  getOverdueRepaymentsByLoanId(context: CooperativeRepaymentContext, loanId: string): CooperativeRepayment[] {
-    this.refreshOverdueStatuses(context, loanId);
+  getOverdueRepaymentsByLoanId(context: CooperativeRepaymentContext, loanId: string | number): CooperativeRepayment[] {
+    const normalizedLoanId = String(loanId);
+    this.refreshOverdueStatuses(context, normalizedLoanId);
     return context.repayments
-      .filter(item => item.loanId === loanId && item.status === 'OVERDUE')
+      .filter(item => String(item.loanId) === normalizedLoanId && item.status === 'OVERDUE')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .map(item => ({ ...item }));
   }
 
-  sendRepaymentReminder(context: CooperativeRepaymentContext, loanId: string): boolean {
-    const loan = context.loans.find(item => item.id === loanId);
+  sendRepaymentReminder(context: CooperativeRepaymentContext, loanId: string | number): boolean {
+    const normalizedLoanId = String(loanId);
+    const loan = context.loans.find(item => String(item.id) === normalizedLoanId);
     if (!loan) {
       return false;
     }
 
     const nowIso = new Date().toISOString();
     const loanRepayments = context.repayments
-      .filter(item => item.loanId === loanId && item.status !== 'PAID')
+      .filter(item => String(item.loanId) === normalizedLoanId && item.status !== 'PAID')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const overdueItems = loanRepayments.filter(item => item.status === 'OVERDUE');
@@ -174,8 +179,8 @@ export class CooperativeRepaymentService {
 
     const totalOverdue = overdueItems.reduce((sum, item) => sum + item.amount, 0);
     const message = overdueItems.length > 0
-      ? `Reminder: ${overdueItems.length} repayment(s) are overdue for loan ${loan.loanId} totaling ${context.formatCurrency(totalOverdue)}.`
-      : `Reminder: Your next repayment for loan ${loan.loanId} is due on the 15th repayment cycle.`;
+      ? `Reminder: ${overdueItems.length} repayment(s) are overdue for loan ${this.getLoanCode(loan)} totaling ${context.formatCurrency(totalOverdue)}.`
+      : `Reminder: Your next repayment for loan ${this.getLoanCode(loan)} is due on the 15th repayment cycle.`;
 
     context.notifications.unshift({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -184,7 +189,7 @@ export class CooperativeRepaymentService {
       title: 'Loan Repayment Reminder',
       message,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId: this.getLoanMemberId(loan),
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -193,13 +198,14 @@ export class CooperativeRepaymentService {
     return true;
   }
 
-  markLoanAsDefaulted(context: CooperativeRepaymentContext, loanId: string): CooperativeLoan | undefined {
-    const loan = context.loans.find(item => item.id === loanId);
+  markLoanAsDefaulted(context: CooperativeRepaymentContext, loanId: string | number): CooperativeLoan | undefined {
+    const normalizedLoanId = String(loanId);
+    const loan = context.loans.find(item => String(item.id) === normalizedLoanId);
     if (!loan || (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED')) {
       return undefined;
     }
 
-    this.refreshOverdueStatuses(context, loanId);
+    this.refreshOverdueStatuses(context, normalizedLoanId);
 
     loan.status = 'DEFAULTED';
     loan.defaultedDate = new Date().toISOString();
@@ -211,9 +217,9 @@ export class CooperativeRepaymentService {
       type: 'LOAN_DEFAULTED',
       recipient: 'MEMBER',
       title: 'Loan Marked as Defaulted',
-      message: `Your loan ${loan.loanId} has been marked as defaulted. Please contact the cooperative admin immediately.`,
+      message: `Your loan ${this.getLoanCode(loan)} has been marked as defaulted. Please contact the cooperative admin immediately.`,
       loanId: loan.id,
-      memberId: loan.memberId,
+      memberId: this.getLoanMemberId(loan),
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -233,22 +239,22 @@ export class CooperativeRepaymentService {
     }
 
     const activeLoan = context.loans
-      .filter(item => item.memberId === memberId && item.status === 'ACTIVE')
-      .sort((a, b) => new Date(a.applicationDate).getTime() - new Date(b.applicationDate).getTime())[0];
+      .filter(item => this.getLoanMemberId(item) === memberId && item.status === 'ACTIVE')
+      .sort((a, b) => new Date(a.applicationDate || a.requestDate).getTime() - new Date(b.applicationDate || b.requestDate).getTime())[0];
 
     if (!activeLoan) {
       return { appliedAmount: 0 };
     }
 
-    this.ensureRepaymentScheduleForLoan(context, activeLoan.id);
-    this.refreshOverdueStatuses(context, activeLoan.id);
+    this.ensureRepaymentScheduleForLoan(context, String(activeLoan.id));
+    this.refreshOverdueStatuses(context, String(activeLoan.id));
 
     const openRepayments = context.repayments
-      .filter(item => item.loanId === activeLoan.id && item.status !== 'PAID')
+      .filter(item => String(item.loanId) === String(activeLoan.id) && item.status !== 'PAID')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     if (openRepayments.length === 0) {
-      return { appliedAmount: 0, loanId: activeLoan.id };
+      return { appliedAmount: 0, loanId: String(activeLoan.id) };
     }
 
     let remainingCredit = patronageAmount;
@@ -302,7 +308,7 @@ export class CooperativeRepaymentService {
     });
 
     const appliedAmount = Number((patronageAmount - remainingCredit).toFixed(2));
-    const stillOpen = context.repayments.some(item => item.loanId === activeLoan.id && item.status !== 'PAID');
+    const stillOpen = context.repayments.some(item => String(item.loanId) === String(activeLoan.id) && item.status !== 'PAID');
 
     activeLoan.totalPrincipalPaid = this.roundCurrency(Number(activeLoan.totalPrincipalPaid || 0) + principalPaidTotal);
     activeLoan.totalInterestPaid = this.roundCurrency(Number(activeLoan.totalInterestPaid || 0) + interestPaidTotal);
@@ -320,26 +326,32 @@ export class CooperativeRepaymentService {
     }
 
     context.saveToStorage();
-    return { appliedAmount, loanId: activeLoan.id };
+    return { appliedAmount, loanId: String(activeLoan.id) };
   }
 
   generateRepaymentSchedule(context: CooperativeRepaymentContext, loan: CooperativeLoan): void {
-    const retainedRepayments = context.repayments.filter(item => item.loanId !== loan.id);
+    const retainedRepayments = context.repayments.filter(item => String(item.loanId) !== String(loan.id));
     context.repayments.splice(0, context.repayments.length, ...retainedRepayments);
 
-    const disbursementDate = loan.disbursementDate ? new Date(loan.disbursementDate) : new Date();
-    const baseInstallment = this.roundCurrency(loan.totalRepayment / loan.duration);
-    const totalInterest = this.roundCurrency(Math.max(loan.totalRepayment - loan.amount, 0));
-    const baseInterest = this.roundCurrency(totalInterest / loan.duration);
+    const disbursementDate = loan.disbursementDate ? new Date(loan.disbursementDate) : loan.disbursedDate ? new Date(loan.disbursedDate) : new Date();
+    const duration = Number(loan.duration ?? loan.repaymentTime ?? 0);
+    if (duration <= 0) {
+      return;
+    }
+
+    const totalRepayment = Number(loan.totalRepayment ?? ((loan.monthlyRepayment ?? loan.repaymentAmount ?? 0) * duration));
+    const baseInstallment = this.roundCurrency(totalRepayment / duration);
+    const totalInterest = this.roundCurrency(Math.max(totalRepayment - loan.amount, 0));
+    const baseInterest = this.roundCurrency(totalInterest / duration);
     let principalBalance = this.roundCurrency(loan.amount);
     let interestBalance = totalInterest;
 
-    for (let installment = 1; installment <= loan.duration; installment++) {
+    for (let installment = 1; installment <= duration; installment++) {
       const dueDate = this.computeInstallmentDueDate(context.repaymentDueDay, disbursementDate, installment);
-      const interestComponent = installment === loan.duration
+      const interestComponent = installment === duration
         ? this.roundCurrency(interestBalance)
         : this.roundCurrency(baseInterest);
-      const principalComponent = installment === loan.duration
+      const principalComponent = installment === duration
         ? this.roundCurrency(principalBalance)
         : this.roundCurrency(Math.max(baseInstallment - interestComponent, 0));
 
@@ -361,12 +373,12 @@ export class CooperativeRepaymentService {
   }
 
   ensureRepaymentScheduleForLoan(context: CooperativeRepaymentContext, loanId: string): void {
-    const loan = context.loans.find(item => item.id === loanId);
+    const loan = context.loans.find(item => String(item.id) === loanId);
     if (!loan || loan.status !== 'ACTIVE') {
       return;
     }
 
-    const hasRepayment = context.repayments.some(item => item.loanId === loanId);
+    const hasRepayment = context.repayments.some(item => String(item.loanId) === loanId);
     if (hasRepayment) {
       return;
     }
@@ -384,7 +396,9 @@ export class CooperativeRepaymentService {
 
     context.repayments.forEach(item => {
       if (loanId && item.loanId !== loanId) {
-        return;
+        if (loanId && String(item.loanId) !== loanId) {
+          return;
+        }
       }
 
       if (item.status === 'PAID') {
@@ -454,5 +468,13 @@ export class CooperativeRepaymentService {
     const stamp = `${Date.now()}`.slice(-6);
     const shortLoanCode = loanCode.replace(/[^A-Z0-9]/gi, '').slice(-6).toUpperCase();
     return `RCP-${shortLoanCode}-${stamp}`;
+  }
+
+  private getLoanCode(loan: CooperativeLoan): string {
+    return String(loan.loanCode || loan.loanId || loan.id || '');
+  }
+
+  private getLoanMemberId(loan: CooperativeLoan): string {
+    return String(loan.memberId || loan.cooperativeMemberId || '');
   }
 }

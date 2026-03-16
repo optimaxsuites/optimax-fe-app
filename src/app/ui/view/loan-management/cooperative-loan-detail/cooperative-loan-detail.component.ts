@@ -3,7 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeLoan, CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-loan-detail',
@@ -48,10 +49,10 @@ export class CooperativeLoanDetailComponent implements OnInit {
     
     if (loan) {
       this.loan = loan;
-      this.member = this.cooperativeService.getMemberById(loan.memberId);
-      this.group = loan.groupId ? this.cooperativeService.getGroupById(loan.groupId) : undefined;
+      this.member = this.cooperativeService.getMemberById(String(loan.cooperativeMemberId || loan.memberId || ''));
+      this.group = loan.cooperativeGroupId ? this.cooperativeService.getGroupById(String(loan.cooperativeGroupId || loan.groupId || '')) : undefined;
       this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
-      this.guarantors = [...(loan.guarantors || [])];
+      this.guarantors = this.normalizeGuarantors(loan.guarantors);
       this.seedPaymentDefaults();
     }
     
@@ -92,7 +93,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    const latest = this.cooperativeService.getLoanById(this.loan.id);
+    const latest = this.cooperativeService.getLoanById(String(this.loan.id));
     if (latest) {
       this.loan = latest;
     }
@@ -136,6 +137,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     }
 
     this.loan = updated;
+    this.guarantors = this.normalizeGuarantors(updated.guarantors);
     this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
     this.messages = [{
       severity: 'warn',
@@ -145,7 +147,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   approveLoan(): void {
-    const updated = this.cooperativeService.approveLoan(this.loan.id);
+    const updated = this.cooperativeService.approveLoan(String(this.loan.id));
     if (!updated) {
       this.messages = [{
         severity: 'warn',
@@ -156,7 +158,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     }
 
     this.loan = updated;
-    this.guarantors = [...(updated.guarantors || [])];
+    this.guarantors = this.normalizeGuarantors(updated.guarantors);
     this.messages = [{
       severity: 'success',
       summary: 'Loan Approved',
@@ -170,7 +172,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   rejectLoan(): void {
     if (this.rejectionReason.trim()) {
-      const updated = this.cooperativeService.rejectLoan(this.loan.id, this.rejectionReason);
+      const updated = this.cooperativeService.rejectLoan(String(this.loan.id), this.rejectionReason);
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -206,7 +208,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   disburseLoan(): void {
     const beforeStats = this.cooperativeService.getStats();
     const beforeAvailable = Math.max(beforeStats.totalFund - beforeStats.loanPortfolio, 0);
-    const updated = this.cooperativeService.disburseLoan(this.loan.id);
+    const updated = this.cooperativeService.disburseLoan(String(this.loan.id));
     const afterStats = this.cooperativeService.getStats();
     const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
 
@@ -244,7 +246,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    const updated = this.cooperativeService.requestLoanChanges(this.loan.id, this.requestChangesNote);
+    const updated = this.cooperativeService.requestLoanChanges(String(this.loan.id), this.requestChangesNote);
     if (!updated) {
       this.messages = [{
         severity: 'warn',
@@ -255,7 +257,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     }
 
     this.loan = updated;
-    this.guarantors = [...(updated.guarantors || [])];
+    this.guarantors = this.normalizeGuarantors(updated.guarantors);
     this.showRequestChangesModal = false;
     this.requestChangesNote = '';
     this.messages = [{
@@ -272,7 +274,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   completeLoan(): void {
     this.loan.status = 'COMPLETED';
-    this.loan.completionDate = new Date().toISOString();
+    this.loan.completedDate = new Date().toISOString();
     this.cooperativeService.updateLoan(this.loan);
     this.messages = [{
       severity: 'success',
@@ -282,7 +284,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   setPendingReview(): void {
-    const updated = this.cooperativeService.setLoanPendingReview(this.loan.id, 'Application kept pending for further admin validation.');
+    const updated = this.cooperativeService.setLoanPendingReview(String(this.loan.id), 'Application kept pending for further admin validation.');
     if (!updated) {
       this.messages = [{
         severity: 'warn',
@@ -301,7 +303,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   approveGuarantor(memberId: string): void {
-    const updated = this.cooperativeService.submitGuarantorDecision(this.loan.id, memberId, 'APPROVED');
+    const updated = this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'APPROVED');
     if (!updated) {
       this.messages = [{
         severity: 'warn',
@@ -312,7 +314,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     }
 
     this.loan = updated;
-    this.guarantors = [...(updated.guarantors || [])];
+    this.guarantors = this.normalizeGuarantors(updated.guarantors);
     this.messages = [{
       severity: 'success',
       summary: 'Guarantor Approved',
@@ -321,7 +323,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   rejectGuarantor(memberId: string): void {
-    const updated = this.cooperativeService.submitGuarantorDecision(this.loan.id, memberId, 'REJECTED');
+    const updated = this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'REJECTED');
     if (!updated) {
       this.messages = [{
         severity: 'warn',
@@ -332,7 +334,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     }
 
     this.loan = updated;
-    this.guarantors = [...(updated.guarantors || [])];
+    this.guarantors = this.normalizeGuarantors(updated.guarantors);
     this.messages = [{
       severity: 'warn',
       summary: 'Guarantor Rejected',
@@ -413,15 +415,15 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   get remainingAmount(): number {
-    return Math.max(this.loan.totalRepayment - this.paidAmount, 0);
+    return Math.max((this.loan.repaymentAmount || 0) - this.paidAmount, 0);
   }
 
   get paymentProgress(): number {
-    if (!this.loan.totalRepayment) {
+    if (!this.loan.repaymentAmount) {
       return 0;
     }
 
-    return Math.min((this.paidAmount / this.loan.totalRepayment) * 100, 100);
+    return Math.min((this.paidAmount / (this.loan.repaymentAmount || 1)) * 100, 100);
   }
 
   get overdueRepaymentsCount(): number {
@@ -483,7 +485,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return 'UNKNOWN';
     }
 
-    const ratio = this.loan.monthlyRepayment > 0 ? shares / this.loan.monthlyRepayment : 0;
+    const ratio = (this.loan.repaymentAmount > 0 ? shares / this.loan.repaymentAmount : 0);
     if (ratio >= 3) {
       return 'GOOD';
     }
@@ -506,5 +508,16 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
     this.paymentAmount = nextUnpaid?.amount || this.loan?.monthlyRepayment || 0;
     this.paymentMethod = 'BANK_TRANSFER';
+  }
+
+  private normalizeGuarantors(guarantors: CooperativeLoan['guarantors'] | undefined): CooperativeLoanGuarantor[] {
+    return (guarantors || []).map((guarantor) => ({
+      memberId: String(guarantor.memberId || ''),
+      guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
+      status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
+      requestedAt: guarantor.requestedAt || new Date().toISOString(),
+      decidedAt: guarantor.decidedAt,
+      note: guarantor.note
+    }));
   }
 }

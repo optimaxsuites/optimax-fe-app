@@ -5,9 +5,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import {
   CooperativeStats,
-  CooperativeLoan,
   CooperativeMember,
   CooperativeNotification,
   CooperativeEmployeeProfile,
@@ -122,12 +122,12 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.cooperativeService.getLoans().subscribe(loans => {
       this.allLoans = [...loans];
       this.recentLoans = [...loans]
-        .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime())
+        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
 
       this.pendingApprovals = loans
         .filter(loan => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
-        .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime())
+        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
 
       this.patronageEstimate = this.estimatePatronage();
@@ -191,21 +191,24 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     const latestLoan = this.recentLoans[0];
     if (latestLoan) {
-      const member = memberMap.get(latestLoan.memberId);
-      const group = latestLoan.groupId ? this.cooperativeService.getGroupById(latestLoan.groupId) : undefined;
+      const memberId = this.getLoanMemberId(latestLoan);
+      const groupId = this.getLoanGroupId(latestLoan);
+      const member = memberId ? memberMap.get(memberId) : undefined;
+      const group = groupId ? this.cooperativeService.getGroupById(groupId) : undefined;
       activities.push({
         icon: 'fas fa-file-signature',
         message: `${member?.fullName || 'A member'} applied for ${this.formatCurrency(latestLoan.amount)} (${group?.name || 'Loan'})`,
-        time: this.getRelativeTime(latestLoan.applicationDate)
+        time: this.getRelativeTime(latestLoan.requestDate)
       });
     }
 
     const activeLoan = this.allLoans.find(loan => loan.status === 'ACTIVE');
     if (activeLoan) {
-      const member = memberMap.get(activeLoan.memberId);
+      const memberId = this.getLoanMemberId(activeLoan);
+      const member = memberId ? memberMap.get(memberId) : undefined;
       activities.push({
         icon: 'fas fa-money-check-alt',
-        message: `${member?.fullName || 'A member'} made payment of ${this.formatCurrency(activeLoan.monthlyRepayment)}`,
+        message: `${member?.fullName || 'A member'} made payment of ${this.formatCurrency(activeLoan.monthlyRepayment || activeLoan.repaymentAmount || 0)}`,
         time: '5h ago'
       });
     }
@@ -252,13 +255,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   isLoanOverdue(loan: CooperativeLoan): boolean {
-    if (loan.status !== 'ACTIVE' || !loan.disbursementDate) {
+    const disbursementDate = loan.disbursementDate || loan.disbursedDate;
+    const duration = loan.duration || loan.repaymentTime || 0;
+    if (loan.status !== 'ACTIVE' || !disbursementDate || !duration) {
       return false;
     }
 
-    const disbursedAt = new Date(loan.disbursementDate).getTime();
+    const disbursedAt = new Date(disbursementDate).getTime();
     const now = Date.now();
-    const durationMs = loan.duration * 30 * 24 * 60 * 60 * 1000;
+    const durationMs = duration * 30 * 24 * 60 * 60 * 1000;
 
     return now - disbursedAt > durationMs;
   }
@@ -306,8 +311,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewLoan(id: string): void {
-    const loan = this.allLoans.find(item => item.id === id);
+  viewLoan(id: string | number): void {
+    const loan = this.allLoans.find(item => String(item.id) === String(id));
     if (!loan) {
       return;
     }
@@ -326,7 +331,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       return '';
     }
 
-    return this.getMemberName(this.selectedLoanForSummary.memberId);
+    return this.getMemberName(this.getLoanMemberId(this.selectedLoanForSummary));
   }
 
   getSelectedLoangroupName(): string {
@@ -334,8 +339,9 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       return '';
     }
 
-    return this.selectedLoanForSummary && this.selectedLoanForSummary.groupId
-      ? this.cooperativeService.getGroupById(this.selectedLoanForSummary.groupId)?.name || 'N/A'
+    const groupId = this.selectedLoanForSummary ? this.getLoanGroupId(this.selectedLoanForSummary) : '';
+    return groupId
+      ? this.cooperativeService.getGroupById(groupId)?.name || 'N/A'
       : 'N/A';
   }
 
@@ -348,7 +354,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   openCooperativeLoanHistory(loan: CooperativeLoan): void {
     this.closeLoanSummaryModal();
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', loan.memberId, this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.getLoanMemberId(loan), this.currentUuid], {
       state: { source: 'admin', cooperative: true, uuid: this.currentUuid }
     });
   }
@@ -445,9 +451,14 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   calculatePatronage(): void {
-    const loansById = new Map(this.allLoans.map(loan => [loan.id, loan]));
+    const loansById = new Map(this.allLoans.map(loan => [String(loan.id), loan]));
     const memberById = new Map(this.allMembers.map(member => [member.id, member]));
-    const activeLoanMembers = new Set(this.allLoans.filter(loan => loan.status === 'ACTIVE').map(loan => loan.memberId));
+    const activeLoanMembers = new Set(
+      this.allLoans
+        .filter(loan => loan.status === 'ACTIVE')
+        .map(loan => this.getLoanMemberId(loan))
+        .filter((memberId): memberId is string => !!memberId)
+    );
 
     const paidRepayments = this.allLoans
       .flatMap(loan => this.cooperativeService.getRepaymentsByLoanId(loan.id))
@@ -462,15 +473,20 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const interestByMember = new Map<string, number>();
 
     paidRepayments.forEach(repayment => {
-      const loan = loansById.get(repayment.loanId);
+      const loan = loansById.get(String(repayment.loanId));
       if (!loan || !loan.totalRepayment) {
         return;
       }
 
       const interestRatio = Math.max((loan.totalRepayment - loan.amount) / loan.totalRepayment, 0);
       const interestPortion = Number((repayment.amount * interestRatio).toFixed(2));
-      const previous = interestByMember.get(loan.memberId) || 0;
-      interestByMember.set(loan.memberId, Number((previous + interestPortion).toFixed(2)));
+      const memberId = this.getLoanMemberId(loan);
+      if (!memberId) {
+        return;
+      }
+
+      const previous = interestByMember.get(memberId) || 0;
+      interestByMember.set(memberId, Number((previous + interestPortion).toFixed(2)));
     });
 
     this.totalInterestCollected = Number(
@@ -611,8 +627,21 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  getMemberName(memberId: string): string {
-    return this.allMembers.find(member => member.id === memberId)?.fullName || memberId;
+  getMemberName(memberId: string | number | undefined): string {
+    if (memberId === undefined || memberId === null || memberId === '') {
+      return 'Unknown member';
+    }
+
+    const normalizedMemberId = String(memberId);
+    return this.allMembers.find(member => member.id === normalizedMemberId || member.memberId === normalizedMemberId)?.fullName || normalizedMemberId;
+  }
+
+  private getLoanMemberId(loan: CooperativeLoan): string {
+    return String(loan.memberId || loan.cooperativeMemberId || '');
+  }
+
+  private getLoanGroupId(loan: CooperativeLoan): string {
+    return String(loan.groupId || loan.cooperativeGroupId || '');
   }
 
   getInviteTenureLabel(employee: CooperativeEmployeeProfile): string {
@@ -635,12 +664,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
         const rawEmployees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+          ? data : []
+          
 
         this.employeeDirectory = rawEmployees
           .map((employee: any) => this.mapEmployeeToProfile(employee))

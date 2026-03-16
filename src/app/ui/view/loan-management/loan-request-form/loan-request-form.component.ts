@@ -4,6 +4,7 @@ import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/fo
 import { Message } from 'primeng/api';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
+import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
 @Component({
   selector: 'app-loan-request-form',
@@ -12,6 +13,9 @@ import { LoanApplicationFormData, LoanSupportingDocument } from '../../../servic
 })
 export class LoanRequestFormComponent implements OnInit {
   @Input() isModal = false;
+  @Input() employeeId = '';
+  @Input() employeeName = '';
+  @Input() department = '';
   @Output() loanSubmitted = new EventEmitter<void>();
   @Output() formCancelled = new EventEmitter<void>();
 
@@ -23,7 +27,8 @@ export class LoanRequestFormComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private loanApplicationService: LoanApplicationService
+    private loanApplicationService: LoanApplicationService,
+    private errorMessageService: ErrorMessageService
   ) {}
 
   ngOnInit(): void {
@@ -175,7 +180,11 @@ export class LoanRequestFormComponent implements OnInit {
         paymentMode: this.loanRequestForm.get('paymentMode')?.value,
         acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
         supportingDocuments: this.supportingDocuments,
-        submissionDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
+        submissionDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US'),
+        employeeId: this.employeeId,
+        employeeName: this.employeeName,
+        department: this.department,
+        employeeNumericId: Number.isFinite(Number(this.employeeId)) ? Number(this.employeeId) : undefined
       };
 
       // Submit to service
@@ -194,7 +203,15 @@ export class LoanRequestFormComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error submitting loan application:', error);
-          this.showMessage('error', 'Submission Failed', 'There was an error submitting your application. Please try again later.');
+          this.showMessage(
+            'error',
+            'Submission Failed',
+            this.errorMessageService.getUserMessage(
+              error,
+              'There was an error submitting your application. Please try again later.'
+            )
+          );
+          this.isLoading = false;
         },
         complete: () => {
           this.isLoading = false; 

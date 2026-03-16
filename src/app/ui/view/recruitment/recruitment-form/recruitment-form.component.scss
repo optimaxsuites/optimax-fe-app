@@ -70,6 +70,9 @@
 
 .form-select {
   border-radius: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .form-row {
@@ -152,4 +155,16 @@
 
 :host ::ng-deep .vacancy-editor .p-editor-content {
   min-height: 320px;
+}
+
+
+::ng-deep .ng-select .ng-select-container {
+    border-radius: 10px 0 0 10px !important;
+    min-height: 36px;
+    border: 1px solid #ccc;
+}
+
+
+::ng-deep .ng-select.ng-select-opened .ng-select-container {
+    border-radius: 10px 10px 0 0 !important;
 }

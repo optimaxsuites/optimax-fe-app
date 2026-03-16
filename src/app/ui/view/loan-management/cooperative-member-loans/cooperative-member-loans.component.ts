@@ -3,7 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeLoan, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
+import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-member-loans',
@@ -91,13 +92,13 @@ export class CooperativeMemberLoansComponent implements OnInit {
 
   applyFilters(): void {
     if (!this.statusFilter) {
-      this.filteredLoans = [...this.loans].sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+      this.filteredLoans = [...this.loans].sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
       return;
     }
 
     this.filteredLoans = this.loans
       .filter(loan => loan.status === this.statusFilter)
-      .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+      .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
   }
 
   setStatusFilter(status: '' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED'): void {

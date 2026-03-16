@@ -117,7 +117,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let loan of memberLoans" (click)="viewLoan(loan.id)">
-              <td class="loan-id">{{ loan.loanId }}</td>
+              <td class="loan-id">{{ loan.loanCode }}</td>
               <td class="amount">{{ formatCurrency(loan.amount) }}</td>
               <td class="purpose">{{ loan.purpose }}</td>
               <td>
@@ -125,7 +125,7 @@
                   {{ loan.status }}
                 </span>
               </td>
-              <td>{{ loan.applicationDate | date:'MMM yyyy' }}</td>
+              <td>{{ loan.requestDate | date:'MMM yyyy' }}</td>
               <td class="actions-col"><i class="fas fa-chevron-right"></i></td>
             </tr>
           </tbody>

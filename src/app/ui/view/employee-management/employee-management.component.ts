@@ -15,6 +15,7 @@ import { EmployeeService } from '../../service/employee.service';
 import { DataService } from '../../service/data.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
+import { EmployeeProfileDashboardComponent } from '../employee-dashboard/employee-profile-dashboard.component';
 
 
 @Component({
@@ -28,6 +29,7 @@ export class EmployeeManagementComponent {
   
   tabsConfig: TabConfig[] = [
     { name: 'Basic Information', component: ViewEmployeeComponent },
+    // { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
     { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
     { name: 'Offboarding', component:  EmployeeOffboardingComponent, },
@@ -275,14 +277,7 @@ handleDateClick(arg: DateClickArg) {
   }
   fetchEmployees(){
     this.employeeService.getAllEmployee().subscribe({
-      next: data => {
-        const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
+      next: (employees) => {
         this.employees = this.sortEmployeesLatest(employees);
         this.uniqueLevels = [
           ...new Set(
@@ -380,13 +375,21 @@ handleDateClick(arg: DateClickArg) {
  
 
   viewThisEmployee(employee: any){
-    console.log(employee)
-    localStorage.setItem('employeeInView', JSON.stringify(employee))
 
-    this.viewEmployee = true
-    this.employeeInView = employee
-    
-    
+    if (employee) {
+      // this.employeeInView = JSON.parse(employee);
+
+      localStorage.setItem('employeeInView', JSON.stringify(employee))
+        this.viewEmployee = true
+
+
+      this.employeeService.getNOKByEmployeeId(employee.id).subscribe((res: any) => {
+        employee.nextOfKin = res;
+        localStorage.setItem('employeeInView', JSON.stringify(employee))
+
+        this.employeeInView = employee
+      })
+    }    
     }    
 
   deleteEmployee(employee: any, event: Event) {

@@ -30,16 +30,59 @@ import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooper
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
+import { QueryComponent } from './ui/view/query/query.component';
+import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
+// import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
-import { QueryComponent } from './ui/view/query/query.component';
+import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 
 const routes: Routes = [
   {
     path: 'user/onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
+  },
+  {
+    path: 'guarantor/confirm/:token/:uuid',
+    component: GuarantorConfirmationComponent,
+  },
+
+  // {
+  //   path: '',
+  //   redirectTo: 'leave/uu',
+  //   pathMatch: 'full',
+  // },
+  {
+    path: 'loan-dashboard',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'loan-dashboard/:legacyId',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-dashboard',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-dashboard/:legacyId',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-management/loan-dashboard',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-management/loan-dashboard/:legacyId',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
   },
   {
     path: 'workschedule-shifts/:uuid',
@@ -49,64 +92,34 @@ const routes: Routes = [
     path: 'guarantor/confirm/:token',
     component: GuarantorConfirmationComponent,
   },
+  {
+    path: 'me/:uuid',
+    component: EmployeeProfileDashboardComponent,
+  },
 
   {
     path: '',
-    redirectTo: 'workschedule-shifts/uu',
+    redirectTo: 'loan/uu',
     pathMatch: 'full',
   },
   {
-    path: 'loan-dashboard',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'loan-dashboard/:legacyId',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'admin/hr/loan-dashboard',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'admin/hr/loan-dashboard/:legacyId',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'admin/hr/loan-management/loan-dashboard',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'admin/hr/loan-management/loan-dashboard/:legacyId',
-    redirectTo: 'admin/hr/loan/uu',
-    pathMatch: 'full'
-  },
-  {
-    path: 'admin/hr/loan/:uuid',
+    path: 'loan/:uuid',
     component: LoanComponent,
   },
   {
-    path: 'admin/hr/loan-management/loan-dashboard/:uuid',
+    path: 'loan-management/loan-dashboard/:uuid',
     component: LoanDashboardComponent,
   },
   {
-    path: 'admin/hr/loan-management/request-for-loan/:uuid',
+    path: 'loan-management/request-for-loan/:uuid',
     component: LoanRequestFormComponent,
   },
   {
-    path: 'admin/hr/loan-management/loan-approval/:uuid',
+    path: 'loan-management/loan-approval/:uuid',
     component: LoanApprovalUiComponent,
   },
-  {
-    path: 'admin/hr/loan-management/loan-disbursement/:uuid',
-    component: LoanDisbursementUiComponent,
-  },
    {
-    path: 'admin/hr/loan-management/loan-details/:employeeId',
+    path: 'loan-management/loan-details/:employeeId',
     component: LoanDetailsComponent,
   },
   {
@@ -114,56 +127,56 @@ const routes: Routes = [
     component: QueryComponent,
   },
   // {
-  //   path: 'admin/hr/loan-management.loan-details/:loanId',
-  //   component: LoanDetailsComponent
-  //  },
+//   path: 'loan-management.loan-details/:loanId',
+//   component: LoanDetailsComponent
+//  },
   {
-    path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
+    path: 'loan-management/loan-details/:employeeId/:uuid',
     component: LoanDetailsComponent,
   },
   {
-    path: 'admin/hr/loan-management/employee-loan-history/:employeeId',
-    component: EmployeeLoanHistoryComponent,
+    path: 'loan-management/employee-loan-history/:employeeId',
+    component: EmployeeLoanHistoryComponent
   },
   {
-    path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
-    component: EmployeeLoanHistoryComponent,
+    path: 'loan-management/employee-loan-history/:employeeId/:uuid',
+    component: EmployeeLoanHistoryComponent
   },
   {
-    path: 'admin/hr/loan-management/reports',
-    component: LoanReportsComponent,
+  path: 'loan-management/reports/:uuid',
+  component: LoanReportsComponent
   },
   // Cooperative Routes
   {
-    path: 'admin/hr/cooperative/dashboard/:uuid',
+    path: 'cooperative/dashboard/:uuid',
     component: CooperativeDashboardComponent
   },
   {
-    path: 'admin/hr/cooperative/members/:uuid',
+    path: 'cooperative/members/:uuid',
     component: CooperativeMembersComponent
   },
   {
-    path: 'admin/hr/cooperative/members/:id/:uuid',
+    path: 'cooperative/members/:id/:uuid',
     component: CooperativeMemberDetailComponent
   },
   {
-    path: 'admin/hr/cooperative/members/add/:uuid',
+    path: 'cooperative/members/add/:uuid',
     component: CooperativeMemberFormComponent
   },
   {
-    path: 'admin/hr/cooperative/members/edit/:id/:uuid',
+    path: 'cooperative/members/edit/:id/:uuid',
     component: CooperativeMemberFormComponent
   },
   {
-    path: 'admin/hr/cooperative/loans/:uuid',
+    path: 'cooperative/loans/:uuid',
     component: CooperativeLoansComponent
   },
   {
-    path: 'admin/hr/cooperative/loans/:id/:uuid',
+    path: 'cooperative/loans/:id/:uuid',
     component: CooperativeLoanDetailComponent
   },
   {
-    path: 'admin/hr/cooperative/groups/:uuid',
+    path: 'cooperative/groups/:uuid',
     component: CooperativeLoanGroupsComponent
   },
   // Member routes
@@ -218,10 +231,10 @@ const routes: Routes = [
   // },
   { path: 'mygoal', component: MygoalComponent },
 
-  {
-    path: 'user/onboarding/:id/:uuid',
-    component: AddEmployeeFormComponent,
-  },
+  // {
+  //   path: 'onboarding/:id/:uuid',
+  //   component: AddEmployeeFormComponent,
+  // },
   {
     path: 'project/:uuid',
     component: ProjectComponent,
@@ -232,7 +245,7 @@ const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'admin/hr/loan/uu',
+    redirectTo: 'loan/uu',
   },
 ];
 @NgModule({

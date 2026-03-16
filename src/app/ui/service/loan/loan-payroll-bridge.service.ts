@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { LoanRepaymentService } from './loan-repayment.service';
-import { LoanStorageService } from './loan-storage.service';
 import { LoanApplication, RepaymentScheduleItem } from './loan.types';
 import { CooperativeService } from './cooperative-loan/cooperative.service';
-import { CooperativeLoan, CooperativeRepayment } from './cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../domain/loan/cooperative-loan.dto';
+import { EmployeeService } from '../employee.service';
+import { LoanService } from './loan.service';
 
 export interface PayrollLoanDeduction {
   loanId: string;
@@ -25,117 +25,52 @@ export interface LoanPayrollPostingResult {
 })
 export class LoanPayrollBridgeService {
   constructor(
-    private loanStorageService: LoanStorageService,
-    private loanRepaymentService: LoanRepaymentService,
-    private cooperativeService: CooperativeService
+    private loanService: LoanService,
+    private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService
   ) {}
 
-  getLoanDeductionsForEmployee(employee: any): PayrollLoanDeduction[] {
-    // Standard loans
-    const activeLoans = this.loanStorageService
-      .getAllApplications()
-      .filter((loan) => this.isLoanEligibleForPayrollDeduction(loan))
-      .filter((loan) => this.isLoanOwnedByEmployee(loan, employee));
+  async getLoanDeductionsForEmployee(employee: any): Promise<PayrollLoanDeduction[]> {
+    try {
+      const employeeDetails = await firstValueFrom(
+        this.employeeService.getEmployeeById(Number(employee.employeeId || employee.id))
+      );
+      const activeLoans = await firstValueFrom(this.loanService.listLoanApplications());
+      const eligibleAdvanceLoans = activeLoans
+        .filter((loan) => this.isLoanEligibleForPayrollDeduction(loan))
+        .filter((loan) => this.isLoanOwnedByEmployee(loan, employeeDetails));
+      const standardDeductions = eligibleAdvanceLoans
+        .map((loan) => this.toDeduction(loan))
+        .filter((deduction): deduction is PayrollLoanDeduction => !!deduction);
+      const cooperativeLoans: CooperativeLoan[] = this.cooperativeService.getLoansByMember(
+        String(employeeDetails.employeeId || employeeDetails.memberId || employeeDetails.id || '')
+      );
+      const cooperativeDeductions: PayrollLoanDeduction[] = [];
 
-    const standardDeductions = activeLoans
-      .map((loan) => this.toDeduction(loan))
-      .filter((deduction): deduction is PayrollLoanDeduction => !!deduction);
-
-    // Cooperative loans
-    const cooperativeLoans: CooperativeLoan[] = this.cooperativeService.getLoansByMember(employee.employeeId || employee.memberId || employee.id);
-    const cooperativeDeductions: PayrollLoanDeduction[] = [];
-    for (const loan of cooperativeLoans) {
-      if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') continue;
-      const repayments = this.cooperativeService.getRepaymentsByLoanId(loan.id);
-      const nextRepayment = repayments.find(r => r.status === 'PENDING' || r.status === 'OVERDUE');
-      if (!nextRepayment || nextRepayment.amount <= 0) continue;
-      cooperativeDeductions.push({
-        loanId: loan.id,
-        amount: nextRepayment.amount,
-        reason: `Cooperative loan repayment (${loan.id})`,
-        dueDate: nextRepayment.dueDate
-      });
-    }
-
-    return [...standardDeductions, ...cooperativeDeductions];
-  }
-
-  async postPayrollLoanDeductions(
-    payrollRows: any[],
-    period: { month: string; year: number }
-  ): Promise<LoanPayrollPostingResult> {
-    const result: LoanPayrollPostingResult = {
-      applied: 0,
-      skipped: 0,
-      failed: 0,
-      errors: []
-    };
-
-    for (const employee of payrollRows || []) {
-      const deductions = employee?.loanDeductions || this.getLoanDeductionsForEmployee(employee);
-
-      for (const deduction of deductions) {
-        // Standard loan
-        const loan = this.loanStorageService.getApplicationById(deduction.loanId);
-        if (loan) {
-          const referenceNumber = this.buildPayrollReference(deduction.loanId, period);
-          const alreadyPosted = (loan.paymentHistory || []).some(
-            (item) => item.referenceNumber === referenceNumber
-          );
-          if (alreadyPosted) {
-            result.skipped += 1;
-            continue;
-          }
-          try {
-            await firstValueFrom(this.loanRepaymentService.recordPayment(deduction.loanId, {
-              amount: deduction.amount,
-              paymentMethod: 'PAYROLL_DEDUCTION',
-              date: new Date().toISOString(),
-              referenceNumber,
-              receivedBy: 'Payroll Module',
-              notes: `Auto payroll deduction for ${period.month} ${period.year}`
-            }));
-            result.applied += 1;
-          } catch (error) {
-            result.failed += 1;
-            const message = error instanceof Error ? error.message : 'Unknown payroll posting error';
-            result.errors.push(`${deduction.loanId}: ${message}`);
-          }
+      for (const loan of cooperativeLoans) {
+        if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') {
           continue;
         }
 
-        // Cooperative loan
-        const coopLoan = this.cooperativeService.getLoanById(deduction.loanId);
-        if (coopLoan) {
-          const referenceNumber = this.buildPayrollReference(deduction.loanId, period);
-          const repayments = this.cooperativeService.getRepaymentsByLoanId(coopLoan.id);
-          const alreadyPosted = repayments.some(
-            (item) => item.receiptNumber === referenceNumber
-          );
-          if (alreadyPosted) {
-            result.skipped += 1;
-            continue;
-          }
-          try {
-            this.cooperativeService.recordRepayment(coopLoan.id, {
-              amount: deduction.amount,
-              paymentMethod: 'PAYROLL_DEDUCTION',
-              paidDate: new Date().toISOString()
-            });
-            // Optionally: set receiptNumber to referenceNumber if needed
-            result.applied += 1;
-          } catch (error) {
-            result.failed += 1;
-            const message = error instanceof Error ? error.message : 'Unknown payroll posting error';
-            result.errors.push(`${deduction.loanId}: ${message}`);
-          }
-        } else {
-          result.skipped += 1;
+        const repayments = this.cooperativeService.getRepaymentsByLoanId(String(loan.id));
+        const nextRepayment = repayments.find((repayment) => repayment.status === 'PENDING' || repayment.status === 'OVERDUE');
+        if (!nextRepayment || nextRepayment.amount <= 0) {
+          continue;
         }
-      }
-    }
 
-    return result;
+        cooperativeDeductions.push({
+          loanId: String(loan.id),
+          amount: Number(nextRepayment.amount || 0),
+          reason: `Cooperative loan repayment (${loan.loanCode || loan.loanId || loan.id})`,
+          dueDate: nextRepayment.dueDate
+        });
+      }
+
+      return [...standardDeductions, ...cooperativeDeductions];
+    } catch (error) {
+      console.error('Unable to prepare payroll loan deductions', error);
+      return [];
+    }
   }
 
   private toDeduction(loan: LoanApplication): PayrollLoanDeduction | null {
@@ -143,15 +78,12 @@ export class LoanPayrollBridgeService {
     if (!nextInstallment) {
       return null;
     }
-
     const installmentAmount = Number(nextInstallment.totalPayment || 0);
     const remainingBalance = Number(loan.currentBalance || 0);
     const amount = this.roundCurrency(Math.min(installmentAmount, remainingBalance));
-
     if (amount <= 0) {
       return null;
     }
-
     return {
       loanId: loan.id,
       amount,
@@ -179,16 +111,13 @@ export class LoanPayrollBridgeService {
     ]
       .map((value: unknown) => String(value ?? '').trim())
       .filter((value: string) => !!value);
-
     const loanEmployeeCode = String(loan.employeeId ?? '').trim();
     if (loanEmployeeCode && employeeCodeCandidates.includes(loanEmployeeCode)) {
       return true;
     }
-
     const employeeNameCandidates = [employee?.fullName, employee?.name]
       .map((value: unknown) => this.normalizeName(String(value ?? '')))
       .filter((value: string) => !!value);
-
     const loanName = this.normalizeName(loan.fullName || '');
     return !!loanName && employeeNameCandidates.includes(loanName);
   }

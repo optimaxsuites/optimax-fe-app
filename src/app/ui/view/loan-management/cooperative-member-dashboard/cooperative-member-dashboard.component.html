@@ -40,7 +40,7 @@
         </div>
         <div class="detail-item">
           <span class="label">Monthly Repayment</span>
-          <span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+          <span class="value">{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span>
         </div>
         <div class="detail-item">
           <span class="label">Outstanding Balance</span>
@@ -107,6 +107,48 @@
   </div>
 
   <div *ngIf="!isLoading" class="dashboard-content">
+    <div *ngIf="!member" class="membership-onboarding-card lm-header-card">
+      <div>
+        <h1>Cooperative Membership</h1>
+        <p class="welcome-text">Your cooperative dashboard becomes available once you have an active membership profile.</p>
+        <p class="member-id">{{ currentEmployeeProfile.fullName }} | {{ currentEmployeeProfile.employeeId }}</p>
+      </div>
+    </div>
+
+    <div *ngIf="!member" class="membership-card">
+      <div class="membership-card-header">
+        <h2><i class="fas fa-user-cog"></i> Membership Eligibility</h2>
+        <div class="role-switcher">
+          <label for="rolePreviewSelectNoMember">Switch Role</label>
+          <select
+            id="rolePreviewSelectNoMember"
+            [ngModel]="selectedPreviewRole"
+            (ngModelChange)="onPreviewRoleChange($event)">
+            <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="action-message" *ngIf="membershipMessage">{{ membershipMessage }}</p>
+
+      <div class="quick-actions-panel">
+        <button
+          class="quick-action-btn apply-btn"
+          type="button"
+          (click)="submitMembershipApplication()">
+          <i class="fas fa-user-plus"></i>
+          Apply for Membership
+        </button>
+        <button
+          class="quick-action-btn"
+          type="button"
+          (click)="requestInvite()">
+          <i class="fas fa-envelope-open-text"></i>
+          Request Invite
+        </button>
+      </div>
+    </div>
+
     <div *ngIf="member">
     <!-- Welcome Header -->
     <div class="welcome-header lm-header-card">
@@ -121,7 +163,7 @@
     </div>
 
     <div class="quick-actions-panel">
-      <button class="quick-action-btn apply-btn" (click)="applyForLoan()" [disabled]="!canApplyForLoan" [title]="canApplyForLoan ? 'Apply for a loan' : 'Junior staff cannot apply'">
+      <button class="quick-action-btn apply-btn" (click)="applyForLoan()">
         <i class="fas fa-plus"></i>
         Apply for New Loan
       </button>
@@ -146,7 +188,7 @@
 
     <div class="membership-card">
       <div class="membership-card-header">
-        <h2><i class="fas fa-user-cog"></i> Membership Role Preview</h2>
+        <h2><i class="fas fa-user-cog"></i> Membership Role</h2>
         <div class="role-switcher">
           <label for="rolePreviewSelect">Switch Role</label>
           <select
@@ -155,7 +197,6 @@
             (ngModelChange)="onPreviewRoleChange($event)">
             <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
           </select>
-          <span class="preview-mode-badge">Preview Mode</span>
         </div>
       </div>
     </div>
@@ -281,15 +322,15 @@
         <p>
           Amount: <strong>{{ formatCurrency(loan.amount) }}</strong>
           <span class="separator">|</span>
-          Monthly: <strong>{{ formatCurrency(loan.monthlyRepayment) }}</strong>
+          Monthly: <strong>{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</strong>
           <span class="separator">|</span>
-          Next: <strong>{{ getNextDueDate(loan.id) ? (getNextDueDate(loan.id) | date:'dd/MM/yyyy') : '-' }}</strong>
+          Next: <strong>{{ getNextDueDate(loan.id.toString()) ? (getNextDueDate(loan.id.toString()) | date:'dd/MM/yyyy') : '-' }}</strong>
         </p>
         <p class="last-payment-line">
-          Last payment: <strong>{{ getLastPaymentDate(loan.id) ? (getLastPaymentDate(loan.id) | date:'dd/MM/yyyy') : 'No payment yet' }}</strong>
+          Last payment: <strong>{{ getLastPaymentDate(loan.id.toString()) ? (getLastPaymentDate(loan.id.toString()) | date:'dd/MM/yyyy') : 'No payment yet' }}</strong>
         </p>
         <div class="loan-actions">
-          <button class="btn-secondary" (click)="viewLoanDetails(loan.id)">View Details</button>
+          <button class="btn-secondary" (click)="viewLoanDetails(loan.id.toString())">View Details</button>
           <button class="btn-primary" (click)="openPaymentModal(loan)">Make Payment</button>
         </div>
       </div>
@@ -314,8 +355,8 @@
               </td>
               <td *ngIf="loanStatusFilter === 'ACTIVE'">{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
               <td class="actions-col">
-                <button class="icon-btn" (click)="viewLoanDetails(loan.id)"><i class="fas fa-eye"></i></button>
-                <button class="icon-btn" (click)="viewRepaymentHistory(loan.id)" title="View Repayment History" aria-label="View Repayment History">
+                <button class="icon-btn" (click)="viewLoanDetails(loan.id.toString())"><i class="fas fa-eye"></i></button>
+                <button class="icon-btn" (click)="viewRepaymentHistory(loan.id.toString())" title="View Repayment History" aria-label="View Repayment History">
                   <i class="fas fa-history"></i>
                 </button>
               </td>
@@ -347,7 +388,7 @@
       <div *ngIf="filteredLoansByStatus.length === 0" class="empty-state">
         <i class="fas fa-smile"></i>
         <p>No {{ loanStatusFilter.toLowerCase() }} loans yet.</p>
-        <button class="apply-btn" (click)="applyForLoan()" [disabled]="!canApplyForLoan" [title]="canApplyForLoan ? 'Apply for a loan' : 'Junior staff cannot apply'">Apply for a Loan</button>
+        <button class="apply-btn" (click)="applyForLoan()">Apply for a Loan</button>
       </div>
     </div>
 

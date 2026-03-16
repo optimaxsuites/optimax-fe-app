@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { CooperativeMember, CooperativeLoan } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
+import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 interface RepaymentHistoryItem {
   loanId: string;
@@ -62,8 +63,8 @@ export class CooperativeMemberDetailComponent implements OnInit {
     });
   }
 
-  viewLoan(id: string): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', id, this.currentUuid], {
+  viewLoan(id: string | number): void {
+    this.router.navigate(['/admin/hr/cooperative/loans', id.toString(), this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -101,22 +102,24 @@ export class CooperativeMemberDetailComponent implements OnInit {
   getRepaymentHistory(): RepaymentHistoryItem[] {
     return this.memberLoans
       .map(loan => {
-        let paidAmount = 0;
+        const paidAmount = Number(loan.totalPaid || 0);
+        const lastRecordedPaymentDate = loan.paymentHistory
+          .map(item => item.paidAt)
+          .filter((paidAt): paidAt is string => !!paidAt)
+          .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
         let status: 'PAID' | 'ONGOING' | 'PENDING' = 'PENDING';
 
         if (loan.status === 'COMPLETED') {
-          paidAmount = loan.totalRepayment;
           status = 'PAID';
         } else if (loan.status === 'ACTIVE' || loan.status === 'APPROVED') {
-          paidAmount = Math.min(loan.monthlyRepayment * 2, loan.totalRepayment);
           status = 'ONGOING';
         }
 
         return {
-          loanId: loan.loanId,
+          loanId: loan.loanCode,
           paidAmount,
-          outstandingAmount: Math.max(loan.totalRepayment - paidAmount, 0),
-          lastPaymentDate: loan.completionDate || loan.updatedAt || loan.applicationDate,
+          outstandingAmount: Math.max(Number(loan.outstandingPrincipal || 0), 0),
+          lastPaymentDate: loan.completedDate || lastRecordedPaymentDate || loan.requestDate,
           status
         };
       })

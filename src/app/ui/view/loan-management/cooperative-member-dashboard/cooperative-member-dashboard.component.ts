@@ -5,9 +5,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import {
   CooperativeMember,
-  CooperativeLoan,
   CooperativeRepayment,
   CooperativeGroupMembership,
   CooperativeNotification,
@@ -107,13 +107,15 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   loadCurrentEmployeeProfile(): void {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
-        const employees = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data?.data)
-          ? data.data
+        const response: any = data;
+        const employees = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.content)
+          ? response.content
+          : Array.isArray(response?.data)
+          ? response.data
           : [];
+          
 
         const userRegDataRaw = sessionStorage.getItem('userRegData');
         const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
@@ -179,7 +181,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       };
       this.loans = this.cooperativeService
         .getLoansByMember(member.id)
-        .sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
       this.memberGroups = this.cooperativeService.getGroupMembershipsByMember(member.id)
         .filter(item => item.status === 'ACTIVE')
         .map(item => ({
@@ -231,7 +233,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   get canApplyForLoan(): boolean {
-    return this.selectedPreviewRole !== 'JUNIOR';
+    return true;
   }
 
   submitMembershipApplication(): void {
@@ -243,11 +245,6 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
     if (this.hasMembership) {
       this.membershipMessage = 'You are already an active cooperative member.';
-      return;
-    }
-
-    if (this.membershipEligibility.requiresManagerApproval && !this.selectedManager) {
-      this.membershipMessage = 'Please select your manager before submitting the application.';
       return;
     }
 
@@ -373,7 +370,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   get nextPayment(): { amount: number; dueDate: string } | null {
     const upcoming = this.activeLoans
-      .flatMap(loan => this.getOpenRepayments(loan.id))
+      .flatMap(loan => this.getOpenRepayments(String(loan.id)))
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
 
     if (upcoming) {
@@ -389,7 +386,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   get personalNextPayment(): { amount: number; dueDate: string } | null {
     const upcoming = this.loans
       .filter(loan => loan.status === 'ACTIVE')
-      .flatMap(loan => this.getOpenRepayments(loan.id))
+      .flatMap(loan => this.getOpenRepayments(String(loan.id)))
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
 
     if (upcoming) {
@@ -460,11 +457,6 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   applyForLoan(): void {
-    if (!this.canApplyForLoan) {
-      this.actionMessage = 'Junior staff are not eligible to apply for cooperative loans yet.';
-      return;
-    }
-
     this.showApplicationModal = true;
   }
 
@@ -499,8 +491,9 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.loadMemberData();
   }
 
-  viewLoanDetails(id: string): void {
-    const loan = this.loans.find(item => item.id === id);
+  viewLoanDetails(id: string | number): void {
+    const normalizedLoanId = String(id);
+    const loan = this.loans.find(item => String(item.id) === normalizedLoanId);
     if (!loan) {
       this.actionMessage = 'Loan details are not available right now.';
       return;
@@ -525,8 +518,9 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate([`/member/cooperative/loans/${loanId}/${this.currentUuid}`]);
   }
 
-  viewRepaymentHistory(id: string): void {
-    this.selectedRepaymentHistoryLoanId = this.selectedRepaymentHistoryLoanId === id ? null : id;
+  viewRepaymentHistory(id: string | number): void {
+    const normalizedLoanId = String(id);
+    this.selectedRepaymentHistoryLoanId = this.selectedRepaymentHistoryLoanId === normalizedLoanId ? null : normalizedLoanId;
   }
 
   closeRepaymentHistory(): void {
@@ -538,7 +532,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return this.loans.find(item => item.id === this.selectedRepaymentHistoryLoanId) || null;
+    return this.loans.find(item => String(item.id) === this.selectedRepaymentHistoryLoanId) || null;
   }
 
   get selectedRepaymentHistoryRows(): CooperativeRepayment[] {
@@ -559,7 +553,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   private toLoanApplicationScheduleView(loan: CooperativeLoan): LoanApplication {
-    const repayments = [...(this.repaymentsByLoanId[loan.id] || [])]
+    const repayments = [...(this.repaymentsByLoanId[String(loan.id)] || [])]
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const totalPaid = repayments
@@ -590,17 +584,23 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       };
     });
 
+    const mappedStatus: LoanApplication['status'] = loan.status === 'DEFAULTED'
+      ? 'ACTIVE'
+      : loan.status === 'PENDING' || loan.status === 'APPROVED' || loan.status === 'REJECTED' || loan.status === 'ACTIVE' || loan.status === 'COMPLETED'
+      ? loan.status
+      : 'PENDING';
+
     return {
-      id: loan.loanId,
-      employeeId: this.member?.memberId || loan.memberId,
+      id: String(loan.loanCode || loan.loanId || loan.id || ''),
+      employeeId: String(this.member?.memberId || loan.memberId || loan.cooperativeMemberId || ''),
       fullName: this.member?.fullName || 'Cooperative Member',
       department: this.currentEmployeeProfile.department || 'Cooperative',
       loanAmount: Number(loan.amount || 0),
-      status: loan.status === 'DEFAULTED' ? 'ACTIVE' : loan.status,
-      dateSubmitted: loan.applicationDate,
+      status: mappedStatus,
+      dateSubmitted: loan.applicationDate || loan.requestDate || new Date().toISOString(),
       purpose: loan.purpose,
       repaymentPeriod: Number(loan.duration || 0),
-      monthlyRepayment: Number(loan.monthlyRepayment || 0),
+      monthlyRepayment: Number(loan.monthlyRepayment || loan.repaymentAmount || 0),
       acknowledgment: true,
       interestRate: Number(loan.interestRate || 0),
       currentBalance,
@@ -617,7 +617,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   openPaymentModal(loan: CooperativeLoan): void {
     this.selectedPaymentLoan = loan;
-    this.paymentAmount = this.getNextInstallmentAmount(loan.id) || loan.monthlyRepayment;
+    this.paymentAmount = this.getNextInstallmentAmount(String(loan.id)) || Number(loan.monthlyRepayment || loan.repaymentAmount || 0);
     this.paymentMethod = 'BANK_TRANSFER';
     this.showPaymentModal = true;
     this.actionMessage = '';
@@ -652,7 +652,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   getOutstandingAmount(loan: CooperativeLoan): number {
-    const repayments = this.repaymentsByLoanId[loan.id] || [];
+    const repayments = this.repaymentsByLoanId[String(loan.id)] || [];
     if (repayments.length === 0) {
       return loan.amount;
     }
@@ -662,8 +662,8 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       .reduce((sum, item) => sum + item.amount, 0);
   }
 
-  getNextDueDate(loanId: string): string | null {
-    const next = this.getOpenRepayments(loanId)
+  getNextDueDate(loanId: string | number): string | null {
+    const next = this.getOpenRepayments(String(loanId))
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
 
     return next?.dueDate || null;
@@ -676,8 +676,8 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     return next?.amount || 0;
   }
 
-  getLastPaymentDate(loanId: string): string | null {
-    const lastPaid = (this.repaymentsByLoanId[loanId] || [])
+  getLastPaymentDate(loanId: string | number): string | null {
+    const lastPaid = (this.repaymentsByLoanId[String(loanId)] || [])
       .filter(item => item.status === 'PAID' && !!item.paidDate)
       .sort((a, b) => new Date(b.paidDate as string).getTime() - new Date(a.paidDate as string).getTime())[0];
 
@@ -708,7 +708,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   private loadRepayments(): void {
     this.repaymentsByLoanId = {};
     this.loans.forEach(loan => {
-      this.repaymentsByLoanId[loan.id] = this.cooperativeService.getRepaymentsByLoanId(loan.id);
+      this.repaymentsByLoanId[String(loan.id)] = this.cooperativeService.getRepaymentsByLoanId(loan.id);
     });
   }
 

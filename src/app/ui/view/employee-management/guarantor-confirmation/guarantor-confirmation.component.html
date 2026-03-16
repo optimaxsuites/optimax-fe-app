@@ -1,16 +1,89 @@
 <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
   <div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-t-2xl border-b border-slate-100 p-8 shadow-sm">
-      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Guarantor Confirmation</h1>
-      <p class="mt-2 text-slate-500">
+    <div *ngIf="securityState === 'valid'" class="bg-white rounded-t-2xl border-b border-slate-100 p-8 shadow-sm">
+      <h1  class="text-3xl font-extrabold text-slate-900 tracking-tight">Guarantor Confirmation</h1>
+      <p   class="mt-2 text-slate-500">
         You have been nominated as a guarantor for 
-        <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded">{{ employeeName || 'the employee' }}</span>. 
+        <span class="text-customBlue font-semibold bg-blue-50 px-2 py-0.5 rounded capitalize">{{ employeeName || 'the employee' }}</span>. 
         Please verify your details below.
       </p>
+  
+      <div   class="mt-4 flex items-center justify-center w-full gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+        <div class="relative h-96 w-96 flex items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-white">
+          <div
+            *ngIf="imageLoading || loadingEmployee"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-100/90 text-slate-500"
+          >
+            <span class="h-10 w-10 rounded-full border-4 border-slate-300 border-t-customBlue animate-spin"></span>
+            <span class="text-sm font-medium">Loading image...</span>
+          </div>
+          <img
+            [src]="employeeImageSrc"
+            alt="Employee photo"
+            (load)="onEmployeeImageLoad()"
+            (error)="onEmployeeImageError()"
+            class="h-full w-full object-cover transition-opacity duration-200"
+            [class.opacity-0]="imageLoading || loadingEmployee"
+            [class.opacity-100]="!imageLoading && !loadingEmployee"
+          />
+        </div>
+      </div>
+      <div  class="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-700">Do you know this person?</p>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            (click)="chooseAcknowledgment('yes')"
+            class="px-6 py-2.5 rounded-lg border border-customGreen text-customGreen font-semibold hover:bg-emerald-50 transition-all"
+          >
+            Yes, I do
+          </button>
+          <button
+            type="button"
+            (click)="chooseAcknowledgment('no')"
+            class="px-6 py-2.5 rounded-lg border border-rose-500 text-rose-500 font-semibold hover:bg-rose-50 transition-all"
+          >
+            No, I don't
+          </button>
+        </div>
+        <p *ngIf="acknowledgment === null" class="text-xs text-slate-400">Please select an option to continue.</p>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
-      
+        <div
+        *ngIf="securityState !== 'valid'"
+        class="mt-6 rounded-xl border p-4"
+        [ngClass]="{
+          'border-slate-200 bg-slate-50 text-slate-700': securityState === 'checking',
+          'border-rose-200 bg-rose-50 text-rose-800': securityState !== 'checking'
+        }"
+      >
+        <div class="flex items-start gap-3">
+          <span
+            *ngIf="securityState === 'checking'"
+            class="mt-0.5 h-5 w-5 rounded-full border-2 border-slate-300 border-t-customBlue animate-spin"
+          ></span>
+          <div class="space-y-1">
+            <p class="text-sm font-semibold">
+              {{
+                securityTitle ||
+                  (securityState === 'checking' ? 'Validating link...' : 'Unable to continue')
+              }}
+            </p>
+            <p class="text-sm">
+              {{
+                securityDetail ||
+                  (securityState === 'checking'
+                    ? 'Please wait while we verify your confirmation link.'
+                    : 'Please request a new confirmation link from HR.')
+              }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'yes'" [formGroup]="form" (ngSubmit)="submit()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-8">
+
       <section>
         <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-4">Personal Details</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -80,6 +153,43 @@
             {{ submitting ? 'Processing...' : 'Submit Confirmation' }}
           </button>
         </div>
+      </div>
+    </form>
+
+    <form *ngIf="securityState === 'valid' && acknowledgment === 'no'" [formGroup]="declineForm" (ngSubmit)="submitDecline()" class="bg-white rounded-b-2xl shadow-sm p-8 space-y-6">
+      <section>
+        <h2 class="text-xs font-uppercase font-bold text-slate-400 uppercase tracking-widest mb-2">Acknowledgment</h2>
+        <p class="text-sm text-slate-600">
+          You indicated you do not know this employee. Please provide your name and email so we can log your response.
+        </p>
+      </section>
+
+      <section>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+            <input type="text" formControlName="fullName" placeholder="John Doe"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue transition-all outline-none" />
+            <p *ngIf="declineForm.get('fullName')?.touched && declineForm.get('fullName')?.invalid" class="mt-1 text-xs text-red-500">Full name is required.</p>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+            <input type="email" formControlName="email" placeholder="john@example.com"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue transition-all outline-none" />
+            <p *ngIf="declineForm.get('email')?.touched && declineForm.get('email')?.invalid" class="mt-1 text-xs text-red-500">Valid email is required.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-slate-400 italic">All fields marked with (*) are mandatory.</p>
+        <button type="submit"
+          [disabled]="submitting || declineForm.invalid"
+          class="w-full sm:w-auto px-8 py-3.5 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-lg shadow-rose-200 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+          <span *ngIf="submitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          {{ submitting ? 'Processing...' : 'Submit Response' }}
+        </button>
       </div>
     </form>
   </div>

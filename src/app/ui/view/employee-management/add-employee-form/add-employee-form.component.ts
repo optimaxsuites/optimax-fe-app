@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import { v4 as uuidV4 } from "uuid"
 
 interface Employee {
   id: number;
@@ -53,6 +54,8 @@ export class AddEmployeeFormComponent {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
+  readonly maxProfilePhotoSizeInMb = 0.5;
+  readonly maxProfilePhotoSizeInBytes = this.maxProfilePhotoSizeInMb * 1024 * 1024;
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
@@ -131,7 +134,8 @@ export class AddEmployeeFormComponent {
     private messageService: MessageService,
     private employeeService: EmployeeService, 
     private route: ActivatedRoute,
-    private errorMessageService: ErrorMessageService
+    private errorMessageService: ErrorMessageService,
+    private router: Router
   ) {  }
 
   ngOnInit(): void {
@@ -302,19 +306,25 @@ export class AddEmployeeFormComponent {
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
     const file = control.value;
-
-
     if (!file) {
       return null; 
     }
+
     if(file instanceof File){
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      console.log(file)
       if (!allowedTypes.includes(file.type )) {
         return { invalidFileType: true };
-      }else{
-       return null
       }
+
+      if (file.size > this.maxProfilePhotoSizeInBytes) {
+        return {
+          fileTooLarge: {
+            maxSizeInMb: this.maxProfilePhotoSizeInMb
+          }
+        };
+      }
+
+      return null;
     }
     else if(typeof(file) == "string"){
       return null;
@@ -435,7 +445,7 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
             err,
             'Failed to save guarantor details. Please try again.'
           );
-          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          // this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
           pending -= 1;
           if (pending === 0) onComplete?.(hadError);
         }
@@ -535,19 +545,19 @@ addNewEmployee(){
   const formData = this.buildEmployeeFormData();
       const vettingPayload = this.buildEmployeePayload();
 
-  this.employeeService.updateEmployee(formData, vettingPayload.employee.id).subscribe({
+  this.employeeService.addEmployee(formData).subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
       if (data?.id) {
         vettingPayload.employee.id = data.id;
         vettingPayload.employeeId = data.id;
       }
-      this.employeeService.sendOnboardingVetting(vettingPayload).subscribe({
+      this.employeeService.sendOnboardingVetting(vettingPayload, data).subscribe({
         error: (err) => {
           const detail = this.errorMessageService.getUserMessage(
             err,
             'Vetting request could not be sent. Please contact support.'
-          );
+          );``
           this.messageService.add({ severity: 'warn', summary: 'Notice', detail, key: 'tl', life: 4000 });
         }
       });
@@ -559,9 +569,10 @@ addNewEmployee(){
       this.guarantorForm.reset()
       this.employeeForm.reset()
       // this.currentTab = 1
+      this.router.navigate([`/admin/hr/me/`+uuidV4()]);
 
       // if (shouldRedirect) {
-      //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+        // this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
       // }
     },
     error: (err) => {
@@ -571,7 +582,7 @@ addNewEmployee(){
         'Failed to submit onboarding details. Please try again.'
       );
       console.log("vettingPayload:", vettingPayload)
-      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      // this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
     }
   })
 }
@@ -582,17 +593,20 @@ private buildEmployeePayload(): {
   nextOfKin: any[];
   guarantors: any[];
 } {
-  const newEmployee = {
+  const employeeMediaId = this.employeeData?.employeeMedia?.id;
+  const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+  const newEmployee: any = {
  
 
    id: this.employeeId,
+    userId: this.employeeData?.userId ?? this.employeeData?.user?.userId ?? storedUserId ?? null,
     firstName:  this.employeeData.firstName,
     lastName:  this.employeeData.lastName,
     email:  this.employeeData.email,
     workEmail: this.employeeData.workEmail,
     jobTitle: this.employeeData.jobTitle,
-    departmentId: this.employeeData.departmentId,
-    levelId: 4,
+    // departmentId: this.employeeData.departmentId,
+    levelId: this.employeeData.level.id,
     employmentType:  this.employeeData.employmentType,
     supervisor: this.employeeData.supervisor,
 
@@ -619,12 +633,14 @@ private buildEmployeePayload(): {
   
 
     // levelId: this.employeeData.levelId,
-    // departmentId: this.employeeData.departmentId,
-    //  jobTitle: this.employeeData.jobTitle,
-     profilePhoto: this.basicForm.get('profilePhoto')?.value instanceof File ? null : this.basicForm.get('profilePhoto')?.value || null
+    departmentId: this.employeeData.department.id,
+    jobTypeId: this.employeeData.jobType.id
 
   
   };
+  if (employeeMediaId) {
+    newEmployee.employeeMediaId = employeeMediaId;
+  }
 
   const nextOfKin = this.nextOfKinList.map((nok) => ({
     fullName: nok.fullName,
@@ -652,16 +668,18 @@ private buildEmployeePayload(): {
   };
 }
 
-private buildEmployeeFormData():any {
+private buildEmployeeFormData(): FormData {
   const payload = this.buildEmployeePayload();
+  const employee = payload.employee || {};
   const formData = new FormData();
-  formData.append('employee', JSON.stringify(payload.employee));
+  formData.append('employee', JSON.stringify(employee));
 
-  if (this.basicForm.get('profilePhoto')?.value instanceof File) {
-    formData.append('file', this.basicForm.get('profilePhoto')?.value)
+  const profilePhoto = this.basicForm.get('profilePhoto')?.value;
+  if (profilePhoto instanceof File) {
+    formData.append('file', profilePhoto, profilePhoto.name);
   }
-  console.log(formData)
-  return payload.employee;
+
+  return formData;
 }
 
 
@@ -716,9 +734,18 @@ private buildEmployeeFormData():any {
   onProfilePhotoChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
-      this.previewImageFile(input.files[0])
       const file = input.files[0];
-      this.basicForm.get('profilePhoto')?.setValue(file)
+      const profilePhotoControl = this.basicForm.get('profilePhoto');
+      profilePhotoControl?.setValue(file);
+      profilePhotoControl?.markAsTouched();
+      profilePhotoControl?.updateValueAndValidity();
+
+      if (profilePhotoControl?.invalid) {
+        input.value = '';
+        return;
+      }
+
+      this.previewImageFile(file);
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 
@@ -775,6 +802,10 @@ private buildEmployeeFormData():any {
   
     if (control?.hasError('invalidFileType')) {
       return `${this.toTitleCaseWithSpace(controlName)} must be a valid image file (PNG, JPG, JPEG).`;
+    }
+
+    if (control?.hasError('fileTooLarge')) {
+      return `${this.toTitleCaseWithSpace(controlName)} must not be more than ${this.maxProfilePhotoSizeInMb} MB.`;
     }
   
     return '';

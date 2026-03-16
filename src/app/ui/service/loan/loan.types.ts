@@ -1,10 +1,13 @@
 // loan.types.ts
 export interface LoanApplication {
+  backendId?: number;
+  loanCode?: string;
   approvedDate?: string;
   disbursementDate?: string;
   startDate?: string;
   endDate?: string;
   submittedAt?: string;
+  adminComment?: string;
   id: string;
   employeeId: string;
   fullName: string;
@@ -20,6 +23,9 @@ export interface LoanApplication {
   interestRate: number;
   currentBalance: number;
   totalPaid: number;
+  totalPrincipalPaid?: number;
+  totalInterestPaid?: number;
+  outstandingPrincipal?: number;
   statusHistory: StatusChange[];
   repaymentSchedule: RepaymentScheduleItem[];
   paymentHistory: PaymentRecord[];
@@ -65,6 +71,12 @@ export interface PaymentRecord {
   date: string;
   amount: number;
   paymentMethod: string;
+  principalAmount?: number;
+  interestPaid?: number;
+  lateFeeAmount?: number;
+  remainingBalance?: number;
+  installmentNo?: number;
+  receiptNumber?: string;
   referenceNumber?: string;
   receivedBy?: string;
   notes?: string;
@@ -80,4 +92,8 @@ export interface LoanApplicationFormData {
   acknowledgment: boolean;
   supportingDocuments?: LoanSupportingDocument[];
   submissionDate?: string;
+  employeeId: string;
+  employeeName?: string;
+  department?: string;
+  employeeNumericId?: number;
 }

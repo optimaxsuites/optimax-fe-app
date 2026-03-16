@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
 @Injectable({
@@ -9,6 +9,11 @@ import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/
 export class EmployeeService {
  baseurl = 'https://be.optimaxsuites.com'
  vettingWebhookUrl = 'https://automation.optimaxsuites.com/webhook/a6eb636c-407e-49e1-9810-ee852b4a2a22'
+  private employeesSubject = new BehaviorSubject<any[]>([]);
+  employees$ = this.employeesSubject.asObservable();
+  private employeesLoaded = false;
+  private employeesLoading = false;
+  private employeesRequest$: Observable<any[]> | null = null;
   constructor(private http: HttpClient) { }
 
   addEmployee(data: any): Observable<any>{
@@ -38,26 +43,67 @@ export class EmployeeService {
    sendWelcomeEmail(data: any): Observable<any>{
     return this.http
         .post<any>(
-             "https://n8n.royalvilletechnologies.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
+             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
         .pipe(catchError(this.handleError));
   }
 
 
-  getAllEmployee(): Observable<any>{
-    return this.http
-        .get<any>(
-            this.baseurl +
-                `/x/api/v2/hr/employees?page=1&size=1200`)
-        .pipe(catchError(this.handleError));
+  getAllEmployee(force = false): Observable<any[]> {
+    if (!force && this.employeesLoaded) {
+      return of(this.employeesSubject.value);
+    }
+
+    if (!force && this.employeesLoading && this.employeesRequest$) {
+      return this.employeesRequest$;
+    }
+
+    this.employeesLoading = true;
+    const request$ = this.http
+      .get<any>(this.baseurl + `/x/api/v2/hr/employees?page=1&size=1200`)
+      .pipe(
+        map((data) => this.normalizeEmployees(data)),
+        tap((employees) => {
+          this.employeesSubject.next(employees);
+          this.employeesLoaded = true;
+        }),
+        catchError(this.handleError),
+        finalize(() => {
+          this.employeesLoading = false;
+          this.employeesRequest$ = null;
+        }),
+        shareReplay(1)
+      );
+
+    this.employeesRequest$ = request$;
+    return request$;
+  }
+
+  ensureEmployeesLoaded(): void {
+    this.getAllEmployee().subscribe({
+      error: () => undefined
+    });
+  }
+
+  refreshEmployees(): Observable<any[]> {
+    return this.getAllEmployee(true);
   }
 
 
-  getEmployeeById(id: number): Observable<any>{
+  getEmployeeById(id: number | string): Observable<any>{
     return this.http
         .get<any>(
             this.baseurl +
                 `/x/api/v2/hr/employees/${id}`)
         .pipe(catchError(this.handleError));
+  }
+
+  getEmployeeByUserId(userId: number | string): Observable<any> {
+    return this.http
+      .get<any>(
+        this.baseurl +
+          `/x/api/v2/hr/employees/employee/by/userId/${userId}`
+      )
+      .pipe(catchError(this.handleError));
   }
 
   deleteEmployee(id: number | string): Observable<any> {
@@ -81,7 +127,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/allowanceTypes/${id}`)
+            `/x/api/v2/hr/allowanceTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -89,7 +135,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/bonusTypes/${id}`)
+            `/x/api/v2/hr/bonusTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -97,7 +143,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/deductionsType/${id}`)
+            `/x/api/v2/hr/deductionsType/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -105,7 +151,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/salaries/overtimeTypes/${id}`)
+            `/x/api/v2/hr/overtimeTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 
@@ -125,6 +171,14 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+  getNOKByEmployeeId(id: any) {
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/nextOfKins/getNextOfKinByEmployeeId/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
 
   addGuarantor(data: any) {
     return this.http
@@ -134,10 +188,10 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
-  sendOnboardingVetting(payload: any): Observable<any> {
+  sendOnboardingVetting(payload: any, data: any): Observable<any> {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
-      .post<any>(this.vettingWebhookUrl, payload, { context })
+      .post<any>(this.vettingWebhookUrl, {payload, data}, { context })
       .pipe(catchError(this.handleError));
   }
 
@@ -159,5 +213,12 @@ export class EmployeeService {
     }
     return throwError(() => error);
     // 'Something bad happened; please try again later.');
+  }
+
+  private normalizeEmployees(data: any): any[] {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.content)) return data.content;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
   }
 }

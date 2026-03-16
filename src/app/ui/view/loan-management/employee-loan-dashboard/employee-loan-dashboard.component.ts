@@ -7,6 +7,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -16,6 +17,7 @@ import { LoanRepaymentService } from '../../../service/loan/loan-repayment.servi
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   employeeName: string = 'Employee Name';
   employeeId: string = 'EMP-123';
+  employeeDepartment: string = '';
   isLoading: boolean = false;
   uuid: string = '';
   
@@ -76,7 +78,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
-    private loanRepaymentService: LoanRepaymentService
+    private loanRepaymentService: LoanRepaymentService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -107,9 +110,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     // Subscribe to loan updates for real-time data
     this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
-        const employeeLoans = applications.filter(loan => 
-          loan.employeeId === this.employeeId
-        );
+        const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
         this.allLoans = this.sortLoansByRecent(employeeLoans);
         this.refreshPayableLoans();
         this.calculateLoanCounts();
@@ -123,21 +124,38 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   loadEmployeeData(): void {
     this.isLoading = true;
-    
+
     this.route.params.subscribe(params => {
       this.uuid = params['uuid'];
-      
-      // In real app, get from auth service
-      this.employeeName = 'Eseose Odion';
-      this.employeeId = 'EMP-123';
-      
-      this.loadLoanData();
+
+      this.employeeService.getAllEmployee().subscribe({
+        next: (response) => {
+          const employees = this.extractEmployees(response);
+          const matchedEmployee = this.resolveCurrentEmployee(employees);
+
+          if (matchedEmployee) {
+            this.employeeName = this.getEmployeeFullName(matchedEmployee) || this.employeeName;
+            this.employeeId = String(
+              matchedEmployee?.id ?? matchedEmployee?.employeeId ?? matchedEmployee?.employeeCode ?? this.employeeId
+            ).trim() || this.employeeId;
+            this.employeeDepartment = String(
+              matchedEmployee?.department?.name ?? matchedEmployee?.department ?? this.employeeDepartment
+            ).trim();
+          }
+
+          this.loadLoanData();
+        },
+        error: (error) => {
+          console.error('Error resolving current employee:', error);
+          this.loadLoanData();
+        }
+      });
     });
   }
 
   loadLoanData(): void {
     this.isLoading = true;
-    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
+    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
       next: (applications) => {
         this.allLoans = this.sortLoansByRecent(applications);
         this.refreshPayableLoans();
@@ -150,6 +168,78 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  private isCurrentEmployeeLoan(loan: LoanApplication): boolean {
+    if (loan.employeeId === this.employeeId) {
+      return true;
+    }
+
+    return loan.fullName.trim().toLowerCase() === this.employeeName.trim().toLowerCase();
+  }
+
+  private extractEmployees(response: any): any[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.content)) {
+      return response.content;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    return [];
+  }
+
+  private resolveCurrentEmployee(employees: any[]): any | undefined {
+    const userRegDataRaw = sessionStorage.getItem('userRegData');
+    const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
+    const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
+    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+    const regEmail = String(userRegData?.email || '').trim().toLowerCase();
+    const regUsername = String(userRegData?.username || '').trim().toLowerCase();
+
+    return employees.find((employee) => {
+      const identifiers = [employee?.id, employee?.employeeId, employee?.employeeCode, employee?.staffId]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+      const employeeEmail = String(employee?.email || employee?.workEmail || '').trim().toLowerCase();
+      const employeeUsername = String(employee?.username || employee?.userName || '').trim().toLowerCase();
+      const employeeFullName = this.getEmployeeFullName(employee).toLowerCase();
+
+      if (sessionUserId && identifiers.includes(sessionUserId)) {
+        return true;
+      }
+
+      if (regEmail && employeeEmail === regEmail) {
+        return true;
+      }
+
+      if (sessionUsername && (employeeUsername === sessionUsername || employeeEmail === sessionUsername || employeeFullName === sessionUsername)) {
+        return true;
+      }
+
+      if (regUsername && (employeeUsername === regUsername || employeeEmail === regUsername || employeeFullName === regUsername)) {
+        return true;
+      }
+
+      return false;
+    });
+  }
+
+  private getEmployeeFullName(employee: any): string {
+    const fullName = String(employee?.fullName || '').trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    return [employee?.firstName, employee?.lastName]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .join(' ');
   }
 
   calculateLoanCounts(): void {
@@ -270,11 +360,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   viewDetailedHistory(): void {
     if (this.uuid) {
       this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, this.uuid], {
-        state: { source: 'employee' }
+        state: { source: 'employee', employeeName: this.employeeName }
       });
     } else {
       this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.employeeId, uuidV4()], {
-        state: { source: 'employee' }
+        state: { source: 'employee', employeeName: this.employeeName }
       });
     }
   }

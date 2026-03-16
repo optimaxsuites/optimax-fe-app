@@ -76,6 +76,9 @@
   <app-modal *ngIf="showLoanForm" [header]="'New Loan Request'" (close)="closeLoanFormModal()">
     <app-loan-request-form
       [isModal]="true"
+      [employeeId]="employeeId"
+      [employeeName]="employeeName"
+      [department]="employeeDepartment"
       (loanSubmitted)="onLoanSubmitted()"
       (formCancelled)="closeLoanFormModal()">
     </app-loan-request-form>
