@@ -25,7 +25,7 @@ export class MenuItemsService {
           description: 'View and manage communications across the organization.'
         },
         {
-          label: 'optimaXAI',
+          label: 'OptimaXAI',
           code: 'OPTIMA_AI',
           route: this.navigationLink.getLink('optimaXAILink'), 
           roles: ['ROLE_USER'],

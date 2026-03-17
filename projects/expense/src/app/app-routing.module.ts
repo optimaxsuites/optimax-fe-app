@@ -15,11 +15,11 @@ import { MobileCheckoutComponent } from './ui/view/mobile-checkout/mobile-checko
 
 const routes: Routes = [
 
-  { path: '', redirectTo: 'admin/expenses', pathMatch: 'full' },
+  // { path: '', redirectTo: '', pathMatch: 'full' },
 
-  {
-    path: 'admin/expenses',
-    children: [
+  // {
+  //   path: '',
+  //   children: [
       // default child when someone lands on /admin/expenses
       { path: '', redirectTo: 'expense/34567whr4567yhsdzr56', pathMatch: 'full' },
 
@@ -34,11 +34,11 @@ const routes: Routes = [
       { path: 'uploadReciept', component: UploadRecieptComponent },
       { path: 'Addperdiem', component: AddPerDiemComponent },
       { path: 'expense-summary', component: ExpenseSummaryComponent },
-    ],
-  },
+    // ],
+  // },
 
   // catch-all goes back to the expense base
-  { path: '**', redirectTo: 'admin/expenses' },
+  // { path: '**', redirectTo: 'admin/expenses' },
 ];
 
 @NgModule({
