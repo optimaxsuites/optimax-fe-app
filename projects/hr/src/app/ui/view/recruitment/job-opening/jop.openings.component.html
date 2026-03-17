@@ -185,10 +185,13 @@
     <p class="text-gray-400  mt-1">{{ selectedJob?.location }}</p>
 
     <hr class=" border-gray-200">
-
-    <div class="job-description prose prose-sm mb-6 text-gray-600"
-         [innerHTML]="selectedJob?.companyOverview">
+ 
+    <div class="w-full pr-8"> <h3 class="font-bold text-xl mb-4 text-gray-700">Company Overview</h3>
+  
+      <div class="prose prose-sm max-w-full overflow-y-auto max-h-[70vh]  custom-rich-text"
+          [innerHTML]="selectedJob?.companyOverview">
       </div>
+    </div>
    </div>
 
 

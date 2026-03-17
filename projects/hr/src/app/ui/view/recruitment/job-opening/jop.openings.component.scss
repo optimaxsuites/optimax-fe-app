@@ -110,3 +110,30 @@
          text-white font-semibold rounded-lg
          transition-colors duration-200;
 }
+
+
+.custom-rich-text ::ng-deep * {
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+.custom-rich-text ::ng-deep img {
+  height: auto !important;
+  border-radius: 8px;
+}
+
+.custom-rich-text ::ng-deep table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Optional: Slim scrollbar for the description */
+.custom-rich-text::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-rich-text::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
