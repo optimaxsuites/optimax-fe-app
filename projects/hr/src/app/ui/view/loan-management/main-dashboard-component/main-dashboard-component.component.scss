@@ -1,0 +1,81 @@
+.main-dashboard-wrapper {
+  display: block;
+}
+
+.dashboard-toggle {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 24px 0.4rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+
+  .toggle-label {
+    color: #2E6276;
+    font-weight: 600;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .dashboard-copy {
+    color: #5f7c87;
+    font-size: 0.92rem;
+    margin: 0;
+  }
+
+  .dashboard-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .switch-btn {
+      padding: 12px 20px;
+      border: 1px solid #d7e7ec;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #f8feff;
+      color: #2E6276;
+      min-width: 170px;
+
+      &:hover {
+        background: #eaf7fb;
+        border-color: #2E6276;
+      }
+
+      &.active {
+        background: #2E6276;
+        color: #fff;
+        border-color: #2E6276;
+      }
+    }
+  }
+}
+
+.dashboard-section {
+  display: block;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-toggle {
+    margin: 0 16px 0.4rem;
+    width: 100%;
+    display: grid;
+    gap: 0.4rem;
+
+    .dashboard-switch {
+      display: grid;
+      grid-template-columns: 1fr;
+
+      .switch-btn {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+  }
+}

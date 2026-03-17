@@ -1,0 +1,252 @@
+<div class="card table-item">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <app-button
+        text="Reject"
+        class="btn-delete"
+        (click)="bulkReject()"
+      ></app-button>
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <app-button
+        (click)="bulkApprove()"
+        text="Approve"
+        class="btn-navigate gap-2"
+      ></app-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="flex w-full justify-between gap-4 px-3">
+    <div class="flex gap-4 w-1/2">
+      <div class="w-full">
+        <ng-select
+          [items]="leaveTypes"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by leave type"
+          [(ngModel)]="selectedLeaveType"
+          (ngModelChange)="filterBySelectedLeaveType()"
+        >
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select
+          [items]="statuses"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by status"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="filterBySelectedStatus()"
+        >
+        </ng-select>
+      </div>
+    </div>
+    <div class="search-bar w-[70%]">
+      <input
+        type="text"
+        placeholder="Search"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filterCandidates()"
+        class="editInput w-full h-[36px]"
+      />
+    </div>
+   
+
+    <!-- <app-table
+        [columns]="leaveRequestColumns"
+        [rows]="filteredCandidates"
+        [actions]="leaveRequestActions"
+        [selectable]="true"
+        selectionMode="multiple"
+        [(selection)]="selectedEmployees"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
+        [emptyMessage]="'No request made yet'"
+        (actionClick)="handleLeaveRequestAction($event)"
+        >
+    </app-table> -->
+  
+  </div>
+
+  <p-table
+    [value]="filteredCandidates"
+    [paginator]="true"
+    [(selection)]="selectedRequests"
+    styleClass=""
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
+    [rows]="10"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+        <th class="table-item" pSortableColumn="Employee">Employee</th>
+        <th class="table-item" pSortableColumn="Date">Date Applied for</th>
+        <th class="table-item" pSortableColumn="LeaveType">Leave Type</th>
+        <th class="table-item" pSortableColumn="NetLeaveBalance">
+          Net Leave Balance
+        </th>
+        <th class="table-item" pSortableColumn="RequestedDuration">
+          Requested Duration
+        </th>
+        <th class="table-item" pSortableColumn="Status">Status</th>
+        <th class="table-item"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-employee let-i="rowIndex">
+      <tr class="p-table-row">
+        <td><p-tableCheckbox [value]="employee" /></td>
+        <td class="table-item">{{ employee.Employee }}</td>
+        <td class="table-item">{{ employee.Date }}</td>
+        <td class="table-item">{{ employee.LeaveType }}</td>
+        <td class="table-item">{{ employee.NetLeaveBalance }}</td>
+        <td class="table-item">{{ employee.RequestedDuration }}</td>
+        <td class="table-item">{{ employee.Status }}</td>
+        <td class="actions table-item">
+          <i
+            class="pi pi-ellipsis-v table-item"
+            (click)="op.toggle($event)"
+          ></i>
+          <p-overlayPanel #op ngClass="padding: 0;">
+            <div>
+              <li class="table-item-panel" (click)="viewEmployee(employee, op)">
+                <i class="pi pi-eye table-item me-2"></i> View
+              </li>
+              <li
+                class="table-item-panel"
+                *ngIf="employee.Status.includes('Pending Approval')"
+                (click)="openAcceptRejectModal(employee)"
+              >
+                <i class="pi pi-download table-item me-2"></i> Approve/Reject
+              </li>
+              <!-- <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Reject</li> -->
+            </div>
+          </p-overlayPanel>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center text-[14px] py-4">
+          No request made yet
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<app-modal *ngIf="acceptModal" (close)="closeModal()">
+  <div class="flex justify-between items-center">
+    <p class="mb-3 text-gray-800 pt-2 text-3xl">Comment</p>
+    <span (click)="closeModal()" class="cursor-pointer">x</span>
+  </div>
+  <textarea
+    name="comment"
+    id="comment"
+    class="border-0 outline-none border-b-2 placeholder:text-gray-400 w-full"
+    rows="5"
+    cols="50"
+    placeholder="enter message here"
+    [(ngModel)]="comment"
+  ></textarea>
+
+  <div class="flex justify-around my-6 px-3 items-center w-full">
+    <button
+      class="bg-customGreen text-white rounded-xl w-[40%] py-4 hover:bg-customGreenHover"
+      (click)="acceptLeave()"
+    >
+      Approve
+    </button>
+    <button
+      class="bg-red-600 hover:bg-red-400 text-white rounded-xl w-[40%] py-4"
+      (click)="rejectLeave()"
+    >
+      Reject
+    </button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="openViewEmployee" (close)="openViewEmployee = false">
+  <div class="flex gap-2 items-center mb-2">
+    <img
+      src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg"
+      alt=""
+      class="w-28 h-28"
+    />
+    <p class="font-bold text-2xl text-gray-700">
+      {{ employeeInView.Employee }}
+    </p>
+  </div>
+  <p>
+    Requested For:
+    <span class="ml-2 mb-5 pb-2 text-wrap">{{ employeeInView.Date }}</span>
+  </p>
+  <p>
+    Duration:
+    <span class="ml-2 mb-5 pb-2 text-wrap">
+      {{ employeeInView.RequestedDuration }}</span
+    >
+  </p>
+  <p>
+    Applied On:
+    <span class="ml-2 mb-5 pb-2 text-wrap">{{ employeeInView.AppliedOn }}</span>
+  </p>
+  <p>
+    Leave Type:
+    <span class="ml-2 mb-5 pb-2 text-wrap">{{ employeeInView.LeaveType }}</span>
+  </p>
+  <p
+    *ngIf="
+      employeeInView.Attachment && employeeInView.Attachment.fileName.length > 0
+    "
+  >
+    Attachement:
+    <button
+      text="Download Resume"
+      class="text-customGreen font-bold ml-2"
+      (click)="downloadAttachment(employeeInView)"
+    >
+      <i class="pi pi-download resume me-2 text-xl"></i> Download Attachment
+    </button>
+  </p>
+  <p
+    *ngIf="employeeInView.Attachment == null"
+    (click)="downloadAttachment(employeeInView)"
+  >
+    Attachement: No attachment attached
+  </p>
+
+  <p class="w-[30vw]">
+    Reason:
+    <span class="ml-2 mb-5 pb-2 text-wrap">
+      {{ employeeInView.RequestComment }}
+    </span>
+  </p>
+
+  <p
+    class="w-[30vw]"
+    *ngIf="!employeeInView.Status.includes('Pending Approval')"
+  >
+    Review Comment:
+    <span class="ml-2 mb-5 pb-2 text-wrap">
+      {{ employeeInView.ApprovalComment }}
+    </span>
+  </p>
+
+  <div
+    *ngIf="employeeInView.Status.includes('Pending Approval')"
+    class="flex justify-around my-3 px-3 items-center w-full"
+  >
+    <button
+      class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl w-[40%] py-4"
+      (click)="openAcceptRejectModal(employeeInView)"
+    >
+      Approve/Reject
+    </button>
+  </div>
+</app-modal>
+<p-toast position="top-right" key="tl" />

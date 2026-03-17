@@ -1,0 +1,87 @@
+<div class="loan-disbursement-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <div *ngIf="isLoading" class="loading-state">Loading disbursement queue...</div>
+
+  <div *ngIf="!isLoading" class="content">
+    <header class="disbursement-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-money-check-alt"></i> Disburse Loans</h1>
+      </div>
+      <span class="queue-count">Approved queue: {{ approvedLoans.length }}</span>
+    </header>
+
+    <div class="empty-state" *ngIf="approvedLoans.length === 0">
+      <i class="fas fa-check-circle"></i>
+      <p>No approved loans are waiting for disbursement.</p>
+    </div>
+
+    <div class="layout" *ngIf="approvedLoans.length > 0">
+      <section class="table-card">
+        <h2>Approved Loans</h2>
+        <app-table
+          [columns]="approvedLoanColumns"
+          [rows]="approvedLoans"
+          [actions]="approvedLoanActions"
+          [striped]="true"
+          [emptyMessage]="'No approved loans are waiting for disbursement.'"
+          (actionClick)="handleApprovedLoanAction($event)">
+        </app-table>
+      </section>
+
+      <section class="form-card">
+        <h2>Disbursement Details</h2>
+        <p class="note">Final stage: status changes from APPROVED to ACTIVE only after disbursement.</p>
+
+        <div class="form-grid">
+          <label>
+            Loan ID
+            <select [(ngModel)]="selectedDisbursementLoanId" (ngModelChange)="onDisbursementLoanChange()">
+              <option value="" disabled>Select approved loan</option>
+              <option *ngFor="let loan of approvedLoans" [value]="loan.id">{{ loan.id }} - {{ loan.fullName }}</option>
+            </select>
+          </label>
+
+          <label>
+            Disbursement Amount
+            <input type="number" [value]="disbursementAmount" readonly />
+          </label>
+
+          <label>
+            Disbursement Date
+            <input type="date" [(ngModel)]="disbursementDate" />
+          </label>
+
+          <label>
+            Recipient Type
+            <select [(ngModel)]="disbursementRecipientType">
+              <option value="BORROWER">Borrower</option>
+              <option value="THIRD_PARTY">Third Party</option>
+            </select>
+          </label>
+
+          <label *ngIf="disbursementRecipientType === 'THIRD_PARTY'">
+            Third-party Recipient Name
+            <input type="text" [(ngModel)]="thirdPartyName" placeholder="Enter seller/vendor name" />
+          </label>
+        </div>
+
+        <div class="checklist">
+          <h3>Pre-disbursement Checklist</h3>
+          <label><input type="checkbox" [(ngModel)]="checklistIdentityVerified" /> Identity and KYC verified</label>
+          <label><input type="checkbox" [(ngModel)]="checklistAccountVerified" /> Recipient account details verified</label>
+          <label><input type="checkbox" [(ngModel)]="checklistComplianceCleared" /> Compliance and policy checks completed</label>
+          <label><input type="checkbox" [(ngModel)]="checklistFundsReserved" /> Funds availability and release authorization confirmed</label>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
+          <button type="button" class="disburse-btn" [disabled]="!canDisburseSelectedLoan" (click)="disburseSelectedLoan()">
+            Disburse Loan
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,283 @@
+<p-confirmDialog
+  class="table-item"
+  header="Confirm Deletion"
+  icon="pi pi-exclamation-triangle"
+  styleClass="custom-confirm-dialog">
+</p-confirmDialog>
+
+<p-toast class="table-item"></p-toast>
+
+
+ <form class="card" [formGroup]="form">
+  <div class="topbar">
+    <div>
+      <h1>Create Purchase Requisition</h1>
+      <p class="subtext">
+        Request items/services. Vendors will price each item during quotation stage.
+      </p>
+    </div>
+
+    <div class="status-pill" [attr.data-status]="status">
+      {{ status }}
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="main">
+      <!-- PR Header -->
+      <div class="card">
+        <div class="card-title">
+          <div>
+            <h2>PR Header</h2>
+            <p class="muted">Department, cost center, and budget code are required.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Title <span class="req">*</span></label>
+            <input class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" type="text" formControlName="title" placeholder="e.g. Office consumables request" />
+          </div>
+
+          <div class="field">
+            <label>Required By <span class="req">*</span></label>
+            <input class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" type="date" formControlName="requiredByDate" />
+          </div>
+
+          <div class="field">
+            <label>Department <span class="req">*</span></label>
+            <select formControlName="departmentId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
+              <option value="">Select department</option>
+              <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Cost Center <span class="req">*</span></label>
+            <select formControlName="costCenterId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
+              <option value="">Select cost center</option>
+              <option *ngFor="let c of costCenters" [value]="c.id">
+                {{ c.code }} — {{ c.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Budget Code <span class="req">*</span></label>
+            <select formControlName="budgetCodeId" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
+              <option value="">Select budget code</option>
+              <option *ngFor="let b of filteredBudgetCodes()" [value]="b.id">
+                {{ b.code }} — {{ b.name }}
+              </option>
+            </select>
+            <small class="hint">Budget codes filter by selected cost center.</small>
+          </div>
+
+          <div class="field">
+            <label>Justification <span class="req">*</span></label>
+            <textarea formControlName="justification" rows="3" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR Items -->
+      <div class="card">
+        <div class="card-title row-between">
+          <div>
+            <h2>PR Items</h2>
+            <p class="muted">Add one or more items. Vendors will add prices later.</p>
+          </div>
+
+          <button type="button" class="btn secondary" (click)="addItem()">+ Add Item</button>
+        </div>
+
+        <!-- ✅ IMPORTANT: formArrayName must be inside same formGroup -->
+        <div class="table-wrap" formArrayName="items">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 32%">Item/Service Name *</th>
+                <th style="width: 22%">Description</th>
+                <th style="width: 10%">Qty *</th>
+                <th style="width: 12%">UoM *</th>
+                <th style="width: 16%">Category (Optional)</th>
+                <th style="width: 8%"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let fg of items.controls; let i = index" [formGroupName]="i">
+                <td>
+                  <input type="text" formControlName="name" placeholder="e.g. A4 Paper" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
+                </td>
+
+                <td>
+                  <input type="text" formControlName="description" placeholder="Optional details" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
+                </td>
+
+                <td>
+                  <input type="number" min="1" formControlName="quantity" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
+                </td>
+
+                <td>
+                  <select formControlName="unitOfMeasure" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
+                    <option *ngFor="let u of uoms" [value]="u">{{ u }}</option>
+                  </select>
+                </td>
+
+                <td>
+                  <input type="text" formControlName="category" placeholder="e.g. Office Supplies" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200" />
+                </td>
+
+                <td class="actions-cell">
+                  <button type="button" class="icon-btn" (click)="removeItem(i)" [disabled]="items.length === 1">
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="footnote">
+            <span class="muted">Items: <strong>{{ itemCount() }}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+         <div class="sidebar">
+      <div class="card">
+        <h3>Budget Cap</h3>
+        <p class="muted">This is your maximum spend approval target.</p>
+
+        <div class="grid-2 tight">
+          <div class="field">
+            <label>Currency <span class="req">*</span></label>
+            <select [formGroup]="form" formControlName="currency" class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200">
+              <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Budget Cap Amount <span class="req">*</span></label>
+            <input
+              type="number"
+              min="1"
+              [formGroup]="form"
+              formControlName="budgetCapAmount"
+              placeholder="e.g. 250000"
+              class=" w-full border p-2 rounded-lg focus:ring-4 focus:ring-green-200 focus:border-green-200"
+            />
+            <small
+              class="error"
+              *ngIf="
+                form.get('budgetCapAmount')?.touched &&
+                form.get('budgetCapAmount')?.invalid
+              "
+            >
+              Must be greater than 0.
+            </small>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-row">
+            <span>Cap</span>
+            <strong
+              >{{ currency() }} {{ budgetCap() | number: "1.0-0" }}</strong
+            >
+          </div>
+          <div class="summary-row muted">
+            <span>Pricing</span>
+            <span>Vendors quote per item later</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="card">
+        <h3>Approval Status</h3>
+        <div class="timeline">
+          <div class="step done">
+            <div class="dot"></div>
+            <div>
+              <strong>Draft</strong>
+              <div class="muted">PR is editable</div>
+            </div>
+          </div>
+
+          <div
+            class="step"
+            [class.active]="
+              status === 'Submitted' ||
+              status === 'UnderReview' ||
+              status === 'Approved'
+            "
+          >
+            <div class="dot"></div>
+            <div>
+              <strong>Submitted</strong>
+              <div class="muted">Sent for approvals</div>
+            </div>
+          </div>
+
+          <div
+            class="step"
+            [class.active]="status === 'UnderReview' || status === 'Approved'"
+          >
+            <div class="dot"></div>
+            <div>
+              <strong>Under Review</strong>
+              <div class="muted">Approvers reviewing</div>
+            </div>
+          </div>
+
+          <div class="step" [class.active]="status === 'Approved'">
+            <div class="dot"></div>
+            <div>
+              <strong>Approved</strong>
+              <div class="muted">Ready for RFQ</div>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+      <div class="actions-panel">
+        <button type="button" class="btn" (click)="saveDraft()">
+          Save Draft
+        </button>
+        <button type="button" class="btn primary" (click)="submit()">
+          Submit for Approval
+        </button>
+        <small class="muted block">
+          Submitting locks the PR and triggers approvals.
+        </small>
+      </div>
+    </div>
+    <!-- <div class="sidebar">
+      <div class="card">
+        <h3>Budget Cap</h3>
+
+        <div class="grid-2 tight">
+          <div class="field">
+            <label>Currency <span class="req">*</span></label>
+            <select formControlName="currency">
+              <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Budget Cap Amount <span class="req">*</span></label>
+            <input type="number" min="1" formControlName="budgetCapAmount" placeholder="e.g. 250000" />
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-panel">
+        <button type="button" class="btn" (click)="saveDraft()">Save Draft</button>
+        <button type="button" class="btn primary" (click)="submit()">Submit for Approval</button>
+      </div>
+    </div> -->
+  </div>
+</form>
+

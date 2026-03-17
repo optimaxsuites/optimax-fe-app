@@ -1,0 +1,45 @@
+<div *ngIf="purchaseReqTable">
+  <div class="card p-3">
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete" class="btn-delete"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button
+          text="Create Purchase Requisition"
+          class="btn-navigate"
+          (click)="openForm()"
+        ></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <app-table
+      [columns]="columns"
+      [rows]="purchaseReqList"
+      [actions]="actions"
+      [paginator]="true"
+      [rowsPerPage]="10"
+      [selectable]="true"
+      selectionMode="multiple"
+      [(selection)]="selectedPurchaseReqList"
+      dataKey="id"
+      (rowClick)="openVendor($event)"
+      (actionClick)="onAction($event)"
+      (selectionChange)="selectedPurchaseReqList = $event"
+    ></app-table>
+  </div>
+</div>
+
+<div class="rfq-form-container" *ngIf="purchaseReqForm">
+  <app-pr-create
+    (submitForm)="onPrSaved($event)"
+    [purchaseReqData]="activeItem"
+    (back)="close()"
+    [isView]="isView"
+    [isCreate]="isCreate"
+    [isEdit]="isEdit"
+    [isRfq]="true"
+    [isQuote]="false"
+  ></app-pr-create>
+</div>

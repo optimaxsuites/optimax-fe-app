@@ -1,0 +1,109 @@
+.clock-card {
+  background: #ffffff;/*linear-gradient(135deg, #111827, #1f2937)*/;
+  color: black;
+  border-radius: 18px;
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+
+  .absent-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .closed-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .completed-warning {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 450px;
+    border-radius: 18px;
+    padding: 1.2rem 1.2rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .time {
+    text-align: center;
+
+    h2 {
+      font-size: 2.4rem;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #9ca3af;
+    }
+  }
+
+  .status {
+    text-align: center;
+
+    span {
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      font-weight: 600;
+
+      &.in {
+        background: #16a34a;
+      }
+
+      &.out {
+        background: #dc2626;
+      }
+
+      &.break {
+        background: #f59e0b;
+      }
+    }
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 0.7rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.2s ease;
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .main-btn {
+      background: #1f9254;
+      color: white;
+
+      &:hover {
+        background: #065f46;
+      }
+    }
+  }
+}

@@ -1,0 +1,389 @@
+<div class="dashboard-container">
+  <app-modal *ngIf="showLoanSummaryModal" [header]="'Co-operative Loan Details'" (close)="closeLoanSummaryModal()">
+    <div class="cooperative-loan-modal" *ngIf="selectedLoanForSummary as loan">
+      <div class="details-grid">
+        <div class="detail-item"><span class="label">Loan ID</span><span class="value">{{ loan.loanCode || loan.loanId }}</span></div>
+        <div class="detail-item"><span class="label">Member</span><span class="value">{{ getSelectedLoanMemberName() }}</span></div>
+        <div class="detail-item"><span class="label">group</span><span class="value">{{ getSelectedLoangroupName() }}</span></div>
+        <div class="detail-item"><span class="label">Status</span><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></div>
+        <div class="detail-item"><span class="label">Applied On</span><span class="value">{{ (loan.requestDate || loan.applicationDate) | date:'medium' }}</span></div>
+        <div class="detail-item"><span class="label">Approved On</span><span class="value">{{ loan.approvedDate ? (loan.approvedDate | date:'medium') : 'N/A' }}</span></div>
+        <div class="detail-item"><span class="label">Amount</span><span class="value">{{ formatCurrency(loan.amount) }}</span></div>
+        <div class="detail-item"><span class="label">Interest Rate</span><span class="value">{{ loan.interestRate }}%</span></div>
+        <div class="detail-item"><span class="label">Duration</span><span class="value">{{ loan.duration }} months</span></div>
+        <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span></div>
+        <div class="detail-item"><span class="label">Total Repayment</span><span class="value">{{ formatCurrency(loan.totalRepayment || 0) }}</span></div>
+        <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
+        <div class="detail-item full" *ngIf="loan.adminRequestNote"><span class="label">Admin Comment</span><span class="value">{{ loan.adminRequestNote }}</span></div>
+        <div class="detail-item full" *ngIf="loan.rejectionReason"><span class="label">Rejection Reason</span><span class="value">{{ loan.rejectionReason }}</span></div>
+      </div>
+
+      <div class="modal-actions" *ngIf="loan.status === 'PENDING'">
+        <button class="btn-primary" (click)="openCooperativeApprovalForm(loan)">
+          <i class="pi pi-check-square"></i>
+          Review
+        </button>
+        <button class="btn-secondary" (click)="openCooperativeLoanHistory(loan)">
+          <i class="pi pi-history"></i>
+          Loan History
+        </button>
+      </div>
+      <div class="modal-actions" *ngIf="loan.status !== 'PENDING'">
+        <button class="btn-secondary" (click)="openCooperativeLoanHistory(loan)">
+          <i class="pi pi-history"></i>
+          Loan History
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <app-modal *ngIf="showPatronageModal" [header]="'Patronage Calculation'" (close)="closePatronageModal()">
+    <div class="modal-content patronage-modal">
+      <div class="patronage-header">
+        <h2>PATRONAGE CALCULATION - {{ patronageYear }}</h2>
+        <div class="patronage-header-actions">
+          <label>
+            Year
+            <select class="year-select" [ngModel]="patronageYear" (ngModelChange)="setPatronageYear($event)">
+              <option *ngFor="let year of patronageYearOptions" [ngValue]="year">{{ year }}</option>
+            </select>
+          </label>
+          <button class="btn-secondary" type="button" (click)="calculatePatronage()">Calculate</button>
+        </div>
+      </div>
+
+      <div class="patronage-summary">
+        <p>Total interest collected this year: <strong>{{ formatCurrency(totalInterestCollected) }}</strong></p>
+        <p>
+          Patronage rate (board approved):
+          <input type="number" min="0" max="100" step="0.1" [(ngModel)]="patronageRate" (ngModelChange)="calculatePatronage()" />
+          %
+        </p>
+        <p>Total to distribute: <strong>{{ formatCurrency(totalToDistribute) }}</strong></p>
+      </div>
+
+      <h3 class="patronage-subtitle">Member Patronage Breakdown</h3>
+
+      <div class="table-container">
+        <table appSortableTable class="simple-table patronage-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Interest Paid</th>
+              <th>Patronage</th>
+              <th>Dist Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of patronageRows">
+              <td>{{ row.memberName }}</td>
+              <td class="amount">{{ formatCurrency(row.interestPaid) }}</td>
+              <td class="amount">{{ formatCurrency(row.patronageAmount) }}</td>
+              <td>
+                <select [ngModel]="row.distributionMethod" (ngModelChange)="onDistributionMethodChange(row, $event)">
+                  <option value="ADD_TO_SHARES">Add to Shares</option>
+                  <option value="CASH_PAYOUT">Cash Payout</option>
+                  <option value="APPLY_TO_LOAN">Apply to Loan</option>
+                </select>
+              </td>
+            </tr>
+            <tr *ngIf="patronageRows.length === 0">
+              <td colspan="4" class="empty-state">No paid repayments found for {{ patronageYear }}.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="patronage-message" *ngIf="patronageMessage">{{ patronageMessage }}</p>
+
+      <div class="patronage-actions">
+        <button class="btn-primary" type="button" (click)="approvePatronageDistribution()">Approve Distribution</button>
+        <button class="btn-secondary" type="button" (click)="exportPatronageReport()">Export Report</button>
+        <button class="btn-secondary" type="button" (click)="printPatronageReport()">Print</button>
+      </div>
+    </div>
+  </app-modal>
+
+  <app-modal *ngIf="showInviteMembersModal" [header]="'Invite New Members'" (close)="closeInviteMembersModal()">
+    <div class="invite-members-modal">
+      <p class="invite-subtitle">Eligible junior employees only: permanent staff, off probation, no disciplinary hold, and not yet cooperative members.</p>
+
+      <div class="table-container" *ngIf="inviteCandidatesCount > 0">
+        <table appSortableTable class="simple-table">
+          <thead>
+            <tr>
+              <th class="actions-col">
+                <input
+                  type="checkbox"
+                  [checked]="isAllInviteCandidatesSelected"
+                  (change)="selectAllInviteCandidates()"
+                  aria-label="Select all candidates" />
+              </th>
+              <th>Name</th>
+              <th>Dept</th>
+              <th>Rank</th>
+              <th>Tenure</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of inviteCandidates">
+              <td class="actions-col">
+                <input
+                  type="checkbox"
+                  [checked]="isInviteSelected(row.employee.employeeId)"
+                  (change)="toggleInviteSelection(row.employee.employeeId)"
+                  [attr.aria-label]="'Select ' + row.employee.fullName" />
+              </td>
+              <td>{{ row.employee.fullName }}</td>
+              <td>{{ row.employee.department }}</td>
+              <td>{{ row.employee.rank }}</td>
+              <td>{{ getInviteTenureLabel(row.employee) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="invite-actions" *ngIf="inviteCandidatesCount > 0">
+        <button class="quick-action-btn" (click)="selectAllInviteCandidates()">
+          {{ isAllInviteCandidatesSelected ? 'Clear Selection' : 'Select All' }}
+        </button>
+        <button class="quick-action-btn" (click)="inviteSelectedCandidates()">
+          {{ inviteActionLabel }}
+        </button>
+      </div>
+
+      <p class="invite-message" *ngIf="inviteMessage">{{ inviteMessage }}</p>
+
+      <div *ngIf="inviteCandidatesCount === 0" class="empty-state">
+        <p>No invite-eligible junior employees available right now.</p>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading your dashboard...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="dashboard-content">
+    <!-- Header -->
+    <div class="dashboard-header lm-header-card">
+      <h1><i class="fas fa-hand-holding-heart"></i> Co-operative Dashboard</h1>
+      <div class="header-actions">
+        <div class="notification-indicator" title="Unread notifications" *ngIf="unreadNotificationCount > 0">
+          <i class="pi pi-bell"></i>
+          <span class="count-badge">{{ unreadNotificationCount }}</span>
+        </div>
+        <button class="btn-secondary" (click)="openInviteMembersModal()">
+          <i class="pi pi-user-plus"></i> Invite New Members
+        </button>
+      </div>
+    </div>
+
+    <section class="alerts-section" *ngIf="alerts.length > 0">
+      <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
+        <i class="pi" [ngClass]="alert.level === 'danger' ? 'pi-exclamation-triangle' : 'pi-bell'"></i>
+        <span>{{ alert.message }}</span>
+      </div>
+    </section>
+
+    <div class="card notifications-card" *ngIf="notifications.length > 0">
+      <div class="card-header">
+        <h2><i class="pi pi-bell"></i> Admin Notifications</h2>
+      </div>
+
+      <div class="notifications-list">
+        <button class="notification-item" type="button" *ngFor="let notification of notifications" [class.unread]="!notification.read" (click)="openNotification(notification)">
+          <div class="notification-body">
+            <span class="notification-title">{{ notification.title }}</span>
+            <span class="notification-message">{{ notification.message }}</span>
+          </div>
+          <div class="notification-meta">
+            <span class="notification-time">{{ getRelativeTime(notification.createdAt) }}</span>
+            <span class="unread-dot" *ngIf="!notification.read"></span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="section-title-row">
+      <h2>Co-op Health</h2>
+      <button class="kpi-chip defaulted" (click)="manageLoans()">
+        Loan Command Center <span class="count-badge">{{ stats.totalLoans }}</span>
+      </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon members-icon">
+          <i class="pi pi-users"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Members</span>
+          <span class="stat-value">{{ stats.totalMembers }}</span>
+          <span class="stat-sub">{{ stats.activeMembers }} active</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon loans-icon">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Active Loans</span>
+          <span class="stat-value">{{ stats.activeLoans }}</span>
+          <span class="stat-sub">{{ stats.pendingLoans }} pending · {{ defaultedLoansCount }} defaulted</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon fund-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Fund</span>
+          <span class="stat-value">{{ formatCurrency(stats.totalFund) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon portfolio-icon">
+          <i class="pi pi-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Loan Portfolio</span>
+          <span class="stat-value">{{ formatCurrency(stats.loanPortfolio) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid activity-actions-grid">
+      <div class="card">
+        <div class="card-header">
+            <h2><i class="pi pi-clock"></i> Recent Activity</h2>
+        </div>
+
+        <div class="activity-list" *ngIf="recentActivity.length > 0">
+          <div class="activity-item" *ngFor="let item of recentActivity">
+            <div class="activity-icon"><i class="pi pi-clock"></i></div>
+            <div class="activity-body">
+              <p>{{ item.message }}</p>
+              <span>{{ item.time }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="recentActivity.length === 0" class="empty-state">
+          <p>No recent activity yet</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+            <h2><i class="pi pi-bolt"></i> Quick Actions</h2>
+        </div>
+
+        <div class="quick-actions-panel">
+          <div class="action-buttons">
+            <button class="btn-primary" (click)="manageLoans()">
+              <i class="fas fa-list-check"></i>
+              Loan Command Center
+              <span class="count-badge" *ngIf="stats.totalLoans > 0">{{ stats.totalLoans }}</span>
+            </button>
+
+            <button class="btn-primary" (click)="disburseLoans()">
+              <i class="pi pi-wallet"></i>
+              Disburse Loans
+            </button>
+
+            <button class="btn-primary" (click)="runPatronageCalculator()">
+              <i class="pi pi-calculator"></i>
+              Patronage Calculator
+            </button>
+
+            <button class="btn-primary" (click)="navigateTo('groups')">
+              <i class="pi pi-th-large"></i>
+              Manage Groups
+            </button>
+          </div>
+        </div>
+
+        <div class="patronage-result" *ngIf="patronageEstimate > 0">
+          Estimated patronage refund pool: <strong>{{ formatCurrency(patronageEstimate) }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="dashboard-grid">
+      <!-- Recent Loans -->
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="pi pi-clock"></i> Recent Loan Applications</h2>
+          <button class="view-all" (click)="navigateTo('loans')">View All <i class="pi pi-arrow-right"></i></button>
+        </div>
+
+        <div class="table-container" *ngIf="recentLoans.length > 0">
+          <table appSortableTable class="simple-table">
+            <thead>
+              <tr>
+                <th>Loan ID</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let loan of recentLoans">
+                <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
+                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                <td><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></td>
+                <td>{{ (loan.requestDate || loan.applicationDate) | date:'shortDate' }}</td>
+                <td class="actions-col"><button class="icon-btn" (click)="viewLoan(loan.id.toString())"><i class="pi pi-eye"></i></button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="recentLoans.length === 0" class="empty-state">
+          <p>No loan applications yet</p>
+        </div>
+      </div>
+
+      <!-- Recent Members -->
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="pi pi-users"></i> Recent Members</h2>
+          <button class="view-all" (click)="navigateTo('members')">View All <i class="pi pi-arrow-right"></i></button>
+        </div>
+
+        <div class="members-list" *ngIf="recentMembers.length > 0">
+          <div *ngFor="let member of recentMembers" class="member-item" (click)="viewMember(member.id)">
+            <div class="member-avatar">{{ member.fullName.charAt(0) }}</div>
+            <div class="member-info">
+              <span class="member-name">{{ member.fullName }}</span>
+              <span class="member-id">{{ member.memberId }}</span>
+            </div>
+            <div class="member-shares">{{ formatCurrency(member.shareCapital) }}</div>
+          </div>
+        </div>
+
+        <div *ngIf="recentMembers.length === 0" class="empty-state">
+          <p>No members yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="info-card">
+      <i class="pi pi-info-circle"></i>
+      <div class="info-content">
+        <h3>What is a Co-operative Loan?</h3>
+        <p>Members pool resources and lend to each other. Interest paid goes back to members as patronage refunds at year-end.</p>
+      </div>
+    </div>
+  </div>
+</div>

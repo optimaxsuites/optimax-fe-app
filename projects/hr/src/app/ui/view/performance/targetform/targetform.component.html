@@ -1,0 +1,207 @@
+<div class="card rounded-2xl">
+  <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+
+  <form
+    [formGroup]="goalForm"
+    (ngSubmit)="onSubmit()"
+    class="space-y-8 flex gap-10 flex-row justify-between px-5 py-3 items-start"
+  >
+    <!-- Left Column -->
+    <div class="w-1/2">
+      <!-- Goal Name -->
+      <div class="mb-4 mt-3">
+        <label class="mb-3 text-lg font-semibold"
+          >Target Name
+          <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i>
+        </label>
+        <input
+          type="text"
+          formControlName="goalName"
+          placeholder="Enter Target name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        />
+        <div
+          *ngIf="
+            goalForm.get('goalName')?.touched &&
+            goalForm.get('goalName')?.invalid
+          "
+          class="text-red-500 text-sm"
+        >
+          Target name is required
+        </div>
+      </div>
+
+      <!-- Level and Priority -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <div class="">
+          <label class="mb-3 text-lg font-semibold"
+            >Level <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+          ></label>
+          <ng-select
+            [items]="level"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="level"
+            placeholder="Select level"
+            class="w-full"
+          ></ng-select>
+        </div>
+
+        <div class="">
+          <label class="mb-3 text-lg font-semibold"
+            >Priority <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+          ></label>
+          <select
+            formControlName="priority"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+          >
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <div>
+          <label class="mb-3 text-lg font-semibold"
+            >Start Date <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+          ></label>
+          <input
+            type="date"
+            formControlName="startDate"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          />
+        </div>
+        <div>
+          <label class="mb-3 text-lg font-semibold"
+            >End Date <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+          ></label>
+          <input
+            type="date"
+            formControlName="endDate"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          />
+        </div>
+      </div>
+
+      <!-- Admin Only Controls -->
+      <div *ngIf="userRole === 'ROLE_ADMIN'" class="">
+        <div>
+          <label class="mb-3 text-lg font-semibold"
+            >Evaluators <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+          ></label>
+          <ng-select
+            [items]="evaluator"
+            [multiple]="true"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="evaluator"
+            placeholder="Select evaluator"
+            class="w-full"
+          ></ng-select>
+        </div>
+      </div>
+
+      <!-- Assigned To -->
+      <div class="">
+        <label class="mb-3 mt-3 text-lg font-semibold"
+          >Assigned To <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+        ></label>
+        <ng-select
+          [items]="employees"
+          formControlName="assignedTo"
+          bindLabel="name"
+          bindValue="id"
+          placeholder="Select Employee"
+        ></ng-select>
+      </div>
+
+      <!-- Progress Status -->
+      <div class="">
+        <label class="my-3 text-lg font-semibold"
+          >Progress Status
+          <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+        ></label>
+        <select
+          formControlName="progressStatus"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        >
+          <option value="Pending">Pending</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-4 mt-6">
+        <button
+          type="button"
+          (click)="onCancel()"
+          class="px-5 py-3 border text-[12px] border-gray-300 rounded-md hover:bg-gray-50 transition duration-200"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-5 py-3 bg-green-600 text-[12px] text-white rounded-md hover:bg-green-700 transition duration-200"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="w-1/2">
+      <div>
+        <label class="mb-3 text-lg font-semibold"
+          >Overview & Description
+          <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+        ></label>
+        <p-editor
+          formControlName="goalDescription"
+          placeholder="Overview & Description..."
+          class="w-full"
+          styleClass="rounded-md border-gray-300 shadow-sm"
+          [style]="{ height: '80px' }"
+        ></p-editor>
+      </div>
+
+      <div class="mt-3">
+        <label class="mb-3 text-lg font-semibold"
+          >Metrics <i class="fas fa-asterisk text-red-500 text-sm ml-1"></i
+        ></label>
+        <div class="flex items-center">
+          <input
+            type="text"
+            #metricInput
+            (input)="onInputChange($event)"
+            class="flex-grow px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+            placeholder="Enter metric"
+          />
+          <span
+            class="text-customGreen cursor-pointer text-lg font-semibold ml-2 bg-green-100 px-3 py-2 rounded-md hover:bg-green-200 transition duration-200"
+            (click)="addMetrics(metricInput)"
+          >
+            + Add Metric
+          </span>
+        </div>
+        <ul class="flex flex-col space-y-4 p-2">
+          <li
+            *ngFor="let metric of metricsArray"
+            class="flex justify-between items-center p-3 border border-gray-210 rounded-md"
+          >
+            <span class="text-gray-800 text-lg">{{ metric.name }}</span>
+            <button
+              type="button"
+              class="text-red-500 hover:text-red-700 transition duration-200"
+              (click)="OnDelete(metric)"
+            >
+              Delete
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </form>
+</div>

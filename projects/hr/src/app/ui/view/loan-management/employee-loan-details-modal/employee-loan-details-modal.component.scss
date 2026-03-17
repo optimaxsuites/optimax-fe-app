@@ -1,0 +1,166 @@
+.employee-loan-details {
+  padding: 8px 10px 16px;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+
+    h2 {
+      margin: 0;
+      color: #2E6276;
+      font-size: 1.45rem;
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 50%;
+      background: #eef4f6;
+      color: #2E6276;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      &:hover {
+        background: #dbe8ec;
+      }
+    }
+  }
+
+  .subtitle {
+    margin: 0 0 14px;
+    color: #6b7280;
+    font-size: 0.92rem;
+  }
+
+  .status-pill {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+
+    &.status-pending {
+      background: rgba(255, 165, 0, 0.12);
+      color: #b87c00;
+    }
+
+    &.status-active {
+      background: rgba(46, 98, 118, 0.12);
+      color: #1e4a5a;
+    }
+
+    &.status-rejected {
+      background: rgba(233, 55, 55, 0.1);
+      color: #b30000;
+    }
+
+    &.status-completed {
+      background: rgba(46, 178, 112, 0.12);
+      color: #1e7e4a;
+    }
+
+    &.status-default {
+      background: rgba(107, 114, 128, 0.12);
+      color: #4b5563;
+    }
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px;
+    border: 1px solid #e3eef0;
+    border-radius: 10px;
+    background: #fff;
+
+    &.full {
+      grid-column: 1 / -1;
+    }
+
+    .label {
+      color: #6b7280;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      font-weight: 600;
+    }
+
+    .value {
+      color: #1f2937;
+      font-size: 0.92rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+  }
+
+  .admin-feedback {
+    border: 1px solid #e3eef0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px;
+
+    h3 {
+      margin: 0 0 8px;
+      color: #2E6276;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .comment {
+      margin: 0;
+      color: #1f2937;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .meta {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #6b7280;
+      font-size: 0.78rem;
+    }
+
+    .empty {
+      margin: 0;
+      color: #6b7280;
+      font-size: 0.88rem;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .employee-loan-details {
+    .details-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-feedback {
+      .meta {
+        flex-direction: column;
+      }
+    }
+  }
+}

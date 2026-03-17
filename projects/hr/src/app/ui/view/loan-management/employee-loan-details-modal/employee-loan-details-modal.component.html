@@ -1,0 +1,78 @@
+<div class="employee-loan-details" *ngIf="loan">
+  <div class="modal-header">
+    <h2>Loan Application Details</h2>
+    <div class="header-actions">
+      <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+      <button class="close-btn" type="button" (click)="requestClose()" aria-label="Close loan details">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <p class="subtitle">A concise view of your application and review outcome.</p>
+
+  <div class="details-grid">
+    <div class="detail-item">
+      <span class="label">Loan ID</span>
+      <span class="value">{{ loan.id }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Applied On</span>
+      <span class="value">{{ formatDate(loan.dateSubmitted) }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Approved On</span>
+      <span class="value">{{ formatDate(getApprovedDate()) }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Interest Rate</span>
+      <span class="value">{{ loan.interestRate || 0 }}%</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Requested Amount</span>
+      <span class="value">{{ formatCurrency(loan.loanAmount) }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Monthly Repayment</span>
+      <span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Repayment Period</span>
+      <span class="value">{{ loan.repaymentPeriod }} months</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Payment Mode</span>
+      <span class="value">{{ loan.paymentMode || 'N/A' }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Total Paid</span>
+      <span class="value">{{ formatCurrency(loan.totalPaid) }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Outstanding Balance</span>
+      <span class="value">{{ formatCurrency(loan.currentBalance) }}</span>
+    </div>
+    <div class="detail-item full">
+      <span class="label">Loan Purpose</span>
+      <span class="value">{{ loan.purpose }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="label">Last Status Update</span>
+      <span class="value">{{ formatDate(getLatestStatusDate()) }}</span>
+    </div>
+  </div>
+
+  <div class="admin-feedback">
+    <h3>Admin Comment</h3>
+    <ng-container *ngIf="getAdminFeedback() as feedback; else noComment">
+      <p class="comment">{{ feedback.notes }}</p>
+      <div class="meta">
+        <span>By: {{ feedback.changedBy || 'Admin' }}</span>
+        <span>{{ formatDate(feedback.date) }}</span>
+      </div>
+    </ng-container>
+    <ng-template #noComment>
+      <p class="empty">No admin comment has been added yet.</p>
+    </ng-template>
+  </div>
+</div>

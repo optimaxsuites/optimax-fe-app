@@ -1,0 +1,330 @@
+<div class="reconciliation-page">
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div class="header-left">
+            <h1>Bank Reconciliation</h1>
+        </div>
+        <div class="header-controls">
+            <div class="control-group">
+                <label>Period</label>
+                <select [(ngModel)]="selectedPeriod" class="select-input">
+                    <option>January 2026</option>
+                    <option>December 2025</option>
+                    <option>November 2025</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Account</label>
+                <select [(ngModel)]="selectedAccount" class="select-input">
+                    <option>GTBank - Main Account</option>
+                    <option>Access Bank - Operations</option>
+                    <option>Zenith Bank - Payroll</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <input type="text" [(ngModel)]="searchText" placeholder="Search transactions..." class="search-input" />
+            </div>
+
+            <button class="icon-btn" (click)="applyFilters()" title="Filter">
+                <i class="pi pi-filter"></i>
+            </button>
+
+            <button class="icon-btn" (click)="refreshData()" title="Refresh">
+                <i class="pi pi-refresh"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Strip -->
+    <div class="stats-strip">
+        <div class="stat-card">
+            <div class="stat-label">Total Imported</div>
+            <div class="stat-value">{{ stats.totalImported }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Auto Matched</div>
+            <div class="stat-value success">{{ stats.autoMatched }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Needs Review</div>
+            <div class="stat-value warning">{{ stats.needsReview }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Resolved</div>
+            <div class="stat-value success">{{ stats.resolved }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Difference</div>
+            <div class="stat-value" [class.error]="stats.difference > 0">
+                {{ formatCurrency(stats.difference) }}
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Use this -->
+    <!-- Tabs Section -->
+    <div class="tabs-section">
+        <button class="tab-btn" [class.active]="activeTab === 'all'" (click)="setActiveTab('all')">
+            All
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'unmatched'" (click)="setActiveTab('unmatched')">
+            Unmatched
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'auto-matched'" (click)="setActiveTab('auto-matched')">
+            Auto Matched
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'needs-review'" (click)="setActiveTab('needs-review')">
+            Needs Review
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'resolved'" (click)="setActiveTab('resolved')">
+            Resolved
+        </button>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <!-- Bank Feed Column -->
+        <div class="kanban-column" [class.drag-over]="dragOverColumn === 'Bank Feed'">
+            <div class="column-header bank-header">
+                <h2>Bank Feed</h2>
+                <span class="badge">{{ filteredBankFeed.length }}</span>
+            </div>
+            <div class="card-container" cdkDropList #bankList="cdkDropList" [cdkDropListData]="bankFeed"
+                [cdkDropListConnectedTo]="[erpList, reviewList, resolvedList]"
+                (cdkDropListDropped)="drop($event, 'Bank Feed')" (cdkDropListEntered)="onDragEntered('Bank Feed')"
+                (cdkDropListExited)="onDragExited()">
+
+                <div *ngFor="let transaction of filteredBankFeed" class="transaction-card" cdkDrag
+                    (cdkDragStarted)="onDragStarted(transaction)" (cdkDragEnded)="onDragEnded()"
+                    (click)="onCardClick(transaction)">
+
+                    <div class="card-header">
+                        <span class="card-id">{{ transaction.id }}</span>
+                        <span class="card-date">{{ transaction.date }}</span>
+                    </div>
+
+                    <div class="card-description">{{ transaction.description }}</div>
+
+                    <div class="card-footer">
+                        <span [class]="'card-amount ' + getAmountClass(transaction.amount)">
+                            {{ formatCurrency(transaction.amount) }}
+                        </span>
+                        <span [class]="'card-source ' + getSourceBadgeClass(transaction.source)">
+                            {{ transaction.source }}
+                        </span>
+                    </div>
+
+                    <div class="card-ai-footer" *ngIf="transaction.matchScore">
+                        <span class="ai-badge match-badge" [title]="transaction.predictionText">
+                            <i class="pi pi-bolt"></i> Match {{ transaction.matchScore }}%
+                        </span>
+                        <span *ngIf="transaction.riskLevel && transaction.riskLevel !== 'low'"
+                            [class]="'ai-badge ' + getRiskBadgeClass(transaction.riskLevel)">
+                            <ng-container *ngIf="transaction.riskLevel === 'high'"><i
+                                    class="pi pi-exclamation-triangle"></i> High Amount</ng-container>
+                            <ng-container *ngIf="transaction.riskLevel === 'medium'"><i class="pi pi-info-circle"></i>
+                                Review</ng-container>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ERP Transactions Column -->
+        <div class="kanban-column" [class.drag-over]="dragOverColumn === 'ERP Transactions'">
+            <div class="column-header erp-header">
+                <h2>ERP Transactions</h2>
+                <span class="badge">{{ filteredErpTransactions.length }}</span>
+            </div>
+            <div class="card-container" cdkDropList #erpList="cdkDropList" [cdkDropListData]="erpTransactions"
+                [cdkDropListConnectedTo]="[bankList, reviewList, resolvedList]"
+                (cdkDropListDropped)="drop($event, 'ERP Transactions')"
+                (cdkDropListEntered)="onDragEntered('ERP Transactions')" (cdkDropListExited)="onDragExited()">
+
+                <div *ngFor="let transaction of filteredErpTransactions" class="transaction-card" cdkDrag
+                    (cdkDragStarted)="onDragStarted(transaction)" (cdkDragEnded)="onDragEnded()"
+                    (click)="onCardClick(transaction)">
+
+                    <div class="card-header">
+                        <span class="card-id">{{ transaction.id }}</span>
+                        <span class="card-date">{{ transaction.date }}</span>
+                    </div>
+
+                    <div class="card-description">{{ transaction.description }}</div>
+
+                    <div class="card-footer">
+                        <span [class]="'card-amount ' + getAmountClass(transaction.amount)">
+                            {{ formatCurrency(transaction.amount) }}
+                        </span>
+                        <span [class]="'card-source ' + getSourceBadgeClass(transaction.source)">
+                            {{ transaction.source }}
+                        </span>
+                    </div>
+
+                    <div class="card-ai-footer" *ngIf="transaction.matchScore">
+                        <span class="ai-badge match-badge" [title]="transaction.predictionText">
+                            <i class="pi pi-bolt"></i> Match {{ transaction.matchScore }}%
+                        </span>
+                        <span *ngIf="transaction.riskLevel && transaction.riskLevel !== 'low'"
+                            [class]="'ai-badge ' + getRiskBadgeClass(transaction.riskLevel)">
+                            <ng-container *ngIf="transaction.riskLevel === 'high'"><i
+                                    class="pi pi-exclamation-triangle"></i> Unusual</ng-container>
+                            <ng-container *ngIf="transaction.riskLevel === 'medium'"><i class="pi pi-info-circle"></i>
+                                Check</ng-container>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Needs Review Column -->
+        <div class="kanban-column" [class.drag-over]="dragOverColumn === 'Needs Review'">
+            <div class="column-header review-header">
+                <h2>Needs Review</h2>
+                <span class="badge">{{ filteredNeedsReview.length }}</span>
+            </div>
+            <div class="card-container" cdkDropList #reviewList="cdkDropList" [cdkDropListData]="needsReview"
+                [cdkDropListConnectedTo]="[bankList, erpList, resolvedList]"
+                (cdkDropListDropped)="drop($event, 'Needs Review')" (cdkDropListEntered)="onDragEntered('Needs Review')"
+                (cdkDropListExited)="onDragExited()">
+
+                <div *ngFor="let transaction of filteredNeedsReview" class="transaction-card flagged" cdkDrag
+                    (cdkDragStarted)="onDragStarted(transaction)" (cdkDragEnded)="onDragEnded()"
+                    (click)="onCardClick(transaction)">
+
+                    <div class="card-header">
+                        <span class="card-id">{{ transaction.id }}</span>
+                        <span class="card-date">{{ transaction.date }}</span>
+                    </div>
+
+                    <div class="card-description">{{ transaction.description }}</div>
+
+                    <div class="card-footer">
+                        <span [class]="'card-amount ' + getAmountClass(transaction.amount)">
+                            {{ formatCurrency(transaction.amount) }}
+                        </span>
+                        <span [class]="'card-source ' + getSourceBadgeClass(transaction.source)">
+                            {{ transaction.source }}
+                        </span>
+                    </div>
+
+                    <div class="card-ai-footer" *ngIf="transaction.predictionText">
+                        <span class="ai-badge risk-high"><i class="pi pi-search"></i> {{
+                            transaction.predictionText?.substring(0, 30) }}...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolved Column -->
+        <div class="kanban-column" [class.drag-over]="dragOverColumn === 'Resolved'">
+            <div class="column-header resolved-header">
+                <h2>Resolved</h2>
+                <span class="badge">{{ filteredResolved.length }}</span>
+            </div>
+            <div class="card-container" cdkDropList #resolvedList="cdkDropList" [cdkDropListData]="resolved"
+                [cdkDropListConnectedTo]="[bankList, erpList, reviewList]"
+                (cdkDropListDropped)="drop($event, 'Resolved')" (cdkDropListEntered)="onDragEntered('Resolved')"
+                (cdkDropListExited)="onDragExited()">
+
+                <div *ngFor="let transaction of filteredResolved" class="transaction-card resolved" cdkDrag
+                    (cdkDragStarted)="onDragStarted(transaction)" (cdkDragEnded)="onDragEnded()"
+                    (click)="onCardClick(transaction)">
+
+                    <div class="card-header">
+                        <span class="card-id">{{ transaction.id }}</span>
+                        <span class="card-date">{{ transaction.date }}</span>
+                    </div>
+
+                    <div class="card-description">{{ transaction.description }}</div>
+
+                    <div class="card-footer">
+                        <span [class]="'card-amount ' + getAmountClass(transaction.amount)">
+                            {{ formatCurrency(transaction.amount) }}
+                        </span>
+                        <span [class]="'card-source ' + getSourceBadgeClass(transaction.source)">
+                            {{ transaction.source }}
+                        </span>
+                    </div>
+
+                    <div class="card-ai-footer">
+                        <span class="ai-badge success-badge"><i class="pi pi-check"></i> Resolved</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Side Drawer -->
+<div class="drawer-overlay" *ngIf="showDrawer" (click)="closeDrawer()"></div>
+<div class="side-drawer" [class.open]="showDrawer">
+    <div class="drawer-header">
+        <h2>Transaction Details</h2>
+        <button class="close-btn" (click)="closeDrawer()">
+            <i class="pi pi-times"></i>
+        </button>
+    </div>
+
+    <div class="drawer-content" *ngIf="selectedCard">
+        <div class="detail-section">
+            <label>ID</label>
+            <p class="detail-value">{{ selectedCard.id }}</p>
+        </div>
+
+        <div class="detail-section">
+            <label>Date</label>
+            <p class="detail-value">{{ selectedCard.date }}</p>
+        </div>
+
+        <div class="detail-section">
+            <label>Description</label>
+            <p class="detail-value">{{ selectedCard.description }}</p>
+        </div>
+
+        <div class="detail-section">
+            <label>Amount</label>
+            <p [class]="'detail-value amount ' + getAmountClass(selectedCard.amount)">
+                {{ formatCurrency(selectedCard.amount) }}
+            </p>
+        </div>
+
+        <div class="detail-section">
+            <label>Source</label>
+            <p class="detail-value">
+                <span [class]="'source-badge-lg ' + getSourceBadgeClass(selectedCard.source)">
+                    {{ selectedCard.source }}
+                </span>
+            </p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedCard.matchScore">
+            <label>Match Score</label>
+            <div class="match-score-bar">
+                <div class="match-score-fill" [style.width.%]="selectedCard.matchScore"></div>
+                <span class="match-score-text">{{ selectedCard.matchScore }}%</span>
+            </div>
+        </div>
+
+        <div class="detail-section ai-explanation" *ngIf="selectedCard.predictionText">
+            <label>AI Analysis</label>
+            <div class="ai-box">
+                <i class="pi pi-sparkles ai-icon"></i>
+                <p>{{ selectedCard.predictionText }}</p>
+            </div>
+        </div>
+
+        <div class="drawer-actions">
+            <button class="action-btn primary">Match Transaction</button>
+            <button class="action-btn secondary">Flag for Review</button>
+            <button class="action-btn danger">Mark as Resolved</button>
+        </div>
+    </div>
+</div>

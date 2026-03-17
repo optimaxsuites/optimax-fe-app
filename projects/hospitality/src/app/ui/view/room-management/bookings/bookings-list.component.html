@@ -1,0 +1,208 @@
+<!-- Toast -->
+<div *ngIf="showToast"
+    class="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium"
+    [ngClass]="toastType === 'success' ? 'bg-customGreen' : 'bg-red-500'">
+    <i [class]="toastType === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'" class="text-lg"></i>
+    <span>{{ toastMessage }}</span>
+</div>
+
+<div class="p-6 max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fa-solid fa-calendar-check text-customBlue mr-2"></i>Bookings
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Manage reservations — check-in, check-out, view details.</p>
+        </div>
+        <!-- Split "New Booking" button -->
+        <div class="flex items-stretch rounded-lg shadow-sm overflow-hidden border border-customBlue">
+            <button (click)="createBooking()"
+                class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors border-r border-blue-500">
+                <i class="fa-solid fa-user-plus"></i>
+                Guest-First
+            </button>
+            <button (click)="createRoomFirstBooking()"
+                class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-door-open"></i>
+                Room-First
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Strip -->
+    <div class="grid grid-cols-4 gap-4 mb-5">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-list text-gray-500"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Total</p>
+                <p class="text-xl font-bold text-gray-800">{{ totalCount }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-calendar-check text-customBlue"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Confirmed</p>
+                <p class="text-xl font-bold text-customBlue">{{ confirmedCount }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-right-to-bracket text-customGreen"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Checked-In</p>
+                <p class="text-xl font-bold text-customGreen">{{ checkedInCount }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-clock text-amber-500"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400">Pending</p>
+                <p class="text-xl font-bold text-amber-500">{{ pendingCount }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-5 space-y-4">
+        <div class="flex items-center gap-3">
+            <div class="flex-1 relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" type="text"
+                    placeholder="Search by ID, Guest Name, Room #, or Status..."
+                    class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-customBlue outline-none" />
+            </div>
+            <button (click)="clearFilters()"
+                class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-filter-circle-xmark"></i> Reset
+            </button>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-4 border-t border-gray-50 pt-4">
+            <!-- Status -->
+            <div class="min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Status Filter</label>
+                <select [(ngModel)]="filterStatus" (change)="applyFilters()"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none">
+                    <option value="">All Statuses</option>
+                    <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
+                </select>
+            </div>
+            <!-- Date From -->
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Check-In From</label>
+                <input [(ngModel)]="filterFrom" (change)="applyFilters()" type="date"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none" />
+            </div>
+            <!-- Date To -->
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Check-In To</label>
+                <input [(ngModel)]="filterTo" (change)="applyFilters()" type="date"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none" />
+            </div>
+            <div class="ml-auto text-sm text-gray-400 self-center">
+                Found {{ filteredBookings.length }} booking{{ filteredBookings.length !== 1 ? 's' : '' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center items-center py-20">
+        <i class="fa-solid fa-spinner fa-spin text-3xl text-customBlue"></i>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!loading && filteredBookings.length === 0" class="text-center py-20">
+        <i class="fa-solid fa-calendar-xmark text-5xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">No bookings found</p>
+        <p class="text-gray-400 text-sm mt-1">Try adjusting your filters or search query.</p>
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!loading && filteredBookings.length > 0"
+        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/80 border-b border-gray-100 text-gray-600">
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Booking Info</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Guest</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Room Allocation</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Dates & Nights</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-right">Financials</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-center">Status</th>
+                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    <tr *ngFor="let b of filteredBookings"
+                        class="hover:bg-blue-50/40 transition-colors cursor-pointer group" (click)="viewBooking(b)">
+                        <td class="px-5 py-4">
+                            <span class="text-sm font-bold text-gray-800 block">#{{ b.id }}</span>
+                            <span class="text-[10px] text-gray-400 font-mono">{{ b.checkinDate }}</span>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-gray-800">{{ getGuestName(b.guest) }}</span>
+                                <span class="text-xs text-gray-400">Identity Verified</span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium text-gray-700">{{ getRoomNumbers(b.rooms) }}</span>
+                                <span class="text-xs text-customBlue">{{ getRoomTypeName(b.rooms) }}</span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="text-sm text-gray-600">
+                                <span class="block">In: {{ b.checkinDate }}</span>
+                                <span class="block text-gray-400 text-xs">{{ getNights(b.checkinDate, b.checkoutDate) }}
+                                    Nights</span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            <span class="text-sm font-bold text-gray-800 block">₦{{ b.total | number }}</span>
+                            <span class="text-xs"
+                                [ngClass]="(b.balanceAmount ?? 0) > 0 ? 'text-red-500 font-medium' : 'text-emerald-500'">
+                                {{ (b.balanceAmount ?? 0) > 0 ? '₦' + (b.balanceAmount | number) + ' due' : 'Paid in
+                                full' }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase"
+                                [ngClass]="getStatusColor(b.status)">
+                                {{ b.status }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-right" (click)="$event.stopPropagation()">
+                            <div class="flex items-center justify-end gap-3">
+                                <button *ngIf="b.status === 'CONFIRMED' || b.status === 'PENDING'"
+                                    (click)="checkIn(b, $event)"
+                                    class="text-[10px] px-2.5 py-1.5 bg-customGreen text-white rounded-lg hover:opacity-90 font-bold transition-all shadow-sm">
+                                    CHECK-IN
+                                </button>
+                                <button *ngIf="b.status === 'CHECKED_IN'" (click)="checkOut(b, $event)"
+                                    class="text-[10px] px-2.5 py-1.5 bg-gray-700 text-white rounded-lg hover:opacity-90 font-bold transition-all shadow-sm text-center">
+                                    CHECK-OUT
+                                </button>
+                                <button (click)="viewBooking(b)"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 group-hover:bg-customBlue group-hover:text-white transition-all">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

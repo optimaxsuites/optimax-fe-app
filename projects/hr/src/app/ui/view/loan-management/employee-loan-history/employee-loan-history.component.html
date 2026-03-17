@@ -1,0 +1,108 @@
+<div class="employee-history-container">
+  <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
+    <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()"></app-employee-loan-details-modal>
+  </app-side-modal>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading loan history...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="history-content">
+    <!-- Header with Back Button -->
+    <div class="history-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1>Loan History: {{ employeeName }}</h1>
+      </div>
+      <div class="employee-badge">Employee ID: {{ employeeId }}</div>
+    </div>
+
+    <!-- Simple Stats Row (Compact) -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-label">Total Loans</span>
+        <span class="stat-value">{{ employeeLoans.length }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Borrowed</span>
+        <span class="stat-value">₦{{ getTotalBorrowed() | number:'1.2-2' }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Outstanding</span>
+        <span class="stat-value">₦{{ getTotalBalance() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="table-container">
+      <table appSortableTable class="loans-table">
+        <thead>
+          <tr>
+            <th (click)="setSort('loanId')" class="sortable">
+              Loan ID 
+              <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
+            </th>
+            <th (click)="setSort('dateSubmitted')" class="sortable">
+              Date 
+              <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
+            </th>
+            <th (click)="setSort('purpose')" class="sortable">
+              Purpose 
+              <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
+            </th>
+            <th (click)="setSort('loanAmount')" class="sortable">
+              Amount 
+              <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
+            </th>
+            <th class="sortable" (click)="setSort('interestRate')">
+              Interest Rate
+              <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
+            </th>
+            <th (click)="setSort('totalPaid')" class="sortable">
+              Paid 
+              <i class="fas" [ngClass]="getSortIcon('totalPaid')"></i>
+            </th>
+            <th (click)="setSort('currentBalance')" class="sortable">
+              Balance 
+              <i class="fas" [ngClass]="getSortIcon('currentBalance')"></i>
+            </th>
+            <th (click)="setSort('status')" class="sortable">
+              Status 
+              <i class="fas" [ngClass]="getSortIcon('status')"></i>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let loan of filteredLoans">
+            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
+            <td>{{ loan.dateSubmitted | date:'mediumDate' }}</td>
+            <td class="purpose">{{ loan.purpose }}</td>
+            <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
+            <td class="interest">{{ loan.interestRate }}%</td>
+            <td class="paid">₦{{ loan.totalPaid | number:'1.2-2' }}</td>
+            <td class="balance">₦{{ loan.currentBalance | number:'1.2-2' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+                {{ loan.status }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <button class="view-btn" (click)="viewLoanDetails(loan)" title="View" aria-label="View">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="employeeLoans.length === 0">
+            <td colspan="9" class="no-data">
+              <i class="fas fa-inbox"></i>
+              <p>No loan history found for this employee</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

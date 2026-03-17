@@ -1,0 +1,70 @@
+<div class="member-loans-container">
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading your loans...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="content">
+    <div class="page-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div>
+          <h1><i class="fas fa-file-invoice-dollar"></i> My Loans</h1>
+          <p *ngIf="member">{{ member.fullName }} · {{ member.memberId }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-strip">
+      <button class="status-pill" [class.active]="statusFilter === ''" (click)="setStatusFilter('')">
+        All ({{ loans.length }})
+      </button>
+      <button class="status-pill" [class.active]="statusFilter === 'PENDING'" (click)="setStatusFilter('PENDING')">
+        Pending ({{ pendingCount }})
+      </button>
+      <button class="status-pill" [class.active]="statusFilter === 'ACTIVE'" (click)="setStatusFilter('ACTIVE')">
+        Active ({{ activeCount }})
+      </button>
+      <button class="status-pill" [class.active]="statusFilter === 'COMPLETED'" (click)="setStatusFilter('COMPLETED')">
+        Completed ({{ completedCount }})
+      </button>
+      <button class="status-pill defaulted" [class.active]="statusFilter === 'DEFAULTED'" (click)="setStatusFilter('DEFAULTED')">
+        Defaulted ({{ defaultedCount }})
+      </button>
+    </div>
+
+    <div class="table-card" *ngIf="filteredLoans.length > 0">
+      <table appSortableTable class="loans-table">
+        <thead>
+          <tr>
+            <th>Loan ID</th>
+            <th>Amount</th>
+            <th>Monthly</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let loan of filteredLoans">
+            <td class="loan-id">{{ loan.loanCode }}</td>
+            <td>{{ formatCurrency(loan.amount) }}</td>
+            <td>{{ formatCurrency(loan.repaymentAmount) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+            </td>
+            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button class="view-btn" (click)="viewLoanDetails(loan.id.toString())">View</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" *ngIf="filteredLoans.length === 0">
+      <i class="fas fa-folder-open"></i>
+      <p>No loans found for this filter.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,150 @@
+.office-hours-card {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-radius: 16px;
+  padding: 1.4rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eef2f7;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .icon {
+        font-size: 1.25rem;
+      }
+    }
+
+    .edit-btn {
+      background: transparent;
+      border: none;
+      color: #065f46;
+      font-size: 1.2rem;
+      cursor: pointer;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .hours-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .hour-item {
+      background: #f1f5f9;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+
+      .label {
+        font-size: 1.2rem;
+        color: #6b7280;
+      }
+
+      .value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #111827;
+      }
+    }
+  }
+
+  .hours-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+
+      label {
+        font-size: 1.2rem;
+        color: #6b7280;
+      }
+
+      input {
+        padding: 0.55rem 0.7rem;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        font-size: 1.5rem;
+        transition: border 0.2s ease, box-shadow 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+      }
+    }
+
+    .actions {
+      grid-column: span 2;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+
+      button {
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+
+        &.primary {
+          background: #1f9254;
+          color: white;
+
+          &:hover {
+            background: #065f46;
+          }
+        }
+
+        &.secondary {
+          background: #f3f4f6;
+          color: #374151;
+
+          &:hover {
+            background: #e5e7eb;
+          }
+        }
+      }
+    }
+  }
+
+  .hint {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: right;
+  }
+}
