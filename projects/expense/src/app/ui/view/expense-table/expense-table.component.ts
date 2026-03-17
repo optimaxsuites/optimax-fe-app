@@ -1,8 +1,9 @@
 import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -11,11 +12,15 @@ import { ToastModule } from 'primeng/toast';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
+import { FileUploadModule } from 'primeng/fileupload';
+import { InputTextareaModule } from 'primeng/inputtextarea';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, Subject, takeUntil } from 'rxjs';
 
 import {
   ExpenseService,
@@ -24,6 +29,8 @@ import {
   MerchantDTO,
   CategoryDTO,
   TaxDTO,
+  PaidBy,
+  Currency
 } from '../../service/expense.service';
 
 import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-modal.component';
@@ -36,6 +43,7 @@ import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-m
   providers: [ConfirmationService, MessageService],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     FormsModule,
     TableModule,
     ButtonModule,
@@ -46,32 +54,48 @@ import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-m
     TooltipModule,
     MatIconModule,
     SideModalComponent,
+    DialogModule,
+    DropdownModule,
+    FileUploadModule,
+    InputTextareaModule
   ],
 })
-export class ExpenseTableComponent implements OnInit {
+export class ExpenseTableComponent implements OnInit, OnDestroy {
   [x: string]: any;
+  
+  // Data
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
   selectedExpenses: Expense[] = [];
+  selectedExpense: Expense | null = null;
 
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+
+  // Search
   searchTerm: string = '';
   private searchTermSubject: Subject<string> = new Subject();
-
-  selectedExpense: Expense | null = null;
 
   // Track selected IDs for the edit form dropdowns
   editMerchantId: number | null = null;
   editCategoryId: number | null = null;
 
-  isModalOpen: boolean = false;
-  isModalOpen2: boolean = false;
+  // Modals
+  isModalOpen: boolean = false;        // Edit/Create modal
+  isModalOpen2: boolean = false;       // Detail view modal
+  showReceiptModal: boolean = false;
+  isEditMode = false;
 
   // Receipt modal properties
-  showReceiptModal: boolean = false;
   receiptModalUrl: string = '';
   receiptModalTitle: string = '';
   receiptImageLoading: boolean = false;
   receiptImageError: string = '';
+  receiptImageUrl: SafeUrl | null = null;
+  receiptBlobUrl: string | null = null;
 
   // Receipt preview blob URLs for the detail view modal
   companyReceiptUrl: string | null = null;
@@ -79,6 +103,10 @@ export class ExpenseTableComponent implements OnInit {
   companyReceiptLoading: boolean = false;
   employeeReceiptLoading: boolean = false;
 
+  // Forms
+  expenseForm!: FormGroup;
+
+  // Filters
   dropdownOpen = {
     category: false,
     status: false,
@@ -86,15 +114,141 @@ export class ExpenseTableComponent implements OnInit {
   };
 
   selectedCategory: string | null = null;
-  selectedStatus: string | null = null;
+  selectedStatus: ExpenseStatus | 'ALL' = 'ALL';
 
   dateRangeType: string | null = null;
   dateFrom: string | null = null;
   dateTo: string | null = null;
 
+  // Dropdown data
   categoryNames: string[] = [];
   categories: CategoryDTO[] = [];
   merchants: MerchantDTO[] = [];
+  taxes: TaxDTO[] = [];
+
+  // Enums for template
+  ExpenseStatus = ExpenseStatus;
+  PaidBy = PaidBy;
+  Currency = Currency;
+
+  statuses = Object.values(ExpenseStatus);
+
+  colorClasses: string[] = [
+    'color-lightblue',
+    'color-lightgreen',
+    'color-lightyellow',
+    'color-lightcoral',
+    'color-lightpink',
+  ];
+
+  // Destroy subject for cleanup
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private router: Router,
+    private expenseService: ExpenseService,
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef,
+    private http: HttpClient,
+    private fb: FormBuilder,
+    private sanitizer: DomSanitizer
+  ) {
+    this.initForm();
+  }
+
+  ngOnInit(): void {
+    this.loadExpenses();
+    this.loadCategories();
+    this.loadMerchants();
+    this.loadTaxes();
+    
+    this.searchTermSubject.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      this.applyFilters();
+    });
+
+    // Subscribe to expense updates
+    this.expenseService.expensesUpdated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadExpenses());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    
+    // Clean up blob URLs
+    if (this.receiptBlobUrl) {
+      URL.revokeObjectURL(this.receiptBlobUrl);
+    }
+    if (this.companyReceiptUrl) {
+      URL.revokeObjectURL(this.companyReceiptUrl);
+    }
+    if (this.employeeReceiptUrl) {
+      URL.revokeObjectURL(this.employeeReceiptUrl);
+    }
+  }
+
+
+  initForm(): void {
+    this.expenseForm = this.fb.group({
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      eventDate: ['', Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      currency: [Currency.NGN, Validators.required],
+      amount: [0, [Validators.required, Validators.min(0)]],
+      paidBy: [PaidBy.COMPANY, Validators.required],
+      receiptReference: [''],
+      merchantId: [null, Validators.required],
+      categoryId: [null, Validators.required],
+      taxId: [1, Validators.required],
+      scheduledPaymentId: [null],
+      companyReceiptFile: [null],
+      expenseReceiptFile: [null]
+    });
+  }
+
+
+  loadExpenses(): void {
+    if (this.selectedStatus && this.selectedStatus !== 'ALL') {
+      this.expenseService.getExpensesByStatus(this.selectedStatus as ExpenseStatus)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (expenses) => {
+            this.expenses = expenses.sort((a, b) => b.id - a.id);
+            this.totalElements = expenses.length;
+            this.totalPages = Math.ceil(expenses.length / this.pageSize);
+            this.applyFilters();
+          },
+          error: (error) => {
+            console.error('Error loading expenses:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to load expenses'
+            });
+          }
+        });
+    } else {
+      this.expenseService.getExpenses().subscribe({
+        next: (expenses) => {
+          this.expenses = expenses.sort((a, b) => b.id - a.id);
+          this.totalElements = expenses.length;
+          this.totalPages = Math.ceil(expenses.length / this.pageSize);
+          this.applyFilters();
+        },
+        error: (error) => {
+          console.error('Error loading expenses:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load expenses'
+          });
+        }
+      });
+    }
+  }
 
   private loadCategories(): void {
     this.expenseService.getCategories().subscribe({
@@ -122,87 +276,16 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
-  statuses = Object.values(ExpenseStatus);
-
-  colorClasses: string[] = [
-    'color-lightblue',
-    'color-lightgreen',
-    'color-lightyellow',
-    'color-lightcoral',
-    'color-lightpink',
-  ];
-
-  constructor(
-    private router: Router,
-    private expenseService: ExpenseService,
-    private confirmationService: ConfirmationService,
-    private messageService: MessageService,
-    private cdr: ChangeDetectorRef,
-    private http: HttpClient,
-  ) {}
-
-  getExpenseCount(): number {
-    return this.expenses?.length || 0;
-  }
-
-  /** Returns true if the expense is APPROVED — used to lock editing */
-  isApproved(expense: Expense): boolean {
-    return expense?.status === ExpenseStatus.APPROVED;
-  }
-
-  ngOnInit(): void {
-    this.loadExpenses();
-    this.loadCategories();
-    this.loadMerchants();
-    this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
-      this.applyFilters();
-    });
-  }
-
-  loadExpenses(): void {
-    this.expenseService.getExpenses().subscribe((expenses) => {
-      this.expenses = expenses.sort((a, b) => b.id - a.id);
-      this.filteredExpenses = [...this.expenses];
-    });
-  }
-
-  onRowSelect(event: any) {
-    this.selectedExpenses = event.value;
-  }
-
-  onRowUnselect(event: any) {
-    this.selectedExpenses = event.value;
-  }
-
-  deleteSelectedExpenses() {
-    if (!this.selectedExpenses.length) return;
-
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.selectedExpenses.length} expenses?`,
-      header: `Delete Selected Expenses`,
-      icon: 'pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-warning',
-      acceptIcon: 'pi-trash',
-      rejectIcon: 'pi-times',
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        this.selectedExpenses.forEach((exp) => this.deleteExpense(exp));
-        this.selectedExpenses = [];
+  private loadTaxes(): void {
+    this.expenseService.getTaxRates().subscribe({
+      next: (taxes) => {
+        this.taxes = taxes;
       },
+      error: (err) => {
+        console.error('Error loading taxes:', err);
+        this.taxes = [];
+      }
     });
-  }
-
-  get dateRangeLabel(): string {
-    if (!this.dateRangeType) return 'Date Range';
-    const labels: { [key: string]: string } = {
-      today: 'Today',
-      week: 'This Week',
-      month: 'This Month',
-      custom: 'Custom Range',
-    };
-    return labels[this.dateRangeType] || 'Date Range';
   }
 
   onSearchInputChange(): void {
@@ -215,6 +298,7 @@ export class ExpenseTableComponent implements OnInit {
       const categoryName = (expense.category as CategoryDTO)?.name || '';
       const amountStr = Math.floor(Number(expense.amount)).toString();
 
+      // Search term filter
       if (this.searchTerm) {
         const term = this.searchTerm.toLowerCase().trim();
         const matchesName = (expense.name || '').toLowerCase().includes(term);
@@ -234,14 +318,17 @@ export class ExpenseTableComponent implements OnInit {
         }
       }
 
+      // Category filter
       if (this.selectedCategory && categoryName !== this.selectedCategory) {
         return false;
       }
 
-      if (this.selectedStatus && expense.status !== this.selectedStatus) {
+      // Status filter
+      if (this.selectedStatus && this.selectedStatus !== 'ALL' && expense.status !== this.selectedStatus) {
         return false;
       }
 
+      // Date range filter
       if (this.dateFrom && this.dateTo) {
         const fromDate = new Date(this.dateFrom);
         const toDate = new Date(this.dateTo + 'T23:59:59');
@@ -347,13 +434,14 @@ export class ExpenseTableComponent implements OnInit {
     this.applyFilters();
   }
 
-  selectStatus(status: string | null): void {
+  selectStatus(status: ExpenseStatus | 'ALL'): void {
     this.selectedStatus = status;
     this.dropdownOpen.status = false;
-    this.applyFilters();
+    this.currentPage = 0;
+    this.loadExpenses();
   }
 
-  selectDateRange(range: string): void {
+  selectDateRange(range: string | null): void {
     this.dateRangeType = range;
     this.dropdownOpen.dateRange = false;
     if (range !== 'custom') {
@@ -374,16 +462,83 @@ export class ExpenseTableComponent implements OnInit {
     }
   }
 
-  openAdvancedFilters(): void {
-    console.log('Opening advanced filters');
+  get dateRangeLabel(): string {
+    if (!this.dateRangeType) return 'Date Range';
+    const labels: { [key: string]: string } = {
+      today: 'Today',
+      week: 'This Week',
+      month: 'This Month',
+      custom: 'Custom Range',
+    };
+    return labels[this.dateRangeType] || 'Date Range';
+  }
+
+
+  onRowSelect(event: any) {
+    this.selectedExpenses = event.value;
+  }
+
+  onRowUnselect(event: any) {
+    this.selectedExpenses = event.value;
+  }
+
+  openCreateModal(): void {
+    this.isEditMode = false;
+    this.expenseForm.reset({
+      currency: Currency.NGN,
+      paidBy: PaidBy.COMPANY,
+      quantity: 1,
+      taxId: 1
+    });
+    this.isModalOpen = true;
+  }
+
+  openEditModal(expense: Expense): void {
+    if (this.isApproved(expense)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Edit Not Allowed',
+        detail: 'Approved expenses cannot be edited.',
+      });
+      return;
+    }
+
+    this.isEditMode = true;
+    this.selectedExpense = expense;
+    
+    const eventDate = this.formatEventDateForInput(expense.eventDate);
+    
+    this.expenseForm.patchValue({
+      name: expense.name,
+      description: expense.description,
+      eventDate: eventDate,
+      quantity: expense.quantity,
+      currency: expense.currency,
+      amount: expense.amount,
+      paidBy: expense.paidBy,
+      receiptReference: expense.receiptReference,
+      merchantId: expense.merchantId || expense.merchant?.id,
+      categoryId: expense.categoryId || expense.category?.id,
+      taxId: expense.taxId || expense.tax?.id || 1,
+      scheduledPaymentId: expense.scheduledPaymentId
+    });
+    
+    // Set edit IDs for backward compatibility
+    this.editMerchantId = expense.merchantId || expense.merchant?.id || null;
+    this.editCategoryId = expense.categoryId || expense.category?.id || null;
+    
+    this.isModalOpen = true;
   }
 
   closeModal(): void {
     this.isModalOpen = false;
-    this.selectedExpense = null;
     this.isModalOpen2 = false;
+    this.selectedExpense = null;
     this.editMerchantId = null;
     this.editCategoryId = null;
+    this.expenseForm.reset();
+    
+    // Clean up receipt URLs
     if (this.companyReceiptUrl) {
       URL.revokeObjectURL(this.companyReceiptUrl);
       this.companyReceiptUrl = null;
@@ -393,49 +548,6 @@ export class ExpenseTableComponent implements OnInit {
       this.employeeReceiptUrl = null;
     }
   }
-
-  generateRandomColor(): string {
-    const colors = ['#ADD8E6', '#90EE90', '#FFFFE0', '#F08080', '#FFB6C1'];
-    return colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  navigateToexpense(): void {
-    this.router.navigate(['/admin/expenses/expense-summary']);
-  }
-
-  navigateToForm(): void {
-    this.router.navigate(['/admin/expenses/expensesForm']);
-  }
-
-  confirmDelete(expense: Expense): void {
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete this expense?`,
-      header: `Delete Expense - ${expense.merchant?.name ?? ''}`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-warning',
-      acceptIcon: 'pi-trash',
-      rejectIcon: 'pi-times',
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        this.deleteExpense(expense);
-      },
-    });
-  }
-
-  deleteExpense(expense: Expense): void {
-    this.expenseService.deleteExpense(expense.id).subscribe(() => {
-      this.loadExpenses();
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Expense Deleted',
-        detail: `Expense for ${expense.merchant?.name ?? ''} has been successfully deleted.`,
-      });
-    });
-  }
-
-  /** Opens the detail view modal and loads receipt previews from expense object */
   viewExpenseApproval(expense: Expense): void {
     this.selectedExpense = { ...expense };
     this.selectedExpense.merchant =
@@ -496,174 +608,218 @@ export class ExpenseTableComponent implements OnInit {
     this.isModalOpen2 = true;
   }
 
-  /** Opens the edit modal — blocked with a toast if the expense is APPROVED */
-  editExpense(expense: Expense): void {
-    if (this.isApproved(expense)) {
+  openReceiptModal(apiUrl: string, title: string): void {
+    if (!apiUrl) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Edit Not Allowed',
-        detail: 'Approved expenses cannot be edited.',
+        summary: 'No Receipt',
+        detail: 'Receipt URL is not available.',
       });
       return;
     }
 
-    this.selectedExpense = JSON.parse(JSON.stringify(expense));
-    if (this.selectedExpense) {
-      this.editMerchantId =
-        this.selectedExpense.merchantId ||
-        this.selectedExpense.merchant?.id ||
-        null;
-      this.editCategoryId =
-        this.selectedExpense.categoryId ||
-        this.selectedExpense.category?.id ||
-        null;
-      this.selectedExpense.tax = this.selectedExpense.tax ?? undefined;
-    }
-    this.isModalOpen = true;
-  }
+    this.receiptModalTitle = title;
+    this.receiptModalUrl = '';
+    this.receiptImageLoading = true;
+    this.receiptImageError = '';
+    this.showReceiptModal = true;
 
-  saveEditedExpense(): void {
-    if (!this.selectedExpense) return;
-
-    if (!this.editMerchantId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Please select a Merchant before saving.',
-      });
-      return;
-    }
-
-    if (!this.editCategoryId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Please select a Category before saving.',
-      });
-      return;
-    }
-
-    const updatedExpense: any = {
-      name: this.selectedExpense.name || '',
-      description: this.selectedExpense.description || '',
-      eventDate:
-        this.selectedExpense.eventDate ||
-        new Date().toISOString().split('T')[0],
-      quantity: this.selectedExpense.quantity || 1,
-      currency: this.selectedExpense.currency,
-      amount: Number(this.selectedExpense.amount) || 0,
-      status: this.selectedExpense.status,
-      paidBy: this.selectedExpense.paidBy,
-      receiptReference: this.selectedExpense.receiptReference || '',
-      merchantId: Number(this.editMerchantId),
-      categoryId: Number(this.editCategoryId),
-      taxId: this.selectedExpense.taxId || this.selectedExpense.tax?.id || 1,
-      scheduledPaymentId: this.selectedExpense.scheduledPaymentId || null,
-    };
-
-    const expenseId = this.selectedExpense.id;
-    this.expenseService.updateExpense(expenseId, updatedExpense).subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Expense Updated',
-          detail: 'Expense has been successfully updated.',
-        });
-        this.closeModal();
+    this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        if (this.receiptBlobUrl) {
+          URL.revokeObjectURL(this.receiptBlobUrl);
+        }
+        this.receiptBlobUrl = URL.createObjectURL(blob);
+        this.receiptImageUrl = this.sanitizer.bypassSecurityTrustUrl(this.receiptBlobUrl);
+        this.receiptModalUrl = this.receiptBlobUrl;
+        this.receiptImageLoading = false;
+        this.cdr.detectChanges();
       },
-      error: (error) => {
-        console.error('Update error:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Update Failed',
-          detail:
-            error?.error?.message ||
-            'Failed to update expense. Please try again.',
-        });
+      error: (err) => {
+        console.error('Failed to fetch receipt:', err);
+        this.receiptImageLoading = false;
+        this.receiptImageError =
+          'The receipt could not be loaded. Use "Open in New Tab" to view it directly.';
+        this.cdr.detectChanges();
       },
     });
   }
 
-  getTotalAmount(): number {
-    return this.expenses.reduce(
-      (sum, expense) => sum + (Number(expense.amount) || 0),
-      0,
-    );
+  closeReceiptModal(): void {
+    this.showReceiptModal = false;
+    if (this.receiptBlobUrl) {
+      URL.revokeObjectURL(this.receiptBlobUrl);
+      this.receiptBlobUrl = null;
+    }
+    this.receiptImageUrl = null;
+    this.receiptModalUrl = '';
+    this.receiptModalTitle = '';
+    this.receiptImageLoading = false;
+    this.receiptImageError = '';
   }
 
-  getApprovedCount(): number {
-    return this.expenses.filter((e) => e.status === ExpenseStatus.APPROVED)
-      .length;
-  }
+  // ============================================
+  // CRUD OPERATIONS
+  // ============================================
 
-  getApprovedAmount(): number {
-    return this.expenses
-      .filter((e) => e.status === ExpenseStatus.APPROVED)
-      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  }
-
-  getPendingCount(): number {
-    return this.expenses.filter((e) => e.status === ExpenseStatus.PENDING)
-      .length;
-  }
-
-  getPendingAmount(): number {
-    return this.expenses
-      .filter((e) => e.status === ExpenseStatus.PENDING)
-      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  }
-
-  getRejectedCount(): number {
-    return this.expenses.filter((e) => e.status === ExpenseStatus.REJECTED)
-      .length;
-  }
-
-  getRejectedAmount(): number {
-    return this.expenses
-      .filter((e) => e.status === ExpenseStatus.REJECTED)
-      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  }
-
-
-  private buildUpdatePayload(expense: Expense, newStatus: ExpenseStatus): any {
-    const merchantId = expense.merchantId || expense.merchant?.id;
-    const categoryId = expense.categoryId || expense.category?.id;
-    const taxId = expense.taxId || (expense.tax as TaxDTO)?.id || 1;
-
-    // Handle date format (may be array or string)
-    let eventDate = expense.eventDate;
-    if (Array.isArray(eventDate)) {
-      const [year, month, day, hour = 0, minute = 0, second = 0] =
-        eventDate as any;
-      eventDate = new Date(
-        year,
-        month - 1,
-        day,
-        hour,
-        minute,
-        second,
-      ).toISOString();
+  onSubmit(): void {
+    if (this.expenseForm.invalid) {
+      Object.keys(this.expenseForm.controls).forEach(key => {
+        const control = this.expenseForm.get(key);
+        if (control?.invalid) {
+          control.markAsTouched();
+        }
+      });
+      
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Please fill in all required fields.'
+      });
+      return;
     }
 
-    return {
-      name: expense.name || '',
-      description: expense.description || '',
-      eventDate: eventDate || new Date().toISOString(),
-      quantity: expense.quantity || 1,
-      currency: expense.currency,
-      amount: Number(expense.amount) || 0,
-      status: newStatus, // This is what changes
-      paidBy:
-        typeof expense.paidBy === 'string'
-          ? expense.paidBy
-          : String(expense.paidBy),
-      receiptReference: expense.receiptReference || '',
-      merchantId: Number(merchantId),
-      categoryId: Number(categoryId),
-      taxId: Number(taxId),
-      scheduledPaymentId: expense.scheduledPaymentId || null,
+    const formValue = this.expenseForm.value;
+    
+    // Convert date to ISO string
+    const eventDate = new Date(formValue.eventDate).toISOString();
+    
+    const expenseData = {
+      ...formValue,
+      eventDate: eventDate
     };
+
+    if (this.isEditMode && this.selectedExpense) {
+      // Update existing expense
+      const updatedExpense: any = {
+        name: expenseData.name,
+        description: expenseData.description,
+        eventDate: expenseData.eventDate,
+        quantity: expenseData.quantity,
+        currency: expenseData.currency,
+        amount: Number(expenseData.amount) || 0,
+        status: this.selectedExpense.status,
+        paidBy: expenseData.paidBy,
+        receiptReference: expenseData.receiptReference || '',
+        merchantId: Number(expenseData.merchantId),
+        categoryId: Number(expenseData.categoryId),
+        taxId: expenseData.taxId || 1,
+        scheduledPaymentId: expenseData.scheduledPaymentId || null,
+      };
+
+      this.expenseService.updateExpense(this.selectedExpense.id, updatedExpense).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Expense Updated',
+            detail: 'Expense has been successfully updated.',
+          });
+          this.closeModal();
+          this.loadExpenses();
+        },
+        error: (error) => {
+          console.error('Update error:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Update Failed',
+            detail: error?.error?.message || 'Failed to update expense. Please try again.',
+          });
+        },
+      });
+    } else {
+      // Create new expense
+      const companyReceipt = formValue.companyReceiptFile;
+      const expenseReceipt = formValue.expenseReceiptFile;
+      
+      this.expenseService.addExpense(expenseData, companyReceipt, expenseReceipt)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Expense Created',
+              detail: 'Expense has been successfully created.',
+            });
+            this.closeModal();
+            this.loadExpenses();
+          },
+          error: (error) => {
+            console.error('Error creating expense:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Creation Failed',
+              detail: error.message || 'Failed to create expense. Please try again.',
+            });
+          }
+        });
+    }
+  }
+
+  confirmDelete(expense: Expense): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete this expense?`,
+      header: `Delete Expense - ${expense.merchant?.name ?? ''}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-warning',
+      acceptIcon: 'pi-trash',
+      rejectIcon: 'pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        this.deleteExpense(expense);
+      },
+    });
+  }
+
+  deleteExpense(expense: Expense): void {
+    this.expenseService.deleteExpense(expense.id).subscribe({
+      next: () => {
+        this.loadExpenses();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Expense Deleted',
+          detail: `Expense for ${expense.merchant?.name ?? ''} has been successfully deleted.`,
+        });
+      },
+      error: (error) => {
+        console.error('Delete error:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error.message || 'Failed to delete expense. Please try again.',
+        });
+      }
+    });
+  }
+
+  deleteSelectedExpenses() {
+    if (!this.selectedExpenses.length) return;
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${this.selectedExpenses.length} expenses?`,
+      header: `Delete Selected Expenses`,
+      icon: 'pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-warning',
+      acceptIcon: 'pi-trash',
+      rejectIcon: 'pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        this.selectedExpenses.forEach((exp) => this.deleteExpense(exp));
+        this.selectedExpenses = [];
+      },
+    });
+  }
+
+  // ============================================
+  // APPROVAL/REJECTION OPERATIONS
+  // ============================================
+
+  /** Returns true if the expense is APPROVED — used to lock editing */
+  isApproved(expense: Expense): boolean {
+    return expense?.status === ExpenseStatus.APPROVED;
   }
 
   approve(request: Expense): void {
@@ -674,48 +830,48 @@ export class ExpenseTableComponent implements OnInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Cannot Approve',
-        detail:
-          'This expense is missing a Merchant or Category. Please edit it first.',
+        detail: 'This expense is missing a Merchant or Category. Please edit it first.',
       });
       return;
     }
 
-    // Build complete update payload with APPROVED status
-    const payload = this.buildUpdatePayload(request, ExpenseStatus.APPROVED);
+    this.confirmationService.confirm({
+      message: `Are you sure you want to approve this expense?`,
+      header: `Approve Expense - ${request.merchant?.name ?? ''}`,
+      icon: 'pi pi-check-circle',
+      acceptButtonStyleClass: 'p-button-success',
+      rejectButtonStyleClass: 'p-button-secondary',
+      acceptIcon: 'pi-check',
+      rejectIcon: 'pi-times',
+      acceptLabel: 'Approve',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        this.expenseService.approveExpense(request).subscribe({
+          next: (updatedExpense) => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Request Approved',
+              detail: `Expense for ${request.merchant?.name ?? ''} has been approved.`,
+            });
+            this.loadExpenses();
 
-    console.log(' Approve payload:', JSON.stringify(payload, null, 2));
-
-    // Use existing updateExpense endpoint
-    this.expenseService.updateExpense(request.id, payload).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Request Approved',
-          detail: `Expense for ${request.merchant?.name ?? ''} has been approved.`,
+            // Refresh modal if open
+            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
+              this.selectedExpense = updatedExpense;
+            }
+          },
+          error: (error) => {
+            console.error('❌ Approve error:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Approval Failed',
+              detail: error?.error?.message || 'Failed to approve expense. Please try again.',
+            });
+          },
         });
-        this.loadExpenses();
-
-        // Refresh modal if open
-        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-          this.selectedExpense = {
-            ...this.selectedExpense,
-            status: ExpenseStatus.APPROVED,
-          };
-        }
-      },
-      error: (error) => {
-        console.error('❌ Approve error:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Approval Failed',
-          detail:
-            error?.error?.message ||
-            'Failed to approve expense. Please try again.',
-        });
-      },
+      }
     });
   }
-
 
   reject(request: Expense): void {
     const merchantId = request.merchantId || request.merchant?.id;
@@ -725,42 +881,48 @@ export class ExpenseTableComponent implements OnInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Cannot Reject',
-        detail:
-          'This expense is missing a Merchant or Category. Please edit it first.',
+        detail: 'This expense is missing a Merchant or Category. Please edit it first.',
       });
       return;
     }
 
-    // Build complete update payload with REJECTED status
-    const payload = this.buildUpdatePayload(request, ExpenseStatus.REJECTED);
+    // Use a custom dialog with text input for reason
+    this.confirmationService.confirm({
+      message: 'Please provide a reason for rejection (optional):',
+      header: `Reject Expense - ${request.merchant?.name ?? ''}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
+      acceptIcon: 'pi-times',
+      rejectIcon: 'pi-undo',
+      acceptLabel: 'Reject',
+      rejectLabel: 'Cancel',
+      accept: () => {
 
-    console.log('❌ Reject payload:', JSON.stringify(payload, null, 2));
+        const reason = prompt('Enter rejection reason:') || 'Rejected by manager';
+        
+        this.expenseService.rejectExpense(request, reason).subscribe({
+          next: (updatedExpense) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Request Rejected',
+              detail: `Expense for ${request.merchant?.name ?? ''} has been rejected.`,
+            });
+            this.loadExpenses();
 
-    this.expenseService.updateExpense(request.id, payload).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Request Rejected',
-          detail: `Expense for ${request.merchant?.name ?? ''} has been rejected.`,
-        });
-        this.loadExpenses();
-
-        // If detail modal is open, refresh the selected expense so the badge updates
-        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-          this.selectedExpense = {
-            ...this.selectedExpense,
-            status: ExpenseStatus.REJECTED,
-          };
-        }
-      },
-      error: (error) => {
-        console.error('❌ Reject error:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Rejection Failed',
-          detail:
-            error?.error?.message ||
-            'Failed to reject expense. Please try again.',
+            // Refresh modal if open
+            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
+              this.selectedExpense = updatedExpense;
+            }
+          },
+          error: (error) => {
+            console.error('❌ Reject error:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Rejection Failed',
+              detail: error?.error?.message || 'Failed to reject expense. Please try again.',
+            });
+          },
         });
       },
     });
@@ -775,8 +937,22 @@ export class ExpenseTableComponent implements OnInit {
       });
       return;
     }
-    this.selectedExpenses.forEach((exp) => this.approve(exp));
-    this.selectedExpenses = [];
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to approve ${this.selectedExpenses.length} expenses?`,
+      header: `Bulk Approve Expenses`,
+      icon: 'pi pi-check-circle',
+      acceptButtonStyleClass: 'p-button-success',
+      rejectButtonStyleClass: 'p-button-secondary',
+      acceptIcon: 'pi-check',
+      rejectIcon: 'pi-times',
+      acceptLabel: 'Approve All',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        this.selectedExpenses.forEach((exp) => this.approve(exp));
+        this.selectedExpenses = [];
+      }
+    });
   }
 
   bulkReject(): void {
@@ -788,8 +964,115 @@ export class ExpenseTableComponent implements OnInit {
       });
       return;
     }
-    this.selectedExpenses.forEach((exp) => this.reject(exp));
-    this.selectedExpenses = [];
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to reject ${this.selectedExpenses.length} expenses?`,
+      header: `Bulk Reject Expenses`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
+      acceptIcon: 'pi-times',
+      rejectIcon: 'pi-undo',
+      acceptLabel: 'Reject All',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        this.selectedExpenses.forEach((exp) => this.reject(exp));
+        this.selectedExpenses = [];
+      }
+    });
+  }
+
+
+  onCompanyReceiptChange(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.expenseForm.patchValue({ companyReceiptFile: file });
+    }
+  }
+
+  onExpenseReceiptChange(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.expenseForm.patchValue({ expenseReceiptFile: file });
+    }
+  }
+
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+  }
+
+  get paginatedExpenses(): Expense[] {
+    const start = this.currentPage * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filteredExpenses.slice(start, end);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages - 1) {
+      this.currentPage++;
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+    }
+  }
+
+
+  getExpenseCount(): number {
+    return this.expenses?.length || 0;
+  }
+
+  generateRandomColor(): string {
+    const colors = ['#ADD8E6', '#90EE90', '#FFFFE0', '#F08080', '#FFB6C1'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  navigateToexpense(): void {
+    this.router.navigate(['/admin/expenses/expense-summary']);
+  }
+
+  navigateToForm(): void {
+    this.router.navigate(['/admin/expenses/expensesForm']);
+  }
+
+  getTotalAmount(): number {
+    return this.expenses.reduce(
+      (sum, expense) => sum + (Number(expense.amount) || 0),
+      0,
+    );
+  }
+
+  getApprovedCount(): number {
+    return this.expenses.filter((e) => e.status === ExpenseStatus.APPROVED).length;
+  }
+
+  getApprovedAmount(): number {
+    return this.expenses
+      .filter((e) => e.status === ExpenseStatus.APPROVED)
+      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+  }
+
+  getPendingCount(): number {
+    return this.expenses.filter((e) => e.status === ExpenseStatus.PENDING).length;
+  }
+
+  getPendingAmount(): number {
+    return this.expenses
+      .filter((e) => e.status === ExpenseStatus.PENDING)
+      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+  }
+
+  getRejectedCount(): number {
+    return this.expenses.filter((e) => e.status === ExpenseStatus.REJECTED).length;
+  }
+
+  getRejectedAmount(): number {
+    return this.expenses
+      .filter((e) => e.status === ExpenseStatus.REJECTED)
+      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
   }
 
   calculateDisplayAmount(expense: Expense): number {
@@ -803,20 +1086,14 @@ export class ExpenseTableComponent implements OnInit {
     return baseAmount * (1 + taxRate);
   }
 
-  getTaxRateDisplayValue(
-    taxPercentage: TaxDTO | number | undefined,
-  ): number | undefined {
+  getTaxRateDisplayValue(taxPercentage: TaxDTO | number | undefined): number | undefined {
     if (taxPercentage === undefined || taxPercentage === null) return undefined;
-    return typeof taxPercentage === 'object'
-      ? taxPercentage.rate
-      : taxPercentage;
+    return typeof taxPercentage === 'object' ? taxPercentage.rate : taxPercentage;
   }
 
   formatAmount(value: number | string | null | undefined): string {
     const n = Number(value);
-    return !isNaN(n) && value !== null && value !== undefined
-      ? n.toLocaleString()
-      : '';
+    return !isNaN(n) && value !== null && value !== undefined ? n.toLocaleString() : '';
   }
 
   updateEditAmount(event: any): void {
@@ -845,18 +1122,6 @@ export class ExpenseTableComponent implements OnInit {
     if (!/[0-9]/.test(event.key)) event.preventDefault();
   }
 
-  hasTaxPercentage(expense: Expense | null): boolean {
-    return !!expense && (expense as any).taxPercentage !== undefined;
-  }
-
-  getTaxPercentage(expense: Expense | null): number | undefined {
-    return expense ? (expense as any).taxPercentage : undefined;
-  }
-
-  getExpenseDate(expense: Expense | null): string | Date | undefined {
-    return expense ? (expense as any).data : undefined;
-  }
-
   onTaxInputChange(event: Event): void {
     if (!this.selectedExpense) return;
     const input = event.target as HTMLInputElement;
@@ -873,68 +1138,10 @@ export class ExpenseTableComponent implements OnInit {
     this.selectedExpense.eventDate = (event.target as HTMLInputElement).value;
   }
 
-  // Original API URL kept separately for the "Open in New Tab" button
-  receiptApiUrl = '';
-  // Blob URL created from the authenticated fetch — revoked on close
-  private receiptBlobUrl: string | null = null;
-
-  openReceiptModal(apiUrl: string, title: string): void {
-    if (!apiUrl) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'No Receipt',
-        detail: 'Receipt URL is not available.',
-      });
-      return;
-    }
-
-    this.receiptApiUrl = apiUrl;
-    this.receiptModalTitle = title;
-    this.receiptModalUrl = '';
-    this.receiptImageLoading = true;
-    this.receiptImageError = '';
-    this.showReceiptModal = true;
-
-
-    this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        if (this.receiptBlobUrl) {
-          URL.revokeObjectURL(this.receiptBlobUrl);
-        }
-        this.receiptBlobUrl = URL.createObjectURL(blob);
-        this.receiptModalUrl = this.receiptBlobUrl;
-        this.receiptImageLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Failed to fetch receipt:', err);
-        this.receiptImageLoading = false;
-        this.receiptImageError =
-          'The receipt could not be loaded. Use "Open in New Tab" to view it directly.';
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-
-  closeReceiptModal(): void {
-    this.showReceiptModal = false;
-    if (this.receiptBlobUrl) {
-      URL.revokeObjectURL(this.receiptBlobUrl);
-      this.receiptBlobUrl = null;
-    }
-    this.receiptModalUrl = '';
-    this.receiptApiUrl = '';
-    this.receiptModalTitle = '';
-    this.receiptImageLoading = false;
-    this.receiptImageError = '';
-  }
-
   onReceiptImageLoad(): void {
     this.receiptImageLoading = false;
   }
 
-  /** Blob loaded fine but the element couldn't render it (e.g. it's a PDF) */
   onReceiptImageError(event: any): void {
     this.receiptImageLoading = false;
     this.receiptImageError =
@@ -952,7 +1159,6 @@ export class ExpenseTableComponent implements OnInit {
     );
   }
 
-
   private convertToWebUrl(path: string): string {
     if (!path) return '';
 
@@ -961,10 +1167,8 @@ export class ExpenseTableComponent implements OnInit {
       return path;
     }
 
-
     const parts = path.split('/');
     const filename = parts[parts.length - 1]; // Get last part
-
 
     return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${filename}`;
   }
@@ -1001,5 +1205,34 @@ export class ExpenseTableComponent implements OnInit {
     }
 
     return '';
+  }
+
+  getStatusBadgeClass(status: ExpenseStatus): string {
+    switch (status) {
+      case ExpenseStatus.PENDING:
+        return 'badge-warning';
+      case ExpenseStatus.APPROVED:
+        return 'badge-success';
+      case ExpenseStatus.REJECTED:
+        return 'badge-danger';
+      default:
+        return 'badge-secondary';
+    }
+  }
+
+  canApproveOrReject(expense: Expense): boolean {
+    return expense.status === ExpenseStatus.PENDING;
+  }
+
+  editExpense(expense: Expense): void {
+    this.openEditModal(expense);
+  }
+
+  saveEditedExpense(): void {
+    this.onSubmit();
+  }
+
+  get receiptApiUrl(): string {
+    return this.receiptModalUrl;
   }
 }
