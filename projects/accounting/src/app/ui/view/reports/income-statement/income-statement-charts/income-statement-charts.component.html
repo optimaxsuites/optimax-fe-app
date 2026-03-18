@@ -2,7 +2,7 @@
   <!-- Revenue/Expense Trend Chart -->
   <div class="chart-card">
     <div *ngIf="revenueChartOptions" class="chart-wrapper">
-      <apx-chart 
+      <apx-chart
         [series]="revenueChartOptions['series']"
         [chart]="revenueChartOptions['chart']"
         [xaxis]="revenueChartOptions['xaxis']"
@@ -22,7 +22,7 @@
   <!-- Expense Distribution Chart -->
   <div class="chart-card">
     <div *ngIf="expenseChartOptions" class="chart-wrapper">
-      <apx-chart 
+      <apx-chart
         [series]="expenseChartOptions['series']"
         [chart]="expenseChartOptions['chart']"
         [labels]="expenseChartOptions['labels']"
@@ -30,9 +30,11 @@
         [fill]="expenseChartOptions['fill']"
         [legend]="expenseChartOptions['legend']"
         [title]="expenseChartOptions['title']"
+        [subtitle]="expenseChartOptions['subtitle']"
         [colors]="expenseChartOptions['colors']"
         [responsive]="expenseChartOptions['responsive']"
-        [dataLabels]="expenseChartOptions['dataLabels']">
+        [dataLabels]="expenseChartOptions['dataLabels']"
+        [tooltip]="expenseChartOptions['tooltip']">
       </apx-chart>
     </div>
   </div>

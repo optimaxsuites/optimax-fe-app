@@ -1,209 +1,101 @@
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
-/>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" />
 
 <div class="container">
   <div class="header">
     <h1 class="main-title">Accounting Reports</h1>
     <div class="button-group">
       <button class="btn btn-secondary" (click)="onExport()">
-        <i class="ri-download-line icon-margin-right"></i>
-        Export
+        <i class="ri-download-line icon-margin-right"></i> Export
       </button>
       <button class="btn btn-primary" (click)="openNewReportModal()">
-        <i class="ri-add-line icon-margin-right"></i>
-        New Report
+        <i class="ri-add-line icon-margin-right"></i> New Report
       </button>
     </div>
   </div>
 
+  <!-- ── SUMMARY CARDS (clickable → MetricDrillDown) ──────────────────────── -->
   <div class="grid grid-cols-4 gap-4 mb-6">
-    <div class="summary-card green">
+    <div class="summary-card"
+         *ngFor="let card of summaryCards"
+         [style.--accent]="'var(' + card.accentVar + ')'"
+         (click)="openCardModal(card)"
+         style="cursor:pointer; position:relative; border-left: 4px solid var(--accent, #1A6B3C);">
       <div class="flex-between-center">
-        <h3 class="summary-title">Total Revenue</h3>
-        <div class="icon-circle bg-blue-light text-blue">
-          <i class="ri-line-chart-line"></i>
-        </div>
+        <h3 class="summary-title">{{ card.title }}</h3>
+        <i class="ri-information-line text-gray-medium" style="font-size:16px"></i>
       </div>
-      <p class="summary-value">₦15,248,927.43</p>
+      <p class="summary-value">{{ fmt.formatCurrencyCompact(card.value) }}</p>
       <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-up">
-          <i class="ri-arrow-up-s-line"></i> 12.5%
+        <span [ngClass]="card.change >= 0 ? 'trend-up' : 'trend-down'">
+          <i [ngClass]="card.change >= 0 ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+          {{ fmt.formatPercentage(card.change) }}
         </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
-      </div>
-    </div>
-    <div class="summary-card blue">
-      <div class="flex-between-center">
-        <h3 class="summary-title">Total Asset</h3>
-        <div class="icon-circle bg-blue-light text-blue">
-          <i class="ri-line-chart-line"></i>
-        </div>
-      </div>
-      <p class="summary-value">₦13,348,927.43</p>
-      <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-up">
-          <i class="ri-arrow-up-s-line"></i> 20.5%
-        </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
-      </div>
-    </div>
-    <div class="summary-card orange">
-      <div class="flex-between-center">
-        <h3 class="summary-title">Total Expenses</h3>
-        <div class="icon-circle bg-red-light text-red">
-          <i class="ri-money-dollar-circle-line"></i>
-        </div>
-      </div>
-      <p class="summary-value">₦2,142,583.21</p>
-      <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-down">
-          <i class="ri-arrow-up-s-line"></i> 8.3%
-        </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
-      </div>
-    </div>
-    <div class="summary-card  sgreen">
-      <div class="flex-between-center">
-        <h3 class="summary-title">Net Profit</h3>
-        <div class="icon-circle bg-green-light text-green">
-          <i class="ri-funds-line"></i>
-        </div>
-      </div>
-      <p class="summary-value">₦2,106,344.22</p>
-      <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-up">
-          <i class="ri-arrow-up-s-line"></i> 15.2%
-        </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
-      </div>
-    </div>
-    <div class="summary-card purple">
-      <div class="flex-between-center">
-        <h3 class="summary-title">Accounts Receivable</h3>
-        <div class="icon-circle bg-purple-light text-purple">
-          <i class="ri-wallet-3-line"></i>
-        </div>
-      </div>
-      <p class="summary-value">₦553,842.67</p>
-      <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-down">
-          <i class="ri-arrow-down-s-line"></i> 3.8%
-        </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
-      </div>
-    </div>
-    <div class="summary-card teal">
-      <div class="flex-between-center">
-        <h3 class="summary-title">Operating Cash Flow</h3>
-        <div class="icon-circle bg-blue-light text-blue">
-          <i class="ri-line-chart-line"></i>
-        </div>
-      </div>
-      <p class="summary-value">₦5,048,927.43</p>
-      <div class="flex-items-center mt-2 text-sm">
-        <span class="trend-up">
-          <i class="ri-arrow-up-s-line"></i> 25.5%
-        </span>
-        <span class="text-gray-medium ml-2">vs last month</span>
+        <span class="text-gray-medium ml-2">vs last period</span>
       </div>
     </div>
   </div>
 
+  <!-- ── FINANCIAL STATEMENTS GRID  -->
   <div class="statements-section" id="financial-statement-section">
     <div class="section-header">
       <h2 class="section-title">Financial Statements</h2>
       <div class="section-actions">
-        <input
-          type="text"
-          class="input-search"
-          placeholder="Search by title..."
-          (input)="onSearch($event)"
-        />
+        <input type="text" class="input-search" placeholder="Search by title..." (input)="onSearch($event)" />
         <select class="filter-select" (change)="onFilterStatus($event)">
           <option value="">All Status</option>
           <option value="Published">Published</option>
           <option value="Draft">Draft</option>
         </select>
-        <button class="btn btn-secondary" (click)="onViewAll()">
-          <i class="icon-download"></i> View All
-        </button>
+        <button class="btn btn-secondary" (click)="onViewAll()">View All</button>
       </div>
     </div>
     <div class="statements-grid">
-      <div
-        class="statement-card"
-        *ngFor="let report of filteredReports"
-        (click)="previewReport(report)"
-      >
-        <div class="statement-icon">
-          <i class="icon-{{ report.icon }}"></i>
-        </div>
+      <div class="statement-card" *ngFor="let report of filteredReports" (click)="previewStatement(report)">
+        <div class="statement-icon"><i class="icon-{{ report.icon }}"></i></div>
         <h3 class="statement-title">{{ report.title }}</h3>
         <p class="statement-description">{{ report.description }}</p>
         <div class="statement-meta">
-          <span>
-            <i class="icon-calendar"></i> Updated: {{ report.updated }}
-          </span>
-          <span
-            class="statement-status"
-            [ngClass]="{
-              'status-published': report.status === 'Published',
-              'status-draft': report.status === 'Draft'
-            }"
-          >
+          <span><i class="icon-calendar"></i> Updated: {{ report.updated }}</span>
+          <span class="statement-status"
+            [ngClass]="{ 'status-published': report.status === 'Published', 'status-draft': report.status === 'Draft' }">
             {{ report.status }}
           </span>
         </div>
         <div class="statement-actions">
-          <button (click)="previewReport(report)">🔍 Preview</button>
-          <!-- <button (click)="downloadReport(report)">📥 Download</button>
-          <button (click)="shareReport(report)">📤 Share</button>
-          <button *ngIf="report.status === 'Draft'" (click)="editReport(report)">✏️ Edit</button>
-          <button (click)="deleteReport(report)">🗑️ Delete</button> -->
+          <button (click)="previewStatement(report); $event.stopPropagation()">🔍 Preview</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ── COMPARATIVE ANALYSIS -->
   <div class="comparison-section">
     <div class="section-header">
       <h2 class="section-title">Comparative Analysis</h2>
       <div class="section-actions">
-        <button class="btn btn-secondary" (click)="periodModalOpen = true">
-          <i class="icon-period"></i> Change Period
-        </button>
+        <button class="btn btn-secondary" (click)="periodModalOpen = true">Change Period</button>
       </div>
     </div>
-    <div>
-      <apx-chart
-        [series]="barChartOptions.series"
-        [chart]="barChartOptions.chart"
-        [xaxis]="barChartOptions.xaxis"
-        [yaxis]="barChartOptions.yaxis"
-        [dataLabels]="barChartOptions.dataLabels"
-        [tooltip]="barChartOptions.tooltip"
-        [legend]="barChartOptions.legend"
-        [fill]="barChartOptions.fill"
-        [colors]="barChartOptions.colors ?? []"
-        [plotOptions]="barChartOptions.plotOptions ?? {}">
-      </apx-chart>
-    </div>
+    <apx-chart
+      *ngIf="barChartOptions"
+      [series]="barChartOptions.series"
+      [chart]="barChartOptions.chart"
+      [xaxis]="barChartOptions.xaxis"
+      [yaxis]="barChartOptions.yaxis"
+      [dataLabels]="barChartOptions.dataLabels"
+      [tooltip]="barChartOptions.tooltip"
+      [legend]="barChartOptions.legend"
+      [fill]="barChartOptions.fill"
+      [colors]="barChartOptions.colors ?? []"
+      [plotOptions]="barChartOptions.plotOptions ?? {}">
+    </apx-chart>
     <div class="comparison-legend">
-      <div class="legend-item">
-        <div class="legend-color color-current"></div>
-        <span>Current Period (2023)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color color-previous"></div>
-        <span>Previous Period (2022)</span>
-      </div>
+      <div class="legend-item"><div class="legend-color color-current"></div><span>{{ selectedPeriod1 }}</span></div>
+      <div class="legend-item"><div class="legend-color color-previous"></div><span>{{ selectedPeriod2 }}</span></div>
     </div>
   </div>
 
-  <!-- Period Selection Modal -->
+  <!-- Period Modal -->
   <div class="period-modal" *ngIf="periodModalOpen">
     <div class="period-modal-content">
       <h3>Select Periods to Compare</h3>
@@ -211,13 +103,13 @@
         <div>
           <label>Period 1</label>
           <select [(ngModel)]="selectedPeriod1">
-            <option *ngFor="let period of availablePeriods" [value]="period">{{ period }}</option>
+            <option *ngFor="let p of availablePeriods" [value]="p">{{ p }}</option>
           </select>
         </div>
         <div>
           <label>Period 2</label>
           <select [(ngModel)]="selectedPeriod2">
-            <option *ngFor="let period of availablePeriods" [value]="period">{{ period }}</option>
+            <option *ngFor="let p of availablePeriods" [value]="p">{{ p }}</option>
           </select>
         </div>
       </div>
@@ -228,19 +120,19 @@
     </div>
   </div>
 
+  <!-- ── CHARTS ─────────────────────────────────────────────────────────────── -->
   <div class="grid grid-2-cols gap-6 mb-6">
     <div class="card chart-card">
       <div class="flex-between-center mb-4">
         <h3 class="card-title">Revenue vs Expenses</h3>
-        <div class="relative">
-          <select class="input-select-sm">
-            <option>Last 6 Months</option>
-            <option>Last 12 Months</option>
-            <option>YTD</option>
-          </select>
-        </div>
+        <select class="input-select-sm">
+          <option>Last 6 Months</option>
+          <option>Last 12 Months</option>
+          <option>YTD</option>
+        </select>
       </div>
       <apx-chart
+        *ngIf="lineChartOptions"
         [series]="lineChartOptions.series"
         [chart]="lineChartOptions.chart"
         [xaxis]="lineChartOptions.xaxis"
@@ -251,22 +143,20 @@
         [tooltip]="lineChartOptions.tooltip"
         [legend]="lineChartOptions.legend"
         [fill]="lineChartOptions.fill"
-        [colors]="lineChartOptions.colors ??[]">
+        [colors]="lineChartOptions.colors ?? []">
       </apx-chart>
     </div>
     <div class="card chart-card">
       <div class="flex-between-center mb-4">
         <h3 class="card-title">Expense Breakdown</h3>
-        <div class="relative">
-          <select class="input-select-sm">
-            <option>This Month</option>
-            <option>Last Month</option>
-            <option>This Quarter</option>
-            <option>Last Quarter</option>
-          </select>
-        </div>
+        <select class="input-select-sm">
+          <option>This Month</option>
+          <option>Last Month</option>
+          <option>This Quarter</option>
+        </select>
       </div>
       <apx-chart
+        *ngIf="donutChartOptions"
         [series]="donutChartOptions.series"
         [chart]="donutChartOptions.chart"
         [labels]="donutChartOptions.labels"
@@ -280,11 +170,8 @@
     </div>
   </div>
 
-  <!-- New Report Modal -->
-  <div
-    class="custom-modal-backdrop"
-    *ngIf="newReportModalOpen"
-    [@fadeSlideIn]>
+  <!-- ── NEW REPORT MODAL  -->
+  <div class="custom-modal-backdrop" *ngIf="newReportModalOpen" [@fadeSlideIn]>
     <div class="custom-modal-content" [ngClass]="{'modal-expanded': modalExpanded}">
       <button class="custom-modal-close" (click)="closeNewReportModal()"><i class="fas fa-times"></i></button>
       <button class="custom-modal-expand" (click)="toggleModalSize()">
@@ -295,64 +182,46 @@
         <div class="grid grid-4-cols gap-4">
           <div>
             <label class="label">Report Type</label>
-            <div class="relative">
-              <select class="input-select" [(ngModel)]="reportType" name="reportType">
-                <option value="">Select Report Type</option>
-                <option>Fixed Asset Movement</option>
-                <option>AR Aging Report</option>
-                <option>AP Aging Report</option>
-                <option>Budget vs Actual</option>
-                <option>Segment/Department Report</option>
-                <option>Inventory Valuation Report</option>
-                <!-- <option>KPI/Ratio Report</option> -->
-                <option>Deferred Revenue & Prepaids</option>
-              </select>
-            </div>
+            <select class="input-select" [(ngModel)]="reportType">
+              <option value="">Select Report Type</option>
+              <option>Fixed Asset Movement</option>
+              <option>AR Aging Report</option>
+              <option>AP Aging Report</option>
+              <option>Budget vs Actual</option>
+              <option>Segment/Department Report</option>
+              <option>Inventory Valuation Report</option>
+              <option>KPI/Ratio Report</option>
+              <option>Deferred Revenue &amp; Prepaids</option>
+            </select>
           </div>
           <div>
             <label class="label">Date Range</label>
-            <div class="relative">
-              <select class="input-select" [(ngModel)]="dateRange" name="dateRange">
-                <option value="">Select Date Range</option>
-                <option>This Month</option>
-                <option>Last Month</option>
-                <option>This Quarter</option>
-                <option>Last Quarter</option>
-                <option>This Year</option>
-                <option>Custom Range</option>
-              </select>
-            </div>
+            <select class="input-select" [(ngModel)]="dateRange">
+              <option value="">Select Date Range</option>
+              <option>This Month</option>
+              <option>Last Month</option>
+              <option>This Quarter</option>
+              <option>Last Quarter</option>
+              <option>This Year</option>
+              <option>Custom Range</option>
+            </select>
           </div>
           <div *ngIf="dateRange === 'Custom Range'">
-      <label class="label">From</label>
-      <div class="relative">
-        <input
-          type="date"
-          class="input-field"
-          [(ngModel)]="fromDate"
-          name="fromDate"
-          [max]="today"
-        />
-      </div>
-    </div>
-    <div *ngIf="dateRange === 'Custom Range'">
-      <label class="label">To</label>
-      <div class="relative">
-        <input
-          type="date"
-          class="input-field"
-          [(ngModel)]="toDate"
-          name="toDate"
-          [max]="today"
-        />
-      </div>
-    </div>
-  </div>
+            <label class="label">From</label>
+            <input type="date" class="input-field" [(ngModel)]="fromDate" [max]="today" />
+          </div>
+          <div *ngIf="dateRange === 'Custom Range'">
+            <label class="label">To</label>
+            <input type="date" class="input-field" [(ngModel)]="toDate" [max]="today" />
+          </div>
+        </div>
         <div class="flex-end-container mt-4">
           <button class="btn btn-primary" (click)="onGenerateReport()">Generate Report</button>
           <button class="btn btn-secondary ml-2" (click)="closeNewReportModal()">Cancel</button>
         </div>
       </div>
+
+      <!-- Recently Generated Reports Table -->
       <div class="flex-between-center card-header-bordered">
         <h3 class="card-title">Recently Generated Reports</h3>
         <button class="text-primary text-sm font-medium">View All</button>
@@ -370,604 +239,211 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-light">
-            <tr *ngFor="let report of reports">
+            <tr *ngFor="let report of paginatedReports">
               <td class="table-data-cell text-gray-dark">{{ report.name }}</td>
               <td class="table-data-cell text-gray-medium">{{ report.date }}</td>
               <td class="table-data-cell text-gray-medium">{{ report.generatedBy }}</td>
               <td class="table-data-cell text-gray-medium">{{ report.type }}</td>
               <td class="table-data-cell">
-                <span class="status-badge" [ngClass]="{'status-completed': report.status === 'Completed', 'status-pending': report.status === 'Pending'}">
+                <span class="status-badge"
+                  [ngClass]="{ 'status-completed': report.status === 'Completed', 'status-pending': report.status === 'Pending' }">
                   {{ report.status }}
                 </span>
               </td>
               <td class="table-data-cell text-align-right">
-                <button *ngIf="report.status === 'Completed'" class="action-button" (click)="openReport(report)">
-                  View
-                </button>
+                <button *ngIf="report.status === 'Completed'" class="action-button" (click)="openReport(report)">View</button>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedReports.length === 0">
+              <td colspan="6" class="table-data-cell text-gray-medium" style="text-align:center">
+                No reports generated yet
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <!-- Wired Pagination -->
       <div class="pagination-container">
-        <div class="pagination-info"></div>
+        <div class="pagination-info">Page {{ currentReportPage }} of {{ totalReportPages }}</div>
         <div class="pagination-buttons">
-          <button class="pagination-btn disabled" disabled>Previous</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn">2</button>
-          <button class="pagination-btn">3</button>
-          <button class="pagination-btn">Next</button>
+          <button class="pagination-btn" [disabled]="currentReportPage === 1" (click)="goToReportPage(currentReportPage - 1)">Previous</button>
+          <button class="pagination-btn" *ngFor="let page of pageNumbers"
+            [ngClass]="{ 'active': page === currentReportPage }"
+            (click)="goToReportPage(page)">{{ page }}</button>
+          <button class="pagination-btn" [disabled]="currentReportPage === totalReportPages" (click)="goToReportPage(currentReportPage + 1)">Next</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ── SAVED REPORTS ────────────────────────────────────────────────────── -->
   <div class="card saved-reports-card">
     <div class="flex-between-center card-header-bordered">
       <h3 class="card-title">Saved Reports</h3>
       <button class="text-primary text-sm font-medium">Manage Reports</button>
     </div>
     <div class="p-4 grid grid-3-cols gap-4">
-      <div class="report-card hover-border-primary">
+      <div class="report-card hover-border-primary" *ngFor="let r of savedReportsList">
         <div class="flex-start-between">
           <div>
-            <h4 class="report-title">Q2 Financial Statement</h4>
-            <p class="report-date">Last generated: Jun 01, 2025</p>
+            <h4 class="report-title">{{ r.title }}</h4>
+            <p class="report-date">Last generated: {{ r.date }}</p>
           </div>
-          <div class="icon-circle bg-blue-light text-blue-dark">
-            <i class="ri-file-chart-2-line"></i>
+          <div class="icon-circle" [ngClass]="[r.iconBg, r.iconColor]">
+            <i [ngClass]="r.icon"></i>
           </div>
         </div>
         <div class="flex mt-4 space-x-2">
           <button class="flex-1 btn btn-primary-sm">View</button>
-          <button class="btn btn-icon-secondary">
-            <i class="ri-download-line text-gray-medium"></i>
-          </button>
-        </div>
-      </div>
-      <div class="report-card hover-border-primary">
-        <div class="flex-start-between">
-          <div>
-            <h4 class="report-title">Monthly Balance Sheet</h4>
-            <p class="report-date">Last generated: May 31, 2025</p>
-          </div>
-          <div class="icon-circle bg-green-light text-green-dark">
-            <i class="ri-file-list-3-line"></i>
-          </div>
-        </div>
-        <div class="flex mt-4 space-x-2">
-          <button class="flex-1 btn btn-primary-sm">View</button>
-          <button class="btn btn-icon-secondary">
-            <i class="ri-download-line text-gray-medium"></i>
-          </button>
-        </div>
-      </div>
-      <div class="report-card hover-border-primary">
-        <div class="flex-start-between">
-          <div>
-            <h4 class="report-title">Annual Tax Report</h4>
-            <p class="report-date">Last generated: Jan 15, 2025</p>
-          </div>
-          <div class="icon-circle bg-purple-light text-purple-dark">
-            <i class="ri-government-line"></i>
-          </div>
-        </div>
-        <div class="flex mt-4 space-x-2">
-          <button class="flex-1 btn btn-primary-sm">View</button>
-          <button class="btn btn-icon-secondary">
-            <i class="ri-download-line text-gray-medium"></i>
-          </button>
+          <button class="btn btn-icon-secondary"><i class="ri-download-line text-gray-medium"></i></button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Shared Fullscreen Modal for All Reports -->
-  <div class="fullscreen-modal" [ngClass]="{'modal-expanded-mode': modalExpanded}" *ngIf="modalOpen">
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- METRIC DRILL-DOWN MODAL — compact, scrollable, blurred backdrop          -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <div class="card-modal-backdrop" *ngIf="cardModalOpen && selectedCard" (click)="closeCardModal()">
+    <div class="card-modal-content" (click)="$event.stopPropagation()">
+
+      <!-- Sticky header -->
+      <div class="modal-sticky-header">
+        <div>
+          <span class="modal-title">{{ selectedCard.title }}</span>
+          <span class="modal-subtitle">Breakdown &amp; Source</span>
+        </div>
+        <button class="modal-close-btn" (click)="closeCardModal()"><i class="ri-close-line"></i></button>
+      </div>
+
+      <!-- Value highlight -->
+      <div class="modal-value-block">
+        <div class="modal-metric-label">{{ selectedCard.title }}</div>
+        <div class="modal-metric-value">{{ fmt.formatCurrency(selectedCard.value) }}</div>
+        <div style="margin-top:4px">
+          <span [ngClass]="selectedCard.change >= 0 ? 'trend-positive' : 'trend-negative'">
+            {{ selectedCard.change >= 0 ? '▲' : '▼' }} {{ fmt.formatPercentage(selectedCard.change) }}
+          </span>
+          <span style="color:#64748b; font-size:0.8rem; margin-left:4px">vs previous period</span>
+        </div>
+      </div>
+
+      <!-- Definition -->
+      <div class="modal-info-box">
+        <span class="modal-info-title">ⓘ Definition</span>
+        {{ selectedCard.definition }}
+      </div>
+
+      <!-- Formula -->
+      <div style="font-size:0.8rem; font-weight:600; color:#64748b; margin-bottom:4px">Calculation Formula</div>
+      <div class="modal-formula-block">{{ selectedCard.formula }}</div>
+
+      <!-- Breakdown Table -->
+      <div style="font-size:0.9rem; font-weight:700; margin-bottom:8px">Detailed Breakdown</div>
+      <table class="modal-breakdown-table">
+        <thead>
+          <tr>
+            <th>Line Item</th>
+            <th style="text-align:right">Amount (₦)</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of selectedCard.breakdown" [ngClass]="row.type === 'equals' ? 'equals-row' : ''">
+            <td>
+              <span style="font-family:monospace; margin-right:6px">{{ row.type === 'add' ? '+' : row.type === 'subtract' ? '−' : '=' }}</span>
+              {{ row.label }}
+            </td>
+            <td style="text-align:right" [ngClass]="row.amount < 0 ? 'amount-negative' : 'amount-positive'">
+              {{ fmt.formatCurrency(row.amount) }}
+            </td>
+            <td><span class="source-badge">{{ row.source }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="report-actions" style="margin-top:16px">
+        <button class="btn btn-info">Export PDF</button>
+        <button class="btn btn-info">Export Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- STATEMENT PREVIEW MODAL — compact, scrollable, blurred backdrop          -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <div class="statement-modal-backdrop" *ngIf="statementModalOpen && selectedStatement" (click)="closeStatementModal()">
+    <div class="statement-modal-content" (click)="$event.stopPropagation()">
+
+      <!-- Sticky header -->
+      <div class="modal-sticky-header">
+        <div>
+          <span class="modal-title">{{ selectedStatement.title }}</span>
+          <button class="modal-close-btn" style="margin-left:8px; vertical-align:middle" (click)="toggleModalSize()" title="Expand">
+            <i [ngClass]="modalExpanded ? 'ri-contract-left-line' : 'ri-expand-left-line'"></i>
+          </button>
+        </div>
+        <button class="modal-close-btn" (click)="closeStatementModal()"><i class="ri-close-line"></i></button>
+      </div>
+
+      <p style="color:#64748b; font-size:0.8rem; margin-bottom:16px">{{ selectedStatement.description }}</p>
+
+      <div *ngFor="let section of selectedStatement.sections" style="margin-bottom:20px">
+        <div style="background:#f0fdf4; padding:8px 14px; font-weight:700; font-size:0.875rem; border-radius:6px 6px 0 0; color:#166534">
+          {{ section.heading }}
+        </div>
+        <table class="modal-breakdown-table" style="border-radius:0 0 6px 6px; overflow:hidden">
+          <tbody>
+            <tr *ngFor="let row of section.rows" [ngClass]="row.isTotal ? 'equals-row' : ''">
+              <td [style.paddingLeft]="row.indent ? '28px' : '12px'">{{ row.label }}</td>
+              <td *ngIf="!isTextOnlyRow(row)" style="text-align:right; font-variant-numeric:tabular-nums"
+                [ngClass]="(row.amount! < 0) ? 'amount-negative' : ((row.amount! > 0 && row.isTotal) ? 'amount-positive' : '')">
+                {{ (row.amount! < 0) ? '(' : '' }}₦{{ row.amount | number }}{{ (row.amount! < 0) ? ')' : '' }}
+              </td>
+              <td *ngIf="isTextOnlyRow(row)"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="report-actions" style="margin-top:16px">
+        <button class="btn btn-info">Export PDF</button>
+        <button class="btn btn-info">Export Excel</button>
+        <button class="btn btn-info">Print</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- GENERATED REPORT FULLSCREEN MODAL                                        -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <div class="fullscreen-modal" [ngClass]="{'modal-expanded-mode': modalExpanded}" *ngIf="modalOpen && selectedReport">
     <div class="fullscreen-modal-content" [ngClass]="{'modal-expanded': modalExpanded, 'modal-normal': !modalExpanded}">
       <button class="fullscreen-modal-expand" (click)="toggleModalSize()">
         <i [ngClass]="modalExpanded ? 'ri-contract-left-line' : 'ri-expand-left-line'"></i>
       </button>
       <button class="fullscreen-modal-close" (click)="closeModal()"><i class="fas fa-times"></i></button>
-      <!-- Bank Reconciliation Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Bank Reconciliation Report'">
-        <div class="report-header">
-          <i class="ri-bank-line report-icon"></i>
-          <span class="report-title">Bank Reconciliation Report</span>
-        </div>
-        <h4>Outstanding Cheques</h4>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Date</th>
-              <th class="px-4 py-2 text-green-700">Description</th>
-              <th class="px-4 py-2 text-green-700">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data?.outstandingCheques">
-              <td>{{ item.date }}</td>
-              <td>{{ item.description }}</td>
-              <td>₦{{ item.amount | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <h4>Deposits in Transit</h4>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Date</th>
-              <th class="px-4 py-2 text-green-700">Description</th>
-              <th class="px-4 py-2 text-green-700">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data?.depositsInTransit">
-              <td>{{ item.date }}</td>
-              <td>{{ item.description }}</td>
-              <td>₦{{ item.amount | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <h4>Bank Charges Missing from Books</h4>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Date</th>
-              <th class="px-4 py-2 text-green-700">Description</th>
-              <th class="px-4 py-2 text-green-700">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data?.bankChargesMissing">
-              <td>{{ item.date }}</td>
-              <td>{{ item.description }}</td>
-              <td>₦{{ item.amount | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Trial Balance Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Trial Balance'">
-        <div class="report-header">
-          <i class="ri-table-line report-icon"></i>
-          <span class="report-title">Trial Balance</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Account</th>
-              <th class="px-4 py-2 text-green-700">Debit</th>
-              <th class="px-4 py-2 text-green-700">Credit</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data?.trialBalance">
-              <td>{{ item.account }}</td>
-              <td>₦{{ item.debit | number }}</td>
-              <td>₦{{ item.credit | number }}</td>
-            </tr>
-            <tr class="font-bold">
-              <td>Total</td>
-              <td>₦{{ selectedReport?.data?.totalDebits | number }}</td>
-              <td>₦{{ selectedReport?.data?.totalCredits | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- General Ledger Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'General Ledger'">
-        <div class="report-header">
-          <i class="ri-book-2-line report-icon"></i>
-          <span class="report-title">General Ledger</span>
-        </div>
-        <div *ngFor="let account of (selectedReport?.data | keyvalue)">
-          <h4>{{ account.key }}</h4>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th class="px-4 py-2 text-green-700">Date</th>
-                <th class="px-4 py-2 text-green-700">Description</th>
-                <th class="px-4 py-2 text-green-700">Debit</th>
-                <th class="px-4 py-2 text-green-700">Credit</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- <tr *ngFor="let entry of account.value">
-                <td>{{ entry.date }}</td>
-                <td>{{ entry.description }}</td>
-                <td>₦{{ entry.debit | number }}</td>
-                <td>₦{{ entry.credit | number }}</td>
-              </tr> -->
-            </tbody>
-          </table>
-        </div>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Notes to the Accounts Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Notes to the Accounts'">
-        <div class="report-header">
-          <i class="ri-file-list-2-line report-icon"></i>
-          <span class="report-title">Notes to the Accounts</span>
-        </div>
-        <h4>Depreciation Schedule</h4>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Asset</th>
-              <th class="px-4 py-2 text-green-700">Method</th>
-              <th class="px-4 py-2 text-green-700">Rate</th>
-              <th class="px-4 py-2 text-green-700">Year</th>
-              <th class="px-4 py-2 text-green-700">Depreciation</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data?.depreciationSchedule">
-              <td>{{ item.asset }}</td>
-              <td>{{ item.method }}</td>
-              <td>{{ item.rate }}</td>
-              <td>{{ item.year }}</td>
-              <td>₦{{ item.depreciation | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <h4>Accounting Policies</h4>
-        <p>{{ selectedReport?.data?.policies }}</p>
-        <h4>Key Ratios</h4>
-        <ul>
-          <li *ngFor="let ratio of selectedReport?.data?.ratios">
-            {{ ratio.metric }}: {{ ratio.value }}
-          </li>
-        </ul>
-        <h4>Manual Notes</h4>
-        <p>{{ selectedReport?.data?.manualNotes }}</p>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Statement of Changes in Equity Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Statement of Changes in Equity'">
-        <div class="report-header">
-          <i class="ri-bar-chart-grouped-line report-icon"></i>
-          <span class="report-title">Statement of Changes in Equity</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Opening Equity</th>
-              <th class="px-4 py-2 text-green-700">Net Income</th>
-              <th class="px-4 py-2 text-green-700">Contributions</th>
-              <th class="px-4 py-2 text-green-700">Dividends</th>
-              <th class="px-4 py-2 text-green-700">Closing Equity</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>₦{{ selectedReport?.data?.openingEquity | number }}</td>
-              <td>₦{{ selectedReport?.data?.netIncome | number }}</td>
-              <td>₦{{ selectedReport?.data?.contributions | number }}</td>
-              <td>₦{{ selectedReport?.data?.dividends | number }}</td>
-              <td>₦{{ selectedReport?.data?.closingEquity | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Management Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Management Report'">
-        <div class="report-header">
-          <i class="ri-bar-chart-horizontal-line report-icon"></i>
-          <span class="report-title">Management Report</span>
-        </div>
-        <h4>Revenue Trends</h4>
-        <ul>
-          <li *ngFor="let value of selectedReport?.data?.revenueTrends; let i = index">
-            Month {{ i + 1 }}: ₦{{ value | number }}
-          </li>
-        </ul>
-        <h4>Expense Breakdown</h4>
-        <ul>
-          <li *ngFor="let item of selectedReport?.data?.expenseBreakdown">
-            {{ item.category }}: ₦{{ item.amount | number }}
-          </li>
-        </ul>
-        <h4>Profit Margins</h4>
-        <p>{{ selectedReport?.data?.profitMargins }}</p>
-        <h4>CEO Commentary</h4>
-        <p>{{ selectedReport?.data?.ceoCommentary }}</p>
-        <h4>Strategy Updates</h4>
-        <p>{{ selectedReport?.data?.strategyUpdates }}</p>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Fixed Asset Movement Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Fixed Asset Movement'">
-        <div class="report-header">
-          <i class="ri-archive-2-line report-icon"></i>
-          <span class="report-title">Fixed Asset Movement Report</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr class="bg-gray-100 text-left text-sm text-gray-700 uppercase tracking-wider">
-              <th class="px-4 py-2 text-green-700">Asset ID</th>
-              <th class="px-4 py-2 text-green-700">Asset Name</th>
-              <th class="px-4 py-2 text-green-700">Type</th>
-              <th class="px-4 py-2 text-green-700">Movement Type</th>
-              <th class="px-4 py-2 text-green-700">From</th>
-              <th class="px-4 py-2 text-green-700">To</th>
-              <th class="px-4 py-2 text-green-700">Date</th>
-              <th class="px-4 py-2 text-green-700">Handled By</th>
-              <th class="px-4 py-2 text-green-700">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.assetId }}</td>
-              <td>{{ item.assetName }}</td>
-              <td>{{ item.type }}</td>
-              <td>{{ item.movementType }}</td>
-              <td>{{ item.from }}</td>
-              <td>{{ item.to }}</td>
-              <td>{{ item.date }}</td>
-              <td>{{ item.handledBy }}</td>
-              <td>{{ item.notes }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- AR Aging Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'AR Aging Report'">
-        <div class="report-header">
-          <i class="ri-hourglass-line report-icon"></i>
-          <span class="report-title">AR Aging Report</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr bg-gray-100 text-left text-sm text-gray-700 uppercase tracking-wider>
-              <th class="px-4 py-2 text-green-700">Customer</th>
-              <th class="px-4 py-2 text-green-700">Invoice #</th>
-              <th class="px-4 py-2 text-green-700">Invoice Date</th>
-              <th class="px-4 py-2 text-green-700">Due Date</th>
-              <th class="px-4 py-2 text-green-700">Total Amount</th>
-              <th class="px-4 py-2 text-green-700">Current</th>
-              <th class="px-4 py-2 text-green-700">1–30 Days</th>
-              <th class="px-4 py-2 text-green-700">31–60 Days</th>
-              <th class="px-4 py-2 text-green-700">61–90 Days</th>
-              <th class="px-4 py-2 text-green-700">&gt;90 Days</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.customer }}</td>
-              <td>{{ item.invoiceNumber }}</td>
-              <td>{{ item.invoiceDate }}</td>
-              <td>{{ item.dueDate }}</td>
-              <td>₦{{ item.totalAmount | number }}</td>
-              <td>₦{{ item.current || 0 | number }}</td>
-              <td>₦{{ item['1-30Days'] || 0 | number }}</td>
-              <td>₦{{ item['31-60Days'] || 0 | number }}</td>
-              <td>₦{{ item['61-90Days'] || 0 | number }}</td>
-              <td>₦{{ item['>90Days'] || 0 | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- AP Aging Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'AP Aging Report'">
-        <div class="report-header">
-          <i class="ri-hourglass-line report-icon"></i>
-          <span class="report-title">AP Aging Report</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Vendor</th>
-              <th class="px-4 py-2 text-green-700">Invoice #</th>
-              <th class="px-4 py-2 text-green-700">Invoice Date</th>
-              <th class="px-4 py-2 text-green-700">Due Date</th>
-              <th class="px-4 py-2 text-green-700">Total Amount</th>
-              <th class="px-4 py-2 text-green-700">Current</th>
-              <th class="px-4 py-2 text-green-700">1–30 Days</th>
-              <th class="px-4 py-2 text-green-700">31–60 Days</th>
-              <th class="px-4 py-2 text-green-700">61–90 Days</th>
-              <th class="px-4 py-2 text-green-700">&gt;90 Days</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.vendor }}</td>
-              <td>{{ item.invoiceNumber }}</td>
-              <td>{{ item.invoiceDate }}</td>
-              <td>{{ item.dueDate }}</td>
-              <td>₦{{ item.totalAmount | number }}</td>
-              <td>₦{{ item.current || 0 | number }}</td>
-              <td>₦{{ item['1-30Days'] || 0 | number }}</td>
-              <td>₦{{ item['31-60Days'] || 0 | number }}</td>
-              <td>₦{{ item['61-90Days'] || 0 | number }}</td>
-              <td>₦{{ item['>90Days'] || 0 | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Budget vs Actual Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Budget vs Actual'">
-        <div class="report-header">
-          <i class="ri-bar-chart-2-line report-icon"></i>
-          <span class="report-title">Budget vs Actual</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Department</th>
-              <th class="px-4 py-2 text-green-700">Budget</th>
-              <th class="px-4 py-2 text-green-700">Actual</th>
-              <th class="px-4 py-2 text-green-700">Variance</th>
-              <th class="px-4 py-2 text-green-700">Variance %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.department }}</td>
-              <td>₦{{ item.budgetedAmount | number }}</td>
-              <td>₦{{ item.actualAmount | number }}</td>
-              <td>
-                ₦{{ item.variance | number }}
-              </td>
-              <td>
-                {{ item.variancePercent }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="text-xs text-gray-600 mt-2 px-4"></div>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Segment/Department Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Segment/Department Report'">
-        <div class="report-header">
-          <i class="ri-building-line report-icon"></i>
-          <span class="report-title">Segment/Department Report</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Segment</th>
-              <th class="px-4 py-2 text-green-700">Revenue</th>
-              <th class="px-4 py-2 text-green-700">Expenses</th>
-              <th class="px-4 py-2 text-green-700">Profit</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.segment }}</td>
-              <td>₦{{ item.revenue | number }}</td>
-              <td>₦{{ item.expenses | number }}</td>
-              <td>₦{{ item.profit | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Inventory Valuation Report Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Inventory Valuation Report'">
-        <div class="report-header">
-          <i class="ri-archive-drawer-line report-icon"></i>
-          <span class="report-title">Inventory Valuation Report</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Item</th>
-              <th class="px-4 py-2 text-green-700">Category</th>
-              <th class="px-4 py-2 text-green-700">Quantity On Hand</th>
-              <th class="px-4 py-2 text-green-700">Unit Cost</th>
-              <th class="px-4 py-2 text-green-700">Total Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.item }}</td>
-              <td>{{ item.category }}</td>
-              <td>{{ item.quantityOnHand }}</td>
-              <td>₦{{ item.unitCost | number }}</td>
-              <td>₦{{ item.totalValue | number }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
-      <!-- Deferred Revenue & Prepaids Modal -->
-      <ng-container *ngIf="selectedReport?.type === 'Deferred Revenue & Prepaids'">
-        <div class="report-header">
-          <i class="ri-calendar-check-line report-icon"></i>
-          <span class="report-title">Deferred Revenue & Prepaids</span>
-        </div>
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-green-700">Customer/Vendor</th>
-              <th class="px-4 py-2 text-green-700">Invoice #</th>
-              <th class="px-4 py-2 text-green-700">Amount/Prepaid</th>
-              <th class="px-4 py-2 text-green-700">Recognized/Expense</th>
-              <th class="px-4 py-2 text-green-700">Deferred/Prepaid Bal.</th>
-              <th class="px-4 py-2 text-green-700">Period</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of selectedReport?.data">
-              <td>{{ item.customer || item.vendor }}</td>
-              <td>{{ item.invoiceNumber || '-' }}</td>
-              <td>
-                ₦{{ item.amount || item.prepaidAmount | number }}
-              </td>
-              <td>
-                ₦{{ item.revenueRecognized || item.expenseRecognized | number }}
-              </td>
-              <td>
-                ₦{{ item.deferredRevenue || item.prepaidBalance | number }}
-              </td>
-              <td>
-                {{ item.recognitionPeriod || item.coveragePeriod }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="report-actions">
-          <button class="btn btn-info">Export PDF</button>
-          <button class="btn btn-info">Export Excel</button>
-          <button class="btn btn-info">Print</button>
-        </div>
-      </ng-container>
+
+      <!-- Report content based on type -->
+      <div class="report-header">
+        <i class="ri-file-chart-line report-icon"></i>
+        <span class="report-title">{{ selectedReport.name }}</span>
+      </div>
+
+      <div class="report-metadata">
+        <p>Generated: {{ selectedReport.date }} | By: {{ selectedReport.generatedBy }}</p>
+      </div>
+
+      <div class="report-content">
+        <!-- Show appropriate report data based on type -->
+        <pre *ngIf="selectedReport.data">{{ selectedReport.data | json }}</pre>
+      </div>
+
+      <div class="report-actions">
+        <button class="btn btn-info">Export PDF</button>
+        <button class="btn btn-info">Export Excel</button>
+        <button class="btn btn-info">Print</button>
+      </div>
     </div>
   </div>
 </div>
