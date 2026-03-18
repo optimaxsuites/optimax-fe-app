@@ -38,8 +38,8 @@
           <label>
             Loan ID
             <select [(ngModel)]="selectedDisbursementLoanId" (ngModelChange)="onDisbursementLoanChange()">
-              <option value="" disabled>Select approved loan</option>
-              <option *ngFor="let loan of approvedLoans" [value]="loan.id">{{ loan.id }} - {{ loan.fullName }}</option>
+              <option [ngValue]="''" disabled>Select approved loan</option>
+              <option *ngFor="let loan of approvedLoans" [ngValue]="loan.id">{{ loan.loanCode || loan.id }} - {{ loan.fullName }}</option>
             </select>
           </label>
 
@@ -50,7 +50,7 @@
 
           <label>
             Disbursement Date
-            <input type="date" [(ngModel)]="disbursementDate" />
+            <input type="date" [(ngModel)]="disbursedDate" />
           </label>
 
           <label>

@@ -1,4 +1,26 @@
 <div class="member-dashboard-container">
+  <app-modal *ngIf="showMyGroupsModal" [header]="'My Groups'" (close)="closeMyGroupsModal()">
+    <div class="my-groups-modal">
+      <p class="modal-copy">Choose a group to open its dedicated mini dashboard.</p>
+
+      <div class="group-selector-list" *ngIf="memberGroups.length > 0; else noMemberGroups">
+        <button type="button" class="group-selector-card" *ngFor="let group of memberGroups" (click)="openGroupDashboard(group.membership.groupId)">
+          <div>
+            <strong>{{ group.groupName }}</strong>
+            <span>{{ formatCurrency(group.membership.monthlyContributionAmount) }}/month</span>
+          </div>
+          <small>Max borrowable {{ formatCurrency(group.maxBorrowable) }}</small>
+        </button>
+      </div>
+
+      <ng-template #noMemberGroups>
+        <div class="empty-state compact">
+          <p>You do not have any active groups yet.</p>
+        </div>
+      </ng-template>
+    </div>
+  </app-modal>
+
   <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
     <div class="cooperative-loan-details" *ngIf="selectedLoanForDetails as loan">
       <div class="modal-header">
@@ -40,7 +62,7 @@
         </div>
         <div class="detail-item">
           <span class="label">Monthly Repayment</span>
-          <span class="value">{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span>
+          <span class="value">{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span>
         </div>
         <div class="detail-item">
           <span class="label">Outstanding Balance</span>
@@ -73,7 +95,7 @@
         </label>
         <label>
           Method
-          <select [(ngModel)]="paymentMethod">
+          <select [(ngModel)]="modeofPayment">
             <option value="BANK_TRANSFER">Bank Transfer</option>
             <option value="CASH">Cash</option>
             <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
@@ -98,6 +120,15 @@
       (formCancelled)="closeApplicationModal()"
       (applicationSubmitted)="onApplicationSubmitted()">
     </app-cooperative-loan-application>
+  </app-modal>
+
+  <app-modal *ngIf="showJoinGroupModal" [header]="'Apply to Join Group'" (close)="closeJoinGroupModal()">
+    <app-join-cooperative-group
+      [availableGroups]="availableJoinGroups"
+      [eligibleGroupIds]="eligibleJoinGroupIds"
+      (applyToGroup)="applyToJoinGroup($event)"
+      (closeModal)="closeJoinGroupModal()">
+    </app-join-cooperative-group>
   </app-modal>
 
   <!-- Loading -->
@@ -158,6 +189,10 @@
         <p class="member-id">Member since: {{ member.joinDate | date:'MMM yyyy' }} | Member ID: {{ member.memberId }}</p>
       </div>
       <div class="header-actions">
+        <button class="my-groups-btn" type="button" (click)="openMyGroupsModal()">
+          <i class="fas fa-layer-group"></i>
+          My Groups
+        </button>
         <div class="user-avatar">{{ getInitials(member.fullName) }}</div>
       </div>
     </div>
@@ -166,6 +201,10 @@
       <button class="quick-action-btn apply-btn" (click)="applyForLoan()">
         <i class="fas fa-plus"></i>
         Apply for New Loan
+      </button>
+      <button class="quick-action-btn" (click)="openJoinGroupModal()">
+        <i class="fas fa-users"></i>
+        Apply to Join Group
       </button>
       <button class="quick-action-btn" (click)="openQuickPaymentModal()">
         <i class="fas fa-credit-card"></i>
@@ -186,143 +225,80 @@
 
     <p class="action-message" *ngIf="actionMessage">{{ actionMessage }}</p>
 
-    <div class="membership-card">
-      <div class="membership-card-header">
-        <h2><i class="fas fa-user-cog"></i> Membership Role</h2>
-        <div class="role-switcher">
-          <label for="rolePreviewSelect">Switch Role</label>
-          <select
-            id="rolePreviewSelect"
-            [ngModel]="selectedPreviewRole"
-            (ngModelChange)="onPreviewRoleChange($event)">
-            <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-updates-card" *ngIf="memberStatusUpdates.length > 0">
-      <h2 class="section-title">Application Status Updates</h2>
-      <div class="updates-list">
-        <div class="update-item" *ngFor="let update of memberStatusUpdates">
-          <div class="update-head">
-            <strong>{{ update.title }}</strong>
-            <span class="time">{{ update.createdAt | date:'short' }}</span>
+    <div class="member-layout">
+      <div class="member-main-column">
+        <div class="membership-card">
+          <div class="membership-card-header">
+            <h2><i class="fas fa-user-cog"></i> Membership Role</h2>
+            <div class="role-switcher">
+              <label for="rolePreviewSelect">Switch Role</label>
+              <select
+                id="rolePreviewSelect"
+                [ngModel]="selectedPreviewRole"
+                (ngModelChange)="onPreviewRoleChange($event)">
+                <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
+              </select>
+            </div>
           </div>
-          <p>
-            {{ getMessageWithoutActivationLink(update.message) }}
-            <a
-              *ngIf="getActivationLinkFromMessage(update.message) as activationLink"
-              href="#"
-              class="activation-link"
-              (click)="openActivationLink($event, activationLink)">
-              Activate Membership
-            </a>
-          </p>
         </div>
-      </div>
-    </div>
 
-    <!-- Stats Cards -->
-    <h2 class="section-title">My Financial Snapshot</h2>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon shares-icon">
-          <i class="fas fa-piggy-bank"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">My Shares</span>
-          <span class="stat-value">{{ formatCurrency(member.shareCapital) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon borrowed-icon">
-          <i class="fas fa-naira-sign"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Borrowed</span>
-          <span class="stat-value">{{ formatCurrency(personalTotalBorrowed) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon outstanding-icon">
-          <i class="fas fa-wallet"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Outstanding</span>
-          <span class="stat-value">{{ formatCurrency(personalOutstandingBalance) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon payment-icon">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Next Payment</span>
-          <span class="stat-value" *ngIf="personalNextPayment">{{ formatCurrency(personalNextPayment.amount) }}</span>
-          <span class="stat-value" *ngIf="!personalNextPayment">₦0</span>
-          <span class="stat-sub" *ngIf="personalNextPayment">{{ personalNextPayment.dueDate | date:'mediumDate' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-updates-card" *ngIf="memberGroups.length > 0">
-      <h2 class="section-title">My Loan Groups</h2>
-      <div class="group-switcher-row">
-        <label for="groupDashboardSelect">View Group Dashboard</label>
-        <select id="groupDashboardSelect" [ngModel]="selectedGroupId" (ngModelChange)="setGroupDashboard($event)">
-          <option value="ALL">All Groups</option>
-          <option *ngFor="let group of memberGroups" [value]="group.membership.groupId || group.membership.groupId">
-            {{ group.groupName }}
-          </option>
-        </select>
-      </div>
-      <div class="updates-list">
-        <div class="update-item" *ngFor="let group of memberGroups">
-          <div class="update-head">
-            <strong>{{ group.groupName }}</strong>
-            <span class="time">{{ formatCurrency(group.membership.monthlyContributionAmount) }}/month</span>
+        <h2 class="section-title">My Financial Snapshot</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon shares-icon">
+              <i class="fas fa-piggy-bank"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">My Shares</span>
+              <span class="stat-value">{{ formatCurrency(member.shareCapital) }}</span>
+            </div>
           </div>
-          <p>
-            Total contribution: <strong>{{ formatCurrency(group.membership.totalContribution) }}</strong>
-            <span class="separator">|</span>
-            Max borrowable: <strong>{{ formatCurrency(group.maxBorrowable) }}</strong>
-          </p>
+
+          <div class="stat-card">
+            <div class="stat-icon borrowed-icon">
+              <i class="fas fa-naira-sign"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Borrowed</span>
+              <span class="stat-value">{{ formatCurrency(personalTotalBorrowed) }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon outstanding-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Outstanding</span>
+              <span class="stat-value">{{ formatCurrency(personalOutstandingBalance) }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon payment-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Next Payment</span>
+              <span class="stat-value" *ngIf="personalNextPayment">{{ formatCurrency(personalNextPayment.amount) }}</span>
+              <span class="stat-value" *ngIf="!personalNextPayment">₦0</span>
+              <span class="stat-sub" *ngIf="personalNextPayment">{{ personalNextPayment.dueDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- My Loans Section -->
-    <div class="loans-section" *ngIf="showLoanHistory">
-      <div class="section-header">
-        <h2><i class="fas fa-file-invoice-dollar"></i> My Loans</h2>
-        <span class="selected-group-label">{{ selectedGroupName }}</span>
-      </div>
+        <div class="loans-section" *ngIf="showLoanHistory">
+          <div class="section-header">
+            <h2><i class="fas fa-file-invoice-dollar"></i> My Loans</h2>
+            <span class="selected-group-label">{{ selectedGroupName }}</span>
+          </div>
 
-      <div class="status-strip">
-        <button class="status-pill" [class.active]="loanStatusFilter === 'PENDING'" (click)="setLoanStatusFilter('PENDING')">
-          <i class="fas fa-hourglass-half"></i>
-          Pending ({{ pendingLoans.length }})
-        </button>
-        <button class="status-pill" [class.active]="loanStatusFilter === 'ACTIVE'" (click)="setLoanStatusFilter('ACTIVE')">
-          <i class="fas fa-check-circle"></i>
-          Active ({{ activeLoans.length }})
-        </button>
-        <button class="status-pill" [class.active]="loanStatusFilter === 'COMPLETED'" (click)="setLoanStatusFilter('COMPLETED')">
-          <i class="fas fa-flag-checkered"></i>
-          Completed ({{ completedLoans.length }})
-        </button>
-      </div>
-
-      <div class="active-loan-card" *ngIf="loanStatusFilter === 'ACTIVE' && primaryActiveLoan as loan">
+      <div class="active-loan-card" *ngIf="primaryActiveLoan as loan">
         <h3>Active Loan: {{ loan.loanId }}</h3>
         <p>
           Amount: <strong>{{ formatCurrency(loan.amount) }}</strong>
           <span class="separator">|</span>
-          Monthly: <strong>{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</strong>
+          Monthly: <strong>{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</strong>
           <span class="separator">|</span>
           Next: <strong>{{ getNextDueDate(loan.id.toString()) ? (getNextDueDate(loan.id.toString()) | date:'dd/MM/yyyy') : '-' }}</strong>
         </p>
@@ -335,25 +311,27 @@
         </div>
       </div>
 
-      <div class="table-container" *ngIf="filteredLoansByStatus.length > 0">
+      <div class="table-container" *ngIf="displayedLoans.length > 0">
         <table appSortableTable class="loans-table compact">
           <thead>
             <tr>
               <th>Loan ID</th>
+              <th>Group</th>
               <th>Amount</th>
               <th>Status</th>
-              <th *ngIf="loanStatusFilter === 'ACTIVE'">Outstanding</th>
+              <th>Outstanding</th>
               <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let loan of filteredLoansByStatus | slice:0:5">
+            <tr *ngFor="let loan of displayedLoans | slice:0:5">
               <td class="loan-id">{{ loan.loanId }}</td>
+              <td>{{ getLoanGroupName(loan) }}</td>
               <td class="amount">{{ formatCurrency(loan.amount) }}</td>
               <td>
                 <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
               </td>
-              <td *ngIf="loanStatusFilter === 'ACTIVE'">{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
+              <td>{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
               <td class="actions-col">
                 <button class="icon-btn" (click)="viewLoanDetails(loan.id.toString())"><i class="fas fa-eye"></i></button>
                 <button class="icon-btn" (click)="viewRepaymentHistory(loan.id.toString())" title="View Repayment History" aria-label="View Repayment History">
@@ -385,26 +363,87 @@
         </ng-template>
       </div>
 
-      <div *ngIf="filteredLoansByStatus.length === 0" class="empty-state">
-        <i class="fas fa-smile"></i>
-        <p>No {{ loanStatusFilter.toLowerCase() }} loans yet.</p>
-        <button class="apply-btn" (click)="applyForLoan()">Apply for a Loan</button>
-      </div>
-    </div>
+          <div *ngIf="displayedLoans.length === 0" class="empty-state">
+            <i class="fas fa-smile"></i>
+            <p>No loans yet.</p>
+            <button class="apply-btn" (click)="applyForLoan()">Apply for a Loan</button>
+          </div>
+        </div>
 
-    <!-- Patronage Info Card -->
-    <div class="patronage-card">
-      <div class="patronage-icon">
-        <i class="fas fa-percentage"></i>
-      </div>
-      <div class="patronage-content">
-        <h3>What is Patronage?</h3>
-        <p>You earn back a portion of the interest you pay!</p>
-        <div class="patronage-example">
-          <span><strong>Your estimated patronage this year:</strong> {{ formatCurrency(estimatedPatronageThisYear) }}</span>
-          <span class="coming-soon">(Will be calculated at year-end)</span>
+        <div class="patronage-card">
+          <div class="patronage-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="patronage-content">
+            <h3>What is Patronage?</h3>
+            <p>You earn back a portion of the interest you pay!</p>
+            <div class="patronage-example">
+              <span><strong>Your estimated patronage this year:</strong> {{ formatCurrency(estimatedPatronageThisYear) }}</span>
+              <span class="coming-soon">(Will be calculated at year-end)</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      <aside class="member-side-column" *ngIf="memberGroups.length > 0 || memberStatusUpdates.length > 0 || groupJoinDecisionUpdates.length > 0">
+        <div class="side-rail-sticky">
+          <div class="status-updates-card side-rail-card" *ngIf="memberGroups.length > 0">
+            <h2 class="section-title">My Loan Groups</h2>
+            <div class="group-switcher-row">
+              <label for="groupDashboardSelect">View Group Dashboard</label>
+              <select id="groupDashboardSelect" [ngModel]="selectedGroupId" (ngModelChange)="setGroupDashboard($event)">
+                <option value="ALL">All Groups</option>
+                <option *ngFor="let group of memberGroups" [value]="group.membership.groupId || group.membership.groupId">
+                  {{ group.groupName }}
+                </option>
+              </select>
+            </div>
+            <div class="updates-list">
+              <div class="update-item" *ngFor="let group of memberGroups">
+                <div class="update-head">
+                  <strong>{{ group.groupName }}</strong>
+                  <span class="time">{{ formatCurrency(group.membership.monthlyContributionAmount) }}/month</span>
+                </div>
+                <p>
+                  Total contribution: <strong>{{ formatCurrency(group.membership.totalContribution) }}</strong>
+                  <span class="separator">|</span>
+                  Max borrowable: <strong>{{ formatCurrency(group.maxBorrowable) }}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-updates-card side-rail-card" *ngIf="memberStatusUpdates.length > 0 || groupJoinDecisionUpdates.length > 0">
+            <h2 class="section-title">Notifications</h2>
+            <div class="updates-list">
+              <div class="update-item" *ngFor="let update of memberStatusUpdates">
+                <div class="update-head">
+                  <strong>{{ update.title }}</strong>
+                  <span class="time">{{ update.createdAt | date:'short' }}</span>
+                </div>
+                <p>
+                  {{ getMessageWithoutActivationLink(update.message) }}
+                  <a
+                    *ngIf="getActivationLinkFromMessage(update.message) as activationLink"
+                    href="#"
+                    class="activation-link"
+                    (click)="openActivationLink($event, activationLink)">
+                    Activate Membership
+                  </a>
+                </p>
+              </div>
+
+              <div class="update-item" *ngFor="let update of groupJoinDecisionUpdates">
+                <div class="update-head">
+                  <strong>{{ update.title }}</strong>
+                  <span class="time">{{ update.createdAt | date:'short' }}</span>
+                </div>
+                <p>{{ update.message }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
     </div>
   </div>

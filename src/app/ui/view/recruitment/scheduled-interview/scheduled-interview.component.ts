@@ -363,7 +363,7 @@ export class ScheduledInterviewComponent {
   //   pdf.setFont('times', 'normal');
   //   pdf.setFontSize(12);
   
-  //   for (const { criteria, submittedAt, totalScore } of candidateData) {
+  //   for (const { criteria, requestDate, totalScore } of candidateData) {
   //     // Check if there’s enough space for a new criteria section
   //     if (currentY + 50 > pdfHeight) {
   //       pdf.addPage();
@@ -377,7 +377,7 @@ export class ScheduledInterviewComponent {
   
   //     // Add Submitted Date and Total Score
   //     pdf.setFont('times', 'normal');
-  //     pdf.text(`Submitted At: ${submittedAt}`, currentX, currentY);
+  //     pdf.text(`Submitted At: ${requestDate}`, currentX, currentY);
   //     currentY += 15;
   
   //     // Add table if questions exist
@@ -455,8 +455,8 @@ export class ScheduledInterviewComponent {
     pdf.setFont('times', 'normal');
     pdf.setFontSize(12);
   
-    candidateData.forEach((entry: { criteria: any; submittedAt: any; totalScore: any; }, index: number) => {
-      const { criteria, submittedAt, totalScore } = entry;
+    candidateData.forEach((entry: { criteria: any; requestDate: any; totalScore: any; }, index: number) => {
+      const { criteria, requestDate, totalScore } = entry;
   
       if (index > 0) {
         pdf.addPage(); // Start a new page for each subsequent iteration
@@ -470,7 +470,7 @@ export class ScheduledInterviewComponent {
   
       // Add Submitted Date and Total Score
       pdf.setFont('times', 'normal');
-      pdf.text(`Submitted At: ${submittedAt}`, currentX, currentY);
+      pdf.text(`Submitted At: ${requestDate}`, currentX, currentY);
       currentY += 15;
   
       // Add table if questions exist

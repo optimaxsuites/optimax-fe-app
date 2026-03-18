@@ -5,5 +5,5 @@ export const environment = {
   env:"groupion",
 
   project: 'ERP',
-  apiKey: 'ApiKey b8ed9b1fb4dcf7a3b5ad88b1b51976ec'
+  apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071'
 };

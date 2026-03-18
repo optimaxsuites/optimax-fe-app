@@ -24,14 +24,14 @@
       align-items: center;
       gap: 0.5rem;
 
-      h3 {
-        font-size: 1.5rem;
+      h2 {
+        font-size: 2.0rem;
         font-weight: 600;
         color: #111827;
       }
 
       .icon {
-        font-size: 1.25rem;
+        font-size: 2.0rem;
       }
     }
 
@@ -146,5 +146,170 @@
     font-weight: 600;
     color: #9ca3af;
     text-align: right;
+  }
+}
+
+// --- Mode display (read-only) ---
+
+.mode-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 14px;
+
+  .label {
+    font-size: 13px;
+    color: #9e9e9e;
+  }
+}
+.shift-info-banner {
+  font-size: 12px;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  // Blue — Fixed office hours
+  &--office-hours {
+    background: #e8f4fd;
+    color: #185fa5;
+    border-color: #b5d4f4;
+
+    .mode-badge__dot { background: #378add; }
+  }
+
+  // Green — Shift-based
+  &--shift {
+    background: #eaf3de;
+    color: #3b6d11;
+    border-color: #c0dd97;
+
+    .mode-badge__dot { background: #639922; }
+  }
+
+  // Amber — Mixed
+  &--mixed {
+    background: #faeeda;
+    color: #854f0b;
+    border-color: #fac775;
+
+    .mode-badge__dot { background: #ef9f27; }
+  }
+}
+
+// --- Schedule mode selector ---
+
+.section-label {
+  font-size: 14px;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0 0 10px;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: #bdbdbd;
+    background: #fafafa;
+  }
+
+  &.active {
+    border-color: #212121;
+    background: #fff;
+  }
+
+  // --- Radio circle ---
+  .radio-circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #bdbdbd;
+    flex-shrink: 0;
+    margin-top: 2px; // aligns with first line of text
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .radio-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &.active {
+    .radio-circle {
+      border-color: #212121;
+      background: #212121;  // fills black when selected
+    }
+
+    .radio-dot {
+      opacity: 1;  // white dot appears inside the filled circle
+    }
+  }
+
+  // --- Text content ---
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #212121;
+    transition: color 0.15s ease;
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: #212121;
+    line-height: 1.4;
+  }
+
+  // Grey out inactive labels
+  &:not(.active) {
+    .mode-option__label {
+      color: #9e9e9e;
+    }
+    .mode-option__desc {
+      color: #9e9e9e;
+    }
   }
 }

@@ -1,10 +1,12 @@
 // loan-application.service.ts
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { Injectable, isDevMode } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { LoanApplication, LoanApplicationFormData } from './loan.types';
 import { LoanService } from './loan.service';
 import { EmployeeService } from '../../service/employee.service';
-import { map, switchMap, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
+// import { catchError, map, switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -19,10 +21,9 @@ export class LoanApplicationService {
   ) {}
 
   // Submit a new loan application
-  submitLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
-    return this.resolveEmployeeNumericId(formData).pipe(
-      switchMap((employeeNumericId) => this.loanService.createLoanApplication(formData, employeeNumericId)),
-      tap((application) => this.upsertApplication(application))
+  submitLoanApplication(formData: LoanApplicationFormData){
+    return this.loanService.createLoanApplication(formData).pipe(
+       catchError(this.handleError)
     );
   }
 
@@ -77,37 +78,51 @@ export class LoanApplicationService {
     );
   }
 
-  private resolveEmployeeNumericId(formData: LoanApplicationFormData): Observable<number> {
-    if (typeof formData.employeeNumericId === 'number' && Number.isFinite(formData.employeeNumericId)) {
-      return new Observable((subscriber) => {
-        subscriber.next(formData.employeeNumericId as number);
-        subscriber.complete();
-      });
-    }
-
-    const parsedEmployeeId = Number(formData.employeeId);
-    if (Number.isFinite(parsedEmployeeId)) {
-      return new Observable((subscriber) => {
-        subscriber.next(parsedEmployeeId);
-        subscriber.complete();
-      });
-    }
+  private resolveEmployeeRecord(formData: LoanApplicationFormData): Observable<any> {
+    const directEmployeeId =
+      typeof formData.employeeId === 'number' && Number.isFinite(formData.employeeId)
+        ? formData.employeeId
+        : Number(formData.employeeId);
 
     return this.employeeService.getAllEmployee().pipe(
       map((response) => this.extractEmployees(response)),
-      map((employees) => {
+      switchMap((employees) => {
         const matchingEmployee =
+          employees.find((employee) => this.matchesDirectEmployeeId(employee, directEmployeeId)) ||
           employees.find((employee) => this.isMatchingEmployee(employee, formData)) ||
           this.findEmployeeFromSession(employees);
-        const employeeId = Number(matchingEmployee?.id);
 
-        if (!Number.isFinite(employeeId)) {
-          throw new Error('Unable to resolve employee record for loan application');
+        if (matchingEmployee) {
+          return of(matchingEmployee);
         }
 
-        return employeeId;
+        if (Number.isFinite(directEmployeeId)) {
+          return this.employeeService.getEmployeeById(directEmployeeId);
+        }
+
+        throw new Error('Unable to resolve employee record for loan application');
       })
     );
+  }
+
+  private matchesDirectEmployeeId(employee: any, directEmployeeId: number): boolean {
+    if (!Number.isFinite(directEmployeeId)) {
+      return false;
+    }
+
+    const normalizedDirectId = String(directEmployeeId).trim();
+    const employeeIdentifiers = [
+      employee?.id,
+      employee?.userId,
+      employee?.user?.id,
+      employee?.employeeId,
+      employee?.employeeCode,
+      employee?.staffId,
+    ]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+
+    return employeeIdentifiers.includes(normalizedDirectId);
   }
 
   private extractEmployees(response: any): any[] {
@@ -145,15 +160,21 @@ export class LoanApplicationService {
   }
 
   private findEmployeeFromSession(employees: any[]): any | undefined {
-    const userRegDataRaw = sessionStorage.getItem('userRegData');
-    const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
-    const sessionUsername = this.normalizeValue(sessionStorage.getItem('username') || '');
-    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+    const userRegData = this.readStoredUserRegData();
+    const sessionUsername = this.normalizeValue(sessionStorage.getItem('username') || localStorage.getItem('username') || '');
+    const sessionUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
     const regEmail = this.normalizeValue(userRegData?.email || '');
     const regUsername = this.normalizeValue(userRegData?.username || '');
 
     return employees.find((employee) => {
-      const employeeIdentifiers = [employee?.id, employee?.employeeId, employee?.employeeCode, employee?.staffId]
+      const employeeIdentifiers = [
+        employee?.id,
+        employee?.userId,
+        employee?.user?.id,
+        employee?.employeeId,
+        employee?.employeeCode,
+        employee?.staffId
+      ]
         .map((value) => String(value ?? '').trim())
         .filter(Boolean);
       const employeeEmail = this.normalizeValue(employee?.email || employee?.workEmail || '');
@@ -182,6 +203,20 @@ export class LoanApplicationService {
     });
   }
 
+  private readStoredUserRegData(): any | null {
+    const rawValue = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
+
+    if (!rawValue || rawValue === 'undefined' || rawValue === 'null') {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawValue);
+    } catch {
+      return null;
+    }
+  }
+
   private filterApplicationsByEmployee(
     applications: LoanApplication[],
     employeeId: string,
@@ -206,7 +241,7 @@ export class LoanApplicationService {
   private upsertApplication(application: LoanApplication): void {
     const currentApplications = [...this.applicationsSubject.value];
     const existingIndex = currentApplications.findIndex((item) =>
-      item.id === application.id || (!!item.backendId && item.backendId === application.backendId)
+      item.id === application.id || item.loanCode === application.loanCode
     );
 
     if (existingIndex >= 0) {
@@ -223,5 +258,22 @@ export class LoanApplicationService {
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private handleError(error: any): Observable<never> {
+    if (error instanceof HttpErrorResponse) {
+      if (isDevMode()) {
+        console.error('Loan submission HTTP error', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          error: error.error
+        });
+      }
+      return throwError(() => error);
+    }
+
+    console.error('Loan submission error', error);
+    return throwError(() => error);
   }
 }

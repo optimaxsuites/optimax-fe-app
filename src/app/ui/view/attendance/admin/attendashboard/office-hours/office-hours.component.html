@@ -2,7 +2,7 @@
   <div class="header">
     <div class="title">
       <span class="icon">🕒</span>
-      <h3>Office Hours</h3>
+      <h2>Attendance Schedule</h2>
     </div>
 
     <button class="edit-btn" (click)="editMode = !editMode">
@@ -10,7 +10,34 @@
     </button>
   </div>
 
-  <div class="hours-display" *ngIf="!editMode">
+    <!-- MODE DISPLAY (read-only) -->
+  <div class="mode-display" *ngIf="!editMode">
+    <span class="label">Schedule Mode</span>
+    <span class="mode-badge mode-badge--{{ selectedMode }}">
+      <!-- Instead of: {{ scheduleModes | modeLabel: selectedMode }} -->
+      {{ getModeLabel(selectedMode) }}
+      <!--{{ scheduleModes | getModeLabel(selectedMode) }}-->
+    </span>
+  </div>
+
+  <!-- MODE SELECTOR (edit mode) -->
+  <div class="mode-selector" *ngIf="editMode">
+    <p class="section-label">Schedule Mode</p>
+    <div class="mode-options">
+      <button
+        *ngFor="let mode of scheduleModes"
+        type="button"
+        class="mode-option"
+        [class.active]="selectedMode === mode.value"
+        (click)="setMode(mode.value)">
+        <span class="mode-option__label">{{ mode.label }}</span><br>
+        <span class="mode-option__desc">{{ mode.description }}</span><br>
+      </button>
+    </div>
+  </div>
+
+  <!-- OFFICE HOURS DISPLAY (read-only, only when relevant) -->
+  <div class="hours-display" *ngIf="!editMode && officeHoursRelevant">
     <div class="hour-item">
       <span class="label">Opening Time</span>
       <span class="value">{{ form.value.openingTime }}</span>
@@ -33,6 +60,13 @@
 
   </div>
 
+    <!-- Shift-only info banner -->
+  <div class="shift-info-banner" *ngIf="!editMode && selectedMode === 'shift'">
+    <!--<span class="icon">📋</span>-->
+    <p>Attendance timing is driven entirely by each employee's assigned shift from <strong>Work Schedules</strong>.</p>
+  </div>
+
+  <!-- OFFICE HOURS FORM (edit mode, only when relevant) -->
   <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
     <div class="input-group">
       <label>Opening Time</label>
@@ -61,11 +95,11 @@
   <br>• Closing Time is after Absent Time
 </div>
 
-    <div class="actions">
+    <div class="actions" *ngIf="editMode">
       <button type="submit" class="primary" (click)="save()">Save Changes</button>
       <button type="button" class="secondary" (click)="resetDefault()">Reset Default</button>
     </div>
   </form>
 
-  <p class="hint">Default office hours: 09:00 AM – 05:00 PM</p>
+  <p class="hint" *ngIf="officeHoursRelevant">Default office hours: 09:00 AM – 05:00 PM</p>
 </div>

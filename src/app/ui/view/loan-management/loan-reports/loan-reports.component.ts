@@ -30,7 +30,7 @@ export class LoanReportsComponent implements OnInit {
   };
   
   // Sorting
-  sortField: string = 'dateSubmitted';
+  sortField: string = 'requestDate';
   sortDirection: 'asc' | 'desc' = 'desc';
   
   // Available departments and statuses for dropdowns
@@ -77,14 +77,18 @@ export class LoanReportsComponent implements OnInit {
   }
 
   extractDepartments(): void {
-    const depts = new Set(this.allLoans.map(loan => loan.department));
+    const depts = new Set(
+      this.allLoans
+        .map(loan => loan.department)
+        .filter((department): department is string => Boolean(department))
+    );
     this.departments = Array.from(depts).sort();
   }
 
   calculateSummaryStats(): void {
     this.summaryStats = {
       totalLoans: this.filteredLoans.length,
-      totalAmount: this.filteredLoans.reduce((sum, loan) => sum + loan.loanAmount, 0),
+      totalAmount: this.filteredLoans.reduce((sum, loan) => sum + loan.amount, 0),
       totalPaid: this.filteredLoans.reduce((sum, loan) => sum + (loan.totalPaid || 0), 0),
       totalBalance: this.filteredLoans.reduce((sum, loan) => sum + (loan.currentBalance || 0), 0),
       pendingCount: this.filteredLoans.filter(loan => loan.status === 'PENDING').length,
@@ -100,7 +104,7 @@ export class LoanReportsComponent implements OnInit {
     if (this.filters.loanId) {
       const term = this.filters.loanId.toLowerCase();
       results = results.filter(loan => 
-        loan.id.toLowerCase().includes(term)
+        String(loan.loanCode || loan.id).toLowerCase().includes(term)
       );
     }
 
@@ -108,7 +112,7 @@ export class LoanReportsComponent implements OnInit {
     if (this.filters.employeeName) {
       const term = this.filters.employeeName.toLowerCase();
       results = results.filter(loan => 
-        loan.fullName.toLowerCase().includes(term)
+        (loan.fullName ?? '').toLowerCase().includes(term)
       );
     }
 
@@ -116,7 +120,7 @@ export class LoanReportsComponent implements OnInit {
     if (this.filters.employeeId) {
       const term = this.filters.employeeId.toLowerCase();
       results = results.filter(loan => 
-        loan.employeeId.toLowerCase().includes(term)
+        String(loan.employeeId).toLowerCase().includes(term)
       );
     }
 
@@ -138,14 +142,14 @@ export class LoanReportsComponent implements OnInit {
     if (this.filters.dateFrom) {
       const fromDate = new Date(this.filters.dateFrom).getTime();
       results = results.filter(loan => 
-        new Date(loan.dateSubmitted).getTime() >= fromDate
+        new Date(loan.requestDate).getTime() >= fromDate
       );
     }
 
     if (this.filters.dateTo) {
       const toDate = new Date(this.filters.dateTo).getTime();
       results = results.filter(loan => 
-        new Date(loan.dateSubmitted).getTime() <= toDate
+        new Date(loan.requestDate).getTime() <= toDate
       );
     }
 
@@ -169,36 +173,37 @@ export class LoanReportsComponent implements OnInit {
   // Sorting
   sortData(data: LoanApplication[]): LoanApplication[] {
     return [...data].sort((a, b) => {
-      let valueA, valueB;
+      let valueA: string | number = '';
+      let valueB: string | number = '';
 
       switch(this.sortField) {
         case 'loanId':
-          valueA = a.id.toLowerCase();
-          valueB = b.id.toLowerCase();
+          valueA = String(a.loanCode || a.id).toLowerCase();
+          valueB = String(b.loanCode || b.id).toLowerCase();
           break;
         case 'employeeName':
-          valueA = a.fullName.toLowerCase();
-          valueB = b.fullName.toLowerCase();
+          valueA = (a.fullName ?? '').toLowerCase();
+          valueB = (b.fullName ?? '').toLowerCase();
           break;
         case 'employeeId':
-          valueA = a.employeeId.toLowerCase();
-          valueB = b.employeeId.toLowerCase();
+          valueA = String(a.employeeId).toLowerCase();
+          valueB = String(b.employeeId).toLowerCase();
           break;
         case 'department':
-          valueA = a.department.toLowerCase();
-          valueB = b.department.toLowerCase();
+            valueA = (a.department ?? '').toLowerCase();
+            valueB = (b.department ?? '').toLowerCase();
           break;
-        case 'loanAmount':
-          valueA = a.loanAmount;
-          valueB = b.loanAmount;
+        case 'amount':
+          valueA = a.amount;
+          valueB = b.amount;
           break;
         case 'status':
           valueA = a.status.toLowerCase();
           valueB = b.status.toLowerCase();
           break;
-        case 'dateSubmitted':
-          valueA = new Date(a.dateSubmitted).getTime();
-          valueB = new Date(b.dateSubmitted).getTime();
+        case 'requestDate':
+          valueA = new Date(a.requestDate).getTime();
+          valueB = new Date(b.requestDate).getTime();
           break;
         default:
           return 0;
@@ -232,22 +237,22 @@ export class LoanReportsComponent implements OnInit {
   // Export to Excel
   exportToExcel(): void {
     const worksheetData = this.filteredLoans.map(loan => ({
-      'Loan ID': loan.id,
+      'Loan ID': loan.loanCode,
       'Employee ID': loan.employeeId,
       'Employee Name': loan.fullName,
       'Department': loan.department,
       'Purpose': loan.purpose,
-      'Loan Amount': loan.loanAmount,
-      'Monthly Repayment': loan.monthlyRepayment,
+      'Loan Amount': loan.amount,
+      'Monthly Repayment': loan.repaymentAmount,
       'Total Paid': loan.totalPaid || 0,
       'Current Balance': loan.currentBalance || 0,
       'Interest Rate': loan.interestRate + '%',
-      'Repayment Period': loan.repaymentPeriod + ' months',
+      'Repayment Period': loan.repaymentTime + ' months',
       'Status': loan.status,
-      'Date Submitted': formatDate(loan.dateSubmitted, 'yyyy-MM-dd', 'en-US'),
+      'Date Submitted': formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
       'Approved Date': loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
-      'Start Date': loan.startDate ? formatDate(loan.startDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
-      'End Date': loan.endDate ? formatDate(loan.endDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
+      'Disbursed Date': loan.disbursedDate ? formatDate(loan.disbursedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      'Completed Date': loan.completedDate ? formatDate(loan.completedDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -271,22 +276,22 @@ export class LoanReportsComponent implements OnInit {
     ];
 
     const csvData = this.filteredLoans.map(loan => [
-      loan.id,
+      loan.loanCode,
       loan.employeeId,
       loan.fullName,
       loan.department,
       loan.purpose,
-      loan.loanAmount,
-      loan.monthlyRepayment,
+      loan.amount,
+      loan.repaymentAmount,
       loan.totalPaid || 0,
       loan.currentBalance || 0,
       loan.interestRate + '%',
-      loan.repaymentPeriod + ' months',
+      loan.repaymentTime + ' months',
       loan.status,
-      formatDate(loan.dateSubmitted, 'yyyy-MM-dd', 'en-US'),
+      formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
       loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
-      loan.startDate ? formatDate(loan.startDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
-      loan.endDate ? formatDate(loan.endDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
+      loan.disbursedDate ? formatDate(loan.disbursedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      loan.completedDate ? formatDate(loan.completedDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
     ]);
 
     const csvContent = [
@@ -378,14 +383,14 @@ export class LoanReportsComponent implements OnInit {
             <tbody>
               ${this.filteredLoans.map(loan => `
                 <tr>
-                  <td>${loan.id}</td>
+                  <td>${loan.loanCode}</td>
                   <td>${loan.fullName}<br><small>${loan.employeeId}</small></td>
                   <td>${loan.department}</td>
-                  <td>₦${loan.loanAmount.toLocaleString()}</td>
+                  <td>₦${loan.amount.toLocaleString()}</td>
                   <td>₦${(loan.totalPaid || 0).toLocaleString()}</td>
                   <td>₦${(loan.currentBalance || 0).toLocaleString()}</td>
                   <td>${loan.status}</td>
-                  <td>${formatDate(loan.dateSubmitted, 'mediumDate', 'en-US')}</td>
+                  <td>${formatDate(loan.requestDate, 'mediumDate', 'en-US')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -424,7 +429,7 @@ export class LoanReportsComponent implements OnInit {
  }
 
  getFilteredTotal(): number {
-  return this.filteredLoans.reduce((sum, loan) => sum + loan.loanAmount, 0);
+  return this.filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
 }
 
   goBack(): void {
@@ -436,8 +441,8 @@ export class LoanReportsComponent implements OnInit {
   this.router.navigate(['/admin/hr/loan', uuidV4()]);
 }
 
-  viewLoanDetails(loanId: string): void {
-  this.router.navigate(['/admin/hr/loan-management/loan-details', loanId, uuidV4()], {
+  viewLoanDetails(loanId: string | number): void {
+  this.router.navigate(['/admin/hr/loan-management/loan-details', String(loanId), uuidV4()], {
     state: { source: 'reports' }
   });
 }

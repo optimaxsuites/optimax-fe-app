@@ -1,64 +1,129 @@
-import { Component } from '@angular/core';
+// job-openings.component.ts
+import { Component, OnInit } from '@angular/core';
 import { RecruitmentService } from '../../../service/recruitment.service';
-
+import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-jop.openings',
+  selector: 'app-job-openings',
   templateUrl: './jop.openings.component.html',
   styleUrl: './jop.openings.component.scss',
-
 })
-export class JopOpeningsComponent {
+export class JopOpeningsComponent implements OnInit {
   vacancies: any[] = [];
   filteredVacancies: any[] = [];
   selectedJob: any = null;
   showApplyModal = false;
   jobCategories: any[] = [];
 
+  // Active filter state
+  private activeCategory = '';
+  private activeType     = '';
+  private activeLocation = '';
+
   application = {
     fullName: '',
     email: '',
-    customData: {} as any
+    phone: '',
+    letter: '',
+    file: null,
+    customData: {} as Record<string, any>,
   };
 
-  constructor(private recruitmentService: RecruitmentService) {}
-
-  ngOnInit() {
-    this.loadPublishedJobs();
-      this.recruitmentService.getJobCategories().subscribe(res => {
-      this.jobCategories = res;
-      })
+  constructor(private recruitmentService: RecruitmentService, private router: Router) {
+     const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras.state && navigation.extras.state['job']) {
+      this.selectedJob = navigation.extras.state['job'];
+      this.showApplyModal = true;
+    }
   }
 
-  loadPublishedJobs() {
-    this.recruitmentService.getJobVacancies().subscribe(res => {
-      this.vacancies = res;
+  ngOnInit(): void {
+    this.loadPublishedJobs();
+
+
+    if (!this.selectedJob && history.state && history.state.job) {
+      this.selectedJob = history.state.job;
+      this.showApplyModal = true;
+    }
+    
+    this.recruitmentService.getJobCategories().subscribe((res) => {
+      this.jobCategories = res;
+    });
+
+  }
+
+  loadPublishedJobs(): void {
+    this.recruitmentService.getJobVacancies().subscribe((res) => {
+      this.vacancies         = res;
       this.filteredVacancies = res;
     });
   }
 
-  filterJobs(event: any) {
-    // Logic to filter this.filteredVacancies based on search input or category
+  // ── Filter handlers ───────────────────────────────────────────────
+  onCategoryChange(event: Event): void {
+    this.activeCategory = (event.target as HTMLSelectElement).value;
+    this.applyFilters();
   }
 
-  openApplyModal(job: any) {
-    this.selectedJob = job;
-    this.application = { fullName: '', email: '', customData: {} };
+  onTypeChange(event: Event): void {
+    this.activeType = (event.target as HTMLSelectElement).value;
+    this.applyFilters();
+  }
+
+  onLocationChange(event: Event): void {
+    this.activeLocation = (event.target as HTMLSelectElement).value;
+    this.applyFilters();
+  }
+
+  private applyFilters(): void {
+    this.filteredVacancies = this.vacancies.filter((job) => {
+      const matchCat = !this.activeCategory
+        || String(job.categoryId) === this.activeCategory;
+
+      const matchType = !this.activeType
+        || job.jobType?.name?.toLowerCase().includes(this.activeType.toLowerCase());
+
+      const matchLoc = !this.activeLocation
+        || job.location?.toLowerCase().includes(this.activeLocation.toLowerCase());
+
+      return matchCat && matchType && matchLoc;
+    });
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────
+  openApplyModal(job: any): void {
+    this.selectedJob  = job;
+    this.application  = { fullName: '', email: '', phone: '', letter: '', file: null, customData: {} };
     this.showApplyModal = true;
   }
 
-  submitApplication() {
+  submitApplication(): void {
     const payload = {
-      vacancyId: this.selectedJob.id,
-      ...this.application
+      vacancyId: this.selectedJob?.id,
+      ...this.application,
     };
 
+    // Uncomment when API is ready:
     // this.recruitmentService.submitApplication(payload).subscribe({
-    //   next: () => {
-    //     alert('Application submitted successfully!');
-    //     this.showApplyModal = false;
-    //   },
-    //   error: (err) => console.error(err)
+    //   next: () => { alert('Application submitted!'); this.showApplyModal = false; },
+    //   error: (err) => console.error(err),
     // });
+
+    console.log('Application payload:', payload);
+    this.showApplyModal = false;
   }
+
+  // Inside your component class
+
+    onCustomFileChange(event: any, label: string) {
+      const file = event.target.files[0];
+      if (file) {
+        this.application.customData[label] = file;
+      }
+    }
+
+    // Update your main file handler for the default CV as well
+    onMainFileChange(event: any) {
+      this.application.file = event.target.files[0];
+    }
 }

@@ -22,7 +22,7 @@ export class LoanBalanceIndicatorsComponent implements OnInit {
     if (!this.loan) return;
     
     // Calculate progress
-    this.progressPercentage = ((this.loan.loanAmount - this.loan.currentBalance) / this.loan.loanAmount) * 100;
+    this.progressPercentage = ((this.loan.amount - this.loan.currentBalance) / this.loan.amount) * 100;
     
     // Find next payment due
     const pendingPayments = this.loan.repaymentSchedule.filter(

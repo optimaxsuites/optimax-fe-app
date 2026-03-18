@@ -40,10 +40,8 @@ export interface CooperativeLoan {
   groupId?: string;
   duration?: number;
   interestRate?: number;
-  monthlyRepayment?: number;
   totalRepayment?: number;
   applicationDate?: string;
-  disbursementDate?: string;
   completionDate?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -98,7 +96,7 @@ export interface PaymentHistory {
   installmentNo: number;
   paidAt: string;
   amount: number;
-  paymentMethod: string;
+  modeofPayment: string;
   referenceNumber: string;
   interest: number;
   remainingBalance: number;

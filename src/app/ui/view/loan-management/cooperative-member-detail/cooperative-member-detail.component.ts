@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -27,7 +28,8 @@ export class CooperativeMemberDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private backNavigationService: BackNavigationService
   ) {}
 
   ngOnInit(): void {
@@ -70,7 +72,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

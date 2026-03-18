@@ -16,7 +16,8 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
-        const accessToken = sessionStorage.getItem("Token");
+        const rawAccessToken = sessionStorage.getItem("Token");
+        const accessToken = this.extractToken(rawAccessToken);
 
         // if (!accessToken) {
         //     const loginLink = this.navigationLink.getLink('signinLink')
@@ -26,18 +27,34 @@ export class AuthInterceptor implements HttpInterceptor {
 
 
 
-        const _request = request.clone({
-            headers: request.headers.set(
-                "Authorization",
-                `Bearer ${accessToken}`
-            ),
-
-        });
+        const _request = accessToken
+          ? request.clone({
+              headers: request.headers.set(
+                  "Authorization",
+                  `Bearer ${accessToken}`
+              ),
+          })
+          : request;
         // console.log("na request", _request)
 
 
 
 
         return next.handle(_request);
+    }
+
+    private extractToken(accessToken: unknown): string {
+        const rawToken = String(accessToken || '').trim();
+
+        if (!rawToken) {
+            return '';
+        }
+
+        const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+        if (bearerMatch?.[1]) {
+            return bearerMatch[1].trim();
+        }
+
+        return rawToken;
     }
 }

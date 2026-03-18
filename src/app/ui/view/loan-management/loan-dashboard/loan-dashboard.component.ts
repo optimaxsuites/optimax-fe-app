@@ -47,13 +47,13 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   showLoanDetailsModal = false;
 
   recentLoanColumns = [
-    { header: 'Loan ID', field: 'id' },
+    { header: 'Loan ID', field: 'loanCode' },
     { header: 'Employee', field: 'fullName' },
     { header: 'Employee ID', field: 'employeeId' },
     { header: 'Department', field: 'department' },
     {
       header: 'Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
     },
     {
       header: 'Status',
@@ -62,7 +62,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     },
     {
       header: 'Date',
-      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
     }
   ];
 
@@ -97,8 +97,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       next: (applications) => {
         // Filter out test data
         const filteredLoans = applications.filter(loan => 
-          !loan.fullName.includes('John Doe') && 
-          !loan.fullName.includes('Jane Doe')
+          !(loan.fullName ?? '').includes('John Doe') && 
+          !(loan.fullName ?? '').includes('Jane Doe')
         );
         // Fetch employee details for each loan
         const employeeIds = filteredLoans.map(loan => loan.employeeId);
@@ -136,8 +136,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       next: (applications) => {
         // Filter out test data
         this.allLoans = applications.filter(loan => 
-          !loan.fullName.includes('John Doe') && 
-          !loan.fullName.includes('Jane Doe')
+          !(loan.fullName ?? '').includes('John Doe') && 
+          !(loan.fullName ?? '').includes('Jane Doe')
         );
         this.updateDashboardStats();
         this.applyFilter();
@@ -178,16 +178,16 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(loan => 
-        loan.fullName.toLowerCase().includes(term) ||
-        loan.employeeId.toLowerCase().includes(term) ||
+        (loan.fullName ?? '').toLowerCase().includes(term) ||
+        String(loan.employeeId).toLowerCase().includes(term) ||
         (loan.purpose && loan.purpose.toLowerCase().includes(term)) ||
-        loan.department.toLowerCase().includes(term)
+        (loan.department ?? '').toLowerCase().includes(term)
       );
     }
     
     // Sort by date and limit to 5 for display
     this.filteredLoans = filtered
-      .sort((a, b) => new Date(b.dateSubmitted).getTime() - new Date(a.dateSubmitted).getTime())
+      .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
       .slice(0, 5);
       
     this.recentLoans = this.filteredLoans;
@@ -206,7 +206,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
     const pendingExposure = this.allLoans
       .filter(loan => loan.status === 'PENDING')
-      .reduce((sum, loan) => sum + loan.loanAmount, 0);
+      .reduce((sum, loan) => sum + loan.amount, 0);
     const estimatedFundPool = 10000000;
     const availableFund = Math.max(estimatedFundPool - this.dashboardStats.totalBalance, 0);
 
@@ -225,7 +225,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     const now = Date.now();
 
     this.allLoans.forEach((loan) => {
-      const paidRatio = loan.loanAmount > 0 ? (loan.totalPaid || 0) / loan.loanAmount : 0;
+      const paidRatio = loan.amount > 0 ? (loan.totalPaid || 0) / loan.amount : 0;
 
       if (paidRatio >= 0.5 && (loan.status === 'ACTIVE' || loan.status === 'APPROVED' || loan.status === 'COMPLETED')) {
         activities.push({
@@ -233,9 +233,9 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
           type: 'PAYMENT_MILESTONE',
           level: 'success',
           message: `${loan.fullName} has paid off ${Math.round(paidRatio * 100)}% of their loan balance.`,
-          loanId: loan.id,
-          employeeId: loan.employeeId,
-          occurredAt: this.getLatestPaymentDate(loan) || loan.approvedDate || loan.dateSubmitted
+          loanId: loan.loanCode,
+          employeeId: String(loan.employeeId),
+          occurredAt: this.getLatestPaymentDate(loan) || loan.approvedDate || loan.requestDate
         });
       }
 
@@ -246,8 +246,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
           type: 'MONTHLY_PAYMENT',
           level: 'info',
           message: `${loan.fullName} just made their monthly installment.`,
-          loanId: loan.id,
-          employeeId: loan.employeeId,
+          loanId: loan.loanCode,
+          employeeId: String(loan.employeeId),
           occurredAt: latestPaymentDate
         });
       }
@@ -259,8 +259,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
           type: 'OVERDUE_PAYMENT',
           level: 'warning',
           message: `${loan.fullName}'s payment for this month is overdue.`,
-          loanId: loan.id,
-          employeeId: loan.employeeId,
+          loanId: loan.loanCode,
+          employeeId: String(loan.employeeId),
           occurredAt: overdueInstallmentDate
         });
       }
@@ -339,8 +339,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    if (loan.endDate) {
-      return new Date(loan.endDate).getTime() < Date.now();
+    if (loan.completedDate) {
+      return new Date(loan.completedDate).getTime() < Date.now();
     }
 
     return false;
@@ -353,8 +353,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     return [...payments]
-      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime())[0]
-      .date;
+      .sort((first, second) => new Date(second.paidAt).getTime() - new Date(first.paidAt).getTime())[0]
+      .paidAt;
   }
 
   private getOverdueInstallmentDate(loan: LoanApplication, now: number): string | null {
@@ -431,8 +431,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.applyFilter();
   }
 
-  openDisbursementCenter(loanId?: string): void {
-    const queryParams = loanId ? { loanId } : undefined;
+  openDisbursementCenter(loanId?: string | number): void {
+    const queryParams = loanId !== undefined ? { loanId: String(loanId) } : undefined;
     this.router.navigate(['/admin/hr/loan-management/loan-disbursement', uuidV4()], {
       queryParams
     });
@@ -467,7 +467,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     if (event.actionId === 'history') {
-      this.seeLoanHistory(event.row.id);
+      this.seeLoanHistory(event.row.employeeId);
     }
   }
 
@@ -475,7 +475,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.selectedLoan = loan;
   }
 
-  viewLoanDetails(loanId: string) {
+  viewLoanDetails(loanId: string | number) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
       this.selectedLoan = loan;
@@ -506,7 +506,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   getLifecycleInstallmentsPreview(loan: LoanApplication): RepaymentScheduleItem[] {
     return [...(loan.repaymentSchedule || [])]
-      .sort((a, b) => a.monthNumber - b.monthNumber)
+      .sort((a, b) => a.installmentNo - b.installmentNo)
       .slice(0, 6);
   }
 
@@ -541,13 +541,13 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   openApprovalForm(loan: LoanApplication): void {
     this.closeLoanDetailsModal();
-    this.router.navigate(['/admin/hr/loan-management/loan-details', loan.id, uuidV4()], {
+    this.router.navigate(['/admin/hr/loan-management/loan-details', String(loan.id), uuidV4()], {
       state: { source: 'dashboard-modal' }
     });
   }
 
-  seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()], {
+  seeLoanHistory(employeeId: string | number) {
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', String(employeeId), uuidV4()], {
       state: { source: 'admin' }
     });
   }
@@ -562,13 +562,13 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewActiveLoans() {
-    this.router.navigate(['/admin/hr/loan-management/loans'], { 
+    this.router.navigate(['/admin/hr/loan-management/loans', uuidV4()], { 
       queryParams: { status: 'ACTIVE' } 
     });
   }
 
   generateReports() {
-    this.router.navigate(['/admin/hr/loan-management/reports']);
+    this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
   }
 
   goBack(): void {

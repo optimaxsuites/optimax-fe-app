@@ -47,7 +47,36 @@ export interface CooperativeGroupMembership {
   monthlyContributionAmount: number;
   totalContribution: number;
   joinedAt: string;
+  requestedAt?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+  rejectionReason?: string;
   lastContributionDate?: string;
+}
+
+export interface CooperativeContributionEntry {
+  id: string;
+  membershipId: string;
+  memberId: string;
+  groupId: string;
+  amount: number;
+  contributionMonth: string;
+  contributedAt: string;
+  status: 'POSTED';
+}
+
+export interface CooperativeGroupInviteHistoryEntry {
+  id: string;
+  groupId: string;
+  employeeId: string;
+  employeeName: string;
+  employeeEmail: string;
+  department: string;
+  rank: CooperativeStaffRank;
+  tenureMonths: number;
+  sentAt: string;
+  subject: string;
+  message: string;
 }
 
 export type CooperativeGuarantorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
@@ -72,6 +101,8 @@ export interface CooperativeNotification {
   id: string;
   type:
     | 'LOAN_PENDING_APPROVAL'
+    | 'GROUP_JOIN_REQUEST'
+    | 'GROUP_JOIN_STATUS_UPDATE'
     | 'LOAN_STATUS_UPDATE'
     | 'LOAN_CHANGE_REQUESTED'
     | 'LOAN_REPAYMENT_REMINDER'
@@ -100,7 +131,7 @@ export interface CooperativeRepayment {
   lateFeeAmount?: number;
   reminderSentAt?: string;
   creditReportedAt?: string;
-  paymentMethod?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
+  modeofPayment?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
   status: 'PENDING' | 'PAID' | 'OVERDUE';
 }
 

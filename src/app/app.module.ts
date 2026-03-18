@@ -179,7 +179,9 @@ import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
+import { CooperativeMemberGroupDashboardComponent } from './ui/view/loan-management/cooperative-member-group-dashboard/cooperative-member-group-dashboard.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
+import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
 import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
@@ -191,13 +193,13 @@ import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/em
 import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
 // import { QueryComponent } from './ui/view/query/query.component';
 import { LeaveTimelineComponent } from './ui/view/leave/leave-timeline/leave-timeline.component';
-import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { JopOpeningsComponent } from './ui/view/recruitment/job-opening/jop.openings.component';
 import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
 import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
 import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 
 @NgModule({
   declarations: [
@@ -313,7 +315,9 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
     EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
+    CooperativeMemberGroupDashboardComponent,
     CooperativeLoanGroupsComponent,
+    CooperativeGroupJoinHistoryComponent,
     MainDashboardComponent,
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,

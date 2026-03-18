@@ -420,6 +420,8 @@ onExpiryDateChange(value: string): void {
         });
       }
     );
+
+    // console.log('Prepared job data for submission:', data);
   }
 
   private buildJobPayload(): JobPostingDTO {

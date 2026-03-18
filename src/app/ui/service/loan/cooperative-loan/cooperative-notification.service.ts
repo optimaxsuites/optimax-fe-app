@@ -5,7 +5,8 @@ import {
   CooperativeMember,
   CooperativeNotification,
   CooperativeRepayment,
-  CooperativeLoanGuarantor
+  CooperativeLoanGuarantor,
+  CooperativeGroupMembership
 } from './cooperative.types';
 
 interface PendingMembershipApplication {
@@ -14,7 +15,7 @@ interface PendingMembershipApplication {
   fullName: string;
   requestedTier: string;
   source: 'SELF' | 'ADMIN_INVITE';
-  submittedAt: string;
+  requestDate: string;
   note?: string;
   status: 'PENDING_MANAGER_APPROVAL';
 }
@@ -73,6 +74,42 @@ export class CooperativeNotificationService {
       message: `${item.fullName} (${item.employeeId}) submitted a cooperative membership request and is pending manager approval.`,
       loanId: '',
       memberId: item.employeeId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+  }
+
+  createGroupJoinRequestNotification(context: CooperativeNotificationContext, membership: CooperativeGroupMembership): void {
+    const member = context.getMemberById(membership.memberId);
+    const group = context.getGroupById(membership.groupId);
+
+    context.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'GROUP_JOIN_REQUEST',
+      recipient: 'ADMIN',
+      title: 'Group Join Request',
+      message: `${member?.fullName || 'Member'} requested to join ${group?.name || 'a cooperative group'} and is awaiting admin review.`,
+      loanId: membership.id,
+      memberId: membership.memberId,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+  }
+
+  createGroupJoinStatusNotification(
+    context: CooperativeNotificationContext,
+    membership: CooperativeGroupMembership,
+    title: string,
+    message: string
+  ): void {
+    context.notifications.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: 'GROUP_JOIN_STATUS_UPDATE',
+      recipient: 'MEMBER',
+      title,
+      message,
+      loanId: membership.id,
+      memberId: membership.memberId,
       createdAt: new Date().toISOString(),
       read: false
     });

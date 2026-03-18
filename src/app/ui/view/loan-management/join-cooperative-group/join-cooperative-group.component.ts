@@ -12,6 +12,19 @@ export class JoinCooperativeGroupComponent {
   @Output() applyToGroup = new EventEmitter<string>();
   @Output() closeModal = new EventEmitter<void>();
 
+  formatCurrency(amount: number | undefined): string {
+    return Number(amount || 0).toLocaleString('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+
+  isEligible(groupId: string): boolean {
+    return this.eligibleGroupIds.includes(groupId);
+  }
+
   onApply(groupId: string) {
     this.applyToGroup.emit(groupId);
   }

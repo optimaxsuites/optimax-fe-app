@@ -21,7 +21,7 @@ export class AttendanceComponent {
     { name: 'Admin Dashboard', 
     component: AttendashboardComponent,
     icon: 'fa-solid fa-chart-line',
-    role: 'ROLE_ADMIN'},
+    /*role: 'ROLE_ADMIN'*/},
     /*{ name: 'Corrections', 
       component: AdminCorrectionsComponent,
     icon: 'fa-solid fa-pen-to-square'},*/

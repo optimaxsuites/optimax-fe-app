@@ -13,6 +13,7 @@ import { environment } from '../environments/environment.prod';
 })
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
+  private readonly tokenStorageKeys = ['Token', 'token', 'accessToken', 'Token2', 'accessToken2'];
 
   constructor(
     private http: HttpClient, 
@@ -22,13 +23,17 @@ export class AuthenticationService {
   ) {  }
 
   isAuthenticated(): boolean {
-    const token =
-      sessionStorage.getItem('Token') ||
-      sessionStorage.getItem('token') ||
-      localStorage.getItem('Token') ||
-      localStorage.getItem('token');
+    const token = this.getStoredAccessToken();
 
-    if (!token || this.jwtHelper.isTokenExpired(token)) {
+    if (!token) {
+      return false;
+    }
+
+    try {
+      if (this.jwtHelper.isTokenExpired(token)) {
+        return false;
+      }
+    } catch {
       return false;
     }
 
@@ -37,17 +42,27 @@ export class AuthenticationService {
   
   logout(): void {
     sessionStorage.removeItem("username");
-    sessionStorage.removeItem("token");
-    localStorage.removeItem("token");
-    localStorage.removeItem("Token");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("fullname");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("userid");
+    localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    localStorage.removeItem("fullname");
+    localStorage.removeItem("email");
+    localStorage.removeItem("userid");
 
-    //added by yomi
+    for (const key of this.tokenStorageKeys) {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    }
+
     sessionStorage.removeItem("userInfoRegData");
     sessionStorage.removeItem("userRegData");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("userid");
-    sessionStorage.removeItem("Token");
     sessionStorage.removeItem("userPrimaryInfoRegData");
+    localStorage.removeItem("userInfoRegData");
+    localStorage.removeItem("userRegData");
+    localStorage.removeItem("userPrimaryInfoRegData");
 
 
     // this.router.navigate([''])
@@ -56,7 +71,7 @@ export class AuthenticationService {
   }
 
   isLoggedIn(): boolean {
-    return !!sessionStorage.getItem('userid');
+    return !!(sessionStorage.getItem('userid') || localStorage.getItem('userid') || this.getStoredAccessToken());
   }
 
 
@@ -124,6 +139,42 @@ export class AuthenticationService {
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+  }
+
+  private getStoredAccessToken(): string | null {
+    for (const key of this.tokenStorageKeys) {
+      const sessionToken = this.normalizeToken(sessionStorage.getItem(key));
+      if (sessionToken) {
+        return sessionToken;
+      }
+
+      const localToken = this.normalizeToken(localStorage.getItem(key));
+      if (localToken) {
+        return localToken;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeToken(value: string | null): string | null {
+    const rawToken = String(value || '').trim();
+
+    if (!rawToken || rawToken === 'undefined' || rawToken === 'null') {
+      return null;
+    }
+
+    const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
+    if (cookieMatch?.[1]) {
+      return cookieMatch[1].trim();
+    }
+
+    const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+      return bearerMatch[1].trim();
+    }
+
+    return rawToken;
   }
   
   private handleError(error: HttpErrorResponse) {

@@ -72,14 +72,14 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   selectedMemberSalary = 0;
 
   // Calculated values
-  monthlyRepayment = 0;
+  repaymentAmount = 0;
   totalRepayment = 0;
   totalInterest = 0;
   showConfirmation = false;
   confirmationDetails: {
     amount?: number;
     duration?: number;
-    monthlyRepayment?: number;
+    repaymentAmount?: number;
     totalRepayment?: number;
     totalInterest?: number;
     purpose?: string;
@@ -148,14 +148,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   loadEmployeeDirectory(): void {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
-        const response: any = data;
-        const employees = Array.isArray(response)
-          ? response
-          : Array.isArray(response?.content)
-          ? response.content
-          : Array.isArray(response?.data)
-          ? response.data
-          : [];
+        const employees = Array.isArray(data)
+          ? data : []
           
         this.employeeDirectory = employees
           .map((employee: any) => this.mapEmployeeToProfile(employee))
@@ -281,6 +275,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   addGuarantor(): void {
+    if (!this.selectedGroup?.requiresGuarantors) {
+      return;
+    }
+
         // Fetch contact info for new guarantor
         const lastGuarantor = this.guarantorsArray.at(this.guarantorsArray.length - 1);
         const memberId = lastGuarantor?.get('memberId')?.value;
@@ -294,6 +292,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   removeGuarantor(index: number): void {
+    if (!this.selectedGroup?.requiresGuarantors) {
+      return;
+    }
+
         // Remove contact info
         const memberId = this.guarantorsArray.at(index)?.get('memberId')?.value;
         if (memberId && this.guarantorContacts[memberId]) {
@@ -326,7 +328,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
 
     this.resolveSelectedMemberSalary();
-    this.qualifiedGroups = [...this.groups];
+    const activeMembershipGroupIds = new Set(
+      this.cooperativeService
+        .getGroupMembershipsByMember(this.selectedMember.id)
+        .filter(membership => membership.status === 'ACTIVE')
+        .map(membership => String(membership.groupId))
+    );
+
+    this.qualifiedGroups = this.groups
+      .filter(group => activeMembershipGroupIds.has(String(group.id)))
+      .sort((left, right) => left.name.localeCompare(right.name));
 
     const selectedGroupId = this.applicationForm?.get('groupId')?.value;
     if (selectedGroupId && !this.qualifiedGroups.some(group => group.id === selectedGroupId)) {
@@ -341,6 +352,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   private syncGuarantorControls(): void {
     if (!this.selectedGroup?.requiresGuarantors) {
       this.guarantorsArray.clear();
+      this.guarantorContacts = {};
       return;
     }
 
@@ -433,17 +445,17 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       const rate = Number(this.selectedGroup.interestRate || 0);
       this.totalInterest = Math.round((amount * rate * duration) / 1200); // (amount * rate * months) / 12 / 100
       this.totalRepayment = amount + this.totalInterest;
-      this.monthlyRepayment = Math.round(this.totalRepayment / duration);
+      this.repaymentAmount = Math.round(this.totalRepayment / duration);
     } else {
       this.totalInterest = 0;
       this.totalRepayment = 0;
-      this.monthlyRepayment = 0;
+      this.repaymentAmount = 0;
     }
     // Update confirmation details
     this.confirmationDetails = {
       amount,
       duration,
-      monthlyRepayment: this.monthlyRepayment,
+      repaymentAmount: this.repaymentAmount,
       totalRepayment: this.totalRepayment,
       totalInterest: this.totalInterest,
       purpose: this.applicationForm.get('purpose')?.value || '',
@@ -504,7 +516,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
 
     if (!this.selectedGroupMembership || this.selectedGroupMembership.status !== 'ACTIVE') {
-      this.submitError = 'Member must first join this group before applying for a loan.';
+      this.submitError = 'Member must have an approved membership in this group before applying for a loan.';
       return false;
     }
 
@@ -599,12 +611,15 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
     this.isSubmitting = true;
     const formValue = this.applicationForm.getRawValue();
-    const guarantors = this.guarantorsArray.controls.map(control => ({
-      memberId: String(control.get('memberId')?.value || '').trim(),
-      guaranteedAmount: Number(control.get('guaranteedAmount')?.value || 0),
-      status: 'PENDING' as const,
-      requestedAt: new Date().toISOString()
-    })).filter(item => !!item.memberId && item.guaranteedAmount > 0);
+    const requiresGuarantors = Boolean(this.selectedGroup?.requiresGuarantors);
+    const guarantors = requiresGuarantors
+      ? this.guarantorsArray.controls.map(control => ({
+          memberId: String(control.get('memberId')?.value || '').trim(),
+          guaranteedAmount: Number(control.get('guaranteedAmount')?.value || 0),
+          status: 'PENDING' as const,
+          requestedAt: new Date().toISOString()
+        })).filter(item => !!item.memberId && item.guaranteedAmount > 0)
+      : [];
     const applicationStage = this.selectedGroup?.requiresGuarantors
       ? 'PENDING_GUARANTOR_APPROVAL'
       : 'READY_FOR_ADMIN_REVIEW';
@@ -615,7 +630,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       purpose: String(formValue.purpose || '').trim(),
       duration: Number(formValue.duration),
       interestRate: this.selectedGroup?.interestRate,
-      monthlyRepayment: this.monthlyRepayment,
+      repaymentAmount: this.repaymentAmount,
       totalRepayment: this.totalRepayment,
       status: 'PENDING' as const,
       applicationStage,
@@ -651,13 +666,12 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
   }
 
-  // Check group-specific requirements utility (move to a method if needed)
-  get canApplyToSelectedGroup(): boolean {
-    return !!this.selectedMember && !!this.selectedGroup;
-  }
+  get guarantorRequirementLabel(): string {
+    if (!this.selectedGroup?.requiresGuarantors) {
+      return 'Not required';
+    }
 
-  get isSelectedGroupJoined(): boolean {
-    return !!this.selectedGroupMembership && this.selectedGroupMembership.status === 'ACTIVE';
+    return `${this.requiredGuarantorCount} required`;
   }
 
   get maxBorrowableAmount(): number {
@@ -665,17 +679,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return 0;
     }
     return this.cooperativeService.getMaxBorrowableAmountForGroup(this.selectedMember.id, this.selectedGroup.id);
-  }
-
-  applyToSelectedGroup(): void {
-    this.submitError = '';
-    this.submitSuccessMessage = '';
-    if (!this.selectedMember || !this.selectedGroup) {
-      this.submitError = 'Select member and group first.';
-      return;
-    }
-    this.selectedGroupMembership = this.cooperativeService.applyForGroupMembership(this.selectedMember.id, this.selectedGroup.id);
-    this.submitSuccessMessage = `Member has joined ${this.selectedGroup.name}.`;
   }
 
   getMemberTenureMonths(memberId: string): number {

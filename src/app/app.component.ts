@@ -5,6 +5,7 @@ import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.co
 import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-interview/scheduled-interview.component';
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
 import { MetadataService } from './ui/service/metadata.service';
+import { environment } from './ui/shared-component/service/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -19,22 +20,24 @@ export class AppHrComponent {
   constructor(
     private authenticationService: AuthenticationService,
     private metadataService: MetadataService,
-  ) {
+  ) {}
+
+  ngOnInit(): void {
+    if (this.authenticationService.isAuthenticated()) {
+      this.metadataService.fetchMetaData(true);
+      return;
+    }
+
     this.userLoginAction();
   }
 
-  ngOnInit(): void {
-    this.userLoginAction();
-    this.metadataService.fetchMetaData(true);
-  }
   async userLoginAction(): Promise<void> {
     const loginDetails = {
       // username: 'Ayaobasheba',
-      username: 'Damilola',
-      password: 123456,
+      username: 'developer',
+      password: '123456',
       project: 'ERP',
-      // apiKey: 'ApiKey 8e2da356563ef460e52d56e83d73b8ee',
-      apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071'
+      apiKey: environment.apiKey,
     };
 
     if (!loginDetails.username || !loginDetails.password) {
@@ -50,29 +53,31 @@ export class AppHrComponent {
       const data = await this.authenticationService
         .userLogin(loginDetails)
         .toPromise();
-      this.loadInitParam(data);
 
       if (!data) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Authentication Failed',
-          detail:
-            'Invalid username or password. Please check credentials and try again.',
-        });
+        return;
       }
-    } catch (error) {}
+
+      this.loadInitParam(data);
+      this.metadataService.fetchMetaData(true);
+
+    } catch (error) {
+      this.authenticationService.logout();
+    }
   }
+
   loadInitParam(data: any) {
     sessionStorage.setItem('role', data.roles);
     sessionStorage.setItem('username', data.username);
     sessionStorage.setItem('fullname', data.fullname);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(
-      tokenStartIndex,
-      data.accessToken.indexOf(';'),
-    );
+    const token = this.extractToken(data.accessToken);
+
+    if (!token) {
+      throw new Error('Unable to extract access token from login response');
+    }
+
     sessionStorage.setItem('Token', token);
     sessionStorage.setItem('token', token);
     localStorage.setItem('Token', token);
@@ -80,7 +85,27 @@ export class AppHrComponent {
     localStorage.setItem('Token2', token);
     sessionStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('accessToken2', data.accessToken);
-    sessionStorage['userRegData'] = JSON.stringify(data);
+    sessionStorage.setItem('userRegData', JSON.stringify(data));
+  }
+
+  private extractToken(accessToken: unknown): string {
+    const rawToken = String(accessToken || '').trim();
+
+    if (!rawToken) {
+      return '';
+    }
+
+    const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
+    if (cookieMatch?.[1]) {
+      return cookieMatch[1].trim();
+    }
+
+    const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+      return bearerMatch[1].trim();
+    }
+
+    return rawToken;
   }
 
   toggleSidebar() {

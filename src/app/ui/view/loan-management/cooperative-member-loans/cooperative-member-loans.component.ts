@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -23,7 +24,8 @@ export class CooperativeMemberLoansComponent implements OnInit {
   constructor(
     private cooperativeService: CooperativeService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private backNavigationService: BackNavigationService
   ) {}
 
   ngOnInit(): void {
@@ -111,7 +113,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/member/cooperative/dashboard', this.currentUuid]);
+    this.backNavigationService.goBack(['/member/cooperative/dashboard', this.currentUuid]);
   }
 
   formatCurrency(amount: number): string {

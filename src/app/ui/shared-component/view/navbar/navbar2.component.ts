@@ -39,9 +39,10 @@ export class Navbar2Component {
             "Your current session has expired. Re-login."
         );
         this.router.navigate([""]);
+      return;
     }
 
-    this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
+    this.userInfoRegData = this.readUserRegData();
     this.userRegData = this.userInfoRegData;
 
     console.log("testing client types", this.userInfoRegData);
@@ -66,6 +67,20 @@ export class Navbar2Component {
 
     // this.router.navigate([''])
 }
+
+  private readUserRegData(): any[] {
+    const rawValue = sessionStorage.getItem('userRegData');
+
+    if (!rawValue || rawValue === 'undefined') {
+      return [];
+    }
+
+    try {
+      return JSON.parse(rawValue);
+    } catch {
+      return [];
+    }
+  }
 
 
 

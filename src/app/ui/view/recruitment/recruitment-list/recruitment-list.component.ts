@@ -6,6 +6,7 @@ import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto
 import { RecruitmentService } from '../../../service/recruitment.service';
 import { RecruitmentFormComponent } from '../recruitment-form/recruitment-form.component';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-recruitment-list',
@@ -42,7 +43,9 @@ export class RecruitmentListComponent implements OnInit {
     private sanitizer: DomSanitizer,
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
-    private recruitmentService: RecruitmentService
+    private recruitmentService: RecruitmentService,
+    private router: Router
+
   ) {}
 
   ngOnInit() {
@@ -184,6 +187,11 @@ export class RecruitmentListComponent implements OnInit {
     this.activeItem = { ...job };
     this.viewModal = true;
     this.populateCustomFieldList();
+  }
+
+  viewJobAsGuest(job: JobPostingDTO){
+    this.activeItem = { ...job };
+    this.router.navigate(['/careers'], { state: { job: this.activeItem } });
   }
 
   console(){

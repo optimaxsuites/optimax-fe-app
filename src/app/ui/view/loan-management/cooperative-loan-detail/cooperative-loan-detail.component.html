@@ -41,7 +41,7 @@
           <strong>Duration:</strong> {{ loan.duration }} months
         </div>
         <div class="top-line">
-          <strong>Monthly:</strong> {{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}
+          <strong>Monthly:</strong> {{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}
           <span class="separator">|</span>
           <strong>Total repay:</strong> {{ formatCurrency(loan.totalRepayment || 0) }}
         </div>
@@ -106,7 +106,7 @@
           <span>Loan Summary: {{ formatCurrency(loan.amount) }} at {{ loan.interestRate }}% for {{ loan.duration }} months</span>
         </div>
         <div class="loan-summary-line monthly">
-          <span>Monthly payment: {{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span>
+          <span>Monthly payment: {{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span>
         </div>
 
         <div class="progress-wrap">
@@ -141,7 +141,7 @@
               <tr *ngFor="let repayment of repaymentSchedule">
                 <td>{{ repayment.dueDate | date:'mediumDate' }}</td>
                 <td>{{ formatCurrency(repayment.amount) }}</td>
-                <td>{{ getPaymentMethodLabel(repayment.paymentMethod) }}</td>
+                <td>{{ getmodeofPaymentLabel(repayment.modeofPayment) }}</td>
                 <td>
                   <span class="repayment-status" [ngClass]="getStatusClass(repayment.status)">
                     {{ getRepaymentStatusLabel(repayment) }}
@@ -219,10 +219,10 @@
               <div class="timeline-title">Approved</div>
             </div>
           </div>
-          <div class="timeline-item" *ngIf="loan.disbursementDate">
+          <div class="timeline-item" *ngIf="loan.disbursedDate">
             <div class="timeline-dot active"></div>
             <div class="timeline-content">
-              <div class="timeline-date">{{ loan.disbursementDate | date:'mediumDate' }}</div>
+              <div class="timeline-date">{{ loan.disbursedDate | date:'mediumDate' }}</div>
               <div class="timeline-title">Disbursed</div>
             </div>
           </div>
@@ -274,7 +274,7 @@
           </label>
           <label>
             Method
-            <select [(ngModel)]="paymentMethod">
+            <select [(ngModel)]="modeofPayment">
               <option value="BANK_TRANSFER">Bank Transfer</option>
               <option value="CASH">Cash</option>
               <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>

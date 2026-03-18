@@ -9,6 +9,8 @@ const DEFAULT_OFFICE_HOURS: OfficeHours = {
   latenessGracePeriod: '09:15'
 };
 
+export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';
+
 @Injectable({ providedIn: 'root' })
 export class OfficeHoursService {
   private officeHoursSubject = new BehaviorSubject<OfficeHours>(
@@ -66,4 +68,16 @@ export class OfficeHoursService {
 
   return current >= openDate;
 }
+
+// Inside the class:
+private scheduleMode: ScheduleMode = 'office-hours'; // default
+
+getScheduleMode(): ScheduleMode {
+  return this.scheduleMode;
+}
+
+setScheduleMode(mode: ScheduleMode): void {
+  this.scheduleMode = mode;
+}
+
 }

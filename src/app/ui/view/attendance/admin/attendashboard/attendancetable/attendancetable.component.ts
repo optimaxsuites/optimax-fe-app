@@ -61,6 +61,9 @@ export class AttendancetableComponent implements OnInit{
 editStatus: AttendanceTableRecord['status'] = 'PRESENT';
 editCheckIn: string | null = null;
 editReason = '';
+
+sortColumn: keyof AttendanceTableRecord | '' = '';
+sortDirection: 'asc' | 'desc' = 'asc';
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -208,6 +211,11 @@ applyFilters() {
   this.dataChange.emit({
     data: this.filteredAttendance,
   filters: this.filters});
+
+/* //if you want it so your sort doesn't reset even after filtering
+  if (this.sortColumn) {
+  this.sortTable(this.sortColumn);
+} */
 }
 
 openModifyForm(record: AttendanceTableRecord) {
@@ -252,6 +260,44 @@ saveModification() {
   alert('Reason must be at least 5 characters.');
   return;
 }
+}
+
+sortTable(column: keyof AttendanceTableRecord) {
+
+  // Toggle direction if same column
+  if (this.sortColumn === column) {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.sortColumn = column;
+    this.sortDirection = 'asc';
+  }
+
+  this.filteredAttendance = [...this.filteredAttendance].sort((a, b) => {
+
+    /*let valueA = a[column];
+    let valueB = b[column];*/
+
+    let valueA = column === 'overriddenBy'
+  ? a.overriddenBy?.adminName
+  : a[column];
+
+let valueB = column === 'overriddenBy'
+  ? b.overriddenBy?.adminName
+  : b[column];
+
+    // Handle null/undefined
+    if (valueA == null) return 1;
+    if (valueB == null) return -1;
+
+    // Convert to string for comparison (safe fallback)
+    valueA = valueA.toString().toLowerCase();
+    valueB = valueB.toString().toLowerCase();
+
+    if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
+    if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
+
+    return 0;
+  });
 }
 
 }

@@ -33,7 +33,10 @@ export class LoanRepaymentService {
   }
 
   // Record a payment
-  recordPayment(loanId: string, payment: Partial<PaymentRecord>): Observable<LoanApplication> {
+  recordPayment(
+    loanId: string,
+    payment: Partial<PaymentRecord> & { totalAmount?: number; paymentMethod?: string; paidAt?: string }
+  ): Observable<LoanApplication> {
     return this.loanApplicationService.getApplicationById(loanId).pipe(
       switchMap((loan) => {
         if (!loan) {
@@ -51,41 +54,41 @@ export class LoanRepaymentService {
           return throwError(() => new Error('No payable installment found for this loan'));
         }
 
-        const paidAmount = Number(payment.amount || 0);
+        const paidAmount = Number(payment.totalAmount || 0);
         if (paidAmount <= 0) {
           return throwError(() => new Error('Payment amount must be greater than zero'));
         }
 
-        if (paidAmount < nextDue.totalPayment) {
+        if (paidAmount < nextDue.totalAmount) {
           return throwError(() => new Error('Payment amount cannot be less than the due installment amount'));
         }
 
-        const paymentDate = payment.date || new Date().toISOString();
-        const receiptNumber = this.generateReceiptNumber(loan.id);
-        const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalPayment, 0));
-        const principalPaid = this.roundCurrency((nextDue.principal || 0) + extraAmount);
-        const interestPaid = this.roundCurrency(nextDue.interest || 0);
+        const paymentDate = payment.paidAt || new Date().toISOString();
+        const receiptNumber = this.generateReceiptNumber(String(loan.id));
+        const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalAmount, 0));
+        const principalPaid = this.roundCurrency((nextDue.principalAmount || 0) + extraAmount);
+        const interestPaid = this.roundCurrency(nextDue.interestAmount || 0);
 
         const paymentRecord: PaymentRecord = {
-          id: receiptNumber,
-          date: paymentDate,
-          amount: paidAmount,
+          id: Date.now(),
+          loanId: loan.id,
+          paidAt: paymentDate,
+          totalAmount: paidAmount,
           principalAmount: principalPaid,
           interestPaid,
           lateFeeAmount: Number(nextDue.lateFeeAmount || 0),
           remainingBalance: this.roundCurrency(Math.max((loan.currentBalance || 0) - paidAmount, 0)),
           paymentMethod: payment.paymentMethod || 'BANK_TRANSFER',
           referenceNumber: payment.referenceNumber || receiptNumber,
-          installmentNo: nextDue.monthNumber,
+          installmentNo: nextDue.installmentNo,
           receiptNumber,
           receivedBy: payment.receivedBy || 'System',
-          notes: payment.notes
+          notes: payment.notes || ''
         };
 
         loan.paymentHistory = [...(loan.paymentHistory || []), paymentRecord];
 
         nextDue.status = 'PAID';
-        nextDue.paymentDate = paymentDate;
         nextDue.paidAmount = paidAmount;
         nextDue.paymentMethod = paymentRecord.paymentMethod;
         nextDue.receiptNumber = receiptNumber;
@@ -95,7 +98,7 @@ export class LoanRepaymentService {
         loan.totalInterestPaid = this.roundCurrency((loan.totalInterestPaid || 0) + interestPaid);
         loan.currentBalance = this.roundCurrency(Math.max((loan.currentBalance || 0) - paidAmount, 0));
         loan.outstandingPrincipal = this.roundCurrency(
-          Math.max((loan.outstandingPrincipal ?? loan.loanAmount) - principalPaid, 0)
+          Math.max((loan.outstandingPrincipal ?? loan.amount) - principalPaid, 0)
         );
 
         this.updateFutureRemainingBalances(loan);
@@ -105,10 +108,10 @@ export class LoanRepaymentService {
           loan.status = 'COMPLETED';
           loan.currentBalance = 0;
           loan.outstandingPrincipal = 0;
-          loan.endDate = new Date().toISOString().split('T')[0];
+          loan.completedDate = new Date().toISOString().split('T')[0];
           loan.statusHistory.push({
             status: 'COMPLETED',
-            date: new Date().toISOString(),
+            changedAt: new Date().toISOString(),
             changedBy: 'System',
             notes: 'Loan marked completed after full repayment.'
           });
@@ -148,10 +151,10 @@ export class LoanRepaymentService {
         item.status = 'OVERDUE';
 
         if (!item.lateFeeAmount) {
-          const lateFee = this.roundCurrency(item.totalPayment * this.lateFeeRate);
+          const lateFee = this.roundCurrency(item.totalAmount * this.lateFeeRate);
           item.lateFeeAmount = lateFee;
-          item.interest = this.roundCurrency((item.interest || 0) + lateFee);
-          item.totalPayment = this.roundCurrency(item.totalPayment + lateFee);
+          item.interestAmount = this.roundCurrency((item.interestAmount || 0) + lateFee);
+          item.totalAmount = this.roundCurrency(item.totalAmount + lateFee);
           loan.currentBalance = this.roundCurrency((loan.currentBalance || 0) + lateFee);
         }
 
@@ -173,14 +176,14 @@ export class LoanRepaymentService {
   private updateFutureRemainingBalances(loan: LoanApplication): void {
     let runningBalance = this.roundCurrency(loan.currentBalance || 0);
 
-    const ordered = [...loan.repaymentSchedule].sort((a, b) => a.monthNumber - b.monthNumber);
+    const ordered = [...loan.repaymentSchedule].sort((a, b) => a.installmentNo - b.installmentNo);
     ordered.forEach(item => {
       if (item.status === 'PAID') {
         item.remainingBalance = runningBalance;
         return;
       }
 
-      const principal = Number(item.principal || 0);
+      const principal = Number(item.principalAmount || 0);
       runningBalance = this.roundCurrency(Math.max(runningBalance - principal, 0));
       item.remainingBalance = runningBalance;
     });

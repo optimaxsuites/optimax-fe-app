@@ -1,34 +1,56 @@
 // loan.types.ts
+export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
+
+export type LoanPaymentMode = 'MONTHLY' | 'ONE_OFF';
+
+export interface LoanAuditUser {
+  id: number;
+  fullname: string;
+  userId: number;
+  email: string;
+  phoneNumber: string;
+  username: string;
+  clientType: string;
+  gender: string;
+  accountId: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
 export interface LoanApplication {
-  backendId?: number;
-  loanCode?: string;
-  approvedDate?: string;
-  disbursementDate?: string;
-  startDate?: string;
-  endDate?: string;
-  submittedAt?: string;
-  adminComment?: string;
-  id: string;
-  employeeId: string;
-  fullName: string;
-  department: string;
-  loanAmount: number;
-  paymentMode?: 'monthly' | 'one_off';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
-  dateSubmitted: string;
+  id: number;
+  loanCode: string;
+  employeeId: number;
+  amount: number;
   purpose: string;
-  repaymentPeriod: number;
-  monthlyRepayment: number;
-  acknowledgment: boolean;
-  interestRate: number;
+  repaymentTime: number;
+  repaymentAmount: number;
+  modeOfPayment: LoanPaymentMode;
+  status: LoanStatus;
+  requestDate: string;
+  approvedDate?: string;
+  approvedBy?: number | LoanAuditUser;
+  disbursedDate?: string;
+  disbursedBy?: number | LoanAuditUser;
+  completedDate?: string;
+  rejectedDate?: string;
+  rejectedBy?: number | LoanAuditUser;
+  adminComment: string;
   currentBalance: number;
   totalPaid: number;
-  totalPrincipalPaid?: number;
-  totalInterestPaid?: number;
-  outstandingPrincipal?: number;
+  totalPrincipalPaid: number;
+  totalInterestPaid: number;
+  outstandingPrincipal: number;
+  statusBeforeOverride?: LoanStatus;
   statusHistory: StatusChange[];
   repaymentSchedule: RepaymentScheduleItem[];
   paymentHistory: PaymentRecord[];
+  fullName?: string;
+  department?: string;
+  acknowledgment?: boolean;
+  interestRate?: number;
   supportingDocuments?: LoanSupportingDocument[];
 }
 
@@ -40,25 +62,28 @@ export interface LoanSupportingDocument {
 }
 
 export interface StatusChange {
-  id?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
-  date: string;
-  changedBy?: string;
+  id?: number;
+  status: LoanStatus;
+  changedAt: string;
+  changedBy?: number | LoanAuditUser | string;
   notes?: string;
+  overrideOpen?: boolean;
+  overrideBy?: number | LoanAuditUser | string;
+  overrideReason?: string;
+  statusBeforeOverride?: LoanStatus;
   interestRate?: number;
 }
 
 export interface RepaymentScheduleItem {
-  id?: string;
-  monthNumber: number;
+  id?: number;
+  installmentNo: number;
   dueDate: string;
-  principal: number;
-  interest: number;
-  totalPayment: number;
+  principalAmount: number;
+  interestAmount: number;
+  totalAmount: number;
+  paidAmount: number;
   remainingBalance: number;
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'SKIPPED';
-  paymentDate?: string;
-  paidAmount?: number;
   paymentMethod?: string;
   receiptNumber?: string;
   reminderSentAt?: string;
@@ -67,33 +92,33 @@ export interface RepaymentScheduleItem {
 }
 
 export interface PaymentRecord {
-  id?: string;
-  date: string;
-  amount: number;
+  id?: number;
+  loanId?: number;
+  paidAt: string;
+  principalAmount: number;
+  interestPaid: number;
+  lateFeeAmount: number;
+  totalAmount: number;
+  remainingBalance: number;
   paymentMethod: string;
-  principalAmount?: number;
-  interestPaid?: number;
-  lateFeeAmount?: number;
-  remainingBalance?: number;
-  installmentNo?: number;
-  receiptNumber?: string;
-  referenceNumber?: string;
+  referenceNumber: string;
+  installmentNo: number;
+  receiptNumber: string;
   receivedBy?: string;
-  notes?: string;
+  notes: string;
 }
 
 export interface LoanApplicationFormData {
-  loanPurpose: string;
+  purpose: string;
   otherPurpose?: string;
-  loanAmount: number;
-  repaymentPeriod: number;
-  monthlyRepaymentAmount: number;
-  paymentMode: 'monthly' | 'one_off';
+  amount: number;
+  repaymentTime: number;
+  repaymentAmount: number;
+  modeOfPayment: LoanPaymentMode;
   acknowledgment: boolean;
   supportingDocuments?: LoanSupportingDocument[];
-  submissionDate?: string;
-  employeeId: string;
+  requestDate?: string;
+  employeeId: number;
   employeeName?: string;
   department?: string;
-  employeeNumericId?: number;
 }

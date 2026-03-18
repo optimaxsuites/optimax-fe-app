@@ -4,7 +4,7 @@
   <div class="balance-summary">
     <div class="balance-item">
       <span class="label">Original Amount:</span>
-      <span class="value">{{ loan.loanAmount | currency:'₦':'symbol':'1.2-2' }}</span>
+      <span class="value">{{ loan.amount | currency:'₦':'symbol':'1.2-2' }}</span>
     </div>
     
     <div class="balance-item">
@@ -49,8 +49,8 @@
     
     <div class="progress-labels">
       <span>₦0</span>
-      <span>{{ loan.loanAmount / 2 | currency:'₦':'symbol':'1.0-0' }}</span>
-      <span>{{ loan.loanAmount | currency:'₦':'symbol':'1.0-0' }}</span>
+      <span>{{ loan.amount / 2 | currency:'₦':'symbol':'1.0-0' }}</span>
+      <span>{{ loan.amount | currency:'₦':'symbol':'1.0-0' }}</span>
     </div>
   </div>
   

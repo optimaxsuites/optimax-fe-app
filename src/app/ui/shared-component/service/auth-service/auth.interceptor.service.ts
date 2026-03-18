@@ -11,7 +11,10 @@ import { NavigationLinksService } from '../navigation-links/navigation-links.ser
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+    // private readonly tokenStorageKeys = ['Token', 'token', 'accessToken', 'Token2', 'accessToken2'];
+    locationIqUrl = 'https://us1.locationiq.com';
     constructor(private router: Router, private navigationLink: NavigationLinksService) {}
+
     intercept(
         request: HttpRequest<any>,
         next: HttpHandler
@@ -22,20 +25,46 @@ export class AuthInterceptor implements HttpInterceptor {
         ) {
             return next.handle(request);
         }
-        const accessToken =
-            sessionStorage.getItem('Token') ||
-            sessionStorage.getItem('token') ||
-            localStorage.getItem('Token') ||
-            localStorage.getItem('token');
+            // If the request is going to LocationIQ, don't attach auth≈
+    if (request.url.startsWith(this.locationIqUrl) ) {
+      return next.handle(request);
+    }
 
-        if (!accessToken) {
-            return next.handle(request);
-        }
+    const accessToken = sessionStorage.getItem('Token');
 
-        const authorizedRequest = request.clone({
-            headers: request.headers.set('Authorization', `Bearer ${accessToken}`),
-        });
+    const host = window.location.hostname;
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    let tenantId = 'optimax'; 
 
-        return next.handle(authorizedRequest);
+    if (!isLocalhost) {
+    const parts = host.split('.');
+    tenantId = parts[0] || 'optimax';
+    }
+
+    const defaultTenantEndpoints = ['admin/login'];
+
+    const isDefaultTenantEndpoint = defaultTenantEndpoints.some(path =>
+    request.url.endsWith(path)
+    );
+
+    let updatedRequest = request.clone({
+    setHeaders: {
+        'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
+    },
+    });
+
+    if (accessToken) {
+    updatedRequest = updatedRequest.clone({
+        setHeaders: {
+        ...updatedRequest.headers.keys().reduce((acc, key) => {
+            acc[key] = updatedRequest.headers.get(key)!;
+            return acc;
+        }, {} as Record<string, string>),
+        Authorization: `Bearer ${accessToken}`,
+        },
+    });
+    }
+
+    return next.handle(updatedRequest);
     }
 }

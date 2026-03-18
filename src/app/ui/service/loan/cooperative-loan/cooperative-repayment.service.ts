@@ -36,7 +36,7 @@ export class CooperativeRepaymentService {
   recordRepayment(
     context: CooperativeRepaymentContext,
     loanId: string | number,
-    payload: { amount: number; paymentMethod: CooperativeRepayment['paymentMethod']; paidDate?: string }
+    payload: { amount: number; modeofPayment: CooperativeRepayment['modeofPayment']; paidDate?: string }
   ): CooperativeRepayment | undefined {
     const normalizedLoanId = String(loanId);
     const loan = context.loans.find(item => String(item.id) === normalizedLoanId);
@@ -66,7 +66,7 @@ export class CooperativeRepaymentService {
     }
 
     const paymentTimestamp = payload.paidDate || new Date().toISOString();
-    const paymentMethod = payload.paymentMethod || 'BANK_TRANSFER';
+    const modeofPayment = payload.modeofPayment || 'BANK_TRANSFER';
     let remainingPayment = paidAmount;
     let principalPaidTotal = 0;
     let interestPaidTotal = 0;
@@ -75,7 +75,7 @@ export class CooperativeRepaymentService {
       ...nextDue,
       amount: paidAmount,
       paidDate: paymentTimestamp,
-      paymentMethod,
+      modeofPayment,
       receiptNumber: this.generateReceiptNumber(this.getLoanCode(loan))
     };
 
@@ -91,7 +91,7 @@ export class CooperativeRepaymentService {
       if (remainingPayment >= installmentAmount) {
         remainingPayment = this.roundCurrency(remainingPayment - installmentAmount);
         installment.paidDate = paymentTimestamp;
-        installment.paymentMethod = paymentMethod;
+        installment.modeofPayment = modeofPayment;
         installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
         installment.status = 'PAID';
 
@@ -115,7 +115,7 @@ export class CooperativeRepaymentService {
       installment.amount = this.roundCurrency(Math.max(installmentAmount - appliedAmount, 0));
       if (installment.amount === 0) {
         installment.paidDate = paymentTimestamp;
-        installment.paymentMethod = paymentMethod;
+        installment.modeofPayment = modeofPayment;
         installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
         installment.status = 'PAID';
       }
@@ -277,7 +277,7 @@ export class CooperativeRepaymentService {
       if (remainingCredit >= installmentAmount) {
         remainingCredit = this.roundCurrency(remainingCredit - installmentAmount);
         item.paidDate = now;
-        item.paymentMethod = 'OTHER';
+        item.modeofPayment = 'OTHER';
         item.status = 'PAID';
         principalPaidTotal += scheduledPrincipal;
         interestPaidTotal += scheduledInterest;
@@ -299,7 +299,7 @@ export class CooperativeRepaymentService {
       item.amount = this.roundCurrency(Math.max(installmentAmount - appliedAmount, 0));
       if (item.amount === 0) {
         item.paidDate = now;
-        item.paymentMethod = 'OTHER';
+        item.modeofPayment = 'OTHER';
         item.status = 'PAID';
       }
       principalPaidTotal += principalReduction;
@@ -333,13 +333,13 @@ export class CooperativeRepaymentService {
     const retainedRepayments = context.repayments.filter(item => String(item.loanId) !== String(loan.id));
     context.repayments.splice(0, context.repayments.length, ...retainedRepayments);
 
-    const disbursementDate = loan.disbursementDate ? new Date(loan.disbursementDate) : loan.disbursedDate ? new Date(loan.disbursedDate) : new Date();
+    const disbursedDate = loan.disbursedDate ? new Date(loan.disbursedDate) : loan.disbursedDate ? new Date(loan.disbursedDate) : new Date();
     const duration = Number(loan.duration ?? loan.repaymentTime ?? 0);
     if (duration <= 0) {
       return;
     }
 
-    const totalRepayment = Number(loan.totalRepayment ?? ((loan.monthlyRepayment ?? loan.repaymentAmount ?? 0) * duration));
+    const totalRepayment = Number(loan.totalRepayment ?? ((loan.repaymentAmount ?? loan.repaymentAmount ?? 0) * duration));
     const baseInstallment = this.roundCurrency(totalRepayment / duration);
     const totalInterest = this.roundCurrency(Math.max(totalRepayment - loan.amount, 0));
     const baseInterest = this.roundCurrency(totalInterest / duration);
@@ -347,7 +347,7 @@ export class CooperativeRepaymentService {
     let interestBalance = totalInterest;
 
     for (let installment = 1; installment <= duration; installment++) {
-      const dueDate = this.computeInstallmentDueDate(context.repaymentDueDay, disbursementDate, installment);
+      const dueDate = this.computeInstallmentDueDate(context.repaymentDueDay, disbursedDate, installment);
       const interestComponent = installment === duration
         ? this.roundCurrency(interestBalance)
         : this.roundCurrency(baseInterest);
@@ -451,8 +451,8 @@ export class CooperativeRepaymentService {
     }
   }
 
-  private computeInstallmentDueDate(repaymentDueDay: number, disbursementDate: Date, installment: number): Date {
-    const dueDate = new Date(disbursementDate);
+  private computeInstallmentDueDate(repaymentDueDay: number, disbursedDate: Date, installment: number): Date {
+    const dueDate = new Date(disbursedDate);
     dueDate.setHours(0, 0, 0, 0);
     dueDate.setDate(1);
     dueDate.setMonth(dueDate.getMonth() + installment);

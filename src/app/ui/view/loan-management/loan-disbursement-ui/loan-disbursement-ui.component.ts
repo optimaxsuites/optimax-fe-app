@@ -18,8 +18,8 @@ export class LoanDisbursementUiComponent implements OnInit {
   messages: Message[] = [];
 
   approvedLoans: LoanApplication[] = [];
-  selectedDisbursementLoanId = '';
-  disbursementDate = '';
+  selectedDisbursementLoanId: number | '' = '';
+  disbursedDate = '';
   disbursementAmount = 0;
   disbursementRecipientType: 'BORROWER' | 'THIRD_PARTY' = 'BORROWER';
   thirdPartyName = '';
@@ -36,15 +36,15 @@ export class LoanDisbursementUiComponent implements OnInit {
     {
       header: 'Amount',
       sortable: true,
-      sortField: 'loanAmount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+      sortField: 'amount',
+      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
     },
     {
       header: 'Approved Date',
       sortable: true,
       sortField: 'approvedDate',
       formatter: (row: LoanApplication) =>
-        new Date(row.approvedDate || row.dateSubmitted).toLocaleDateString('en-NG', {
+        new Date(row.approvedDate || row.requestDate).toLocaleDateString('en-NG', {
           year: 'numeric',
           month: 'short',
           day: 'numeric'
@@ -81,10 +81,11 @@ export class LoanDisbursementUiComponent implements OnInit {
       next: applications => {
         this.approvedLoans = applications
           .filter(loan => loan.status === 'APPROVED')
-          .sort((a, b) => new Date(b.approvedDate || b.dateSubmitted).getTime() - new Date(a.approvedDate || a.dateSubmitted).getTime());
+          .sort((a, b) => new Date(b.approvedDate || b.requestDate).getTime() - new Date(a.approvedDate || a.requestDate).getTime());
 
-        const targetId = preferredLoanId && this.approvedLoans.some(item => item.id === preferredLoanId)
-          ? preferredLoanId
+        const normalizedPreferredLoanId = preferredLoanId ? Number(preferredLoanId) : NaN;
+        const targetId = Number.isFinite(normalizedPreferredLoanId) && this.approvedLoans.some(item => item.id === normalizedPreferredLoanId)
+          ? normalizedPreferredLoanId
           : this.approvedLoans[0]?.id || '';
 
         this.selectedDisbursementLoanId = targetId;
@@ -105,7 +106,7 @@ export class LoanDisbursementUiComponent implements OnInit {
     this.syncDisbursementFields();
   }
 
-  pickLoanForDisbursement(loanId: string): void {
+  pickLoanForDisbursement(loanId: number): void {
     this.selectedDisbursementLoanId = loanId;
     this.onDisbursementLoanChange();
   }
@@ -126,11 +127,11 @@ export class LoanDisbursementUiComponent implements OnInit {
       ? `Funds released to third-party recipient: ${this.thirdPartyName.trim()}`
       : 'Funds released to borrower account';
 
-    const statusNote = `${recipientNote}. Disbursed on ${this.disbursementDate}. Repayment schedule and interest accrual initiated.`;
+    const statusNote = `${recipientNote}. Disbursed on ${this.disbursedDate}. Repayment schedule and interest accrual initiated.`;
 
     this.loanApprovalService.updateApplicationStatus(selectedLoan.id, {
       status: 'ACTIVE',
-      date: new Date().toISOString(),
+      changedAt: new Date().toISOString(),
       changedBy: 'Admin',
       notes: statusNote
     }).subscribe({
@@ -138,7 +139,7 @@ export class LoanDisbursementUiComponent implements OnInit {
         this.messages = [{
           severity: 'success',
           summary: 'Loan Disbursed',
-          detail: `${selectedLoan.id} moved from APPROVED to ACTIVE.`
+          detail: `${selectedLoan.loanCode || selectedLoan.id} moved from APPROVED to ACTIVE.`
         }];
         this.loadApprovedLoans();
       },
@@ -195,7 +196,7 @@ export class LoanDisbursementUiComponent implements OnInit {
   private syncDisbursementFields(): void {
     const selectedLoan = this.selectedDisbursementLoan;
     const today = new Date();
-    this.disbursementDate = today.toISOString().split('T')[0];
-    this.disbursementAmount = Number(selectedLoan?.loanAmount || 0);
+    this.disbursedDate = today.toISOString().split('T')[0];
+    this.disbursementAmount = Number(selectedLoan?.amount || 0);
   }
 }

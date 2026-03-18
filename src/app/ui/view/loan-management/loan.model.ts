@@ -9,9 +9,9 @@ export interface LoanRequestForm {
     workEmail: string;
     phoneNumber?: string; // optional
     eligibilityDeclaration: boolean;
-    loanPurpose: string;
-    loanAmount: number;
-    repaymentPeriod: number; // in months
+    purpose: string;
+    amount: number;
+    repaymentTime: number; // in months
     acknowledgment: boolean;
     monthlyObligations: number;
     rentMortgage: number;

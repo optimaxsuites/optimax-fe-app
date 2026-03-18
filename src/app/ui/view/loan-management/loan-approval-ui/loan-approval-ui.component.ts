@@ -14,21 +14,17 @@ import { LoanApprovalService } from '../../../service/loan/loan-approval.service
 })
 export class LoanApprovalUiComponent implements OnInit {
   searchTerm: string = '';
-  
-  // Add sorting properties only
-  sortField: string = 'dateSubmitted';
+  sortField: string = 'requestDate';
   sortDirection: 'asc' | 'desc' = 'desc';
-  
-  // Add filter properties
+
   filters = {
     employeeId: '',
     department: '',
     status: '',
     minAmount: null as number | null,
     maxAmount: null as number | null
-  }
+  };
 
-  // Use service data
   loanApplications: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
   isLoading = true;
@@ -41,7 +37,7 @@ export class LoanApprovalUiComponent implements OnInit {
     { header: 'Department', field: 'department' },
     {
       header: 'Loan Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
     },
     { header: 'Purpose', field: 'purpose' },
     {
@@ -51,7 +47,7 @@ export class LoanApprovalUiComponent implements OnInit {
     },
     {
       header: 'Date Submitted',
-      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
     }
   ];
 
@@ -81,7 +77,7 @@ export class LoanApprovalUiComponent implements OnInit {
 
   handleLoanAction(event: { actionId: string; row: LoanApplication }) {
     if (event.actionId === 'view') {
-      this.viewLoanDetails(event.row.id, event.row.employeeId);
+      this.viewLoanDetails(event.row.id, uuidV4());
       return;
     }
     if (event.actionId === 'history') {
@@ -89,13 +85,12 @@ export class LoanApprovalUiComponent implements OnInit {
     }
   }
 
-  // Load applications from service
   loadApplications(): void {
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
         this.loanApplications = applications;
-        this.applyFilters(); // This will now also sort
+        this.applyFilters();
         this.isLoading = false;
       },
       error: (error) => {
@@ -105,59 +100,49 @@ export class LoanApprovalUiComponent implements OnInit {
     });
   }
 
-  // Apply all filters
   applyFilters() {
     let results = [...this.loanApplications];
 
-    // Employee ID filter
     if (this.filters.employeeId) {
       const term = this.filters.employeeId.toLowerCase();
-      results = results.filter(loan => 
-        loan.employeeId.toLowerCase().includes(term)
+      results = results.filter(loan =>
+        String(loan.employeeId).toLowerCase().includes(term)
       );
     }
 
-    // Department filter
     if (this.filters.department) {
       const term = this.filters.department.toLowerCase();
-      results = results.filter(loan => 
-        loan.department.toLowerCase().includes(term)
+      results = results.filter(loan =>
+        (loan.department ?? '').toLowerCase().includes(term)
       );
     }
 
-    // Status filter
     if (this.filters.status) {
       const term = this.filters.status.toUpperCase();
-      results = results.filter(loan => 
+      results = results.filter(loan =>
         loan.status.toUpperCase().includes(term)
       );
     }
 
-    // Min Amount filter
     if (this.filters.minAmount !== null) {
-      results = results.filter(loan => loan.loanAmount >= this.filters.minAmount!);
+      results = results.filter(loan => loan.amount >= this.filters.minAmount!);
     }
 
-    // Max Amount filter
     if (this.filters.maxAmount !== null) {
-      results = results.filter(loan => loan.loanAmount <= this.filters.maxAmount!);
+      results = results.filter(loan => loan.amount <= this.filters.maxAmount!);
     }
 
-    // Apply search term 
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      results = results.filter(loan => 
-        loan.fullName.toLowerCase().includes(term) ||
-        loan.employeeId.toLowerCase().includes(term)
+      results = results.filter(loan =>
+        (loan.fullName ?? '').toLowerCase().includes(term) ||
+        String(loan.employeeId).toLowerCase().includes(term)
       );
     }
 
-    // Apply sorting
-    results = this.sortData(results);
-    this.filteredLoans = results;
+    this.filteredLoans = this.sortData(results);
   }
 
-  // Update search method
   onSearch(event: any) {
     this.searchTerm = event.target.value;
     this.applyFilters();
@@ -188,8 +173,7 @@ export class LoanApprovalUiComponent implements OnInit {
       minAmount: null,
       maxAmount: null
     };
-    // Reset sorting to default
-    this.sortField = 'dateSubmitted';
+    this.sortField = 'requestDate';
     this.sortDirection = 'desc';
     this.applyFilters();
   }
@@ -199,34 +183,32 @@ export class LoanApprovalUiComponent implements OnInit {
     this.applyFilters();
   }
 
-  // NEW: Sorting method
   sortData(data: LoanApplication[]): LoanApplication[] {
     return [...data].sort((a, b) => {
-      let valueA, valueB;
+      let valueA: string | number = '';
+      let valueB: string | number = '';
 
-      // Get values based on sort field
-      switch(this.sortField) {
-        case 'dateSubmitted':
-          valueA = new Date(a.dateSubmitted).getTime();
-          valueB = new Date(b.dateSubmitted).getTime();
+      switch (this.sortField) {
+        case 'requestDate':
+          valueA = new Date(a.requestDate).getTime();
+          valueB = new Date(b.requestDate).getTime();
           break;
-        case 'loanAmount':
-          valueA = a.loanAmount;
-          valueB = b.loanAmount;
+        case 'amount':
+          valueA = a.amount;
+          valueB = b.amount;
           break;
         case 'employeeId':
-          valueA = a.employeeId.toLowerCase();
-          valueB = b.employeeId.toLowerCase();
+          valueA = String(a.employeeId).toLowerCase();
+          valueB = String(b.employeeId).toLowerCase();
           break;
         case 'fullName':
-          valueA = a.fullName.toLowerCase();
-          valueB = b.fullName.toLowerCase();
+          valueA = (a.fullName ?? '').toLowerCase();
+          valueB = (b.fullName ?? '').toLowerCase();
           break;
         default:
           return 0;
       }
 
-      // Compare values
       if (valueA < valueB) {
         return this.sortDirection === 'asc' ? -1 : 1;
       }
@@ -237,28 +219,23 @@ export class LoanApprovalUiComponent implements OnInit {
     });
   }
 
-  // NEW: Set sort field and direction
   setSort(field: string): void {
     if (this.sortField === field) {
-      // Toggle direction if same field
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      // New field, default to descending for dates, ascending for others
       this.sortField = field;
-      this.sortDirection = field === 'dateSubmitted' ? 'desc' : 'asc';
+      this.sortDirection = field === 'requestDate' ? 'desc' : 'asc';
     }
     this.applyFilters();
   }
 
-  // NEW: Get sort indicator
   getSortIndicator(field: string): string {
     if (this.sortField !== field) return '';
     return this.sortDirection === 'asc' ? ' ↑' : ' ↓';
   }
 
-  // Add status class method
   getStatusClass(status: string): string {
-    switch(status) {
+    switch (status) {
       case 'APPROVED': return 'status-approved';
       case 'PENDING': return 'status-pending';
       case 'REJECTED': return 'status-rejected';
@@ -279,16 +256,14 @@ export class LoanApprovalUiComponent implements OnInit {
     };
   }
 
-  // Get sort icon class
   getSortIcon(field: string): string {
     if (this.sortField !== field) {
-      return 'fa-sort'; // Default unsorted icon
+      return 'fa-sort';
     }
     return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
-  // Approve/Reject methods
-  approveLoan(applicationId: string): void {
+  approveLoan(applicationId: string | number): void {
     this.loanApprovalService.approveLoan(applicationId).subscribe({
       next: () => {
         this.messages = [{
@@ -309,7 +284,7 @@ export class LoanApprovalUiComponent implements OnInit {
     });
   }
 
-  rejectLoan(applicationId: string, reason?: string): void {
+  rejectLoan(applicationId: string | number, reason?: string): void {
     const rejectionReason = (reason || '').trim();
     if (!rejectionReason) {
       this.messages = [{
@@ -340,14 +315,14 @@ export class LoanApprovalUiComponent implements OnInit {
     });
   }
 
-  viewLoanDetails(applicationId: string, uuid: string) {
-    this.router.navigate(['/admin/hr/loan-management/loan-details', applicationId, uuid], {
+  viewLoanDetails(applicationId: string | number, uuid: string) {
+    this.router.navigate(['/admin/hr/loan-management/loan-details', String(applicationId), uuid], {
       state: { source: 'approval' }
     });
   }
 
-  seeLoanHistory(employeeId: string) {
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', employeeId, uuidV4()], {
+  seeLoanHistory(employeeId: string | number) {
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', String(employeeId), uuidV4()], {
       state: { source: 'admin' }
     });
   }
