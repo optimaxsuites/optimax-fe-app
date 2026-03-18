@@ -41,6 +41,27 @@ export class AccountingFormatService {
     }
   }
 
+  formatCurrencyCompact(value: number, options: FormatOptions = {}): string {
+    const roundedValue = Math.abs(this.toMonetaryPrecision(value));
+    
+    let compactValue: number;
+    let suffix: string;
+    
+    if (roundedValue >= 1_000_000) {
+      compactValue = roundedValue / 1_000_000;
+      suffix = 'M';
+    } else if (roundedValue >= 1_000) {
+      compactValue = roundedValue / 1_000;
+      suffix = 'K';
+    } else {
+      return this.formatCurrency(value, options);
+    }
+    
+    const decimals = options.decimals ?? 1;
+    const symbol = value < 0 ? '-' : '';
+    return `${symbol}₦${compactValue.toFixed(decimals)}${suffix}`;
+  }
+
   formatPercentage(value: number, decimals: number = 1): string {
     const roundedValue = this.toMonetaryPrecision(value);
     try {
@@ -129,6 +150,12 @@ export class AccountingFormatService {
     if (value > 0.01) return '▲';
     if (value < -0.01) return '▼';
     return '→';
+  }
+
+  getAmountClass(value: number): string {
+    if (value > 0) return 'text-green-600';
+    if (value < 0) return 'text-red-600';
+    return 'text-gray-500';
   }
 
   formatLineItem(name: string, level: number = 0, bold: boolean = false): string {
