@@ -14,7 +14,7 @@
   <div class="summary-card">
     <div class="summary-head">
       <h2>Group Summary</h2>
-      <span>Use column headers to sort.</span>
+      <span>Use column headers to sort and row actions to manage each group.</span>
     </div>
     <app-table
       [columns]="groupSummaryColumns"
@@ -24,6 +24,13 @@
       [emptyMessage]="'No loan groups available.'"
       (actionClick)="handleGroupSummaryAction($event)">
     </app-table>
+  </div>
+
+  <div class="invite-helper-card">
+    <div>
+      <h3>Manage Group Outreach</h3>
+      <p>Use the <strong>Invite New Members</strong> row action in the summary table to notify employees about a specific group.</p>
+    </div>
   </div>
 
   <div class="group-card" *ngFor="let group of groups">
@@ -103,6 +110,151 @@
 
       <div class="form-actions">
         <button type="button" class="secondary" (click)="closeGroupDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" *ngIf="showInviteMembersModal && selectedGroupForInvite">
+    <div class="form-modal invite-modal">
+      <div class="invite-modal-header">
+        <div>
+          <h3>Invite New Members</h3>
+          <p>
+            Notify employees about <strong>{{ selectedGroupForInvite.name }}</strong>. They will still need to apply from their
+            <strong>My Membership</strong> dashboard and can still be approved or rejected through the normal review flow.
+          </p>
+        </div>
+        <button type="button" class="secondary ghost" (click)="closeInviteMembersModal()">Close</button>
+      </div>
+
+      <div class="invite-filter-bar">
+        <label>
+          <span>Department</span>
+          <select [(ngModel)]="inviteDepartmentFilter">
+            <option value="ALL">All departments</option>
+            <option *ngFor="let department of inviteDepartmentOptions" [ngValue]="department">{{ department }}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Rank</span>
+          <select [(ngModel)]="inviteRankFilter">
+            <option value="ALL">All ranks</option>
+            <option *ngFor="let rank of inviteRankOptions" [ngValue]="rank">{{ rank }}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Tenure</span>
+          <select [(ngModel)]="inviteTenureFilter">
+            <option *ngFor="let option of inviteTenureOptions" [ngValue]="option.value">{{ option.label }}</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="invite-toolbar">
+        <div class="invite-summary">
+          <strong>{{ filteredInviteEmployees.length }}</strong> employee{{ filteredInviteEmployees.length === 1 ? '' : 's' }} in view
+          <span>· {{ selectedInviteCount }} selected</span>
+        </div>
+
+        <button type="button" class="secondary" (click)="toggleSelectAllVisibleInviteEmployees()" [disabled]="selectableFilteredInviteEmployees.length === 0">
+          {{ getVisibleInviteSelectionLabel() }}
+        </button>
+      </div>
+
+      <div class="invite-table-wrapper" *ngIf="filteredInviteEmployees.length > 0; else emptyInviteState">
+        <table class="invite-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col">Select</th>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Rank</th>
+              <th>Tenure</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let employee of filteredInviteEmployees">
+              <td class="checkbox-col">
+                <input
+                  type="checkbox"
+                  [checked]="isInviteSelected(employee.employeeId)"
+                  (change)="toggleInviteSelection(employee.employeeId)"
+                  [disabled]="!canInviteEmployee(employee)"
+                  [attr.aria-label]="'Select ' + employee.fullName" />
+              </td>
+              <td>
+                <div class="employee-cell">
+                  <strong>{{ employee.fullName }}</strong>
+                </div>
+              </td>
+              <td>{{ employee.email }}</td>
+              <td>{{ employee.department }}</td>
+              <td>{{ employee.rank }}</td>
+              <td>{{ getInviteTenureLabel(employee) }}</td>
+              <td>
+                <span class="invite-status" [class.disabled]="!canInviteEmployee(employee)">
+                  {{ getInviteStatusLabel(employee) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #emptyInviteState>
+        <div class="invite-empty-state">
+          <p>No employees match the current filters.</p>
+        </div>
+      </ng-template>
+
+      <div class="email-preview-card">
+        <span class="preview-label">Email preview</span>
+        <h4>{{ inviteEmailSubject }}</h4>
+        <p>{{ inviteEmailBodyPreview }}</p>
+      </div>
+
+      <div class="invite-history-card">
+        <div class="invite-history-head">
+          <div>
+            <span class="preview-label">Invite history</span>
+            <h4>Previously notified employees</h4>
+          </div>
+          <span class="history-count">{{ groupInviteHistoryCount }} sent</span>
+        </div>
+
+        <div class="invite-history-list" *ngIf="selectedGroupInviteHistory.length > 0; else noInviteHistory">
+          <div class="invite-history-row" *ngFor="let invite of selectedGroupInviteHistory">
+            <div>
+              <strong>{{ invite.employeeName }}</strong>
+              <span>{{ invite.employeeEmail }}</span>
+            </div>
+            <div>
+              <strong>{{ invite.department }}</strong>
+              <span>{{ invite.rank }} · {{ getTenureLabel(invite.tenureMonths) }}</span>
+            </div>
+            <div>
+              <strong>{{ getHistoryDateLabel(invite.sentAt) }}</strong>
+              <span>Invitation logged</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noInviteHistory>
+          <p class="invite-history-empty">No invitation history has been recorded for this group yet.</p>
+        </ng-template>
+      </div>
+
+      <p class="invite-message" *ngIf="inviteMessage">{{ inviteMessage }}</p>
+
+      <div class="form-actions invite-actions-row">
+        <button type="button" class="secondary" (click)="closeInviteMembersModal()">Cancel</button>
+        <button type="button" class="primary" (click)="sendGroupInviteEmails()" [disabled]="selectedInviteCount === 0">
+          {{ inviteActionLabel }}
+        </button>
       </div>
     </div>
   </div>

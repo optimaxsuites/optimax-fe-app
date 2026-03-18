@@ -44,17 +44,17 @@
               Loan ID 
               <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
             </th>
-            <th (click)="setSort('dateSubmitted')" class="sortable">
+            <th (click)="setSort('requestDate')" class="sortable">
               Date 
-              <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
+              <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
             </th>
             <th (click)="setSort('purpose')" class="sortable">
               Purpose 
               <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
             </th>
-            <th (click)="setSort('loanAmount')" class="sortable">
+            <th (click)="setSort('amount')" class="sortable">
               Amount 
-              <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
+              <i class="fas" [ngClass]="getSortIcon('amount')"></i>
             </th>
             <th class="sortable" (click)="setSort('interestRate')">
               Interest Rate
@@ -77,10 +77,10 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
-            <td>{{ loan.dateSubmitted | date:'mediumDate' }}</td>
+            <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
+            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
             <td class="purpose">{{ loan.purpose }}</td>
-            <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
+            <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
             <td class="interest">{{ loan.interestRate }}%</td>
             <td class="paid">₦{{ loan.totalPaid | number:'1.2-2' }}</td>
             <td class="balance">₦{{ loan.currentBalance | number:'1.2-2' }}</td>

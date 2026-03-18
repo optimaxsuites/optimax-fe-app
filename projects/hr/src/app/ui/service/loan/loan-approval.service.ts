@@ -9,15 +9,13 @@ import { LoanApplicationService } from './loan-application.service';
   providedIn: 'root'
 })
 export class LoanApprovalService {
-  
   constructor(private loanApplicationService: LoanApplicationService) {}
 
-  // Update application status with optional comment
   updateApplicationStatus(
-    loanId: string,
+    loanId: string | number,
     statusOrUpdate: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING' | StatusChange
   ): Observable<LoanApplication> {
-    return this.loanApplicationService.getApplicationById(loanId).pipe(
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
         if (!application) {
           return throwError(() => new Error('Application not found'));
@@ -27,7 +25,9 @@ export class LoanApprovalService {
         const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
         const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
         const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy || 'Admin';
-        const date = typeof statusOrUpdate === 'string' ? new Date().toISOString() : statusOrUpdate.date || new Date().toISOString();
+        const changedAt = typeof statusOrUpdate === 'string'
+          ? new Date().toISOString()
+          : statusOrUpdate.changedAt || new Date().toISOString();
         const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
         let effectiveInterestRate = application.interestRate;
 
@@ -37,7 +37,7 @@ export class LoanApprovalService {
           effectiveInterestRate = this.determineInterestRate(application);
         }
 
-        if (Number.isFinite(effectiveInterestRate)) {
+        if (effectiveInterestRate !== undefined && Number.isFinite(effectiveInterestRate)) {
           application.interestRate = Number(effectiveInterestRate.toFixed(2));
         }
 
@@ -45,32 +45,29 @@ export class LoanApprovalService {
         application.adminComment = notes || application.adminComment || '';
         application.statusHistory = [...(application.statusHistory || []), {
           status,
-          date,
+          changedAt,
           changedBy,
           notes: notes || `Status changed from ${oldStatus} to ${status}`,
           interestRate: application.interestRate
         }];
 
-        switch(status) {
+        switch (status) {
           case 'APPROVED':
             application.approvedDate = new Date().toISOString().split('T')[0];
-            application.disbursementDate = undefined;
+            application.disbursedDate = undefined;
             break;
           case 'ACTIVE':
-            if (!application.startDate) {
-              application.startDate = new Date().toISOString().split('T')[0];
-            }
-            application.disbursementDate = new Date().toISOString().split('T')[0];
+            application.disbursedDate = new Date().toISOString().split('T')[0];
             application.repaymentSchedule = this.generateRepaymentSchedule(
-              application.loanAmount,
-              application.repaymentPeriod,
-              application.interestRate,
-              application.paymentMode
+              application.amount,
+              application.repaymentTime,
+              Number(application.interestRate || 0),
+              application.modeOfPayment
             );
-            application.monthlyRepayment = application.repaymentSchedule.length > 0
-              ? application.repaymentSchedule[0].totalPayment
+            application.repaymentAmount = application.repaymentSchedule.length > 0
+              ? application.repaymentSchedule[0].totalAmount
               : 0;
-            application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
+            application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.totalAmount, 0);
             application.totalInterestPaid = application.paymentHistory.reduce(
               (sum, payment) => sum + Number(payment.interestPaid || 0),
               0
@@ -80,21 +77,21 @@ export class LoanApprovalService {
               0
             );
             {
-              const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalPayment, 0);
+              const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalAmount, 0);
               application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
               application.outstandingPrincipal = Math.max(
-                application.loanAmount - Number(application.totalPrincipalPaid || 0),
+                application.amount - Number(application.totalPrincipalPaid || 0),
                 0
               );
             }
             break;
           case 'COMPLETED':
-            application.endDate = new Date().toISOString().split('T')[0];
+            application.completedDate = new Date().toISOString().split('T')[0];
             application.currentBalance = 0;
             application.outstandingPrincipal = 0;
             break;
           case 'REJECTED':
-            application.endDate = new Date().toISOString().split('T')[0];
+            application.rejectedDate = new Date().toISOString().split('T')[0];
             break;
         }
 
@@ -103,39 +100,36 @@ export class LoanApprovalService {
     );
   }
 
-  // Approve loan (convenience method)
-  approveLoan(loanId: string, notes?: string): Observable<LoanApplication> {
+  approveLoan(loanId: string | number, notes?: string): Observable<LoanApplication> {
     return this.updateApplicationStatus(loanId, {
       status: 'APPROVED',
       notes: notes || 'Loan approved',
       changedBy: 'Admin',
-      date: new Date().toISOString()
+      changedAt: new Date().toISOString()
     });
   }
 
-  // Reject loan (convenience method)
-  rejectLoan(loanId: string, notes: string): Observable<LoanApplication> {
+  rejectLoan(loanId: string | number, notes: string): Observable<LoanApplication> {
     return this.updateApplicationStatus(loanId, {
       status: 'REJECTED',
       notes: notes || 'Loan rejected',
       changedBy: 'Admin',
-      date: new Date().toISOString()
+      changedAt: new Date().toISOString()
     });
   }
 
-  // Get pending applications
   getPendingApplications(): Observable<LoanApplication[]> {
     return this.loanApplicationService.getAllApplications().pipe(
       switchMap((applications) => of(applications.filter((application) => application.status === 'PENDING')))
     );
   }
 
-  determineInterestRate(loan: Pick<LoanApplication, 'paymentMode' | 'repaymentPeriod'>): number {
-    if (loan.paymentMode === 'one_off') {
+  determineInterestRate(loan: Pick<LoanApplication, 'modeOfPayment' | 'repaymentTime'>): number {
+    if (loan.modeOfPayment === 'ONE_OFF') {
       return 5;
     }
 
-    const tenureMonths = loan.repaymentPeriod || 0;
+    const tenureMonths = loan.repaymentTime || 0;
 
     if (tenureMonths <= 3) {
       return 4.5;
@@ -153,17 +147,17 @@ export class LoanApprovalService {
   }
 
   calculateRepaymentBreakdown(
-    loanAmount: number,
+    amount: number,
     months: number,
     interestRate: number,
-    paymentMode?: 'monthly' | 'one_off'
-  ): { monthlyRepayment: number; totalRepayment: number; totalInterest: number } {
-    if (paymentMode === 'one_off') {
-      const totalInterest = loanAmount * (interestRate / 100);
-      const totalRepayment = loanAmount + totalInterest;
+    modeOfPayment?: 'MONTHLY' | 'ONE_OFF'
+  ): { repaymentAmount: number; totalRepayment: number; totalInterest: number } {
+    if (modeOfPayment === 'ONE_OFF') {
+      const totalInterest = amount * (interestRate / 100);
+      const totalRepayment = amount + totalInterest;
 
       return {
-        monthlyRepayment: Number(totalRepayment.toFixed(2)),
+        repaymentAmount: Number(totalRepayment.toFixed(2)),
         totalRepayment: Number(totalRepayment.toFixed(2)),
         totalInterest: Number(totalInterest.toFixed(2))
       };
@@ -171,7 +165,7 @@ export class LoanApprovalService {
 
     if (!months || months <= 0) {
       return {
-        monthlyRepayment: 0,
+        repaymentAmount: 0,
         totalRepayment: 0,
         totalInterest: 0
       };
@@ -179,40 +173,41 @@ export class LoanApprovalService {
 
     const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
     const monthlyPayment = monthlyInterestRate > 0
-      ? loanAmount *
+      ? amount *
         (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
         (Math.pow(1 + monthlyInterestRate, months) - 1)
-      : loanAmount / months;
+      : amount / months;
 
     const totalRepayment = monthlyPayment * months;
-    const totalInterest = totalRepayment - loanAmount;
+    const totalInterest = totalRepayment - amount;
 
     return {
-      monthlyRepayment: Number(monthlyPayment.toFixed(2)),
+      repaymentAmount: Number(monthlyPayment.toFixed(2)),
       totalRepayment: Number(totalRepayment.toFixed(2)),
       totalInterest: Number(totalInterest.toFixed(2))
     };
   }
 
   private generateRepaymentSchedule(
-    loanAmount: number,
+    amount: number,
     months: number,
     interestRate: number,
-    paymentMode?: 'monthly' | 'one_off'
+    modeOfPayment?: 'MONTHLY' | 'ONE_OFF'
   ): RepaymentScheduleItem[] {
-    if (paymentMode === 'one_off') {
-      const oneOffInterest = loanAmount * (interestRate / 100);
-      const oneOffTotal = loanAmount + oneOffInterest;
+    if (modeOfPayment === 'ONE_OFF') {
+      const oneOffInterest = amount * (interestRate / 100);
+      const oneOffTotal = amount + oneOffInterest;
       const oneOffDueDate = new Date();
       oneOffDueDate.setMonth(oneOffDueDate.getMonth() + 1);
       oneOffDueDate.setDate(15);
 
       return [{
-        monthNumber: 1,
+        installmentNo: 1,
         dueDate: oneOffDueDate.toISOString().split('T')[0],
-        principal: parseFloat(loanAmount.toFixed(2)),
-        interest: parseFloat(oneOffInterest.toFixed(2)),
-        totalPayment: parseFloat(oneOffTotal.toFixed(2)),
+        principalAmount: parseFloat(amount.toFixed(2)),
+        interestAmount: parseFloat(oneOffInterest.toFixed(2)),
+        totalAmount: parseFloat(oneOffTotal.toFixed(2)),
+        paidAmount: 0,
         remainingBalance: 0,
         status: 'PENDING'
       }];
@@ -226,12 +221,12 @@ export class LoanApprovalService {
     const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
 
     const monthlyPayment = monthlyInterestRate > 0
-      ? loanAmount *
+      ? amount *
         (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
         (Math.pow(1 + monthlyInterestRate, months) - 1)
-      : loanAmount / months;
+      : amount / months;
 
-    let remainingBalance = loanAmount;
+    let remainingBalance = amount;
 
     for (let month = 1; month <= months; month++) {
       const interest = monthlyInterestRate > 0 ? remainingBalance * monthlyInterestRate : 0;
@@ -243,11 +238,12 @@ export class LoanApprovalService {
       dueDate.setDate(15);
 
       schedule.push({
-        monthNumber: month,
+        installmentNo: month,
         dueDate: dueDate.toISOString().split('T')[0],
-        principal: parseFloat(principal.toFixed(2)),
-        interest: parseFloat(interest.toFixed(2)),
-        totalPayment: parseFloat(monthlyPayment.toFixed(2)),
+        principalAmount: parseFloat(principal.toFixed(2)),
+        interestAmount: parseFloat(interest.toFixed(2)),
+        totalAmount: parseFloat(monthlyPayment.toFixed(2)),
+        paidAmount: 0,
         remainingBalance: parseFloat(Math.max(remainingBalance, 0).toFixed(2)),
         status: 'PENDING'
       });

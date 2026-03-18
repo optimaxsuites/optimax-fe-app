@@ -17,7 +17,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Requested Purpose <span class="required">*</span></label>
-            <select formControlName="loanPurpose" class="form-select">
+            <select formControlName="purpose" class="form-select">
               <option value="">Select Purpose</option>
               <option value="medical">Medical Emergency</option>
               <option value="education">Education/Professional Development</option>
@@ -27,7 +27,7 @@
               <option value="personal">Personal/Family Needs</option>
               <option value="other">Other (Please specify)</option>
             </select>
-            <div class="error" *ngIf="loanPurpose?.invalid && loanPurpose?.touched">Loan purpose is required</div>
+            <div class="error" *ngIf="purpose?.invalid && purpose?.touched">Loan purpose is required</div>
 
             <div class="other-purpose" *ngIf="showOtherPurpose">
               <label>Specify Other Purpose</label>
@@ -38,11 +38,11 @@
 
           <div class="form-group">
             <label>Loan Amount Requested (₦) <span class="required">*</span></label>
-            <input type="number" formControlName="loanAmount" class="form-input" placeholder="₦0.00" min="10000" max="50000000">
-            <div class="error" *ngIf="loanAmount?.invalid && loanAmount?.touched">
-              <span *ngIf="loanAmount?.errors?.['required']">Loan amount is required</span>
-              <span *ngIf="loanAmount?.errors?.['min']">Minimum loan amount is ₦10,000</span>
-              <span *ngIf="loanAmount?.errors?.['max']">Maximum loan amount is ₦50,000,000</span>
+            <input type="number" formControlName="amount" class="form-input" placeholder="₦0.00" min="10000" max="50000000">
+            <div class="error" *ngIf="amount?.invalid && amount?.touched">
+              <span *ngIf="amount?.errors?.['required']">Loan amount is required</span>
+              <span *ngIf="amount?.errors?.['min']">Minimum loan amount is ₦10,000</span>
+              <span *ngIf="amount?.errors?.['max']">Maximum loan amount is ₦50,000,000</span>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Repayment Period (Months) <span class="required">*</span></label>
-            <select formControlName="repaymentPeriod" class="form-select">
+            <select formControlName="repaymentTime" class="form-select">
               <option value="">Select Period</option>
               <option value="6">6 Months</option>
               <option value="12">12 Months</option>
@@ -58,20 +58,20 @@
               <option value="24">24 Months</option>
               <option value="36">36 Months</option>
             </select>
-            <div class="error" *ngIf="repaymentPeriod?.invalid && repaymentPeriod?.touched">Repayment period is required</div>
+            <div class="error" *ngIf="repaymentTime?.invalid && repaymentTime?.touched">Repayment period is required</div>
           </div>
 
           <div class="form-group">
             <label>Mode of Repayment <span class="required">*</span></label>
-            <select formControlName="paymentMode" class="form-select">
+            <select formControlName="modeOfPayment" class="form-select">
               <option value="">Select Mode of Repayment</option>
-              <option value="monthly">Monthly Installments</option>
-              <option value="one_off">One-off Payment</option>
+              <option value="MONTHLY">Monthly Installments</option>
+              <option value="ONE_OFF">One-off Payment</option>
             </select>
-            <div class="error" *ngIf="paymentMode?.invalid && paymentMode?.touched">Please select a repayment mode</div>
-            <div class="payment-info" *ngIf="paymentMode?.value">
-              <span *ngIf="paymentMode?.value === 'monthly'">Payments will be spread over {{ repaymentPeriod?.value || 'selected' }} months.</span>
-              <span *ngIf="paymentMode?.value === 'one_off'">Full payment of ₦{{ loanAmount?.value || '0' }} due in one lump sum.</span>
+            <div class="error" *ngIf="modeOfPayment?.invalid && modeOfPayment?.touched">Please select a repayment mode</div>
+            <div class="payment-info" *ngIf="modeOfPayment?.value">
+              <span *ngIf="modeOfPayment?.value === 'MONTHLY'">Payments will be spread over {{ repaymentTime?.value || 'selected' }} months.</span>
+              <span *ngIf="modeOfPayment?.value === 'ONE_OFF'">Full payment of ₦{{ amount?.value || '0' }} due in one lump sum.</span>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@
       <div class="form-section">
         <h2>Repayment Preview</h2>
         <div class="calculated-field-wrapper">
-          <input type="number" formControlName="monthlyRepaymentAmount" class="form-input calculated" readonly placeholder="Automatically calculated">
+          <input type="number" formControlName="repaymentAmountAmount" class="form-input calculated" readonly placeholder="Automatically calculated">
           <span class="calculated-badge">Calculated</span>
         </div>
         <div class="field-hint">Based on your selected loan amount and repayment period.</div>
@@ -115,8 +115,8 @@
           <li>Interest rates will be applied as per company policy.</li>
           <li>Late payments may incur additional charges.</li>
           <li>Approval is conditional upon credit assessment.</li>
-          <li *ngIf="paymentMode?.value === 'one_off'">One-off payment must be made in full by the due date.</li>
-          <li *ngIf="paymentMode?.value === 'monthly'">Monthly payments are due on the 1st of each month.</li>
+          <li *ngIf="modeOfPayment?.value === 'ONE_OFF'">One-off payment must be made in full by the due date.</li>
+          <li *ngIf="modeOfPayment?.value === 'MONTHLY'">Monthly payments are due on the 1st of each month.</li>
         </ul>
         <div class="checkbox-group">
           <input type="checkbox" id="acknowledgment" formControlName="acknowledgment" class="form-checkbox">

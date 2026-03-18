@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 @Component({
   selector: 'app-cooperative-member-form',
@@ -22,7 +23,8 @@ export class CooperativeMemberFormComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private backNavigationService: BackNavigationService
   ) {}
 
   ngOnInit(): void {
@@ -133,7 +135,7 @@ export class CooperativeMemberFormComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

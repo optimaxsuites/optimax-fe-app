@@ -1,4 +1,28 @@
 <div class="dashboard-container">
+  <app-modal *ngIf="showGroupJoinReviewModal" [header]="groupJoinReviewAction === 'approve' ? 'Approve Join Request' : 'Reject Join Request'" (close)="closeGroupJoinReviewModal()">
+    <div class="group-join-review-modal" *ngIf="selectedGroupJoinApplication as application">
+      <div class="review-summary">
+        <p><strong>Member:</strong> {{ application.memberName }} ({{ application.memberCode }})</p>
+        <p><strong>Group:</strong> {{ application.groupName }}</p>
+        <p><strong>Requested:</strong> {{ application.requestDate | date:'medium' }}</p>
+      </div>
+
+      <label class="review-field">
+        <span>{{ groupJoinReviewAction === 'approve' ? 'Approval Note' : 'Rejection Reason' }}</span>
+        <textarea rows="4" [(ngModel)]="groupJoinReviewNote" [placeholder]="groupJoinReviewAction === 'approve' ? 'Optional note for the member' : 'Explain why this request was rejected'"></textarea>
+      </label>
+
+      <p class="review-error" *ngIf="groupJoinReviewError">{{ groupJoinReviewError }}</p>
+
+      <div class="review-actions">
+        <button type="button" class="btn-secondary" (click)="closeGroupJoinReviewModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="submitGroupJoinReview()">
+          {{ groupJoinReviewAction === 'approve' ? 'Approve Request' : 'Reject Request' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
   <app-modal *ngIf="showLoanSummaryModal" [header]="'Co-operative Loan Details'" (close)="closeLoanSummaryModal()">
     <div class="cooperative-loan-modal" *ngIf="selectedLoanForSummary as loan">
       <div class="details-grid">
@@ -11,7 +35,7 @@
         <div class="detail-item"><span class="label">Amount</span><span class="value">{{ formatCurrency(loan.amount) }}</span></div>
         <div class="detail-item"><span class="label">Interest Rate</span><span class="value">{{ loan.interestRate }}%</span></div>
         <div class="detail-item"><span class="label">Duration</span><span class="value">{{ loan.duration }} months</span></div>
-        <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment || loan.repaymentAmount || 0) }}</span></div>
+        <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span></div>
         <div class="detail-item"><span class="label">Total Repayment</span><span class="value">{{ formatCurrency(loan.totalRepayment || 0) }}</span></div>
         <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
         <div class="detail-item full" *ngIf="loan.adminRequestNote"><span class="label">Admin Comment</span><span class="value">{{ loan.adminRequestNote }}</span></div>
@@ -171,10 +195,6 @@
     <div class="dashboard-header lm-header-card">
       <h1><i class="fas fa-hand-holding-heart"></i> Co-operative Dashboard</h1>
       <div class="header-actions">
-        <div class="notification-indicator" title="Unread notifications" *ngIf="unreadNotificationCount > 0">
-          <i class="pi pi-bell"></i>
-          <span class="count-badge">{{ unreadNotificationCount }}</span>
-        </div>
         <button class="btn-secondary" (click)="openInviteMembersModal()">
           <i class="pi pi-user-plus"></i> Invite New Members
         </button>
@@ -187,25 +207,6 @@
         <span>{{ alert.message }}</span>
       </div>
     </section>
-
-    <div class="card notifications-card" *ngIf="notifications.length > 0">
-      <div class="card-header">
-        <h2><i class="pi pi-bell"></i> Admin Notifications</h2>
-      </div>
-
-      <div class="notifications-list">
-        <button class="notification-item" type="button" *ngFor="let notification of notifications" [class.unread]="!notification.read" (click)="openNotification(notification)">
-          <div class="notification-body">
-            <span class="notification-title">{{ notification.title }}</span>
-            <span class="notification-message">{{ notification.message }}</span>
-          </div>
-          <div class="notification-meta">
-            <span class="notification-time">{{ getRelativeTime(notification.createdAt) }}</span>
-            <span class="unread-dot" *ngIf="!notification.read"></span>
-          </div>
-        </button>
-      </div>
-    </div>
 
     <div class="section-title-row">
       <h2>Co-op Health</h2>
@@ -307,6 +308,12 @@
               <i class="pi pi-th-large"></i>
               Manage Groups
             </button>
+
+            <button class="btn-primary" (click)="openGroupJoinHistory()">
+              <i class="fas fa-list-check"></i>
+              Join Requests
+              <span class="count-badge" *ngIf="pendingGroupJoinCount > 0">{{ pendingGroupJoinCount }}</span>
+            </button>
           </div>
         </div>
 
@@ -330,6 +337,7 @@
             <thead>
               <tr>
                 <th>Loan ID</th>
+                <th>Group</th>
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Date</th>
@@ -339,6 +347,7 @@
             <tbody>
               <tr *ngFor="let loan of recentLoans">
                 <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
+                <td>{{ getLoanGroupName(loan) }}</td>
                 <td class="amount">{{ formatCurrency(loan.amount) }}</td>
                 <td><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></td>
                 <td>{{ (loan.requestDate || loan.applicationDate) | date:'shortDate' }}</td>
@@ -353,26 +362,49 @@
         </div>
       </div>
 
-      <!-- Recent Members -->
+      <!-- Group Join Applications -->
       <div class="card">
         <div class="card-header">
-          <h2><i class="pi pi-users"></i> Recent Members</h2>
-          <button class="view-all" (click)="navigateTo('members')">View All <i class="pi pi-arrow-right"></i></button>
+          <h2><i class="pi pi-sitemap"></i> Group Join Applications</h2>
+          <button class="view-all" (click)="openGroupJoinHistory()">View All <i class="pi pi-arrow-right"></i></button>
         </div>
 
-        <div class="members-list" *ngIf="recentMembers.length > 0">
-          <div *ngFor="let member of recentMembers" class="member-item" (click)="viewMember(member.id)">
-            <div class="member-avatar">{{ member.fullName.charAt(0) }}</div>
-            <div class="member-info">
-              <span class="member-name">{{ member.fullName }}</span>
-              <span class="member-id">{{ member.memberId }}</span>
-            </div>
-            <div class="member-shares">{{ formatCurrency(member.shareCapital) }}</div>
-          </div>
+        <p class="section-message" *ngIf="groupJoinActionMessage">{{ groupJoinActionMessage }}</p>
+
+        <div class="table-container" *ngIf="recentGroupJoinApplications.length > 0">
+          <table appSortableTable class="simple-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Group</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Review</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let application of recentGroupJoinApplications">
+                <td>
+                  <div>{{ application.memberName }}</div>
+                  <small>{{ application.memberCode }}</small>
+                </td>
+                <td>{{ application.groupName }}</td>
+                <td><span class="status-badge" [ngClass]="'status-' + application.status.toLowerCase()">{{ application.status }}</span></td>
+                <td>{{ application.requestDate | date:'shortDate' }}</td>
+                <td>{{ application.reviewedAt ? (application.reviewedAt | date:'shortDate') : 'Awaiting review' }}</td>
+                <td class="actions-col">
+                  <button class="icon-btn" (click)="viewMember(application.memberId)"><i class="pi pi-eye"></i></button>
+                  <button class="table-action approve" *ngIf="application.status === 'PENDING'" (click)="openGroupJoinReviewModal('approve', application)">Approve</button>
+                  <button class="table-action reject" *ngIf="application.status === 'PENDING'" (click)="openGroupJoinReviewModal('reject', application)">Reject</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div *ngIf="recentMembers.length === 0" class="empty-state">
-          <p>No members yet</p>
+        <div *ngIf="recentGroupJoinApplications.length === 0" class="empty-state">
+          <p>No group join applications yet.</p>
         </div>
       </div>
     </div>

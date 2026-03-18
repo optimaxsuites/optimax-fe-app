@@ -179,7 +179,9 @@ import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
+import { CooperativeMemberGroupDashboardComponent } from './ui/view/loan-management/cooperative-member-group-dashboard/cooperative-member-group-dashboard.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
+import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { MainDashboardComponent } from './ui/view/loan-management/main-dashboard-component/main-dashboard-component.component';
 import { EmployeeLoanDetailsModalComponent } from './ui/view/loan-management/employee-loan-details-modal/employee-loan-details-modal.component';
 import { SortableTableDirective } from './ui/shared-component/view/table/sortable-table.directive';
@@ -313,7 +315,9 @@ import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-co
     EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
+    CooperativeMemberGroupDashboardComponent,
     CooperativeLoanGroupsComponent,
+    CooperativeGroupJoinHistoryComponent,
     MainDashboardComponent,
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,

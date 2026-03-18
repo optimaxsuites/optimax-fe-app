@@ -3,8 +3,9 @@ import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
-import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-loans',
@@ -16,11 +17,12 @@ export class CooperativeLoansComponent implements OnInit {
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
   members: CooperativeMember[] = [];
+  groups: CooperativeLoanGroup[] = [];
   isLoading = true;
   searchTerm = '';
   showDisbursementModal = false;
   selectedDisbursementLoanId = '';
-  disbursementDate = '';
+  disbursedDate = '';
   disbursementAmount = 0;
   disbursementRecipientType: 'BORROWER' | 'THIRD_PARTY' = 'BORROWER';
   thirdPartyName = '';
@@ -30,6 +32,7 @@ export class CooperativeLoansComponent implements OnInit {
   checklistFundsReserved = false;
   statusFilter: '' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' = '';
   stageFilter: '' | 'READY_FOR_ADMIN_REVIEW' | 'PENDING_GUARANTOR_APPROVAL' | 'INFO_REQUESTED' = '';
+  groupFilter = '';
   openDisbursementOnLoad = false;
 
   // Sorting
@@ -47,6 +50,7 @@ export class CooperativeLoansComponent implements OnInit {
 
   constructor(
     private cooperativeService: CooperativeService,
+    private backNavigationService: BackNavigationService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -75,6 +79,8 @@ export class CooperativeLoansComponent implements OnInit {
 
   loadLoans(): void {
     this.isLoading = true;
+    this.groups = this.cooperativeService.getGroups();
+
     this.cooperativeService.getMembers().subscribe(members => {
       this.members = members;
     });
@@ -97,10 +103,12 @@ export class CooperativeLoansComponent implements OnInit {
     const search = this.searchTerm.trim().toLowerCase();
     if (search) {
       results = results.filter(loan => {
-        const memberName = this.getMemberName(loan.cooperativeMemberId).toLowerCase();
+        const memberName = this.getMemberName(loan.cooperativeMemberId || loan.memberId).toLowerCase();
+        const groupName = this.getGroupName(loan.groupId || loan.cooperativeGroupId).toLowerCase();
         return (
           loan.loanCode.toLowerCase().includes(search) ||
           memberName.includes(search) ||
+          groupName.includes(search) ||
           loan.status.toLowerCase().includes(search) ||
           String(loan.purpose || '').toLowerCase().includes(search)
         );
@@ -114,6 +122,10 @@ export class CooperativeLoansComponent implements OnInit {
 
     if (this.stageFilter) {
       results = results.filter(loan => loan.applicationStage === this.stageFilter);
+    }
+
+    if (this.groupFilter) {
+      results = results.filter(loan => String(loan.groupId || loan.cooperativeGroupId || '') === this.groupFilter);
     }
 
     this.filteredLoans = this.sortData(results);
@@ -169,6 +181,7 @@ export class CooperativeLoansComponent implements OnInit {
     this.searchTerm = '';
     this.statusFilter = '';
     this.stageFilter = '';
+    this.groupFilter = '';
     this.sortField = 'applicationDate';
     this.sortDirection = 'desc';
     this.applyFilters();
@@ -251,7 +264,7 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -296,6 +309,16 @@ export class CooperativeLoansComponent implements OnInit {
     const normalizedMemberId = String(memberId);
     const member = this.members.find(item => item.id === normalizedMemberId || item.memberId === normalizedMemberId);
     return member?.fullName || normalizedMemberId;
+  }
+
+  getGroupName(groupId: string | number | undefined): string {
+    if (groupId === undefined || groupId === null || groupId === '') {
+      return 'Ungrouped';
+    }
+
+    const normalizedGroupId = String(groupId);
+    const group = this.groups.find(item => String(item.id) === normalizedGroupId);
+    return group?.name || 'Unknown Group';
   }
 
   getRelativeDate(dateValue: string): string {
@@ -362,6 +385,18 @@ export class CooperativeLoansComponent implements OnInit {
     };
   }
 
+  get groupOptions(): CooperativeLoanGroup[] {
+    const groupIdsInLoans = new Set(
+      this.loans
+        .map(loan => String(loan.groupId || loan.cooperativeGroupId || ''))
+        .filter(Boolean)
+    );
+
+    return this.groups
+      .filter(group => groupIdsInLoans.has(String(group.id)))
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }
+
   get approvedLoans(): CooperativeLoan[] {
     return this.loans
       .filter(item => item.status === 'APPROVED')
@@ -404,7 +439,7 @@ export class CooperativeLoansComponent implements OnInit {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
 
-    this.disbursementDate = `${yyyy}-${mm}-${dd}`;
+    this.disbursedDate = `${yyyy}-${mm}-${dd}`;
     this.disbursementAmount = Number(loan?.amount || 0);
   }
 }

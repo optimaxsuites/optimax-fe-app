@@ -2,6 +2,7 @@ import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
+import { finalize } from 'rxjs/operators';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
@@ -39,19 +40,18 @@ export class LoanRequestFormComponent implements OnInit {
   initializeForm(): void {
     this.loanRequestForm = this.fb.group({
       // Loan Details
-      loanPurpose: ['', Validators.required],
+      purpose: ['', Validators.required],
       otherPurpose: [''],
-      loanAmount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
-      repaymentPeriod: ['', Validators.required],
-      monthlyRepaymentAmount: [{value: '', disabled: true}, [Validators.required]],
-      // Payment Mode Field
-      paymentMode: ['', Validators.required],
+      amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
+      repaymentTime: ['', Validators.required],
+      repaymentAmountAmount: [{value: '', disabled: true}, [Validators.required]],
+      modeOfPayment: ['', Validators.required],
       // Acknowledgement
       acknowledgment: [false, Validators.requiredTrue]
     });
 
     // Conditional validation for "Other Purpose" field
-    this.loanRequestForm.get('loanPurpose')?.valueChanges.subscribe(value => {
+    this.loanRequestForm.get('purpose')?.valueChanges.subscribe(value => {
       this.showOtherPurpose = value === 'other';
       const otherPurposeControl = this.loanRequestForm.get('otherPurpose');
       if (value === 'other') {
@@ -66,69 +66,69 @@ export class LoanRequestFormComponent implements OnInit {
 
   setupFormListeners(): void {
     // Auto-calculate monthly repayment amount
-    this.loanRequestForm.get('loanAmount')?.valueChanges.subscribe(() => {
-      this.calculateMonthlyRepayment();
+    this.loanRequestForm.get('amount')?.valueChanges.subscribe(() => {
+      this.calculaterepaymentAmount();
     });
 
-    this.loanRequestForm.get('repaymentPeriod')?.valueChanges.subscribe(() => {
-      this.calculateMonthlyRepayment();
+    this.loanRequestForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+      this.calculaterepaymentAmount();
     });
 
     // Reset monthly repayment when one-off is selected
-    this.loanRequestForm.get('paymentMode')?.valueChanges.subscribe(mode => {
-      if (mode === 'one_off') {
+    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe(mode => {
+      if (mode === 'ONE_OFF') {
         // For one-off payment, monthly repayment = total loan amount
-        const loanAmount = this.loanRequestForm.get('loanAmount')?.value;
-        if (loanAmount) {
-          this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(loanAmount);
+        const amount = this.loanRequestForm.get('amount')?.value;
+        if (amount) {
+          this.loanRequestForm.get('repaymentAmountAmount')?.setValue(amount);
         }
       } else {
-        this.calculateMonthlyRepayment();
+        this.calculaterepaymentAmount();
       }
     });
   }
 
   // Calculation method
-  calculateMonthlyRepayment(): void {
-    const loanAmount = this.loanRequestForm.get('loanAmount')?.value;
-    const repaymentPeriod = this.loanRequestForm.get('repaymentPeriod')?.value;
-    const paymentMode = this.loanRequestForm.get('paymentMode')?.value;
+  calculaterepaymentAmount(): void {
+    const amount = this.loanRequestForm.get('amount')?.value;
+    const repaymentTime = this.loanRequestForm.get('repaymentTime')?.value;
+    const modeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
     
-    if (loanAmount && repaymentPeriod) {
-      if (paymentMode === 'one_off') {
+    if (amount && repaymentTime) {
+      if (modeOfPayment === 'ONE_OFF') {
         // For one-off payment, show full amount
-        this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(loanAmount);
+        this.loanRequestForm.get('repaymentAmountAmount')?.setValue(amount);
       } else {
         // Standard monthly calculation
-        const monthlyRepayment = loanAmount / repaymentPeriod;
-        this.loanRequestForm.get('monthlyRepaymentAmount')?.setValue(Number(monthlyRepayment.toFixed(2)));
+        const repaymentAmount = amount / repaymentTime;
+        this.loanRequestForm.get('repaymentAmountAmount')?.setValue(Number(repaymentAmount.toFixed(2)));
       }
     }
   }
 
   // Getters for form controls
-  get loanPurpose(): AbstractControl | null { 
-    return this.loanRequestForm.get('loanPurpose'); 
+  get purpose(): AbstractControl | null { 
+    return this.loanRequestForm.get('purpose'); 
   }
   
   get otherPurpose(): AbstractControl | null { 
     return this.loanRequestForm.get('otherPurpose'); 
   }
   
-  get loanAmount(): AbstractControl | null { 
-    return this.loanRequestForm.get('loanAmount'); 
+  get amount(): AbstractControl | null { 
+    return this.loanRequestForm.get('amount'); 
   }
   
-  get repaymentPeriod(): AbstractControl | null { 
-    return this.loanRequestForm.get('repaymentPeriod'); 
+  get repaymentTime(): AbstractControl | null { 
+    return this.loanRequestForm.get('repaymentTime'); 
   }
   
-  get monthlyRepaymentAmount(): AbstractControl | null { 
-    return this.loanRequestForm.get('monthlyRepaymentAmount'); 
+  get repaymentAmountAmount(): AbstractControl | null { 
+    return this.loanRequestForm.get('repaymentAmountAmount'); 
   }
   
-  get paymentMode(): AbstractControl | null {
-    return this.loanRequestForm.get('paymentMode');
+  get modeOfPayment(): AbstractControl | null {
+    return this.loanRequestForm.get('modeOfPayment');
   }
 
   get acknowledgment(): AbstractControl | null { 
@@ -172,56 +172,51 @@ export class LoanRequestFormComponent implements OnInit {
 
       // Prepare form data for submission
       const formData: LoanApplicationFormData = {
-        loanPurpose: this.loanRequestForm.get('loanPurpose')?.value,
+        purpose: this.loanRequestForm.get('purpose')?.value,
         otherPurpose: this.loanRequestForm.get('otherPurpose')?.value,
-        loanAmount: parseFloat(this.loanRequestForm.get('loanAmount')?.value),
-        repaymentPeriod: parseInt(this.loanRequestForm.get('repaymentPeriod')?.value),
-        monthlyRepaymentAmount: parseFloat(this.loanRequestForm.get('monthlyRepaymentAmount')?.value),
-        paymentMode: this.loanRequestForm.get('paymentMode')?.value,
+        amount: parseFloat(this.loanRequestForm.get('amount')?.value),
+        repaymentTime: parseInt(this.loanRequestForm.get('repaymentTime')?.value),
+        repaymentAmount: parseFloat(this.loanRequestForm.get('repaymentAmountAmount')?.value),
+        modeOfPayment: this.loanRequestForm.get('modeOfPayment')?.value,
         acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
         supportingDocuments: this.supportingDocuments,
-        submissionDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US'),
-        employeeId: this.employeeId,
+        requestDate: new Date().toISOString(),
+        employeeId: Number(this.employeeId),
         employeeName: this.employeeName,
-        department: this.department,
-        employeeNumericId: Number.isFinite(Number(this.employeeId)) ? Number(this.employeeId) : undefined
+        department: this.department
       };
 
-      // Submit to service
-      this.loanApplicationService.submitLoanApplication(formData).subscribe({
-        next: (response) => {
-          console.log('Loan application submitted successfully:', response);
-          this.showMessage('success', 'Application Submitted', `Your application ID is ${response.id}.`);
-
-          // Reset form
-          this.loanRequestForm.reset();
-          this.showOtherPurpose = false;
-          this.supportingDocuments = [];
-          this.loanSubmitted.emit();
-
-          // Parent component handles post-submit behavior.
-        },
-        error: (error) => {
-          console.error('Error submitting loan application:', error);
-          this.showMessage(
-            'error',
-            'Submission Failed',
-            this.errorMessageService.getUserMessage(
-              error,
-              'There was an error submitting your application. Please try again later.'
-            )
-          );
+      this.loanApplicationService.submitLoanApplication(formData)
+        .pipe(finalize(() => {
           this.isLoading = false;
-        },
-        complete: () => {
-          this.isLoading = false; 
-        }
-      });
+        }))
+        .subscribe({
+          next: (response) => {
+            const applicationReference = response.loanCode || String(response.id);
+            this.showMessage('success', 'Application Submitted', `Your application ID is ${applicationReference}.`);
+
+            this.loanRequestForm.reset();
+            this.showOtherPurpose = false;
+            this.supportingDocuments = [];
+            this.loanSubmitted.emit();
+          },
+          error: (error) => {
+            console.error('Error submitting loan application:', error);
+            this.showMessage(
+              'error',
+              'Submission Failed',
+              this.errorMessageService.getUserMessage(
+                error,
+                'There was an error submitting your application. Please try again later.'
+              )
+            );
+          }
+        });
     } else {
       this.loanRequestForm.markAllAsTouched();
       
       // Show specific error message for payment mode
-      if (this.paymentMode?.invalid) {
+      if (this.modeOfPayment?.invalid) {
         this.showMessage('warn', 'Validation Error', 'Please select a mode of payment (Monthly or One-off).');
       } else {
         this.showMessage('warn', 'Validation Error', 'Please fill out all required fields correctly before submitting.');

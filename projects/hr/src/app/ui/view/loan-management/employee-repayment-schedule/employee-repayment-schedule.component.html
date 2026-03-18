@@ -2,7 +2,7 @@
   <!-- Loan Header -->
   <div class="loan-header">
     <div class="loan-title">
-      <h3 [title]="loan.id">Repayment Schedule: {{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</h3>
+      <h3 [title]="loan.loanCode">Repayment Schedule: {{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</h3>
       <span class="loan-purpose">{{ loan.purpose }}</span>
     </div>
     <div class="loan-status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
@@ -18,7 +18,7 @@
       </div>
       <div class="card-content">
         <span class="label">Total Loan</span>
-        <span class="value">₦{{ loan.loanAmount | number:'1.2-2' }}</span>
+        <span class="value">₦{{ loan.amount | number:'1.2-2' }}</span>
       </div>
     </div>
 
@@ -109,20 +109,20 @@
            [ngClass]="getStatusClass(item.status)">
         <div class="item-header">
           <i [ngClass]="getStatusIcon(item.status)"></i>
-          <span class="month">Month {{ item.monthNumber }}</span>
+          <span class="month">Installment {{ item.installmentNo }}</span>
         </div>
         <div class="item-content">
           <div class="amount-row">
             <span>Principal:</span>
-            <span>₦{{ item.principal | number:'1.2-2' }}</span>
+            <span>₦{{ item.principalAmount | number:'1.2-2' }}</span>
           </div>
           <div class="amount-row">
             <span>Interest:</span>
-            <span>₦{{ item.interest | number:'1.2-2' }}</span>
+            <span>₦{{ item.interestAmount | number:'1.2-2' }}</span>
           </div>
           <div class="total-row">
             <span>Total:</span>
-            <span>₦{{ item.totalPayment | number:'1.2-2' }}</span>
+            <span>₦{{ item.totalAmount | number:'1.2-2' }}</span>
           </div>
           <div class="due-date">
             <i class="fas fa-calendar"></i>
@@ -156,11 +156,11 @@
         </thead>
         <tbody>
           <tr *ngFor="let item of loan.repaymentSchedule">
-            <td>{{ item.monthNumber }}</td>
+            <td>{{ item.installmentNo }}</td>
             <td>{{ formatDate(item.dueDate) }}</td>
-            <td>₦{{ item.principal | number:'1.2-2' }}</td>
-            <td>₦{{ item.interest | number:'1.2-2' }}</td>
-            <td>₦{{ item.totalPayment | number:'1.2-2' }}</td>
+            <td>₦{{ item.principalAmount | number:'1.2-2' }}</td>
+            <td>₦{{ item.interestAmount | number:'1.2-2' }}</td>
+            <td>₦{{ item.totalAmount | number:'1.2-2' }}</td>
             <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
             <td>
               <span class="status-badge-small" [ngClass]="getStatusClass(item.status)">

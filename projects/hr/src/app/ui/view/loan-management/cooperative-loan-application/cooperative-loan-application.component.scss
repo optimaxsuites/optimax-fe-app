@@ -356,6 +356,172 @@
     border-radius: 8px;
   }
 
+  .confirmation-submodal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(10, 26, 33, 0.52);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(3px);
+  }
+
+  .confirmation-dialog {
+    width: min(100%, 760px);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background:
+      radial-gradient(circle at top right, rgba(255, 184, 77, 0.12), transparent 28%),
+      linear-gradient(180deg, #ffffff 0%, #f7fbfc 100%);
+    border: 1px solid #dce9ed;
+    border-radius: 22px;
+    box-shadow: 0 28px 70px rgba(9, 31, 39, 0.22);
+    padding: 22px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .confirmation-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+
+    h2 {
+      margin: 4px 0 8px;
+      color: #19313c;
+      font-size: 1.45rem;
+      border: 0;
+      padding: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #5e6f77;
+      line-height: 1.55;
+      max-width: 520px;
+    }
+  }
+
+  .confirmation-eyebrow {
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #8a6a1d;
+  }
+
+  .confirmation-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #d7e7ec;
+    background: #fff;
+    color: #2e6276;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .confirmation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .confirmation-card {
+    border: 1px solid #dfeaed;
+    border-radius: 16px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.82);
+    display: grid;
+    gap: 6px;
+
+    &.hero {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #2e6276, #4b95af);
+      border-color: transparent;
+      color: #fff;
+
+      .label,
+      small {
+        color: rgba(255, 255, 255, 0.88);
+      }
+
+      strong {
+        color: #fff;
+        font-size: 1.7rem;
+      }
+    }
+
+    .label {
+      color: #6d7c83;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 800;
+    }
+
+    strong {
+      color: #1b3540;
+      font-size: 1.02rem;
+      line-height: 1.35;
+    }
+
+    small {
+      color: #64747c;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+  }
+
+  .confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 6px;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    border-radius: 10px;
+    padding: 11px 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .cancel-btn {
+    background: #fff;
+    border: 1px solid #d7e7ec;
+    color: #495057;
+
+    &:hover {
+      background: #f3f7f9;
+      border-color: #c6dbe3;
+    }
+  }
+
+  .submit-btn {
+    border: none;
+    background: linear-gradient(135deg, #2EB270, #22945a);
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(46, 178, 112, 0.18);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(46, 178, 112, 0.22);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+
   .acknowledgement-section {
     .ack-note {
       margin: 0 0 10px;
@@ -385,40 +551,6 @@
     background: #fff;
     padding: 10px 0 2px;
     border-top: 1px solid #e3eef0;
-
-    button {
-      border-radius: 6px;
-      padding: 10px 20px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .cancel-btn {
-      background: #fff;
-      border: 1px solid #d7e7ec;
-      color: #495057;
-
-      &:hover {
-        background: #f3f7f9;
-      }
-    }
-
-    .submit-btn {
-      border: none;
-      background: #2EB270;
-      color: #fff;
-
-      &:hover:not(:disabled) {
-        background: #47e797;
-        transform: translateY(-2px);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
   }
 
   &.modal-mode {
@@ -464,6 +596,20 @@
       grid-template-columns: 1fr;
     }
 
+
+    .confirmation-dialog {
+      padding: 18px;
+    }
+
+    .confirmation-header,
+    .confirmation-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .confirmation-grid {
+      grid-template-columns: 1fr;
+    }
     .form-actions {
       justify-content: stretch;
 

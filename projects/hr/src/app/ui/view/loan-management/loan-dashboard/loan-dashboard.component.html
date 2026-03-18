@@ -2,15 +2,15 @@
     <app-modal *ngIf="showLoanDetailsModal" [header]="'Loan Details'" (close)="closeLoanDetailsModal()">
         <div class="loan-details-modal" *ngIf="selectedLoan as loan">
             <div class="details-grid">
-                <div class="detail-item"><span class="label">Loan ID</span><span class="value">{{ loan.id }}</span></div>
+                <div class="detail-item"><span class="label">Loan ID</span><span class="value">{{ loan.loanCode }}</span></div>
                 <div class="detail-item"><span class="label">Employee</span><span class="value">{{ loan.fullName }}</span></div>
                 <div class="detail-item"><span class="label">Employee ID</span><span class="value">{{ loan.employeeId }}</span></div>
                 <div class="detail-item"><span class="label">Department</span><span class="value">{{ loan.department }}</span></div>
-                <div class="detail-item"><span class="label">Applied On</span><span class="value">{{ loan.dateSubmitted | date:'medium' }}</span></div>
+                <div class="detail-item"><span class="label">Applied On</span><span class="value">{{ loan.requestDate | date:'medium' }}</span></div>
                 <div class="detail-item"><span class="label">Approved On</span><span class="value">{{ (loan.approvedDate || null) ? (loan.approvedDate | date:'medium') : 'N/A' }}</span></div>
-                <div class="detail-item"><span class="label">Amount</span><span class="value">{{ formatCurrency(loan.loanAmount) }}</span></div>
+                <div class="detail-item"><span class="label">Amount</span><span class="value">{{ formatCurrency(loan.amount) }}</span></div>
                 <div class="detail-item"><span class="label">Interest Rate</span><span class="value">{{ loan.interestRate || 0 }}%</span></div>
-                <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span></div>
+                <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.repaymentAmount) }}</span></div>
                 <div class="detail-item"><span class="label">Outstanding</span><span class="value">{{ formatCurrency(loan.currentBalance) }}</span></div>
                 <div class="detail-item"><span class="label">Overdue Installments</span><span class="value">{{ getOverdueInstallmentsCount(loan) }}</span></div>
                 <div class="detail-item"><span class="label">Grace Reminders</span><span class="value">{{ getReminderSentCount(loan) }}</span></div>
@@ -34,9 +34,9 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let item of getLifecycleInstallmentsPreview(loan)">
-                            <td>{{ item.monthNumber }}</td>
+                            <td>{{ item.installmentNo }}</td>
                             <td>{{ item.dueDate | date:'mediumDate' }}</td>
-                            <td>{{ formatCurrency(item.totalPayment) }}</td>
+                            <td>{{ formatCurrency(item.totalAmount) }}</td>
                             <td>{{ formatCurrency(item.lateFeeAmount || 0) }}</td>
                             <td>{{ getInstallmentLifecycleLabel(item) }}</td>
                             <td>{{ item.creditReportedAt ? 'Reported' : 'Not Reported' }}</td>
@@ -174,7 +174,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let loan of filteredLoans">
-                                <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
+                                <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
                                 <td>
                                     <div class="employee-info">
                                         <span class="name">{{ loan.fullName }}</span>
@@ -182,13 +182,13 @@
                                     </div>
                                 </td>
                                 <td>{{ loan.department }}</td>
-                                <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
+                                <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
                                 <td>                    
                                     <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
                                         {{ loan.status }}
                                     </span>
                                 </td>
-                                <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
+                                <td>{{ loan.requestDate | date:'shortDate' }}</td>
                                 <td class="actions-col">
                                     <div class="action-buttons">
                                         <button class="btn-view"

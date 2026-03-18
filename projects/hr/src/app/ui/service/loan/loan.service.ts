@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, isDevMode } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import {
@@ -27,39 +27,33 @@ export class LoanService {
   constructor(private http: HttpClient) {}
 
   getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
-    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl);
+    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl).pipe(
+      catchError(this.handleError)
+    );
   }
 
   getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
-    return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`);
+    return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
-    return this.http.post<AdvanceLoan>(this.standardLoanUrl, payload);
+    return this.http.post<AdvanceLoan>(this.standardLoanUrl, payload).pipe(
+      catchError(this.handleError)
+    );
   }
 
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
-    return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, payload);
+    return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, payload).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  getAdvanceLoanStats(payload: any): Observable<AdvanceLoanStats> {
-    return this.http.post<AdvanceLoanStats>(`${this.standardLoanUrl}/stats`, payload);
-  }
-
-  getApplicationByIdFromBackend(id: number | string): Observable<any> {
-    return this.http.get<any>(`${this.standardLoanUrl}/${id}`);
-  }
-
-  updateApplicationOnBackend(id: number | string, payload: any): Observable<any> {
-    return this.http.put<any>(`${this.standardLoanUrl}/${id}`, payload);
-  }
-
-  postLoanStats(payload: any): Observable<any> {
-    return this.http.post<any>(`${this.standardLoanUrl}/stats`, payload);
-  }
-
-  getAllApplicationsFromBackend(): Observable<any[]> {
-    return this.http.get<any[]>(this.standardLoanUrl);
+  getAdvanceLoanStats(): Observable<AdvanceLoanStats> {
+    return this.http.get<AdvanceLoanStats>(`${this.standardLoanUrl}/stats`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   listLoanApplications(): Observable<LoanApplication[]> {
@@ -74,14 +68,30 @@ export class LoanService {
     );
   }
 
-  createLoanApplication(formData: LoanApplicationFormData, employeeNumericId: number): Observable<LoanApplication> {
-    return this.createAdvanceLoan(this.toCreatePayload(formData, employeeNumericId)).pipe(
-      map((loan) => this.toLoanApplication(loan))
+  createLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
+    return this.createAdvanceLoan({
+      employeeId: Number(formData.employeeId || 0),
+      amount: formData.amount,
+      purpose: formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose,
+      repaymentAmount: formData.repaymentAmount,
+      repaymentTime: formData.repaymentTime,
+      modeOfPayment: formData.modeOfPayment,
+      requestDate: formData.requestDate || new Date().toISOString()
+    }).pipe(
+      map((loan) => {
+        const application = this.toLoanApplication(loan);
+        return {
+          ...application,
+          requestDate: this.normalizeDateValue(loan.requestDate, formData.requestDate || new Date().toISOString()),
+          fullName: application.fullName || formData.employeeName || 'Employee',
+          department: application.department || formData.department || ''
+        };
+      })
     );
   }
 
   saveLoanApplication(application: LoanApplication): Observable<LoanApplication> {
-    const identifier = application.backendId ? String(application.backendId) : application.id;
+    const identifier = String(application.id || application.loanCode);
 
     return this.getAdvanceLoanByIdentifier(identifier).pipe(
       switchMap((sourceLoan) => {
@@ -136,25 +146,26 @@ export class LoanService {
     const employee = loan.employee;
 
     return {
-      backendId: Number(loan.id),
+      id: Number(loan.id || 0),
       loanCode: String(loan.loanCode || loan.id),
-      id: String(loan.loanCode || loan.id),
-      approvedDate: loan.approvedDate || undefined,
-      disbursementDate: loan.disbursedDate || undefined,
-      startDate: loan.disbursedDate || undefined,
-      endDate: loan.completedDate || loan.rejectedDate || undefined,
-      submittedAt: loan.requestDate || undefined,
+      approvedDate: this.normalizeDateValue(loan.approvedDate) || undefined,
+      approvedBy: loan.approvedBy,
+      disbursedDate: this.normalizeDateValue(loan.disbursedDate) || undefined,
+      disbursedBy: loan.disbursedBy,
+      requestDate: this.normalizeDateValue(loan.requestDate, new Date().toISOString()),
+      completedDate: this.normalizeDateValue(loan.completedDate) || undefined,
+      rejectedDate: this.normalizeDateValue(loan.rejectedDate) || undefined,
+      rejectedBy: loan.rejectedBy,
       adminComment: loan.adminComment || '',
-      employeeId: String(employee?.id ?? ''),
+      employeeId: Number(employee?.id || 0),
       fullName: this.getEmployeeFullName(employee),
       department: employee?.department?.name || '',
-      loanAmount: Number(loan.amount || 0),
-      paymentMode: this.fromBackendPaymentMode(loan.modeOfPayment),
+      amount: Number(loan.amount || 0),
+      modeOfPayment: this.fromBackendPaymentMode(loan.modeOfPayment),
       status: this.toLoanStatus(loan.status),
-      dateSubmitted: loan.requestDate || new Date().toISOString(),
       purpose: loan.purpose || '',
-      repaymentPeriod: Number(loan.repaymentTime || repaymentSchedule.length || 0),
-      monthlyRepayment: Number(loan.repaymentAmount || repaymentSchedule[0]?.totalPayment || 0),
+      repaymentTime: Number(loan.repaymentTime || repaymentSchedule.length || 0),
+      repaymentAmount: Number(loan.repaymentAmount || repaymentSchedule[0]?.totalAmount || 0),
       acknowledgment: true,
       interestRate: this.deriveInterestRate(loan),
       currentBalance: Number(loan.currentBalance || 0),
@@ -171,28 +182,29 @@ export class LoanService {
 
   private toRepaymentScheduleItem(item: AdvanceLoanRepaymentSchedule, index: number): RepaymentScheduleItem {
     return {
-      id: String(item.id || index + 1),
-      monthNumber: Number(item.installmentNo || index + 1),
+      id: Number(item.id || index + 1),
+      installmentNo: Number(item.installmentNo || index + 1),
       dueDate: item.dueDate,
-      principal: Number(item.principalAmount || 0),
-      interest: Number(item.interestAmount || 0),
-      totalPayment: Number(item.totalAmount || 0),
+      principalAmount: Number(item.principalAmount || 0),
+      interestAmount: Number(item.interestAmount || 0),
+      totalAmount: Number(item.totalAmount || 0),
+      paidAmount: Number(item.paidAmount || 0),
       remainingBalance: Number(item.remainingBalance || 0),
-      status: this.toRepaymentStatus(item.status),
-      paidAmount: Number(item.paidAmount || 0)
+      status: this.toRepaymentStatus(item.status)
     };
   }
 
   private toPaymentRecord(item: AdvanceLoanPaymentHistory, index: number): PaymentRecord {
     return {
-      id: String(item.id || index + 1),
-      date: item.paidAt,
-      amount: Number(item.totalAmount || 0),
+      id: Number(item.id || index + 1),
+      loanId: typeof item.loanId === 'number' ? item.loanId : item.loanId?.id,
+      paidAt: item.paidAt,
       principalAmount: Number(item.principalAmount || 0),
       interestPaid: Number(item.interestPaid || 0),
       lateFeeAmount: Number(item.lateFeeAmount || 0),
+      totalAmount: Number(item.totalAmount || 0),
       remainingBalance: Number(item.remainingBalance || 0),
-      paymentMethod: item.paymentMethod || 'BANK_TRANSFER',
+      paymentMethod: item.modeofPayment || 'BANK_TRANSFER',
       referenceNumber: item.referenceNumber || '',
       installmentNo: Number(item.installmentNo || 0),
       notes: item.notes || '',
@@ -203,65 +215,41 @@ export class LoanService {
 
   private toStatusChange(item: AdvanceLoanStatusHistory): StatusChange {
     return {
-      id: String(item.id || ''),
+      id: Number(item.id || 0),
       status: this.toLoanStatus(item.status),
-      date: item.changedAt,
+      changedAt: item.changedAt,
       changedBy: this.getUserDisplayName(item.changedBy),
       notes: item.notes || '',
+      overrideOpen: item.overrideOpen,
+      overrideBy: item.overrideBy ? this.getUserDisplayName(item.overrideBy) : undefined,
+      overrideReason: item.overrideReason || undefined,
+      statusBeforeOverride: this.toLoanStatus(item.statusBeforeOverride || item.status),
       interestRate: Number((item as any).interestRate || 0)
     };
   }
 
-  private toCreatePayload(formData: LoanApplicationFormData, employeeNumericId: number): any {
-    return {
-      id: 0,
-      loanCode: '',
-      employeeId: employeeNumericId,
-      amount: formData.loanAmount,
-      purpose: formData.loanPurpose === 'other' ? formData.otherPurpose || 'Other' : formData.loanPurpose,
-      repaymentAmount: formData.monthlyRepaymentAmount,
-      repaymentTime: formData.repaymentPeriod,
-      modeOfPayment: this.toBackendPaymentMode(formData.paymentMode),
-      requestDate: new Date().toISOString(),
-      approvedDate: '',
-      approvedBy: 0,
-      disbursedDate: '',
-      disbursedBy: 0,
-      completedDate: '',
-      rejectedDate: '',
-      rejectedBy: 0,
-      status: 'PENDING',
-      adminComment: '',
-      currentBalance: formData.loanAmount,
-      totalPaid: 0,
-      totalPrincipalPaid: 0,
-      totalInterestPaid: 0,
-      outstandingPrincipal: formData.loanAmount,
-      statusBeforeOverride: 'PENDING',
-      repaymentSchedule: [],
-      paymentHistory: [],
-      statusHistory: []
-    };
-  }
-
+  /**
+   * Create payload for PUT /advanceLoans/{id}
+   * Uses IDs (not full objects) as shown in the endpoint documentation
+   */
   private toUpdatePayload(application: LoanApplication, sourceLoan: AdvanceLoan): any {
     return {
       id: Number(sourceLoan.id),
-      loanCode: sourceLoan.loanCode || application.loanCode || application.id,
-      employeeId: Number(sourceLoan.employee?.id || this.parseNumericId(application.employeeId) || 0),
-      amount: application.loanAmount,
+      loanCode: sourceLoan.loanCode || application.loanCode || String(application.id),
+      employeeId: Number(sourceLoan.employee?.id || application.employeeId || 0),
+      amount: application.amount,
       purpose: application.purpose,
-      repaymentAmount: application.monthlyRepayment,
-      repaymentTime: application.repaymentPeriod,
-      modeOfPayment: this.toBackendPaymentMode(application.paymentMode),
-      requestDate: sourceLoan.requestDate || application.dateSubmitted,
+      repaymentAmount: application.repaymentAmount,
+      repaymentTime: application.repaymentTime,
+      modeOfPayment: application.modeOfPayment,
+      requestDate: sourceLoan.requestDate || application.requestDate,
       approvedDate: application.approvedDate || sourceLoan.approvedDate || '',
-      approvedBy: sourceLoan.approvedBy?.id || 0,
-      disbursedDate: application.disbursementDate || sourceLoan.disbursedDate || '',
-      disbursedBy: sourceLoan.disbursedBy?.id || 0,
-      completedDate: application.status === 'COMPLETED' ? application.endDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || '',
-      rejectedDate: application.status === 'REJECTED' ? application.endDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || '',
-      rejectedBy: sourceLoan.rejectedBy?.id || 0,
+      approvedBy: this.extractUserId(sourceLoan.approvedBy),
+      disbursedDate: application.disbursedDate || sourceLoan.disbursedDate || '',
+      disbursedBy: this.extractUserId(sourceLoan.disbursedBy),
+      completedDate: application.status === 'COMPLETED' ? application.completedDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || '',
+      rejectedDate: application.status === 'REJECTED' ? application.rejectedDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || '',
+      rejectedBy: this.extractUserId(sourceLoan.rejectedBy),
       status: application.status,
       adminComment: application.adminComment || sourceLoan.adminComment || this.getLatestStatusNote(application),
       currentBalance: application.currentBalance,
@@ -272,11 +260,11 @@ export class LoanService {
       statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
       repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
         id: this.resolveNumericId(sourceLoan.repaymentSchedule?.[index]?.id),
-        installmentNo: item.monthNumber,
+        installmentNo: item.installmentNo,
         dueDate: item.dueDate,
-        principalAmount: item.principal,
-        interestAmount: item.interest,
-        totalAmount: item.totalPayment,
+        principalAmount: item.principalAmount,
+        interestAmount: item.interestAmount,
+        totalAmount: item.totalAmount,
         paidAmount: Number(item.paidAmount || 0),
         remainingBalance: item.remainingBalance,
         status: item.status
@@ -284,31 +272,38 @@ export class LoanService {
       paymentHistory: (application.paymentHistory || []).map((item, index) => ({
         id: this.resolveNumericId(sourceLoan.paymentHistory?.[index]?.id),
         loanId: Number(sourceLoan.id),
-        paidAt: item.date,
+        paidAt: item.paidAt,
         principalAmount: Number(item.principalAmount || 0),
         interestPaid: Number(item.interestPaid || 0),
         lateFeeAmount: Number(item.lateFeeAmount || 0),
-        totalAmount: item.amount,
+        totalAmount: item.totalAmount,
         remainingBalance: Number(item.remainingBalance || application.currentBalance || 0),
         paymentMethod: item.paymentMethod,
         referenceNumber: item.referenceNumber || '',
         installmentNo: Number(item.installmentNo || 0),
         notes: item.notes || '',
-        receiptNumber: item.receiptNumber || item.id || ''
+        receiptNumber: item.receiptNumber || String(item.id || '')
       })),
       statusHistory: (application.statusHistory || []).map((item, index) => ({
         id: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.id),
         status: item.status,
-        changedAt: item.date,
-        changedBy: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.changedBy),
+        changedAt: item.changedAt,
+        changedBy: this.extractUserId(sourceLoan.statusHistory?.[index]?.changedBy),
         notes: item.notes || '',
-        overrideOpen: false,
-        overrideBy: this.resolveNumericId(sourceLoan.statusHistory?.[index]?.overrideBy),
-        overrideReason: sourceLoan.statusHistory?.[index]?.overrideReason || '',
-        statusBeforeOverride: sourceLoan.statusHistory?.[index]?.statusBeforeOverride || sourceLoan.statusBeforeOverride || application.status
+        overrideOpen: item.overrideOpen ?? false,
+        overrideBy: this.extractUserId(sourceLoan.statusHistory?.[index]?.overrideBy),
+        overrideReason: item.overrideReason || sourceLoan.statusHistory?.[index]?.overrideReason || '',
+        statusBeforeOverride: item.statusBeforeOverride || sourceLoan.statusHistory?.[index]?.statusBeforeOverride || sourceLoan.statusBeforeOverride || application.status
       })),
       interestRate: application.interestRate
     };
+  }
+
+  // Helper method to extract user ID from various formats
+  private extractUserId(user: AdvanceLoanUser | number | undefined): number {
+    if (!user) return 0;
+    if (typeof user === 'number') return user;
+    return Number(user.id || user.userId || 0);
   }
 
   private parseNumericId(value: string | number | undefined | null): number | null {
@@ -362,16 +357,12 @@ export class LoanService {
 
   private getLatestStatusNote(application: LoanApplication): string {
     const latestHistory = [...(application.statusHistory || [])]
-      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime())[0];
+      .sort((first, second) => new Date(second.changedAt).getTime() - new Date(first.changedAt).getTime())[0];
     return latestHistory?.notes || '';
   }
 
-  private toBackendPaymentMode(paymentMode?: string): 'MONTHLY' | 'ONE_OFF' {
-    return paymentMode === 'one_off' ? 'ONE_OFF' : 'MONTHLY';
-  }
-
-  private fromBackendPaymentMode(paymentMode?: string): 'monthly' | 'one_off' {
-    return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'one_off' : 'monthly';
+  private fromBackendPaymentMode(paymentMode?: string): 'MONTHLY' | 'ONE_OFF' {
+    return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
   }
 
   private toLoanStatus(status?: string): LoanApplication['status'] {
@@ -424,5 +415,33 @@ export class LoanService {
 
     const annualizedRate = ((totalInterest / principal) * 100 * 12) / tenureMonths;
     return Number(annualizedRate.toFixed(2));
+  }
+
+  private normalizeDateValue(value: unknown, fallback = ''): string {
+    const rawValue = String(value ?? '').trim();
+
+    if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
+      return fallback;
+    }
+
+    const timestamp = new Date(rawValue).getTime();
+    return Number.isFinite(timestamp) ? rawValue : fallback;
+  }
+
+  private handleError(error: any): Observable<never> {
+    if (error instanceof HttpErrorResponse) {
+      if (isDevMode()) {
+        console.error('Advance loan API error', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          error: error.error
+        });
+      }
+      return throwError(() => error);
+    }
+
+    console.error('Advance loan service error', error);
+    return throwError(() => error);
   }
 }

@@ -14,11 +14,11 @@
   <div class="details-grid">
     <div class="detail-item">
       <span class="label">Loan ID</span>
-      <span class="value">{{ loan.id }}</span>
+      <span class="value">{{ loan.loanCode }}</span>
     </div>
     <div class="detail-item">
       <span class="label">Applied On</span>
-      <span class="value">{{ formatDate(loan.dateSubmitted) }}</span>
+      <span class="value">{{ formatDate(loan.requestDate) }}</span>
     </div>
     <div class="detail-item">
       <span class="label">Approved On</span>
@@ -30,19 +30,19 @@
     </div>
     <div class="detail-item">
       <span class="label">Requested Amount</span>
-      <span class="value">{{ formatCurrency(loan.loanAmount) }}</span>
+      <span class="value">{{ formatCurrency(loan.amount) }}</span>
     </div>
     <div class="detail-item">
       <span class="label">Monthly Repayment</span>
-      <span class="value">{{ formatCurrency(loan.monthlyRepayment) }}</span>
+      <span class="value">{{ formatCurrency(loan.repaymentAmount) }}</span>
     </div>
     <div class="detail-item">
       <span class="label">Repayment Period</span>
-      <span class="value">{{ loan.repaymentPeriod }} months</span>
+      <span class="value">{{ loan.repaymentTime }} months</span>
     </div>
     <div class="detail-item">
       <span class="label">Payment Mode</span>
-      <span class="value">{{ loan.paymentMode || 'N/A' }}</span>
+      <span class="value">{{ loan.modeOfPayment || 'N/A' }}</span>
     </div>
     <div class="detail-item">
       <span class="label">Total Paid</span>
@@ -68,7 +68,7 @@
       <p class="comment">{{ feedback.notes }}</p>
       <div class="meta">
         <span>By: {{ feedback.changedBy || 'Admin' }}</span>
-        <span>{{ formatDate(feedback.date) }}</span>
+        <span>{{ formatDate(feedback.changedAt) }}</span>
       </div>
     </ng-container>
     <ng-template #noComment>

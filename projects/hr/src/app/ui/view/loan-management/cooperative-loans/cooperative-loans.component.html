@@ -77,9 +77,26 @@
         </select>
       </div>
 
+      <div class="filter-group">
+        <label for="groupFilter">Group</label>
+        <select id="groupFilter" [(ngModel)]="groupFilter" (ngModelChange)="applyFilters()">
+          <option value="">All Groups</option>
+          <option *ngFor="let group of groupOptions" [value]="group.id">{{ group.name }}</option>
+        </select>
+      </div>
+
       <button class="refresh-btn" type="button" (click)="refreshList()">Refresh</button>
       <button class="refresh-btn" type="button" (click)="openDisbursementModal()" [disabled]="approvedCount === 0">Disburse Loans</button>
       <button class="reset-btn" type="button" (click)="resetFilters()">Reset Filters</button>
+    </div>
+
+    <div class="status-strip group-strip" *ngIf="groupOptions.length > 0">
+      <button class="status-pill all" [class.active]="groupFilter === ''" (click)="groupFilter = ''; applyFilters()">
+        All Groups
+      </button>
+      <button class="status-pill" *ngFor="let group of groupOptions" [class.active]="groupFilter === group.id" (click)="groupFilter = group.id; applyFilters()">
+        {{ group.name }}
+      </button>
     </div>
 
     <div class="status-strip">
@@ -119,6 +136,7 @@
               ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
             </th>
             <th>Member</th>
+            <th>Group</th>
             <th (click)="setSort('amount')" class="sortable">
               Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i>
             </th>
@@ -137,6 +155,7 @@
           <tr *ngFor="let loan of filteredLoans">
             <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
             <td>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</td>
+            <td>{{ getGroupName(loan.groupId || loan.cooperativeGroupId) }}</td>
             <td class="amount">{{ formatCurrency(loan.amount) }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
@@ -159,7 +178,7 @@
             </td>
           </tr>
           <tr *ngIf="filteredLoans.length === 0">
-            <td colspan="8" class="no-data">
+            <td colspan="9" class="no-data">
               <i class="fas fa-search"></i>
               <p>No loans found</p>
             </td>
@@ -193,7 +212,7 @@
 
           <label>
             Disbursement Date
-            <input type="date" [(ngModel)]="disbursementDate" />
+            <input type="date" [(ngModel)]="disbursedDate" />
           </label>
 
           <label>

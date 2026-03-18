@@ -16,7 +16,7 @@ interface PendingMembershipApplication {
   fullName: string;
   requestedTier: string;
   source: 'SELF' | 'ADMIN_INVITE';
-  submittedAt: string;
+  requestDate: string;
   note?: string;
   status: 'PENDING_MANAGER_APPROVAL';
 }
@@ -179,7 +179,7 @@ export class CooperativeMembershipService {
         fullName: application.employee.fullName,
         requestedTier: application.requestedTier || eligibility.policy.tier,
         source: application.source,
-        submittedAt: new Date().toISOString(),
+        requestDate: new Date().toISOString(),
         note: application.note,
         status: 'PENDING_MANAGER_APPROVAL'
       };

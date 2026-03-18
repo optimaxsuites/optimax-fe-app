@@ -31,12 +31,12 @@ export class LoanStorageService {
 
   // Get application by ID
   getApplicationById(id: string): LoanApplication | undefined {
-    return this.applications.find(app => app.id === id);
+    return this.applications.find(app => String(app.id) === id || app.loanCode === id);
   }
 
   // Get applications by employee ID
   getApplicationsByEmployeeId(employeeId: string): LoanApplication[] {
-    return this.applications.filter(app => app.employeeId === employeeId);
+    return this.applications.filter(app => String(app.employeeId) === employeeId);
   }
 
   // Save a new application
@@ -48,7 +48,7 @@ export class LoanStorageService {
 
   // Update existing application
   updateApplication(updatedApp: LoanApplication): void {
-    const index = this.applications.findIndex(app => app.id === updatedApp.id);
+    const index = this.applications.findIndex(app => app.id === updatedApp.id || app.loanCode === updatedApp.loanCode);
     if (index !== -1) {
       this.applications[index] = updatedApp;
       this.saveToStorage();
@@ -58,7 +58,7 @@ export class LoanStorageService {
 
   // Delete application (if needed)
   deleteApplication(id: string): void {
-    this.applications = this.applications.filter(app => app.id !== id);
+    this.applications = this.applications.filter(app => String(app.id) !== id && app.loanCode !== id);
     this.saveToStorage();
     this.applicationsSubject.next([...this.applications]);
   }
@@ -75,33 +75,34 @@ export class LoanStorageService {
 
   private createSampleData(): LoanApplication[] {
     return [{
-      id: 'LN-001',
-      employeeId: 'EMP-123',
+      id: 1,
+      loanCode: 'LN-001',
+      employeeId: 123,
       fullName: 'Eseose Odion',
       department: 'IT',
-      loanAmount: 50000,
-      paymentMode: 'monthly',
+      amount: 50000,
+      modeOfPayment: 'MONTHLY',
       status: 'PENDING',
-      dateSubmitted: new Date().toISOString().split('T')[0],
+      requestDate: new Date().toISOString().split('T')[0],
       purpose: 'Medical Emergency',
-      repaymentPeriod: 12,
-      monthlyRepayment: 4166.67,
+      repaymentTime: 12,
+      repaymentAmount: 4166.67,
       acknowledgment: true,
       interestRate: 5.5,
       currentBalance: 50000,
       totalPaid: 0,
+      totalPrincipalPaid: 0,
+      totalInterestPaid: 0,
+      outstandingPrincipal: 50000,
+      adminComment: '',
       statusHistory: [{
         status: 'PENDING',
-        date: new Date().toISOString().split('T')[0],
+        changedAt: new Date().toISOString().split('T')[0],
         notes: 'Loan application submitted'
       }],
       repaymentSchedule: [],
       paymentHistory: []
     }];
-  }
-
-  private generateId(): string {
-    return 'LN-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
   }
 
   private loadFromStorage(): void {

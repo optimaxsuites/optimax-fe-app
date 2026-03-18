@@ -11,7 +11,7 @@ export interface QuestionItemDTO {
   
   export interface ScoreSheetDTO {
     applicantid: string;
-    submittedAt: string; 
+    requestDate: string; 
     criteria?: QuestionDTO;
     totalScore?: number | null;
   }

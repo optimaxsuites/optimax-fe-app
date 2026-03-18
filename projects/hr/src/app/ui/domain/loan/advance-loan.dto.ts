@@ -158,7 +158,7 @@ export interface AdvanceLoanPaymentHistory {
   lateFeeAmount: number;
   totalAmount: number;
   remainingBalance: number;
-  paymentMethod: string;
+  modeofPayment: string;
   referenceNumber: string;
   installmentNo: number;
   notes: string;
@@ -188,7 +188,7 @@ export interface AdvanceLoanStats {
   totalOverdueInstallments: number;
   totalCreditReported: number;
   totalOverride: number;
-  totalLoanAmount: number;
+  totalamount: number;
   totalOutstanding: number;
   totalPaid: number;
   avgInterestRate: number;

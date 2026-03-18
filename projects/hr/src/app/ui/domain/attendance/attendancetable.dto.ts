@@ -13,4 +13,10 @@ export interface AttendanceTableRecord {
     adminId: string;
     adminName: string;
   }
+  // --- NEW: snapshot of the schedule that was active when this record was created ---
+  appliedScheduleType?: 'office-hours' | 'shift';
+  appliedScheduleId?: string;
+  appliedExpectedStart?: string;
+  appliedExpectedEnd?: string;
+  appliedShiftName?: string;
 }

@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -26,13 +27,14 @@ export class CooperativeLoanDetailComponent implements OnInit {
   rejectionReason = '';
   requestChangesNote = '';
   paymentAmount = 0;
-  paymentMethod: CooperativeRepayment['paymentMethod'] = 'BANK_TRANSFER';
+  modeofPayment: CooperativeRepayment['modeofPayment'] = 'BANK_TRANSFER';
   messages: Message[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private backNavigationService: BackNavigationService
   ) {}
 
   ngOnInit(): void {
@@ -80,7 +82,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
     const recorded = this.cooperativeService.recordRepayment(this.loan.id, {
       amount: this.paymentAmount,
-      paymentMethod: this.paymentMethod,
+      modeofPayment: this.modeofPayment,
       paidDate: new Date().toISOString()
     });
 
@@ -103,7 +105,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     this.messages = [{
       severity: 'success',
       summary: 'Payment Recorded',
-      detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getPaymentMethodLabel(recorded.paymentMethod)}.`
+      detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
     }];
   }
 
@@ -343,7 +345,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -364,7 +366,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return this.cooperativeService.getMemberById(memberId)?.fullName || memberId;
   }
 
-  getPaymentMethodLabel(method?: CooperativeRepayment['paymentMethod']): string {
+  getmodeofPaymentLabel(method?: CooperativeRepayment['modeofPayment']): string {
     switch (method) {
       case 'BANK_TRANSFER':
         return 'Bank Transfer';
@@ -506,8 +508,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
       .filter(item => item.status !== 'PAID')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
 
-    this.paymentAmount = nextUnpaid?.amount || this.loan?.monthlyRepayment || 0;
-    this.paymentMethod = 'BANK_TRANSFER';
+    this.paymentAmount = nextUnpaid?.amount || this.loan?.repaymentAmount || 0;
+    this.modeofPayment = 'BANK_TRANSFER';
   }
 
   private normalizeGuarantors(guarantors: CooperativeLoan['guarantors'] | undefined): CooperativeLoanGuarantor[] {

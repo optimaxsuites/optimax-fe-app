@@ -18,7 +18,7 @@
 
       <div class="form-section-block">
         <label>Payment Method</label>
-        <select [(ngModel)]="selectedPaymentMethod">
+        <select [(ngModel)]="selectedmodeofPayment">
           <option value="">-- Select Method --</option>
           <option value="BANK_TRANSFER">Bank Transfer</option>
           <option value="CARD">Card Payment</option>
@@ -27,7 +27,7 @@
         </select>
       </div>
 
-      <div class="form-section-block" *ngIf="selectedPaymentMethod === 'BANK_TRANSFER'">
+      <div class="form-section-block" *ngIf="selectedmodeofPayment === 'BANK_TRANSFER'">
         <label>Bank Name</label>
         <input type="text" [(ngModel)]="bankName" placeholder="e.g. Zenith Bank" />
         <label>Account Name</label>
@@ -36,19 +36,19 @@
         <input type="text" [(ngModel)]="accountNumber" placeholder="0123456789" />
       </div>
 
-      <div class="form-section-block" *ngIf="selectedPaymentMethod === 'CARD'">
+      <div class="form-section-block" *ngIf="selectedmodeofPayment === 'CARD'">
         <label>Card Holder Name</label>
         <input type="text" [(ngModel)]="cardHolderName" placeholder="Name on card" />
         <label>Card Last 4 Digits</label>
         <input type="text" maxlength="4" [(ngModel)]="cardLast4" placeholder="1234" />
       </div>
 
-      <div class="form-section-block" *ngIf="selectedPaymentMethod === 'CASH'">
+      <div class="form-section-block" *ngIf="selectedmodeofPayment === 'CASH'">
         <label>Receiver Name</label>
         <input type="text" [(ngModel)]="cashReceiverName" placeholder="Cash collected by" />
       </div>
 
-      <div class="form-section-block" *ngIf="selectedPaymentMethod === 'PAYROLL_DEDUCTION'">
+      <div class="form-section-block" *ngIf="selectedmodeofPayment === 'PAYROLL_DEDUCTION'">
         <label>Payroll Cycle</label>
         <select [(ngModel)]="payrollCycle">
           <option value="">-- Select Cycle --</option>
@@ -57,7 +57,7 @@
         </select>
       </div>
 
-      <div class="form-section-block" *ngIf="selectedPaymentMethod">
+      <div class="form-section-block" *ngIf="selectedmodeofPayment">
         <label>Reference (Optional)</label>
         <input type="text" [(ngModel)]="paymentReference" placeholder="Payment reference" />
         <label>Narration (Optional)</label>
@@ -137,7 +137,7 @@
             <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
           </div>
           <p>{{ update.message }}</p>
-          <span class="time">{{ update.date | date:'medium' }}</span>
+          <span class="time">{{ update.changedAt | date:'medium' }}</span>
         </div>
       </div>
     </div>
@@ -195,10 +195,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let loan of allLoans.slice(0, 5)">
-              <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
-              <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
+              <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
+              <td>{{ loan.requestDate | date:'shortDate' }}</td>
               <td class="loan-purpose">{{ loan.purpose }}</td>
-              <td class="loan-amount">{{ formatCurrency(loan.loanAmount) }}</td>
+              <td class="loan-amount">{{ formatCurrency(loan.amount) }}</td>
               <td>{{ loan.interestRate }}%</td>
               <td>
                 <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">

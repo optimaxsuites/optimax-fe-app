@@ -5,10 +5,10 @@
   <div class="summary-cards">
     <div class="summary-card">
       <h3>Total Loan</h3>
-      <p class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</p>    </div>
+      <p class="amount">₦{{ loan.amount | number:'1.2-2' }}</p>    </div>
     <div class="summary-card">
       <h3>Monthly Payment</h3>
-      <p class="amount">₦{{ loan.monthlyRepayment | number:'1.2-2' }}</p>
+      <p class="amount">₦{{ loan.repaymentAmount | number:'1.2-2' }}</p>
     </div>
     <div class="summary-card">
       <h3>Total Interest</h3>
@@ -36,25 +36,25 @@
     
     <div class="bars-container">
       <div *ngFor="let payment of paymentBreakdown.slice(0, 12)" class="month-bar">
-        <div class="bar-label">Month {{ payment.month }}</div>
+        <div class="bar-label">Installment {{ payment.installmentNo }}</div>
         <div class="bar-wrapper">
           <div class="bar-segment principal" 
-               [style.height.%]="calculateBarHeight(payment.principal)"
-               [title]="'Principal: ₦' + payment.principal">
+               [style.height.%]="calculateBarHeight(payment.principalAmount)"
+               [title]="'Principal: ₦' + payment.principalAmount">
           </div>
           <div class="bar-segment interest" 
-               [style.height.%]="calculateBarHeight(payment.interest)"
-               [title]="'Interest: ₦' + payment.interest">
+               [style.height.%]="calculateBarHeight(payment.interestAmount)"
+               [title]="'Interest: ₦' + payment.interestAmount">
           </div>
         </div>
         <div class="bar-total">
-          ₦{{ (payment.principal + payment.interest) | number:'1.0-0' }}
+          ₦{{ (payment.principalAmount + payment.interestAmount) | number:'1.0-0' }}
         </div>
       </div>
     </div>
     
     <div class="visualization-note" *ngIf="paymentBreakdown.length > 12">
-      Showing first 12 months. Total period: {{ loan.repaymentPeriod }} months
+      Showing first 12 months. Total period: {{ loan.repaymentTime }} months
     </div>
   </div>
   
@@ -65,9 +65,9 @@
       <div *ngFor="let month of loan.repaymentSchedule; let i = index" class="timeline-item">
         <div class="timeline-dot" [ngClass]="getStatusClass(month.status)"></div>
         <div class="timeline-content">
-          <span>Month {{ month.monthNumber }}</span>
+          <span>Installment {{ month.installmentNo }}</span>
           <small>{{ month.dueDate | date:'MMM yyyy' }}</small>
-          <div class="timeline-amount">₦{{ month.totalPayment | number:'1.2-2' }}</div>
+          <div class="timeline-amount">₦{{ month.totalAmount | number:'1.2-2' }}</div>
         </div>
         <div class="timeline-line" *ngIf="i < loan!.repaymentSchedule.length - 1"></div>
       </div>

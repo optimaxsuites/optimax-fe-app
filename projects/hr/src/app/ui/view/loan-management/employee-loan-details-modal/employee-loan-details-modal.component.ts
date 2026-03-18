@@ -32,7 +32,7 @@ export class EmployeeLoanDetailsModalComponent {
     }
 
     const approvedHistory = this.getStatusHistoryByStatus('APPROVED');
-    return approvedHistory?.date ?? null;
+    return approvedHistory?.changedAt ?? null;
   }
 
   getLatestStatusDate(): string | null {
@@ -41,9 +41,9 @@ export class EmployeeLoanDetailsModalComponent {
     }
 
     const sorted = [...this.loan.statusHistory].sort(
-      (left, right) => new Date(right.date).getTime() - new Date(left.date).getTime()
+      (left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime()
     );
-    return sorted[0]?.date ?? null;
+    return sorted[0]?.changedAt ?? null;
   }
 
   getAdminFeedback(): StatusChange | null {
@@ -53,7 +53,7 @@ export class EmployeeLoanDetailsModalComponent {
 
     const withNotes = this.loan.statusHistory
       .filter((item) => !!item.notes?.trim())
-      .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
 
     return withNotes[0] ?? null;
   }
@@ -96,7 +96,7 @@ export class EmployeeLoanDetailsModalComponent {
 
     const entries = this.loan.statusHistory
       .filter((item) => item.status === status)
-      .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
 
     return entries[0] ?? null;
   }

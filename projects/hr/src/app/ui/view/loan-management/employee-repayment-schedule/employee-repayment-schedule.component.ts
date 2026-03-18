@@ -30,11 +30,11 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
     
     this.totalPaid = this.loan.repaymentSchedule
       .filter(item => item.status === 'PAID')
-      .reduce((sum, item) => sum + item.totalPayment, 0);
+      .reduce((sum, item) => sum + item.totalAmount, 0);
     
     this.totalRemaining = this.loan.repaymentSchedule
       .filter(item => item.status !== 'PAID')
-      .reduce((sum, item) => sum + item.totalPayment, 0);
+      .reduce((sum, item) => sum + item.totalAmount, 0);
     
     this.paidCount = this.loan.repaymentSchedule
       .filter(item => item.status === 'PAID').length;
@@ -53,7 +53,7 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
     
     if (nextPayment) {
       this.nextPaymentDate = nextPayment.dueDate;
-      this.nextPaymentAmount = nextPayment.totalPayment;
+      this.nextPaymentAmount = nextPayment.totalAmount;
     }
   }
   

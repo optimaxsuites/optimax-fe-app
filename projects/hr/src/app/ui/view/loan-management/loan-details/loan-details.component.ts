@@ -27,7 +27,7 @@ export class LoanDetailsComponent implements OnInit {
   messages: Message[] = [];
   suggestedInterestRate = 0;
   approvalPreview = {
-    monthlyRepayment: 0,
+    repaymentAmount: 0,
     totalRepayment: 0,
     totalInterest: 0
   };
@@ -79,7 +79,7 @@ export class LoanDetailsComponent implements OnInit {
         this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
           next: (applications) => {
             const employeeLoans = applications.sort((a, b) =>
-              new Date(b.dateSubmitted).getTime() - new Date(a.dateSubmitted).getTime()
+              new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
             );
 
             this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
@@ -148,7 +148,7 @@ export class LoanDetailsComponent implements OnInit {
     this.commentForm.reset();
     this.suggestedInterestRate = 0;
     this.approvalPreview = {
-      monthlyRepayment: 0,
+      repaymentAmount: 0,
       totalRepayment: 0,
       totalInterest: 0
     };
@@ -183,7 +183,7 @@ export class LoanDetailsComponent implements OnInit {
       status: this.selectedAction,
       notes: this.commentForm.value.comment || '',
       changedBy: sessionStorage.getItem('username') || 'Admin',
-      date: new Date().toISOString(),
+      changedAt: new Date().toISOString(),
       interestRate: this.selectedAction === 'APPROVED'
         ? Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate)
         : Number(this.commentForm.value.interestRate ?? 0)
@@ -245,7 +245,7 @@ export class LoanDetailsComponent implements OnInit {
   
   getProgressPercentage(): number {
     if (!this.loan) return 0;
-    return ((this.loan.loanAmount - this.loan.currentBalance) / this.loan.loanAmount) * 100;
+    return ((this.loan.amount - this.loan.currentBalance) / this.loan.amount) * 100;
   }
   
   formatCurrency(amount: number): string {
@@ -259,8 +259,8 @@ export class LoanDetailsComponent implements OnInit {
   // Get payment mode display text
   getPaymentModeDisplay(mode?: string): string {
     switch(mode) {
-      case 'monthly': return 'Monthly Installments';
-      case 'one_off': return 'One-off Payment';
+      case 'MONTHLY': return 'Monthly Installments';
+      case 'ONE_OFF': return 'One-off Payment';
       default: return this.toTitleCase((mode || '').replace(/_/g, ' ')) || 'Not specified';
     }
   }
@@ -284,10 +284,10 @@ export class LoanDetailsComponent implements OnInit {
     }
 
     this.approvalPreview = this.loanApprovalService.calculateRepaymentBreakdown(
-      this.loan.loanAmount,
-      this.loan.repaymentPeriod,
+      this.loan.amount,
+      this.loan.repaymentTime,
       Number.isFinite(interestRate) ? interestRate : 0,
-      this.loan.paymentMode
+      this.loan.modeOfPayment
     );
   }
 }

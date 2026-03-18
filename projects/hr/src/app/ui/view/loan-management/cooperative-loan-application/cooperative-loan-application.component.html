@@ -23,7 +23,7 @@
           <p><strong>Membership tenure:</strong> {{ getMemberTenureMonths(selectedMember.id) }} month(s)</p>
         </div>
         <div class="eligibility-note blocked" *ngIf="!selectedMember">
-          Select a member to view eligible loan groups.
+          Select a member to view the loan groups they belong to.
         </div>
 
         <div class="form-group">
@@ -35,7 +35,7 @@
             </option>
           </select>
           <div class="eligibility-note blocked" *ngIf="selectedMember && qualifiedGroups.length === 0">
-            No active loan groups are available yet.
+            This member does not have an active membership in any loan group yet.
           </div>
         </div>
 
@@ -47,18 +47,12 @@
             <span><strong>Min tenure:</strong> {{ selectedGroup.minMemberTenureMonths }} month(s)</span>
             <span><strong>Monthly contribution:</strong> {{ formatCurrency(selectedGroup.monthlyContributionAmount) }}</span>
             <span><strong>Max borrowing:</strong> {{ selectedGroup.maxBorrowingPercentage }}% of contribution</span>
-            <span><strong>Guarantors:</strong> {{ selectedGroup.requiresGuarantors ? selectedGroup.minimumGuarantors : 0 }}</span>
+            <span><strong>Guarantor rule:</strong> {{ guarantorRequirementLabel }}</span>
           </div>
 
           <div class="group-details">
-            <span><strong>Joined group:</strong> {{ isSelectedGroupJoined ? 'YES' : 'NO' }}</span>
+            <span><strong>Membership status:</strong> Active</span>
             <span><strong>Max borrowable now:</strong> {{ formatCurrency(maxBorrowableAmount) }}</span>
-          </div>
-
-          <div class="group-details" *ngIf="!isSelectedGroupJoined">
-            <button type="button" class="apply-btn" (click)="applyToSelectedGroup()" [disabled]="!canApplyToSelectedGroup">
-              Apply To Join Group
-            </button>
           </div>
         </div>
       </div>
@@ -187,13 +181,13 @@
         </div>
       </div>
 
-      <div class="form-section" *ngIf="monthlyRepayment > 0">
+      <div class="form-section" *ngIf="repaymentAmount > 0">
         <h2>Repayment Preview</h2>
         <div class="calculation-preview">
           <div class="calc-grid">
             <div class="calc-item">
               <span class="label">Monthly payment</span>
-              <span class="value">{{ formatCurrency(monthlyRepayment) }}</span>
+              <span class="value">{{ formatCurrency(repaymentAmount) }}</span>
             </div>
             <div class="calc-item">
               <span class="label">Total interest</span>
@@ -242,28 +236,66 @@
     <!-- Submit -->
     <div class="form-actions" *ngIf="!showConfirmation">
       <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
-      <button type="submit" class="submit-btn" [disabled]!="!applicationForm.valid || isSubmitting">
+      <button type="submit" class="submit-btn" [disabled]="!applicationForm.valid || isSubmitting">
         {{ isSubmitting ? 'Submitting...' : 'Submit' }}
       </button>
     </div>
 
     <!-- Confirmation Step -->
-    <div class="confirmation-modal" *ngIf="showConfirmation">
-      <div class="confirmation-content">
-        <h2>Confirm Loan Application</h2>
-        <ul>
-          <li><strong>Applicant:</strong> {{ confirmationDetails.memberName }}</li>
-          <li><strong>Group:</strong> {{ confirmationDetails.groupName }}</li>
-          <li><strong>Amount:</strong> {{ formatCurrency(confirmationDetails.amount) }}</li>
-          <li><strong>Duration:</strong> {{ confirmationDetails.duration }} month(s)</li>
-          <li><strong>Purpose:</strong> {{ confirmationDetails.purpose ? confirmationDetails.purpose : getPurposeLabel(applicationForm.get('purposeType')?.value) }}</li>
-          <li><strong>Monthly Repayment:</strong> {{ formatCurrency(confirmationDetails.monthlyRepayment) }}</li>
-          <li><strong>Total Repayment:</strong> {{ formatCurrency(confirmationDetails.totalRepayment) }}</li>
-          <li><strong>Total Interest:</strong> {{ formatCurrency(confirmationDetails.totalInterest) }}</li>
-        </ul>
+    <div class="confirmation-submodal" *ngIf="showConfirmation" (click)="showConfirmation = false">
+      <div class="confirmation-dialog" (click)="$event.stopPropagation()">
+        <div class="confirmation-header">
+          <div>
+            <span class="confirmation-eyebrow">Review Application</span>
+            <h2>Confirm Loan Application</h2>
+            <p>Check the borrowing terms below before the request is sent for processing.</p>
+          </div>
+          <button type="button" class="confirmation-close" (click)="showConfirmation = false" aria-label="Close confirmation dialog">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="confirmation-grid">
+          <div class="confirmation-card hero">
+            <span class="label">Requested Amount</span>
+            <strong>{{ formatCurrency(confirmationDetails.amount) }}</strong>
+            <small>{{ confirmationDetails.duration }} month(s) repayment window</small>
+          </div>
+
+          <div class="confirmation-card">
+            <span class="label">Applicant</span>
+            <strong>{{ confirmationDetails.memberName }}</strong>
+            <small>{{ confirmationDetails.groupName }}</small>
+          </div>
+
+          <div class="confirmation-card">
+            <span class="label">Purpose</span>
+            <strong>{{ confirmationDetails.purpose ? confirmationDetails.purpose : getPurposeLabel(applicationForm.get('purposeType')?.value) }}</strong>
+            <small>{{ selectedGroup?.requiresGuarantors ? 'Guarantor approval required first' : 'Moves straight to admin review' }}</small>
+          </div>
+
+          <div class="confirmation-card">
+            <span class="label">Monthly Repayment</span>
+            <strong>{{ formatCurrency(confirmationDetails.repaymentAmount) }}</strong>
+            <small>Total repayment {{ formatCurrency(confirmationDetails.totalRepayment) }}</small>
+          </div>
+
+          <div class="confirmation-card">
+            <span class="label">Total Interest</span>
+            <strong>{{ formatCurrency(confirmationDetails.totalInterest) }}</strong>
+            <small>Based on current group rate</small>
+          </div>
+
+          <div class="confirmation-card" *ngIf="selectedGroup">
+            <span class="label">Policy Route</span>
+            <strong>{{ selectedGroup.requiresShares ? 'Share-backed conditions apply' : 'Standard cooperative policy' }}</strong>
+            <small>{{ guarantorRequirementLabel }}</small>
+          </div>
+        </div>
+
         <div class="confirmation-actions">
           <button type="button" class="cancel-btn" (click)="showConfirmation = false">Back</button>
-          <button type="button" class="submit-btn" (click)="confirmSubmit()" [disabled]!="isSubmitting">
+          <button type="button" class="submit-btn" (click)="confirmSubmit()" [disabled]="isSubmitting">
             {{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}
           </button>
         </div>

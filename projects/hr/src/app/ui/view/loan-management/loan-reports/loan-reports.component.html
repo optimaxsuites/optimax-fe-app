@@ -135,8 +135,8 @@
               Dept <i class="fas" [ngClass]="getSortIcon('department')"></i>
             </th>
             <th>Purpose</th>
-            <th (click)="setSort('loanAmount')" class="sortable amount">
-              Amount <i class="fas" [ngClass]="getSortIcon('loanAmount')"></i>
+            <th (click)="setSort('amount')" class="sortable amount">
+              Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i>
             </th>
             <th>Monthly</th>
             <th>Paid</th>
@@ -144,15 +144,15 @@
             <th (click)="setSort('status')" class="sortable">
               Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
             </th>
-            <th (click)="setSort('dateSubmitted')" class="sortable">
-              Date <i class="fas" [ngClass]="getSortIcon('dateSubmitted')"></i>
+            <th (click)="setSort('requestDate')" class="sortable">
+              Date <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
             </th>
             <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id" [title]="loan.id">{{ loan.id.length > 11 ? (loan.id | slice:0:11) + '...' : loan.id }}</td>
+            <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
             <td>
               <div class="employee-info">
                 <span class="name">{{ loan.fullName }}</span>
@@ -160,8 +160,8 @@
             </td>
             <td>{{ loan.employeeId }}</td>
             <td>{{ loan.department }}</td>
-            <td class="purpose" [title]="loan.purpose">{{ loan.purpose | slice:0:30 }}{{ loan.purpose.length > 30 ? '...' : '' }}</td>            <td class="amount">₦{{ loan.loanAmount | number:'1.2-2' }}</td>
-            <td>₦{{ loan.monthlyRepayment | number:'1.2-2' }}</td>
+            <td class="purpose" [title]="loan.purpose">{{ loan.purpose | slice:0:30 }}{{ loan.purpose.length > 30 ? '...' : '' }}</td>            <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
+            <td>₦{{ loan.repaymentAmount | number:'1.2-2' }}</td>
             <td class="paid">₦{{ (loan.totalPaid || 0) | number:'1.2-2' }}</td>
             <td class="balance">₦{{ (loan.currentBalance || 0) | number:'1.2-2' }}</td>
             <td>
@@ -169,7 +169,7 @@
                 {{ loan.status }}
               </span>
             </td>
-            <td>{{ loan.dateSubmitted | date:'shortDate' }}</td>
+            <td>{{ loan.requestDate | date:'shortDate' }}</td>
             <td class="actions-col">
               <div class="action-buttons">
                 <button class="btn-view" (click)="viewLoanDetails(loan.id)" title="View Details">

@@ -1,3 +1,4 @@
+import { IDelay } from './../../../../../../node_modules/exponential-backoff/dist/delay/delay.interface.d';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router'; 
@@ -42,7 +43,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   payableLoans: LoanApplication[] = [];
   selectedPaymentLoanId = '';
   autoMonthlyAmount = 0;
-  selectedPaymentMethod = '';
+  selectedmodeofPayment = '';
   paymentReference = '';
   paymentNarration = '';
   bankName = '';
@@ -53,18 +54,18 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   cashReceiverName = '';
   payrollCycle = '';
   paymentFormError = '';
-  applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; date: string; message: string }> = [];
+  applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> = [];
 
   historyColumns = [
-    { header: 'Loan ID', field: 'id' },
+    { header: 'Loan ID', field: 'loanCode' },
     {
       header: 'Date',
-      formatter: (row: LoanApplication) => new Date(row.dateSubmitted).toLocaleDateString()
+      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
     },
     { header: 'Purpose', field: 'purpose' },
     {
       header: 'Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.loanAmount)
+      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
     },
     {
       header: 'Status',
@@ -95,14 +96,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   private sortLoansByRecent(loans: LoanApplication[]): LoanApplication[] {
     return [...loans].sort((a, b) => {
-      const timestampA = new Date(a.submittedAt || a.dateSubmitted).getTime();
-      const timestampB = new Date(b.submittedAt || b.dateSubmitted).getTime();
+      const timestampA = new Date(a.requestDate).getTime();
+      const timestampB = new Date(b.requestDate).getTime();
       const dateDiff = timestampB - timestampA;
       if (dateDiff !== 0) {
         return dateDiff;
       }
 
-      return b.id.localeCompare(a.id);
+      return String(b.loanCode || b.id).localeCompare(String(a.loanCode || a.id));
     });
   }
 
@@ -128,20 +129,25 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       this.uuid = params['uuid'];
 
-      this.employeeService.getAllEmployee().subscribe({
-        next: (response) => {
-          const employees = this.extractEmployees(response);
-          const matchedEmployee = this.resolveCurrentEmployee(employees);
+      const userId = (sessionStorage.getItem('userid') || '').trim();
 
-          if (matchedEmployee) {
-            this.employeeName = this.getEmployeeFullName(matchedEmployee) || this.employeeName;
-            this.employeeId = String(
-              matchedEmployee?.id ?? matchedEmployee?.employeeId ?? matchedEmployee?.employeeCode ?? this.employeeId
-            ).trim() || this.employeeId;
-            this.employeeDepartment = String(
-              matchedEmployee?.department?.name ?? matchedEmployee?.department ?? this.employeeDepartment
-            ).trim();
-          }
+      this.employeeService.getEmployeeByUserId(userId).subscribe({
+        next: (response) => {
+          // const employees = this.extractEmployees(response);
+          // const matchedEmployee = this.resolveCurrentEmployee(employees);
+
+          // if (matchedEmployee) {
+          //   this.employeeName = this.getEmployeeFullName(matchedEmployee) || this.employeeName;
+          //   this.employeeId = String(
+          //     matchedEmployee?.id ?? matchedEmployee?.employeeId ?? matchedEmployee?.employeeCode ?? this.employeeId
+          //   ).trim() || this.employeeId;
+          //   this.employeeDepartment = String(
+          //     matchedEmployee?.department?.name ?? matchedEmployee?.department ?? this.employeeDepartment
+          //   ).trim();
+          // }
+
+          this.employeeId = response.id
+          this.employeeName = `${response.firstName} ${response.lastName}`
 
           this.loadLoanData();
         },
@@ -171,11 +177,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private isCurrentEmployeeLoan(loan: LoanApplication): boolean {
-    if (loan.employeeId === this.employeeId) {
+    if (String(loan.employeeId) === this.employeeId) {
       return true;
     }
 
-    return loan.fullName.trim().toLowerCase() === this.employeeName.trim().toLowerCase();
+    return (loan.fullName ?? '').trim().toLowerCase() === this.employeeName.trim().toLowerCase();
   }
 
   private extractEmployees(response: any): any[] {
@@ -195,15 +201,21 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private resolveCurrentEmployee(employees: any[]): any | undefined {
-    const userRegDataRaw = sessionStorage.getItem('userRegData');
-    const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
-    const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
-    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+    const userRegData = this.readStoredUserRegData();
+    const sessionUsername = String(sessionStorage.getItem('username') || localStorage.getItem('username') || '').trim().toLowerCase();
+    const sessionUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
     const regEmail = String(userRegData?.email || '').trim().toLowerCase();
     const regUsername = String(userRegData?.username || '').trim().toLowerCase();
 
     return employees.find((employee) => {
-      const identifiers = [employee?.id, employee?.employeeId, employee?.employeeCode, employee?.staffId]
+      const identifiers = [
+        employee?.id,
+        employee?.userId,
+        employee?.user?.id,
+        employee?.employeeId,
+        employee?.employeeCode,
+        employee?.staffId
+      ]
         .map((value) => String(value ?? '').trim())
         .filter(Boolean);
       const employeeEmail = String(employee?.email || employee?.workEmail || '').trim().toLowerCase();
@@ -228,6 +240,20 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
       return false;
     });
+  }
+
+  private readStoredUserRegData(): any | null {
+    const rawValue = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
+
+    if (!rawValue || rawValue === 'undefined' || rawValue === 'null') {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawValue);
+    } catch {
+      return null;
+    }
   }
 
   private getEmployeeFullName(employee: any): string {
@@ -302,7 +328,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.selectedPaymentMethod) {
+    if (!this.selectedmodeofPayment) {
       this.paymentFormError = 'Please select a payment method.';
       return;
     }
@@ -317,9 +343,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.loanRepaymentService.recordPayment(this.selectedPaymentLoanId, {
-      amount: this.autoMonthlyAmount,
-      paymentMethod: this.selectedPaymentMethod,
-      date: new Date().toISOString(),
+      totalAmount: this.autoMonthlyAmount,
+      paymentMethod: this.selectedmodeofPayment,
+      paidAt: new Date().toISOString(),
       referenceNumber: this.paymentReference || undefined,
       notes: this.paymentNarration || undefined,
       receivedBy: this.cashReceiverName || undefined
@@ -441,7 +467,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private getDueAmountForLoan(loanId: string): number {
-    const loan = this.allLoans.find(item => item.id === loanId);
+    const loan = this.allLoans.find(item => String(item.id) === loanId);
     if (!loan) {
       return 0;
     }
@@ -450,19 +476,19 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       .filter((item: RepaymentScheduleItem) => item.status === 'PENDING' || item.status === 'OVERDUE')
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
 
-    if (pendingInstallment?.totalPayment) {
-      return Number(pendingInstallment.totalPayment.toFixed(2));
+    if (pendingInstallment?.totalAmount) {
+      return Number(pendingInstallment.totalAmount.toFixed(2));
     }
 
-    if (loan.monthlyRepayment > 0) {
-      return Number(loan.monthlyRepayment.toFixed(2));
+    if (loan.repaymentAmount > 0) {
+      return Number(loan.repaymentAmount.toFixed(2));
     }
 
     return 0;
   }
 
   private validateMethodSpecificDetails(): boolean {
-    switch (this.selectedPaymentMethod) {
+    switch (this.selectedmodeofPayment) {
       case 'BANK_TRANSFER':
         if (!this.bankName || !this.accountName || !this.accountNumber) {
           this.paymentFormError = 'Enter bank name, account name and account number.';
@@ -495,7 +521,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   private resetPaymentForm(): void {
     this.selectedPaymentLoanId = '';
     this.autoMonthlyAmount = 0;
-    this.selectedPaymentMethod = '';
+    this.selectedmodeofPayment = '';
     this.paymentReference = '';
     this.paymentNarration = '';
     this.bankName = '';
@@ -516,13 +542,15 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           .map(item => ({
             loanId: loan.id,
             status: item.status,
-            date: item.date,
-            message: item.notes || `Loan ${loan.id} status updated to ${item.status}.`
+            changedAt: item.changedAt,
+            message: item.notes || `Loan ${loan.loanCode} status updated to ${item.status}.`
           }))
       )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
       .slice(0, 5);
 
-    this.applicationUpdates = updates;
+    this.applicationUpdates = updates.map((item) => ({ ...item, loanId: String(item.loanId) }));
   }
+
+  
 }

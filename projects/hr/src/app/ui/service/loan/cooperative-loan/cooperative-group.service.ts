@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
+import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
 
 export interface CooperativeGroupContext {
   members: CooperativeMember[];
   groups: CooperativeLoanGroup[];
   groupMemberships: CooperativeGroupMembership[];
+  contributionEntries: CooperativeContributionEntry[];
   saveToStorage: () => void;
 }
 
@@ -46,6 +47,16 @@ export class CooperativeGroupService {
       .map(item => ({ ...item }));
   }
 
+  getGroupMemberships(context: CooperativeGroupContext): CooperativeGroupMembership[] {
+    return context.groupMemberships.map(item => ({ ...item }));
+  }
+
+  getContributionEntriesByGroup(context: CooperativeGroupContext, groupId: string): CooperativeContributionEntry[] {
+    return context.contributionEntries
+      .filter(item => item.groupId === groupId)
+      .map(item => ({ ...item }));
+  }
+
   getGroupMembership(
     context: CooperativeGroupContext,
     memberId: string,
@@ -59,8 +70,17 @@ export class CooperativeGroupService {
     memberId: string,
     groupId: string
   ): CooperativeGroupMembership {
+    const now = new Date().toISOString();
     const existing = this.getGroupMembership(context, memberId, groupId);
     if (existing) {
+      if (existing.status === 'REJECTED') {
+        existing.status = 'PENDING';
+        existing.requestedAt = now;
+        existing.reviewedAt = undefined;
+        existing.reviewNote = undefined;
+        existing.rejectionReason = undefined;
+        context.saveToStorage();
+      }
       return { ...existing };
     }
 
@@ -69,13 +89,92 @@ export class CooperativeGroupService {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       memberId,
       groupId: groupId,
-      status: 'ACTIVE',
+      status: 'PENDING',
       monthlyContributionAmount: Number(group?.monthlyContributionAmount || 0),
       totalContribution: 0,
-      joinedAt: new Date().toISOString()
+      joinedAt: '',
+      requestedAt: now
     };
 
     context.groupMemberships.push(membership);
+    context.saveToStorage();
+    return { ...membership };
+  }
+
+  approveGroupMembership(
+    context: CooperativeGroupContext,
+    membershipId: string,
+    note?: string
+  ): CooperativeGroupMembership | undefined {
+    const membership = context.groupMemberships.find(item => item.id === membershipId);
+    if (!membership) {
+      return undefined;
+    }
+
+    membership.status = 'ACTIVE';
+    membership.joinedAt = new Date().toISOString();
+    membership.reviewedAt = membership.joinedAt;
+    membership.reviewNote = String(note || '').trim() || undefined;
+    membership.rejectionReason = undefined;
+    context.saveToStorage();
+    return { ...membership };
+  }
+
+  recordContribution(
+    context: CooperativeGroupContext,
+    membershipId: string,
+    payload: { amount: number; contributionMonth: string; contributedAt?: string }
+  ): CooperativeContributionEntry | undefined {
+    const membership = context.groupMemberships.find(item => item.id === membershipId && item.status === 'ACTIVE');
+    if (!membership) {
+      return undefined;
+    }
+
+    const amount = Number(payload.amount || 0);
+    const contributionMonth = String(payload.contributionMonth || '').trim();
+    if (amount <= 0 || !/^\d{4}-\d{2}$/.test(contributionMonth)) {
+      return undefined;
+    }
+
+    const hasExistingEntry = context.contributionEntries.some(item => item.membershipId === membershipId && item.contributionMonth === contributionMonth);
+    if (hasExistingEntry) {
+      return undefined;
+    }
+
+    const contributedAt = payload.contributedAt || new Date().toISOString();
+    const entry: CooperativeContributionEntry = {
+      id: `${membershipId}-${contributionMonth}`,
+      membershipId,
+      memberId: membership.memberId,
+      groupId: membership.groupId,
+      amount,
+      contributionMonth,
+      contributedAt,
+      status: 'POSTED'
+    };
+
+    context.contributionEntries.push(entry);
+    membership.totalContribution = Number((Number(membership.totalContribution || 0) + amount).toFixed(2));
+    membership.lastContributionDate = contributedAt;
+    context.saveToStorage();
+
+    return { ...entry };
+  }
+
+  rejectGroupMembership(
+    context: CooperativeGroupContext,
+    membershipId: string,
+    reason?: string
+  ): CooperativeGroupMembership | undefined {
+    const membership = context.groupMemberships.find(item => item.id === membershipId);
+    if (!membership) {
+      return undefined;
+    }
+
+    membership.status = 'REJECTED';
+    membership.reviewedAt = new Date().toISOString();
+    membership.reviewNote = String(reason || '').trim() || undefined;
+    membership.rejectionReason = String(reason || '').trim() || undefined;
     context.saveToStorage();
     return { ...membership };
   }

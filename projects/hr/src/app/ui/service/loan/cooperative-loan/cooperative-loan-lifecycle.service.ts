@@ -108,7 +108,7 @@ export class CooperativeLoanLifecycleService {
     }
 
     loan.status = 'ACTIVE';
-    loan.disbursementDate = new Date().toISOString();
+    loan.disbursedDate = new Date().toISOString();
     loan.fundsReserved = false;
     loan.applicationStage = undefined;
     loan.totalPrincipalPaid = Number(loan.totalPrincipalPaid || 0);
