@@ -7,7 +7,7 @@
           class="tab-btn" 
           [ngClass]="{'active': selectedTab === tab.name}" 
           (click)="selectTab(tab)">
-          <span *ngIf="tab.icon" class="tab-icon" [ngClass]="tab.icon" aria-hidden="true"></span>
+          <i *ngIf="tab.icon" class="tab-icon" [class]="tab.icon + ' tab-icon'" aria-hidden="true"></i>
           <span class="tab-label">{{ tab.name }}</span>
           <span *ngIf="tab.hasDropdown" class="tab-caret">▼</span>
         </button>

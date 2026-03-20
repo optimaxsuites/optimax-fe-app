@@ -6,6 +6,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-cooperative-loans',
@@ -156,10 +157,13 @@ export class CooperativeLoansComponent implements OnInit {
           return 0;
       }
 
-      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
+      const comparison = compareLoanSortValues(valueA, valueB);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
     });
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
 
   setSort(field: string): void {

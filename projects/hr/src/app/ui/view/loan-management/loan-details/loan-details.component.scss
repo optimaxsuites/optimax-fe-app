@@ -4,28 +4,6 @@
   margin: 0 auto;
   color: #2f3b45;
 
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    padding: 48px 0;
-
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 4px solid #e3eef0;
-      border-top-color: #2E6276;
-      animation: spin 0.8s linear infinite;
-    }
-
-    p {
-      color: #6b7a86;
-      font-weight: 500;
-    }
-  }
-
   .loan-header {
     display: flex;
     align-items: center;
@@ -277,21 +255,51 @@
       }
     }
 
-    .approve-btn {
-      background: #2EB270;
+    .approve-btn,
+    .reject-btn {
+      position: relative;
+      overflow: hidden;
       color: #ffffff;
+      border: 1px solid transparent;
+      box-shadow: 0 12px 22px rgba(31, 60, 74, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 45%, transparent 70%);
+        pointer-events: none;
+      }
 
       &:hover {
-        background: #47e797;
+        transform: translateY(-2px);
+        filter: saturate(1.04);
+      }
+
+      i,
+      span {
+        position: relative;
+        z-index: 1;
+      }
+    }
+
+    .approve-btn {
+      background: linear-gradient(135deg, #2eb270 0%, #43c884 52%, #1c8f58 100%);
+      border-color: rgba(35, 122, 78, 0.38);
+
+      &:hover {
+        box-shadow: 0 16px 28px rgba(46, 178, 112, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.32);
       }
     }
 
     .reject-btn {
-      background: #FF0000;
-      color: #ffffff;
+      background: linear-gradient(135deg, #ff4d5f 0%, #ff6b79 48%, #c81f36 100%);
+      border-color: rgba(172, 31, 49, 0.4);
 
       &:hover {
-        background: #ff3333;
+        box-shadow: 0 16px 28px rgba(255, 42, 63, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.3);
       }
     }
   }
@@ -498,6 +506,312 @@
 }
 
 // Modal Styles
+.loan-status-modal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(20, 35, 45, 0.48);
+}
+
+.loan-status-dialog {
+  display: flex;
+  flex-direction: column;
+  color: #233746;
+  width: min(500px, calc(100vw - 32px));
+  min-width: 0;
+  max-height: calc(100vh - 80px);
+  border-radius: 18px;
+  border: 1px solid #d9e9ef;
+  box-shadow: 0 18px 40px rgba(23, 43, 63, 0.18);
+  background: linear-gradient(180deg, #fcfeff 0%, #f5fbfd 100%);
+  overflow: hidden;
+}
+
+.loan-status-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #d9e9ef;
+  background: linear-gradient(180deg, rgba(226, 241, 246, 0.75) 0%, rgba(252, 254, 255, 0.9) 100%);
+
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.3;
+    font-weight: 700;
+    color: #1f566a;
+  }
+
+  .close-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5f7280;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+      background: #ffffff;
+      color: #1f566a;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.loan-status-dialog__body {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.loan-status-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #d9e9ef;
+  background: rgba(248, 252, 253, 0.9);
+}
+
+.loan-summary {
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbfd 100%);
+  border: 1px solid #dbe9ee;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.summary-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+
+  &:last-child {
+    grid-column: 1 / -1;
+  }
+
+  span {
+    color: #6b7a86;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: #264b5a;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: left;
+    line-height: 1.35;
+    word-break: break-word;
+
+    &.amount {
+      color: #1f9c64;
+      font-size: 0.96rem;
+    }
+  }
+}
+
+.comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.comment-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #385360;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  .required {
+    color: #d92f2f;
+  }
+}
+
+.interest-rate-hint,
+.comment-hint,
+.approval-preview {
+  border-radius: 16px;
+}
+
+.interest-rate-hint {
+  padding: 10px 12px;
+  background: #f2fbf6;
+  border: 1px solid #ccecd9;
+  color: #255766;
+  font-size: 0.84rem;
+  line-height: 1.4;
+
+  strong {
+    color: #1f9c64;
+  }
+}
+
+.comment-section input,
+.comment-section textarea {
+  width: 100%;
+  border: 1.5px solid #d3e3e9;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #233746;
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.comment-section input {
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.comment-section textarea {
+  min-height: 88px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.comment-section input:focus,
+.comment-section textarea:focus {
+  outline: none;
+  border-color: #2e6276;
+  box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.12);
+  background: #fcfeff;
+}
+
+.comment-section input.error,
+.comment-section textarea.error {
+  border-color: #d92f2f;
+  box-shadow: 0 0 0 4px rgba(217, 47, 47, 0.08);
+}
+
+.error-message {
+  margin-top: -2px;
+
+  small {
+    color: #d92f2f;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+}
+
+.approval-preview {
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbfd 100%);
+  border: 1px solid #d9e9ef;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.preview-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  color: #58707c;
+  font-size: 0.77rem;
+
+  strong {
+    color: #1f566a;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  &.interest strong {
+    color: #1f9c64;
+  }
+}
+
+.comment-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f4f9fb;
+  border: 1px solid #d8e8ef;
+  color: #43606d;
+  font-size: 0.84rem;
+  line-height: 1.4;
+
+  i {
+    margin-top: 2px;
+    color: #2e6276;
+  }
+}
+
+.cancel-btn,
+.submit-btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.cancel-btn {
+  background: #ffffff;
+  color: #516671;
+  border: 1px solid #d3e3e9;
+
+  &:hover {
+    background: #f7fbfc;
+    border-color: #b7d2dd;
+  }
+}
+
+.submit-btn {
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(31, 86, 106, 0.14);
+
+  &.approve {
+    background: linear-gradient(135deg, #1f9c64 0%, #2eb270 100%);
+  }
+
+  &.reject {
+    background: linear-gradient(135deg, #cb2e2e 0%, #e14646 100%);
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -768,24 +1082,37 @@
         align-items: center;
         gap: 10px;
         color: white;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        box-shadow: 0 12px 22px rgba(31, 60, 74, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 45%, transparent 70%);
+          pointer-events: none;
+        }
 
         &.approve {
-          background: #2EB270;
+          background: linear-gradient(135deg, #2eb270 0%, #43c884 52%, #1c8f58 100%);
+          border-color: rgba(35, 122, 78, 0.38);
 
           &:hover:not(:disabled) {
-            background: #47e797;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(46, 178, 112, 0.3);
+            box-shadow: 0 16px 28px rgba(46, 178, 112, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.32);
           }
         }
 
         &.reject {
-          background: #FF0000;
+          background: linear-gradient(135deg, #ff4d5f 0%, #ff6b79 48%, #c81f36 100%);
+          border-color: rgba(172, 31, 49, 0.4);
 
           &:hover:not(:disabled) {
-            background: #ff3333;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+            box-shadow: 0 16px 28px rgba(255, 42, 63, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.3);
           }
         }
 
@@ -796,8 +1123,52 @@
 
         i {
           font-size: 1rem;
+          position: relative;
+          z-index: 1;
         }
       }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  :host ::ng-deep app-modal.loan-status-modal .modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 16px;
+  }
+
+  .loan-status-dialog__header,
+  .loan-status-dialog__body,
+  .loan-status-dialog__footer {
+      padding-left: 16px;
+      padding-right: 16px;
+  }
+
+  .summary-row,
+  .preview-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .loan-summary,
+  .approval-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-row strong,
+  .preview-row strong {
+    text-align: left;
+  }
+
+  .loan-status-dialog__footer {
+    flex-direction: column-reverse;
+
+    .cancel-btn,
+    .submit-btn {
+      justify-content: center;
+      width: 100%;
     }
   }
 }

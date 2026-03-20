@@ -119,7 +119,7 @@
             <tr *ngFor="let loan of memberLoans" (click)="viewLoan(loan.id)">
               <td class="loan-id">{{ loan.loanCode }}</td>
               <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-              <td class="purpose">{{ loan.purpose }}</td>
+              <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
               <td>
                 <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
                   {{ loan.status }}

@@ -70,7 +70,7 @@
         </div>
         <div class="detail-item full">
           <span class="label">Purpose</span>
-          <span class="value">{{ loan.purpose }}</span>
+          <span class="value">{{ formatPurposeDisplay(loan.purpose) }}</span>
         </div>
       </div>
 
@@ -130,12 +130,6 @@
       (closeModal)="closeJoinGroupModal()">
     </app-join-cooperative-group>
   </app-modal>
-
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading your dashboard...</p>
-  </div>
 
   <div *ngIf="!isLoading" class="dashboard-content">
     <div *ngIf="!member" class="membership-onboarding-card lm-header-card">

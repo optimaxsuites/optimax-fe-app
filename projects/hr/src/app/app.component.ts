@@ -23,15 +23,17 @@ export class AppHrComponent {
   ) {}
 
   ngOnInit(): void {
-    if (this.authenticationService.isAuthenticated()) {
-      this.metadataService.fetchMetaData(true);
-      return;
-    }
-
     this.userLoginAction();
+
+    // if (this.authenticationService.isAuthenticated()) {
+    //   this.metadataService.fetchMetaData(true);
+    //   return;
+    // }
+
   }
 
   async userLoginAction(): Promise<void> {
+    console.log("Signing in user with hardcoded credentials for testing...");
     const loginDetails = {
       // username: 'Ayaobasheba',
       username: 'developer',

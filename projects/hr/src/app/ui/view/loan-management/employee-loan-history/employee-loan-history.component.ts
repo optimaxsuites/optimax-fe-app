@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
+import { Location, formatDate } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
+import * as XLSX from 'xlsx';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -9,6 +10,7 @@ import { BackNavigationService } from '../../../shared-component/service/navigat
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { EmployeeService } from '../../../service/employee.service';
+import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-history',
@@ -32,6 +34,17 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // Sorting properties
   sortField: string = 'requestDate';
   sortDirection: 'asc' | 'desc' = 'desc';
+  statusFilter: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' = '';
+  dateFrom: string = '';
+  dateTo: string = '';
+  readonly statusOptions: Array<{ label: string; value: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' }> = [
+    { label: 'All Statuses', value: '' },
+    { label: 'Pending', value: 'PENDING' },
+    { label: 'Approved', value: 'APPROVED' },
+    { label: 'Rejected', value: 'REJECTED' },
+    { label: 'Active', value: 'ACTIVE' },
+    { label: 'Completed', value: 'COMPLETED' }
+  ];
   
   constructor(
     private location: Location,
@@ -256,19 +269,25 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       }
 
       // Compare values
-      if (valueA < valueB) {
-        return this.sortDirection === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return this.sortDirection === 'asc' ? 1 : -1;
-      }
-      return 0;
+      const comparison = compareLoanSortValues(valueA, valueB);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
     });
   }
 
   // Apply sorting
   applySort(): void {
-    this.filteredLoans = this.sortData(this.employeeLoans);
+    this.filteredLoans = this.sortData(this.getFilteredLoans());
+  }
+
+  onFiltersChanged(): void {
+    this.applySort();
+  }
+
+  resetFilters(): void {
+    this.statusFilter = '';
+    this.dateFrom = '';
+    this.dateTo = '';
+    this.applySort();
   }
 
   // Set sort field and direction
@@ -305,12 +324,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       return;
     }
 
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    this.router.navigate(['/admin/hr/loan', uuidV4()]);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid || uuidV4()]);
   }
   
   viewLoanDetails(loan: LoanApplication): void {
@@ -350,6 +364,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       default: return 'status-default';
     }
   }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
+  }
   
   getTotalBorrowed(): number {
     return this.employeeLoans.reduce((sum, loan) => sum + loan.amount, 0);
@@ -361,5 +379,223 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   
   getTotalBalance(): number {
     return this.employeeLoans.reduce((sum, loan) => sum + loan.currentBalance, 0);
+  }
+
+  exportToExcel(): void {
+    const worksheetData = this.filteredLoans.map(loan => ({
+      'Loan ID': loan.loanCode || loan.id,
+      'Employee ID': loan.employeeId,
+      'Employee Name': loan.fullName,
+      'Department': loan.department,
+      'Purpose': this.formatPurposeDisplay(loan.purpose),
+      'Loan Amount': loan.amount,
+      'Interest Rate': `${loan.interestRate || 0}%`,
+      'Total Paid': loan.totalPaid || 0,
+      'Current Balance': loan.currentBalance || 0,
+      'Status': loan.status,
+      'Date Submitted': formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
+      'Approved Date': loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      'Disbursed Date': loan.disbursedDate ? formatDate(loan.disbursedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      'Completed Date': loan.completedDate ? formatDate(loan.completedDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Employee Loan History');
+    XLSX.writeFile(workbook, `${this.getHistoryFileBaseName()}.xlsx`);
+  }
+
+  exportToCSV(): void {
+    const headers = [
+      'Loan ID',
+      'Employee ID',
+      'Employee Name',
+      'Department',
+      'Purpose',
+      'Loan Amount',
+      'Interest Rate',
+      'Total Paid',
+      'Current Balance',
+      'Status',
+      'Date Submitted',
+      'Approved Date',
+      'Disbursed Date',
+      'Completed Date'
+    ];
+
+    const csvRows = this.filteredLoans.map(loan => [
+      loan.loanCode || loan.id,
+      loan.employeeId,
+      loan.fullName,
+      loan.department,
+      this.formatPurposeDisplay(loan.purpose),
+      loan.amount,
+      `${loan.interestRate || 0}%`,
+      loan.totalPaid || 0,
+      loan.currentBalance || 0,
+      loan.status,
+      formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
+      loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      loan.disbursedDate ? formatDate(loan.disbursedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
+      loan.completedDate ? formatDate(loan.completedDate, 'yyyy-MM-dd', 'en-US') : 'N/A'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.map(value => this.escapeCsvValue(value)).join(','))
+    ].join('\n');
+
+    this.downloadBlob(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }), `${this.getHistoryFileBaseName()}.csv`);
+  }
+
+  printReport(): void {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      return;
+    }
+
+    const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
+    const reportName = `employee_loan_history_${this.employeeId}_${reportDate}`;
+
+    const styles = `
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #2E6276; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 16px; }
+        .filters-applied { background: #f8feff; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #2E6276; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e3eef0; }
+        tr:nth-child(even) { background: #f8feff; }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .summary-card { background: #f8feff; padding: 15px; border-radius: 4px; text-align: center; }
+        .summary-card h3 { margin: 0 0 5px 0; color: #2E6276; }
+        .summary-card .value { font-size: 1.4rem; font-weight: bold; color: #2EB270; }
+        .date { color: #8a8a8a; font-size: 0.9rem; }
+      </style>
+    `;
+
+    const filtersApplied = this.getAppliedFiltersSummary();
+
+    const content = `
+      <html>
+        <head><title>${reportName}</title>${styles}</head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>Employee Loan History</h1>
+              <div><strong>Employee:</strong> ${this.employeeName}</div>
+              <div><strong>Employee ID:</strong> ${this.employeeId}</div>
+            </div>
+            <div class="date">Generated: ${formatDate(new Date(), 'medium', 'en-US')}</div>
+          </div>
+
+          <div class="summary">
+            <div class="summary-card">
+              <h3>Total Loans</h3>
+              <div class="value">${this.filteredLoans.length}</div>
+            </div>
+            <div class="summary-card">
+              <h3>Total Borrowed</h3>
+              <div class="value">₦${this.getTotalBorrowed().toLocaleString()}</div>
+            </div>
+            <div class="summary-card">
+              <h3>Total Balance</h3>
+              <div class="value">₦${this.getTotalBalance().toLocaleString()}</div>
+            </div>
+          </div>
+
+          ${filtersApplied ? `<div class="filters-applied"><strong>Filters Applied:</strong> ${filtersApplied}</div>` : ''}
+
+          <table>
+            <thead>
+              <tr>
+                <th>Loan ID</th>
+                <th>Date</th>
+                <th>Purpose</th>
+                <th>Amount</th>
+                <th>Interest Rate</th>
+                <th>Paid</th>
+                <th>Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.filteredLoans.map(loan => `
+                <tr>
+                  <td>${loan.loanCode || loan.id}</td>
+                  <td>${formatDate(loan.requestDate, 'mediumDate', 'en-US')}</td>
+                  <td>${this.formatPurposeDisplay(loan.purpose)}</td>
+                  <td>₦${loan.amount.toLocaleString()}</td>
+                  <td>${loan.interestRate || 0}%</td>
+                  <td>₦${(loan.totalPaid || 0).toLocaleString()}</td>
+                  <td>₦${(loan.currentBalance || 0).toLocaleString()}</td>
+                  <td>${loan.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  private getFilteredLoans(): LoanApplication[] {
+    return this.employeeLoans.filter((loan) => {
+      const matchesStatus = !this.statusFilter || loan.status === this.statusFilter;
+      const requestTimestamp = new Date(loan.requestDate).getTime();
+
+      if (!Number.isFinite(requestTimestamp)) {
+        return matchesStatus && !this.dateFrom && !this.dateTo;
+      }
+
+      const matchesFrom = !this.dateFrom || requestTimestamp >= new Date(this.dateFrom).getTime();
+      const matchesTo = !this.dateTo || requestTimestamp <= this.getEndOfDayTimestamp(this.dateTo);
+
+      return matchesStatus && matchesFrom && matchesTo;
+    });
+  }
+
+  private getEndOfDayTimestamp(dateValue: string): number {
+    const endOfDay = new Date(dateValue);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay.getTime();
+  }
+
+  private getAppliedFiltersSummary(): string {
+    return [
+      this.statusFilter ? `status: ${this.statusFilter}` : '',
+      this.dateFrom ? `dateFrom: ${this.dateFrom}` : '',
+      this.dateTo ? `dateTo: ${this.dateTo}` : ''
+    ].filter(Boolean).join(' • ');
+  }
+
+  private getHistoryFileBaseName(): string {
+    const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
+    const employeeName = (this.employeeName || 'employee')
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_-]/g, '');
+    const employeeId = (this.employeeId || 'unknown').trim().replace(/\s+/g, '_');
+
+    return `${employeeName}_${employeeId}_${reportDate}`;
+  }
+
+  private escapeCsvValue(value: unknown): string {
+    const normalized = String(value ?? '');
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
   }
 }

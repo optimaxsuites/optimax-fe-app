@@ -46,7 +46,7 @@
           <strong>Total repay:</strong> {{ formatCurrency(loan.totalRepayment || 0) }}
         </div>
         <div class="top-line purpose-line">
-          <strong>Purpose:</strong> {{ loan.purpose }}
+          <strong>Purpose:</strong> {{ formatPurposeDisplay(loan.purpose) }}
         </div>
       </section>
 

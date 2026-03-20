@@ -1,12 +1,5 @@
 <div class="loan-details-container">
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
-
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading">
-    <div class="spinner"></div>
-    <p>Loading loan details...</p>
-  </div>
-  
   <div *ngIf="!isLoading && loan" class="loan-content">
     <!-- Header -->
     <div class="loan-header lm-header-card">
@@ -51,7 +44,7 @@
             </div>
             <div class="info-item">
               <label>Purpose:</label>
-              <span>{{ loan.purpose }}</span>
+              <span>{{ getPurposeDisplay(loan.purpose) }}</span>
             </div>
             <div class="info-item">
               <label>Repayment Period:</label>
@@ -149,7 +142,7 @@
           <div class="status-history">
             <h4>Status History</h4>
             <div class="status-timeline">
-              <div *ngFor="let history of loan.statusHistory; let i = index" class="timeline-item">
+              <div *ngFor="let history of statusTimeline; let i = index" class="timeline-item">
                 <div class="timeline-dot" [style.background-color]="getStatusColor(history.status)"></div>
                 <div class="timeline-content">
                   <div class="timeline-header">
@@ -164,9 +157,9 @@
                     {{ history.notes }}
                   </div>
                 </div>
-                <div class="timeline-line" *ngIf="i < loan.statusHistory.length - 1"></div>
+                <div class="timeline-line" *ngIf="i < statusTimeline.length - 1"></div>
               </div>
-              <div *ngIf="loan.statusHistory.length === 0" class="no-history">
+              <div *ngIf="statusTimeline.length === 0" class="no-history">
                 No status history available.
               </div>
             </div>
@@ -180,14 +173,14 @@
         <div class="action-card">
           <h3>Quick Actions</h3>
           <div class="action-buttons-vertical">
-            <button class="view-history-btn" (click)="viewEmployeeHistory()" title="See History" aria-label="See History">
+            <button type="button" class="view-history-btn" (click)="viewEmployeeHistory()" title="See History" aria-label="See History">
               <i class="fas fa-history"></i>
             </button>
-            <button *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
+            <button type="button" *ngIf="loan.status === 'PENDING'" class="approve-btn" (click)="approveLoan()">
               <i class="fas fa-check-circle"></i> Approve
             </button>
-            <button *ngIf="loan.status === 'PENDING'" class="reject-btn" (click)="rejectLoan()">
-              <i class="fas fa-times-circle"></i> Reject
+            <button type="button" *ngIf="loan.status === 'PENDING'" class="reject-btn" (click)="rejectLoan()">
+              <i class="fas fa-ban"></i> Reject
             </button>
           </div>
         </div>
@@ -247,16 +240,16 @@
   </div>
   
   <!-- Comment Modal for Approval/Rejection -->
-  <app-modal *ngIf="showCommentModal" (close)="closeCommentModal()">
-    <div class="modal-container">
-      <div class="modal-header">
+  <div *ngIf="showCommentModal" class="loan-status-modal-shell" (click)="closeCommentModal()">
+    <div class="loan-status-dialog" (click)="$event.stopPropagation()">
+      <div class="loan-status-dialog__header">
         <h2>{{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }} Loan Application</h2>
-        <button class="close-btn" (click)="closeCommentModal()">
+        <button type="button" class="close-btn" (click)="closeCommentModal()">
           <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="modal-body">
+      <div class="loan-status-dialog__body">
         <div class="loan-summary">
           <div class="summary-row">
             <span>Employee:</span>
@@ -337,21 +330,22 @@
         </div>
       </div>
       
-      <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeCommentModal()">
+      <div class="loan-status-dialog__footer">
+        <button type="button" class="cancel-btn" (click)="closeCommentModal()">
           Cancel
         </button>
         <button 
+          type="button"
           class="submit-btn" 
           [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
           (click)="submitStatusChange()"
           [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && interestRateControl.invalid)">
-          <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-times-circle': selectedAction === 'REJECTED'}"></i>
+          <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
           {{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }}
         </button>
       </div>
     </div>
-  </app-modal>
+  </div>
   
   <div *ngIf="!isLoading && !loan" class="not-found">
     <h2>Loan Not Found</h2>

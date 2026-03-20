@@ -1,8 +1,5 @@
 <div class="loan-disbursement-container">
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
-
-  <div *ngIf="isLoading" class="loading-state">Loading disbursement queue...</div>
-
   <div *ngIf="!isLoading" class="content">
     <header class="disbursement-header lm-header-card">
       <div class="header-left">

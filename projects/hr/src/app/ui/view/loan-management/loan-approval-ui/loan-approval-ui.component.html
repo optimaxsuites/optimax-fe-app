@@ -1,11 +1,5 @@
 <div class="loan-approval-container">
     <p-messages [(value)]="messages" [enableService]="false"></p-messages>
-
-    <!-- Add loading indicator -->
-    <div *ngIf="isLoading" class="loading">
-        Loading applications...
-    </div>
-
     <div *ngIf="!isLoading">
         <header class="approval-header lm-header-card">
             <div class="header-left">
@@ -106,13 +100,72 @@
 
         <!-- Table Section -->
         <div class="approval-table-container">
-            <app-table
-                [columns]="loanColumns"
-                [rows]="filteredLoans"
-                [actions]="loanActions"
-                [emptyMessage]="'No loan applications found matching your filters'"
-                (actionClick)="handleLoanAction($event)"
-            ></app-table>
+            <table class="loans-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" (click)="setSort('loanId')">
+                            Application ID
+                            <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('fullName')">
+                            Employee
+                            <i class="fas" [ngClass]="getSortIcon('fullName')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('employeeId')">
+                            Employee ID
+                            <i class="fas" [ngClass]="getSortIcon('employeeId')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('department')">
+                            Department
+                            <i class="fas" [ngClass]="getSortIcon('department')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('amount')">
+                            Loan Amount
+                            <i class="fas" [ngClass]="getSortIcon('amount')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('purpose')">
+                            Purpose
+                            <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('status')">
+                            Status
+                            <i class="fas" [ngClass]="getSortIcon('status')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('requestDate')">
+                            Date Submitted
+                            <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
+                        </th>
+                        <th class="actions-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let loan of filteredLoans">
+                        <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                        <td>{{ loan.fullName || 'N/A' }}</td>
+                        <td>{{ loan.employeeId || 'N/A' }}</td>
+                        <td>{{ loan.department || 'N/A' }}</td>
+                        <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
+                        <td>{{ formatPurposeDisplay(loan.purpose) }}</td>
+                        <td>
+                            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+                                {{ loan.status }}
+                            </span>
+                        </td>
+                        <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+                        <td class="actions actions-col">
+                            <button class="btn-view" type="button" (click)="openLoanDetails(loan)" title="View" aria-label="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-history" type="button" (click)="seeLoanHistory(loan.employeeId)" title="See History" aria-label="See History">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="filteredLoans.length === 0">
+                        <td class="no-results" colspan="9">No loan applications found matching your filters</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

@@ -7,6 +7,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, StatusChange } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 
 @Component({
   selector: 'app-loan-details',
@@ -16,6 +17,7 @@ import { LoanApprovalService } from '../../../service/loan/loan-approval.service
 export class LoanDetailsComponent implements OnInit {
   employeeId: string = '';
   loan: LoanApplication | null = null;
+  statusTimeline: StatusChange[] = [];
   isLoading: boolean = true;
   canChangeStatus: boolean = true;
   navigationSource: string = 'approval';
@@ -46,7 +48,8 @@ export class LoanDetailsComponent implements OnInit {
     private router: Router,
     private fb: FormBuilder,
     private loanApplicationService: LoanApplicationService,
-    private loanApprovalService: LoanApprovalService
+    private loanApprovalService: LoanApprovalService,
+    private errorMessageService: ErrorMessageService
   ) {
     this.commentForm = this.fb.group({
       comment: ['', Validators.required],
@@ -71,6 +74,7 @@ export class LoanDetailsComponent implements OnInit {
       next: (loan) => {
         if (loan) {
           this.loan = loan;
+          this.updateStatusTimeline();
           this.isLoading = false;
           return;
         }
@@ -83,6 +87,7 @@ export class LoanDetailsComponent implements OnInit {
             );
 
             this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
+            this.updateStatusTimeline();
             this.isLoading = false;
           },
           error: (error) => {
@@ -99,6 +104,130 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   // Status tracking methods
+  private updateStatusTimeline(): void {
+    this.statusTimeline = this.loan ? this.buildStatusTimeline(this.loan) : [];
+  }
+
+  private buildStatusTimeline(loan: LoanApplication): StatusChange[] {
+    const timeline = [...(loan.statusHistory || [])];
+    const requestDate = this.normalizeDate(loan.requestDate);
+    const approvedDate = this.normalizeDate(loan.approvedDate);
+    const rejectedDate = this.normalizeDate(loan.rejectedDate);
+    const disbursedDate = this.normalizeDate(loan.disbursedDate);
+    const completedDate = this.normalizeDate(loan.completedDate);
+
+    if (requestDate) {
+      timeline.push({
+        status: 'PENDING',
+        changedAt: requestDate,
+        changedBy: 'Employee',
+        notes: 'Loan application submitted'
+      });
+    }
+
+    if (approvedDate) {
+      timeline.push({
+        status: 'APPROVED',
+        changedAt: approvedDate,
+        changedBy: this.formatHistoryActor(loan.approvedBy),
+        notes: loan.status === 'APPROVED' && loan.adminComment ? loan.adminComment : 'Loan approved'
+      });
+    }
+
+    if (rejectedDate) {
+      timeline.push({
+        status: 'REJECTED',
+        changedAt: rejectedDate,
+        changedBy: this.formatHistoryActor(loan.rejectedBy),
+        notes: loan.status === 'REJECTED' && loan.adminComment ? loan.adminComment : 'Loan rejected'
+      });
+    }
+
+    if (disbursedDate) {
+      timeline.push({
+        status: 'ACTIVE',
+        changedAt: disbursedDate,
+        changedBy: this.formatHistoryActor(loan.disbursedBy),
+        notes: 'Loan disbursed'
+      });
+    }
+
+    if (completedDate) {
+      timeline.push({
+        status: 'COMPLETED',
+        changedAt: completedDate,
+        changedBy: 'System',
+        notes: 'Loan completed'
+      });
+    }
+
+    const dedupedTimeline = timeline.filter((entry, index, entries) => {
+      const normalizedDate = this.normalizeDate(entry.changedAt);
+      if (!normalizedDate) {
+        return false;
+      }
+
+      return index === entries.findIndex((candidate) =>
+        candidate.status === entry.status && this.normalizeDate(candidate.changedAt) === normalizedDate
+      );
+    });
+
+    const hasCurrentStatus = dedupedTimeline.some((entry) => entry.status === loan.status);
+    if (!hasCurrentStatus) {
+      dedupedTimeline.push({
+        status: loan.status,
+        changedAt: completedDate || disbursedDate || approvedDate || rejectedDate || requestDate || new Date().toISOString(),
+        changedBy: this.resolveCurrentStatusActor(loan),
+        notes: loan.adminComment || `Loan ${this.getStatusLabel(loan.status).toLowerCase()}`
+      });
+    }
+
+    return dedupedTimeline.sort(
+      (left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime()
+    );
+  }
+
+  private resolveCurrentStatusActor(loan: LoanApplication): string {
+    switch (loan.status) {
+      case 'APPROVED':
+        return this.formatHistoryActor(loan.approvedBy);
+      case 'REJECTED':
+        return this.formatHistoryActor(loan.rejectedBy);
+      case 'ACTIVE':
+        return this.formatHistoryActor(loan.disbursedBy);
+      case 'COMPLETED':
+        return 'System';
+      default:
+        return 'Employee';
+    }
+  }
+
+  private normalizeDate(value: string | undefined): string {
+    const rawValue = String(value || '').trim();
+    if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
+      return '';
+    }
+
+    const timestamp = new Date(rawValue).getTime();
+    return Number.isFinite(timestamp) ? rawValue : '';
+  }
+
+  private formatHistoryActor(actor: LoanApplication['approvedBy'] | LoanApplication['disbursedBy'] | LoanApplication['rejectedBy'] | string | undefined): string {
+    if (!actor) {
+      return 'System';
+    }
+
+    if (typeof actor === 'string') {
+      return actor;
+    }
+
+    if (typeof actor === 'number') {
+      return actor > 0 ? `User ${actor}` : 'System';
+    }
+
+    return actor.fullname || actor.username || actor.email || 'System';
+  }
+
   getStatusColor(status: string): string {
     const statusOption = this.statusOptions.find(option => option.value === status);
     return statusOption ? statusOption.color : '#6c757d';
@@ -182,7 +311,7 @@ export class LoanDetailsComponent implements OnInit {
     const statusUpdate: StatusChange = {
       status: this.selectedAction,
       notes: this.commentForm.value.comment || '',
-      changedBy: sessionStorage.getItem('username') || 'Admin',
+      changedBy: Number(sessionStorage.getItem('userid') || localStorage.getItem('userid') || 0) || 'Admin',
       changedAt: new Date().toISOString(),
       interestRate: this.selectedAction === 'APPROVED'
         ? Number(this.commentForm.value.interestRate ?? this.suggestedInterestRate)
@@ -191,23 +320,43 @@ export class LoanDetailsComponent implements OnInit {
 
     this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
       next: () => {
+        const actionVerb = this.getActionVerb(this.selectedAction);
         this.messages = [{
           severity: 'success',
           summary: 'Status Updated',
-          detail: `Loan ${this.selectedAction.toLowerCase()} successfully.`
+          detail: `Loan ${actionVerb}d successfully.`
         }];
         this.closeCommentModal();
         this.loadLoanDetails();
       },
       error: (error) => {
         console.error('Error updating status:', error);
+        const actionVerb = this.getActionVerb(this.selectedAction);
         this.messages = [{
           severity: 'error',
           summary: 'Update Failed',
-          detail: `Failed to ${this.selectedAction.toLowerCase()} loan.`
+          detail: this.errorMessageService.getUserMessage(
+            error,
+            `Failed to ${actionVerb} loan.`
+          )
         }];
       }
     });
+  }
+
+  private getActionVerb(action: LoanApplication['status'] | ''): string {
+    switch (action) {
+      case 'APPROVED':
+        return 'approve';
+      case 'REJECTED':
+        return 'reject';
+      case 'ACTIVE':
+        return 'disburse';
+      case 'COMPLETED':
+        return 'complete';
+      default:
+        return 'update';
+    }
   }
 
   get commentControl(): FormControl {
@@ -227,11 +376,6 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   goBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
   

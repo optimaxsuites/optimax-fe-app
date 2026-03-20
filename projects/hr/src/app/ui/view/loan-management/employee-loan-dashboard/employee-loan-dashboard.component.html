@@ -88,13 +88,7 @@
     <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()"></app-employee-loan-details-modal>
   </app-side-modal>
 
-  <!-- Loading State -->
-  <div class="loading-state" *ngIf="isLoading">
-    <div class="spinner"></div>
-    <p>Loading your dashboard...</p>
-  </div>
-
-  <div *ngIf="!isLoading" class="dashboard-content">
+  <div class="dashboard-content">
     <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
     <div class="welcome-header lm-header-card">
@@ -105,49 +99,19 @@
       <div class="user-avatar">{{ getInitials(employeeName) }}</div>
     </div>
 
-    <div class="quick-actions-panel">
-      <button class="quick-action-btn new-loan-btn" (click)="openLoanFormModal()">
-        <i class="fas fa-plus"></i>
-        New Loan Request
-      </button>
-      <button class="quick-action-btn" (click)="openPaymentFormModal()">
-        <i class="fas fa-credit-card"></i>
-        Make Payment
-      </button>
-      <button class="quick-action-btn" (click)="toggleHistory()">
-        <i class="fas fa-history"></i>
-        Loan History
-      </button>
-      <button class="quick-action-btn" (click)="viewDetailedHistory()">
-        <i class="fas fa-list"></i>
-        Full History
-      </button>
-    </div>
-
-    <div class="card status-updates-card" *ngIf="applicationUpdates.length > 0">
-      <div class="card-header">
-        <h2><i class="fas fa-bell"></i> Application Status Updates</h2>
-        <span class="history-subtitle">Latest updates on your requests</span>
-      </div>
-
-      <div class="updates-list">
-        <div class="update-item" *ngFor="let update of applicationUpdates">
-          <div class="update-topline">
-            <span class="loan-code">{{ update.loanId }}</span>
-            <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
-          </div>
-          <p>{{ update.message }}</p>
-          <span class="time">{{ update.changedAt | date:'medium' }}</span>
-        </div>
-      </div>
-    </div>
-
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon pending-icon"><i class="fas fa-hourglass-half"></i></div>
         <div class="stat-content">
           <span class="stat-label">Pending Applications</span>
           <span class="stat-value">{{ loanCounts.pending }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon approved-icon"><i class="fas fa-stamp"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Approved Loans</span>
+          <span class="stat-value">{{ loanCounts.approved }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -174,58 +138,115 @@
       </div>
     </div>
 
-    <div class="card loan-history-section" *ngIf="showHistory">
-      <div class="card-header">
-        <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
-        <span class="history-subtitle">Showing last 5 requests</span>
-      </div>
+    <div class="dashboard-workspace">
+      <aside class="quick-actions-panel card">
+        <div class="action-panel-head">
+          <h2><i class="fas fa-compass"></i> Command Center</h2>
+        </div>
 
-      <div class="table-container" *ngIf="allLoans.length > 0">
-        <table appSortableTable class="history-table">
-          <thead>
-            <tr>
-              <th>Loan ID</th>
-              <th>Date</th>
-              <th>Purpose</th>
-              <th>Amount</th>
-              <th>Interest</th>
-              <th>Status</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let loan of allLoans.slice(0, 5)">
-              <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
-              <td>{{ loan.requestDate | date:'shortDate' }}</td>
-              <td class="loan-purpose">{{ loan.purpose }}</td>
-              <td class="loan-amount">{{ formatCurrency(loan.amount) }}</td>
-              <td>{{ loan.interestRate }}%</td>
-              <td>
-                <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
-                  {{ getStatusDisplay(loan.status) }}
-                </span>
-              </td>
-              <td class="actions-col">
-                <div class="table-actions">
-                  <button class="btn-view-schedule" (click)="viewLoanDetails(loan)" title="View Details" aria-label="View Details">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <button class="btn-view-schedule" (click)="viewRepaymentSchedule(loan)" title="View Repayment Schedule" aria-label="View Repayment Schedule">
-                    <i class="fas fa-calendar-alt"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="empty-state" *ngIf="allLoans.length === 0">
-        <i class="fas fa-inbox"></i>
-        <p>You haven't submitted any loan requests yet.</p>
-        <button class="quick-action-btn" (click)="openLoanFormModal()">
-          <i class="fas fa-plus"></i> Submit Your First Request
+        <button class="quick-action-btn new-loan-btn" (click)="openLoanFormModal()">
+          <span class="action-icon"><i class="fas fa-plus"></i></span>
+          <span class="action-copy">
+            <strong>New Loan Request</strong>
+            <small>Start a fresh application</small>
+          </span>
         </button>
+        <button class="quick-action-btn" (click)="openPaymentFormModal()">
+          <span class="action-icon"><i class="fas fa-credit-card"></i></span>
+          <span class="action-copy">
+            <strong>Make Payment</strong>
+            <small>Pay into an active balance</small>
+          </span>
+        </button>
+        <button class="quick-action-btn" (click)="toggleHistory()">
+          <span class="action-icon"><i class="fas fa-history"></i></span>
+          <span class="action-copy">
+            <strong>Loan History</strong>
+            <small>Show or hide recent requests</small>
+          </span>
+        </button>
+        <button class="quick-action-btn" (click)="viewDetailedHistory()">
+          <span class="action-icon"><i class="fas fa-list"></i></span>
+          <span class="action-copy">
+            <strong>Full History</strong>
+            <small>Open the detailed loan ledger</small>
+          </span>
+        </button>
+      </aside>
+
+      <div class="workspace-main">
+        <div class="card status-updates-card" *ngIf="applicationUpdates.length > 0">
+          <div class="card-header">
+            <h2><i class="fas fa-bell"></i> Application Status Updates</h2>
+            <span class="history-subtitle">Latest updates on your requests</span>
+          </div>
+
+          <div class="updates-list">
+            <div class="update-item" *ngFor="let update of applicationUpdates">
+              <div class="update-topline">
+                <span class="loan-code">{{ update.loanId }}</span>
+                <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
+              </div>
+              <p>{{ update.message }}</p>
+              <span class="time">{{ update.changedAt | date:'medium' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card loan-history-section" *ngIf="showHistory">
+          <div class="card-header">
+            <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
+            <span class="history-subtitle">Showing last 5 requests</span>
+          </div>
+
+          <div class="table-container" *ngIf="allLoans.length > 0">
+            <table appSortableTable class="history-table">
+              <thead>
+                <tr>
+                  <th (click)="setHistorySort('loanId')" class="sortable">Loan ID <i class="fas" [ngClass]="getHistorySortIcon('loanId')"></i></th>
+                  <th (click)="setHistorySort('requestDate')" class="sortable">Date <i class="fas" [ngClass]="getHistorySortIcon('requestDate')"></i></th>
+                  <th (click)="setHistorySort('purpose')" class="sortable purpose-col">Purpose <i class="fas" [ngClass]="getHistorySortIcon('purpose')"></i></th>
+                  <th (click)="setHistorySort('amount')" class="sortable amount-col">Amount <i class="fas" [ngClass]="getHistorySortIcon('amount')"></i></th>
+                  <th (click)="setHistorySort('interestRate')" class="sortable">Interest <i class="fas" [ngClass]="getHistorySortIcon('interestRate')"></i></th>
+                  <th (click)="setHistorySort('status')" class="sortable">Status <i class="fas" [ngClass]="getHistorySortIcon('status')"></i></th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let loan of sortedRecentLoans">
+                  <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
+                  <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+                  <td class="loan-purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
+                  <td class="loan-amount">{{ formatCurrency(loan.amount) }}</td>
+                  <td>{{ loan.interestRate }}%</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
+                      {{ getStatusDisplay(loan.status) }}
+                    </span>
+                  </td>
+                  <td class="actions-col">
+                    <div class="table-actions">
+                      <button class="btn-view-schedule" (click)="viewLoanDetails(loan)" title="View Details" aria-label="View Details">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn-view-schedule" (click)="viewRepaymentSchedule(loan)" title="View Repayment Schedule" aria-label="View Repayment Schedule">
+                        <i class="fas fa-calendar-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" *ngIf="allLoans.length === 0">
+            <i class="fas fa-inbox"></i>
+            <p>You haven't submitted any loan requests yet.</p>
+            <button class="quick-action-btn" (click)="openLoanFormModal()">
+              <i class="fas fa-plus"></i> Submit Your First Request.
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

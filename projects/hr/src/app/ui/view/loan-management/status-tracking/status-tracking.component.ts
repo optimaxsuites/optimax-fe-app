@@ -13,10 +13,10 @@ export class StatusTrackingComponent {
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#8f8500' },
-    { value: 'APPROVED', label: 'Approved', color: '#b86200' },
-    { value: 'REJECTED', label: 'Rejected', color: '#dc3545' },
-    { value: 'ACTIVE', label: 'Active', color: '#1e4a8f' },
-    { value: 'COMPLETED', label: 'Completed', color: '#1e7e4a' }
+    { value: 'APPROVED', label: 'Approved', color: '#eb9b3f' },
+    { value: 'REJECTED', label: 'Rejected', color: '#ff2a3f' },
+    { value: 'ACTIVE', label: 'Active', color: '#7efdff' },
+    { value: 'COMPLETED', label: 'Completed', color: '#65f0a6' }
   ];
 
   getStatusColor(status: string): string {

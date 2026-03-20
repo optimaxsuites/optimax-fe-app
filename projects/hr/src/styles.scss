@@ -37,9 +37,9 @@ html{
 .status-pill.status-approved,
 .current-status-badge.status-approved,
 .status-tag.status-approved {
-  background-color: rgba(255, 165, 0, 0.16) !important;
-  color: #b86200 !important;
-  border: 1px solid rgba(255, 165, 0, 0.35) !important;
+  background-color: rgba(235, 155, 63, 0.14) !important;
+  color: #eb9b3f !important;
+  border: 1px solid rgba(235, 155, 63, 0.28) !important;
 }
 
 .status-badge.status-active,
@@ -335,9 +335,9 @@ app-employee-dashboard .status-badge.status-pending {
 
 app-loan-dashboard .status-badge.status-approved,
 app-employee-dashboard .status-badge.status-approved {
-  background-color: rgba(255, 165, 0, 0.16) !important;
-  color: #b86200 !important;
-  border: 1px solid rgba(255, 165, 0, 0.35) !important;
+  background-color: rgba(235, 155, 63, 0.14) !important;
+  color: #eb9b3f !important;
+  border: 1px solid rgba(235, 155, 63, 0.28) !important;
 }
 
 app-loan-dashboard .status-badge.status-active,
@@ -564,9 +564,9 @@ app-loan-request-form .status-badge.status-approved,
 app-cooperative-loan-application .status-badge.status-approved,
 app-employee-repayment-schedule .loan-status-badge.status-approved,
 app-repayment-schedule-view .status-badge.status-approved {
-  background-color: rgba(46, 178, 112, 0.1) !important;
-  color: #1e7e4a !important;
-  border: 1px solid rgba(46, 178, 112, 0.3) !important;
+  background-color: rgba(235, 155, 63, 0.14) !important;
+  color: #eb9b3f !important;
+  border: 1px solid rgba(235, 155, 63, 0.28) !important;
 }
 
 app-loan-dashboard .status-badge.status-active,
