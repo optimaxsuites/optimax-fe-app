@@ -299,6 +299,7 @@ processNewPurchase() {
 
             if(success){
              this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Subscription renewed successfully!', life: 3000, key:"tf" });
+             this.reUnlockModule(15)
              // No need to unlock module, it's already unlocked
              this.router.navigate(['/admin/marketplace/8612bffd-4cbe-41a7-bbb7-19c3655b121b'])
             }else {
@@ -497,6 +498,83 @@ private calculateNewEndDate(baseDate: string | Date, isYearly: boolean): string 
     };
   
     this.marketplaceService.registerApp(newApp).subscribe({
+      next: async (data) => {
+        console.log('✅ Module registered:', data);
+
+        const rawSubmenu = mainModule.submenu || [];
+        
+        const registrableSubmenu = rawSubmenu.filter((item: any) => 
+            item.doNotRegisterAsPermission !== true
+        );
+        
+        const submenuApps = registrableSubmenu.map((item: any) => ({
+          id: 0,
+          appName: item.label,
+          appCode: item.code,
+          description: item.code, 
+          moduleId: data.id
+        }));
+  
+        if (submenuApps.length === 0) {
+          await this.completeInstallation();
+          return;
+        }
+  
+        const submenuRequests = submenuApps.map((app: any) =>
+          this.marketplaceService.registerSubApp(app)
+        );
+  
+        forkJoin(submenuRequests).subscribe({
+          next: (results) => {
+            console.log('✅ All submenu apps registered:', results);
+            this.completeInstallation();
+          },
+          error: (error) => {
+            console.error('❌ Error registering submenu apps:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to install one or more submenu apps.',
+              key: 'tf',
+              life: 3000
+            });
+          }
+        });
+      },
+      error: (err) => {
+        console.log(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: "Failed to install app.",
+          key: 'tf',
+          life: 3000
+        });
+    //  this.loading = false
+    //  this.visible = false
+
+      }
+    });
+  }
+
+   async reUnlockModule(id: number) {
+  console.log("got here - unlockModule")
+  const moduleInMenu: any = this.menuitems.filter((menuItem) => menuItem.code === this.module.name)
+  console.log(this.module)
+  console.log(this.menuitems)
+
+  console.log(moduleInMenu)
+
+  const mainModule = moduleInMenu[0];
+    const app = {
+      id: id,
+      name: this.module.name,
+      title: mainModule.label,
+      description: this.module.description,
+      shortDescription: mainModule.description
+    };
+  
+    this.marketplaceService.registerApp(app).subscribe({
       next: async (data) => {
         console.log('✅ Module registered:', data);
 

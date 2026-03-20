@@ -244,7 +244,7 @@ export class RolesNpermissionComponent {
           canCreate: perm.canCreate,
           canDelete: perm.canDelete,
           canUpdate: perm.canEdit,
-          superuser: perm.superuser,
+          superuser: perm.canView && perm.canCreate && perm.canDelete && perm.canEdit,
           appRoleId: role.id,
           appRegister: {
             id: appRegister.id,
