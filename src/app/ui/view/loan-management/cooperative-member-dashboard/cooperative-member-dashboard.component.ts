@@ -19,6 +19,7 @@ import {
   CooperativeLoanGroup
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 @Component({
   selector: 'app-cooperative-member-dashboard',
   templateUrl: './cooperative-member-dashboard.component.html',
@@ -747,6 +748,10 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   formatCurrency(amount: number): string {
     return this.cooperativeService.formatCurrency(amount);
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
 
   getInitials(name: string): string {

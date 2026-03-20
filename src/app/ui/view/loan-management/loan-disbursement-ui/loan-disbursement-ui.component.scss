@@ -1,10 +1,23 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .loan-disbursement-container {
-  padding: 24px;
+  width: 100%;
+  padding: 28px 32px 32px;
   min-height: 100vh;
+  box-sizing: border-box;
   background: #f8feff;
   font-family: Arial, sans-serif;
 
-  .loading-state,
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: calc(100vh - 88px);
+  }
+
   .empty-state {
     background: #fff;
     border: 1px solid #e3eef0;
@@ -62,16 +75,31 @@
 
   .layout {
     display: grid;
-    grid-template-columns: 1.15fr 1fr;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1.65fr) minmax(360px, 0.95fr);
+    gap: 20px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
   }
 
   .table-card,
   .form-card {
     background: #fff;
     border: 1px solid #e3eef0;
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 24px rgba(31, 60, 74, 0.06);
+    min-width: 0;
+  }
+
+  .table-card {
+    display: flex;
+    flex-direction: column;
+
+    app-table {
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   h2 {
@@ -108,7 +136,7 @@
   .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 14px;
 
     label {
       display: grid;
@@ -182,8 +210,20 @@
   }
 }
 
+@media (max-width: 1280px) {
+  .loan-disbursement-container {
+    padding-inline: 24px;
+
+    .layout {
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+    }
+  }
+}
+
 @media (max-width: 1024px) {
   .loan-disbursement-container {
+    padding: 22px 20px 24px;
+
     .layout {
       grid-template-columns: 1fr;
     }

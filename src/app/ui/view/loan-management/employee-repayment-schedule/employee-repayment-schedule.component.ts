@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-repayment-schedule',
@@ -90,6 +91,10 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
       month: 'short',
       day: 'numeric'
     });
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
   
   isOverdue(item: RepaymentScheduleItem): boolean {

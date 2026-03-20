@@ -37,7 +37,7 @@
         <div class="detail-item"><span class="label">Duration</span><span class="value">{{ loan.duration }} months</span></div>
         <div class="detail-item"><span class="label">Monthly Repayment</span><span class="value">{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span></div>
         <div class="detail-item"><span class="label">Total Repayment</span><span class="value">{{ formatCurrency(loan.totalRepayment || 0) }}</span></div>
-        <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ loan.purpose }}</span></div>
+        <div class="detail-item full"><span class="label">Purpose</span><span class="value">{{ formatPurposeDisplay(loan.purpose) }}</span></div>
         <div class="detail-item full" *ngIf="loan.adminRequestNote"><span class="label">Admin Comment</span><span class="value">{{ loan.adminRequestNote }}</span></div>
         <div class="detail-item full" *ngIf="loan.rejectionReason"><span class="label">Rejection Reason</span><span class="value">{{ loan.rejectionReason }}</span></div>
       </div>
@@ -193,7 +193,30 @@
   <div *ngIf="!isLoading" class="dashboard-content">
     <!-- Header -->
     <div class="dashboard-header lm-header-card">
-      <h1><i class="fas fa-hand-holding-heart"></i> Co-operative Dashboard</h1>
+      <div class="dashboard-title-group">
+        <div class="dashboard-switcher">
+          <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
+            <i class="fas fa-hand-holding-heart"></i> Co-operative Dashboard
+          </button>
+          <button
+            type="button"
+            class="dashboard-menu-toggle"
+            aria-label="Open dashboard menu"
+            [attr.aria-expanded]="isDashboardMenuOpen"
+            (click)="toggleDashboardMenu($event)">
+            <i class="fas fa-caret-down" [class.open]="isDashboardMenuOpen"></i>
+          </button>
+
+          <div class="dashboard-menu" *ngIf="isDashboardMenuOpen">
+            <button type="button" class="dashboard-menu-item" (click)="switchDashboard('advance')">
+              Manage Advanced Loans
+            </button>
+            <button type="button" class="dashboard-menu-item active" (click)="switchDashboard('cooperative')">
+              Manage Cooperative Loans
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="header-actions">
         <button class="btn-secondary" (click)="openInviteMembersModal()">
           <i class="pi pi-user-plus"></i> Invite New Members
@@ -350,7 +373,7 @@
                 <td>{{ getLoanGroupName(loan) }}</td>
                 <td class="amount">{{ formatCurrency(loan.amount) }}</td>
                 <td><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></td>
-                <td>{{ (loan.requestDate || loan.applicationDate) | date:'shortDate' }}</td>
+                <td>{{ (loan.requestDate || loan.applicationDate) | date:'mediumDate' }}</td>
                 <td class="actions-col"><button class="icon-btn" (click)="viewLoan(loan.id.toString())"><i class="pi pi-eye"></i></button></td>
               </tr>
             </tbody>
@@ -391,8 +414,8 @@
                 </td>
                 <td>{{ application.groupName }}</td>
                 <td><span class="status-badge" [ngClass]="'status-' + application.status.toLowerCase()">{{ application.status }}</span></td>
-                <td>{{ application.requestDate | date:'shortDate' }}</td>
-                <td>{{ application.reviewedAt ? (application.reviewedAt | date:'shortDate') : 'Awaiting review' }}</td>
+                <td>{{ application.requestDate | date:'mediumDate' }}</td>
+                <td>{{ application.reviewedAt ? (application.reviewedAt | date:'mediumDate') : 'Awaiting review' }}</td>
                 <td class="actions-col">
                   <button class="icon-btn" (click)="viewMember(application.memberId)"><i class="pi pi-eye"></i></button>
                   <button class="table-action approve" *ngIf="application.status === 'PENDING'" (click)="openGroupJoinReviewModal('approve', application)">Approve</button>

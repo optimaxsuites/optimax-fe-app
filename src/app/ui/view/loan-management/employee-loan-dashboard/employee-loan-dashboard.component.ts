@@ -9,6 +9,7 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -28,6 +29,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   
   loanCounts = {
     pending: 0,
+    approved: 0,
     active: 0,
     requested: 0,
     rejected: 0,
@@ -55,6 +57,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   payrollCycle = '';
   paymentFormError = '';
   applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> = [];
+  historySortField: string = 'requestDate';
+  historySortDirection: 'asc' | 'desc' = 'desc';
 
   historyColumns = [
     { header: 'Loan ID', field: 'loanCode' },
@@ -94,6 +98,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  get sortedRecentLoans(): LoanApplication[] {
+    return this.sortHistoryLoans(this.allLoans).slice(0, 5);
+  }
+
   private sortLoansByRecent(loans: LoanApplication[]): LoanApplication[] {
     return [...loans].sort((a, b) => {
       const timestampA = new Date(a.requestDate).getTime();
@@ -103,8 +111,25 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         return dateDiff;
       }
 
-      return String(b.loanCode || b.id).localeCompare(String(a.loanCode || a.id));
+      return compareLoanSortValues(String(b.loanCode || b.id), String(a.loanCode || a.id));
     });
+  }
+
+  setHistorySort(field: string): void {
+    if (this.historySortField === field) {
+      this.historySortDirection = this.historySortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.historySortField = field;
+      this.historySortDirection = field === 'requestDate' ? 'desc' : 'asc';
+    }
+  }
+
+  getHistorySortIcon(field: string): string {
+    if (this.historySortField !== field) {
+      return 'fa-sort';
+    }
+
+    return this.historySortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
   setupLoanSubscription(): void {
@@ -113,6 +138,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       next: (applications) => {
         const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
         this.allLoans = this.sortLoansByRecent(employeeLoans);
+        this.syncSelectedLoanDetails();
         this.refreshPayableLoans();
         this.calculateLoanCounts();
         this.refreshApplicationUpdates();
@@ -164,6 +190,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
       next: (applications) => {
         this.allLoans = this.sortLoansByRecent(applications);
+        this.syncSelectedLoanDetails();
         this.refreshPayableLoans();
         this.calculateLoanCounts();
         this.refreshApplicationUpdates();
@@ -271,6 +298,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   calculateLoanCounts(): void {
     this.loanCounts = {
       pending: 0,
+      approved: 0,
       active: 0,
       requested: 0,
       rejected: 0,
@@ -284,7 +312,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           this.loanCounts.requested++;
           break;
         case 'APPROVED':
-          this.loanCounts.active++;
+          this.loanCounts.approved++;
           break;
         case 'REJECTED':
           this.loanCounts.rejected++;
@@ -301,6 +329,45 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   openLoanFormModal(): void {
     this.showLoanForm = true;
+  }
+
+  private sortHistoryLoans(loans: LoanApplication[]): LoanApplication[] {
+    return [...loans].sort((a, b) => {
+      let valueA: string | number = '';
+      let valueB: string | number = '';
+
+      switch (this.historySortField) {
+        case 'loanId':
+          valueA = String(a.loanCode || a.id).toLowerCase();
+          valueB = String(b.loanCode || b.id).toLowerCase();
+          break;
+        case 'requestDate':
+          valueA = new Date(a.requestDate).getTime();
+          valueB = new Date(b.requestDate).getTime();
+          break;
+        case 'purpose':
+          valueA = this.formatPurposeDisplay(a.purpose).toLowerCase();
+          valueB = this.formatPurposeDisplay(b.purpose).toLowerCase();
+          break;
+        case 'amount':
+          valueA = a.amount || 0;
+          valueB = b.amount || 0;
+          break;
+        case 'interestRate':
+          valueA = a.interestRate || 0;
+          valueB = b.interestRate || 0;
+          break;
+        case 'status':
+          valueA = this.getStatusDisplay(a.status).toLowerCase();
+          valueB = this.getStatusDisplay(b.status).toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      const comparison = compareLoanSortValues(valueA, valueB);
+      return this.historySortDirection === 'asc' ? comparison : -comparison;
+    });
   }
 
   openPaymentFormModal(): void {
@@ -416,6 +483,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }).format(amount);
   }
 
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
+  }
+
   getTotalRequests(): number {
     return this.allLoans.length;
   }
@@ -445,6 +516,23 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   viewLoanDetails(loan: LoanApplication): void {
     this.selectedLoanForDetails = loan;
     this.showLoanDetailsModal = true;
+
+    this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
+      next: (latestLoan) => {
+        if (!latestLoan) {
+          return;
+        }
+
+        this.selectedLoanForDetails = latestLoan;
+        this.replaceLoanInDashboard(latestLoan);
+        this.refreshPayableLoans();
+        this.calculateLoanCounts();
+        this.refreshApplicationUpdates();
+      },
+      error: (error) => {
+        console.error('Error refreshing selected loan details:', error);
+      }
+    });
   }
 
   closeLoanDetailsModal(): void {
@@ -464,6 +552,35 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.payableLoans = this.allLoans.filter(loan =>
       (loan.status === 'ACTIVE' || loan.status === 'APPROVED') && loan.currentBalance > 0
     );
+  }
+
+  private syncSelectedLoanDetails(): void {
+    if (!this.selectedLoanForDetails) {
+      return;
+    }
+
+    const refreshedLoan = this.allLoans.find((loan) =>
+      loan.id === this.selectedLoanForDetails?.id || loan.loanCode === this.selectedLoanForDetails?.loanCode
+    );
+
+    if (refreshedLoan) {
+      this.selectedLoanForDetails = refreshedLoan;
+    }
+  }
+
+  private replaceLoanInDashboard(updatedLoan: LoanApplication): void {
+    const loanIndex = this.allLoans.findIndex((loan) =>
+      loan.id === updatedLoan.id || loan.loanCode === updatedLoan.loanCode
+    );
+
+    if (loanIndex < 0) {
+      return;
+    }
+
+    const nextLoans = [...this.allLoans];
+    nextLoans[loanIndex] = updatedLoan;
+    this.allLoans = this.sortLoansByRecent(nextLoans);
+    this.syncSelectedLoanDetails();
   }
 
   private getDueAmountForLoan(loanId: string): number {

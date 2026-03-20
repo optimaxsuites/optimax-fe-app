@@ -849,7 +849,7 @@
           background: #f8feff;
           th {
             padding: 12px 8px;
-            text-align: left;
+            text-align: center;
             color: #2E6276;
             font-weight: 600;
           }
@@ -861,6 +861,7 @@
           &:hover { background: #f8feff; }
           td {
             padding: 12px 8px;
+            text-align: center;
             &.loan-id {
               font-family: monospace;
               color: #2E6276;
@@ -876,11 +877,11 @@
               border-radius: 12px;
               font-size: 0.8rem;
               font-weight: 600;
-              &.status-pending { background-color: rgba(231, 222, 101, 0.2); color: #8f8500; border: 1px solid rgba(231, 222, 101, 0.3); }
-              &.status-approved { background-color: rgba(46, 178, 112, 0.1); color: #1e7e4a; border: 1px solid rgba(46, 178, 112, 0.3); }
-              &.status-rejected { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
-              &.status-active { background-color: rgba(46, 98, 118, 0.1); color: #1e4a5a; border: 1px solid rgba(46, 98, 118, 0.3); }
-              &.status-completed { background-color: rgba(128, 128, 128, 0.1); color: #4d4d4d; border: 1px solid rgba(128, 128, 128, 0.3); }
+              &.status-pending { background-color: rgba(143, 133, 0, 0.14); color: #8f8500; border: 1px solid rgba(143, 133, 0, 0.28); }
+              &.status-approved { background-color: rgba(235, 155, 63, 0.14); color: #eb9b3f; border: 1px solid rgba(235, 155, 63, 0.28); }
+              &.status-rejected { background-color: rgba(255, 42, 63, 0.12); color: #ff2a3f; border: 1px solid rgba(255, 42, 63, 0.28); }
+              &.status-active { background-color: rgba(126, 253, 255, 0.14); color: #7efdff; border: 1px solid rgba(126, 253, 255, 0.3); }
+              &.status-completed { background-color: rgba(101, 240, 166, 0.14); color: #65f0a6; border: 1px solid rgba(101, 240, 166, 0.28); }
               &.status-defaulted { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
             }
 

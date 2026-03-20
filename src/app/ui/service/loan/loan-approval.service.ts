@@ -1,7 +1,7 @@
 // loan-approval.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, map } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
 
@@ -24,46 +24,42 @@ export class LoanApprovalService {
         const oldStatus = application.status;
         const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
         const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
-        const changedBy = typeof statusOrUpdate === 'string' ? 'Admin' : statusOrUpdate.changedBy || 'Admin';
+        const actingUserId = this.getCurrentUserId();
         const changedAt = typeof statusOrUpdate === 'string'
           ? new Date().toISOString()
           : statusOrUpdate.changedAt || new Date().toISOString();
         const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
-        let effectiveInterestRate = application.interestRate;
-
+        
+        // Set interest rate if needed
         if (interestRate !== undefined && Number.isFinite(interestRate)) {
-          effectiveInterestRate = Number(interestRate.toFixed(2));
-        } else if (status === 'APPROVED') {
-          effectiveInterestRate = this.determineInterestRate(application);
+          application.interestRate = Number(interestRate.toFixed(2));
+        } else if (status === 'APPROVED' && !application.interestRate) {
+          application.interestRate = this.determineInterestRate(application);
         }
 
-        if (effectiveInterestRate !== undefined && Number.isFinite(effectiveInterestRate)) {
-          application.interestRate = Number(effectiveInterestRate.toFixed(2));
-        }
-
+        // Update the application status
         application.status = status;
         application.adminComment = notes || application.adminComment || '';
-        application.statusHistory = [...(application.statusHistory || []), {
-          status,
-          changedAt,
-          changedBy,
-          notes: notes || `Status changed from ${oldStatus} to ${status}`,
-          interestRate: application.interestRate
-        }];
 
+        // Update dates based on status
         switch (status) {
           case 'APPROVED':
-            application.approvedDate = new Date().toISOString().split('T')[0];
+            application.approvedDate = new Date().toISOString();
+            application.approvedBy = actingUserId;
             application.disbursedDate = undefined;
             break;
           case 'ACTIVE':
-            application.disbursedDate = new Date().toISOString().split('T')[0];
-            application.repaymentSchedule = this.generateRepaymentSchedule(
-              application.amount,
-              application.repaymentTime,
-              Number(application.interestRate || 0),
-              application.modeOfPayment
-            );
+            application.disbursedDate = new Date().toISOString();
+            application.disbursedBy = actingUserId;
+            // Generate repayment schedule if needed
+            if (!application.repaymentSchedule?.length) {
+              application.repaymentSchedule = this.generateRepaymentSchedule(
+                application.amount,
+                application.repaymentTime,
+                Number(application.interestRate || 0),
+                application.modeOfPayment
+              );
+            }
             application.repaymentAmount = application.repaymentSchedule.length > 0
               ? application.repaymentSchedule[0].totalAmount
               : 0;
@@ -86,25 +82,46 @@ export class LoanApprovalService {
             }
             break;
           case 'COMPLETED':
-            application.completedDate = new Date().toISOString().split('T')[0];
+            application.completedDate = new Date().toISOString();
             application.currentBalance = 0;
             application.outstandingPrincipal = 0;
             break;
           case 'REJECTED':
-            application.rejectedDate = new Date().toISOString().split('T')[0];
+            application.rejectedDate = new Date().toISOString();
+            application.rejectedBy = actingUserId;
             break;
         }
 
-        return this.loanApplicationService.saveApplication(application);
+        // Save the application (this will send statusHistory: [])
+        return this.loanApplicationService.saveApplication(application).pipe(
+          // AFTER successful save, refresh the application to get the complete data with history
+          switchMap((savedApp) => {
+            console.log('Status updated successfully, refreshing data...');
+            return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
+              map((refreshedApp) => {
+                if (!refreshedApp) {
+                  return savedApp; // Fallback to saved app if refresh fails
+                }
+                console.log('Refreshed application with history:', refreshedApp.statusHistory);
+                return refreshedApp;
+              })
+            );
+          })
+        );
       })
     );
+  }
+
+  private getCurrentUserId(): number {
+    const storedUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
+    const parsedUserId = Number(storedUserId);
+    return Number.isFinite(parsedUserId) ? parsedUserId : 0;
   }
 
   approveLoan(loanId: string | number, notes?: string): Observable<LoanApplication> {
     return this.updateApplicationStatus(loanId, {
       status: 'APPROVED',
       notes: notes || 'Loan approved',
-      changedBy: 'Admin',
       changedAt: new Date().toISOString()
     });
   }
@@ -113,7 +130,6 @@ export class LoanApprovalService {
     return this.updateApplicationStatus(loanId, {
       status: 'REJECTED',
       notes: notes || 'Loan rejected',
-      changedBy: 'Admin',
       changedAt: new Date().toISOString()
     });
   }

@@ -6,6 +6,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-cooperative-loan-detail',
@@ -381,6 +382,10 @@ export class CooperativeLoanDetailComponent implements OnInit {
       default:
         return '-';
     }
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
 
   getRepaymentStatusLabel(item: CooperativeRepayment): string {

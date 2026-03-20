@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
@@ -13,6 +13,7 @@ import {
   CooperativeMembershipEligibility,
   CooperativeGroupMembership
 } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 interface DashboardActivity {
   icon: string;
@@ -61,6 +62,8 @@ interface GroupJoinApplicationRow {
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   currentUuid = uuidV4();
+  selectedDashboard: 'advance' | 'cooperative' = 'cooperative';
+  isDashboardMenuOpen = false;
   stats!: CooperativeStats;
   recentLoans: CooperativeLoan[] = [];
   recentMembers: CooperativeMember[] = [];
@@ -101,7 +104,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     private employeeService: EmployeeService,
     private backNavigationService: BackNavigationService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private hostElement: ElementRef<HTMLElement>
   ) {}
 
   ngOnInit(): void {
@@ -111,15 +115,57 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.subscriptions.add(this.route.queryParamMap.subscribe(params => {
-      void params;
+      this.selectedDashboard = params.get('dashboard') === 'advance' ? 'advance' : 'cooperative';
     }));
 
     this.loadDashboard();
     this.loadEmployeeDirectory();
   }
 
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.isDashboardMenuOpen) {
+      return;
+    }
+
+    if (!this.hostElement.nativeElement.contains(event.target as Node)) {
+      this.isDashboardMenuOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    this.isDashboardMenuOpen = false;
+  }
+
+  navigateToCurrentDashboard(): void {
+    this.onDashboardSelect(this.selectedDashboard);
+  }
+
+  toggleDashboardMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.isDashboardMenuOpen = !this.isDashboardMenuOpen;
+  }
+
+  switchDashboard(value: 'advance' | 'cooperative'): void {
+    this.isDashboardMenuOpen = false;
+    this.onDashboardSelect(value);
+  }
+
+  onDashboardSelect(value: string): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { dashboard: value === 'advance' ? 'advance' : 'cooperative' },
+      queryParamsHandling: 'merge'
+    });
   }
 
   get defaultedLoansCount(): number {

@@ -154,7 +154,7 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-dashboard', this.currentUuid]);
+    this.router.navigate(['/admin/hr/loan', this.currentUuid]);
   }
 
   formatCurrency(amount: number): string {

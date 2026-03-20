@@ -5,6 +5,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 interface RepaymentHistoryItem {
   loanId: string;
@@ -79,6 +80,10 @@ export class CooperativeMemberDetailComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return this.cooperativeService.formatCurrency(amount);
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
 
   getStatusClass(status: string): string {

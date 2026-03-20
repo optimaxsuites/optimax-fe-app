@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
+import { Location, formatDate } from '@angular/common';
 import { Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-approval-ui',
@@ -30,32 +31,6 @@ export class LoanApprovalUiComponent implements OnInit {
   isLoading = true;
   messages: Message[] = [];
 
-  loanColumns = [
-    { header: 'Application ID', field: 'id' },
-    { header: 'Employee', field: 'fullName' },
-    { header: 'Employee ID', field: 'employeeId' },
-    { header: 'Department', field: 'department' },
-    {
-      header: 'Loan Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
-    },
-    { header: 'Purpose', field: 'purpose' },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: LoanApplication) => `status-badge ${this.getStatusClass(row.status)}`
-    },
-    {
-      header: 'Date Submitted',
-      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
-    }
-  ];
-
-  loanActions = [
-    { id: 'view', label: 'View Details', className: 'btn-view' },
-    { id: 'history', label: 'History', className: 'btn-history' }
-  ];
-
   constructor(
     private location: Location,
     private router: Router,
@@ -73,6 +48,14 @@ export class LoanApprovalUiComponent implements OnInit {
       currency: 'NGN',
       minimumFractionDigits: 2
     }).format(amount);
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
+  }
+
+  openLoanDetails(loan: LoanApplication): void {
+    this.viewLoanDetails(loan.id, uuidV4());
   }
 
   handleLoanAction(event: { actionId: string; row: LoanApplication }) {
@@ -189,6 +172,10 @@ export class LoanApprovalUiComponent implements OnInit {
       let valueB: string | number = '';
 
       switch (this.sortField) {
+        case 'loanId':
+          valueA = String(a.loanCode || a.id).toLowerCase();
+          valueB = String(b.loanCode || b.id).toLowerCase();
+          break;
         case 'requestDate':
           valueA = new Date(a.requestDate).getTime();
           valueB = new Date(b.requestDate).getTime();
@@ -205,17 +192,24 @@ export class LoanApprovalUiComponent implements OnInit {
           valueA = (a.fullName ?? '').toLowerCase();
           valueB = (b.fullName ?? '').toLowerCase();
           break;
+        case 'department':
+          valueA = (a.department ?? '').toLowerCase();
+          valueB = (b.department ?? '').toLowerCase();
+          break;
+        case 'purpose':
+          valueA = this.formatPurposeDisplay(a.purpose).toLowerCase();
+          valueB = this.formatPurposeDisplay(b.purpose).toLowerCase();
+          break;
+        case 'status':
+          valueA = (a.status ?? '').toLowerCase();
+          valueB = (b.status ?? '').toLowerCase();
+          break;
         default:
           return 0;
       }
 
-      if (valueA < valueB) {
-        return this.sortDirection === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return this.sortDirection === 'asc' ? 1 : -1;
-      }
-      return 0;
+      const comparison = compareLoanSortValues(valueA, valueB);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
     });
   }
 

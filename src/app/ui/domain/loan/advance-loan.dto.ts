@@ -194,3 +194,19 @@ export interface AdvanceLoanStats {
   avgInterestRate: number;
   advanceLoans: AdvanceLoan[];
 }
+
+export interface UserDTO {
+  id: number;
+  fullname: string;
+  userId: number;
+  email: string;
+  phoneNumber: string;
+  username: string;
+  clientType: string;
+  gender: string;
+  accountId: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+}

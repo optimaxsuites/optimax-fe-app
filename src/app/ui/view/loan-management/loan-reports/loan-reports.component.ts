@@ -7,6 +7,7 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 import * as XLSX from 'xlsx';
 //import { saveAs } from 'file-saver';
 import { formatDate } from '@angular/common';
+import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-reports',
@@ -56,6 +57,10 @@ export class LoanReportsComponent implements OnInit {
 
   ngOnInit() {
     this.loadLoans();
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
   }
 
   loadLoans(): void {
@@ -209,13 +214,8 @@ export class LoanReportsComponent implements OnInit {
           return 0;
       }
 
-      if (valueA < valueB) {
-        return this.sortDirection === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return this.sortDirection === 'asc' ? 1 : -1;
-      }
-      return 0;
+      const comparison = compareLoanSortValues(valueA, valueB);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
     });
   }
 

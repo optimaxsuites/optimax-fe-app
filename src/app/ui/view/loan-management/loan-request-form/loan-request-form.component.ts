@@ -45,7 +45,7 @@ export class LoanRequestFormComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
       repaymentTime: ['', Validators.required],
       repaymentAmountAmount: [{value: '', disabled: true}, [Validators.required]],
-      modeOfPayment: ['', Validators.required],
+      modeOfPayment: [{ value: '', disabled: true }, Validators.required],
       // Acknowledgement
       acknowledgment: [false, Validators.requiredTrue]
     });
@@ -71,6 +71,16 @@ export class LoanRequestFormComponent implements OnInit {
     });
 
     this.loanRequestForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+      const repaymentTime = this.loanRequestForm.get('repaymentTime')?.value;
+      const modeOfPaymentControl = this.loanRequestForm.get('modeOfPayment');
+
+      if (!repaymentTime) {
+        modeOfPaymentControl?.reset('');
+        modeOfPaymentControl?.disable({ emitEvent: false });
+      } else if (modeOfPaymentControl?.disabled) {
+        modeOfPaymentControl.enable({ emitEvent: false });
+      }
+
       this.calculaterepaymentAmount();
     });
 
@@ -196,6 +206,7 @@ export class LoanRequestFormComponent implements OnInit {
             this.showMessage('success', 'Application Submitted', `Your application ID is ${applicationReference}.`);
 
             this.loanRequestForm.reset();
+            this.loanRequestForm.get('modeOfPayment')?.disable({ emitEvent: false });
             this.showOtherPurpose = false;
             this.supportingDocuments = [];
             this.loanSubmitted.emit();

@@ -2,41 +2,84 @@
   <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
     <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()"></app-employee-loan-details-modal>
   </app-side-modal>
-
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading loan history...</p>
-  </div>
-
   <div *ngIf="!isLoading" class="history-content">
     <!-- Header with Back Button -->
     <div class="history-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1>Loan History: {{ employeeName }}</h1>
+        <div class="header-copy">
+          <h1>Loan History: {{ employeeName }}</h1>
+          <p class="employee-id">Employee ID: {{ employeeId }}</p>
+        </div>
       </div>
-      <div class="employee-badge">Employee ID: {{ employeeId }}</div>
+      <div class="header-actions">
+        <button class="export-btn excel" type="button" (click)="exportToExcel()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
+        <button class="export-btn csv" type="button" (click)="exportToCSV()">
+          <i class="fas fa-file-csv"></i> CSV
+        </button>
+        <button class="export-btn print" type="button" (click)="printReport()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
     </div>
 
     <!-- Simple Stats Row (Compact) -->
-    <div class="stats-row">
-      <div class="stat-item">
-        <span class="stat-label">Total Loans</span>
-        <span class="stat-value">{{ employeeLoans.length }}</span>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon summary-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Loans</span>
+          <span class="stat-value">{{ employeeLoans.length }}</span>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-label">Total Borrowed</span>
-        <span class="stat-value">₦{{ getTotalBorrowed() | number:'1.2-2' }}</span>
+      <div class="stat-card">
+        <div class="stat-icon borrowed-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Borrowed</span>
+          <span class="stat-value">₦{{ getTotalBorrowed() | number:'1.2-2' }}</span>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-label">Outstanding</span>
-        <span class="stat-value">₦{{ getTotalBalance() | number:'1.2-2' }}</span>
+      <div class="stat-card">
+        <div class="stat-icon outstanding-icon"><i class="fas fa-scale-balanced"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Outstanding</span>
+          <span class="stat-value">₦{{ getTotalBalance() | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Status</label>
+          <select [(ngModel)]="statusFilter" (ngModelChange)="onFiltersChanged()">
+            <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Date From</label>
+          <input type="date" [(ngModel)]="dateFrom" (ngModelChange)="onFiltersChanged()" />
+        </div>
+        <div class="filter-group">
+          <label>Date To</label>
+          <input type="date" [(ngModel)]="dateTo" (ngModelChange)="onFiltersChanged()" />
+        </div>
+        <div class="filter-actions">
+          <button class="reset-btn" type="button" (click)="resetFilters()">
+            <i class="fas fa-undo"></i> Reset Filters
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Loans Table -->
     <div class="table-container">
+      <div class="table-head">
+        <h2><i class="fas fa-table-list"></i> Loan Records</h2>
+      </div>
+
       <table appSortableTable class="loans-table">
         <thead>
           <tr>
@@ -79,7 +122,7 @@
           <tr *ngFor="let loan of filteredLoans">
             <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
             <td>{{ loan.requestDate | date:'mediumDate' }}</td>
-            <td class="purpose">{{ loan.purpose }}</td>
+            <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
             <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
             <td class="interest">{{ loan.interestRate }}%</td>
             <td class="paid">₦{{ loan.totalPaid | number:'1.2-2' }}</td>
@@ -95,10 +138,10 @@
               </button>
             </td>
           </tr>
-          <tr *ngIf="employeeLoans.length === 0">
+          <tr *ngIf="filteredLoans.length === 0">
             <td colspan="9" class="no-data">
               <i class="fas fa-inbox"></i>
-              <p>No loan history found for this employee</p>
+              <p>{{ employeeLoans.length === 0 ? 'No loan history found for this employee' : 'No loans match the selected filters' }}</p>
             </td>
           </tr>
         </tbody>

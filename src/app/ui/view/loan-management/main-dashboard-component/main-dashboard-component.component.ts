@@ -38,4 +38,8 @@ export class MainDashboardComponent {
       queryParamsHandling: 'merge'
     });
   }
+
+  onDashboardSelect(value: string): void {
+    this.onDashboardChange(value === 'cooperative' ? 'cooperative' : 'advance');
+  }
 }

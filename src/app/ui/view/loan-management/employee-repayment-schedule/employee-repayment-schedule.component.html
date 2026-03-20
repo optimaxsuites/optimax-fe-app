@@ -3,7 +3,7 @@
   <div class="loan-header">
     <div class="loan-title">
       <h3 [title]="loan.loanCode">Repayment Schedule: {{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</h3>
-      <span class="loan-purpose">{{ loan.purpose }}</span>
+      <span class="loan-purpose">{{ formatPurposeDisplay(loan.purpose) }}</span>
     </div>
     <div class="loan-status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
       {{ loan.status }}
