@@ -1,61 +1,70 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
 
 @Component({
   selector: 'app-taxation',
   templateUrl: './taxation.component.html',
-  styleUrl: './taxation.component.scss'
+  styleUrls: ['./taxation.component.scss']
 })
-export class TaxationComponent {
-form!: FormGroup;
+export class TaxationComponent implements OnInit {
+  form!: FormGroup;
+
+  private localStorageKey = 'payrollStatutorySettings';
 
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
+    const saved = localStorage.getItem(this.localStorageKey);
+    const initial = saved ? JSON.parse(saved) : {};
+
     this.form = this.fb.group({
 
       // PAYE
       paye: this.fb.group({
-        enabled: [true],
-        annualization: [true],
-        bonusTaxMethod: ['Standard'],
+        enabled: [initial.paye?.enabled ?? true],
+        annualization: [initial.paye?.annualization ?? true],
+        bonusTaxMethod: [initial.paye?.bonusTaxMethod ?? 'Standard'],
         reliefs: this.fb.group({
-          enableCRA: [false],
-          fixedAmount: [200000],
-          percentOfIncome: [20],
-          minimumRelief: [0],
-          applyAnnually: [true]
+          enableCRA: [initial.paye?.reliefs?.enableCRA ?? false],
+          fixedAmount: [initial.paye?.reliefs?.fixedAmount ?? 200000],
+          percentOfIncome: [initial.paye?.reliefs?.percentOfIncome ?? 20],
+          minimumRelief: [initial.paye?.reliefs?.minimumRelief ?? 0],
+          applyAnnually: [initial.paye?.reliefs?.applyAnnually ?? true]
         }),
-        bands: this.fb.array([this.createBand()])
+        bands: this.fb.array(
+          (initial.paye?.bands && initial.paye.bands.length > 0) 
+            ? initial.paye.bands.map((b: any) => this.createBand(b))
+            : [this.createBand()]
+        )
       }),
 
       // Pension
       pension: this.fb.group({
-        enabled: [false],
-        employeeRate: [8, Validators.required],
-        employerRate: [10, Validators.required],
-        base: ['Basic+Housing+Transport', Validators.required]
+        enabled: [initial.pension?.enabled ?? false],
+        employeeRate: [initial.pension?.employeeRate ?? 8, Validators.required],
+        employerRate: [initial.pension?.employerRate ?? 10, Validators.required],
+        base: [initial.pension?.base ?? 'Basic+Housing+Transport', Validators.required]
       }),
 
       // NHF
       nhf: this.fb.group({
-        enabled: [false],
-        employeeRate: [2.5, Validators.required],
-        base: ['Basic Salary', Validators.required]
+        enabled: [initial.nhf?.enabled ?? false],
+        employeeRate: [initial.nhf?.employeeRate ?? 2.5, Validators.required],
+        base: [initial.nhf?.base ?? 'Basic Salary', Validators.required]
       }),
 
       // Health Insurance
       health: this.fb.group({
-        enabled: [false],
-        employeeRate: [0],
-        employerRate: [0],
-        type: ['Percentage']
+        enabled: [initial.health?.enabled ?? false],
+        employeeRate: [initial.health?.employeeRate ?? 0],
+        employerRate: [initial.health?.employerRate ?? 0],
+        type: [initial.health?.type ?? 'Percentage']
       }),
 
       // Employer-only statutory
       employerContributions: this.fb.group({
-        nsitfRate: [1],
-        itfRate: [1]
+        nsitfRate: [initial.employerContributions?.nsitfRate ?? 1],
+        itfRate: [initial.employerContributions?.itfRate ?? 1]
       })
 
     });
@@ -64,16 +73,15 @@ form!: FormGroup;
   }
 
   // PAYE bands
-
   get bands(): FormArray {
     return this.form.get('paye.bands') as FormArray;
   }
 
-  createBand(): FormGroup {
+  createBand(data?: any): FormGroup {
     return this.fb.group({
-      min: [0, Validators.required],
-      max: [0, Validators.required],
-      rate: [0, Validators.required]
+      min: [data?.min ?? 0, Validators.required],
+      max: [data?.max ?? 0, Validators.required],
+      rate: [data?.rate ?? 0, Validators.required]
     });
   }
 
@@ -88,67 +96,68 @@ form!: FormGroup;
   save(): void {
     if (this.form.invalid) return;
 
-    console.log('Statutory Settings:', this.form.value);
-    // TODO: send to API
+    const settings = this.form.value;
+    console.log('Statutory Settings (saved locally):', settings);
+
+    // Save to localStorage
+    localStorage.setItem(this.localStorageKey, JSON.stringify(settings));
+
+    alert('Statutory & Taxation settings saved locally.');
   }
 
   private setupToggleListeners() {
-  // PAYE Toggle
-  this.form.get('paye.enabled')?.valueChanges.subscribe(enabled => {
-    if (!enabled) {
-      this.form.patchValue({
-        paye: {
+    // PAYE Toggle
+    this.form.get('paye.enabled')?.valueChanges.subscribe(enabled => {
+      if (!enabled) {
+        this.form.get('paye')?.patchValue({
           annualization: false,
           bonusTaxMethod: 'Standard',
           reliefs: { enableCRA: false }
-        }
-      }, { emitEvent: false });
-      // To clear FormArray bands if needed:
-      // while (this.bands.length !== 0) { this.bands.removeAt(0); }
-    }
-  });
+        }, { emitEvent: false });
+      }
+    });
 
-  // CRA Reliefs Toggle
-  this.form.get('paye.reliefs.enableCRA')?.valueChanges.subscribe(enabled => {
-    if (!enabled) {
-      this.form.get('paye.reliefs')?.patchValue({
-        fixedAmount: null,
-        percentOfIncome: null,
-        minimumRelief: null,
-        applyAnnually: false
-      }, { emitEvent: false });
-    }
-  });
+    // CRA Reliefs Toggle
+    this.form.get('paye.reliefs.enableCRA')?.valueChanges.subscribe(enabled => {
+      if (!enabled) {
+        this.form.get('paye.reliefs')?.patchValue({
+          fixedAmount: null,
+          percentOfIncome: null,
+          minimumRelief: null,
+          applyAnnually: false
+        }, { emitEvent: false });
+      }
+    });
 
-  // Pension Toggle
-  this.form.get('pension.enabled')?.valueChanges.subscribe(enabled => {
-    if (!enabled) {
-      this.form.get('pension')?.patchValue({
-        employeeRate: null,
-        employerRate: null,
-        base: null
-      }, { emitEvent: false });
-    }
-  });
+    // Pension Toggle
+    this.form.get('pension.enabled')?.valueChanges.subscribe(enabled => {
+      if (!enabled) {
+        this.form.get('pension')?.patchValue({
+          employeeRate: null,
+          employerRate: null,
+          base: null
+        }, { emitEvent: false });
+      }
+    });
 
-  // NHF Toggle
-  this.form.get('nhf.enabled')?.valueChanges.subscribe(enabled => {
-    if (!enabled) {
-      this.form.get('nhf')?.patchValue({
-        employeeRate: null,
-        base: null
-      }, { emitEvent: false });
-    }
-  });
+    // NHF Toggle
+    this.form.get('nhf.enabled')?.valueChanges.subscribe(enabled => {
+      if (!enabled) {
+        this.form.get('nhf')?.patchValue({
+          employeeRate: null,
+          base: null
+        }, { emitEvent: false });
+      }
+    });
 
-  // Health Toggle
-  this.form.get('health.enabled')?.valueChanges.subscribe(enabled => {
-    if (!enabled) {
-      this.form.get('health')?.patchValue({
-        employeeRate: null,
-        employerRate: null
-      }, { emitEvent: false });
-    }
-  });
-}
+    // Health Toggle
+    this.form.get('health.enabled')?.valueChanges.subscribe(enabled => {
+      if (!enabled) {
+        this.form.get('health')?.patchValue({
+          employeeRate: null,
+          employerRate: null
+        }, { emitEvent: false });
+      }
+    });
+  }
 }
