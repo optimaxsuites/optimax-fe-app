@@ -7,6 +7,7 @@ import { LeaveComponent } from '../leave/leave.component';
 import { CompensationComponent } from '../compensation/compensation.component';
 import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.component';
 import { MetadataComponent } from '../metadata/metadata.component';
+import { PayrollComponent } from '../payroll/payroll.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -28,6 +29,17 @@ export class HrSettingsComponent {
       ],
       icon: 'pi pi-receipt',
       component: SalaryComponent,
+    },
+    {
+      name: 'Payroll',
+      subSetting: [
+        'Payroll Structure',
+        'Deductions',
+        'Bonuses and Benefits',
+        'Payslip',
+      ],
+      icon: 'pi pi-receipt',
+      component: PayrollComponent,
     },
     {
       name: 'Compensations and Deductions',

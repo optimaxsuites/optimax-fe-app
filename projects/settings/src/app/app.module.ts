@@ -92,6 +92,9 @@ import { SupplierComponent } from './ui/view/pos/metadatas/supplier/supplier.com
 import { DiscountComponent } from './ui/view/pos/metadatas/discount/discount.component';
 import { QrcodeComponent } from './ui/view/pos/qrcode/qrcode.component';
 import { MetadataComponent } from './ui/view/hr/metadata/metadata.component';
+import { PayrollComponent } from './ui/view/hr/payroll/payroll.component';
+import { GeneralComponent } from './ui/view/hr/payroll/general/general.component';
+import { TaxationComponent } from './ui/view/hr/payroll/taxation/taxation.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -130,7 +133,10 @@ import { MetadataComponent } from './ui/view/hr/metadata/metadata.component';
     SupplierComponent,
     DiscountComponent,
     QrcodeComponent,
-    MetadataComponent
+    MetadataComponent,
+    PayrollComponent,
+    GeneralComponent,
+    TaxationComponent
   ],
   imports: [
     // BrowserModule,
