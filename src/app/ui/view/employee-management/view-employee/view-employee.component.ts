@@ -33,10 +33,13 @@ export class ViewEmployeeComponent {
     if (employee) {
       this.employeeInView = JSON.parse(employee);
 
+      console.log(this.employeeInView)
+
       if(this.employeeInView?.level){
         this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
           next: data => {
             this.employeeInView.salaryDetails = data[0]
+            this.employeeInView.salaryDetails.netSalary = this.calculateNetSalary(data[0])
             console.log(this.employeeInView)
             // this.employeeInView.leaveEvents = this.generateLeaveEvents(this.employeeInView.salaryDetails.leaveDetails)
           },

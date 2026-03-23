@@ -106,6 +106,24 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.notificationsSubscription = this.cooperativeService.getNotificationsObservable().subscribe(notifications => {
       this.updateMemberStatusUpdates(notifications);
     });
+
+    // Force member dashboard for testing/demo
+    if (!this.member) {
+      this.member = {
+        id: '1',
+        memberId: 'COP-001',
+        fullName: 'Demo User',
+        email: 'demo@company.com',
+        phone: '+234 800 000 0000',
+        joinDate: '2024-01-01T00:00:00Z',
+        status: 'ACTIVE',
+        shareCapital: 100000,
+        address: '123 Demo Street',
+        emergencyContact: { name: 'Jane Doe', phone: '+234 800 000 0001', relationship: 'Spouse' },
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      };
+    }
   }
 
   ngOnDestroy(): void {

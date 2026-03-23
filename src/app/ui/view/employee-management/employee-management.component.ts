@@ -378,6 +378,7 @@ handleDateClick(arg: DateClickArg) {
 
     if (employee) {
       // this.employeeInView = JSON.parse(employee);
+      console.log(employee)
 
       localStorage.setItem('employeeInView', JSON.stringify(employee))
         this.viewEmployee = true

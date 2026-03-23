@@ -1,4 +1,4 @@
-
+<!-- 
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 <p-toast></p-toast>
 
@@ -57,7 +57,7 @@
   (close)="closeViewModal()">
   
   <div class="view-wrapper p-4">
-    <!-- Section for Predefined Fields -->
+    // Section for Predefined Fields
     <div class="predefined-section">
       <h3 class="section-title">Basic Information</h3>
       <div class="info-grid">
@@ -82,23 +82,69 @@
 
     <hr class="divider">
 
-    <!-- Section for Dynamic Fields -->
+    // Section for Dynamic Fields
     <div class="dynamic-section">
       <h3 class="section-title">Additional Information</h3>
       <div *ngFor="let key of getDynamicKeys()" class="info-item mb-4">
         <label><strong>{{ key | splitAndTitleCase }}:</strong></label>
 
-        <!-- Check if value is a document -->
+        // Check if value is a document
         <span *ngIf="isDocument(activeItem[key]); else textValue">
           <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
           <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}" class="file-link ms-2">Download</a>
         </span>
         
-        <!-- Non-file Values -->
+       // Non-file Values
         <ng-template #textValue>
           <span> {{ activeItem[key] }}</span>
         </ng-template>
       </div>
     </div>
   </div>
-</app-modal>
+</app-modal> -->
+
+
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-700">
+      <span (click)="viewState = 'job-grid'" class="cursor-pointer hover:text-customBlue">Recruitment</span>
+      <span *ngIf="viewState === 'applicant-list'"> / {{ selectedJob?.jobTitle }}</span>
+    </h2>
+  </div>
+
+  <div *ngIf="viewState === 'job-grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let job of groupedJobs" 
+         (click)="selectJob(job)"
+         class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all cursor-pointer group">
+      
+      <div class="flex justify-between items-start mb-4">
+        <div class="p-3 bg-blue-50 rounded-lg text-customBlue group-hover:bg-customBlue group-hover:text-white transition-colors">
+          <i class="pi pi-briefcase text-xl"></i>
+        </div>
+        <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">Active</span>
+      </div>
+
+      <h3 class="text-lg font-bold text-gray-800 mb-1">{{ job.title }}</h3>
+      <p class="text-gray-500 text-sm mb-4">{{ job.category }} • {{ job.location }}</p>
+
+      <div class="flex items-center justify-between border-t pt-4">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-700">{{ job.applicants.length }}</p>
+          <p class="text-sm text-gray-400 uppercase">Total</p>
+        </div>
+        <!-- <div class="text-center border-x px-6">
+          <p class="text-2xl font-bold text-customBlue">3</p> <p class="text-xs text-gray-400 uppercase">New</p>
+        </div> -->
+        <button class="text-customBlue hover:underline text-sm font-semibold">View All</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="viewState === 'applicant-list'" class="animate-fade-in">
+    <app-table 
+      [columns]="applicantColumns" 
+      [rows]="filteredApplicants" 
+      (actionClick)="handleCandidateAction($event)">
+    </app-table>
+  </div>
+</div>

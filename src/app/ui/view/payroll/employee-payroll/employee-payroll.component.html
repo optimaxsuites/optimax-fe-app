@@ -1,122 +1,10 @@
-<div class="border-2 rounded-3xl m-4 p-4 table-item">
-  <div class="flex justify-between items-center">
-    <div>
-      <p class="text-gray-700 text-[20px] font-semibold">Payroll Settings Snapshot</p>
-      <p class="text-[12px] text-gray-500">Configured in settings and applied to this payroll run.</p>
-    </div>
-    <app-button text="Edit Settings" class="btn-navigate gap-2"></app-button>
-  </div>
-
-  <div class="grid grid-cols-3 gap-4 mt-4">
-    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-      <p class="font-semibold text-gray-700">Pay Schedule</p>
-      <p class="text-[13px] text-gray-600 mt-2">
-        Cycle: {{ payrollSettings.paySchedule.startDay }}th - {{ payrollSettings.paySchedule.endDay }}th
-      </p>
-      <p class="text-[13px] text-gray-600">Working days: {{ payrollSettings.paySchedule.workingDaysPerPeriod }}</p>
-      <p class="text-[13px] text-gray-600">Hours/day: {{ payrollSettings.paySchedule.hoursPerDay }}</p>
-    </div>
-
-    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-      <p class="font-semibold text-gray-700">Attendance Deductions</p>
-      <p class="text-[13px] text-gray-600 mt-2">
-        Resumption: {{ payrollSettings.attendancePolicy.resumptionTime }}
-        ({{ payrollSettings.attendancePolicy.graceMinutes }} min grace)
-      </p>
-      <p class="text-[13px] text-gray-600">Late until {{ payrollSettings.attendancePolicy.lateWindowEnd }}</p>
-      <div class="flex items-center gap-2 mt-2">
-        <span class="text-[12px] text-gray-500">Late penalty</span>
-        <select
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
-          [(ngModel)]="payrollSettings.attendancePolicy.latePenalty.type"
-          (change)="onSettingsChange()">
-          <option value="fixed">Fixed</option>
-          <option value="percentage">%</option>
-        </select>
-        <input
-          type="number"
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
-          [(ngModel)]="payrollSettings.attendancePolicy.latePenalty.amount"
-          (change)="onSettingsChange()"
-        />
-      </div>
-      <div class="flex items-center gap-2 mt-2">
-        <span class="text-[12px] text-gray-500">Absent penalty</span>
-        <select
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
-          [(ngModel)]="payrollSettings.attendancePolicy.absentPenalty.type"
-          (change)="onSettingsChange()">
-          <option value="fixed">Fixed</option>
-          <option value="percentage">%</option>
-        </select>
-        <input
-          type="number"
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
-          [(ngModel)]="payrollSettings.attendancePolicy.absentPenalty.amount"
-          (change)="onSettingsChange()"
-        />
-      </div>
-    </div>
-
-    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-      <p class="font-semibold text-gray-700">Overtime</p>
-      <label class="flex items-center gap-2 text-[13px] text-gray-600 mt-2">
-        <input type="checkbox" [(ngModel)]="payrollSettings.overtime.enabled" (change)="onSettingsChange()" />
-        Enabled
-      </label>
-      <div class="flex items-center gap-2 mt-2">
-        <span class="text-[12px] text-gray-500">Rate</span>
-        <select
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px]"
-          [(ngModel)]="payrollSettings.overtime.rateType"
-          (change)="onSettingsChange()">
-          <option value="percentage">%</option>
-          <option value="fixed">Fixed</option>
-        </select>
-        <input
-          type="number"
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
-          [(ngModel)]="payrollSettings.overtime.rateValue"
-          (change)="onSettingsChange()"
-        />
-      </div>
-      <div class="flex items-center gap-2 mt-2">
-        <span class="text-[12px] text-gray-500">Max hours/period</span>
-        <input
-          type="number"
-          class="bg-white border border-gray-200 rounded-md px-2 py-1 text-[12px] w-20"
-          [(ngModel)]="payrollSettings.overtime.maxHoursPerPeriod"
-          (change)="onSettingsChange()"
-        />
-      </div>
-
-      <div class="mt-4 pt-3 border-t border-gray-200">
-        <p class="font-semibold text-gray-700">Loan Payroll Sync</p>
-        <label class="flex items-center gap-2 text-[13px] text-gray-600 mt-2">
-          <input type="checkbox" [(ngModel)]="autoApplyLoanDeductions" (change)="onAutoLoanApplyToggle()" />
-          Auto-apply loan deductions to loan balances
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt-5">
-    <p class="font-semibold text-gray-700">Salary By Level</p>
-    <div class="grid grid-cols-4 gap-3 mt-3">
-      <div *ngFor="let levelSetting of payrollSettings.salaryByLevel" class="bg-white border border-gray-100 rounded-xl p-3">
-        <p class="font-semibold text-gray-700">{{ levelSetting.level }}</p>
-        <p class="text-[12px] text-gray-600">Monthly: {{ formatCurrency(levelSetting.monthly) }}</p>
-        <p class="text-[12px] text-gray-600">Daily: {{ formatCurrency(levelSetting.daily) }}</p>
-      </div>
-    </div>
-  </div>
-</div>
+<!--  -->
 
 <div class="border-2  rounded-3xl m-4 table-item">
     <p-toolbar styleClass="mb-4 gap-2">
         <ng-template pTemplate="left">
         <div class="flex gap-3 text-gray-700 items-center">
-            <p class="text-gray-700  text-[20px]">Payroll for {{selectedMonth}} {{selectedYear}}</p>
+            <p class="text-gray-700  text-[20px]">Payroll for {{currentMonthName}} {{currentYear}}</p>
             <div class="flex items-center gap-4">
                 <label for="calendar" (click)="toggleCalendar()"><i class="fa-solid fa-calendar-days text-[20px] text-gray-500 cursor-pointer "></i></label>
                 <div *ngIf="showCalendar" class="calendar-modal">
@@ -137,18 +25,20 @@
           </ng-template>
       <ng-template pTemplate="right">
         <app-button  [text]="'View ' + selectedMonth + ' ' + selectedYear + ' Summary'"  class="btn-navigate gap-2"  (click)="viewSummary()"></app-button>
-        <app-button
+        <app-button  [text]="'Generate ' + currentMonthName + ' ' + currentYear + ' Payroll'"  class="btn-navigate gap-2"  (click)="generatePayroll()"></app-button>
+
+        <!-- <app-button
           [text]="isApplyingLoanDeductions ? 'Applying Loan Deductions...' : 'Apply Loan Deductions'"
           class="btn-navigate gap-2"
           (click)="applyLoanDeductionsToPayroll({ month: selectedMonth, year: selectedYear })">
-        </app-button>
+        </app-button> -->
         <app-button  text="Download CSV"  class="btn-navigate gap-2" (click)="generateCSV()"><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
       </ng-template>
     </p-toolbar>
 
-    <p *ngIf="loanDeductionSyncMessage" class="px-3 pb-2 text-[12px] text-gray-600">
+    <!-- <p *ngIf="loanDeductionSyncMessage" class="px-3 pb-2 text-[12px] text-gray-600">
       {{ loanDeductionSyncMessage }}
-    </p>
+    </p> -->
 
     <div class="flex w-full justify-between gap-4 px-3">
     <div class="flex gap-4 w-1/2">
@@ -199,7 +89,7 @@
 
     <app-table 
         [columns]="payrollColumns"
-        [rows]="filteredEmployeePayroll"
+        [rows]="filteredEmployees"
         [actions]="payrollActions"
         [selectable]="true"
         selectionMode="multiple"

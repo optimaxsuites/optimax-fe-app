@@ -1,4 +1,5 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
@@ -175,40 +176,37 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   loadDashboard(): void {
     this.isLoading = true;
 
-    this.cooperativeService.loadGroups().subscribe(() => {
-      this.loadRecentGroupJoinApplications();
-      this.refreshDashboardSignals();
-    });
+    forkJoin({
+      groups: this.cooperativeService.loadGroups(),
+      stats: this.cooperativeService.loadStats(),
+      loans: this.cooperativeService.getLoans(),
+      members: this.cooperativeService.getMembers()
+    }).subscribe(({ groups, stats, loans, members }) => {
+      // Groups
+      // (groups are loaded for side effects, no assignment needed here)
 
-    this.cooperativeService.loadStats().subscribe(stats => {
+      // Stats
       this.stats = stats;
-      this.refreshDashboardSignals();
-    });
 
-    // Get recent loans
-    this.cooperativeService.getLoans().subscribe(loans => {
+      // Loans
       this.allLoans = [...loans];
       this.recentLoans = [...loans]
         .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
-
       this.pendingApprovals = loans
         .filter(loan => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
         .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
-
       this.patronageEstimate = this.estimatePatronage();
       this.refreshPatronageYearOptions();
-      this.refreshDashboardSignals();
-    });
 
-    // Get recent members
-    this.cooperativeService.getMembers().subscribe(members => {
+      // Members
       this.allMembers = [...members];
       this.recentMembers = [...members]
         .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
         .slice(0, 5);
 
+      // Dependent refreshes
       this.loadRecentGroupJoinApplications();
       this.refreshDashboardSignals();
       this.refreshInviteCandidates();
