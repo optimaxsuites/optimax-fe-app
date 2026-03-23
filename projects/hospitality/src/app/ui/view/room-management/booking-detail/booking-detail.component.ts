@@ -8,6 +8,7 @@ import {
   Guest,
   Room,
   AdditionalDetail,
+  ServiceCharge,
   Payment,
   PaymentMethod,
 } from '../../../hospitality/hotelservice.service';
@@ -82,6 +83,10 @@ export class BookingDetailComponent implements OnInit {
   toastType: 'success' | 'error' = 'success';
   showToast = false;
 
+  availableServices: AdditionalDetail[] = [];
+  appliedServices: ServiceCharge[] = [];
+  servicePayments: Map<number, boolean> = new Map(); // track if a service charge is paid
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -150,6 +155,100 @@ export class BookingDetailComponent implements OnInit {
     this.booking = b;
     this.loading = false;
     this.loadRelated(b);
+    this.loadServices();
+  }
+
+  loadServices(): void {
+    this.hotelService.getAdditionalDetails().subscribe({
+      next: (svcs) => (this.availableServices = svcs),
+    });
+
+    if (this.booking?.rooms && this.booking.rooms.length > 0) {
+      this.hotelService.getServiceCharges().subscribe({
+        next: (charges) => {
+          // Filter charges for the rooms in this booking
+          const roomIds = this.booking!.rooms.map((r) =>
+            this.hotelService.getId(r),
+          );
+          this.appliedServices = charges.filter((c) =>
+            roomIds.includes(this.hotelService.getId(c.room)),
+          );
+        },
+      });
+    }
+  }
+
+  addService(svc: AdditionalDetail): void {
+    if (!this.booking?.rooms || this.booking.rooms.length === 0) {
+      this.showToastMessage('No rooms assigned to add services to', 'error');
+      return;
+    }
+
+    const firstRoomId = this.hotelService.getId(this.booking.rooms[0]);
+    const today = this.hotelService.formatDate(new Date());
+
+    const charge: ServiceCharge = {
+      description: svc.name,
+      amount: svc.price,
+      applicableFrom: today,
+      applicableTo: today,
+      room: firstRoomId,
+    };
+
+    this.hotelService.createServiceCharge(charge).subscribe({
+      next: (created) => {
+        this.appliedServices.push(created);
+        this.showToastMessage(`${svc.name} added to booking`, 'success');
+      },
+      error: () => this.showToastMessage('Failed to add service', 'error'),
+    });
+  }
+
+  payService(charge: ServiceCharge): void {
+    // Show payment modal with the exact service amount
+    this.paymentForm.patchValue({
+      amount: charge.amount,
+      notes: `Payment for ${charge.description}`,
+    });
+    this.showPaymentModal = true;
+  }
+
+  removeService(charge: ServiceCharge): void {
+    if (!charge.id) return;
+    this.hotelService.deleteServiceCharge(charge.id).subscribe({
+      next: () => {
+        this.appliedServices = this.appliedServices.filter(
+          (s) => s.id !== charge.id,
+        );
+        this.showToastMessage('Service removed', 'success');
+      },
+      error: () => this.showToastMessage('Failed to remove service', 'error'),
+    });
+  }
+
+  isServicePaid(charge: ServiceCharge): boolean {
+    return this.payments.some(
+      (p) =>
+        p.amountPaid === charge.amount &&
+        (p.note?.includes(charge.description) || false),
+    );
+  }
+
+  getServiceIcon(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('laundry')) return 'fa-shirt';
+    if (n.includes('food') || n.includes('meal') || n.includes('breakfast'))
+      return 'fa-utensils';
+    if (n.includes('spa') || n.includes('massage')) return 'fa-spa';
+    if (n.includes('transport') || n.includes('taxi')) return 'fa-car';
+    if (n.includes('wifi') || n.includes('internet')) return 'fa-wifi';
+    if (n.includes('gym')) return 'fa-dumbbell';
+    return 'fa-concierge-bell';
+  }
+
+  getRoomNumber(roomId: number): string {
+    const room = this.rooms.find((r) => this.hotelService.getId(r) === roomId);
+    return room ? String(room.roomNumber) : String(roomId);
   }
 
   loadRelated(booking: Booking): void {
@@ -511,5 +610,9 @@ export class BookingDetailComponent implements OnInit {
     this.toastType = type;
     this.showToast = true;
     setTimeout(() => (this.showToast = false), 3500);
+  }
+
+  navigateToRoomFirst(): void {
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
   }
 }

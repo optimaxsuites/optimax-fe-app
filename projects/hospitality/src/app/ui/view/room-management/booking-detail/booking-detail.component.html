@@ -44,6 +44,10 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-3 shrink-0 self-end">
+                <button (click)="navigateToRoomFirst()"
+                    class="px-5 py-2.5 bg-customBlue text-white rounded-lg text-sm font-semibold hover:bg-customBlueHover transition-all flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-calendar-plus"></i> New Booking
+                </button>
                 <button *ngIf="booking.status === 'CONFIRMED' || booking.status === 'PENDING'"
                     (click)="updateStatus('CHECKED_IN')" [disabled]="submittingStatus"
                     class="px-5 py-2.5 bg-customGreen text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2 shadow-sm">
@@ -94,7 +98,7 @@
                                 'N/A' }}
                             </p>
                         </div>
-                        <a *ngIf="guest.id" [routerLink]="['/hospitality', uuid, 'guests', guest.id]"
+                        <a *ngIf="guest.id" [routerLink]="['/hospitality', 'guests', uuid, guest.id]"
                             class="text-customBlue text-sm hover:underline font-medium ml-auto">
                             View Profile
                         </a>
@@ -156,6 +160,79 @@
                     </div>
                 </div>
 
+                <!-- Additional Services Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-bell-concierge text-customBlue"></i> Additional Services
+                        </h3>
+                        <span class="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                            {{ appliedServices.length }} Applied
+                        </span>
+                    </div>
+
+                    <!-- Available Services Grid -->
+                    <div class="mb-8">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Available Services</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div *ngFor="let svc of availableServices" 
+                                 class="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all group flex items-center justify-between cursor-pointer"
+                                 (click)="addService(svc)">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-50 text-customBlue rounded-lg flex items-center justify-center group-hover:bg-customBlue group-hover:text-white transition-colors">
+                                        <i class="fa-solid" [ngClass]="getServiceIcon(svc.name)"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-800">{{ svc.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ svc.price | currency:'UGX ':'symbol':'1.0-0' }}/{{ svc.measurements }}</p>
+                                    </div>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center group-hover:bg-customGreen group-hover:text-white transition-all">
+                                    <i class="fa-solid fa-plus text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applied Services List -->
+                    <div *ngIf="appliedServices.length > 0">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Applied to this Booking</p>
+                        <div class="space-y-3">
+                            <div *ngFor="let charge of appliedServices" 
+                                 class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-gray-400">
+                                        <i class="fa-solid" [ngClass]="getServiceIcon(charge.description)"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-800">{{ charge.description }}</p>
+                                        <p class="text-xs text-gray-500">Room {{ getRoomNumber(charge.room) }} · {{ charge.amount | currency:'UGX ':'symbol':'1.0-0' }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <button *ngIf="!isServicePaid(charge)" 
+                                            (click)="payService(charge)"
+                                            class="px-4 py-1.5 bg-customGreen text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all flex items-center gap-2">
+                                        <i class="fa-solid fa-wallet"></i> Pay Now
+                                    </button>
+                                    <span *ngIf="isServicePaid(charge)" 
+                                          class="px-3 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded-lg uppercase">
+                                        <i class="fa-solid fa-check mr-1.5"></i> Paid
+                                    </span>
+                                    <button (click)="removeService(charge)" class="text-gray-400 hover:text-red-500 p-2 transition-colors">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="appliedServices.length === 0" class="py-10 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        <i class="fa-solid fa-concierge-bell text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500">No additional services have been added to this booking yet.</p>
+                        <p class="text-xs text-gray-400 mt-1">Select from the available services above to bill the guest.</p>
+                    </div>
+                </div>
 
             </div>
 
@@ -191,10 +268,9 @@
                         <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
                             <i class="fa-solid fa-money-bill-wave text-gray-400 mr-1.5"></i>Payments
                         </h3>
-                        <button (click)="showPaymentModal = true"
-                            class="px-3 py-1.5 bg-customGreen/10 text-customGreen text-[11px] font-bold uppercase rounded-lg hover:bg-customGreen/20 transition-all border border-customGreen/20">
-                            + Pay
-                        </button>
+                        <div class="px-3 py-1 bg-blue-50 text-customBlue text-[10px] font-bold rounded-lg border border-blue-100">
+                            {{ payments.length }} PAYMENTS
+                        </div>
                     </div>
                     <div *ngIf="payments.length > 0" class="space-y-2.5 mb-3">
                         <div *ngFor="let p of payments"

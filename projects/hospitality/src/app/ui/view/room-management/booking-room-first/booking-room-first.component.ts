@@ -61,6 +61,7 @@ export class BookingRoomFirstComponent implements OnInit {
 
   submitting = false;
   uuid = '';
+  isGuestSkipped = false;
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
@@ -127,12 +128,9 @@ export class BookingRoomFirstComponent implements OnInit {
     this.hotelService.getRooms().subscribe({
       next: (rooms) => {
         console.log('DEBUG: BookingRoomFirst — received rooms:', rooms?.length, rooms);
-        // Sort: AVAILABLE first, then others
-        this.allRooms = [...(rooms || [])].sort((a, b) => {
-          if (a.roomStatus === 'AVAILABLE' && b.roomStatus !== 'AVAILABLE') return -1;
-          if (a.roomStatus !== 'AVAILABLE' && b.roomStatus === 'AVAILABLE') return 1;
-          return a.roomNumber - b.roomNumber;
-        });
+        // Filter for ONLY available rooms as requested
+        this.allRooms = (rooms || []).filter(r => r.roomStatus === 'AVAILABLE')
+          .sort((a, b) => a.roomNumber - b.roomNumber);
         this.applyRoomFilter();
         console.log('DEBUG: BookingRoomFirst — filteredRooms:', this.filteredRooms.length);
         this.loading = false;
@@ -196,7 +194,18 @@ export class BookingRoomFirstComponent implements OnInit {
     );
   }
 
-  selectGuest(g: Guest): void { this.selectedGuest = g; this.showNewGuestForm = false; }
+  selectGuest(g: Guest): void { 
+    this.selectedGuest = g; 
+    this.showNewGuestForm = false; 
+    this.isGuestSkipped = false;
+  }
+
+  skipGuest(): void {
+    this.selectedGuest = null;
+    this.isGuestSkipped = true;
+    this.step = 3;
+    this.showToastMessage('Guest info skipped (Walk-in)', 'success');
+  }
 
   createAndSelectGuest(): void {
     if (this.guestForm.invalid) return;

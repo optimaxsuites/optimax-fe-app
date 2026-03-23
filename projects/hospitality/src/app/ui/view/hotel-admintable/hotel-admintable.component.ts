@@ -1,7 +1,7 @@
 // hotel-admintable.component.ts
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { PrimeNGConfig } from 'primeng/api';
 import {
@@ -88,7 +88,8 @@ export class HotelAdmintableComponent implements OnInit {
     private hotelService: HotelserviceService,
     private confirmationService: ConfirmationService,
     private fb: FormBuilder,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.initializeForms();
   }
@@ -532,5 +533,9 @@ export class HotelAdmintableComponent implements OnInit {
   onRoomCreated(): void {
     this.openRoomForm = false;
     this.loadRooms();
+  }
+
+  bookRoom(room: Room): void {
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
   }
 }

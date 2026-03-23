@@ -261,6 +261,14 @@
               <button
                 pButton
                 pRipple
+                icon="pi pi-calendar-plus"
+                class="p-button-rounded p-button-text p-button-sm p-button-success"
+                (click)="bookRoom(room); $event.stopPropagation()"
+                tooltip="Book Room"
+              ></button>
+              <button
+                pButton
+                pRipple
                 icon="pi pi-pencil"
                 class="p-button-rounded p-button-text p-button-sm"
                 (click)="openEditRoomModal(room); $event.stopPropagation()"

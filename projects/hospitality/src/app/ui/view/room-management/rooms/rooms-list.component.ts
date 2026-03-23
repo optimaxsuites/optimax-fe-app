@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   HotelserviceService,
   Room,
@@ -75,6 +75,7 @@ export class RoomsListComponent implements OnInit {
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -325,5 +326,9 @@ export class RoomsListComponent implements OnInit {
     this.toastType = type;
     this.showToast = true;
     setTimeout(() => (this.showToast = false), 3500);
+  }
+
+  bookRoom(room: Room): void {
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
   }
 }
