@@ -300,6 +300,17 @@ export class ExpenseService {
       );
   }
 
+  getAllExpenses(): Observable<Expense[]> {
+    return this.http
+      .get<Expense[]>(`${this.baseUrl}/expenses/all`, { headers: this.getHeaders() })
+      .pipe(
+        catchError((err) => {
+          console.error('getAllExpenses failed:', err);
+          return this.getExpenses();
+        })
+      );
+  }
+
   getExpensesByStatus(status: ExpenseStatus): Observable<Expense[]> {
     const params = new HttpParams().set('page', '1').set('size', '1000');
     const url = `${this.expenseUrl}/find/by/expense/status/${status}`;
@@ -340,8 +351,7 @@ export class ExpenseService {
     return this.addExpense(expense, companyReceipt, employeeReceipt);
   }
 
-  // ─── Update ─────────────────────────────────────────────────────────────────
-
+  
   updateExpense(id: number, updatedExpense: Expense | any): Observable<Expense> {
     const payload: any = {
       id,

@@ -1,12 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { MatIconModule } from '@angular/material/icon';
+import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
 
 @Component({
   selector: 'app-expense-approval',
   templateUrl: './expense-approval.component.html',
   styleUrls: ['./expense-approval.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatIconModule, SafeUrlPipe]
 })
 export class ExpenseApprovalComponent implements OnInit {
 
@@ -14,8 +19,6 @@ export class ExpenseApprovalComponent implements OnInit {
   expenses: Expense[] = [];
   expenseId: string | null = null;
   dropdownOpen = false;
-
-  // ── File Preview Modal ──────────────────────────────────────────
   showFileModal = false;
   fileModalUrl = '';
   fileModalTitle = '';

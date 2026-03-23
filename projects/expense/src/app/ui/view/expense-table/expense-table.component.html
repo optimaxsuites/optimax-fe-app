@@ -5,11 +5,9 @@
 
 <body class="font-['DM_Sans'] bg-gray-100 min-h-screen p-8">
 
-<!-- ========== PRIME COMPONENTS (placeholders) ========== -->
 <p-confirmDialog header="Confirm Action" icon="pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 <p-toast position="top-right"></p-toast>
 
-<!-- ========== MAIN UI ========== -->
 <div class="w-full max-w-full p-8 m-0">
 
   <!-- HEADER + ADD BUTTON -->
@@ -18,55 +16,72 @@
       <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Expenses</h1>
       <p class="text-lg text-gray-500 m-0">Manage and track your business expenses</p>
     </div>
-    <button class="flex items-center gap-3 bg-teal-800 text-white text-lg font-medium py-3.5 px-8 border-0 rounded-xl cursor-pointer transition-all duration-200 hover:bg-teal-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg max-md:w-full max-md:justify-center" (click)="navigateToForm()">
-      <span class="material-icons text-2xl">add</span>
-      Add Expense
-    </button>
+    <div class="flex items-center gap-2 flex-wrap">
+      <button class="flex items-center gap-3 bg-teal-800 text-white text-lg font-medium py-3.5 px-8 border-0 rounded-xl cursor-pointer transition-all duration-200 hover:bg-teal-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg" (click)="navigateToForm()">
+        <span class="material-icons text-2xl">add</span>
+        Add Expense
+      </button>
+      <button (click)="toggleViewAll()"
+        class="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg transition"
+        [class.bg-blue-50]="viewAllUsers"
+        [class.border-blue-400]="viewAllUsers"
+        [class.text-blue-700]="viewAllUsers"
+        [class.border-gray-300]="!viewAllUsers"
+        [class.text-gray-600]="!viewAllUsers">
+        <i class="pi" [class.pi-users]="!viewAllUsers" [class.pi-user]="viewAllUsers"></i>
+        {{ viewAllUsers ? 'My Expenses' : 'All Employees' }}
+      </button>
+      <button (click)="openImportModal()"
+        class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+        <i class="pi pi-upload"></i> Import
+      </button>
+      <button (click)="navigateToAnalytics()"
+        class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+        <i class="pi pi-chart-bar"></i> Analytics
+      </button>
+    </div>
   </div>
 
   <!-- SUMMARY CARDS -->
   <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
-    <!-- Total -->
     <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-blue-50 border-blue-200">
       <div>
-        <p class="text-base font-semibold mb-2 opacity-90">Total Expenses</p>
-        <h3 class="text-3xl font-bold mb-1 leading-tight">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</h3>
+        <p class="text-base font-semibold mb-2 opacity-90 text-blue-800">Total Expenses</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</h3>
+        <p class="text-sm text-blue-600 m-0">{{ getExpenseCount() }} total records</p>
       </div>
       <div class="w-14 h-14 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
         <span class="material-icons text-3xl">trending_up</span>
       </div>
     </div>
 
-    <!-- Approved -->
     <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-green-50 border-green-200">
       <div>
-        <p class="text-base font-semibold mb-2 opacity-90">Approved</p>
-        <h3 class="text-3xl font-bold mb-1 leading-tight">{{ getApprovedCount() }}</h3>
-        <p class="text-sm font-medium m-0 opacity-85">{{ getApprovedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+        <p class="text-base font-semibold mb-2 opacity-90 text-green-800">Approved</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-green-900">{{ getApprovedCount() }}</h3>
+        <p class="text-sm text-green-600 m-0">{{ getApprovedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
       <div class="w-14 h-14 rounded-full flex items-center justify-center bg-green-100 text-green-600">
         <span class="material-icons text-3xl">check_circle</span>
       </div>
     </div>
 
-    <!-- Pending -->
     <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-amber-50 border-amber-200">
       <div>
-        <p class="text-base font-semibold mb-2 opacity-90">Pending</p>
-        <h3 class="text-3xl font-bold mb-1 leading-tight">{{ getPendingCount() }}</h3>
-        <p class="text-sm font-medium m-0 opacity-85">{{ getPendingAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+        <p class="text-base font-semibold mb-2 opacity-90 text-amber-800">Pending</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-amber-900">{{ getPendingCount() }}</h3>
+        <p class="text-sm text-amber-600 m-0">{{ getPendingAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
       <div class="w-14 h-14 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
         <span class="material-icons text-3xl">schedule</span>
       </div>
     </div>
 
-    <!-- Rejected -->
     <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-red-50 border-red-200">
       <div>
-        <p class="text-base font-semibold mb-2 opacity-90">Rejected</p>
-        <h3 class="text-3xl font-bold mb-1 leading-tight">{{ getRejectedCount() }}</h3>
-        <p class="text-sm font-medium m-0 opacity-85">{{ getRejectedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+        <p class="text-base font-semibold mb-2 opacity-90 text-red-800">Rejected</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-red-900">{{ getRejectedCount() }}</h3>
+        <p class="text-sm text-red-600 m-0">{{ getRejectedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
       <div class="w-14 h-14 rounded-full flex items-center justify-center bg-red-100 text-red-600">
         <span class="material-icons text-3xl">cancel</span>
@@ -83,29 +98,21 @@
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 flex items-center">
             <span class="material-icons">search</span>
           </span>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (input)="onSearchInputChange()"
-            placeholder="Search expenses..."
-            class="w-full py-3.5 pl-12 pr-4 border border-gray-300 rounded-xl text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10"
-          >
+          <input type="text" [(ngModel)]="searchTerm" (input)="onSearchInputChange()" placeholder="Search expenses..."
+            class="w-full py-3.5 pl-12 pr-4 border border-gray-300 rounded-xl text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10">
         </div>
 
-        <!-- category -->
-        <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10 max-lg:w-full">
+        <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
           <option value="">All Categories</option>
           <option *ngFor="let cat of categoryNames" [value]="cat">{{ cat }}</option>
         </select>
 
-        <!-- status -->
-        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10 max-lg:w-full">
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
           <option value="">All Status</option>
           <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
         </select>
 
-        <!-- date range -->
-        <select [(ngModel)]="dateRangeType" (ngModelChange)="selectDateRange($event)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10 max-lg:w-full">
+        <select [(ngModel)]="dateRangeType" (ngModelChange)="selectDateRange($event)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
           <option value="">All Dates</option>
           <option value="today">Today</option>
           <option value="week">This Week</option>
@@ -113,26 +120,23 @@
           <option value="custom">Custom Range</option>
         </select>
 
-        <div *ngIf="dateRangeType === 'custom'" class="flex items-center gap-2 max-md:flex-col max-md:items-stretch">
-          <input type="date" [(ngModel)]="dateFrom" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800 max-md:w-full">
-          <span class="text-gray-500 text-xl max-md:hidden">–</span>
-          <input type="date" [(ngModel)]="dateTo" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800 max-md:w-full">
+        <div *ngIf="dateRangeType === 'custom'" class="flex items-center gap-2">
+          <input type="date" [(ngModel)]="dateFrom" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800">
+          <span class="text-gray-500 text-xl">–</span>
+          <input type="date" [(ngModel)]="dateTo" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800">
         </div>
       </div>
 
       <!-- bulk actions -->
-      <div *ngIf="selectedExpenses.length > 0" class="flex items-center gap-3 p-2 bg-gray-50 rounded-xl max-md:flex-wrap max-md:justify-center">
+      <div *ngIf="selectedExpenses.length > 0" class="flex items-center gap-3 p-2 bg-gray-50 rounded-xl flex-wrap">
         <span class="py-2 px-4 bg-gray-200 rounded-lg text-sm font-medium text-gray-700">{{ selectedExpenses.length }} selected</span>
-        
-        <button (click)="bulkApprove()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
+        <button (click)="bulkApprove()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
           <span class="material-icons text-xl">check</span> Accept
         </button>
-        
-        <button (click)="bulkReject()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100">
+        <button (click)="bulkReject()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100">
           <span class="material-icons text-xl">block</span> Reject
         </button>
-        
-        <button (click)="deleteSelectedExpenses()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 bg-red-50 text-red-600 border-red-200 hover:bg-red-100">
+        <button (click)="deleteSelectedExpenses()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-red-50 text-red-600 border-red-200 hover:bg-red-100">
           <span class="material-icons text-xl">delete</span> Delete
         </button>
       </div>
@@ -141,7 +145,23 @@
 
   <!-- EXPENSE TABLE -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden w-full">
-    <p-table
+
+    <!-- Loading skeleton -->
+    <div *ngIf="isLoading" class="p-6">
+      <div *ngFor="let i of [1,2,3,4,5]" class="flex gap-4 mb-4">
+        <p-skeleton width="2rem" height="2rem" borderRadius="4px"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="10rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="7rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+      </div>
+    </div>
+
+    <p-table *ngIf="!isLoading"
       [value]="filteredExpenses"
       [(selection)]="selectedExpenses"
       dataKey="id"
@@ -149,11 +169,13 @@
       [rows]="10"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Showing {first} to {last} of {totalRecords} expenses"
-      styleClass="w-full border-collapse"
+      styleClass="w-full"
     >
       <ng-template pTemplate="header">
         <tr class="bg-gray-50">
-          <th style="width: 4rem" class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+          <th style="width:3.5rem" class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">
+            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+          </th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Date</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Expense Name</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Created By</th>
@@ -161,105 +183,123 @@
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Category</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-right">Amount</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Status</th>
-          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-center">Actions</th>
+          <!-- ✅ ACTIONS COLUMN RESTORED -->
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-center" style="min-width:160px">Actions</th>
         </tr>
       </ng-template>
 
       <ng-template pTemplate="body" let-expense>
-        <tr class="transition-colors duration-200 hover:bg-gray-50">
-          <td class="py-5 px-4 border-b border-gray-100 text-center w-16"><p-tableCheckbox [value]="expense"></p-tableCheckbox></td>
+        <tr class="transition-colors duration-200 hover:bg-gray-50 border-b border-gray-100">
 
-          <td class="py-5 px-4 border-b border-gray-100 text-gray-800">{{ formatEventDate(expense.eventDate) | date:'mediumDate' }}</td>
+          <td class="py-4 px-4">
+            <p-tableCheckbox [value]="expense"></p-tableCheckbox>
+          </td>
 
-          <td class="py-5 px-4 border-b border-gray-100 font-semibold text-gray-900">{{ expense.name }}</td>
+          <td class="py-4 px-4 text-gray-700 text-sm whitespace-nowrap">
+            {{ formatEventDate(expense.eventDate) | date:'dd MMM yyyy' }}
+          </td>
 
-          <td class="py-5 px-4 border-b border-gray-100">
+          <td class="py-4 px-4 font-semibold text-gray-900 max-w-[180px]">
+            <span class="block truncate" [title]="expense.name">{{ expense.name }}</span>
+          </td>
+
+          <td class="py-4 px-4">
             <span class="text-sm text-gray-700">{{ expense.expenseBy?.fullname || '—' }}</span>
           </td>
 
-          <td class="py-5 px-4 border-b border-gray-100">{{ expense.merchant?.name || '—' }}</td>
+          <td class="py-4 px-4 text-sm text-gray-700">{{ expense.merchant?.name || '—' }}</td>
 
-          <td class="py-5 px-4 border-b border-gray-100">
-            <span *ngIf="expense.category?.name; else noCategory" class="inline-block py-1.5 px-4 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700">
-              {{ expense.category?.name }}
+          <td class="py-4 px-4">
+            <span class="inline-block py-1 px-3 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700">
+              {{ expense.category?.name || '—' }}
             </span>
-            <ng-template #noCategory>
-              <span class="inline-block py-1.5 px-4 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700">—</span>
-            </ng-template>
           </td>
 
-          <td class="py-5 px-4 border-b border-gray-100 font-semibold text-gray-900 text-right font-['Cambria']">
+          <td class="py-4 px-4 font-semibold text-gray-900 text-right text-sm whitespace-nowrap">
             {{ calculateDisplayAmount(expense) | currency:'NGN':'symbol':'1.2-2' }}
           </td>
 
-          <td class="py-5 px-4 border-b border-gray-100">
-            <span class="inline-flex items-center gap-2 py-1.5 px-4 rounded-full text-sm font-medium border"
+          <td class="py-4 px-4">
+            <span class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-semibold border"
                   [ngClass]="{
-                    'bg-green-50 text-green-600 border-green-200': expense.status === 'APPROVED',
-                    'bg-amber-50 text-amber-600 border-amber-200': expense.status === 'PENDING',
-                    'bg-red-50 text-red-600 border-red-200': expense.status === 'REJECTED'
+                    'bg-green-50 text-green-700 border-green-200': expense.status === 'APPROVED',
+                    'bg-amber-50 text-amber-700 border-amber-200': expense.status === 'PENDING',
+                    'bg-red-50 text-red-700 border-red-200': expense.status === 'REJECTED'
                   }">
-              <span class="w-2 h-2 rounded-full"
+              <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     [ngClass]="{
                       'bg-green-600': expense.status === 'APPROVED',
-                      'bg-amber-600': expense.status === 'PENDING',
+                      'bg-amber-500': expense.status === 'PENDING',
                       'bg-red-600': expense.status === 'REJECTED'
                     }"></span>
               {{ expense.status | titlecase }}
             </span>
           </td>
 
-          <td class="py-5 px-4 border-b border-gray-100 text-center">
-            <div class="flex items-center justify-center gap-1 opacity-70 transition-opacity duration-200 hover:opacity-100">
-              <!-- view -->
-              <button
-                (click)="viewExpenseApproval(expense)"
-                class="flex items-center justify-center w-10 h-10 border-0 bg-transparent rounded-lg text-gray-500 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:text-teal-800"
-                pTooltip="View Details">
-                <span class="material-icons text-xl">visibility</span>
+          <!--  ACTIONS CELL — FULLY RESTORED -->
+          <td class="py-4 px-4">
+            <div class="flex items-center justify-center gap-1">
+
+              <!-- View Details — always visible for all statuses -->
+              <button pTooltip="View Details" tooltipPosition="top"
+                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="viewExpenseApproval(expense)">
+                <i class="pi pi-eye text-sm"></i>
               </button>
 
-              <!-- edit — disabled & styled differently when APPROVED -->
-              <button
-                (click)="editExpense(expense)"
-                class="flex items-center justify-center w-10 h-10 border-0 bg-transparent rounded-lg text-gray-500 cursor-pointer transition-all duration-200 hover:bg-blue-100 hover:text-blue-600"
-                [class.opacity-45]="isApproved(expense)"
-                [class.cursor-not-allowed]="isApproved(expense)"
-                [class.bg-gray-100]="isApproved(expense)"
-                [class.text-gray-400]="isApproved(expense)"
-                [pTooltip]="isApproved(expense) ? 'Approved expenses cannot be edited' : 'Edit'"
-                tooltipPosition="top">
-                <span class="material-icons text-xl">{{ isApproved(expense) ? 'lock' : 'edit' }}</span>
+              <!-- Edit — only for PENDING expenses -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="Edit Expense" tooltipPosition="top"
+                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="openEditModal(expense)">
+                <i class="pi pi-pencil text-sm"></i>
               </button>
 
-              <!-- more menu -->
-              <div class="relative group">
-                <button class="flex items-center justify-center w-10 h-10 border-0 bg-transparent rounded-lg text-gray-500 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:text-gray-600">
-                  <span class="material-icons text-xl">more_vert</span>
-                </button>
-                <div class="hidden group-hover:block absolute right-0 top-full min-w-[160px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                  <button (click)="approve(expense)" class="flex items-center gap-2 w-full px-4 py-3 border-0 bg-transparent text-sm text-left cursor-pointer transition-colors duration-200 hover:bg-green-50 hover:text-green-600">
-                    <span class="material-icons text-lg">check</span> Accept
-                  </button>
-                  <button (click)="reject(expense)" class="flex items-center gap-2 w-full px-4 py-3 border-0 bg-transparent text-sm text-left cursor-pointer transition-colors duration-200 hover:bg-red-50 hover:text-red-600">
-                    <span class="material-icons text-lg">close</span> Reject
-                  </button>
-                </div>
-              </div>
+              <!-- Lock indicator — shown for APPROVED or REJECTED (cannot edit) -->
+              <span *ngIf="isLocked(expense)"
+                pTooltip="Locked — already {{ expense.status | titlecase }}" tooltipPosition="top"
+                class="expense-actions-lock w-8 h-8 flex items-center justify-center cursor-default">
+                <i class="pi pi-lock text-gray-400 text-sm"></i>
+              </span>
+
+              <!-- Approve — quick approve button, only for PENDING -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="Approve" tooltipPosition="top"
+                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="approve(expense)">
+                <i class="pi pi-check text-sm"></i>
+              </button>
+
+              <!-- Reject — quick reject button, only for PENDING -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="Reject" tooltipPosition="top"
+                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="openRejectionDialog(expense)">
+                <i class="pi pi-times text-sm"></i>
+              </button>
+
+              <!-- Delete — always visible -->
+              <button pTooltip="Delete" tooltipPosition="top"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
+                (click)="confirmDelete(expense)">
+                <i class="pi pi-trash text-red-400 text-sm"></i>
+              </button>
+
             </div>
           </td>
+
         </tr>
       </ng-template>
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="9" class="py-16 text-center">
-            <div class="flex flex-col items-center justify-center">
-              <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                <span class="material-symbols-outlined text-5xl text-gray-400">receipt_long</span>
+          <td colspan="9" class="py-20 text-center">
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                <span class="material-icons text-5xl text-gray-300">receipt_long</span>
               </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-2">No expenses found</h3>
-              <p class="text-base text-gray-500 m-0">Adjust your filters or add a new expense.</p>
+              <h3 class="text-xl font-semibold text-gray-800">No expenses found</h3>
+              <p class="text-gray-500 m-0">Adjust your filters or add a new expense.</p>
             </div>
           </td>
         </tr>
@@ -271,73 +311,64 @@
 <!-- ========== SIDE MODAL: EDIT ========== -->
 <app-side-modal *ngIf="isModalOpen" (close)="closeModal()">
   <div class="h-full flex flex-col bg-white">
-    <div class="p-6 border-b border-gray-200 flex justify-between items-start bg-white">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-start">
       <h2 class="text-2xl font-bold text-gray-900">Edit Expense</h2>
-      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:text-gray-900">
+      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all">
         <span class="material-icons text-xl">close</span>
       </button>
     </div>
 
-    <form *ngIf="selectedExpense" #editForm="ngForm" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+    <form *ngIf="selectedExpense" #editForm="ngForm" class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
 
-      <div class="w-full">
+      <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Expense Name</label>
-        <input [(ngModel)]="selectedExpense.name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10" />
+        <input [(ngModel)]="selectedExpense.name" name="name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+      <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-          <input
-            [value]="formatAmount(selectedExpense.amount)"
-            (input)="updateEditAmount($event)"
-            (keypress)="onlyNumbers($event)"
-            name="amount" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10" />
+          <input [value]="formatAmount(selectedExpense.amount)" (input)="updateEditAmount($event)" (keypress)="onlyNumbers($event)"
+            name="amount" type="text"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Tax (%)</label>
-          <input
-            [value]="getTaxRateDisplayValue(selectedExpense.tax)"
-            (input)="onTaxInputChange($event)"
-            name="taxPercentage" type="number" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10" />
+          <input [value]="getTaxRateDisplayValue(selectedExpense.tax)" (input)="onTaxInputChange($event)"
+            name="taxPercentage" type="number" step="0.01"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
         </div>
       </div>
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-        <input
-          [value]="formatEventDateForInput(selectedExpense?.eventDate)"
-          (input)="onDateInputChange($event)"
-          name="eventDate" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10" />
+        <input [value]="formatEventDateForInput(selectedExpense?.eventDate)" (input)="onDateInputChange($event)"
+          name="eventDate" type="date"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
       </div>
 
-      <!-- Merchant dropdown -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Merchant
-          <span *ngIf="!editMerchantId" class="text-amber-600 text-xs font-medium ml-2">⚠ Not assigned</span>
+          <span *ngIf="!editMerchantId" class="text-amber-600 text-xs ml-2">⚠ Not assigned</span>
         </label>
-        <select
-          [(ngModel)]="editMerchantId"
-          name="merchantId"
-          class="w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10"
-          [ngClass]="{'border-amber-300 bg-amber-50': !editMerchantId}">
+        <select [(ngModel)]="editMerchantId" name="merchantId"
+          class="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:border-teal-700 transition-all"
+          [ngClass]="{'border-amber-300 bg-amber-50': !editMerchantId, 'border-gray-300': editMerchantId}">
           <option [ngValue]="null" disabled>— Select Merchant —</option>
           <option *ngFor="let m of merchants" [ngValue]="m.id">{{ m.name }}</option>
         </select>
       </div>
 
-      <!-- Category dropdown -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Category
-          <span *ngIf="!editCategoryId" class="text-amber-600 text-xs font-medium ml-2">⚠ Not assigned</span>
+          <span *ngIf="!editCategoryId" class="text-amber-600 text-xs ml-2">⚠ Not assigned</span>
         </label>
-        <select
-          [(ngModel)]="editCategoryId"
-          name="categoryId"
-          class="w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10"
-          [ngClass]="{'border-amber-300 bg-amber-50': !editCategoryId}">
+        <select [(ngModel)]="editCategoryId" name="categoryId"
+          class="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:border-teal-700 transition-all"
+          [ngClass]="{'border-amber-300 bg-amber-50': !editCategoryId, 'border-gray-300': editCategoryId}">
           <option [ngValue]="null" disabled>— Select Category —</option>
           <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
         </select>
@@ -345,14 +376,16 @@
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-        <textarea [(ngModel)]="selectedExpense.description" name="description" rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10"></textarea>
+        <textarea [(ngModel)]="selectedExpense.description" name="description" rows="4"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all resize-none"></textarea>
       </div>
-
     </form>
 
-    <div class="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-4">
-      <button type="button" class="py-3 px-8 rounded-lg text-base font-medium cursor-pointer transition-all duration-200 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50" (click)="closeModal()">Cancel</button>
-      <button type="button" class="py-3 px-8 rounded-lg text-base font-medium cursor-pointer transition-all duration-200 bg-teal-800 text-white border-0 hover:bg-teal-700" (click)="saveEditedExpense()">Save Changes</button>
+    <div class="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+      <button type="button" (click)="closeModal()"
+        class="py-3 px-6 rounded-lg text-base font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
+      <button type="button" (click)="saveEditedExpense()"
+        class="py-3 px-6 rounded-lg text-base font-medium bg-teal-800 text-white border-0 hover:bg-teal-700 transition-all">Save Changes</button>
     </div>
   </div>
 </app-side-modal>
@@ -360,32 +393,31 @@
 <!-- ========== SIDE MODAL: DETAIL VIEW ========== -->
 <app-side-modal *ngIf="isModalOpen2" (close)="closeModal()">
   <div class="h-full flex flex-col bg-white">
-    <div class="p-6 border-b border-gray-200 flex justify-between items-start bg-white">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-start">
       <div>
         <h2 class="text-2xl font-bold text-gray-900 mb-1">Expense Details</h2>
         <p class="text-sm text-gray-500 m-0">ID: #{{ selectedExpense?.id || '---' }}</p>
       </div>
-      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:text-gray-900">
+      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-100 transition-all">
         <span class="material-icons text-xl">close</span>
       </button>
     </div>
 
     <div class="flex-1 overflow-y-auto p-6">
 
-      <!-- APPROVED LOCK NOTICE -->
       <div *ngIf="selectedExpense?.status === 'APPROVED'" class="flex items-center gap-2 p-3 mb-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
         <span class="material-icons text-green-600 text-lg">lock</span>
         <span>This expense has been approved and cannot be edited.</span>
       </div>
 
-      <!-- status banner -->
-      <div class="flex items-center gap-4 p-6 rounded-xl border mb-8"
+      <!-- Status banner -->
+      <div class="flex items-center gap-4 p-5 rounded-xl border mb-6"
            [ngClass]="{
              'bg-green-50 border-green-200': selectedExpense?.status === 'APPROVED',
              'bg-amber-50 border-amber-200': selectedExpense?.status === 'PENDING',
              'bg-red-50 border-red-200': selectedExpense?.status === 'REJECTED'
            }">
-        <div class="w-12 h-12 rounded-full flex items-center justify-center"
+        <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
              [ngClass]="{
                'bg-green-100 text-green-600': selectedExpense?.status === 'APPROVED',
                'bg-amber-100 text-amber-600': selectedExpense?.status === 'PENDING',
@@ -396,270 +428,354 @@
           <span class="material-icons" *ngIf="selectedExpense?.status === 'REJECTED'">cancel</span>
         </div>
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">Status</p>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Status</p>
           <p class="text-xl font-bold m-0">{{ selectedExpense?.status }}</p>
+        </div>
+
+        <!-- Quick actions in detail view for PENDING -->
+        <div *ngIf="selectedExpense && canApproveOrReject(selectedExpense)" class="ml-auto flex gap-2">
+          <button (click)="approve(selectedExpense!); closeModal()"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors">
+            <i class="pi pi-check"></i> Approve
+          </button>
+          <button (click)="openRejectionDialog(selectedExpense!); closeModal()"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors">
+            <i class="pi pi-times"></i> Reject
+          </button>
         </div>
       </div>
 
-      <!-- details -->
-      <div class="flex flex-col gap-8">
-        <div class="grid grid-cols-2 gap-6 max-md:grid-cols-1">
-          <div class="w-full">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Expense Name</label>
-            <p class="text-lg font-medium text-gray-900 m-0">{{ selectedExpense?.name }}</p>
+      <div class="flex flex-col gap-6">
+        <div class="grid grid-cols-2 gap-5 max-md:grid-cols-1">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Expense Name</label>
+            <p class="text-base font-semibold text-gray-900 m-0">{{ selectedExpense?.name }}</p>
           </div>
-          <div class="w-full">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Date</label>
-            <p class="text-lg font-medium text-gray-900 m-0">{{ formatEventDate(selectedExpense?.eventDate) | date:'mediumDate' }}</p>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Date</label>
+            <p class="text-base font-semibold text-gray-900 m-0">{{ formatEventDate(selectedExpense?.eventDate) | date:'dd MMM yyyy' }}</p>
           </div>
         </div>
 
-        <!-- Created By User Info -->
-        <div *ngIf="selectedExpense?.expenseBy" class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Created By</label>
+        <div *ngIf="selectedExpense?.expenseBy">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Created By</label>
           <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <span class="material-icons text-blue-500 text-xl">person</span>
+            <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <span class="material-icons text-blue-500 text-lg">person</span>
             </div>
-            <div class="flex flex-col gap-0.5 min-w-0">
+            <div class="min-w-0">
               <p class="text-sm font-semibold text-gray-900 m-0 truncate">{{ selectedExpense!.expenseBy!.fullname }}</p>
               <p class="text-xs text-gray-500 m-0 truncate">{{ selectedExpense!.expenseBy!.email }}</p>
             </div>
           </div>
         </div>
 
-        <!-- Approved By User Info (only if approved) -->
-        <div *ngIf="selectedExpense?.approvedBy && selectedExpense?.status === 'APPROVED'" class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Approved By</label>
+        <div *ngIf="selectedExpense?.approvedBy && selectedExpense?.status === 'APPROVED'">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Approved By</label>
           <div class="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
-            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span class="material-icons text-green-600 text-xl">check_circle</span>
+            <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span class="material-icons text-green-600 text-lg">check_circle</span>
             </div>
-            <div class="flex flex-col gap-0.5 min-w-0">
+            <div class="min-w-0">
               <p class="text-sm font-semibold text-gray-900 m-0 truncate">{{ selectedExpense!.approvedBy!.fullname }}</p>
               <p class="text-xs text-gray-500 m-0 truncate">{{ selectedExpense!.approvedBy!.email }}</p>
             </div>
           </div>
         </div>
 
-        <div class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Merchant</label>
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
-              <span class="material-icons">store</span>
+        <div *ngIf="selectedExpense?.rejectionReason && selectedExpense?.status === 'REJECTED'" class="p-4 rounded-lg bg-red-50 border border-red-200">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-red-500 mb-1.5">Rejection Reason</label>
+          <p class="text-sm text-red-800 m-0">{{ selectedExpense?.rejectionReason }}</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Merchant</label>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0">
+              <span class="material-icons text-lg">store</span>
             </div>
-            <p class="text-lg font-medium text-gray-900 m-0">{{ selectedExpense?.merchant?.name || '—' }}</p>
+            <p class="text-base font-medium text-gray-900 m-0">{{ selectedExpense?.merchant?.name || '—' }}</p>
           </div>
         </div>
 
-        <div class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Financials</label>
-          <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-            <div class="flex justify-between items-center py-3 text-gray-600 border-b border-gray-200">
+        <!-- Financials -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Financials</label>
+          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+            <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
               <span>Subtotal</span>
               <span class="font-medium">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
             </div>
-            <div class="flex justify-between items-center py-3 text-gray-600 border-b border-gray-200">
+            <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
               <span>
                 Tax
-                <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)" class="inline-block px-2 py-1 bg-gray-200 rounded text-xs ml-2">
+                <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)" class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs ml-2">
                   {{ getTaxRateDisplayValue(selectedExpense?.tax) }}%
                 </span>
               </span>
-              <span class="font-medium" *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)">Included</span>
-              <span class="font-medium" *ngIf="!getTaxRateDisplayValue(selectedExpense?.tax)">None</span>
+              <span class="font-medium text-sm">{{ getTaxRateDisplayValue(selectedExpense?.tax) ? 'Included' : 'None' }}</span>
             </div>
-            <div class="flex justify-between items-center pt-4 mt-2 border-t-2 border-gray-300">
-              <span class="text-base font-semibold text-gray-900">Total</span>
-              <span class="text-2xl font-bold text-teal-800">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
+            <div class="flex justify-between items-center pt-3 mt-1 border-t-2 border-gray-300">
+              <span class="font-semibold text-gray-900">Total</span>
+              <span class="text-xl font-bold text-teal-800">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
             </div>
           </div>
         </div>
 
-        <div class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Category</label>
-          <span class="inline-block py-2 px-6 bg-green-50 border border-green-200 rounded-full text-base font-medium text-green-600">{{ selectedExpense?.category?.name || '—' }}</span>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Category</label>
+          <span class="inline-block py-1.5 px-5 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-700">{{ selectedExpense?.category?.name || '—' }}</span>
         </div>
 
-        <div *ngIf="selectedExpense?.description" class="w-full">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Description</label>
-          <p class="p-5 bg-gray-50 border border-gray-200 rounded-xl text-base leading-relaxed text-gray-700 m-0">{{ selectedExpense?.description }}</p>
+        <div *ngIf="selectedExpense?.description">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</label>
+          <p class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm leading-relaxed text-gray-700 m-0">{{ selectedExpense?.description }}</p>
         </div>
 
-        <div class="w-full mt-5">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Receipts</label>
+        <!-- Receipts -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Receipts</label>
+          <div class="grid grid-cols-2 gap-3 max-md:grid-cols-1">
 
-          <div class="grid grid-cols-2 gap-3.5 max-md:grid-cols-1">
-
-            <!-- ── Company Receipt ─────────────────────────────── -->
+            <!-- Company Receipt -->
             <div class="flex flex-col gap-1.5">
-              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <span class="material-icons text-base">business</span> Company Receipt
+              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
+                <span class="material-icons text-sm">business</span> Company Receipt
               </p>
-              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[120px] flex items-center justify-center bg-gray-50 relative">
-
-                <!-- Has a converted URL -->
-                <ng-container *ngIf="companyReceiptUrl; else noCompanyReceipt">
-
-                  <!-- PDF receipt — show a link instead of broken <img> -->
-                  <div *ngIf="companyReceiptUrl.toLowerCase().endsWith('.pdf'); else companyImg"
-                       class="flex flex-col items-center gap-2 p-4 text-center">
-                    <span class="material-icons text-4xl text-red-500">picture_as_pdf</span>
-                    <a [href]="companyReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-sm font-medium underline">
-                      View Company Receipt (PDF)
-                    </a>
-                  </div>
-
-                  <!-- Image receipt — clickable thumbnail -->
-                  <ng-template #companyImg>
-                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full"
-                         (click)="openReceiptModal(companyReceiptUrl!, 'Company Receipt')">
-                      <img [src]="companyReceiptUrl"
-                           alt="Company Receipt"
-                           class="w-full h-36 object-cover block"
-                           (error)="onReceiptThumbnailError($event, 'company')" />
-                      <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-sm gap-2">
-                        <span class="material-icons text-3xl">zoom_in</span>
-                        <span>Click to view full size</span>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[110px] flex items-center justify-center bg-gray-50 relative">
+                <div *ngIf="companyReceiptLoading" class="flex items-center gap-2 text-gray-400 text-xs">
+                  <i class="pi pi-spin pi-spinner"></i> Loading…
+                </div>
+                <ng-container *ngIf="!companyReceiptLoading">
+                  <ng-container *ngIf="companyReceiptUrl; else noCompanyReceipt">
+                    <div *ngIf="companyReceiptUrl.toLowerCase().endsWith('.pdf'); else companyImg" class="flex flex-col items-center gap-2 p-4 text-center">
+                      <span class="material-icons text-4xl text-red-500">picture_as_pdf</span>
+                      <a [href]="companyReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-xs font-medium underline">View PDF</a>
+                    </div>
+                    <ng-template #companyImg>
+                      <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(companyReceiptUrl!, 'Company Receipt')">
+                        <img [src]="companyReceiptUrl" alt="Company Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'company')" />
+                        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                          <span class="material-icons text-2xl">zoom_in</span>
+                          <span>View full size</span>
+                        </div>
                       </div>
+                    </ng-template>
+                    <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-0.5 text-xs shadow-sm">
+                      <a [href]="companyReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
+                        <span class="material-icons text-xs align-middle">open_in_new</span> Open
+                      </a>
+                    </div>
+                  </ng-container>
+                  <ng-template #noCompanyReceipt>
+                    <div class="flex flex-col items-center gap-1 text-gray-300 text-xs p-4 text-center">
+                      <span class="material-icons text-2xl text-gray-200">receipt_long</span>
+                      <span>No company receipt</span>
                     </div>
                   </ng-template>
-
-                  <!-- "Open in new tab" link always visible below the thumbnail -->
-                  <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-1 text-xs shadow-sm">
-                    <a [href]="companyReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
-                      <span class="material-icons text-sm align-middle">open_in_new</span>
-                      Open
-                    </a>
-                  </div>
-
                 </ng-container>
-
-                <!-- No receipt uploaded -->
-                <ng-template #noCompanyReceipt>
-                  <div class="flex flex-col items-center gap-1.5 text-gray-300 text-xs p-4 text-center">
-                    <span class="material-icons text-3xl text-gray-200">receipt_long</span>
-                    <span>No company receipt uploaded</span>
-                  </div>
-                </ng-template>
-
               </div>
             </div>
 
-            <!-- ── Employee Receipt ────────────────────────────── -->
+            <!-- Employee Receipt -->
             <div class="flex flex-col gap-1.5">
-              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <span class="material-icons text-base">person</span> Employee Receipt
+              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
+                <span class="material-icons text-sm">person</span> Employee Receipt
               </p>
-              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[120px] flex items-center justify-center bg-gray-50 relative">
-
-                <!-- Has a converted URL -->
-                <ng-container *ngIf="employeeReceiptUrl; else noEmployeeReceipt">
-
-                  <!-- PDF receipt -->
-                  <div *ngIf="employeeReceiptUrl.toLowerCase().endsWith('.pdf'); else employeeImg"
-                       class="flex flex-col items-center gap-2 p-4 text-center">
-                    <span class="material-icons text-4xl text-red-500">picture_as_pdf</span>
-                    <a [href]="employeeReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-sm font-medium underline">
-                      View Employee Receipt (PDF)
-                    </a>
-                  </div>
-
-                  <!-- Image receipt -->
-                  <ng-template #employeeImg>
-                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full"
-                         (click)="openReceiptModal(employeeReceiptUrl!, 'Employee Receipt')">
-                      <img [src]="employeeReceiptUrl"
-                           alt="Employee Receipt"
-                           class="w-full h-36 object-cover block"
-                           (error)="onReceiptThumbnailError($event, 'employee')" />
-                      <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-sm gap-2">
-                        <span class="material-icons text-3xl">zoom_in</span>
-                        <span>Click to view full size</span>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[110px] flex items-center justify-center bg-gray-50 relative">
+                <div *ngIf="employeeReceiptLoading" class="flex items-center gap-2 text-gray-400 text-xs">
+                  <i class="pi pi-spin pi-spinner"></i> Loading…
+                </div>
+                <ng-container *ngIf="!employeeReceiptLoading">
+                  <ng-container *ngIf="employeeReceiptUrl; else noEmployeeReceipt">
+                    <div *ngIf="employeeReceiptUrl.toLowerCase().endsWith('.pdf'); else employeeImg" class="flex flex-col items-center gap-2 p-4 text-center">
+                      <span class="material-icons text-4xl text-red-500">picture_as_pdf</span>
+                      <a [href]="employeeReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-xs font-medium underline">View PDF</a>
+                    </div>
+                    <ng-template #employeeImg>
+                      <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(employeeReceiptUrl!, 'Employee Receipt')">
+                        <img [src]="employeeReceiptUrl" alt="Employee Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'employee')" />
+                        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                          <span class="material-icons text-2xl">zoom_in</span>
+                          <span>View full size</span>
+                        </div>
                       </div>
+                    </ng-template>
+                    <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-0.5 text-xs shadow-sm">
+                      <a [href]="employeeReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
+                        <span class="material-icons text-xs align-middle">open_in_new</span> Open
+                      </a>
+                    </div>
+                  </ng-container>
+                  <ng-template #noEmployeeReceipt>
+                    <div class="flex flex-col items-center gap-1 text-gray-300 text-xs p-4 text-center">
+                      <span class="material-icons text-2xl text-gray-200">receipt_long</span>
+                      <span>No employee receipt</span>
                     </div>
                   </ng-template>
-
-                  <!-- "Open in new tab" link -->
-                  <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-1 text-xs shadow-sm">
-                    <a [href]="employeeReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
-                      <span class="material-icons text-sm align-middle">open_in_new</span>
-                      Open
-                    </a>
-                  </div>
-
                 </ng-container>
-
-                <!-- No receipt uploaded -->
-                <ng-template #noEmployeeReceipt>
-                  <div class="flex flex-col items-center gap-1.5 text-gray-300 text-xs p-4 text-center">
-                    <span class="material-icons text-3xl text-gray-200">receipt_long</span>
-                    <span>No employee receipt uploaded</span>
-                  </div>
-                </ng-template>
-
               </div>
             </div>
 
           </div>
         </div>
-        <!-- ========== END RECEIPT PREVIEWS ========== -->
 
       </div>
     </div>
   </div>
 </app-side-modal>
 
-<!-- ========== RECEIPT IMAGE MODAL ========== -->
-<div *ngIf="showReceiptModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[10000] p-8 animate-[fadeIn_0.2s_ease]" (click)="closeReceiptModal()">
-  <div class="bg-white rounded-xl w-[90vw] max-w-7xl h-[85vh] max-h-[900px] flex flex-col shadow-2xl animate-[slideUp_0.3s_ease]" (click)="$event.stopPropagation()">
-    <div class="flex justify-between items-center py-6 px-8 border-b border-gray-200 flex-shrink-0">
-      <h3 class="text-2xl font-semibold text-gray-800 m-0">{{ receiptModalTitle }}</h3>
-      <button (click)="closeReceiptModal()" class="bg-transparent border-0 cursor-pointer text-gray-500 hover:text-red-500 transition-colors duration-200 p-2 flex items-center justify-center">
-        <span class="material-icons text-3xl">close</span>
+<!-- ========== IMPORT MODAL ========== -->
+<p-dialog
+  header="Import Expenses"
+  [(visible)]="showImportModal"
+  [modal]="true"
+  [style]="{ width: '600px' }"
+  [closable]="true"
+  (onHide)="onImportCancelled()">
+
+  <div class="p-4">
+    <!-- Drop zone -->
+    <div class="border-2 border-dashed rounded-xl p-8 text-center mb-6 transition-all"
+         [ngClass]="importDragging ? 'border-teal-500 bg-teal-50' : 'border-gray-300 bg-gray-50 hover:border-teal-400'"
+         (dragover)="onImportDragOver($event)"
+         (dragleave)="onImportDragLeave($event)"
+         (drop)="onImportDrop($event)">
+      <span class="material-icons text-5xl text-gray-300 block mb-3">upload_file</span>
+      <p class="text-gray-600 font-medium mb-1">Drag & drop your file here</p>
+      <p class="text-sm text-gray-400 mb-4">Supports CSV (.csv) and Excel (.xlsx, .xls)</p>
+      <label class="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-800 text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-teal-700 transition-colors">
+        <i class="pi pi-folder-open"></i>
+        Browse File
+        <input type="file" accept=".csv,.xlsx,.xls" class="hidden" (change)="onImportFileSelect($event)" />
+      </label>
+    </div>
+
+    <!-- File preview -->
+    <div *ngIf="importFile" class="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl mb-4">
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+           [ngClass]="importFile.name.endsWith('.csv') ? 'bg-green-100' : 'bg-blue-100'">
+        <span class="material-icons text-lg" [ngClass]="importFile.name.endsWith('.csv') ? 'text-green-600' : 'text-blue-600'">
+          {{ importFile.name.endsWith('.csv') ? 'table_chart' : 'grid_on' }}
+        </span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-800 m-0 truncate">{{ importFile.name }}</p>
+        <p class="text-xs text-gray-500 m-0">{{ (importFile.size / 1024).toFixed(1) }} KB</p>
+      </div>
+      <button (click)="clearImportFile()" class="text-gray-400 hover:text-red-500 transition-colors">
+        <i class="pi pi-times text-sm"></i>
       </button>
     </div>
-    <div class="flex-1 overflow-auto p-8 flex items-center justify-center bg-gray-50 min-h-0">
-      <!-- Loading spinner -->
-      <div *ngIf="receiptImageLoading" class="flex flex-col items-center justify-center gap-4 text-gray-500">
-        <div class="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
-        <p class="m-0 text-base">Loading receipt...</p>
-      </div>
-      
-      <!-- Error message -->
-      <div *ngIf="receiptImageError" class="flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <span class="material-icons text-6xl text-red-500">error_outline</span>
-        <p class="m-0 text-lg font-semibold text-gray-800">Failed to load receipt image</p>
-        <p class="m-0 text-sm text-gray-400 max-w-md">{{ receiptImageError }}</p>
-      </div>
-      
-      <!-- Image -->
-      <img *ngIf="!receiptImageLoading && !receiptImageError" 
-           [src]="receiptModalUrl" 
-           [alt]="receiptModalTitle" 
-           class="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-md"
-           (load)="onReceiptImageLoad()"
-           (error)="onReceiptImageError($event)" />
+
+    <!-- Template download -->
+    <div class="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+      <i class="pi pi-info-circle text-blue-500"></i>
+      <span>Need a template?</span>
+      <button (click)="downloadImportTemplate()" class="font-semibold underline hover:text-blue-900 ml-1">Download sample CSV</button>
     </div>
-    <div class="flex gap-4 justify-end py-6 px-8 border-t border-gray-200 flex-shrink-0">
-      <a [href]="receiptApiUrl" target="_blank" class="py-3 px-6 rounded-lg text-base font-medium cursor-pointer transition-all duration-200 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 flex items-center gap-2">
-        <span class="material-icons text-xl">open_in_new</span>
-        Open in New Tab
-      </a>
-      <button (click)="closeReceiptModal()" class="py-3 px-6 rounded-lg text-base font-medium cursor-pointer transition-all duration-200 bg-teal-800 text-white border-0 hover:bg-teal-700">Close</button>
+
+    <!-- Import progress -->
+    <div *ngIf="importLoading" class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+      <div class="flex items-center gap-3 mb-2">
+        <i class="pi pi-spin pi-spinner text-teal-700"></i>
+        <span class="text-sm font-medium text-gray-700">Processing {{ importFile?.name }}…</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-1.5">
+        <div class="bg-teal-700 h-1.5 rounded-full transition-all duration-300" [style.width]="importProgress + '%'"></div>
+      </div>
+      <p class="text-xs text-gray-500 mt-1.5">{{ importProgress }}% complete</p>
+    </div>
+
+    <!-- Import result -->
+    <div *ngIf="importResult" class="mt-4 p-4 rounded-xl border"
+         [ngClass]="importResult.errors > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
+      <p class="font-semibold text-sm m-0 mb-2" [ngClass]="importResult.errors > 0 ? 'text-amber-800' : 'text-green-800'">
+        Import {{ importResult.errors > 0 ? 'completed with warnings' : 'successful!' }}
+      </p>
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-gray-900 text-lg m-0">{{ importResult.total }}</p>
+          <p class="text-gray-500 m-0">Total rows</p>
+        </div>
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-green-600 text-lg m-0">{{ importResult.success }}</p>
+          <p class="text-gray-500 m-0">Imported</p>
+        </div>
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-red-500 text-lg m-0">{{ importResult.errors }}</p>
+          <p class="text-gray-500 m-0">Errors</p>
+        </div>
+      </div>
+      <div *ngIf="importResult.errorMessages?.length" class="mt-3 max-h-24 overflow-y-auto">
+        <p class="text-xs text-amber-700 font-medium mb-1">Issues found:</p>
+        <ul class="text-xs text-amber-600 list-disc pl-4 space-y-0.5">
+          <li *ngFor="let msg of importResult.errorMessages">{{ msg }}</li>
+        </ul>
+      </div>
     </div>
   </div>
-  
+
+  <ng-template pTemplate="footer">
+    <button (click)="onImportCancelled()" class="px-5 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mr-2">Cancel</button>
+    <button (click)="processImport()" [disabled]="!importFile || importLoading"
+      class="px-5 py-2.5 text-sm font-medium rounded-lg transition-colors"
+      [ngClass]="!importFile || importLoading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-teal-800 text-white hover:bg-teal-700'">
+      <i class="pi pi-upload mr-1.5"></i>
+      {{ importLoading ? 'Importing…' : 'Import Expenses' }}
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- ========== REJECTION DIALOG ========== -->
+<p-dialog header="Reject Expense" [(visible)]="showRejectionDialog" [modal]="true" [style]="{ width: '420px' }" (onHide)="cancelRejection()">
+  <div class="p-4">
+    <p class="text-sm text-gray-500 mb-3">Provide a reason (optional). It will be recorded and emailed to the submitter.</p>
+    <textarea rows="4" [(ngModel)]="rejectionReason" placeholder="e.g. Missing receipt, incorrect amount…"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <button (click)="cancelRejection()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 mr-2">Cancel</button>
+    <button (click)="confirmRejection()" class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Confirm Rejection</button>
+  </ng-template>
+</p-dialog>
+
+<!-- ========== RECEIPT IMAGE MODAL ========== -->
+<div *ngIf="showReceiptModal"
+  class="fixed inset-0 bg-black/90 flex items-center justify-center z-[10000] p-8"
+  style="animation: fadeIn 0.2s ease"
+  (click)="closeReceiptModal()">
+  <div class="bg-white rounded-xl w-[90vw] max-w-5xl h-[85vh] flex flex-col shadow-2xl" style="animation: slideUp 0.3s ease" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center py-5 px-6 border-b border-gray-200 flex-shrink-0">
+      <h3 class="text-xl font-semibold text-gray-800 m-0">{{ receiptModalTitle }}</h3>
+      <button (click)="closeReceiptModal()" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+        <span class="material-icons text-2xl">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto p-6 flex items-center justify-center bg-gray-50 min-h-0">
+      <div *ngIf="receiptImageLoading" class="flex flex-col items-center gap-3 text-gray-500">
+        <div class="w-10 h-10 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin"></div>
+        <p class="m-0 text-sm">Loading receipt…</p>
+      </div>
+      <div *ngIf="receiptImageError" class="flex flex-col items-center gap-3 p-8 text-center">
+        <span class="material-icons text-5xl text-red-400">error_outline</span>
+        <p class="m-0 text-base font-medium text-gray-800">Failed to load receipt</p>
+        <p class="m-0 text-sm text-gray-400 max-w-sm">{{ receiptImageError }}</p>
+      </div>
+      <img *ngIf="!receiptImageLoading && !receiptImageError" [src]="receiptModalUrl" [alt]="receiptModalTitle"
+        class="max-w-full max-h-full object-contain rounded-lg shadow-md"
+        (load)="onReceiptImageLoad()" (error)="onReceiptImageError($event)" />
+    </div>
+    <div class="flex gap-3 justify-end py-5 px-6 border-t border-gray-200 flex-shrink-0">
+      <a [href]="receiptApiUrl" target="_blank" class="py-2.5 px-5 rounded-lg text-sm font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 flex items-center gap-2 transition-colors">
+        <span class="material-icons text-lg">open_in_new</span> Open in New Tab
+      </a>
+      <button (click)="closeReceiptModal()" class="py-2.5 px-5 rounded-lg text-sm font-medium bg-teal-800 text-white hover:bg-teal-700 transition-colors">Close</button>
+    </div>
+  </div>
 </div>
 
 <style>
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>

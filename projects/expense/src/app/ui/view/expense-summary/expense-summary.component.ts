@@ -1,16 +1,29 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { Expense } from '../../service/expense.service';
-//import { MenuItem } from 'primeng/api';
-import { MessageService } from 'primeng/api';
-import { ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-expense-summary',
   templateUrl: './expense-summary.component.html',
   styleUrls: ['./expense-summary.component.scss'],
-  providers: [MessageService, ConfirmationService]
+  standalone: true,
+  providers: [MessageService, ConfirmationService],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ToastModule,
+    ConfirmDialogModule,
+    TooltipModule
+  ]
 })
 export class ExpenseSummaryComponent {
   expenseSummary: any;
