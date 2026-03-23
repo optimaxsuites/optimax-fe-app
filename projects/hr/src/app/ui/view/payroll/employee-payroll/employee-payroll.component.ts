@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
 import { firstValueFrom } from 'rxjs';
+import { EmployeeService } from '../../../service/employee.service';
+import { DomSanitizer } from '@angular/platform-browser';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -103,6 +105,11 @@ showDropdown = false;
 selectedEmployees: any[] = [];
 currentEmployeeInView: any = {};
 
+  uniqueLevels: any;
+  uniquePositions: any;
+  currentPage = 1;
+  fetchEmployeeLoading = false;
+
 payrollSettings: PayrollSettings = {
   paySchedule: {
     startDay: 15,
@@ -155,21 +162,21 @@ overtimeOverrides: Record<number, number> = {
     { header: 'Employee', field: 'name', sortable: true, className: 'table-item' },
     { header: 'Level', field: 'level', sortable: true, className: 'table-item' },
     { header: 'Department', field: 'department', sortable: true, className: 'table-item' },
-    { header: 'Salary Structure', field: 'type', sortable: true, className: 'table-item' },
-    {
-      header: 'Attendance Deduction',
-      field: 'attendancePenalty',
-      sortable: true,
-      className: 'table-item',
-      formatter: (row) => this.formatCurrency(row?.attendancePenalty ?? 0)
-    },
-    {
-      header: 'Overtime',
-      field: 'overtimePay',
-      sortable: true,
-      className: 'table-item',
-      formatter: (row) => this.formatCurrency(row?.overtimePay ?? 0)
-    },
+    // { header: 'Salary Structure', field: 'type', sortable: true, className: 'table-item' },
+    // {
+    //   header: 'Attendance Deduction',
+    //   field: 'attendancePenalty',
+    //   sortable: true,
+    //   className: 'table-item',
+    // //   formatter: (row) => this.formatCurrency(row?.attendancePenalty ?? 0)
+    // // },
+    // {
+    //   header: 'Overtime',
+    //   field: 'overtimePay',
+    //   sortable: true,
+    //   className: 'table-item',
+    //   formatter: (row) => this.formatCurrency(row?.overtimePay ?? 0)
+    // },
     {
       header: 'Amount Payable',
       field: 'netPayable',
@@ -1229,386 +1236,26 @@ overtimeOverrides: Record<number, number> = {
     }
     
 ] 
-// employeePayroll = [
-//     {
-//         id: 1,
-//         name: "Adebayo Oluwaseun",
-//         type: "salaried",
-//         level: "Senior",
-//         department: "Sales",
-//         salary: 6000,
-//         bonuses: [
-//             {
-//                 amount: 500,
-//                 reason: "Exceeded sales targets"
-//             },
-//             {
-//                 amount: 200,
-//                 reason: "Client retention success"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 350,
-//                 reason: "Tax"
-//             },
-//             {
-//                 amount: 200,
-//                 reason: "Health insurance"
-//             },
-//             {
-//                 amount: 100,
-//                 reason: "Pension contribution"
-//             }
-//         ],
-//         accountNumber: "1234567890",
-//         bank: "First Bank",
-//         allowances: {
-//             housingAllowance: 50000,
-//             transportationAllowance: 30000,
-//             mealAllowance: 20000,
-//             healthAllowance: 30000,
-//             carAllowance: 40000,
-//             securityAllowance: 25000,
-//             travelAllowance: 20000,
-//         },
-//         netPayable: 6000 + 500 + 200 + 50000 + 30000 + 20000 + 30000 + 40000 + 25000 + 20000 - (350 + 200 + 100)
-//     },
-//     {
-//         id: 2,
-//         name: "Chinaza Okeke",
-//         type: "salaried",
-//         level: "Mid-level",
-//         department: "Finance",
-//         salary: 5500,
-//         bonuses: [
-//             {
-//                 amount: 400,
-//                 reason: "Excellent performance review"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 330,
-//                 reason: "Tax"
-//             },
-//             {
-//                 amount: 150,
-//                 reason: "Pension"
-//             },
-//             {
-//                 amount: 200,
-//                 reason: "Loan repayment"
-//             }
-//         ],
-//         accountNumber: "2345678901",
-//         bank: "Zenith Bank",
-//         allowances: {
-//             housingAllowance: 45000,
-//             transportationAllowance: 25000,
-//             mealAllowance: 18000,
-//             healthAllowance: 28000,
-//             carAllowance: 35000,
-//             securityAllowance: 20000,
-//             travelAllowance: 15000,
-//         },
-//         netPayable: 5500 + 400 + 45000 + 25000 + 18000 + 28000 + 35000 + 20000 + 15000 - (330 + 150 + 200)
-//     },
-//     {
-//         id: 3,
-//         name: "Idris Mohammed",
-//         type: "salaried",
-//         level: "Junior",
-//         department: "Engineering",
-//         salary: 4800,
-//         bonuses: [
-//             {
-//                 amount: 300,
-//                 reason: "Timely project completion"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 280,
-//                 reason: "Tax"
-//             },
-//             {
-//                 amount: 150,
-//                 reason: "Health insurance"
-//             }
-//         ],
-//         accountNumber: "3456789012",
-//         bank: "GTBank",
-//         allowances: {
-//             housingAllowance: 40000,
-//             transportationAllowance: 20000,
-//             mealAllowance: 15000,
-//             healthAllowance: 25000,
-//             carAllowance: 30000,
-//             securityAllowance: 15000,
-//             travelAllowance: 10000,
-//         },
-//         netPayable: 4800 + 300 + 40000 + 20000 + 15000 + 25000 + 30000 + 15000 + 10000 - (280 + 150)
-//     },
-//     {
-//         id: 4,
-//         name: "Yemi Adesanya",
-//         type: "salaried",
-//         level: "Mid-level",
-//         department: "Marketing",
-//         salary: 5200,
-//         bonuses: [
-//             {
-//                 amount: 350,
-//                 reason: "Employee of the month"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 310,
-//                 reason: "Tax"
-//             },
-//             {
-//                 amount: 160,
-//                 reason: "Pension"
-//             }
-//         ],
-//         accountNumber: "4567890123",
-//         bank: "Access Bank",
-//         allowances: {
-//             housingAllowance: 42000,
-//             transportationAllowance: 23000,
-//             mealAllowance: 17000,
-//             healthAllowance: 27000,
-//             carAllowance: 32000,
-//             securityAllowance: 18000,
-//             travelAllowance: 12000,
-//         },
-//         netPayable: 5200 + 350 + 42000 + 23000 + 17000 + 27000 + 32000 + 18000 + 12000 - (310 + 160)
-//     },
-//     {
-//         id: 5,
-//         name: "Ifeoma Eze",
-//         type: "project-based",
-//         level: "Contract",
-//         department: "Freelance",
-//         projects: [
-//             {
-//                 projectId: "P201",
-//                 projectName: "E-commerce Website",
-//                 projectPay: 2500
-//             },
-//             {
-//                 projectId: "P202",
-//                 projectName: "Mobile App UI Design",
-//                 projectPay: 1800
-//             }
-//         ],
-//         totalProjectPay: 2500 + 1800,
-//         deductions: [
-//             {
-//                 amount: 400,
-//                 reason: "Tax"
-//             }
-//         ],
-//         accountNumber: "5678901234",
-//         bank: "Union Bank",
-//         allowances: {
-//             housingAllowance: 30000,
-//             transportationAllowance: 15000,
-//             mealAllowance: 12000,
-//             healthAllowance: 20000,
-//             carAllowance: 25000,
-//             securityAllowance: 10000,
-//             travelAllowance: 8000,
-//         },
-//         netPayable: (2500 + 1800) - 400 + 30000 + 15000 + 12000 + 20000 + 25000 + 10000 + 8000
-//     },
-//     {
-//         id: 6,
-//         name: "Abubakar Suleiman",
-//         type: "project-based",
-//         level: "Contract",
-//         department: "IT Services",
-//         projects: [
-//             {
-//                 projectId: "P203",
-//                 projectName: "CRM System",
-//                 projectPay: 3000
-//             },
-//             {
-//                 projectId: "P204",
-//                 projectName: "ERP Software Development",
-//                 projectPay: 3500
-//             }
-//         ],
-//         totalProjectPay: 3000 + 3500,
-//         deductions: [
-//             {
-//                 amount: 600,
-//                 reason: "Tax"
-//             }
-//         ],
-//         accountNumber: "6789012345",
-//         bank: "Fidelity Bank",
-//         allowances: {
-//             housingAllowance: 60000,
-//             transportationAllowance: 30000,
-//             mealAllowance: 25000,
-//             healthAllowance: 35000,
-//             carAllowance: 40000,
-//             securityAllowance: 22000,
-//             travelAllowance: 18000,
-//         },
-//         netPayable: (3000 + 3500) - 600 + 60000 + 30000 + 25000 + 35000 + 40000 + 22000 + 18000
-//     },
-//     {
-//         id: 7,
-//         name: "Bukola Akinyemi",
-//         type: "project-based",
-//         level: "Contract",
-//         department: "Marketing",
-//         projects: [
-//             {
-//                 projectId: "P205",
-//                 projectName: "Digital Marketing Campaign",
-//                 projectPay: 2200
-//             }
-//         ],
-//         totalProjectPay: 2200,
-//         deductions: [
-//             {
-//                 amount: 220,
-//                 reason: "Tax"
-//             }
-//         ],
-//         accountNumber: "7890123456",
-//         bank: "Sterling Bank",
-//         allowances: {
-//             housingAllowance: 28000,
-//             transportationAllowance: 12000,
-//             mealAllowance: 8000,
-//             healthAllowance: 15000,
-//             carAllowance: 20000,
-//             securityAllowance: 9000,
-//             travelAllowance: 7000,
-//         },
-//         netPayable: 2200 - 220 + 28000 + 12000 + 8000 + 15000 + 20000 + 9000 + 7000
-//     },
-//     {
-//         id: 8,
-//         name: "Kemi Onyekachi",
-//         type: "salaried",
-//         level: "Junior",
-//         department: "Customer Support",
-//         salary: 4700,
-//         bonuses: [
-//             {
-//                 amount: 250,
-//                 reason: "Successful client acquisition"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 270,
-//                 reason: "Tax"
-//             },
-//             {
-//                 amount: 120,
-//                 reason: "Health insurance"
-//             }
-//         ],
-//         accountNumber: "8901234567",
-//         bank: "EcoBank",
-//         allowances: {
-//             housingAllowance: 35000,
-//             transportationAllowance: 18000,
-//             mealAllowance: 13000,
-//             healthAllowance: 22000,
-//             carAllowance: 25000,
-//             securityAllowance: 14000,
-//             travelAllowance: 10000,
-//         },
-//         netPayable: 4700 + 250 + 35000 + 18000 + 13000 + 22000 + 25000 + 14000 + 10000 - (270 + 120)
-//     },
-//     {
-//         id: 9,
-//         name: "Ngozi Dike",
-//         type: "salaried",
-//         level: "Senior",
-//         department: "Research",
-//         salary: 6200,
-//         bonuses: [
-//             {
-//                 amount: 600,
-//                 reason: "Outstanding research project"
-//             }
-//         ],
-//         deductions: [
-//             {
-//                 amount: 400,
-//                 reason: "Tax"
-//             }
-//         ],
-//         accountNumber: "9012345678",
-//         bank: "United Bank for Africa",
-//         allowances: {
-//             housingAllowance: 75000,
-//             transportationAllowance: 40000,
-//             mealAllowance: 25000,
-//             healthAllowance: 30000,
-//             carAllowance: 45000,
-//             securityAllowance: 20000,
-//             travelAllowance: 18000,
-//         },
-//         netPayable: 6200 + 600 + 75000 + 40000 + 25000 + 30000 + 45000 + 20000 + 18000 - 400
-//     },
-//     {
-//         id: 10,
-//         name: "James Onuoha",
-//         type: "project-based",
-//         level: "Contract",
-//         department: "Consulting",
-//         projects: [
-//             {
-//                 projectId: "P206",
-//                 projectName: "Consulting for a startup",
-//                 projectPay: 4000
-//             }
-//         ],
-//         totalProjectPay: 4000,
-//         deductions: [
-//             {
-//                 amount: 350,
-//                 reason: "Tax"
-//             }
-//         ],
-//         accountNumber: "0123456789",
-//         bank: "Polaris Bank",
-//         allowances: {
-//             housingAllowance: 60000,
-//             transportationAllowance: 30000,
-//             mealAllowance: 20000,
-//             healthAllowance: 25000,
-//             carAllowance: 35000,
-//             securityAllowance: 18000,
-//             travelAllowance: 15000,
-//         },
-//         netPayable: 4000 - 350 + 60000 + 30000 + 20000 + 25000 + 35000 + 18000 + 15000
-//     }
-// ];
+
 showCalendar = false;
 selectedMonth: any
 selectedYear: any 
+currentMonth: number = new Date().getMonth() + 1;
+currentYear: number = new Date().getFullYear();
 monthNames = [
     "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
 ];
+currentMonthName = this.monthNames[this.currentMonth - 1];
 months:any[] = [];
 years: any[] = [];
 filteredEmployeePayroll: any[] = []
 currentPayroll: any[] = []
 payrollSumary = {}
-constructor(){
+employees: any = []
+filteredEmployees: any[] = [];
+employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
+
+constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer){
     this.generateYears();
     this.selectedMonth = this.months[new Date().getMonth()]; 
      
@@ -1620,9 +1267,121 @@ ngOnInit(){
     this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b))
     this.selectedMonth = this.months[this.months.length - 1]
     this.selectedYear = this.years[this.years.length - 1]
-    this.handlePeriodChange()
+    // this.handlePeriodChange()
+       this.fetchEmployees()
       
 }
+
+ fetchEmployees(){
+    this.filteredEmployees = []
+    this.employeeService.getAllEmployee().subscribe({
+      next: (employees) => {
+        this.employees = this.sortEmployeesLatest(employees);
+        this.uniqueLevels = [
+          ...new Set(
+            this.employees
+              .map((employee: { level: any }) => employee?.level?.name)
+              .filter((level: string) => level != null) 
+          ),
+        ];
+        
+        this.uniquePositions = [
+          ...new Set(
+            this.employees
+              .map((employee: { jobTitle: string }) => employee?.jobTitle)
+              .filter((jobTitle: string) => jobTitle != undefined) 
+          ),
+        ];
+
+        this.filteredEmployees = this.employees.map((employee: any) => {
+        //   if (employee.employeeMedia?.mediaNo) {
+        //     this.fetchProfilePhoto(employee);
+        //   } else {
+        //     employee.imageUrl = this.employeeProfilePhotoUrl; // Assign default image if no mediaNo
+        //   }
+          if(employee?.level.id){
+                this.employeeService.getSalaryById(employee.level.id).subscribe({
+                next: data => {
+                    employee.netPayable = this.calculateNetSalary(data[0])
+                },
+                error: err => console.log(err)
+                })
+            }
+          employee.name = `${employee.firstName} ${employee.lastName}`;
+          employee.level = employee.level?.name || 'N/A';
+          employee.department = employee.department?.name || 'N/A';
+        //   employee.netPayable = 0; // Initialize netPayable to 0 or calculate based on your logic
+
+          return employee;
+        });
+
+        this.fetchEmployeeLoading= false
+        this.resetPagination();
+    console.log(this.filteredEmployees)
+    
+
+      },
+      error: err => {
+        console.log(err)
+        this.fetchEmployeeLoading= false
+    }
+    })
+
+
+  }
+
+   private calculateNetSalary(details: any): number {
+    if (!details) return 0;
+    const base = this.toNumber(details.baseSalary);
+    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
+    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
+    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
+    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
+    return base + allowances + bonuses + overtime - deductions;
+  }
+
+    fetchProfilePhoto(employee: any): void {
+    this.employeeService.getEmployeeImage(employee.employeeMedia.mediaNo).subscribe({
+      next: (response) => {
+        const blob = new Blob([response], { type: 'image/png' });
+        employee.imageUrl = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
+      },
+      error: (err) => {
+        console.error('Failed to load image for employee:', err);
+      }
+    });
+  }
+
+
+  private sortEmployeesLatest(employees: any[]): any[] {
+    return employees
+      .slice()
+      .sort((a, b) => this.getEmployeeSortValue(b) - this.getEmployeeSortValue(a));
+  }
+
+  private getEmployeeSortValue(employee: any): number {
+    const dateValue =
+      employee?.createdAt ??
+      employee?.hireDate ??
+      employee?.employementStartDate ??
+      employee?.employmentStartDate ??
+      employee?.employmentDate ??
+      employee?.dateOfHire;
+
+    if (dateValue) {
+      const time = new Date(dateValue).getTime();
+      if (!Number.isNaN(time)) return time;
+    }
+
+    const id = employee?.id;
+    if (typeof id === 'number') return id;
+    if (typeof id === 'string' && id.trim() !== '') {
+      const parsed = Number(id);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+
+    return 0;
+  }
   formatCurrency(value: number): string {
     const normalized = Number.isFinite(value) ? value : 0;
     return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -2101,4 +1860,38 @@ download(format: string) {
     this.showDropdown = false;
 }
 
+generatePayroll() {
+    this.fetchEmployeeLoading = true
+    this.fetchEmployees()
+  const payrollData = this.calculatePayroll(); // your local calculation function
+  localStorage.setItem('generatedPayroll', JSON.stringify(payrollData));
+//   this.filteredEmployeePayroll = payrollData;
+//   this.payrollSummary = this.generateSummary(payrollData);
+}
+
+calculatePayroll(){
+
+}
+
+  private resetPagination() {
+    this.currentPage = 1;
+  }
+
+   private sumAmounts(items: any, fields: string[]): number {
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((total, item) => {
+      if (item === null || item === undefined) return total;
+      if (typeof item === 'number') return total + item;
+      for (const field of fields) {
+        const value = this.toNumber(item?.[field]);
+        if (value !== 0) return total + value;
+      }
+      return total + this.toNumber(item);
+    }, 0);
+  }
+
+  private toNumber(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
 }

@@ -4,7 +4,7 @@
     <p-toolbar styleClass="mb-4 gap-2">
         <ng-template pTemplate="left">
         <div class="flex gap-3 text-gray-700 items-center">
-            <p class="text-gray-700  text-[20px]">Payroll for {{selectedMonth}} {{selectedYear}}</p>
+            <p class="text-gray-700  text-[20px]">Payroll for {{currentMonthName}} {{currentYear}}</p>
             <div class="flex items-center gap-4">
                 <label for="calendar" (click)="toggleCalendar()"><i class="fa-solid fa-calendar-days text-[20px] text-gray-500 cursor-pointer "></i></label>
                 <div *ngIf="showCalendar" class="calendar-modal">
@@ -25,18 +25,20 @@
           </ng-template>
       <ng-template pTemplate="right">
         <app-button  [text]="'View ' + selectedMonth + ' ' + selectedYear + ' Summary'"  class="btn-navigate gap-2"  (click)="viewSummary()"></app-button>
-        <app-button
+        <app-button  [text]="'Generate ' + currentMonthName + ' ' + currentYear + ' Payroll'"  class="btn-navigate gap-2"  (click)="generatePayroll()"></app-button>
+
+        <!-- <app-button
           [text]="isApplyingLoanDeductions ? 'Applying Loan Deductions...' : 'Apply Loan Deductions'"
           class="btn-navigate gap-2"
           (click)="applyLoanDeductionsToPayroll({ month: selectedMonth, year: selectedYear })">
-        </app-button>
+        </app-button> -->
         <app-button  text="Download CSV"  class="btn-navigate gap-2" (click)="generateCSV()"><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
       </ng-template>
     </p-toolbar>
 
-    <p *ngIf="loanDeductionSyncMessage" class="px-3 pb-2 text-[12px] text-gray-600">
+    <!-- <p *ngIf="loanDeductionSyncMessage" class="px-3 pb-2 text-[12px] text-gray-600">
       {{ loanDeductionSyncMessage }}
-    </p>
+    </p> -->
 
     <div class="flex w-full justify-between gap-4 px-3">
     <div class="flex gap-4 w-1/2">
@@ -87,7 +89,7 @@
 
     <app-table 
         [columns]="payrollColumns"
-        [rows]="filteredEmployeePayroll"
+        [rows]="filteredEmployees"
         [actions]="payrollActions"
         [selectable]="true"
         selectionMode="multiple"
