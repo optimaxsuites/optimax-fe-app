@@ -188,8 +188,10 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   loadGroups(): void {
-    this.groups = this.cooperativeService.getGroups();
-    this.rebuildGroupMetrics();
+    this.cooperativeService.loadGroups().subscribe(groups => {
+      this.groups = groups;
+      this.rebuildGroupMetrics();
+    });
   }
 
   private rebuildGroupMetrics(): void {
@@ -326,20 +328,21 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       patronageRate: Number(formValue.patronageRate)
     } as Omit<CooperativeLoanGroup, 'id'>;
 
-    if (this.editingGroupId) {
-      this.cooperativeService.updateGroup({ id: this.editingGroupId, ...payload });
-    } else {
-      this.cooperativeService.addGroup(payload);
-    }
+    const request = this.editingGroupId
+      ? this.cooperativeService.updateGroup({ id: this.editingGroupId, ...payload })
+      : this.cooperativeService.addGroup(payload);
 
-    this.cancelForm();
-    this.loadGroups();
+    request.subscribe(() => {
+      this.cancelForm();
+      this.loadGroups();
+    });
   }
 
   toggleGroupStatus(group: CooperativeLoanGroup): void {
     const nextStatus = group.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    this.cooperativeService.setGroupStatus(group.id, nextStatus);
-    this.loadGroups();
+    this.cooperativeService.setGroupStatus(group.id, nextStatus).subscribe(() => {
+      this.loadGroups();
+    });
   }
 
   viewGroupDetails(group: CooperativeLoanGroup): void {

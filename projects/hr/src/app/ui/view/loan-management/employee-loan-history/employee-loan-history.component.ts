@@ -10,7 +10,14 @@ import { BackNavigationService } from '../../../shared-component/service/navigat
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { EmployeeService } from '../../../service/employee.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import {
+  compareLoanSortValues,
+  formatLoanDepartmentDisplay,
+  formatLoanPurposeDisplay,
+  resolveLoanOutstandingBalance,
+  resolveLoanTotalPaid,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-history',
@@ -84,7 +91,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
             this.employeeLoans = applications.map(loan => ({
               ...loan,
               fullName: employee?.fullName || loan.fullName,
-              department: employee?.department || loan.department
+              department: formatLoanDepartmentDisplay(employee?.department || loan.department)
             }));
             this.filteredLoans = [...this.employeeLoans];
             this.employeeName = employee?.fullName || (this.employeeLoans[0]?.fullName ?? '');
@@ -93,14 +100,19 @@ export class EmployeeLoanHistoryComponent implements OnInit {
             this.isLoading = false;
           })
           .catch(() => {
-            this.employeeLoans = applications;
-            this.filteredLoans = [...applications];
+            this.employeeLoans = applications.map((loan) => ({
+              ...loan,
+              department: formatLoanDepartmentDisplay(loan.department)
+            }));
+            this.filteredLoans = [...this.employeeLoans];
             this.employeeName = this.employeeLoans[0]?.fullName ?? '';
             this.applySort();
             this.isLoading = false;
           });
       },
       error: (error) => {
+        this.employeeLoans = [];
+        this.filteredLoans = [];
         console.error('Error loading employee history:', error);
         this.isLoading = false;
       }
@@ -244,6 +256,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
           valueA = a.interestRate ?? 0;
           valueB = b.interestRate ?? 0;
           break;
+        case 'totalRepayable':
+          valueA = this.getLoanTotalRepayable(a);
+          valueB = this.getLoanTotalRepayable(b);
+          break;
         case 'loanId':
           valueA = String(a.loanCode || a.id).toLowerCase();
           valueB = String(b.loanCode || b.id).toLowerCase();
@@ -368,17 +384,33 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   formatPurposeDisplay(purpose?: string | null): string {
     return formatLoanPurposeDisplay(purpose);
   }
+
+  formatDepartmentDisplay(department?: unknown): string {
+    return formatLoanDepartmentDisplay(department);
+  }
   
   getTotalBorrowed(): number {
     return this.employeeLoans.reduce((sum, loan) => sum + loan.amount, 0);
   }
   
   getTotalPaid(): number {
-    return this.employeeLoans.reduce((sum, loan) => sum + loan.totalPaid, 0);
+    return this.employeeLoans.reduce((sum, loan) => sum + resolveLoanTotalPaid(loan), 0);
   }
   
   getTotalBalance(): number {
-    return this.employeeLoans.reduce((sum, loan) => sum + loan.currentBalance, 0);
+    return this.employeeLoans.reduce((sum, loan) => sum + resolveLoanOutstandingBalance(loan), 0);
+  }
+
+  getLoanResolvedPaid(loan: LoanApplication): number {
+    return resolveLoanTotalPaid(loan);
+  }
+
+  getLoanResolvedBalance(loan: LoanApplication): number {
+    return resolveLoanOutstandingBalance(loan);
+  }
+
+  getLoanTotalRepayable(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
   }
 
   exportToExcel(): void {
@@ -386,12 +418,12 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       'Loan ID': loan.loanCode || loan.id,
       'Employee ID': loan.employeeId,
       'Employee Name': loan.fullName,
-      'Department': loan.department,
+      'Department': this.formatDepartmentDisplay(loan.department),
       'Purpose': this.formatPurposeDisplay(loan.purpose),
       'Loan Amount': loan.amount,
       'Interest Rate': `${loan.interestRate || 0}%`,
-      'Total Paid': loan.totalPaid || 0,
-      'Current Balance': loan.currentBalance || 0,
+      'Total Paid': this.getLoanResolvedPaid(loan),
+      'Current Balance': this.getLoanResolvedBalance(loan),
       'Status': loan.status,
       'Date Submitted': formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
       'Approved Date': loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
@@ -427,12 +459,12 @@ export class EmployeeLoanHistoryComponent implements OnInit {
       loan.loanCode || loan.id,
       loan.employeeId,
       loan.fullName,
-      loan.department,
+      this.formatDepartmentDisplay(loan.department),
       this.formatPurposeDisplay(loan.purpose),
       loan.amount,
       `${loan.interestRate || 0}%`,
-      loan.totalPaid || 0,
-      loan.currentBalance || 0,
+      this.getLoanResolvedPaid(loan),
+      this.getLoanResolvedBalance(loan),
       loan.status,
       formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
       loan.approvedDate ? formatDate(loan.approvedDate, 'yyyy-MM-dd', 'en-US') : 'N/A',
@@ -528,8 +560,8 @@ export class EmployeeLoanHistoryComponent implements OnInit {
                   <td>${this.formatPurposeDisplay(loan.purpose)}</td>
                   <td>₦${loan.amount.toLocaleString()}</td>
                   <td>${loan.interestRate || 0}%</td>
-                  <td>₦${(loan.totalPaid || 0).toLocaleString()}</td>
-                  <td>₦${(loan.currentBalance || 0).toLocaleString()}</td>
+                  <td>₦${this.getLoanResolvedPaid(loan).toLocaleString()}</td>
+                  <td>₦${this.getLoanResolvedBalance(loan).toLocaleString()}</td>
                   <td>${loan.status}</td>
                 </tr>
               `).join('')}

@@ -137,11 +137,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   loadData(): void {
     this.cooperativeService.getMembers().subscribe(members => {
       this.members = members.filter(m => m.status === 'ACTIVE');
-      this.groups = this.cooperativeService.getGroups().filter(group => group.status === 'ACTIVE');
-      this.refreshEligibleMembers();
-      this.tryApplyPrefillMember();
-      this.resolveSelectedMemberEligibility();
-      this.refreshQualifiedGroups();
+      this.cooperativeService.loadGroups().subscribe(groups => {
+        this.groups = groups.filter(group => group.status === 'ACTIVE');
+        this.refreshEligibleMembers();
+        this.tryApplyPrefillMember();
+        this.resolveSelectedMemberEligibility();
+        this.refreshQualifiedGroups();
+      });
     });
   }
 
@@ -639,19 +641,26 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       useSharesAsCollateral: Boolean(formValue.useSharesAsCollateral || this.selectedGroup?.requiresShares),
       pledgedSharesAmount: Number(formValue.pledgedSharesAmount || 0)
     };
-    const saved = this.cooperativeService.addLoan(newLoan as any);
-    this.submitSuccessMessage = this.selectedGroup?.requiresGuarantors
-      ? 'Application submitted. Guarantor requests are now pending before admin review.'
-      : 'Application submitted successfully and sent for admin review.';
-    this.showConfirmation = false;
-    this.isSubmitting = false;
-    setTimeout(() => {
-      if (this.isModal) {
-        this.applicationSubmitted.emit();
-        this.formCancelled.emit();
-        this.submitError = '';
+    this.cooperativeService.addLoan(newLoan as any).subscribe({
+      next: () => {
+        this.submitSuccessMessage = this.selectedGroup?.requiresGuarantors
+          ? 'Application submitted. Guarantor requests are now pending before admin review.'
+          : 'Application submitted successfully and sent for admin review.';
+        this.showConfirmation = false;
+        this.isSubmitting = false;
+        setTimeout(() => {
+          if (this.isModal) {
+            this.applicationSubmitted.emit();
+            this.formCancelled.emit();
+            this.submitError = '';
+          }
+        }, 1200);
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.submitError = 'Unable to submit cooperative loan application right now.';
       }
-    }, 1200);
+    });
   }
   // Utility for confirmation label
   getPurposeLabel(purposeType: string): string {

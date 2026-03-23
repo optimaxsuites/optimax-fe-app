@@ -164,9 +164,9 @@ export class CooperativeMembersComponent implements OnInit {
     this.cooperativeService.updateMember({
       ...member,
       status
+    }).subscribe(() => {
+      this.loadMembers();
     });
-
-    this.loadMembers();
   }
 
   suspendMember(member: CooperativeMember, event: Event): void {

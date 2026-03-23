@@ -44,14 +44,18 @@ export class CooperativeMemberDetailComponent implements OnInit {
 
   loadMember(id: string): void {
     this.isLoading = true;
-    const member = this.cooperativeService.getMemberById(id);
-    
-    if (member) {
+    this.cooperativeService.loadMemberById(id).subscribe(member => {
+      if (!member) {
+        this.isLoading = false;
+        return;
+      }
+
       this.member = member;
-      this.memberLoans = this.cooperativeService.getLoansByMember(member.id);
-    }
-    
-    this.isLoading = false;
+      this.cooperativeService.getLoans().subscribe(loans => {
+        this.memberLoans = loans.filter(loan => String(loan.memberId || loan.cooperativeMemberId || '') === member.id);
+        this.isLoading = false;
+      });
+    });
   }
 
   editMember(): void {

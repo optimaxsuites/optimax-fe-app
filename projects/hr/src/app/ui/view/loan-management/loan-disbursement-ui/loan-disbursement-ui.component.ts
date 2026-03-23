@@ -6,6 +6,7 @@ import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { resolveLoanTotalRepayableAmount } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-disbursement-ui',
@@ -30,19 +31,21 @@ export class LoanDisbursementUiComponent implements OnInit {
   checklistFundsReserved = false;
 
   approvedLoanColumns: TableColumn<LoanApplication>[] = [
-    { header: 'Loan ID', field: 'id', sortable: true },
-    { header: 'Employee', field: 'fullName', sortable: true },
-    { header: 'Department', field: 'department', sortable: true },
+    { header: 'Loan ID', field: 'id', sortable: true, align: 'center' },
+    { header: 'Employee', field: 'fullName', sortable: true, align: 'center' },
+    { header: 'Department', field: 'department', sortable: true, align: 'center' },
     {
       header: 'Amount',
       sortable: true,
       sortField: 'amount',
+      align: 'center',
       formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
     },
     {
       header: 'Approved Date',
       sortable: true,
       sortField: 'approvedDate',
+      align: 'center',
       formatter: (row: LoanApplication) =>
         new Date(row.approvedDate || row.requestDate).toLocaleDateString('en-NG', {
           year: 'numeric',
@@ -53,7 +56,7 @@ export class LoanDisbursementUiComponent implements OnInit {
   ];
 
   approvedLoanActions: TableAction<LoanApplication>[] = [
-    { id: 'select', label: 'Select', className: 'pick-btn' }
+    { id: 'select', label: '', ariaLabel: 'Select loan', icon: 'fas fa-arrow-right', className: 'pick-btn icon-only' }
   ];
 
   constructor(
@@ -131,7 +134,7 @@ export class LoanDisbursementUiComponent implements OnInit {
 
     this.loanApprovalService.updateApplicationStatus(selectedLoan.id, {
       status: 'ACTIVE',
-      changedAt: new Date().toISOString(),
+      changedAt: this.buildDisbursementDateTime(),
       changedBy: 'Admin',
       notes: statusNote
     }).subscribe({
@@ -165,6 +168,35 @@ export class LoanDisbursementUiComponent implements OnInit {
     }).format(amount);
   }
 
+  formatDisplayDate(value?: string | null): string {
+    if (!value) {
+      return 'N/A';
+    }
+
+    return new Date(value).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  getQueuedDisbursementTotal(): number {
+    return this.approvedLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
+  }
+
+  getLoanTotalRepayable(loan?: LoanApplication): number {
+    return loan ? resolveLoanTotalRepayableAmount(loan) : 0;
+  }
+
+  getChecklistCompletedCount(): number {
+    return [
+      this.checklistIdentityVerified,
+      this.checklistAccountVerified,
+      this.checklistComplianceCleared,
+      this.checklistFundsReserved
+    ].filter(Boolean).length;
+  }
+
   get selectedDisbursementLoan(): LoanApplication | undefined {
     return this.approvedLoans.find(item => item.id === this.selectedDisbursementLoanId);
   }
@@ -195,8 +227,37 @@ export class LoanDisbursementUiComponent implements OnInit {
 
   private syncDisbursementFields(): void {
     const selectedLoan = this.selectedDisbursementLoan;
-    const today = new Date();
-    this.disbursedDate = today.toISOString().split('T')[0];
+    this.disbursedDate = this.getTodayDateInputValue();
     this.disbursementAmount = Number(selectedLoan?.amount || 0);
+  }
+
+  private buildDisbursementDateTime(): string {
+    const rawDate = String(this.disbursedDate || '').trim();
+    const now = new Date();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      const [year, month, day] = rawDate.split('-').map((part) => Number(part));
+      const disbursedAt = new Date(
+        year,
+        Number(month) - 1,
+        day,
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds()
+      );
+
+      return disbursedAt.toISOString();
+    }
+
+    return now.toISOString();
+  }
+
+  private getTodayDateInputValue(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

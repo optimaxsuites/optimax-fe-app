@@ -6,7 +6,12 @@ import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import {
+  compareLoanSortValues,
+  formatLoanDepartmentDisplay,
+  formatLoanPurposeDisplay,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-approval-ui',
@@ -54,6 +59,14 @@ export class LoanApprovalUiComponent implements OnInit {
     return formatLoanPurposeDisplay(purpose);
   }
 
+  formatDepartmentDisplay(department?: unknown): string {
+    return formatLoanDepartmentDisplay(department);
+  }
+
+  getLoanTotalRepayable(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
+  }
+
   openLoanDetails(loan: LoanApplication): void {
     this.viewLoanDetails(loan.id, uuidV4());
   }
@@ -72,7 +85,10 @@ export class LoanApprovalUiComponent implements OnInit {
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
-        this.loanApplications = applications;
+        this.loanApplications = applications.map((loan) => ({
+          ...loan,
+          department: this.formatDepartmentDisplay(loan.department)
+        }));
         this.applyFilters();
         this.isLoading = false;
       },
@@ -96,7 +112,7 @@ export class LoanApprovalUiComponent implements OnInit {
     if (this.filters.department) {
       const term = this.filters.department.toLowerCase();
       results = results.filter(loan =>
-        (loan.department ?? '').toLowerCase().includes(term)
+        this.formatDepartmentDisplay(loan.department).toLowerCase().includes(term)
       );
     }
 
@@ -184,6 +200,14 @@ export class LoanApprovalUiComponent implements OnInit {
           valueA = a.amount;
           valueB = b.amount;
           break;
+        case 'interestRate':
+          valueA = a.interestRate || 0;
+          valueB = b.interestRate || 0;
+          break;
+        case 'totalRepayable':
+          valueA = this.getLoanTotalRepayable(a);
+          valueB = this.getLoanTotalRepayable(b);
+          break;
         case 'employeeId':
           valueA = String(a.employeeId).toLowerCase();
           valueB = String(b.employeeId).toLowerCase();
@@ -193,8 +217,8 @@ export class LoanApprovalUiComponent implements OnInit {
           valueB = (b.fullName ?? '').toLowerCase();
           break;
         case 'department':
-          valueA = (a.department ?? '').toLowerCase();
-          valueB = (b.department ?? '').toLowerCase();
+          valueA = this.formatDepartmentDisplay(a.department).toLowerCase();
+          valueB = this.formatDepartmentDisplay(b.department).toLowerCase();
           break;
         case 'purpose':
           valueA = this.formatPurposeDisplay(a.purpose).toLowerCase();

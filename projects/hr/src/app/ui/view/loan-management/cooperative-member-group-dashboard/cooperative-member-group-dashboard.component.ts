@@ -177,58 +177,60 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     this.isLoading = true;
     this.actionMessage = '';
 
-    this.group = this.cooperativeService.getGroupById(this.currentGroupId);
-    if (!this.group) {
-      this.actionMessage = 'This group could not be found.';
-      this.isLoading = false;
-      return;
-    }
+    this.cooperativeService.loadGroupById(this.currentGroupId).subscribe(group => {
+      this.group = group;
+      if (!this.group) {
+        this.actionMessage = 'This group could not be found.';
+        this.isLoading = false;
+        return;
+      }
 
-    this.groupMemberships = this.cooperativeService.getGroupMemberships()
-      .filter(item => String(item.groupId) === this.currentGroupId && item.status === 'ACTIVE')
-      .sort((a, b) => new Date(b.joinedAt || b.requestedAt || '').getTime() - new Date(a.joinedAt || a.requestedAt || '').getTime());
+      this.groupMemberships = this.cooperativeService.getGroupMemberships()
+        .filter(item => String(item.groupId) === this.currentGroupId && item.status === 'ACTIVE')
+        .sort((a, b) => new Date(b.joinedAt || b.requestedAt || '').getTime() - new Date(a.joinedAt || a.requestedAt || '').getTime());
 
-    this.groupMembers = this.groupMemberships
-      .map(item => this.cooperativeService.getMemberById(item.memberId))
-      .filter((member): member is CooperativeMember => !!member);
+      this.groupMembers = this.groupMemberships
+        .map(item => this.cooperativeService.getMemberById(item.memberId))
+        .filter((member): member is CooperativeMember => !!member);
 
-    this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(this.currentGroupId);
+      this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(this.currentGroupId);
 
-    this.currentMember = this.cooperativeService.getMemberById(this.currentMemberId);
-    this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
+      this.currentMember = this.cooperativeService.getMemberById(this.currentMemberId);
+      this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
 
-    this.recentJoiners = [...this.groupMembers]
-      .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-      .slice(0, 5);
+      this.recentJoiners = [...this.groupMembers]
+        .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+        .slice(0, 5);
 
-    this.contributionRows = this.groupMemberships.map(membership => {
-      const member = this.cooperativeService.getMemberById(membership.memberId);
-      const totalContribution = this.groupContributionEntries
-        .filter(entry => entry.membershipId === membership.id)
-        .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+      this.contributionRows = this.groupMemberships.map(membership => {
+        const member = this.cooperativeService.getMemberById(membership.memberId);
+        const totalContribution = this.groupContributionEntries
+          .filter(entry => entry.membershipId === membership.id)
+          .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
 
-      return {
-        memberId: membership.memberId,
-        memberName: member?.fullName || 'Unknown member',
-        memberCode: member?.memberId || membership.memberId,
-        monthlyContribution: Number(membership.monthlyContributionAmount || 0),
-        totalContribution: totalContribution || Number(membership.totalContribution || 0),
-        joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
-      };
-    });
+        return {
+          memberId: membership.memberId,
+          memberName: member?.fullName || 'Unknown member',
+          memberCode: member?.memberId || membership.memberId,
+          monthlyContribution: Number(membership.monthlyContributionAmount || 0),
+          totalContribution: totalContribution || Number(membership.totalContribution || 0),
+          joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
+        };
+      });
 
-    this.contributionHistory = this.buildContributionHistory();
+      this.contributionHistory = this.buildContributionHistory();
 
-    this.cooperativeService.getLoans().subscribe(loans => {
-      this.groupLoans = loans.filter(loan => String(loan.groupId || loan.cooperativeGroupId || '') === this.currentGroupId);
-      this.borrowerRows = this.groupLoans
-        .filter(loan => loan.status !== 'REJECTED' && loan.status !== 'PENDING')
-        .map(loan => this.toBorrowerRow(loan))
-        .sort((a, b) => b.progressPercent - a.progressPercent);
+      this.cooperativeService.getLoans().subscribe(loans => {
+        this.groupLoans = loans.filter(loan => String(loan.groupId || loan.cooperativeGroupId || '') === this.currentGroupId);
+        this.borrowerRows = this.groupLoans
+          .filter(loan => loan.status !== 'REJECTED' && loan.status !== 'PENDING')
+          .map(loan => this.toBorrowerRow(loan))
+          .sort((a, b) => b.progressPercent - a.progressPercent);
 
-      this.activityFeed = this.buildActivityFeed();
+        this.activityFeed = this.buildActivityFeed();
 
-      this.isLoading = false;
+        this.isLoading = false;
+      });
     });
   }
 

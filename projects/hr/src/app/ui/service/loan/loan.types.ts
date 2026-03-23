@@ -22,6 +22,8 @@ export interface LoanAuditUser {
 export interface LoanApplication {
   id: number;
   loanCode: string;
+  clientSubmissionKey?: string;
+  localOnly?: boolean;
   employeeId: number;
   amount: number;
   purpose: string;

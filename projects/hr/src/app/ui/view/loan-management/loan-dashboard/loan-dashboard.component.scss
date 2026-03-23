@@ -1,3 +1,5 @@
+@use '../loan-status-badges' as loanStatus;
+
 .loan-dashboard-container {
   padding: 24px;
   min-height: 100vh;
@@ -13,7 +15,6 @@
     justify-content: center;
     padding: 24px;
     overflow-y: auto;
-    z-index: 1200;
 
     .modal-content {
       width: min(1240px, 100%);
@@ -136,6 +137,10 @@
         background: linear-gradient(135deg, #fefcf7 0%, #ffffff 100%);
         border-color: #eee0b7;
       }
+
+      &.repayment-group {
+        background: linear-gradient(180deg, #ffffff 0%, #f6fbfd 100%);
+      }
     }
 
     .group-head {
@@ -174,17 +179,22 @@
 
       &.comment {
         background: #fff4cf;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
         color: #9f6a00;
       }
     }
 
     .group-label {
+          flex: 1;
       display: inline-block;
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #6a8794;
       font-weight: 700;
+          height: 100%;
     }
 
     .detail-list {
@@ -267,8 +277,8 @@
       }
 
       &.status-approved {
-          background: rgba(235, 155, 63, 0.14);
-          color: #eb9b3f;
+          background: rgba(79, 124, 255, 0.14);
+          color: #4f7cff;
       }
 
       &.status-rejected {
@@ -277,8 +287,8 @@
       }
 
       &.status-active {
-        background: rgba(56, 189, 248, 0.16);
-        color: #1e4a8f;
+        background: rgba(126, 253, 255, 0.14);
+        color: #7efdff;
       }
 
       &.status-completed {
@@ -292,6 +302,87 @@
       color: #203945;
       font-size: 0.96rem;
       line-height: 1.6;
+    }
+
+    .repayment-summary-band {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .repayment-stat {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #dbe9ee;
+      background: #ffffff;
+
+      span {
+        color: #6a8794;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+      }
+
+      strong {
+        font-size: 0.95rem;
+        color: #203945;
+        line-height: 1.35;
+      }
+
+      &.emphasis {
+        background: linear-gradient(135deg, rgba(46, 98, 118, 0.08), rgba(56, 189, 248, 0.08));
+        border-color: rgba(46, 98, 118, 0.18);
+      }
+    }
+
+    .repayment-progress-block {
+      display: grid;
+      gap: 10px;
+    }
+
+    .repayment-progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #203945;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .repayment-progress-track {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #dfecef;
+    }
+
+    .repayment-progress-fill {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 10px;
+      background: linear-gradient(90deg, #2e6276 0%, #47b3d1 100%);
+      transition: width 0.35s ease;
+
+      .progress-copy {
+        color: #ffffff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+    }
+
+    .repayment-progress-note {
+      margin: 0;
+      color: #627987;
+      font-size: 0.88rem;
+      line-height: 1.55;
     }
 
     .modal-actions {
@@ -899,35 +990,7 @@
         white-space: nowrap;
         animation: fadeIn 0.3s ease;
 
-        &.status-pending {
-          background-color: rgba(143, 133, 0, 0.14);
-          color: #8f8500;
-          border: 1px solid rgba(143, 133, 0, 0.28);
-        }
-
-        &.status-approved {
-          background-color: rgba(235, 155, 63, 0.14);
-          color: #eb9b3f;
-          border: 1px solid rgba(235, 155, 63, 0.28);
-        }
-
-        &.status-rejected {
-          background-color: rgba(255, 42, 63, 0.12);
-          color: #ff2a3f;
-          border: 1px solid rgba(255, 42, 63, 0.28);
-        }
-
-        &.status-active {
-          background-color: rgba(126, 253, 255, 0.14);
-          color: #7efdff;
-          border: 1px solid rgba(126, 253, 255, 0.3);
-        }
-
-        &.status-completed {
-          background-color: rgba(101, 240, 166, 0.14);
-          color: #65f0a6;
-          border: 1px solid rgba(101, 240, 166, 0.28);
-        }
+        @include loanStatus.advance-loan-status-badges();
       }
 
       .action-buttons {
@@ -977,13 +1040,14 @@
     display: grid;
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.7fr);
     gap: 18px;
-    align-items: start;
+    align-items: stretch;
   }
 
   .dashboard-side-rail {
     display: grid;
     gap: 16px;
-    align-items: start;
+    align-items: stretch;
+    height: 100%;
   }
 
   .command-bar {
@@ -1088,11 +1152,14 @@
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid #e3eef0;
+    min-width: 0;
 
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
       margin-bottom: 16px;
 
       h2 {
@@ -1100,9 +1167,11 @@
         font-size: 1.2rem;
         font-weight: 600;
         margin: 0;
-        padding: 20px;
+        padding: 0;
+        display: inline-flex;
         align-items: center;
         gap: 8px;
+        min-width: 0;
 
         i {
           color: #FFA500;
@@ -1123,19 +1192,77 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 560px;
+      max-height: 520px;
       overflow-y: auto;
+      overflow-x: hidden;
       padding-right: 2px;
+
+      &.compact {
+        max-height: none;
+      }
+    }
+
+    .activity-groups {
+      display: grid;
+      gap: 16px;
+    }
+
+    .activity-group {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #e3eef0;
+      background: #fbfdfe;
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0;
+        font-size: 0.92rem;
+        color: #2e6276;
+        font-weight: 700;
+      }
+
+      span {
+        min-width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: #5b6d76;
+        background: #eef6f8;
+        border: 1px solid #dbe8ed;
+      }
     }
 
     .activity-item {
       display: flex;
+      width: 100%;
       align-items: flex-start;
       gap: 10px;
       padding: 10px;
       border-radius: 10px;
       border: 1px solid #e3eef0;
       background: #fff;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+      &:hover,
+      &:focus-visible {
+        border-color: #b6d6e2;
+        box-shadow: 0 8px 18px rgba(46, 98, 118, 0.08);
+        transform: translateY(-1px);
+        outline: none;
+      }
 
       .activity-icon {
         width: 28px;
@@ -1153,6 +1280,7 @@
 
       .activity-content {
         min-width: 0;
+        flex: 1;
       }
 
       .activity-message {
@@ -1160,11 +1288,13 @@
         color: #2f3b45;
         font-size: 0.9rem;
         line-height: 1.35;
+        overflow-wrap: anywhere;
       }
 
       .activity-meta {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 6px;
         color: #8a8a8a;
         font-size: 0.76rem;
@@ -1192,7 +1322,7 @@
 
     .empty-state.compact {
       padding: 30px 14px;
-          min-width: 820px;
+      min-width: 0;
 
       p {
         margin: 0;
@@ -1363,13 +1493,26 @@
     .recent-activity {
       padding: 16px;
 
+      .section-header {
+        align-items: flex-start;
+      }
+
       .activity-list {
         max-height: 420px;
       }
     }
 
-    .loan-details-modal .details-grid {
-      grid-template-columns: 1fr;
+    .loan-details-modal {
+      .details-grid,
+      .repayment-summary-band {
+        grid-template-columns: 1fr;
+      }
+
+      .repayment-progress-fill {
+        .progress-copy {
+          display: none;
+        }
+      }
     }
   }
 }
@@ -1408,6 +1551,18 @@
 
       small {
         font-size: 0.75rem;
+      }
+    }
+
+    .recent-activity {
+      .activity-item {
+        padding: 10px;
+      }
+
+      .activity-meta {
+        .dot {
+          display: none;
+        }
       }
     }
   }

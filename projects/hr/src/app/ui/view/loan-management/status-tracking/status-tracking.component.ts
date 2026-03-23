@@ -13,7 +13,7 @@ export class StatusTrackingComponent {
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#8f8500' },
-    { value: 'APPROVED', label: 'Approved', color: '#eb9b3f' },
+    { value: 'APPROVED', label: 'Approved', color: '#4f7cff' },
     { value: 'REJECTED', label: 'Rejected', color: '#ff2a3f' },
     { value: 'ACTIVE', label: 'Active', color: '#7efdff' },
     { value: 'COMPLETED', label: 'Completed', color: '#65f0a6' }

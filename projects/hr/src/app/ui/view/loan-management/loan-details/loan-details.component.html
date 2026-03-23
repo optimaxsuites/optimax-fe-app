@@ -59,6 +59,10 @@
               <span>{{ loan.interestRate }}%</span>
             </div>
             <div class="info-item">
+              <label>Total Repayable:</label>
+              <span class="amount">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
+            </div>
+            <div class="info-item">
               <label>Current Balance:</label>
               <span class="amount">{{ formatCurrency(loan.currentBalance) }}</span>
             </div>
@@ -187,7 +191,7 @@
         
         <!-- Status Summary -->
         <div class="summary-card">
-          <h3>Status Summary</h3>
+          <h3>Lifecycle Summary</h3>
           <div class="summary-grid">
             <div class="summary-item">
               <span class="label">Submitted:</span>
@@ -209,16 +213,38 @@
         </div>
         
         <!-- Progress Bar -->
-        <div class="progress-card">
-          <h3>Repayment Progress</h3>
+        <div class="progress-card" [ngClass]="{ 'disbursed-loan-card': hasBeenDisbursed() }">
+          <h3>{{ hasBeenDisbursed() ? 'Repayment Snapshot' : 'Repayment Progress' }}</h3>
+          <div class="repayment-snapshot-band" *ngIf="hasBeenDisbursed()">
+            <div class="snapshot-chip emphasis">
+              <span>State</span>
+              <strong>{{ getRepaymentStatusTitle() }}</strong>
+            </div>
+            <div class="snapshot-chip">
+              <span>Installments</span>
+              <strong>{{ getPaidInstallmentsCount() }}/{{ getTotalInstallmentsCount() || 0 }}</strong>
+            </div>
+            <div class="snapshot-chip">
+              <span>Outstanding</span>
+              <strong>{{ formatCurrency(getResolvedOutstandingBalance()) }}</strong>
+            </div>
+          </div>
           <div class="progress-section">
             <div class="progress-header">
-              <span>Amount Paid</span>
+              <span>{{ hasBeenDisbursed() ? 'Repayment completion' : 'Amount Paid' }}</span>
               <span>{{ getProgressPercentage().toFixed(1) }}%</span>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill" [style.width]="getProgressPercentage() + '%'"></div>
+              <div class="progress-fill" [style.width]="getProgressPercentage() + '%'">
+                <span class="progress-caption" *ngIf="hasBeenDisbursed() && getProgressPercentage() > 18">
+                  {{ getPaidInstallmentsCount() }}/{{ getTotalInstallmentsCount() || 0 }} cleared
+                </span>
+              </div>
             </div>
+            <p class="progress-note" *ngIf="hasBeenDisbursed()">
+              {{ getRepaymentStatusTitle() }}.
+              <span *ngIf="!hasRepaymentStarted()">No repayment has been recorded yet, so progress remains at 0%.</span>
+            </p>
             <div class="progress-details">
               <div class="progress-item">
                 <span class="label">Loan Amount:</span>
@@ -226,11 +252,15 @@
               </div>
               <div class="progress-item">
                 <span class="label">Amount Paid:</span>
-                <span class="value">{{ formatCurrency(loan.totalPaid) }}</span>
+                <span class="value">{{ formatCurrency(getResolvedAmountPaid()) }}</span>
+              </div>
+              <div class="progress-item" *ngIf="hasBeenDisbursed()">
+                <span class="label">Total Repayable:</span>
+                <span class="value">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
               </div>
               <div class="progress-item">
                 <span class="label">Balance:</span>
-                <span class="value">{{ formatCurrency(loan.currentBalance) }}</span>
+                <span class="value">{{ formatCurrency(getResolvedOutstandingBalance()) }}</span>
               </div>
             </div>
           </div>

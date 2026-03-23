@@ -3,10 +3,24 @@ import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
-import { LoanApplication, RepaymentScheduleItem, StatusChange } from '../../../service/loan/loan.types';
+import { LoanApplication, PaymentRecord, RepaymentScheduleItem, StatusChange } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { EmployeeService } from '../../../service/employee.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import {
+  compareLoanSortValues,
+  formatLoanDepartmentDisplay,
+  formatLoanPurposeDisplay,
+  getLoanRepaymentStatusTitle,
+  hasLoanBeenDisbursed,
+  hasLoanRepaymentStarted,
+  resolveCompletedLoanActor,
+  resolveLoanActorName,
+  resolveLoanEmployeeName,
+  resolveLoanOutstandingBalance,
+  resolveLoanRepaymentProgress,
+  resolveLoanTotalPaid,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 interface LoanDashboardAlert {
   level: 'warning' | 'danger';
@@ -15,11 +29,11 @@ interface LoanDashboardAlert {
 
 interface LoanRecentActivity {
   id: string;
-  type: 'PAYMENT_MILESTONE' | 'MONTHLY_PAYMENT' | 'OVERDUE_PAYMENT';
+  type: 'PAYMENT' | 'MILESTONE' | 'COMPLETION';
   level: 'success' | 'info' | 'warning';
   message: string;
   loanId: string;
-  employeeId: string;
+  loanApplicationId: LoanApplication['id'];
   occurredAt: string;
 }
 
@@ -165,7 +179,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
             this.allLoans = filteredLoans.map((loan, idx) => ({
               ...loan,
               fullName: employeeDetails[idx]?.fullName || loan.fullName,
-              department: employeeDetails[idx]?.department || loan.department
+              department: formatLoanDepartmentDisplay(employeeDetails[idx]?.department || loan.department)
             }));
             this.updateDashboardStats();
             this.applyFilter();
@@ -174,7 +188,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
             this.isLoading = false;
           })
           .catch(() => {
-            this.allLoans = filteredLoans;
+            this.allLoans = filteredLoans.map((loan) => ({
+              ...loan,
+              department: formatLoanDepartmentDisplay(loan.department)
+            }));
             this.updateDashboardStats();
             this.applyFilter();
             this.updateAlerts();
@@ -219,25 +236,18 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     ).length;
     
     this.dashboardStats.totalBalance = this.allLoans.reduce((total, loan) => {
-      return total + (loan.currentBalance || 0);
+      return total + resolveLoanOutstandingBalance(loan);
     }, 0);
   }
 
   applyFilter(): void {
-    let filtered = [...this.allLoans];
-    
-    // Apply status filter
-    if (this.activeFilter === 'PENDING') {
-      filtered = filtered.filter(loan => loan.status === 'PENDING');
-    } else if (this.activeFilter === 'ACTIVE') {
-      filtered = filtered.filter(loan => loan.status === 'ACTIVE');
-    }
-    
-    this.totalFilteredLoans = filtered.length;
+    this.activeFilter = 'ALL';
+    const latestLoans = this.getLatestSubmittedLoans();
+
+    this.totalFilteredLoans = this.allLoans.length;
 
     // Keep the dashboard as a recent-records overview only.
-    this.filteredLoans = this.sortLoans(filtered)
-      .slice(0, this.recentLoanLimit);
+    this.filteredLoans = this.sortLoans(latestLoans);
       
     this.recentLoans = this.filteredLoans;
   }
@@ -271,57 +281,65 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   updateRecentActivities(): void {
     const activities: LoanRecentActivity[] = [];
-    const now = Date.now();
+    const currentDate = new Date();
 
     this.allLoans.forEach((loan) => {
-      const paidRatio = loan.amount > 0 ? (loan.totalPaid || 0) / loan.amount : 0;
+      const paymentHistory = [...(loan.paymentHistory || [])].sort(
+        (first, second) => new Date(first.paidAt).getTime() - new Date(second.paidAt).getTime()
+      );
 
-      if (paidRatio >= 0.5 && (loan.status === 'ACTIVE' || loan.status === 'APPROVED' || loan.status === 'COMPLETED')) {
-        activities.push({
-          id: `${loan.id}-milestone`,
-          type: 'PAYMENT_MILESTONE',
-          level: 'success',
-          message: `${loan.fullName} has paid off ${Math.round(paidRatio * 100)}% of their loan balance.`,
-          loanId: loan.loanCode,
-          employeeId: String(loan.employeeId),
-          occurredAt: this.getLatestPaymentDate(loan) || loan.approvedDate || loan.requestDate
-        });
-      }
+      const totalRepayable = resolveLoanTotalRepayableAmount(loan);
+      let cumulativePaid = 0;
+      const milestoneThresholds = [25, 50, 75, 100];
+      const crossedMilestones = new Set<number>();
 
-      const latestPaymentDate = this.getLatestPaymentDate(loan);
-      if (latestPaymentDate) {
-        activities.push({
-          id: `${loan.id}-payment`,
-          type: 'MONTHLY_PAYMENT',
-          level: 'info',
-          message: `${loan.fullName} just made their monthly installment.`,
-          loanId: loan.loanCode,
-          employeeId: String(loan.employeeId),
-          occurredAt: latestPaymentDate
-        });
-      }
+      paymentHistory.forEach((payment, index) => {
+        const paymentDate = new Date(payment.paidAt);
+        const paymentAmount = Number(payment.totalAmount || 0);
 
-      const overdueInstallmentDate = this.getOverdueInstallmentDate(loan, now);
-      if (overdueInstallmentDate) {
-        activities.push({
-          id: `${loan.id}-overdue`,
-          type: 'OVERDUE_PAYMENT',
-          level: 'warning',
-          message: `${loan.fullName}'s payment for this month is overdue.`,
-          loanId: loan.loanCode,
-          employeeId: String(loan.employeeId),
-          occurredAt: overdueInstallmentDate
+        if (this.isSameMonth(paymentDate, currentDate)) {
+          activities.push({
+            id: `${loan.id}-payment-${payment.id || index}`,
+            type: 'PAYMENT',
+            level: 'info',
+            message: `Repayment alert: ${loan.fullName || 'An employee'} posted ${this.formatCurrency(paymentAmount)} to loan ${loan.loanCode} this month.`,
+            loanId: loan.loanCode,
+            loanApplicationId: loan.id,
+            occurredAt: payment.paidAt
+          });
+        }
+
+        cumulativePaid = Number((cumulativePaid + paymentAmount).toFixed(2));
+        const progressPercent = totalRepayable > 0 ? (cumulativePaid / totalRepayable) * 100 : 0;
+
+        milestoneThresholds.forEach((threshold) => {
+          if (progressPercent < threshold || crossedMilestones.has(threshold)) {
+            return;
+          }
+
+          crossedMilestones.add(threshold);
+          activities.push({
+            id: `${loan.id}-milestone-${threshold}`,
+            type: threshold === 100 ? 'COMPLETION' : 'MILESTONE',
+            level: 'success',
+            message: threshold === 100
+              ? `Repayment milestone: ${loan.fullName || 'An employee'} has fully repaid loan ${loan.loanCode}.`
+              : `Repayment milestone: ${loan.fullName || 'An employee'} has reached ${threshold}% repayment on loan ${loan.loanCode}.`,
+            loanId: loan.loanCode,
+            loanApplicationId: loan.id,
+            occurredAt: threshold === 100 && loan.completedDate ? loan.completedDate : payment.paidAt
+          });
         });
-      }
+      });
     });
 
-    const sortedActivities = activities
+    this.recentActivities = activities
       .sort((first, second) => new Date(second.occurredAt).getTime() - new Date(first.occurredAt).getTime())
-      .slice(0, 10);
+      .slice(0, 5);
+  }
 
-    this.recentActivities = sortedActivities.length > 0
-      ? sortedActivities
-      : this.getMockRecentActivities();
+  openRecentActivity(activity: LoanRecentActivity): void {
+    this.viewLoanDetails(activity.loanApplicationId);
   }
 
   getActivityRelativeTime(activityDate: string): string {
@@ -356,12 +374,12 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   getActivityIcon(activityType: LoanRecentActivity['type']): string {
     switch (activityType) {
-      case 'PAYMENT_MILESTONE':
-        return 'fa-chart-line';
-      case 'MONTHLY_PAYMENT':
+      case 'PAYMENT':
         return 'fa-credit-card';
-      case 'OVERDUE_PAYMENT':
-        return 'fa-exclamation-circle';
+      case 'MILESTONE':
+        return 'fa-chart-line';
+      case 'COMPLETION':
+        return 'fa-circle-check';
       default:
         return 'fa-info-circle';
     }
@@ -395,73 +413,18 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  private getLatestPaymentDate(loan: LoanApplication): string | null {
-    const payments = loan.paymentHistory || [];
-    if (payments.length === 0) {
-      return null;
-    }
-
-    return [...payments]
-      .sort((first, second) => new Date(second.paidAt).getTime() - new Date(first.paidAt).getTime())[0]
-      .paidAt;
+  private isSameMonth(left: Date, right: Date): boolean {
+    return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth();
   }
 
-  private getOverdueInstallmentDate(loan: LoanApplication, now: number): string | null {
-    if (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED') {
-      return null;
-    }
-
-    const schedule = loan.repaymentSchedule || [];
-    const overdueItem = schedule.find((item) => {
-      if (item.status === 'OVERDUE') {
-        return true;
-      }
-
-      if (item.status !== 'PENDING') {
-        return false;
-      }
-
-      return new Date(item.dueDate).getTime() < now;
-    });
-
-    return overdueItem?.dueDate || null;
-  }
-
-  private getMockRecentActivities(): LoanRecentActivity[] {
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000)).toISOString();
-    const threeHoursAgo = new Date(now.getTime() - (3 * 60 * 60 * 1000)).toISOString();
-    const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
-
-    return [
-      {
-        id: 'mock-activity-1',
-        type: 'PAYMENT_MILESTONE',
-        level: 'success',
-        message: 'Eseose Odion has paid off 50% of their loan balance.',
-        loanId: 'LN-MOCK001',
-        employeeId: 'EMP-123',
-        occurredAt: oneHourAgo
-      },
-      {
-        id: 'mock-activity-2',
-        type: 'MONTHLY_PAYMENT',
-        level: 'info',
-        message: 'Chisom Ada just made their monthly installment.',
-        loanId: 'LN-MOCK002',
-        employeeId: 'EMP-204',
-        occurredAt: threeHoursAgo
-      },
-      {
-        id: 'mock-activity-3',
-        type: 'OVERDUE_PAYMENT',
-        level: 'warning',
-        message: "Peter Obi's payment for this month is overdue.",
-        loanId: 'LN-MOCK003',
-        employeeId: 'EMP-078',
-        occurredAt: yesterday
-      }
-    ];
+  private getLatestSubmittedLoans(): LoanApplication[] {
+    return [...this.allLoans]
+      .sort((first, second) => {
+        const firstTime = new Date(first.requestDate).getTime();
+        const secondTime = new Date(second.requestDate).getTime();
+        return secondTime - firstTime;
+      })
+      .slice(0, this.recentLoanLimit);
   }
 
   // Filter methods
@@ -575,6 +538,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return pendingEntry?.changedAt || loan.requestDate || null;
   }
 
+  getPreviewDisplayedStatus(loan: LoanApplication): LoanApplication['status'] {
+    return this.resolvePreviewDisplayedStatus(loan, this.buildStatusTimeline(loan));
+  }
+
   getPreviewApprovedDate(loan: LoanApplication): string | null {
     if (loan.approvedDate) {
       return loan.approvedDate;
@@ -596,8 +563,26 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  getPreviewDisbursedDate(loan: LoanApplication): string | null {
+    if (loan.disbursedDate) {
+      return loan.disbursedDate;
+    }
+
+    const activeEntry = this.getStatusHistoryByStatus(loan, 'ACTIVE');
+    if (activeEntry?.changedAt) {
+      return activeEntry.changedAt;
+    }
+
+    if (loan.status === 'ACTIVE' || loan.status === 'COMPLETED') {
+      return this.getPreviewLatestMeaningfulStatusDate(loan, 'ACTIVE', 'APPROVED');
+    }
+
+    return null;
+  }
+
   getPreviewInterestRate(loan: LoanApplication): number {
-    if (loan.status !== 'APPROVED' && loan.status !== 'ACTIVE' && loan.status !== 'COMPLETED') {
+    const displayedStatus = this.getPreviewDisplayedStatus(loan);
+    if (displayedStatus !== 'APPROVED' && displayedStatus !== 'ACTIVE' && displayedStatus !== 'COMPLETED') {
       return 0;
     }
 
@@ -635,6 +620,14 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return [...timeline].sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.changedAt || null;
   }
 
+  getPreviewLatestMeaningfulStatusDate(loan: LoanApplication, ...statuses: LoanApplication['status'][]): string | null {
+    const timeline = this.buildStatusTimeline(loan)
+      .filter((item) => statuses.includes(item.status))
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
+
+    return timeline[0]?.changedAt || null;
+  }
+
   getOverdueInstallmentsCount(loan: LoanApplication): number {
     return (loan.repaymentSchedule || []).filter(item => item.status === 'OVERDUE').length;
   }
@@ -649,6 +642,42 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
 
   getLateFeesTotal(loan: LoanApplication): number {
     return (loan.repaymentSchedule || []).reduce((sum, item) => sum + Number(item.lateFeeAmount || 0), 0);
+  }
+
+  getPreviewResolvedAmountPaid(loan: LoanApplication): number {
+    return resolveLoanTotalPaid(loan);
+  }
+
+  getPreviewTotalRepayableAmount(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
+  }
+
+  getPreviewResolvedOutstandingBalance(loan: LoanApplication): number {
+    return resolveLoanOutstandingBalance(loan);
+  }
+
+  getPreviewProgressPercentage(loan: LoanApplication): number {
+    return resolveLoanRepaymentProgress(loan);
+  }
+
+  hasPreviewRepaymentStarted(loan: LoanApplication): boolean {
+    return hasLoanRepaymentStarted(loan);
+  }
+
+  hasPreviewBeenDisbursed(loan: LoanApplication): boolean {
+    return hasLoanBeenDisbursed(loan);
+  }
+
+  getPreviewRepaymentStatusTitle(loan: LoanApplication): string {
+    return getLoanRepaymentStatusTitle(loan);
+  }
+
+  getPreviewPaidInstallmentsCount(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).filter((item) => item.status === 'PAID').length;
+  }
+
+  getPreviewTotalInstallmentsCount(loan: LoanApplication): number {
+    return (loan.repaymentSchedule || []).length || Number(loan.repaymentTime || 0);
   }
 
   getLifecycleInstallmentsPreview(loan: LoanApplication): RepaymentScheduleItem[] {
@@ -682,7 +711,17 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     const completedDate = this.normalizeDate(loan.completedDate);
 
     if (requestDate) {
-      timeline.push({ status: 'PENDING', changedAt: requestDate, changedBy: 'Employee', notes: 'Loan application submitted' });
+      timeline.push({ status: 'PENDING', changedAt: requestDate, changedBy: resolveLoanEmployeeName(loan), notes: 'Loan application submitted' });
+    }
+
+    const shouldInferApproved = !approvedDate && (loan.status === 'ACTIVE' || loan.status === 'COMPLETED' || !!disbursedDate || !!completedDate);
+    if (shouldInferApproved) {
+      timeline.push({
+        status: 'APPROVED',
+        changedAt: disbursedDate || completedDate || requestDate || new Date().toISOString(),
+        changedBy: this.formatActor(loan.approvedBy || loan.disbursedBy),
+        notes: 'Loan approved'
+      });
     }
 
     if (approvedDate) {
@@ -708,10 +747,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     if (completedDate) {
-      timeline.push({ status: 'COMPLETED', changedAt: completedDate, changedBy: 'System', notes: 'Loan completed' });
+      timeline.push({ status: 'COMPLETED', changedAt: completedDate, changedBy: resolveCompletedLoanActor(loan), notes: 'Loan completed' });
     }
 
-    return timeline
+    const dedupedTimeline = timeline
       .filter((entry, index, entries) => {
         const normalizedDate = this.normalizeDate(entry.changedAt);
         if (!normalizedDate) {
@@ -722,7 +761,90 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
           candidate.status === entry.status && this.normalizeDate(candidate.changedAt) === normalizedDate
         );
       })
-      .sort((left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime());
+      .sort((left, right) => {
+        const statusOrderDifference = this.getStatusProgressionOrder(left.status) - this.getStatusProgressionOrder(right.status);
+        if (statusOrderDifference !== 0) {
+          return statusOrderDifference;
+        }
+
+        return new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime();
+      });
+
+    const resolvedStatus = this.resolvePreviewDisplayedStatus(loan, dedupedTimeline);
+    const hasResolvedStatus = dedupedTimeline.some((entry) => entry.status === resolvedStatus);
+
+    if (!hasResolvedStatus) {
+      dedupedTimeline.push({
+        status: resolvedStatus,
+        changedAt: completedDate || disbursedDate || approvedDate || rejectedDate || requestDate || new Date().toISOString(),
+        changedBy: this.resolveCurrentStatusActor(loan),
+        notes: loan.adminComment || `Loan ${resolvedStatus.toLowerCase()}`
+      });
+    }
+
+    return dedupedTimeline;
+  }
+
+  private getStatusProgressionOrder(status: LoanApplication['status']): number {
+    switch (status) {
+      case 'PENDING':
+        return 1;
+      case 'APPROVED':
+        return 2;
+      case 'ACTIVE':
+        return 3;
+      case 'COMPLETED':
+        return 4;
+      case 'REJECTED':
+        return 5;
+      default:
+        return 99;
+    }
+  }
+
+  private resolvePreviewDisplayedStatus(loan: LoanApplication, timeline: StatusChange[] = []): LoanApplication['status'] {
+    const explicitStatus = this.normalizeStatus(loan.status);
+    const latestTimelineStatus = timeline
+      .filter((item) => !!this.normalizeDate(item.changedAt))
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.status;
+
+    if (explicitStatus === 'COMPLETED') {
+      return 'COMPLETED';
+    }
+
+    if (explicitStatus === 'ACTIVE') {
+      return 'ACTIVE';
+    }
+
+    if (explicitStatus === 'REJECTED') {
+      return 'REJECTED';
+    }
+
+    if (explicitStatus === 'APPROVED') {
+      return 'APPROVED';
+    }
+
+    if (latestTimelineStatus && latestTimelineStatus !== 'PENDING') {
+      return latestTimelineStatus;
+    }
+
+    if (this.normalizeDate(loan.completedDate)) {
+      return 'COMPLETED';
+    }
+
+    if (this.normalizeDate(loan.disbursedDate)) {
+      return 'ACTIVE';
+    }
+
+    if (this.normalizeDate(loan.rejectedDate)) {
+      return 'REJECTED';
+    }
+
+    if (this.normalizeDate(loan.approvedDate)) {
+      return 'APPROVED';
+    }
+
+    return explicitStatus || latestTimelineStatus || 'PENDING';
   }
 
   private getStatusHistoryByStatus(loan: LoanApplication, status: LoanApplication['status']): StatusChange | null {
@@ -742,9 +864,9 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       case 'ACTIVE':
         return this.formatActor(loan.disbursedBy);
       case 'COMPLETED':
-        return 'System';
+        return resolveCompletedLoanActor(loan);
       default:
-        return 'Employee';
+        return resolveLoanEmployeeName(loan);
     }
   }
 
@@ -758,20 +880,23 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return Number.isFinite(timestamp) ? rawValue : '';
   }
 
+  private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
+    const normalizedStatus = String(status || '').trim().toUpperCase();
+
+    switch (normalizedStatus) {
+      case 'PENDING':
+      case 'APPROVED':
+      case 'REJECTED':
+      case 'ACTIVE':
+      case 'COMPLETED':
+        return normalizedStatus;
+      default:
+        return null;
+    }
+  }
+
   private formatActor(actor: LoanApplication['approvedBy'] | LoanApplication['disbursedBy'] | LoanApplication['rejectedBy'] | string | undefined): string {
-    if (!actor) {
-      return 'System';
-    }
-
-    if (typeof actor === 'string') {
-      return actor;
-    }
-
-    if (typeof actor === 'number') {
-      return actor > 0 ? `User ${actor}` : 'System';
-    }
-
-    return actor.fullname || actor.username || actor.email || 'System';
+    return resolveLoanActorName(actor);
   }
 
   private syncSelectedLoan(): void {
@@ -835,6 +960,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.applyFilter();
   }
 
+  formatDepartmentDisplay(department?: unknown): string {
+    return formatLoanDepartmentDisplay(department);
+  }
+
   private sortLoans(loans: LoanApplication[]): LoanApplication[] {
     return [...loans].sort((a, b) => {
       let valueA: string | number = '';
@@ -854,8 +983,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
           valueB = (b.fullName || '').toLowerCase();
           break;
         case 'department':
-          valueA = (a.department || '').toLowerCase();
-          valueB = (b.department || '').toLowerCase();
+          valueA = this.formatDepartmentDisplay(a.department).toLowerCase();
+          valueB = this.formatDepartmentDisplay(b.department).toLowerCase();
           break;
         case 'amount':
           valueA = a.amount || 0;

@@ -17,7 +17,10 @@
   [dataKey]="dataKey"
   [selection]="selection"
   [selectionMode]="selectable ? selectionMode : undefined"
+  [sortField]="sortField"
+  [sortOrder]="sortOrder"
   (selectionChange)="handleSelectionChange($event)"
+  (onSort)="handleSort($event)"
 >
   <ng-template pTemplate="header">
     <tr>
@@ -41,7 +44,17 @@
       >
         <span class="app-table-header">
           {{ col.header }}
-          <p-sortIcon *ngIf="col.sortable" [field]="getSortField(col)"></p-sortIcon>
+          <ng-container *ngIf="col.sortable">
+            <i
+              *ngIf="sortIconStyle === 'font-awesome'; else primeSortIcon"
+              class="fas app-table-sort-icon"
+              [ngClass]="getSortIcon(getSortField(col))"
+              aria-hidden="true"
+            ></i>
+            <ng-template #primeSortIcon>
+              <p-sortIcon [field]="getSortField(col)"></p-sortIcon>
+            </ng-template>
+          </ng-container>
         </span>
       </th>
       <th *ngIf="actions.length" class="app-table-actions-col">Actions</th>
@@ -84,11 +97,13 @@
               type="button"
               class="app-table-action"
               [ngClass]="action.className"
+              [attr.aria-label]="action.ariaLabel || action.label || action.id"
+              [attr.title]="action.ariaLabel || action.label || action.id"
               [disabled]="action.disabled ? action.disabled(row) : false"
               (click)="handleActionClick(action.id, row, $event)"
             >
               <i *ngIf="action.icon" [class]="action.icon"></i>
-              {{ action.label }}
+              <span *ngIf="action.label">{{ action.label }}</span>
             </button>
           </ng-container>
         </td>

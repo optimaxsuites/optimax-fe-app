@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, PaymentRecord } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
+import { resolveCompletedLoanActor, resolveLoanEmployeeName, resolvePaymentActorName } from './loan-display.util';
 
 @Injectable({
   providedIn: 'root'
@@ -68,6 +69,7 @@ export class LoanRepaymentService {
         const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalAmount, 0));
         const principalPaid = this.roundCurrency((nextDue.principalAmount || 0) + extraAmount);
         const interestPaid = this.roundCurrency(nextDue.interestAmount || 0);
+        const paymentActor = resolvePaymentActorName(payment, resolveLoanEmployeeName(loan));
 
         const paymentRecord: PaymentRecord = {
           id: Date.now(),
@@ -82,7 +84,7 @@ export class LoanRepaymentService {
           referenceNumber: payment.referenceNumber || receiptNumber,
           installmentNo: nextDue.installmentNo,
           receiptNumber,
-          receivedBy: payment.receivedBy || 'System',
+          receivedBy: paymentActor,
           notes: payment.notes || ''
         };
 
@@ -112,7 +114,11 @@ export class LoanRepaymentService {
           loan.statusHistory.push({
             status: 'COMPLETED',
             changedAt: new Date().toISOString(),
-            changedBy: 'System',
+            changedBy: resolveCompletedLoanActor({
+              paymentHistory: [...(loan.paymentHistory || []), paymentRecord],
+              fullName: loan.fullName,
+              employeeId: loan.employeeId
+            }),
             notes: 'Loan marked completed after full repayment.'
           });
         }

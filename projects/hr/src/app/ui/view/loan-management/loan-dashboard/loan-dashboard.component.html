@@ -5,7 +5,7 @@
                 <div class="summary-copy">
                     <span class="eyebrow">Advance Loan Preview</span>
                     <h3>{{ loan.fullName }}</h3>
-                    <p>{{ loan.loanCode }} • {{ loan.department || 'No department' }}</p>
+                    <p>{{ loan.loanCode }} • {{ formatDepartmentDisplay(loan.department) }}</p>
                 </div>
                 <div class="summary-metrics">
                     <div class="metric-chip">
@@ -50,7 +50,7 @@
                         </div>
                         <div class="detail-row">
                             <span class="row-label">Department</span>
-                            <span class="row-value">{{ loan.department || 'N/A' }}</span>
+                            <span class="row-value">{{ formatDepartmentDisplay(loan.department) }}</span>
                         </div>
                     </div>
                 </div>
@@ -71,9 +71,13 @@
                             <span class="row-label">Approved On</span>
                             <span class="row-value">{{ getPreviewApprovedDate(loan) ? (getPreviewApprovedDate(loan) | date:'medium') : 'N/A' }}</span>
                         </div>
+                        <div class="detail-row">
+                            <span class="row-label">Disbursed On</span>
+                            <span class="row-value">{{ getPreviewDisbursedDate(loan) ? (getPreviewDisbursedDate(loan) | date:'medium') : 'N/A' }}</span>
+                        </div>
                         <div class="detail-row status-row">
                             <span class="row-label">Current Status</span>
-                            <span class="status-chip" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+                            <span class="status-chip" [ngClass]="getStatusClass(getPreviewDisplayedStatus(loan))">{{ getPreviewDisplayedStatus(loan) }}</span>
                         </div>
                         <div class="detail-row">
                             <span class="row-label">Interest Rate</span>
@@ -99,8 +103,12 @@
                             <span class="row-value money">{{ formatCurrency(loan.repaymentAmount) }}</span>
                         </div>
                         <div class="detail-row">
+                            <span class="row-label">Amount Paid</span>
+                            <span class="row-value money">{{ formatCurrency(getPreviewResolvedAmountPaid(loan)) }}</span>
+                        </div>
+                        <div class="detail-row">
                             <span class="row-label">Outstanding</span>
-                            <span class="row-value money warning">{{ formatCurrency(loan.currentBalance) }}</span>
+                            <span class="row-value money warning">{{ formatCurrency(getPreviewResolvedOutstandingBalance(loan)) }}</span>
                         </div>
                         <div class="detail-row">
                             <span class="row-label">Late Fees</span>
@@ -131,12 +139,52 @@
                         </div>
                     </div>
                 </div>
+                <div class="detail-group full repayment-group" *ngIf="hasPreviewBeenDisbursed(loan)">
+                    <div class="group-head">
+                        <span class="group-icon finance"><i class="fas fa-chart-line"></i></span>
+                        <div>
+                            <span class="group-label">Repayment</span>
+                            <h5>Repayment Snapshot</h5>
+                        </div>
+                    </div>
+                    <div class="repayment-summary-band">
+                        <div class="repayment-stat emphasis">
+                            <span>State</span>
+                            <strong>{{ getPreviewRepaymentStatusTitle(loan) }}</strong>
+                        </div>
+                        <div class="repayment-stat">
+                            <span>Installments</span>
+                            <strong>{{ getPreviewPaidInstallmentsCount(loan) }}/{{ getPreviewTotalInstallmentsCount(loan) || 0 }}</strong>
+                        </div>
+                        <div class="repayment-stat">
+                            <span>Total Repayable</span>
+                            <strong>{{ formatCurrency(getPreviewTotalRepayableAmount(loan)) }}</strong>
+                        </div>
+                    </div>
+                    <div class="repayment-progress-block">
+                        <div class="repayment-progress-head">
+                            <span>Repayment completion</span>
+                            <strong>{{ getPreviewProgressPercentage(loan).toFixed(1) }}%</strong>
+                        </div>
+                        <div class="repayment-progress-track">
+                            <div class="repayment-progress-fill" [style.width.%]="getPreviewProgressPercentage(loan)">
+                                <span class="progress-copy" *ngIf="getPreviewProgressPercentage(loan) > 18">
+                                    {{ getPreviewPaidInstallmentsCount(loan) }}/{{ getPreviewTotalInstallmentsCount(loan) || 0 }} cleared
+                                </span>
+                            </div>
+                        </div>
+                        <p class="repayment-progress-note">
+                            {{ getPreviewRepaymentStatusTitle(loan) }}.
+                            <span *ngIf="!hasPreviewRepaymentStarted(loan)">No repayment has been recorded yet, so progress remains at 0%.</span>
+                        </p>
+                    </div>
+                </div>
                 <div class="detail-group full narrative-group">
                     <div class="group-head">
                         <span class="group-icon"><i class="fas fa-bullseye"></i></span>
                         <div>
                             <span class="group-label">Purpose</span>
-                            <h5>Why this loan exists</h5>
+                            <h5>Why This Loan Exists</h5>
                         </div>
                     </div>
                     <p class="group-copy">{{ formatPurposeDisplay(loan.purpose) }}</p>
@@ -146,7 +194,7 @@
                         <span class="group-icon comment"><i class="fas fa-message"></i></span>
                         <div>
                             <span class="group-label">Admin Note</span>
-                            <h5>Latest review comment</h5>
+                            <h5>Latest Review Comment</h5>
                         </div>
                     </div>
                     <p class="group-copy">{{ getPreviewAdminFeedback(loan)?.notes || 'No admin comment has been added yet.' }}</p>
@@ -261,29 +309,18 @@
             </div>
         </section>
 
-        <!-- Filter indicator -->
-        <div class="filter-indicator" *ngIf="activeFilter !== 'ALL'">
-            <span class="filter-badge">
-                Showing: {{ activeFilter === 'PENDING' ? 'Pending Loans' : 'Active Loans' }}
-                <button class="clear-filter" (click)="showAllLoans()">✕</button>
-            </span>
-        </div>
-
         <div class="recent-content-grid">
             <section class="recent-loans full-width">
                 <div class="section-header">
                     <h2>
                         <i class="fas fa-file-invoice"></i>
-                        {{ activeFilter === 'ALL' ? 'Recent ' : '' }}
-                        {{ activeFilter === 'PENDING' ? 'Pending ' : '' }}
-                        {{ activeFilter === 'ACTIVE' ? 'Active ' : '' }}
-                        Loan Applications
+                        Recent Loan Applications
                     </h2>
-                    <span class="loan-count">Showing {{ filteredLoans.length }} most recent of {{ totalFilteredLoans }} matching loans</span>
+                    <span class="loan-count">Showing {{ filteredLoans.length }} most recent of {{ totalFilteredLoans }} applications</span>
                 </div>
 
                 <div *ngIf="filteredLoans.length === 0" class="empty-state">
-                    <p>No {{ activeFilter !== 'ALL' ? activeFilter.toLowerCase() + ' ' : '' }}loan applications found.</p>
+                    <p>No loan applications found.</p>
                     <button class="btn-primary" (click)="showAllLoans()">View All Loans</button>
                 </div>
 
@@ -310,7 +347,7 @@
                                         <span class="name">{{ loan.fullName }}</span>
                                     </div>
                                 </td>
-                                <td>{{ loan.department }}</td>
+                                <td>{{ formatDepartmentDisplay(loan.department) }}</td>
                                 <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
                                 <td>                    
                                     <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
@@ -393,14 +430,19 @@
 
                 <aside class="recent-activity">
                     <div class="section-header">
-                        <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                        <h2><i class="fas fa-credit-card"></i> Repayment Updates</h2>
                         <span class="loan-count">{{ recentActivities.length }} updates</span>
                     </div>
 
                     <div class="activity-list" *ngIf="recentActivities.length > 0; else noActivityState">
-                        <div class="activity-item" *ngFor="let activity of recentActivities" [ngClass]="getActivityLevelClass(activity.level)">
+                        <button
+                            type="button"
+                            class="activity-item"
+                            *ngFor="let activity of recentActivities"
+                            [ngClass]="getActivityLevelClass(activity.level)"
+                            (click)="openRecentActivity(activity)">
                             <div class="activity-icon">
-                                <i class="fas fa-clock"></i>
+                                <i class="fas" [ngClass]="getActivityIcon(activity.type)"></i>
                             </div>
                             <div class="activity-content">
                                 <p class="activity-message">{{ activity.message }}</p>
@@ -410,12 +452,12 @@
                                     <span>{{ activity.loanId }}</span>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     </div>
 
                     <ng-template #noActivityState>
                         <div class="empty-state compact">
-                            <p>No recent activity yet.</p>
+                            <p>No repayment updates yet.</p>
                         </div>
                     </ng-template>
                 </aside>

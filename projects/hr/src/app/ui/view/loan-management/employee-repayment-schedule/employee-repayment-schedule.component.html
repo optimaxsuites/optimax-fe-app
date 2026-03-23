@@ -10,6 +10,12 @@
     </div>
   </div>
 
+  <div class="empty-state" *ngIf="!loan.repaymentSchedule.length">
+    <i class="fas fa-calendar-xmark"></i>
+    <p>No repayment schedule is available for this loan yet.</p>
+  </div>
+
+  <ng-container *ngIf="loan.repaymentSchedule.length">
   <!-- Summary Cards -->
   <div class="summary-cards">
     <div class="summary-card">
@@ -66,6 +72,21 @@
 
   <!-- Progress Bar -->
   <div class="progress-section">
+    <div class="repayment-snapshot-band" *ngIf="hasBeenDisbursed()">
+      <div class="snapshot-chip emphasis">
+        <span>State</span>
+        <strong>{{ getRepaymentStatusTitle() }}</strong>
+      </div>
+      <div class="snapshot-chip">
+        <span>Installments</span>
+        <strong>{{ paidCount }}/{{ loan.repaymentSchedule.length }}</strong>
+      </div>
+      <div class="snapshot-chip">
+        <span>Total Repayable</span>
+        <strong>₦{{ totalRepayable | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
     <div class="progress-header">
       <span class="progress-title">Repayment Progress</span>
       <span class="progress-percentage">{{ completionPercentage.toFixed(1) }}% Complete</span>
@@ -77,11 +98,16 @@
              [style.width]="completionPercentage + '%'"
              [style.background]="getProgressColor()">
           <span class="progress-text" *ngIf="completionPercentage > 15">
-            {{ paidCount }}/{{ loan.repaymentSchedule.length }} payments
+            {{ paidCount }}/{{ loan.repaymentSchedule.length }} cleared
           </span>
         </div>
       </div>
     </div>
+
+    <p class="progress-note" *ngIf="hasBeenDisbursed()">
+      {{ getRepaymentStatusTitle() }}.
+      <span *ngIf="!hasRepaymentStarted()">No repayment has been recorded yet, so progress remains at 0%.</span>
+    </p>
 
     <!-- Status Indicators -->
     <div class="status-indicators">
@@ -142,7 +168,7 @@
       <i class="fas fa-table"></i> View Detailed Breakdown
     </summary>
     <div class="table-container">
-      <table appSortableTable>
+      <table class="detailed-breakdown-table">
         <thead>
           <tr>
             <th>Month</th>
@@ -172,4 +198,5 @@
       </table>
     </div>
   </details>
+  </ng-container>
 </div>

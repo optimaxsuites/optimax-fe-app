@@ -1,7 +1,51 @@
-import { Injectable } from '@angular/core';
+import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
+
+export interface CooperativeGroupApiContributionHistory {
+  id?: number;
+  member?: string;
+  amount?: number;
+  date?: string;
+}
+
+export interface CooperativeGroupApiResponse {
+  id: number;
+  code?: string;
+  name?: string;
+  monthlyAmount?: number;
+  memberIds?: number[];
+  memberLimit?: number;
+  withdrawCap?: number;
+  interestRate?: number;
+  currentBalance?: number;
+  contributionHistory?: CooperativeGroupApiContributionHistory[];
+  loanHistory?: any[];
+  status?: string;
+  description?: string;
+  patronageRate?: number;
+  patronageAmount?: number;
+}
+
+export interface CooperativeGroupApiPayload {
+  id: number;
+  code?: string;
+  name: string;
+  monthlyAmount: number;
+  memberIds: number[];
+  memberLimit: number;
+  withdrawCap: number;
+  interestRate: number;
+  currentBalance: number;
+  contributionHistory: CooperativeGroupApiContributionHistory[];
+  loanHistory: any[];
+  status: string;
+  description: string;
+  patronageRate: number;
+  patronageAmount: number;
+}
 
 export interface CooperativeGroupContext {
   members: CooperativeMember[];
@@ -15,12 +59,28 @@ export interface CooperativeGroupContext {
   providedIn: 'root'
 })
 export class CooperativeGroupService {
-    private groupUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeGroups';
+    private readonly groupUrl = `${this.getBaseApiUrl()}/x/api/v2/hr/cooperativeGroups`;
 
     constructor(private http: HttpClient) {}
 
-    createCooperativeGroup(payload: any): Observable<any> {
-      return this.http.post(this.groupUrl, payload);
+    private getBaseApiUrl(): string {
+      return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+    }
+
+    getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
+      return this.http.get<CooperativeGroupApiResponse[]>(this.groupUrl);
+    }
+
+    getCooperativeGroupById(id: number): Observable<CooperativeGroupApiResponse> {
+      return this.http.get<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`);
+    }
+
+    createCooperativeGroup(payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
+      return this.http.post<CooperativeGroupApiResponse>(this.groupUrl, payload);
+    }
+
+    updateCooperativeGroup(id: number, payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
+      return this.http.put<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`, payload);
     }
   getEligibleGroupsForMember(
     context: CooperativeGroupContext,

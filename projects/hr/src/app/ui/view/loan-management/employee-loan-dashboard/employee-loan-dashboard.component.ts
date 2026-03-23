@@ -9,7 +9,7 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 import { EmployeeService } from '../../../service/employee.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { compareLoanSortValues, formatLoanPurposeDisplay, resolveLoanTotalRepayableAmount } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -24,6 +24,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   uuid: string = '';
   
   showHistory: boolean = true;
+  showStatusUpdates: boolean = true;
   showLoanForm: boolean = false;
   showPaymentForm: boolean = false;
   
@@ -100,6 +101,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   get sortedRecentLoans(): LoanApplication[] {
     return this.sortHistoryLoans(this.allLoans).slice(0, 5);
+  }
+
+  get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> {
+    return this.applicationUpdates.slice(0, 3);
+  }
+
+  getLoanTotalRepayable(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
   }
 
   private sortLoansByRecent(loans: LoanApplication[]): LoanApplication[] {
@@ -357,6 +366,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           valueA = a.interestRate || 0;
           valueB = b.interestRate || 0;
           break;
+        case 'totalRepayable':
+          valueA = this.getLoanTotalRepayable(a);
+          valueB = this.getLoanTotalRepayable(b);
+          break;
         case 'status':
           valueA = this.getStatusDisplay(a.status).toLowerCase();
           valueB = this.getStatusDisplay(b.status).toLowerCase();
@@ -438,6 +451,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   toggleHistory(): void {
     this.showHistory = !this.showHistory;
+  }
+
+  toggleStatusUpdates(): void {
+    this.showStatusUpdates = !this.showStatusUpdates;
   }
 
   onLoanSubmitted(): void {
@@ -542,6 +559,20 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   viewRepaymentSchedule(loan: LoanApplication): void {
     this.selectedLoanForSchedule = loan;
+
+    this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
+      next: (latestLoan) => {
+        if (!latestLoan) {
+          return;
+        }
+
+        this.selectedLoanForSchedule = latestLoan;
+        this.replaceLoanInDashboard(latestLoan);
+      },
+      error: (error) => {
+        console.error('Error refreshing repayment schedule loan:', error);
+      }
+    });
   }
 
   closeRepaymentSchedule(): void {
@@ -555,16 +586,24 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private syncSelectedLoanDetails(): void {
-    if (!this.selectedLoanForDetails) {
-      return;
+    if (this.selectedLoanForDetails) {
+      const refreshedDetailLoan = this.allLoans.find((loan) =>
+        loan.id === this.selectedLoanForDetails?.id || loan.loanCode === this.selectedLoanForDetails?.loanCode
+      );
+
+      if (refreshedDetailLoan) {
+        this.selectedLoanForDetails = refreshedDetailLoan;
+      }
     }
 
-    const refreshedLoan = this.allLoans.find((loan) =>
-      loan.id === this.selectedLoanForDetails?.id || loan.loanCode === this.selectedLoanForDetails?.loanCode
-    );
+    if (this.selectedLoanForSchedule) {
+      const refreshedScheduleLoan = this.allLoans.find((loan) =>
+        loan.id === this.selectedLoanForSchedule?.id || loan.loanCode === this.selectedLoanForSchedule?.loanCode
+      );
 
-    if (refreshedLoan) {
-      this.selectedLoanForDetails = refreshedLoan;
+      if (refreshedScheduleLoan) {
+        this.selectedLoanForSchedule = refreshedScheduleLoan;
+      }
     }
   }
 

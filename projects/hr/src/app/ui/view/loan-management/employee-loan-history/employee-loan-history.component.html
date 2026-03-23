@@ -100,8 +100,12 @@
               <i class="fas" [ngClass]="getSortIcon('amount')"></i>
             </th>
             <th class="sortable" (click)="setSort('interestRate')">
-              Interest Rate
+              Interest
               <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
+            </th>
+            <th class="sortable" (click)="setSort('totalRepayable')">
+              Repayable
+              <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
             </th>
             <th (click)="setSort('totalPaid')" class="sortable">
               Paid 
@@ -124,9 +128,10 @@
             <td>{{ loan.requestDate | date:'mediumDate' }}</td>
             <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
             <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
-            <td class="interest">{{ loan.interestRate }}%</td>
-            <td class="paid">₦{{ loan.totalPaid | number:'1.2-2' }}</td>
-            <td class="balance">₦{{ loan.currentBalance | number:'1.2-2' }}</td>
+            <td class="interest">{{ loan.interestRate || 0 }}%</td>
+            <td class="amount">₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
+            <td class="paid">₦{{ getLoanResolvedPaid(loan) | number:'1.2-2' }}</td>
+            <td class="balance">₦{{ getLoanResolvedBalance(loan) | number:'1.2-2' }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
                 {{ loan.status }}
@@ -139,7 +144,7 @@
             </td>
           </tr>
           <tr *ngIf="filteredLoans.length === 0">
-            <td colspan="9" class="no-data">
+            <td colspan="10" class="no-data">
               <i class="fas fa-inbox"></i>
               <p>{{ employeeLoans.length === 0 ? 'No loan history found for this employee' : 'No loans match the selected filters' }}</p>
             </td>

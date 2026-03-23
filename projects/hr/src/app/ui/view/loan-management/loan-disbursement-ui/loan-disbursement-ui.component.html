@@ -4,10 +4,56 @@
     <header class="disbursement-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-money-check-alt"></i> Disburse Loans</h1>
+        <h1><i class="fas fa-hand-holding-heart"></i> Disburse Loans</h1>
       </div>
-      <span class="queue-count">Approved queue: {{ approvedLoans.length }}</span>
+      <div class="header-actions">
+        <span class="header-pill queue-count">Approved queue: {{ approvedLoans.length }}</span>
+        <span class="header-pill queue-total">{{ formatCurrency(getQueuedDisbursementTotal()) }}</span>
+      </div>
     </header>
+
+    <section class="summary-strip" *ngIf="approvedLoans.length > 0">
+      <article class="summary-card">
+        <div class="card-icon ready-icon">
+          <i class="fas fa-hand-holding-dollar"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Ready for release</span>
+          <strong>{{ approvedLoans.length }}</strong>
+          <small>Approved loans awaiting disbursement</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <div class="card-icon amount-icon">
+          <i class="fas fa-wallet"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Queued amount</span>
+          <strong>{{ formatCurrency(getQueuedDisbursementTotal()) }}</strong>
+          <small>Total value of the current approval queue</small>
+        </div>
+      </article>
+      <article class="summary-card" *ngIf="selectedDisbursementLoan as selectedLoan">
+        <div class="card-icon selected-icon">
+          <i class="fas fa-file-signature"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Selected loan</span>
+          <strong>{{ formatCurrency(selectedLoan.amount) }}</strong>
+          <small>{{ selectedLoan.loanCode || selectedLoan.id }} for {{ selectedLoan.fullName }}</small>
+        </div>
+      </article>
+      <article class="summary-card" *ngIf="selectedDisbursementLoan as selectedLoan">
+        <div class="card-icon checklist-icon">
+          <i class="fas fa-clipboard-check"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Checklist progress</span>
+          <strong>{{ getChecklistCompletedCount() }}/4</strong>
+          <small>{{ canDisburseSelectedLoan ? 'Ready to disburse' : 'Complete all release checks' }}</small>
+        </div>
+      </article>
+    </section>
 
     <div class="empty-state" *ngIf="approvedLoans.length === 0">
       <i class="fas fa-check-circle"></i>
@@ -15,70 +61,143 @@
     </div>
 
     <div class="layout" *ngIf="approvedLoans.length > 0">
-      <section class="table-card">
-        <h2>Approved Loans</h2>
+      <section class="table-card surface-card">
+        <div class="section-head">
+          <span class="heading-icon" aria-hidden="true"><i class="fas fa-list-check"></i></span>
+          <div class="section-copy">
+            <span class="eyebrow">Approved Queue</span>
+            <h2>Loans Ready for Disbursement</h2>
+          </div>
+          <p>Select a loan from the queue to populate the release form.</p>
+        </div>
         <app-table
+          wrapperClass="disbursement-table"
           [columns]="approvedLoanColumns"
           [rows]="approvedLoans"
           [actions]="approvedLoanActions"
+          sortIconStyle="font-awesome"
           [striped]="true"
           [emptyMessage]="'No approved loans are waiting for disbursement.'"
           (actionClick)="handleApprovedLoanAction($event)">
         </app-table>
       </section>
 
-      <section class="form-card">
-        <h2>Disbursement Details</h2>
-        <p class="note">Final stage: status changes from APPROVED to ACTIVE only after disbursement.</p>
+      <aside class="action-rail">
+        <section class="selection-card surface-card" *ngIf="selectedDisbursementLoan as selectedLoan">
+          <div class="section-head compact">
+            <span class="heading-icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Selected Loan</span>
+              <h2>{{ selectedLoan.fullName }}</h2>
+            </div>
+            <span class="status-badge status-approved">APPROVED</span>
+          </div>
 
-        <div class="form-grid">
-          <label>
-            Loan ID
-            <select [(ngModel)]="selectedDisbursementLoanId" (ngModelChange)="onDisbursementLoanChange()">
-              <option [ngValue]="''" disabled>Select approved loan</option>
-              <option *ngFor="let loan of approvedLoans" [ngValue]="loan.id">{{ loan.loanCode || loan.id }} - {{ loan.fullName }}</option>
-            </select>
-          </label>
+          <div class="selection-band">
+            <div>
+              <span class="band-label">Loan ID</span>
+              <strong>{{ selectedLoan.loanCode || selectedLoan.id }}</strong>
+            </div>
+            <div>
+              <span class="band-label">Department</span>
+              <strong>{{ selectedLoan.department || 'N/A' }}</strong>
+            </div>
+          </div>
 
-          <label>
-            Disbursement Amount
-            <input type="number" [value]="disbursementAmount" readonly />
-          </label>
+          <div class="detail-list two-column">
+            <div class="detail-row">
+              <span class="row-label">Amount</span>
+              <span class="row-value money">{{ formatCurrency(selectedLoan.amount) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Interest</span>
+              <span class="row-value">{{ selectedLoan.interestRate || 0 }}%</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Repayable Amount</span>
+              <span class="row-value money">{{ formatCurrency(getLoanTotalRepayable(selectedLoan)) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Approved On</span>
+              <span class="row-value">{{ formatDisplayDate(selectedLoan.approvedDate || selectedLoan.requestDate) }}</span>
+            </div>
+          </div>
+        </section>
 
-          <label>
-            Disbursement Date
-            <input type="date" [(ngModel)]="disbursedDate" />
-          </label>
+        <section class="form-card surface-card">
+          <div class="section-head compact">
+            <span class="heading-icon" aria-hidden="true"><i class="fas fa-money-check-dollar"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Release Form</span>
+              <h2>Disbursement Details</h2>
+            </div>
+          </div>
+          <p class="note">This is the final approval step. Once disbursed, the loan moves from APPROVED to ACTIVE.</p>
 
-          <label>
-            Recipient Type
-            <select [(ngModel)]="disbursementRecipientType">
-              <option value="BORROWER">Borrower</option>
-              <option value="THIRD_PARTY">Third Party</option>
-            </select>
-          </label>
+          <div class="form-grid">
+            <label class="full-span">
+              Loan ID
+              <select [(ngModel)]="selectedDisbursementLoanId" (ngModelChange)="onDisbursementLoanChange()">
+                <option [ngValue]="''" disabled>Select approved loan</option>
+                <option *ngFor="let loan of approvedLoans" [ngValue]="loan.id">{{ loan.loanCode || loan.id }} - {{ loan.fullName }}</option>
+              </select>
+            </label>
 
-          <label *ngIf="disbursementRecipientType === 'THIRD_PARTY'">
-            Third-party Recipient Name
-            <input type="text" [(ngModel)]="thirdPartyName" placeholder="Enter seller/vendor name" />
-          </label>
-        </div>
+            <label>
+              Disbursement Amount
+              <input type="text" [value]="formatCurrency(disbursementAmount)" readonly />
+            </label>
 
-        <div class="checklist">
-          <h3>Pre-disbursement Checklist</h3>
-          <label><input type="checkbox" [(ngModel)]="checklistIdentityVerified" /> Identity and KYC verified</label>
-          <label><input type="checkbox" [(ngModel)]="checklistAccountVerified" /> Recipient account details verified</label>
-          <label><input type="checkbox" [(ngModel)]="checklistComplianceCleared" /> Compliance and policy checks completed</label>
-          <label><input type="checkbox" [(ngModel)]="checklistFundsReserved" /> Funds availability and release authorization confirmed</label>
-        </div>
+            <label>
+              Disbursement Date
+              <input type="date" [(ngModel)]="disbursedDate" />
+            </label>
 
-        <div class="actions">
-          <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
-          <button type="button" class="disburse-btn" [disabled]="!canDisburseSelectedLoan" (click)="disburseSelectedLoan()">
-            Disburse Loan
-          </button>
-        </div>
-      </section>
+            <label>
+              Recipient Type
+              <select [(ngModel)]="disbursementRecipientType">
+                <option value="BORROWER">Borrower</option>
+                <option value="THIRD_PARTY">Third Party</option>
+              </select>
+            </label>
+
+            <label *ngIf="disbursementRecipientType === 'THIRD_PARTY'" class="full-span">
+              Third-party Recipient Name
+              <input type="text" [(ngModel)]="thirdPartyName" placeholder="Enter seller or vendor name" />
+            </label>
+          </div>
+
+          <div class="recipient-hint" *ngIf="selectedDisbursementLoan">
+            <i class="fas fa-info-circle"></i>
+            <span *ngIf="disbursementRecipientType === 'BORROWER'">Funds will be released to the borrower's registered account.</span>
+            <span *ngIf="disbursementRecipientType === 'THIRD_PARTY'">Use the recipient name to document who receives the funds on the borrower's behalf.</span>
+          </div>
+
+          <div class="checklist-card">
+            <div class="checklist-head">
+              <span class="heading-icon" aria-hidden="true"><i class="fas fa-shield-halved"></i></span>
+              <div class="section-copy">
+                <span class="eyebrow">Control Checks</span>
+                <h3>Pre-disbursement Checklist</h3>
+              </div>
+              <span class="checklist-count">{{ getChecklistCompletedCount() }}/4 complete</span>
+            </div>
+            <div class="checklist">
+              <label><input type="checkbox" [(ngModel)]="checklistIdentityVerified" /> Identity and KYC verified</label>
+              <label><input type="checkbox" [(ngModel)]="checklistAccountVerified" /> Recipient account details verified</label>
+              <label><input type="checkbox" [(ngModel)]="checklistComplianceCleared" /> Compliance and policy checks completed</label>
+              <label><input type="checkbox" [(ngModel)]="checklistFundsReserved" /> Funds availability and release authorization confirmed</label>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="cancel-btn" (click)="goBack()">Cancel</button>
+            <button type="button" class="disburse-btn" [disabled]="!canDisburseSelectedLoan" (click)="disburseSelectedLoan()">
+              Disburse Loan
+            </button>
+          </div>
+        </section>
+      </aside>
     </div>
   </div>
 </div>
