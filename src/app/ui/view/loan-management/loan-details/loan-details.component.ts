@@ -8,6 +8,18 @@ import { LoanApplication, StatusChange } from '../../../service/loan/loan.types'
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import {
+  getLoanRepaymentStatusTitle,
+  hasLoanBeenDisbursed,
+  hasLoanRepaymentStarted,
+  resolveCompletedLoanActor,
+  resolveLoanActorName,
+  resolveLoanEmployeeName,
+  resolveLoanOutstandingBalance,
+  resolveLoanRepaymentProgress,
+  resolveLoanTotalPaid,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-details',
@@ -36,7 +48,7 @@ export class LoanDetailsComponent implements OnInit {
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#ffc107' },
-    { value: 'APPROVED', label: 'Approved', color: '#28a745' },
+    { value: 'APPROVED', label: 'Approved', color: '#4f7cff' },
     { value: 'REJECTED', label: 'Rejected', color: '#dc3545' },
     { value: 'ACTIVE', label: 'Active', color: '#17a2b8' },
     { value: 'COMPLETED', label: 'Completed', color: '#6c757d' }
@@ -120,8 +132,18 @@ export class LoanDetailsComponent implements OnInit {
       timeline.push({
         status: 'PENDING',
         changedAt: requestDate,
-        changedBy: 'Employee',
+        changedBy: resolveLoanEmployeeName(loan),
         notes: 'Loan application submitted'
+      });
+    }
+
+    const shouldInferApproved = !approvedDate && (loan.status === 'ACTIVE' || loan.status === 'COMPLETED' || !!disbursedDate || !!completedDate);
+    if (shouldInferApproved) {
+      timeline.push({
+        status: 'APPROVED',
+        changedAt: disbursedDate || completedDate || requestDate || new Date().toISOString(),
+        changedBy: this.formatHistoryActor(loan.approvedBy || loan.disbursedBy),
+        notes: 'Loan approved'
       });
     }
 
@@ -156,7 +178,7 @@ export class LoanDetailsComponent implements OnInit {
       timeline.push({
         status: 'COMPLETED',
         changedAt: completedDate,
-        changedBy: 'System',
+        changedBy: resolveCompletedLoanActor(loan),
         notes: 'Loan completed'
       });
     }
@@ -182,9 +204,31 @@ export class LoanDetailsComponent implements OnInit {
       });
     }
 
-    return dedupedTimeline.sort(
-      (left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime()
-    );
+    return dedupedTimeline.sort((left, right) => {
+      const statusOrderDifference = this.getStatusProgressionOrder(left.status) - this.getStatusProgressionOrder(right.status);
+      if (statusOrderDifference !== 0) {
+        return statusOrderDifference;
+      }
+
+      return new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime();
+    });
+  }
+
+  private getStatusProgressionOrder(status: LoanApplication['status']): number {
+    switch (status) {
+      case 'PENDING':
+        return 1;
+      case 'APPROVED':
+        return 2;
+      case 'ACTIVE':
+        return 3;
+      case 'COMPLETED':
+        return 4;
+      case 'REJECTED':
+        return 5;
+      default:
+        return 99;
+    }
   }
 
   private resolveCurrentStatusActor(loan: LoanApplication): string {
@@ -196,9 +240,9 @@ export class LoanDetailsComponent implements OnInit {
       case 'ACTIVE':
         return this.formatHistoryActor(loan.disbursedBy);
       case 'COMPLETED':
-        return 'System';
+        return resolveCompletedLoanActor(loan);
       default:
-        return 'Employee';
+        return resolveLoanEmployeeName(loan);
     }
   }
 
@@ -213,19 +257,7 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   private formatHistoryActor(actor: LoanApplication['approvedBy'] | LoanApplication['disbursedBy'] | LoanApplication['rejectedBy'] | string | undefined): string {
-    if (!actor) {
-      return 'System';
-    }
-
-    if (typeof actor === 'string') {
-      return actor;
-    }
-
-    if (typeof actor === 'number') {
-      return actor > 0 ? `User ${actor}` : 'System';
-    }
-
-    return actor.fullname || actor.username || actor.email || 'System';
+    return resolveLoanActorName(actor);
   }
 
   getStatusColor(status: string): string {
@@ -388,8 +420,39 @@ export class LoanDetailsComponent implements OnInit {
   }
   
   getProgressPercentage(): number {
-    if (!this.loan) return 0;
-    return ((this.loan.amount - this.loan.currentBalance) / this.loan.amount) * 100;
+    return this.loan ? resolveLoanRepaymentProgress(this.loan) : 0;
+  }
+
+  getResolvedAmountPaid(): number {
+    return this.loan ? resolveLoanTotalPaid(this.loan) : 0;
+  }
+
+  getTotalRepayableAmount(): number {
+    return this.loan ? resolveLoanTotalRepayableAmount(this.loan) : 0;
+  }
+
+  getResolvedOutstandingBalance(): number {
+    return this.loan ? resolveLoanOutstandingBalance(this.loan) : 0;
+  }
+
+  hasRepaymentStarted(): boolean {
+    return this.loan ? hasLoanRepaymentStarted(this.loan) : false;
+  }
+
+  hasBeenDisbursed(): boolean {
+    return this.loan ? hasLoanBeenDisbursed(this.loan) : false;
+  }
+
+  getRepaymentStatusTitle(): string {
+    return this.loan ? getLoanRepaymentStatusTitle(this.loan) : 'Repayment has not started';
+  }
+
+  getPaidInstallmentsCount(): number {
+    return (this.loan?.repaymentSchedule || []).filter((item) => item.status === 'PAID').length;
+  }
+
+  getTotalInstallmentsCount(): number {
+    return (this.loan?.repaymentSchedule || []).length || Number(this.loan?.repaymentTime || 0);
   }
   
   formatCurrency(amount: number): string {

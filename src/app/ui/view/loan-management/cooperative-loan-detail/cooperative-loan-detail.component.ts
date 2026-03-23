@@ -48,18 +48,18 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   loadLoan(id: string): void {
     this.isLoading = true;
-    const loan = this.cooperativeService.getLoanById(id);
-    
-    if (loan) {
-      this.loan = loan;
-      this.member = this.cooperativeService.getMemberById(String(loan.cooperativeMemberId || loan.memberId || ''));
-      this.group = loan.cooperativeGroupId ? this.cooperativeService.getGroupById(String(loan.cooperativeGroupId || loan.groupId || '')) : undefined;
-      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
-      this.guarantors = this.normalizeGuarantors(loan.guarantors);
-      this.seedPaymentDefaults();
-    }
-    
-    this.isLoading = false;
+    this.cooperativeService.loadLoanById(id).subscribe(loan => {
+      if (loan) {
+        this.loan = loan;
+        this.member = this.cooperativeService.getMemberById(String(loan.cooperativeMemberId || loan.memberId || ''));
+        this.group = loan.cooperativeGroupId ? this.cooperativeService.getGroupById(String(loan.cooperativeGroupId || loan.groupId || '')) : undefined;
+        this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
+        this.guarantors = this.normalizeGuarantors(loan.guarantors);
+        this.seedPaymentDefaults();
+      }
+
+      this.isLoading = false;
+    });
   }
 
   openRecordPaymentModal(): void {
@@ -81,33 +81,33 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    const recorded = this.cooperativeService.recordRepayment(this.loan.id, {
+    this.cooperativeService.recordRepayment(this.loan.id, {
       amount: this.paymentAmount,
       modeofPayment: this.modeofPayment,
       paidDate: new Date().toISOString()
-    });
+    }).subscribe((recorded) => {
+      if (!recorded) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Payment Not Recorded',
+          detail: 'Unable to record payment. Confirm amount and loan state.'
+        }];
+        return;
+      }
 
-    if (!recorded) {
+      const latest = this.cooperativeService.getLoanById(String(this.loan.id));
+      if (latest) {
+        this.loan = latest;
+      }
+      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+      this.showRecordPaymentModal = false;
+
       this.messages = [{
-        severity: 'warn',
-        summary: 'Payment Not Recorded',
-        detail: 'Unable to record payment. Confirm amount and loan state.'
+        severity: 'success',
+        summary: 'Payment Recorded',
+        detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
       }];
-      return;
-    }
-
-    const latest = this.cooperativeService.getLoanById(String(this.loan.id));
-    if (latest) {
-      this.loan = latest;
-    }
-    this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-    this.showRecordPaymentModal = false;
-
-    this.messages = [{
-      severity: 'success',
-      summary: 'Payment Recorded',
-      detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
-    }];
+    });
   }
 
   sendReminder(): void {
@@ -129,44 +129,46 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   markDefaulted(): void {
-    const updated = this.cooperativeService.markLoanAsDefaulted(this.loan.id);
-    if (!updated) {
+    this.cooperativeService.markLoanAsDefaulted(this.loan.id).subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Action Not Allowed',
+          detail: 'Only approved or active loans can be marked as defaulted.'
+        }];
+        return;
+      }
+
+      this.loan = updated;
+      this.guarantors = this.normalizeGuarantors(updated.guarantors);
+      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
       this.messages = [{
         severity: 'warn',
-        summary: 'Action Not Allowed',
-        detail: 'Only approved or active loans can be marked as defaulted.'
+        summary: 'Loan Defaulted',
+        detail: 'Loan status updated to DEFAULTED and member notification has been sent.'
       }];
-      return;
-    }
-
-    this.loan = updated;
-    this.guarantors = this.normalizeGuarantors(updated.guarantors);
-    this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-    this.messages = [{
-      severity: 'warn',
-      summary: 'Loan Defaulted',
-      detail: 'Loan status updated to DEFAULTED and member notification has been sent.'
-    }];
+    });
   }
 
   approveLoan(): void {
-    const updated = this.cooperativeService.approveLoan(String(this.loan.id));
-    if (!updated) {
-      this.messages = [{
-        severity: 'warn',
-        summary: 'Approval Failed',
-        detail: 'Only pending loans can be approved.'
-      }];
-      return;
-    }
+    this.cooperativeService.approveLoan(String(this.loan.id)).subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Approval Failed',
+          detail: 'Only pending loans can be approved.'
+        }];
+        return;
+      }
 
-    this.loan = updated;
-    this.guarantors = this.normalizeGuarantors(updated.guarantors);
-    this.messages = [{
-      severity: 'success',
-      summary: 'Loan Approved',
-      detail: 'Loan approved, approval date recorded, member notified, and funds marked for disbursement.'
-    }];
+      this.loan = updated;
+      this.guarantors = this.normalizeGuarantors(updated.guarantors);
+      this.messages = [{
+        severity: 'success',
+        summary: 'Loan Approved',
+        detail: 'Loan approved, approval date recorded, member notified, and funds marked for disbursement.'
+      }];
+    });
   }
 
   showRejectDialog(): void {
@@ -175,24 +177,25 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   rejectLoan(): void {
     if (this.rejectionReason.trim()) {
-      const updated = this.cooperativeService.rejectLoan(String(this.loan.id), this.rejectionReason);
-      if (!updated) {
-        this.messages = [{
-          severity: 'warn',
-          summary: 'Rejection Failed',
-          detail: 'Unable to reject loan at this time.'
-        }];
-        return;
-      }
+      this.cooperativeService.rejectLoan(String(this.loan.id), this.rejectionReason).subscribe((updated) => {
+        if (!updated) {
+          this.messages = [{
+            severity: 'warn',
+            summary: 'Rejection Failed',
+            detail: 'Unable to reject loan at this time.'
+          }];
+          return;
+        }
 
-      this.loan = updated;
-      this.showRejectModal = false;
-      this.rejectionReason = '';
-      this.messages = [{
-        severity: 'success',
-        summary: 'Loan Rejected',
-        detail: 'Loan rejected, reason saved, and member notified with the reason.'
-      }];
+        this.loan = updated;
+        this.showRejectModal = false;
+        this.rejectionReason = '';
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Rejected',
+          detail: 'Loan rejected, reason saved, and member notified with the reason.'
+        }];
+      });
       return;
     }
 
@@ -211,28 +214,29 @@ export class CooperativeLoanDetailComponent implements OnInit {
   disburseLoan(): void {
     const beforeStats = this.cooperativeService.getStats();
     const beforeAvailable = Math.max(beforeStats.totalFund - beforeStats.loanPortfolio, 0);
-    const updated = this.cooperativeService.disburseLoan(String(this.loan.id));
-    const afterStats = this.cooperativeService.getStats();
-    const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
+    this.cooperativeService.disburseLoan(String(this.loan.id)).subscribe((updated) => {
+      const afterStats = this.cooperativeService.getStats();
+      const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
 
-    if (!updated) {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Disbursement Failed',
+          detail: 'Only approved loans can be disbursed.'
+        }];
+        return;
+      }
+
+      this.loan = updated;
+      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+      const deducted = Math.max(beforeAvailable - afterAvailable, 0);
+
       this.messages = [{
-        severity: 'warn',
-        summary: 'Disbursement Failed',
-        detail: 'Only approved loans can be disbursed.'
+        severity: 'success',
+        summary: 'Loan Disbursed',
+        detail: `Loan is now ACTIVE, disbursement date recorded, repayment schedule generated, and ${this.formatCurrency(deducted || this.loan.amount)} deducted from the co-op pool.`
       }];
-      return;
-    }
-
-    this.loan = updated;
-    this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-    const deducted = Math.max(beforeAvailable - afterAvailable, 0);
-
-    this.messages = [{
-      severity: 'success',
-      summary: 'Loan Disbursed',
-      detail: `Loan is now ACTIVE, disbursement date recorded, repayment schedule generated, and ${this.formatCurrency(deducted || this.loan.amount)} deducted from the co-op pool.`
-    }];
+    });
   }
 
   showRequestChangesDialog(): void {
@@ -249,25 +253,26 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    const updated = this.cooperativeService.requestLoanChanges(String(this.loan.id), this.requestChangesNote);
-    if (!updated) {
-      this.messages = [{
-        severity: 'warn',
-        summary: 'Request Failed',
-        detail: 'Unable to request changes at this time.'
-      }];
-      return;
-    }
+    this.cooperativeService.requestLoanChanges(String(this.loan.id), this.requestChangesNote).subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Request Failed',
+          detail: 'Unable to request changes at this time.'
+        }];
+        return;
+      }
 
-    this.loan = updated;
-    this.guarantors = this.normalizeGuarantors(updated.guarantors);
-    this.showRequestChangesModal = false;
-    this.requestChangesNote = '';
-    this.messages = [{
-      severity: 'info',
-      summary: 'Changes Requested',
-      detail: 'Change request sent to member and saved on this application.'
-    }];
+      this.loan = updated;
+      this.guarantors = this.normalizeGuarantors(updated.guarantors);
+      this.showRequestChangesModal = false;
+      this.requestChangesNote = '';
+      this.messages = [{
+        severity: 'info',
+        summary: 'Changes Requested',
+        detail: 'Change request sent to member and saved on this application.'
+      }];
+    });
   }
 
   cancelRequestChanges(): void {
@@ -278,71 +283,85 @@ export class CooperativeLoanDetailComponent implements OnInit {
   completeLoan(): void {
     this.loan.status = 'COMPLETED';
     this.loan.completedDate = new Date().toISOString();
-    this.cooperativeService.updateLoan(this.loan);
-    this.messages = [{
-      severity: 'success',
-      summary: 'Loan Completed',
-      detail: 'Loan marked as completed.'
-    }];
+    this.cooperativeService.updateLoan(this.loan).subscribe({
+      next: (updatedLoan) => {
+        this.loan = updatedLoan;
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Completed',
+          detail: 'Loan marked as completed.'
+        }];
+      },
+      error: () => {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Update Failed',
+          detail: 'Unable to mark this loan as completed right now.'
+        }];
+      }
+    });
   }
 
   setPendingReview(): void {
-    const updated = this.cooperativeService.setLoanPendingReview(String(this.loan.id), 'Application kept pending for further admin validation.');
-    if (!updated) {
-      this.messages = [{
-        severity: 'warn',
-        summary: 'Action Not Allowed',
-        detail: 'Unable to keep this application in pending review queue.'
-      }];
-      return;
-    }
+    this.cooperativeService.setLoanPendingReview(String(this.loan.id), 'Application kept pending for further admin validation.').subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Action Not Allowed',
+          detail: 'Unable to keep this application in pending review queue.'
+        }];
+        return;
+      }
 
-    this.loan = updated;
-    this.messages = [{
-      severity: 'info',
-      summary: 'Marked as Pending',
-      detail: 'Application remains in pending queue for later decision.'
-    }];
+      this.loan = updated;
+      this.messages = [{
+        severity: 'info',
+        summary: 'Marked as Pending',
+        detail: 'Application remains in pending queue for later decision.'
+      }];
+    });
   }
 
   approveGuarantor(memberId: string): void {
-    const updated = this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'APPROVED');
-    if (!updated) {
-      this.messages = [{
-        severity: 'warn',
-        summary: 'Unable To Approve',
-        detail: 'This guarantor request may already be decided.'
-      }];
-      return;
-    }
+    this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'APPROVED').subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Unable To Approve',
+          detail: 'This guarantor request may already be decided.'
+        }];
+        return;
+      }
 
-    this.loan = updated;
-    this.guarantors = this.normalizeGuarantors(updated.guarantors);
-    this.messages = [{
-      severity: 'success',
-      summary: 'Guarantor Approved',
-      detail: 'Guarantor response recorded successfully.'
-    }];
+      this.loan = updated;
+      this.guarantors = this.normalizeGuarantors(updated.guarantors);
+      this.messages = [{
+        severity: 'success',
+        summary: 'Guarantor Approved',
+        detail: 'Guarantor response recorded successfully.'
+      }];
+    });
   }
 
   rejectGuarantor(memberId: string): void {
-    const updated = this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'REJECTED');
-    if (!updated) {
+    this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'REJECTED').subscribe((updated) => {
+      if (!updated) {
+        this.messages = [{
+          severity: 'warn',
+          summary: 'Unable To Reject',
+          detail: 'This guarantor request may already be decided.'
+        }];
+        return;
+      }
+
+      this.loan = updated;
+      this.guarantors = this.normalizeGuarantors(updated.guarantors);
       this.messages = [{
         severity: 'warn',
-        summary: 'Unable To Reject',
-        detail: 'This guarantor request may already be decided.'
+        summary: 'Guarantor Rejected',
+        detail: 'Guarantor rejection recorded. Application status updated accordingly.'
       }];
-      return;
-    }
-
-    this.loan = updated;
-    this.guarantors = this.normalizeGuarantors(updated.guarantors);
-    this.messages = [{
-      severity: 'warn',
-      summary: 'Guarantor Rejected',
-      detail: 'Guarantor rejection recorded. Application status updated accordingly.'
-    }];
+    });
   }
 
   goBack(): void {

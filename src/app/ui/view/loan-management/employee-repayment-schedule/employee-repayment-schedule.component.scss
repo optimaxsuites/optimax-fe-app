@@ -1,3 +1,5 @@
+@use '../loan-status-badges' as loanStatus;
+
 .employee-repayment-schedule {
   background: white;
   border-radius: 12px;
@@ -34,29 +36,7 @@
       font-size: 0.9rem;
       text-transform: uppercase;
 
-      &.status-pending {
-        background: rgba(255, 165, 0, 0.1);
-        color: #b87c00;
-        border: 1px solid rgba(255, 165, 0, 0.3);
-      }
-
-      &.status-approved, &.status-active {
-        background: rgba(46, 178, 112, 0.1);
-        color: #1e7e4a;
-        border: 1px solid rgba(46, 178, 112, 0.3);
-      }
-
-      &.status-rejected {
-        background: rgba(255, 0, 0, 0.1);
-        color: #b30000;
-        border: 1px solid rgba(255, 0, 0, 0.3);
-      }
-
-      &.status-completed {
-        background: rgba(128, 128, 128, 0.1);
-        color: #4d4d4d;
-        border: 1px solid rgba(128, 128, 128, 0.3);
-      }
+      @include loanStatus.advance-loan-status-badges();
     }
   }
 
@@ -124,6 +104,41 @@
   .progress-section {
     margin-bottom: 32px;
 
+    .repayment-snapshot-band {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .snapshot-chip {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #dbe9ee;
+      background: #ffffff;
+
+      span {
+        color: #6a8794;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+      }
+
+      strong {
+        font-size: 0.95rem;
+        color: #203945;
+        line-height: 1.35;
+      }
+
+      &.emphasis {
+        background: linear-gradient(135deg, rgba(46, 98, 118, 0.08), rgba(56, 189, 248, 0.08));
+        border-color: rgba(46, 98, 118, 0.18);
+      }
+    }
+
     .progress-header {
       display: flex;
       justify-content: space-between;
@@ -166,6 +181,13 @@
           }
         }
       }
+    }
+
+    .progress-note {
+      margin: 0 0 12px;
+      color: #627987;
+      font-size: 0.88rem;
+      line-height: 1.55;
     }
 
     .status-indicators {
@@ -394,6 +416,16 @@
     &.status-skipped {
       background: rgba(128, 128, 128, 0.1);
       color: #8a8a8a;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-repayment-schedule {
+    .progress-section {
+      .repayment-snapshot-band {
+        grid-template-columns: 1fr;
+      }
     }
   }
 }

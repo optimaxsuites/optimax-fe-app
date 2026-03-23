@@ -1,5 +1,6 @@
 export interface CooperativeMember {
   id: string;
+  employeeId?: string;
   memberId: string;
   fullName: string;
   email: string;

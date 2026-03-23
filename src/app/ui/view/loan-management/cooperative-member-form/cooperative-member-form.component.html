@@ -19,6 +19,14 @@
     <form id="member-form" [formGroup]="memberForm" (ngSubmit)="onSubmit()" class="member-form">
       <div class="form-section">
         <h2>Personal Information</h2>
+
+        <div class="form-group">
+          <label>Employee ID <span class="required">*</span></label>
+          <input type="text" formControlName="employeeId" placeholder="Enter backend employee ID">
+          <div class="error" *ngIf="memberForm.get('employeeId')?.invalid && memberForm.get('employeeId')?.touched">
+            Employee ID is required
+          </div>
+        </div>
         
         <div class="form-group">
           <label>Full Name <span class="required">*</span></label>

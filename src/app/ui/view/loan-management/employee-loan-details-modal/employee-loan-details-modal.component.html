@@ -4,7 +4,7 @@
       <span class="eyebrow">Employee Loan Details</span>
       <div class="modal-header">
         <div>
-          <h2>Loan Application Details</h2>
+          <h2><i class="fas fa-file-lines"></i> Loan Application Details</h2>
           <p class="subtitle">A simple summary of your request, review state, and repayment details.</p>
         </div>
         <div class="header-actions">
@@ -67,6 +67,10 @@
           <span class="row-value">{{ formatDate(getApprovedDate()) }}</span>
         </div>
         <div class="detail-row">
+          <span class="row-label">Disbursed On</span>
+          <span class="row-value">{{ formatDate(getDisbursedDate()) }}</span>
+        </div>
+        <div class="detail-row">
           <span class="row-label">Last Status Update</span>
           <span class="row-value">{{ formatDate(getLatestStatusDate()) }}</span>
         </div>
@@ -123,6 +127,10 @@
           <span class="row-value strong">{{ getDisplayedInterestRate() }}%</span>
         </div>
         <div class="detail-row">
+          <span class="row-label">Total Repayable</span>
+          <span class="row-value strong money">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
+        </div>
+        <div class="detail-row">
           <span class="row-label">Payment Mode</span>
           <span class="row-value">{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</span>
         </div>
@@ -161,7 +169,7 @@
               <span class="timeline-date">{{ formatDate(item.changedAt) }}</span>
             </div>
             <p class="timeline-note">{{ item.notes || 'Status updated.' }}</p>
-            <span class="timeline-actor">{{ item.changedBy || 'System' }}</span>
+            <span class="timeline-actor">{{ item.changedBy || 'Unknown User' }}</span>
           </div>
         </div>
       </div>
@@ -184,7 +192,7 @@
     <ng-container *ngIf="getAdminFeedback() as feedback; else noComment">
       <p class="comment">{{ feedback.notes }}</p>
       <div class="meta">
-        <span><i class="fas fa-user-shield"></i>{{ feedback.changedBy || 'Admin' }}</span>
+        <span><i class="fas fa-user-shield"></i>{{ feedback.changedBy || 'Unknown User' }}</span>
         <span><i class="fas fa-clock"></i>{{ formatDate(feedback.changedAt) }}</span>
       </div>
     </ng-container>

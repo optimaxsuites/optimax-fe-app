@@ -127,6 +127,14 @@
                             Purpose
                             <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
                         </th>
+                        <th class="sortable" (click)="setSort('interestRate')">
+                            Interest
+                            <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
+                        </th>
+                        <th class="sortable" (click)="setSort('totalRepayable')">
+                            Repayable Amount
+                            <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
+                        </th>
                         <th class="sortable" (click)="setSort('status')">
                             Status
                             <i class="fas" [ngClass]="getSortIcon('status')"></i>
@@ -143,9 +151,11 @@
                         <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
                         <td>{{ loan.fullName || 'N/A' }}</td>
                         <td>{{ loan.employeeId || 'N/A' }}</td>
-                        <td>{{ loan.department || 'N/A' }}</td>
+                        <td>{{ formatDepartmentDisplay(loan.department) }}</td>
                         <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
                         <td>{{ formatPurposeDisplay(loan.purpose) }}</td>
+                        <td>{{ loan.interestRate || 0 }}%</td>
+                        <td class="amount-cell">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
                         <td>
                             <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
                                 {{ loan.status }}
@@ -162,7 +172,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="filteredLoans.length === 0">
-                        <td class="no-results" colspan="9">No loan applications found matching your filters</td>
+                        <td class="no-results" colspan="11">No loan applications found matching your filters</td>
                     </tr>
                 </tbody>
             </table>

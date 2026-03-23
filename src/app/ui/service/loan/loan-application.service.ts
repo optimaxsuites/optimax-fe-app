@@ -13,6 +13,7 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 })
 export class LoanApplicationService {
   private readonly applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
+  private readonly localApplicationsCacheKey = 'advance-loan-local-applications';
   private hasLoadedApplications = false;
 
   constructor(
@@ -23,7 +24,17 @@ export class LoanApplicationService {
   // Submit a new loan application
   submitLoanApplication(formData: LoanApplicationFormData){
     return this.loanService.createLoanApplication(formData).pipe(
-       catchError(this.handleError)
+      tap((createdApplication) => {
+        this.hasLoadedApplications = true;
+        this.upsertApplication(this.buildOptimisticSubmittedApplication(formData, createdApplication), true);
+
+        this.refreshApplications().subscribe({
+          error: () => {
+            // Keep the optimistic local update if the follow-up refresh fails.
+          }
+        });
+      }),
+      catchError(this.handleError)
     );
   }
 
@@ -37,7 +48,7 @@ export class LoanApplicationService {
     return this.loanService.getLoanApplicationByIdentifier(id).pipe(
       tap((application) => {
         if (application) {
-          this.upsertApplication(application);
+          this.upsertApplication(application, true);
         }
       })
     );
@@ -65,15 +76,20 @@ export class LoanApplicationService {
 
   saveApplication(application: LoanApplication): Observable<LoanApplication> {
     return this.loanService.saveLoanApplication(application).pipe(
-      tap((savedApplication) => this.upsertApplication(savedApplication))
+      tap((savedApplication) => this.upsertApplication(savedApplication, true))
     );
   }
 
   refreshApplications(): Observable<LoanApplication[]> {
     return this.loanService.listLoanApplications().pipe(
+      map((applications) => this.mergeApplicationCollections(
+        this.mergeApplicationCollections(this.readLocalApplicationsCache(), this.applicationsSubject.value),
+        applications
+      )),
       tap((applications) => {
         this.hasLoadedApplications = true;
         this.applicationsSubject.next(applications);
+        this.writeLocalApplicationsCache(applications);
       })
     );
   }
@@ -238,19 +254,207 @@ export class LoanApplicationService {
     });
   }
 
-  private upsertApplication(application: LoanApplication): void {
+  private upsertApplication(application: LoanApplication, persistLocally = false): void {
     const currentApplications = [...this.applicationsSubject.value];
-    const existingIndex = currentApplications.findIndex((item) =>
-      item.id === application.id || item.loanCode === application.loanCode
-    );
+    const existingIndex = this.findMatchingApplicationIndex(currentApplications, application);
 
     if (existingIndex >= 0) {
-      currentApplications[existingIndex] = application;
+      currentApplications[existingIndex] = this.mergeLoanApplications(currentApplications[existingIndex], application);
     } else {
       currentApplications.unshift(application);
     }
 
     this.applicationsSubject.next(currentApplications);
+
+    if (persistLocally) {
+      this.writeLocalApplicationsCache(currentApplications);
+    }
+  }
+
+  private mergeApplicationCollections(
+    currentApplications: LoanApplication[],
+    fetchedApplications: LoanApplication[]
+  ): LoanApplication[] {
+    const mergedApplications = [...currentApplications];
+
+    fetchedApplications.forEach((application) => {
+      const existingIndex = this.findMatchingApplicationIndex(mergedApplications, application);
+
+      if (existingIndex >= 0) {
+        mergedApplications[existingIndex] = this.mergeLoanApplications(mergedApplications[existingIndex], application);
+      } else {
+        mergedApplications.push(application);
+      }
+    });
+
+    return mergedApplications.sort((first, second) => {
+      const secondTime = new Date(second.requestDate || 0).getTime();
+      const firstTime = new Date(first.requestDate || 0).getTime();
+      return secondTime - firstTime;
+    });
+  }
+
+  private mergeLoanApplications(existing: LoanApplication, incoming: LoanApplication): LoanApplication {
+    return {
+      ...existing,
+      ...incoming,
+      id: incoming.localOnly ? existing.id : incoming.id || existing.id,
+      loanCode: incoming.localOnly ? existing.loanCode : incoming.loanCode || existing.loanCode,
+      clientSubmissionKey: incoming.clientSubmissionKey || existing.clientSubmissionKey,
+      localOnly: incoming.localOnly && !existing.localOnly ? incoming.localOnly : false,
+      employeeId: incoming.employeeId || existing.employeeId,
+      fullName: incoming.fullName || existing.fullName,
+      department: incoming.department || existing.department,
+      requestDate: incoming.requestDate || existing.requestDate,
+      purpose: incoming.purpose || existing.purpose,
+      amount: incoming.amount || existing.amount,
+      repaymentAmount: incoming.repaymentAmount || existing.repaymentAmount,
+      repaymentTime: incoming.repaymentTime || existing.repaymentTime,
+      modeOfPayment: incoming.modeOfPayment || existing.modeOfPayment,
+      status: incoming.status || existing.status,
+      approvedDate: incoming.approvedDate ?? existing.approvedDate,
+      approvedBy: incoming.approvedBy ?? existing.approvedBy,
+      disbursedDate: incoming.disbursedDate ?? existing.disbursedDate,
+      disbursedBy: incoming.disbursedBy ?? existing.disbursedBy,
+      completedDate: incoming.completedDate ?? existing.completedDate,
+      rejectedDate: incoming.rejectedDate ?? existing.rejectedDate,
+      rejectedBy: incoming.rejectedBy ?? existing.rejectedBy,
+      adminComment: incoming.adminComment ?? existing.adminComment,
+      currentBalance: incoming.currentBalance ?? existing.currentBalance,
+      totalPaid: incoming.totalPaid ?? existing.totalPaid,
+      totalPrincipalPaid: incoming.totalPrincipalPaid ?? existing.totalPrincipalPaid,
+      totalInterestPaid: incoming.totalInterestPaid ?? existing.totalInterestPaid,
+      outstandingPrincipal: incoming.outstandingPrincipal ?? existing.outstandingPrincipal,
+      interestRate: incoming.interestRate ?? existing.interestRate,
+      repaymentSchedule: incoming.repaymentSchedule?.length ? incoming.repaymentSchedule : existing.repaymentSchedule,
+      paymentHistory: incoming.paymentHistory?.length ? incoming.paymentHistory : existing.paymentHistory,
+      statusHistory: incoming.statusHistory?.length ? incoming.statusHistory : existing.statusHistory,
+      supportingDocuments: incoming.supportingDocuments?.length ? incoming.supportingDocuments : existing.supportingDocuments
+    };
+  }
+
+  private buildOptimisticSubmittedApplication(
+    formData: LoanApplicationFormData,
+    createdApplication: LoanApplication
+  ): LoanApplication {
+    const normalizedPurpose = formData.purpose === 'other'
+      ? formData.otherPurpose || 'Other'
+      : formData.purpose;
+    const requestDate = formData.requestDate || createdApplication.requestDate || new Date().toISOString();
+    const clientSubmissionKey = this.buildClientSubmissionKey({
+      employeeId: Number(formData.employeeId || createdApplication.employeeId || 0),
+      amount: Number(formData.amount || createdApplication.amount || 0),
+      purpose: normalizedPurpose || createdApplication.purpose || '',
+      modeOfPayment: formData.modeOfPayment || createdApplication.modeOfPayment,
+      requestDate
+    });
+
+    return {
+      ...createdApplication,
+      id: this.looksLikeValidCreatedApplication(createdApplication, formData) ? createdApplication.id : -Date.now(),
+      loanCode: this.looksLikeValidCreatedApplication(createdApplication, formData)
+        ? (createdApplication.loanCode || String(createdApplication.id))
+        : `LOCAL-${Date.now()}`,
+      clientSubmissionKey,
+      localOnly: !this.looksLikeValidCreatedApplication(createdApplication, formData),
+      employeeId: createdApplication.employeeId || Number(formData.employeeId || 0),
+      fullName: createdApplication.fullName || formData.employeeName || 'Employee',
+      department: createdApplication.department || formData.department || '',
+      amount: Number(formData.amount || createdApplication.amount || 0),
+      purpose: normalizedPurpose || createdApplication.purpose || '',
+      repaymentAmount: Number(formData.repaymentAmount || createdApplication.repaymentAmount || 0),
+      repaymentTime: Number(formData.repaymentTime || createdApplication.repaymentTime || 0),
+      modeOfPayment: formData.modeOfPayment || createdApplication.modeOfPayment,
+      requestDate,
+      status: createdApplication.status || 'PENDING',
+      currentBalance: createdApplication.currentBalance || Number(formData.amount || 0),
+      outstandingPrincipal: createdApplication.outstandingPrincipal || Number(formData.amount || 0),
+      statusHistory: createdApplication.statusHistory || [],
+      repaymentSchedule: createdApplication.repaymentSchedule || [],
+      paymentHistory: createdApplication.paymentHistory || [],
+      acknowledgment: true,
+      adminComment: createdApplication.adminComment || ''
+    };
+  }
+
+  private looksLikeValidCreatedApplication(
+    application: LoanApplication,
+    formData: LoanApplicationFormData
+  ): boolean {
+    const normalizedRequestedPurpose = this.normalizeValue(
+      formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose || ''
+    );
+    const normalizedApplicationPurpose = this.normalizeValue(application.purpose || '');
+
+    return Boolean(
+      application.id > 0
+      && application.amount > 0
+      && normalizedApplicationPurpose
+      && normalizedRequestedPurpose === normalizedApplicationPurpose
+      && application.employeeId > 0
+    );
+  }
+
+  private findMatchingApplicationIndex(applications: LoanApplication[], candidate: LoanApplication): number {
+    const candidateSignature = this.buildClientSubmissionKey(candidate);
+
+    return applications.findIndex((item) => {
+      if (item.id === candidate.id || item.loanCode === candidate.loanCode) {
+        return true;
+      }
+
+      const itemSignature = this.buildClientSubmissionKey(item);
+      return !!candidateSignature && candidateSignature === itemSignature;
+    });
+  }
+
+  private buildClientSubmissionKey(application: {
+    employeeId?: number;
+    amount?: number;
+    purpose?: string;
+    modeOfPayment?: string;
+    requestDate?: string;
+    clientSubmissionKey?: string;
+  }): string {
+    if (application.clientSubmissionKey) {
+      return application.clientSubmissionKey;
+    }
+
+    const normalizedDate = String(application.requestDate || '').trim();
+    const parsedDate = normalizedDate ? new Date(normalizedDate) : null;
+    const normalizedTimestamp = parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toISOString().slice(0, 16)
+      : normalizedDate;
+
+    return [
+      String(application.employeeId || 0),
+      String(Number(application.amount || 0)),
+      this.normalizeValue(application.purpose || ''),
+      String(application.modeOfPayment || ''),
+      normalizedTimestamp
+    ].join('|');
+  }
+
+  private readLocalApplicationsCache(): LoanApplication[] {
+    const rawValue = localStorage.getItem(this.localApplicationsCacheKey);
+    if (!rawValue) {
+      return [];
+    }
+
+    try {
+      const parsedValue = JSON.parse(rawValue);
+      return Array.isArray(parsedValue) ? parsedValue : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeLocalApplicationsCache(applications: LoanApplication[]): void {
+    try {
+      localStorage.setItem(this.localApplicationsCacheKey, JSON.stringify(applications));
+    } catch {
+      // Ignore storage quota/write failures and continue with in-memory state.
+    }
   }
 
   private normalizeValue(value: string): string {

@@ -16,6 +16,7 @@ export interface TableAction<T = any> {
   id: string;
   label: string;
   icon?: string;
+  ariaLabel?: string;
   className?: string;
   visible?: (row: T) => boolean;
   disabled?: (row: T) => boolean;
@@ -44,12 +45,16 @@ export class TableComponent {
   @Input() paginator: boolean = false;
   @Input() rowsPerPage: number = 10;
   @Input() rowsPerPageOptions: number[] = [10, 20, 50];
+  @Input() sortIconStyle: 'prime' | 'font-awesome' = 'prime';
 
   @Output() rowClick = new EventEmitter<any>();
   @Output() actionClick = new EventEmitter<{ actionId: string; row: any }>();
   @Output() selectionChange = new EventEmitter<any[] | any>();
 
   @ContentChild(TableBodyDirective) bodyTemplate?: TableBodyDirective;
+
+  sortField: string | null = null;
+  sortOrder: number = 1;
 
   get colSpan(): number {
     const actionCount = this.actions?.length ? 1 : 0;
@@ -95,5 +100,18 @@ export class TableComponent {
   getSortField(column: TableColumn): string | undefined {
     if (!column.sortable) return undefined;
     return (column.sortField || column.field) as string | undefined;
+  }
+
+  handleSort(event: { field?: string; order?: number }) {
+    this.sortField = event.field || null;
+    this.sortOrder = event.order || 1;
+  }
+
+  getSortIcon(field?: string): string {
+    if (!field || this.sortField !== field) {
+      return 'fa-sort';
+    }
+
+    return this.sortOrder === 1 ? 'fa-sort-up' : 'fa-sort-down';
   }
 }

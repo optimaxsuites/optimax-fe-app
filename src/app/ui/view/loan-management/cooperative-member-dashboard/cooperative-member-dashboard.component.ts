@@ -175,45 +175,48 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.actionMessage = '';
     this.showTierOnApply = false;
-    
-    const member = this.cooperativeService.getMemberById(this.currentMemberId);
-    if (member) {
-      this.member = member;
-      this.currentEmployeeProfile = {
-        ...this.currentEmployeeProfile,
-        employeeId: member.id,
-        fullName: member.fullName,
-        email: member.email,
-        phone: member.phone,
-        department: member.address || this.currentEmployeeProfile.department
-      };
-      this.loans = this.cooperativeService
-        .getLoansByMember(member.id)
-        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
-      this.memberGroups = this.cooperativeService.getGroupMembershipsByMember(member.id)
-        .filter(item => item.status === 'ACTIVE')
-        .map(item => ({
-          membership: item,
-          groupName: this.cooperativeService.getGroupById(item.groupId || item.groupId)?.name || 'Unknown Group',
-          maxBorrowable: this.cooperativeService.getMaxBorrowableAmountForGroup(member.id, item.groupId || item.groupId)
-        }));
-      this.refreshJoinGroupOptions(member.id);
-      const hasSelectedGroup = this.selectedGroupId !== 'ALL'
-        && this.memberGroups.some(group => String(group.membership.groupId) === this.selectedGroupId);
-      this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : 'ALL';
-      this.loadRepayments();
-    } else {
-      this.loans = [];
-      this.repaymentsByLoanId = {};
-      this.memberGroups = [];
-      this.availableJoinGroups = [];
-      this.eligibleJoinGroupIds = [];
-    }
 
-    this.membershipEligibility = this.cooperativeService.checkMembershipEligibility(this.currentEmployeeProfile);
-    this.updateMemberStatusUpdates();
-    
-    this.isLoading = false;
+    this.cooperativeService.loadGroups().subscribe(() => {
+      this.cooperativeService.getMembers().subscribe(() => {
+        const member = this.cooperativeService.getMemberById(this.currentMemberId);
+        if (member) {
+          this.member = member;
+          this.currentEmployeeProfile = {
+            ...this.currentEmployeeProfile,
+            employeeId: member.employeeId || member.id,
+            fullName: member.fullName,
+            email: member.email,
+            phone: member.phone,
+            department: member.address || this.currentEmployeeProfile.department
+          };
+          this.loans = this.cooperativeService
+            .getLoansByMember(member.id)
+            .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
+          this.memberGroups = this.cooperativeService.getGroupMembershipsByMember(member.id)
+            .filter(item => item.status === 'ACTIVE')
+            .map(item => ({
+              membership: item,
+              groupName: this.cooperativeService.getGroupById(item.groupId || item.groupId)?.name || 'Unknown Group',
+              maxBorrowable: this.cooperativeService.getMaxBorrowableAmountForGroup(member.id, item.groupId || item.groupId)
+            }));
+          this.refreshJoinGroupOptions(member.id);
+          const hasSelectedGroup = this.selectedGroupId !== 'ALL'
+            && this.memberGroups.some(group => String(group.membership.groupId) === this.selectedGroupId);
+          this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : 'ALL';
+          this.loadRepayments();
+        } else {
+          this.loans = [];
+          this.repaymentsByLoanId = {};
+          this.memberGroups = [];
+          this.availableJoinGroups = [];
+          this.eligibleJoinGroupIds = [];
+        }
+
+        this.membershipEligibility = this.cooperativeService.checkMembershipEligibility(this.currentEmployeeProfile);
+        this.updateMemberStatusUpdates();
+        this.isLoading = false;
+      });
+    });
   }
 
   onPreviewRoleChange(role: 'JUNIOR' | 'MID' | 'SENIOR'): void {
@@ -697,20 +700,20 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const repayment = this.cooperativeService.recordRepayment(this.selectedPaymentLoan.id, {
+    this.cooperativeService.recordRepayment(this.selectedPaymentLoan.id, {
       amount: this.paymentAmount,
       modeofPayment: this.modeofPayment,
       paidDate: new Date().toISOString()
+    }).subscribe((repayment) => {
+      if (!repayment) {
+        this.actionMessage = 'Unable to record payment right now. Please try again.';
+        return;
+      }
+
+      this.closePaymentModal();
+      this.loadMemberData();
+      this.actionMessage = `Payment of ${this.formatCurrency(repayment.amount)} was recorded successfully.`;
     });
-
-    if (!repayment) {
-      this.actionMessage = 'Unable to record payment right now. Please try again.';
-      return;
-    }
-
-    this.closePaymentModal();
-    this.loadMemberData();
-    this.actionMessage = `Payment of ${this.formatCurrency(repayment.amount)} was recorded successfully.`;
   }
 
   getOutstandingAmount(loan: CooperativeLoan): number {
@@ -862,6 +865,8 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       .filter(notification =>
         notification.type === 'LOAN_STATUS_UPDATE' ||
         notification.type === 'LOAN_INFO_REQUESTED' ||
+        notification.type === 'LOAN_REPAYMENT_REMINDER' ||
+        notification.type === 'GUARANTOR_REQUEST' ||
         notification.type === 'GUARANTOR_STATUS_UPDATE' ||
         notification.type === 'LOAN_DEFAULTED'
       )

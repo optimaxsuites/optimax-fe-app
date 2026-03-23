@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
+import { persistLoanInterestRate, persistLoanStatusActorName, persistLoanStatusNote } from './loan-display.util';
 
 @Injectable({
   providedIn: 'root'
@@ -27,30 +28,39 @@ export class LoanApprovalService {
         const actingUserId = this.getCurrentUserId();
         const changedAt = typeof statusOrUpdate === 'string'
           ? new Date().toISOString()
-          : statusOrUpdate.changedAt || new Date().toISOString();
+          : this.toLoanDateTime(statusOrUpdate.changedAt) || new Date().toISOString();
         const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
         
         // Set interest rate if needed
         if (interestRate !== undefined && Number.isFinite(interestRate)) {
           application.interestRate = Number(interestRate.toFixed(2));
+          persistLoanInterestRate(application, application.interestRate);
         } else if (status === 'APPROVED' && !application.interestRate) {
           application.interestRate = this.determineInterestRate(application);
+          persistLoanInterestRate(application, application.interestRate);
         }
 
         // Update the application status
         application.status = status;
         application.adminComment = notes || application.adminComment || '';
 
+        if (notes?.trim()) {
+          persistLoanStatusNote(application, status, notes);
+        }
+
         // Update dates based on status
         switch (status) {
           case 'APPROVED':
-            application.approvedDate = new Date().toISOString();
+            application.approvedDate = changedAt;
             application.approvedBy = actingUserId;
+            persistLoanStatusActorName(application, 'APPROVED', actingUserId);
             application.disbursedDate = undefined;
+            this.recalculateApprovalTerms(application);
             break;
           case 'ACTIVE':
-            application.disbursedDate = new Date().toISOString();
+            application.disbursedDate = changedAt;
             application.disbursedBy = actingUserId;
+            persistLoanStatusActorName(application, 'ACTIVE', actingUserId);
             // Generate repayment schedule if needed
             if (!application.repaymentSchedule?.length) {
               application.repaymentSchedule = this.generateRepaymentSchedule(
@@ -82,13 +92,14 @@ export class LoanApprovalService {
             }
             break;
           case 'COMPLETED':
-            application.completedDate = new Date().toISOString();
+            application.completedDate = changedAt;
             application.currentBalance = 0;
             application.outstandingPrincipal = 0;
             break;
           case 'REJECTED':
-            application.rejectedDate = new Date().toISOString();
+            application.rejectedDate = changedAt;
             application.rejectedBy = actingUserId;
+            persistLoanStatusActorName(application, 'REJECTED', actingUserId);
             break;
         }
 
@@ -116,6 +127,40 @@ export class LoanApprovalService {
     const storedUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
     const parsedUserId = Number(storedUserId);
     return Number.isFinite(parsedUserId) ? parsedUserId : 0;
+  }
+
+  private toLoanDateTime(value: string | undefined): string {
+    const rawValue = String(value || '').trim();
+
+    if (!rawValue) {
+      return '';
+    }
+
+    return /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+      ? `${rawValue}T00:00:00`
+      : rawValue;
+  }
+
+  private recalculateApprovalTerms(application: LoanApplication): void {
+    const hasRecordedPayments = (application.paymentHistory || []).length > 0 || Number(application.totalPaid || 0) > 0;
+    if (hasRecordedPayments) {
+      return;
+    }
+
+    application.repaymentSchedule = this.generateRepaymentSchedule(
+      application.amount,
+      application.repaymentTime,
+      Number(application.interestRate || 0),
+      application.modeOfPayment
+    );
+
+    application.repaymentAmount = application.repaymentSchedule.length > 0
+      ? application.repaymentSchedule[0].totalAmount
+      : 0;
+
+    const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
+    application.currentBalance = Number(Math.max(totalRepayable - Number(application.totalPaid || 0), 0).toFixed(2));
+    application.outstandingPrincipal = Number(Math.max(application.amount - Number(application.totalPrincipalPaid || 0), 0).toFixed(2));
   }
 
   approveLoan(loanId: string | number, notes?: string): Observable<LoanApplication> {

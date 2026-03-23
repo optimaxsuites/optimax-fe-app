@@ -172,17 +172,20 @@
             <small>Open the detailed loan ledger</small>
           </span>
         </button>
-      </aside>
 
-      <div class="workspace-main">
-        <div class="card status-updates-card" *ngIf="applicationUpdates.length > 0">
-          <div class="card-header">
-            <h2><i class="fas fa-bell"></i> Application Status Updates</h2>
-            <span class="history-subtitle">Latest updates on your requests</span>
+        <section class="status-updates-panel" *ngIf="applicationUpdates.length > 0">
+          <div class="status-updates-panel-head">
+            <div>
+              <h3><i class="fas fa-bell"></i> Status Updates</h3>
+              <span>Latest 3 updates</span>
+            </div>
+            <button type="button" class="status-toggle-btn" (click)="toggleStatusUpdates()" [attr.aria-expanded]="showStatusUpdates">
+              <i class="fas" [ngClass]="showStatusUpdates ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
           </div>
 
-          <div class="updates-list">
-            <div class="update-item" *ngFor="let update of applicationUpdates">
+          <div class="updates-list" *ngIf="showStatusUpdates">
+            <div class="update-item" *ngFor="let update of recentApplicationUpdates">
               <div class="update-topline">
                 <span class="loan-code">{{ update.loanId }}</span>
                 <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
@@ -191,8 +194,10 @@
               <span class="time">{{ update.changedAt | date:'medium' }}</span>
             </div>
           </div>
-        </div>
+        </section>
+      </aside>
 
+      <div class="workspace-main">
         <div class="card loan-history-section" *ngIf="showHistory">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
@@ -208,6 +213,7 @@
                   <th (click)="setHistorySort('purpose')" class="sortable purpose-col">Purpose <i class="fas" [ngClass]="getHistorySortIcon('purpose')"></i></th>
                   <th (click)="setHistorySort('amount')" class="sortable amount-col">Amount <i class="fas" [ngClass]="getHistorySortIcon('amount')"></i></th>
                   <th (click)="setHistorySort('interestRate')" class="sortable">Interest <i class="fas" [ngClass]="getHistorySortIcon('interestRate')"></i></th>
+                  <th (click)="setHistorySort('totalRepayable')" class="sortable amount-col">Repayable Amount <i class="fas" [ngClass]="getHistorySortIcon('totalRepayable')"></i></th>
                   <th (click)="setHistorySort('status')" class="sortable">Status <i class="fas" [ngClass]="getHistorySortIcon('status')"></i></th>
                   <th class="actions-col">Actions</th>
                 </tr>
@@ -218,7 +224,8 @@
                   <td>{{ loan.requestDate | date:'mediumDate' }}</td>
                   <td class="loan-purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
                   <td class="loan-amount">{{ formatCurrency(loan.amount) }}</td>
-                  <td>{{ loan.interestRate }}%</td>
+                  <td>{{ loan.interestRate || 0 }}%</td>
+                  <td class="loan-amount">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
                   <td>
                     <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
                       {{ getStatusDisplay(loan.status) }}

@@ -1,3 +1,5 @@
+@use '../loan-status-badges' as loanStatus;
+
 .employee-history-container {
   padding: 24px;
   min-height: 100vh;
@@ -350,35 +352,7 @@
               text-transform: uppercase;
               text-align: center;
 
-              &.status-pending {
-                background: rgba(231, 222, 101, 0.2);
-                color: #8f8500;
-                border: 1px solid rgba(231, 222, 101, 0.3);
-              }
-
-              &.status-approved {
-                background: rgba(255, 165, 0, 0.16);
-                color: #b86200;
-                border: 1px solid rgba(255, 165, 0, 0.35);
-              }
-
-              &.status-rejected {
-                background: rgba(233, 55, 55, 0.1);
-                color: #b30000;
-                border: 1px solid rgba(233, 55, 55, 0.3);
-              }
-
-              &.status-active {
-                background: rgba(56, 189, 248, 0.16);
-                color: #1e4a8f;
-                border: 1px solid rgba(56, 189, 248, 0.35);
-              }
-
-              &.status-completed {
-                background: rgba(46, 178, 112, 0.1);
-                color: #1e7e4a;
-                border: 1px solid rgba(46, 178, 112, 0.3);
-              }
+              @include loanStatus.advance-loan-status-badges();
             }
 
             .view-btn {

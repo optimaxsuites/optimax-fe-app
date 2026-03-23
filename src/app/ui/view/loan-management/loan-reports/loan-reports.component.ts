@@ -7,7 +7,12 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 import * as XLSX from 'xlsx';
 //import { saveAs } from 'file-saver';
 import { formatDate } from '@angular/common';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import {
+  compareLoanSortValues,
+  formatLoanDepartmentDisplay,
+  formatLoanPurposeDisplay,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-loan-reports',
@@ -63,12 +68,23 @@ export class LoanReportsComponent implements OnInit {
     return formatLoanPurposeDisplay(purpose);
   }
 
+  formatDepartmentDisplay(department?: unknown): string {
+    return formatLoanDepartmentDisplay(department);
+  }
+
+  getLoanTotalRepayable(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
+  }
+
   loadLoans(): void {
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
-        this.allLoans = applications;
-        this.filteredLoans = [...applications];
+        this.allLoans = applications.map((loan) => ({
+          ...loan,
+          department: this.formatDepartmentDisplay(loan.department)
+        }));
+        this.filteredLoans = [...this.allLoans];
         this.extractDepartments();
         this.calculateSummaryStats();
         this.applyFilters();
@@ -84,7 +100,7 @@ export class LoanReportsComponent implements OnInit {
   extractDepartments(): void {
     const depts = new Set(
       this.allLoans
-        .map(loan => loan.department)
+        .map(loan => this.formatDepartmentDisplay(loan.department))
         .filter((department): department is string => Boolean(department))
     );
     this.departments = Array.from(depts).sort();
@@ -132,7 +148,7 @@ export class LoanReportsComponent implements OnInit {
     // Filter by Department
     if (this.filters.department) {
       results = results.filter(loan => 
-        loan.department === this.filters.department
+        this.formatDepartmentDisplay(loan.department) === this.filters.department
       );
     }
 
@@ -195,12 +211,20 @@ export class LoanReportsComponent implements OnInit {
           valueB = String(b.employeeId).toLowerCase();
           break;
         case 'department':
-            valueA = (a.department ?? '').toLowerCase();
-            valueB = (b.department ?? '').toLowerCase();
+            valueA = this.formatDepartmentDisplay(a.department).toLowerCase();
+            valueB = this.formatDepartmentDisplay(b.department).toLowerCase();
           break;
         case 'amount':
           valueA = a.amount;
           valueB = b.amount;
+          break;
+        case 'interestRate':
+          valueA = a.interestRate || 0;
+          valueB = b.interestRate || 0;
+          break;
+        case 'totalRepayable':
+          valueA = this.getLoanTotalRepayable(a);
+          valueB = this.getLoanTotalRepayable(b);
           break;
         case 'status':
           valueA = a.status.toLowerCase();
@@ -240,13 +264,13 @@ export class LoanReportsComponent implements OnInit {
       'Loan ID': loan.loanCode,
       'Employee ID': loan.employeeId,
       'Employee Name': loan.fullName,
-      'Department': loan.department,
+      'Department': this.formatDepartmentDisplay(loan.department),
       'Purpose': loan.purpose,
       'Loan Amount': loan.amount,
-      'Monthly Repayment': loan.repaymentAmount,
+      'Interest Rate': loan.interestRate + '%',
+      'Repayable Amount': this.getLoanTotalRepayable(loan),
       'Total Paid': loan.totalPaid || 0,
       'Current Balance': loan.currentBalance || 0,
-      'Interest Rate': loan.interestRate + '%',
       'Repayment Period': loan.repaymentTime + ' months',
       'Status': loan.status,
       'Date Submitted': formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
@@ -270,8 +294,8 @@ export class LoanReportsComponent implements OnInit {
   exportToCSV(): void {
     const headers = [
       'Loan ID', 'Employee ID', 'Employee Name', 'Department', 'Purpose',
-      'Loan Amount', 'Monthly Repayment', 'Total Paid', 'Current Balance',
-      'Interest Rate', 'Repayment Period', 'Status', 'Date Submitted',
+      'Loan Amount', 'Interest Rate', 'Repayable Amount', 'Total Paid', 'Current Balance',
+      'Repayment Period', 'Status', 'Date Submitted',
       'Approved Date', 'Start Date', 'End Date'
     ];
 
@@ -279,13 +303,13 @@ export class LoanReportsComponent implements OnInit {
       loan.loanCode,
       loan.employeeId,
       loan.fullName,
-      loan.department,
+      this.formatDepartmentDisplay(loan.department),
       loan.purpose,
       loan.amount,
-      loan.repaymentAmount,
+      loan.interestRate + '%',
+      this.getLoanTotalRepayable(loan),
       loan.totalPaid || 0,
       loan.currentBalance || 0,
-      loan.interestRate + '%',
       loan.repaymentTime + ' months',
       loan.status,
       formatDate(loan.requestDate, 'yyyy-MM-dd', 'en-US'),
@@ -374,6 +398,8 @@ export class LoanReportsComponent implements OnInit {
                 <th>Employee</th>
                 <th>Department</th>
                 <th>Amount</th>
+                <th>Interest</th>
+                <th>Repayable Amount</th>
                 <th>Paid</th>
                 <th>Balance</th>
                 <th>Status</th>
@@ -387,6 +413,8 @@ export class LoanReportsComponent implements OnInit {
                   <td>${loan.fullName}<br><small>${loan.employeeId}</small></td>
                   <td>${loan.department}</td>
                   <td>₦${loan.amount.toLocaleString()}</td>
+                  <td>${loan.interestRate || 0}%</td>
+                  <td>₦${this.getLoanTotalRepayable(loan).toLocaleString()}</td>
                   <td>₦${(loan.totalPaid || 0).toLocaleString()}</td>
                   <td>₦${(loan.currentBalance || 0).toLocaleString()}</td>
                   <td>${loan.status}</td>

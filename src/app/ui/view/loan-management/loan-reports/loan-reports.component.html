@@ -131,7 +131,12 @@
             <th (click)="setSort('amount')" class="sortable amount">
               Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i>
             </th>
-            <th>Monthly Installment</th>
+            <th (click)="setSort('interestRate')" class="sortable">
+              Interest <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
+            </th>
+            <th (click)="setSort('totalRepayable')" class="sortable amount">
+              Repayable Amount <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
+            </th>
             <th>Paid</th>
             <th>Balance</th>
             <th (click)="setSort('status')" class="sortable">
@@ -152,10 +157,11 @@
               </div>
             </td>
             <td>{{ loan.employeeId }}</td>
-            <td>{{ loan.department }}</td>
+            <td>{{ formatDepartmentDisplay(loan.department) }}</td>
             <td class="purpose" [title]="formatPurposeDisplay(loan.purpose)">{{ formatPurposeDisplay(loan.purpose) | slice:0:30 }}{{ formatPurposeDisplay(loan.purpose).length > 30 ? '...' : '' }}</td>
             <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
-            <td>₦{{ loan.repaymentAmount | number:'1.2-2' }}</td>
+            <td>{{ loan.interestRate || 0 }}%</td>
+            <td>₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
             <td class="paid">₦{{ (loan.totalPaid || 0) | number:'1.2-2' }}</td>
             <td class="balance">₦{{ (loan.currentBalance || 0) | number:'1.2-2' }}</td>
             <td>

@@ -52,6 +52,7 @@ export class CooperativeMemberFormComponent implements OnInit {
 
   initForm(): void {
     this.memberForm = this.fb.group({
+      employeeId: ['', Validators.required],
       fullName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', Validators.required],
@@ -76,24 +77,25 @@ export class CooperativeMemberFormComponent implements OnInit {
 
   loadMember(): void {
     this.isLoading = true;
-    const member = this.cooperativeService.getMemberById(this.memberId!);
-    
-    if (member) {
-      this.existingMemberCode = member.memberId;
-      this.memberForm.patchValue({
-        fullName: member.fullName,
-        email: member.email,
-        phone: member.phone,
-        address: member.address || '',
-        shareCapital: member.shareCapital,
-        status: member.status,
-        emergencyName: member.emergencyContact?.name || '',
-        emergencyPhone: member.emergencyContact?.phone || '',
-        emergencyRelationship: member.emergencyContact?.relationship || ''
-      });
-    }
-    
-    this.isLoading = false;
+    this.cooperativeService.loadMemberById(this.memberId!).subscribe(member => {
+      if (member) {
+        this.existingMemberCode = member.memberId;
+        this.memberForm.patchValue({
+          employeeId: member.employeeId || '',
+          fullName: member.fullName,
+          email: member.email,
+          phone: member.phone,
+          address: member.address || '',
+          shareCapital: member.shareCapital,
+          status: member.status,
+          emergencyName: member.emergencyContact?.name || '',
+          emergencyPhone: member.emergencyContact?.phone || '',
+          emergencyRelationship: member.emergencyContact?.relationship || ''
+        });
+      }
+
+      this.isLoading = false;
+    });
   }
 
   onSubmit(): void {
@@ -101,6 +103,7 @@ export class CooperativeMemberFormComponent implements OnInit {
       const formValue = this.memberForm.value;
       
       const memberData: any = {
+        employeeId: String(formValue.employeeId || '').trim(),
         fullName: formValue.fullName,
         email: formValue.email,
         phone: formValue.phone,
@@ -119,18 +122,18 @@ export class CooperativeMemberFormComponent implements OnInit {
       }
 
       if (this.isEdit && this.memberId) {
-        // Update existing
         const existing = this.cooperativeService.getMemberById(this.memberId);
         if (existing) {
           const updated = { ...existing, ...memberData };
-          this.cooperativeService.updateMember(updated);
+          this.cooperativeService.updateMember(updated).subscribe(() => {
+            this.goBack();
+          });
         }
       } else {
-        // Add new
-        this.cooperativeService.addMember(memberData);
+        this.cooperativeService.addMember(memberData).subscribe(() => {
+          this.goBack();
+        });
       }
-
-      this.goBack();
     }
   }
 

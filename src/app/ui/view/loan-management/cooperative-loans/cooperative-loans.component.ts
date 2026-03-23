@@ -80,7 +80,9 @@ export class CooperativeLoansComponent implements OnInit {
 
   loadLoans(): void {
     this.isLoading = true;
-    this.groups = this.cooperativeService.getGroups();
+    this.cooperativeService.loadGroups().subscribe(groups => {
+      this.groups = groups;
+    });
 
     this.cooperativeService.getMembers().subscribe(members => {
       this.members = members;
@@ -250,15 +252,16 @@ export class CooperativeLoansComponent implements OnInit {
       return;
     }
 
-    const updated = this.cooperativeService.disburseLoan(String(this.selectedDisbursementLoan.id));
-    if (!updated) {
-      return;
-    }
+    this.cooperativeService.disburseLoan(String(this.selectedDisbursementLoan.id)).subscribe((updated) => {
+      if (!updated) {
+        return;
+      }
 
-    this.closeDisbursementModal();
-    this.loadLoans();
-    this.statusFilter = 'ACTIVE';
-    this.applyFilters();
+      this.closeDisbursementModal();
+      this.loadLoans();
+      this.statusFilter = 'ACTIVE';
+      this.applyFilters();
+    });
   }
 
   reviewLoan(id: string | number): void {

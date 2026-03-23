@@ -175,8 +175,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   loadDashboard(): void {
     this.isLoading = true;
 
-    // Get stats
-    this.stats = this.cooperativeService.getStats();
+    this.cooperativeService.loadGroups().subscribe(() => {
+      this.loadRecentGroupJoinApplications();
+      this.refreshDashboardSignals();
+    });
+
+    this.cooperativeService.loadStats().subscribe(stats => {
+      this.stats = stats;
+      this.refreshDashboardSignals();
+    });
 
     // Get recent loans
     this.cooperativeService.getLoans().subscribe(loans => {
@@ -671,16 +678,17 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
       if (row.distributionMethod === 'ADD_TO_SHARES') {
         member.shareCapital = Number((member.shareCapital + row.patronageAmount).toFixed(2));
-        this.cooperativeService.updateMember({ ...member });
+        this.cooperativeService.updateMember({ ...member }).subscribe();
         return;
       }
 
       if (row.distributionMethod === 'APPLY_TO_LOAN') {
-        const result = this.cooperativeService.applyPatronageToMemberLoan(row.memberId, row.patronageAmount);
-        if (result.appliedAmount <= 0) {
-          member.shareCapital = Number((member.shareCapital + row.patronageAmount).toFixed(2));
-          this.cooperativeService.updateMember({ ...member });
-        }
+        this.cooperativeService.applyPatronageToMemberLoan(row.memberId, row.patronageAmount).subscribe((result) => {
+          if (result.appliedAmount <= 0) {
+            member.shareCapital = Number((member.shareCapital + row.patronageAmount).toFixed(2));
+            this.cooperativeService.updateMember({ ...member }).subscribe();
+          }
+        });
         return;
       }
     });

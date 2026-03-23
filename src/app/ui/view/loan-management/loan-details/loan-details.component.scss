@@ -321,6 +321,47 @@
   }
 
   .progress-card {
+    &.disbursed-loan-card {
+      background: linear-gradient(180deg, #ffffff 0%, #f6fbfd 100%);
+      border-color: #d8e9ef;
+      box-shadow: 0 10px 24px rgba(35, 55, 80, 0.08);
+    }
+
+    .repayment-snapshot-band {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .snapshot-chip {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #dbe9ee;
+      background: #ffffff;
+
+      span {
+        color: #6b7a86;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      strong {
+        color: #214858;
+        font-size: 0.96rem;
+        line-height: 1.35;
+      }
+
+      &.emphasis {
+        background: linear-gradient(135deg, rgba(46, 98, 118, 0.08), rgba(56, 189, 248, 0.08));
+        border-color: rgba(46, 98, 118, 0.18);
+      }
+    }
+
     .progress-section {
       .progress-header {
         display: flex;
@@ -338,10 +379,29 @@
         margin-bottom: 16px;
 
         .progress-fill {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 10px;
           height: 100%;
           background: linear-gradient(90deg, #2E6276, #47b3d1);
           transition: width 0.4s ease;
+
+          .progress-caption {
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+          }
         }
+      }
+
+      .progress-note {
+        margin: -4px 0 16px;
+        color: #617380;
+        font-size: 0.88rem;
+        line-height: 1.5;
       }
 
       .progress-details {
@@ -1432,12 +1492,20 @@
   }
 
   .progress-card {
+    .repayment-snapshot-band {
+      grid-template-columns: 1fr;
+    }
+
     .progress-bar {
       height: 9px;
       border-radius: 999px;
 
       .progress-fill {
         background: #2E6276;
+
+        .progress-caption {
+          display: none;
+        }
       }
     }
   }

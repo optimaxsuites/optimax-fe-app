@@ -75,7 +75,9 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       this.currentUuid = routeUuid;
     }
 
-    this.loadApplications();
+    this.cooperativeService.loadGroups().subscribe(() => {
+      this.loadApplications();
+    });
   }
 
   get filteredApplications(): GroupJoinHistoryRow[] {

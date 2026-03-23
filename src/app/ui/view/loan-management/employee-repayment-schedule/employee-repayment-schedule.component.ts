@@ -1,18 +1,28 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
-import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import {
+  formatLoanPurposeDisplay,
+  getLoanRepaymentStatusTitle,
+  hasLoanBeenDisbursed,
+  hasLoanRepaymentStarted,
+  resolveLoanOutstandingBalance,
+  resolveLoanRepaymentProgress,
+  resolveLoanTotalPaid,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-repayment-schedule',
   templateUrl: './employee-repayment-schedule.component.html',
   styleUrls: ['./employee-repayment-schedule.component.scss']
 })
-export class EmployeeRepaymentScheduleComponent implements OnInit {
+export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   @Input() loan!: LoanApplication;
   
   // Summary stats
   totalPaid: number = 0;
   totalRemaining: number = 0;
+  totalRepayable: number = 0;
   paidCount: number = 0;
   upcomingCount: number = 0;
   overdueCount: number = 0;
@@ -25,17 +35,30 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
   ngOnInit() {
     this.calculateStats();
   }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['loan']) {
+      this.calculateStats();
+    }
+  }
   
   calculateStats(): void {
-    if (!this.loan?.repaymentSchedule) return;
-    
-    this.totalPaid = this.loan.repaymentSchedule
-      .filter(item => item.status === 'PAID')
-      .reduce((sum, item) => sum + item.totalAmount, 0);
-    
-    this.totalRemaining = this.loan.repaymentSchedule
-      .filter(item => item.status !== 'PAID')
-      .reduce((sum, item) => sum + item.totalAmount, 0);
+    if (!this.loan?.repaymentSchedule?.length) {
+      this.totalPaid = 0;
+      this.totalRemaining = 0;
+      this.totalRepayable = 0;
+      this.paidCount = 0;
+      this.upcomingCount = 0;
+      this.overdueCount = 0;
+      this.completionPercentage = 0;
+      this.nextPaymentDate = '';
+      this.nextPaymentAmount = 0;
+      return;
+    }
+
+    this.totalPaid = resolveLoanTotalPaid(this.loan);
+    this.totalRepayable = resolveLoanTotalRepayableAmount(this.loan);
+    this.totalRemaining = resolveLoanOutstandingBalance(this.loan);
     
     this.paidCount = this.loan.repaymentSchedule
       .filter(item => item.status === 'PAID').length;
@@ -45,8 +68,8 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
     
     this.overdueCount = this.loan.repaymentSchedule
       .filter(item => item.status === 'OVERDUE').length;
-    
-    this.completionPercentage = (this.paidCount / this.loan.repaymentSchedule.length) * 100;
+
+    this.completionPercentage = resolveLoanRepaymentProgress(this.loan);
     
     // Find next payment
     const nextPayment = this.loan.repaymentSchedule
@@ -55,6 +78,9 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
     if (nextPayment) {
       this.nextPaymentDate = nextPayment.dueDate;
       this.nextPaymentAmount = nextPayment.totalAmount;
+    } else {
+      this.nextPaymentDate = '';
+      this.nextPaymentAmount = 0;
     }
   }
   
@@ -95,6 +121,18 @@ export class EmployeeRepaymentScheduleComponent implements OnInit {
 
   formatPurposeDisplay(purpose?: string | null): string {
     return formatLoanPurposeDisplay(purpose);
+  }
+
+  hasBeenDisbursed(): boolean {
+    return hasLoanBeenDisbursed(this.loan);
+  }
+
+  hasRepaymentStarted(): boolean {
+    return hasLoanRepaymentStarted(this.loan);
+  }
+
+  getRepaymentStatusTitle(): string {
+    return getLoanRepaymentStatusTitle(this.loan);
   }
   
   isOverdue(item: RepaymentScheduleItem): boolean {

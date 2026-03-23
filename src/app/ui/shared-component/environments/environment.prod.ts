@@ -15,5 +15,5 @@ export const environment = {
     apiBaseUrl: "https://be.optimaxsuites.com",
     env: "development",
     project: 'ERP',
-    apiKey: '3196c9c0ab4f6b69ab91e276edd06071' // Remove 'ApiKey ' prefix
+    apiKey: '3196c9c0ab4f6b69ab91e276edd06071' 
 };
