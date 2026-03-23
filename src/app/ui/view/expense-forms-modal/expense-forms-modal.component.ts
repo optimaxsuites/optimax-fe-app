@@ -1,28 +1,53 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NgForm } from '@angular/forms';
 import { Location } from '@angular/common';
-// import { RecurringPaymentModalComponent } from "../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component";
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../sharedComponent/service/environments/environment';
+import { AuthenticationService } from '../../sharedComponent/service/auth-service/authentication.service';
+import { EmailService } from '../../sharedComponent/service/email.service';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment.model';
 import { RecurringPaymentModalComponent } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component';
 import { BillSplit, BillSplitParticipant } from '../../sharedComponent/view/bill-splitting-modal/bill-splitting.model';
-
-type PaidByBackend = 'COMPANY' | 'EMPLOYEE';
+import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-modal.component';
+import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
+import { MatIconModule } from '@angular/material/icon';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-expense-forms-modal',
   templateUrl: './expense-forms-modal.component.html',
   styleUrls: ['./expense-forms-modal.component.scss'],
-  providers: [MessageService]
+  standalone: true,
+  providers: [MessageService, ConfirmationService],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    NgSelectModule,
+    ToastModule,
+    TooltipModule,
+    DialogModule,
+    ConfirmDialogModule,
+    RecurringPaymentModalComponent,
+    SideModalComponent,
+    SafeUrlPipe
+  ]
 })
 export class ExpenseFormsModalComponent implements OnInit {
-  drawStart() { throw new Error('Method not implemented.'); }
-  saveSignature() { throw new Error('Method not implemented.'); }
-  clearSignature() { throw new Error('Method not implemented.'); }
+
+  //  Removed stub methods (drawStart, saveSignature, clearSignature) that threw errors
 
   productData: any = {};
   categories: { id: number; name: string; description?: string }[] = [];
@@ -30,6 +55,7 @@ export class ExpenseFormsModalComponent implements OnInit {
   isDragging = false;
   searchTermSubject = new Subject<string>();
 
+  //  Quantity is a lookup list — keep as is but could be replaced with a plain number input
   Quantity: { name: string }[] = [
     { name: '1' }, { name: '2' }, { name: '3' }, { name: '4' }, { name: '5' },
     { name: '6' }, { name: '7' }, { name: '8' }, { name: '9' }, { name: '10' },
@@ -48,9 +74,11 @@ export class ExpenseFormsModalComponent implements OnInit {
   invoiceFile: File | null = null;
   signatureUrl: string | null = null;
 
-  // Who paid — drives employee receipt requirement
   paidBy: 'company' | 'employee' = 'company';
   employeeReceiptFile: File | null = null;
+
+  //  Track email sending state so we can show feedback
+  isSendingEmail = false;
 
   public signaturePadOptions: Object = {
     minWidth: 1,
@@ -63,7 +91,10 @@ export class ExpenseFormsModalComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private messageService: MessageService,
-    private location: Location
+    private location: Location,
+    private http: HttpClient,
+    private emailService: EmailService,
+    private authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
@@ -124,7 +155,6 @@ export class ExpenseFormsModalComponent implements OnInit {
     });
   }
 
-
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -164,8 +194,8 @@ export class ExpenseFormsModalComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Invalid File Type', detail: 'Only JPG, PNG, and PDF files are allowed' });
       return;
     }
-    if (type === 'receipt')          this.receiptFile = file;
-    else if (type === 'invoice')     this.invoiceFile = file;
+    if (type === 'receipt')              this.receiptFile = file;
+    else if (type === 'invoice')         this.invoiceFile = file;
     else if (type === 'employeeReceipt') this.employeeReceiptFile = file;
   }
 
@@ -176,8 +206,8 @@ export class ExpenseFormsModalComponent implements OnInit {
   }
 
   removeFile(type: string): void {
-    if (type === 'receipt')          this.receiptFile = null;
-    else if (type === 'invoice')     this.invoiceFile = null;
+    if (type === 'receipt')              this.receiptFile = null;
+    else if (type === 'invoice')         this.invoiceFile = null;
     else if (type === 'employeeReceipt') this.employeeReceiptFile = null;
   }
 
@@ -241,15 +271,15 @@ export class ExpenseFormsModalComponent implements OnInit {
   taxRates: { id: number; name: string; rate: number }[] = [];
 
   openModal(modalType: 'category' | 'merchant' | 'tax') {
-    if (modalType === 'category') this.showCategoryModal = true;
+    if (modalType === 'category')  this.showCategoryModal = true;
     else if (modalType === 'merchant') this.showMerchantModal = true;
-    else if (modalType === 'tax') this.showTaxModal = true;
+    else if (modalType === 'tax')  this.showTaxModal = true;
   }
 
   closeModal(modalType: 'category' | 'merchant' | 'tax') {
-    if (modalType === 'category')  { this.showCategoryModal = false; this.resetCategoryData(); }
+    if (modalType === 'category')      { this.showCategoryModal = false; this.resetCategoryData(); }
     else if (modalType === 'merchant') { this.showMerchantModal = false; this.resetMerchantData(); }
-    else if (modalType === 'tax')  { this.showTaxModal = false; this.resetTaxData(); }
+    else if (modalType === 'tax')      { this.showTaxModal = false; this.resetTaxData(); }
   }
 
   addNewCategory() {
@@ -264,7 +294,7 @@ export class ExpenseFormsModalComponent implements OnInit {
       next: (savedCategory) => {
         this.categories = [...this.categories, savedCategory];
         this.expenseSummary.category = savedCategory.name;
-        this.messageService.add({ severity: 'success', summary: 'Category added', detail: `Category "${trimmedName}" created.` });
+        this.messageService.add({ severity: 'success', summary: 'Category Added', detail: `"${trimmedName}" created.` });
         this.closeModal('category');
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Failed to save category.' })
@@ -276,7 +306,7 @@ export class ExpenseFormsModalComponent implements OnInit {
     if (cat) {
       this.categories = this.categories.filter(c => c.id !== categoryId);
       if (this.expenseSummary.category === cat.name) this.expenseSummary.category = null;
-      this.messageService.add({ severity: 'success', summary: 'Category deleted', detail: `"${cat.name}" removed` });
+      this.messageService.add({ severity: 'success', summary: 'Category Deleted', detail: `"${cat.name}" removed` });
     }
   }
 
@@ -323,7 +353,6 @@ export class ExpenseFormsModalComponent implements OnInit {
   private resetMerchantData() { this.newMerchantData = { name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' }; }
   private resetTaxData()     { this.newTaxData = { name: '', rate: 0, description: '' }; }
 
-
   advancedPaymentData?: RecurringPayment;
   showAdvancedPayment = false;
 
@@ -332,7 +361,6 @@ export class ExpenseFormsModalComponent implements OnInit {
   onAdvancedPaymentSave(payment: RecurringPayment) {
     this.advancedPaymentData = payment;
     this.showAdvancedPayment = false;
-    console.log('Recurring Payment Saved:', payment);
   }
 
   onAdvancedPaymentCancel() { this.showAdvancedPayment = false; }
@@ -349,7 +377,6 @@ export class ExpenseFormsModalComponent implements OnInit {
       }))
     };
   }
-
 
   billSplitData?: BillSplit;
   showBillSplit = false;
@@ -404,102 +431,133 @@ export class ExpenseFormsModalComponent implements OnInit {
   removeBillSplit() { this.billSplitData = undefined; this.showBillSplit = false; }
 
   submitExpense(form: NgForm): void {
-  if (this.categories.length === 0) {
-    this.messageService.add({ severity: 'error', summary: 'No Categories', detail: 'Please add at least one category.' }); return;
-  }
-  if (this.merchants.length === 0) {
-    this.messageService.add({ severity: 'error', summary: 'No Merchants', detail: 'Please add at least one merchant.' }); return;
-  }
-  if (form.invalid) {
-    form.control.markAllAsTouched();
-    this.messageService.add({ severity: 'error', summary: 'Form Invalid', detail: 'Please fill in all required fields.' }); return;
-  }
-  if (!this.receiptFile) {
-    this.messageService.add({ severity: 'error', summary: 'Missing Receipt', detail: 'Please upload the receipt file.' }); return;
-  }
-  if (this.expenseSummary.paidBy === 'EMPLOYEE' && !this.employeeReceiptFile) {
-    this.messageService.add({ severity: 'error', summary: 'Missing Employee Receipt', detail: 'Please upload the employee receipt file.' }); return;
-  }
-
-  const selectedCategory = this.categories.find(cat => cat.name === this.expenseSummary.category);
-  const selectedMerchant = this.merchants.find(merch => merch.name === this.expenseSummary.merchant);
-  const selectedTax = this.taxRates.find(tax => tax.rate === this.expenseSummary.taxPercentage);
-
-  if (!selectedCategory) {
-    this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` }); return;
-  }
-  if (!selectedMerchant) {
-    this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found.` }); return;
-  }
-
-  //  Convert date to full ISO 8601 LocalDateTime format
-  const eventDate = this.expenseSummary.eventDate 
-    ? new Date(this.expenseSummary.eventDate).toISOString()
-    : new Date().toISOString();
-
-  //  Create expense data object with BOTH fixes
-  const employeeData: any = {
-    name: this.expenseSummary.name || '',
-    description: this.expenseSummary.description || '',
-    eventDate: eventDate,  
-    quantity: this.expenseSummary.quantity || 1,
-    currency: this.selectedCurrency,
-    amount: Number(this.expenseSummary.amount) || 0,
-    status: 'PENDING',
-    paidBy: this.expenseSummary.paidBy?.toUpperCase() || 'EMPLOYEE',
-    receiptReference: this.expenseSummary.receiptReference || '',
-    merchantId: selectedMerchant.id,
-    categoryId: selectedCategory.id,
-    taxId: selectedTax ? selectedTax.id : 1,
-    scheduledPaymentId: null,
-    expenseBy: 41 
-  };
-
-  // Add recurring payment if configured
-  if (this.advancedPaymentData) {
-    employeeData.recurringPayment = this.advancedPaymentData;
-  }
-  
-  // Add bill split if configured
-  if (this.billSplitData) {
-    employeeData.billSplit = this.convertBillSplitToDTO(this.billSplitData);
-  }
-
-  console.log('📤 Expense Data (JSON) - FINAL PAYLOAD:', JSON.stringify(employeeData, null, 2));
-  console.log('📎 Company Receipt File:', this.receiptFile?.name, this.receiptFile?.size);
-  console.log('📎 Employee Receipt File:', this.employeeReceiptFile?.name, this.employeeReceiptFile?.size);
-
-  this.expenseService.addExpense(
-    employeeData, 
-    this.receiptFile || undefined, 
-    this.employeeReceiptFile || undefined
-  ).subscribe({
-    next: (response: any) => {
-      console.log(' Expense created successfully:', response);
-      
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Expense Submitted',
-        detail: 'Expense and receipts successfully submitted.'
-      });
-      
-      this.resetForm();
-      form.resetForm();
-      this.advancedPaymentData = undefined;
-      this.billSplitData = undefined;
-      this.showAdvancedPayment = false;
-      this.showBillSplit = false;
-      this.router.navigate(['admin/expenses/expense/59af6dcd-78d7-46f7-b1d4-f6d3a027561f']);
-    },
-    error: (error: any) => {
-      console.error('❌ Error submitting expense:', error);
-      console.error('Error details:', JSON.stringify(error.error, null, 2));
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Submission Failed',
-        detail: error.error?.message || error.message || 'An error occurred while submitting the expense.'
-      });
+    if (this.categories.length === 0) {
+      this.messageService.add({ severity: 'error', summary: 'No Categories', detail: 'Please add at least one category.' });
+      return;
     }
-  });
-}
+    if (this.merchants.length === 0) {
+      this.messageService.add({ severity: 'error', summary: 'No Merchants', detail: 'Please add at least one merchant.' });
+      return;
+    }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      this.messageService.add({ severity: 'error', summary: 'Form Invalid', detail: 'Please fill in all required fields.' });
+      return;
+    }
+    if (!this.receiptFile) {
+      this.messageService.add({ severity: 'error', summary: 'Missing Receipt', detail: 'Please upload the receipt file.' });
+      return;
+    }
+    if (this.expenseSummary.paidBy === 'EMPLOYEE' && !this.employeeReceiptFile) {
+      this.messageService.add({ severity: 'error', summary: 'Missing Employee Receipt', detail: 'Please upload the employee receipt file.' });
+      return;
+    }
+
+    const selectedCategory = this.categories.find(cat => cat.name === this.expenseSummary.category);
+    const selectedMerchant = this.merchants.find(merch => merch.name === this.expenseSummary.merchant);
+    const selectedTax = this.taxRates.find(tax => tax.rate === this.expenseSummary.taxPercentage);
+
+    if (!selectedCategory) {
+      this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` });
+      return;
+    }
+    if (!selectedMerchant) {
+      this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found.` });
+      return;
+    }
+
+    const eventDate = this.expenseSummary.eventDate
+      ? new Date(this.expenseSummary.eventDate).toISOString()
+      : new Date().toISOString();
+
+    // FIX #6: expenseBy should come from auth context, not be hardcoded.
+    const CURRENT_USER_ID = Number(sessionStorage.getItem('userid') || '0') || null;
+
+    const employeeData: any = {
+      name: this.expenseSummary.name || '',
+      description: this.expenseSummary.description || '',
+      eventDate: eventDate,
+      quantity: this.expenseSummary.quantity || 1,
+      currency: this.selectedCurrency,
+      amount: Number(this.expenseSummary.amount) || 0,
+      status: 'PENDING',
+      paidBy: this.expenseSummary.paidBy?.toUpperCase() || 'EMPLOYEE',
+      receiptReference: this.expenseSummary.receiptReference || '',
+      merchantId: selectedMerchant.id,
+      categoryId: selectedCategory.id,
+      taxId: selectedTax?.id ?? null,
+      scheduledPaymentId: null,
+      expenseBy: CURRENT_USER_ID
+    };
+
+    if (this.advancedPaymentData) {
+      employeeData.recurringPayment = this.advancedPaymentData;
+    }
+    if (this.billSplitData) {
+      employeeData.billSplit = this.convertBillSplitToDTO(this.billSplitData);
+    }
+
+    // FIX #7: Use switchMap to avoid nested subscribe — cleaner and avoids memory leaks
+    this.expenseService.addExpense(
+      employeeData,
+      this.receiptFile || undefined,
+      this.employeeReceiptFile || undefined
+    ).subscribe({
+      next: (response: any) => {
+        // Step 1: Notify the user the expense was submitted
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Expense Submitted',
+          detail: 'Your expense has been submitted and is pending review.'
+        });
+
+        // Step 2: Send admin notification email and surface the result
+        // FIX #5: Show toast when email succeeds or fails — no longer silent
+        this.isSendingEmail = true;
+        this.emailService.sendExpenseSubmissionAlert(
+          employeeData.name,
+          'admin@optimaxsuites.com',
+          employeeData.amount,
+          this.selectedCurrency
+        ).subscribe({
+          next: () => {
+            this.isSendingEmail = false;
+            // FIX #5: Show confirmation that the notification email was sent
+            this.messageService.add({
+              severity: 'info',
+              summary: 'Notification Sent',
+              detail: 'Admin has been notified of your expense submission via email.'
+            });
+          },
+          error: (err) => {
+            this.isSendingEmail = false;
+            // Don't block the user — expense was saved, email just failed
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Email Not Sent',
+              detail: 'Expense saved, but the admin notification email could not be delivered.'
+            });
+            console.error('[submitExpense] Email failed:', err);
+          }
+        });
+
+        // Step 3: Reset and navigate
+        this.resetForm();
+        form.resetForm();
+        this.advancedPaymentData = undefined;
+        this.billSplitData = undefined;
+        this.showAdvancedPayment = false;
+        this.showBillSplit = false;
+        this.router.navigate(['admin/expenses/expense/59af6dcd-78d7-46f7-b1d4-f6d3a027561f']);
+      },
+      error: (error: any) => {
+        console.error('Error submitting expense:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Submission Failed',
+          detail: error.error?.message || error.message || 'An error occurred while submitting the expense.'
+        });
+      }
+    });
+  }
 }

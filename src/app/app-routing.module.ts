@@ -9,6 +9,7 @@ import { ExpenseSummaryComponent } from './ui/view/expense-summary/expense-summa
 import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
+import { ExpenseAnalyticsComponent } from './ui/view/expense-analytics/expense-analytics.component';
 import { TaxReportComponent } from './ui/view/tax-report/tax-report.component';
 import { MobileCheckoutComponent } from './ui/view/mobile-checkout/mobile-checkout.component';
 
@@ -34,6 +35,7 @@ const routes: Routes = [
       { path: 'uploadReciept', component: UploadRecieptComponent },
       { path: 'Addperdiem', component: AddPerDiemComponent },
       { path: 'expense-summary', component: ExpenseSummaryComponent },
+      { path: 'analytics', component: ExpenseAnalyticsComponent },
     ],
   },
 

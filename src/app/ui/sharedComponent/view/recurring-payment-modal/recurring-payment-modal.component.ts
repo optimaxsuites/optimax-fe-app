@@ -1,11 +1,14 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RecurringPayment } from './recurring-payment.model';
 
 @Component({
   selector: 'app-recurring-payment-modal',
   templateUrl: './recurring-payment-modal.component.html',
-  styleUrls: ['./recurring-payment-modal.component.scss']
+  styleUrls: ['./recurring-payment-modal.component.scss'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule]
 })
 export class RecurringPaymentModalComponent {
   @Output() save = new EventEmitter<RecurringPayment>();

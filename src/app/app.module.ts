@@ -86,18 +86,13 @@ import { SafeUrlPipe } from './ui/sharedComponent/safe-url.pipe';
   declarations: [
     AppComponent,
     AddPerDiemComponent,
-    ExpenseApprovalComponent,
-    ExpenseFormsModalComponent,
-    ExpenseSummaryComponent,
     UploadRecieptComponent,
     ExpensesComponent,
     ApprovalReportsComponent,
     DisbursementComponent,
-    RecurringPaymentModalComponent,
     TaxReportComponent,
     MobileCheckoutComponent,
-    BillSplittingModalComponent,
-    SafeUrlPipe
+    BillSplittingModalComponent
   ],
   imports: [
     BrowserModule,
@@ -173,7 +168,12 @@ import { SafeUrlPipe } from './ui/sharedComponent/safe-url.pipe';
     ButtonComponent,
     SideModalComponent,
     ExpenseTableComponent,
-    ReimbursementComponent
+    ReimbursementComponent,
+    ExpenseApprovalComponent,
+    ExpenseFormsModalComponent,
+    ExpenseSummaryComponent,
+    RecurringPaymentModalComponent,
+    SafeUrlPipe
   ],
 
    providers: [
