@@ -257,6 +257,33 @@ button {
   }
 }
 
+td.empty-state {
+  text-align: center !important;
+  padding: 3rem 1rem;
+  //width: 100%;
+
+  .empty-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    .empty-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #4a5568; 
+      margin: 0;
+    }
+
+    .empty-subtitle {
+      font-size: 1.25rem;
+      color: #a0aec0;
+      margin: 0;
+    }
+  }
+}
 
 /* MODAL ANIMATION */
 

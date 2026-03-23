@@ -16,13 +16,84 @@ export class AttendancetableService {
     return of(this.attendanceSubject.value);
   }
 
-  constructor(private officeHoursService: OfficeHoursService) {
+  private absentTimeout: any;
+private absentInterval: any;
+
+constructor(private officeHoursService: OfficeHoursService) {
+  this.scheduleAbsentCheck();
+
+  // Re-schedule if admin changes office hours
+  this.officeHoursService.officeHours$.subscribe(() => {
+    this.scheduleAbsentCheck();
+  });
+}
+
+private scheduleAbsentCheck() {
+  // Clear any existing timers before rescheduling
+  if (this.absentTimeout) clearTimeout(this.absentTimeout);
+  if (this.absentInterval) clearInterval(this.absentInterval);
+
+  const now = new Date();
+  const officeHours = this.officeHoursService.getOfficeHours();
+  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
+
+  const absentTimeToday = new Date();
+  absentTimeToday.setHours(hour, minute, 0, 0);
+
+  const msUntilAbsentTime = absentTimeToday.getTime() - now.getTime();
+
+  if (msUntilAbsentTime > 0) {
+    // Fire exactly when absentTime hits
+    this.absentTimeout = setTimeout(() => {
+      this.autoMarkAbsentIfNeeded();
+
+      // Then keep checking every minute as a safety net
+      this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
+    }, msUntilAbsentTime);
+
+  } else {
+    // absentTime already passed
+    this.autoMarkAbsentIfNeeded();
+    this.absentInterval = setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
+  }
+}
+
+  /*constructor(private officeHoursService: OfficeHoursService) {
+  this.scheduleAbsentCheck();
+}
+
+private scheduleAbsentCheck() {
+  const now = new Date();
+  const officeHours = this.officeHoursService.getOfficeHours();
+  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
+
+  const absentTimeToday = new Date();
+  absentTimeToday.setHours(hour, minute, 0, 0);
+
+  const msUntilAbsentTime = absentTimeToday.getTime() - now.getTime();
+
+  if (msUntilAbsentTime > 0) {
+    // Fire exactly when absentTime hits
+    setTimeout(() => {
+      this.autoMarkAbsentIfNeeded();
+
+      // Then keep checking every minute as a safety net
+      setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
+    }, msUntilAbsentTime);
+
+  } else {
+    // absentTime already passed (e.g. page refreshed after absentTime)
+    this.autoMarkAbsentIfNeeded();
+    setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
+  }
+}*/
+  /*constructor(private officeHoursService: OfficeHoursService) {
     setInterval(() => {
     this.autoMarkAbsentIfNeeded();
   }, 60000); // every minute
-  }
+  }*/
 
-clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
 if (this.hasCompletedToday(employeeid)) {
   return; // Block further clocking
 }
@@ -41,11 +112,16 @@ if (this.hasCompletedToday(employeeid)) {
       date: today,
       checkIn: null,
       checkOut: null,
+      checkInLocation: null,
+      checkOutLocation: null,
       status: 'ABSENT',
       hours: 0
     };
     data.unshift(record);
   }
+
+   // Capture location
+  const location = await this.getCurrentLocation();
 
   const now = new Date();
   const officeHours = this.officeHoursService.getOfficeHours();
@@ -54,20 +130,10 @@ if (this.hasCompletedToday(employeeid)) {
   const closing = this.convertToDateTime(officeHours.closingTime);
   const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod)
 
-  /*if (action === 'IN') {
-    record.checkIn = now.toLocaleTimeString();
-
-    // LATE or PRESENT logic
-    if (now > opening) {
-      record.status = 'LATE';
-    } else {
-      record.status = 'PRESENT';
-    }
-  }*/
-
   if (action === 'IN') {
 
   record.checkIn = now.toLocaleTimeString();
+  record.checkInLocation = location;  // to store location
 
   // If admin opened attendance, never mark late
   if (record.overrideOpen) {
@@ -79,12 +145,7 @@ if (this.hasCompletedToday(employeeid)) {
   } else {
 
     const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
-
-     if (now <= graceTime) {
-      record.status = 'PRESENT';
-    } else {
-      record.status = 'LATE';
-    }
+     record.status = now <= graceTime ? 'PRESENT' : 'LATE';
     // Normal Late / Present logic
     /*if (now > opening) {
       record.status = 'LATE';
@@ -97,6 +158,7 @@ if (this.hasCompletedToday(employeeid)) {
 
   if (action === 'OUT') {
     record.checkOut = now.toLocaleTimeString();
+    record.checkOutLocation = location; 
     record.hours = this.calculateHours(record.checkIn!, record.checkOut);
 
     // OVERTIME logic (but do not remove LATE)
@@ -168,6 +230,8 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
       date: date,
       checkIn: null,
       checkOut: null,
+      checkInLocation: null,
+      checkOutLocation: null,
       status: newStatus,
       hours: 0
     });
@@ -222,6 +286,8 @@ private autoMarkAbsentIfNeeded() {
         date: today,
         checkIn: null,
         checkOut: null,
+        checkInLocation: null,
+        checkOutLocation: null,
         status: 'ABSENT',
         hours: 0
       });
@@ -359,6 +425,51 @@ overrideAttendance(
   record.overriddenBy = admin;
 
   this.attendanceSubject.next(data);
+}
+
+private getCurrentLocation(): Promise<string> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve('Location unavailable');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude.toFixed(5);
+        const lng = position.coords.longitude.toFixed(5);
+        /*resolve(`${lat}, ${lng}`);*/
+        // --- REVERSE GEOCODING GOES HERE ---
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            { headers: { 'User-Agent': 'YourAppName/1.0' } }
+          );
+          const json = await response.json();
+          resolve(json.display_name ?? `${lat}, ${lng}`);         // human-readable address, falls back to coords
+        } catch {
+          resolve(`${lat}, ${lng}`);                              // if API fails, fall back to raw coords
+        }
+      },
+      (error) => {
+        // Gracefully handle denial or timeout
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            resolve('Location denied');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            resolve('Location unavailable');
+            break;
+          case error.TIMEOUT:
+            resolve('Location timeout');
+            break;
+          default:
+            resolve('Location error');
+        }
+      },
+      { timeout: 8000, maximumAge: 0 }
+    );
+  });
 }
 
 

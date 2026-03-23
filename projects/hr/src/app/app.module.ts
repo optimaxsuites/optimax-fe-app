@@ -80,7 +80,7 @@ import { LeaveUsageComponent } from './ui/view/leave/leave-usage/leave-usage.com
 import { LeaveRequestComponent } from './ui/view/leave/leave-request/leave-request.component';
 import { LeavePlanComponent } from './ui/view/leave/leave-plan/leave-plan.component';
 import { LeavePlanningDashboardComponent } from './ui/view/leave/leave-planning-dashboard/leave-planning-dashboard.component';
-import { ApplyComponent } from './ui/view/leave/apply/apply.component';
+// import { ApplyComponent } from './ui/view/leave/apply/apply.component';
 import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.component';
 import { PerformanceComponent } from './ui/view/performance/performance.component';
 import { AppraisallistComponent } from './ui/view/performance/appraisallist/appraisallist.component';
@@ -128,18 +128,18 @@ import { AttendashboardComponent } from './ui/view/attendance/admin/attendashboa
 import { StatsCardsComponent } from './ui/view/attendance/admin/attendashboard/stats-cards/stats-cards.component';
 import { HeatmapComponent } from './ui/view/attendance/admin/attendashboard/heatmap/heatmap.component';
 import { LateArrivalsComponent } from './ui/view/attendance/admin/attendashboard/late-arrivals/late-arrivals.component';
-// import { AttendancetableComponent } from './ui/view/attendance/admin/attendancetable/attendancetable.component';
-// import { AttendancefilterComponent } from './ui/view/attendance/admin/attendancetable/attendancefilter/attendancefilter.component';
-// import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendancesummary/attendancesummary.component';
+//import { AttendancetableComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancetable.component';
+//import { AttendancefilterComponent } from './ui/view/attendance/admin/attendashboard/attendancetable/attendancefilter/attendancefilter.component';
+//import { AttendancesummaryComponent } from './ui/view/attendance/admin/attendashboard/attendancesummary/attendancesummary.component';
 import { OfficeHoursComponent } from './ui/view/attendance/admin/attendashboard/office-hours/office-hours.component';
 import { EmployeedashboardComponent } from './ui/view/attendance/employee/employeedashboard/employeedashboard.component';
 import { TodaySummaryComponent } from './ui/view/attendance/employee/employeedashboard/today-summary/today-summary.component';
 import { CheckinCheckoutComponent } from './ui/view/attendance/employee/employeedashboard/checkin-checkout/checkin-checkout.component';
-// import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeesummary/employeesummary.component';
-// import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeesummary/monthlysummary/monthlysummary.component';
+//import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/employeesummary.component';
+//import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
 import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
 import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
-// import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
+//import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
 import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
@@ -224,7 +224,7 @@ import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-co
     LeavePlanComponent,
     LeavePlanningDashboardComponent,
     AssignLeaveComponent,
-    ApplyComponent,
+    // ApplyComponent,
     PerformanceComponent,
     AppraisallistComponent,
     AppraisalcycleComponent,

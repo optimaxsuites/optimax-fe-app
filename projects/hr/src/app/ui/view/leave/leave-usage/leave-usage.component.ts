@@ -7,6 +7,7 @@ import {
   DayCellContentArg,
 } from '@fullcalendar/core';
 import { LeaveServiceService } from '../../../service/leave-service.service';
+import { LeaveApiService } from '../../../service/leave-api.service';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
@@ -17,6 +18,8 @@ import {
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-leave-usage',
@@ -25,10 +28,17 @@ import { TableAction, TableColumn } from '../../../shared-component/view/table/t
   providers: [MessageService],
 })
 export class LeaveUsageComponent implements OnInit {
+  // API Data
+  currentEmployee: any = null;
+  currentEmployeeId: number | null = null;
+  leaveBalances: any[] = [];
+  leaveTypes: any[] = [];
+  isLoadingStats: boolean = false;
+
+  // Existing properties
   employee!: Employee;
   statuses: string[] = ['Pending Approval', 'Approved', 'Rejected'];
   leaveSettings!: LeaveSettings;
-  leaveTypes!: string[];
   allowedLeaveTypes!: string[];
   userInfoRegData: any[] = [];
   userRegData: any = {};
@@ -79,28 +89,19 @@ export class LeaveUsageComponent implements OnInit {
     dayCellDidMount: this.styleDayCell.bind(this),
   };
 
-  // totalDays = 21;
-  // usedDays = 6;
-  // total = 53;
-  // approved = 40;
-  // rejected = 3;
-  // pending = 15;
-
   constructor(
     private messageService: MessageService,
     private token: RandomTokenService,
     private leaveService: LeaveServiceService,
+    private apiService: LeaveApiService
   ) {}
 
   ngOnInit() {
+    this.loadCurrentEmployeeStats();
+    
+    // Keep existing mock data for leave requests
     this.leaveSettings = this.leaveService.getLeaveSettings();
-    this.leaveTypes = this.leaveSettings.leaveTypes
-      .filter((leave) => leave.isActive)
-      .map((leave) => leave.typeName);
     this.employee = this.leaveService.getEmployeeById('EMP-001');
-    this.allowedLeaveTypes = this.employee.leaveTypes
-      .filter((leave) => leave.allocatedDays > leave.daysUsed)
-      .map((leave) => leave.typeName);
 
     this.today = new Date().toISOString().split('T')[0];
     this.userRegData = this.userInfoRegData;
@@ -117,13 +118,130 @@ export class LeaveUsageComponent implements OnInit {
     this.updateCalendarEvents();
   }
 
+  // ==================== API DATA LOADING ====================
+
+  loadCurrentEmployeeStats() {
+    this.isLoadingStats = true;
+
+    this.apiService.getCurrentEmployee().subscribe({
+      next: (employee) => {
+        if (!employee) {
+          console.warn('No employee loaded');
+          this.isLoadingStats = false;
+          return;
+        }
+
+        this.currentEmployee = employee;
+        this.currentEmployeeId = employee.id;
+
+        console.log('✅ Current employee loaded:', employee);
+
+        // Load balances and leave types
+        this.loadLeaveBalances();
+      },
+      error: (err) => {
+        console.error('❌ Failed to load current employee:', err);
+        this.isLoadingStats = false;
+      }
+    });
+  }
+
+  loadLeaveBalances() {
+    forkJoin({
+      balances: this.apiService.getLeaveBalances().pipe(catchError(() => of([]))),
+      leaveTypes: this.apiService.getLeaveTypes().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: (data) => {
+        // Filter balances for current employee
+        this.leaveBalances = (data.balances || []).filter(
+          (balance: any) => balance.employee === this.currentEmployeeId
+        );
+
+        this.leaveTypes = data.leaveTypes || [];
+
+        console.log('✅ Leave balances loaded:', {
+          balances: this.leaveBalances.length,
+          leaveTypes: this.leaveTypes.length
+        });
+
+        this.isLoadingStats = false;
+      },
+      error: (err) => {
+        console.error('❌ Failed to load leave balances:', err);
+        this.isLoadingStats = false;
+      }
+    });
+  }
+
+  // ==================== STATS CALCULATIONS FROM API ====================
+
+  getTotalAllocatedDays(): number {
+    if (!this.leaveBalances || this.leaveBalances.length === 0) {
+      return 0;
+    }
+
+    return this.leaveBalances.reduce((sum, balance) => {
+      const total = (balance.balance || 0) + (balance.usedDays || 0);
+      return sum + total;
+    }, 0);
+  }
+
+  getTotalUsedDays(): number {
+    if (!this.leaveBalances || this.leaveBalances.length === 0) {
+      return 0;
+    }
+
+    return this.leaveBalances.reduce((sum, balance) => {
+      return sum + (balance.usedDays || 0);
+    }, 0);
+  }
+
+  getRemainingDays(): number {
+    if (!this.leaveBalances || this.leaveBalances.length === 0) {
+      return 0;
+    }
+
+    return this.leaveBalances.reduce((sum, balance) => {
+      return sum + (balance.balance || 0);
+    }, 0);
+  }
+
+  // ==================== LEAVE TYPE CARDS FROM API ====================
+
+  getLeaveTypeCards() {
+    if (!this.leaveBalances || !this.leaveTypes || this.leaveBalances.length === 0) {
+      return [];
+    }
+
+    return this.leaveBalances.map(balance => {
+      // Find the corresponding leave type
+      const leaveType = this.leaveTypes.find(lt => lt.id === balance.leaveTypeId);
+      
+      const totalAllocated = (balance.balance || 0) + (balance.usedDays || 0);
+      const remaining = balance.balance || 0;
+      const used = balance.usedDays || 0;
+      const usedPercentage = totalAllocated > 0 ? (used / totalAllocated) * 100 : 0;
+
+      return {
+        typeName: leaveType?.name || 'Unknown',
+        allocatedDays: totalAllocated,
+        daysUsed: used,
+        remainingDays: remaining,
+        usedPercentage: usedPercentage,
+        isActive: true
+      };
+    });
+  }
+
   // ==================== CALENDAR STYLING ====================
+
   formatDateLocal(date: Date): string {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
+
   getDayCellClass(arg: any): string[] {
     const dateStr = this.formatDateLocal(arg.date);
     const isPast = arg.date < new Date(new Date().setHours(0, 0, 0, 0));
@@ -178,19 +296,13 @@ export class LeaveUsageComponent implements OnInit {
       return false;
     }
 
-    // Simple string comparison - no Date objects at all
     return this.allowedDateRanges.some((range) => {
-      console.log(
-        `Checking if ${dateString} is between ${range.start} and ${range.end} - Result: ${dateString >= range.start && dateString <= range.end}`,
-      );
       return dateString >= range.start && dateString <= range.end;
     });
   }
 
-  // For HTML min attribute
   getMinAllowedDate(): string {
     if (this.allowedDateRanges.length === 0) {
-      // Return a future date to disable all past dates
       const futureDate = new Date();
       futureDate.setFullYear(futureDate.getFullYear() + 10);
       return futureDate.toISOString().split('T')[0];
@@ -201,10 +313,8 @@ export class LeaveUsageComponent implements OnInit {
     return minDate.toISOString().split('T')[0];
   }
 
-  // For HTML max attribute
   getMaxAllowedDate(): string {
     if (this.allowedDateRanges.length === 0) {
-      // Return today to disable all dates
       return this.today;
     }
 
@@ -213,7 +323,6 @@ export class LeaveUsageComponent implements OnInit {
     return maxDate.toISOString().split('T')[0];
   }
 
-  // Custom date filter for input
   isDateDisabled(date: string): boolean {
     const isPast = new Date(date) < new Date(new Date().setHours(0, 0, 0, 0));
     if (isPast) return true;
@@ -283,30 +392,7 @@ export class LeaveUsageComponent implements OnInit {
       .join(', ');
   }
 
-  // ==================== EXISTING METHODS ====================
-
-  // get remainingDays(): number {
-  //   return this.totalDays - this.usedDays;
-  // }
-
-  // get usedPercentage(): number {
-  //   return (this.usedDays / this.totalDays) * 100;
-  // }
-
-  getTotalAllocatedDays(): number {
-    return this.employee.leaveTypes.reduce(
-      (sum, lt) => sum + lt.allocatedDays,
-      0,
-    );
-  }
-
-  getTotalUsedDays(): number {
-    return this.employee.leaveTypes.reduce((sum, lt) => sum + lt.daysUsed, 0);
-  }
-
-  getRemainingDays(): number {
-    return this.getTotalAllocatedDays() - this.getTotalUsedDays();
-  }
+  // ==================== LEAVE REQUEST METHODS ====================
 
   openApplyLeaveModal() {
     if (!this.hasPlannedLeaves) {
@@ -418,19 +504,18 @@ export class LeaveUsageComponent implements OnInit {
     this.calendarEvents = this.myRequests.map((req: any) => {
       const { start, end } = this.parseDateRange(req.Date);
 
-      // Determine color based on status
-      let backgroundColor = '#3B82F6'; // Default blue
+      let backgroundColor = '#3B82F6';
       let borderColor = '#2563EB';
       let textColor = '#FFFFFF';
 
       if (req.Status.includes('Approved')) {
-        backgroundColor = '#10B981'; // Green
+        backgroundColor = '#10B981';
         borderColor = '#059669';
       } else if (req.Status.includes('Rejected')) {
-        backgroundColor = '#EF4444'; // Red
+        backgroundColor = '#EF4444';
         borderColor = '#DC2626';
       } else if (req.Status.includes('Pending')) {
-        backgroundColor = '#F59E0B'; // Amber/Yellow
+        backgroundColor = '#F59E0B';
         borderColor = '#D97706';
       }
 

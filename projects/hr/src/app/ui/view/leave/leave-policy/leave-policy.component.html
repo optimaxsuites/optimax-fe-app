@@ -5,13 +5,24 @@
       <div>
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Leave Settings</h1>
         <p class="text-gray-600 text-lg">
-          Configure leave policies and allocations
+          Configure leave policies and allocations (Level-Based System)
         </p>
       </div>
     </div>
 
-    <!-- MAIN GRID -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Loading State -->
+    <div
+      *ngIf="isLoading"
+      class="bg-white rounded-lg border border-gray-200 p-12 text-center"
+    >
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-customBlue mx-auto mb-4"
+      ></div>
+      <p class="text-gray-600">Loading leave settings...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- LEFT: CORE SETTINGS -->
       <div class="lg:col-span-2 space-y-6">
         <!-- Summary Stats -->
@@ -19,10 +30,10 @@
           <div class="flex flex-wrap justify-between items-start gap-4">
             <div>
               <h2 class="text-xl font-semibold text-gray-800">
-                Total Allocated Days (All Active Leave Types)
+                Total Allocated Days (Level-Based)
               </h2>
               <p class="text-lg text-gray-600">
-                Sum of all active leave type allocations
+                Example: {{ levels[0]?.name || "First Level" }}
               </p>
             </div>
 
@@ -34,109 +45,6 @@
                 total days / year
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Automatic Approval -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-800">
-                Automatic Leave Approval
-              </h2>
-              <p class="text-base text-gray-600">
-                Auto-approve requests when balance is sufficient
-              </p>
-            </div>
-
-            <button
-              (click)="toggleAutomaticApproval()"
-              [ngClass]="{
-                'bg-teal-600': leaveSettings.automaticApproval,
-                'bg-gray-300': !leaveSettings.automaticApproval,
-              }"
-              class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none"
-            >
-              <span
-                [ngClass]="{
-                  'translate-x-7': leaveSettings.automaticApproval,
-                  'translate-x-1': !leaveSettings.automaticApproval,
-                }"
-                class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
-              ></span>
-            </button>
-          </div>
-
-          <div
-            *ngIf="leaveSettings.automaticApproval"
-            class="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-md text-base text-teal-800"
-          >
-            ✓ Enabled — requests will be auto-approved when balance allows.
-          </div>
-
-          <div
-            *ngIf="!leaveSettings.automaticApproval"
-            class="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-base text-gray-600"
-          >
-            Manual approval required for all requests.
-          </div>
-        </div>
-
-        <!-- Level-Based Allocation Toggle -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-800">
-                Level-Based Leave Allocation
-              </h2>
-              <p class="text-base text-gray-600">
-                Allocate different leave amounts based on employee level/grade
-              </p>
-            </div>
-
-            <button
-              (click)="toggleLevelBasedAllocation()"
-              [ngClass]="{
-                'bg-teal-600': leaveSettings.useLevelBasedAllocation,
-                'bg-gray-300': !leaveSettings.useLevelBasedAllocation,
-              }"
-              class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none"
-            >
-              <span
-                [ngClass]="{
-                  'translate-x-7': leaveSettings.useLevelBasedAllocation,
-                  'translate-x-1': !leaveSettings.useLevelBasedAllocation,
-                }"
-                class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
-              ></span>
-            </button>
-          </div>
-
-          <div
-            *ngIf="leaveSettings.useLevelBasedAllocation"
-            class="mt-4 space-y-3"
-          >
-            <div
-              class="p-3 bg-teal-50 border border-teal-200 rounded-md text-base text-teal-800"
-            >
-              ✓ Enabled — employees receive leave based on their level
-            </div>
-
-            <div class="flex gap-3">
-              <button
-                (click)="openAllocationMatrix()"
-                class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md text-sm font-medium transition-colors"
-              >
-                Configure Allocation Matrix
-              </button>
-            </div>
-          </div>
-
-          <div
-            *ngIf="!leaveSettings.useLevelBasedAllocation"
-            class="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-base text-gray-600"
-          >
-            Standard allocation — all employees receive the same leave amounts
           </div>
         </div>
 
@@ -154,217 +62,219 @@
 
             <button
               (click)="openPlanningPolicy()"
-              class="px-4 py-2 bg-customBlue hover:bg-customBlue/90 text-white rounded-md text-sm font-medium transition-colors"
+              class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md text-sm font-medium transition-colors"
             >
               Configure Planning
             </button>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div class="grid grid-cols-2 gap-4 mt-4">
             <div
               class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
             >
               <p class="text-xs text-customBlue font-medium">Max Days/Month</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
-                {{ planningPolicy.maxDaysPerMonth }}
+                {{ policy?.maxDaysPerMonth || 0 }}
               </p>
             </div>
             <div
               class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
             >
-              <p class="text-xs text-customBlue font-medium">Planning Months</p>
+              <p class="text-xs text-customBlue font-medium">Max Months/Year</p>
               <p class="text-2xl font-bold text-customBlue mt-1">
-                {{ planningPolicy.maxPlanningMonths }}
-              </p>
-            </div>
-            <div
-              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
-            >
-              <p class="text-xs text-customBlue font-medium">Total Allowed</p>
-              <p class="text-2xl font-bold text-customBlue mt-1">
-                {{ planningPolicy.totalAllowedPlannedDays }}
-              </p>
-            </div>
-            <div
-              class="p-3 bg-customBlue/5 rounded-lg border border-customBlue/30"
-            >
-              <p class="text-xs text-customBlue font-medium">Emergency Days</p>
-              <p class="text-2xl font-bold text-customBlue mt-1">
-                {{ planningPolicy.emergencyLeaveDaysAllowed }}
+                {{ policy?.maxMonthPerYear || 0 }}
               </p>
             </div>
           </div>
         </div>
 
-        <!-- Leave Types with Allocations -->
+        <!-- Leave Types with Allocation Matrix -->
         <div class="bg-white rounded-lg border border-gray-200 p-6">
           <div class="flex justify-between items-center mb-4">
             <div>
               <h2 class="text-xl font-semibold text-gray-800">
-                Leave Types & Allocations
+                Leave Types (Level-Based Allocation)
               </h2>
               <p class="text-base text-gray-600">
-                {{
-                  leaveSettings.useLevelBasedAllocation
-                    ? "Configure leave types (allocations set in matrix)"
-                    : "Each leave type has its own allocated days per year"
-                }}
+                Allocations are configured per level in the matrix below
               </p>
             </div>
 
             <button
-              (click)="showAddForm = !showAddForm"
-              class="px-4 py-2 bg-customBlue hover:bg-customBlue/90 text-white rounded-md text-sm font-medium transition-colors"
+              (click)="showAddLeaveTypeForm = !showAddLeaveTypeForm"
+              class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md text-sm font-medium transition-colors"
             >
-              {{ showAddForm ? "Cancel" : "+ Add Leave Type" }}
+              {{ showAddLeaveTypeForm ? "Cancel" : "+ Add Leave Type" }}
             </button>
           </div>
 
           <!-- Add Leave Type Form -->
           <div
-            *ngIf="showAddForm"
+            *ngIf="showAddLeaveTypeForm"
             class="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-md"
           >
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-              <div class="md:col-span-2">
-                <label class="block text-base font-medium text-gray-700 mb-1">
-                  Leave Type Name
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Leave Type Name *
                 </label>
                 <input
-                  [(ngModel)]="newLeaveType.typeName"
+                  [(ngModel)]="newLeaveType.name"
                   type="text"
                   placeholder="e.g. Study Leave"
+                  required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 outline-none"
                 />
               </div>
 
-              <div *ngIf="!leaveSettings.useLevelBasedAllocation">
-                <label class="block text-base font-medium text-gray-700 mb-1">
-                  Allocated Days
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Code *
                 </label>
                 <input
-                  [(ngModel)]="newLeaveType.allocatedDays"
-                  type="number"
-                  min="0"
-                  placeholder="0"
+                  [(ngModel)]="newLeaveType.code"
+                  type="text"
+                  placeholder="e.g. STUDY"
+                  required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 outline-none"
                 />
               </div>
 
-              <label class="flex items-center gap-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Default Days *
+                </label>
                 <input
-                  [(ngModel)]="newLeaveType.isActive"
-                  type="checkbox"
-                  class="w-4 h-4 text-teal-600 border-gray-300 rounded"
+                  [(ngModel)]="newLeaveType.defaultDays"
+                  type="number"
+                  min="0"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 outline-none"
                 />
-                <span class="text-base font-medium text-gray-700">Active</span>
-              </label>
-
-              <div class="flex gap-2">
-                <button
-                  (click)="addLeaveType()"
-                  class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-base transition-colors"
-                >
-                  Add
-                </button>
-                <button
-                  (click)="showAddForm = false"
-                  class="px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-md text-sm transition-colors"
-                >
-                  Cancel
-                </button>
               </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Description *
+                </label>
+                <input
+                  [(ngModel)]="newLeaveType.description"
+                  type="text"
+                  placeholder="Description"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+              <button
+                (click)="addLeaveType()"
+                [disabled]="
+                  !newLeaveType.name ||
+                  !newLeaveType.code ||
+                  !newLeaveType.description ||
+                  isCreatingLeaveType
+                "
+                class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <span
+                  *ngIf="isCreatingLeaveType"
+                  class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+                ></span>
+                <span>{{
+                  isCreatingLeaveType ? "Creating..." : "Create Leave Type"
+                }}</span>
+              </button>
+              <button
+                (click)="resetLeaveTypeForm()"
+                [disabled]="isCreatingLeaveType"
+                class="px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-md transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
             </div>
           </div>
 
           <!-- Leave Types List -->
           <div class="divide-y divide-gray-200">
             <div
-              *ngFor="let leaveType of leaveSettings.leaveTypes"
+              *ngFor="let leaveType of leaveTypes"
               class="flex items-center justify-between py-4"
             >
-              <div class="flex items-center gap-4 flex-1">
-                <span
-                  [ngClass]="{
-                    'bg-teal-100 text-teal-800': leaveType.isActive,
-                    'bg-gray-100 text-gray-600': !leaveType.isActive,
-                  }"
-                  class="px-3 py-1 text-sm font-semibold rounded-full"
-                >
-                  {{ leaveType.isActive ? "Active" : "Inactive" }}
+              <!-- Display Mode -->
+              <div
+                *ngIf="editingLeaveTypeId !== leaveType.id"
+                class="flex items-center gap-4 flex-1"
+              >
+                <span class="font-medium text-base min-w-[150px]">
+                  {{ leaveType.name }}
                 </span>
-                <span
-                  [ngClass]="{
-                    'text-gray-800': leaveType.isActive,
-                    'text-gray-500': !leaveType.isActive,
-                  }"
-                  class="font-medium text-base min-w-[150px]"
-                >
-                  {{ leaveType.typeName }}
+                <span class="text-sm text-gray-500">
+                  Code: {{ leaveType.code }}
                 </span>
+                <span class="text-sm text-gray-500">
+                  Default: {{ leaveType.defaultDays }} days
+                </span>
+                <span class="text-sm text-gray-500 italic">
+                  (Allocations in matrix)
+                </span>
+              </div>
 
-                <!-- Days Display/Edit (only if NOT using level-based) -->
-                <div
-                  *ngIf="!leaveSettings.useLevelBasedAllocation"
-                  class="flex items-center gap-3"
-                >
-                  <div
-                    *ngIf="editingLeaveId !== leaveType.id"
-                    class="flex items-center gap-2"
-                  >
-                    <span class="text-2xl font-bold text-teal-700">
-                      {{ leaveType.allocatedDays }}
-                    </span>
-                    <span class="text-sm text-gray-500">days/year</span>
-                  </div>
-
-                  <div
-                    *ngIf="editingLeaveId === leaveType.id"
-                    class="flex items-center gap-2"
-                  >
-                    <input
-                      [(ngModel)]="tempEditDays"
-                      type="number"
-                      min="0"
-                      class="w-20 px-2 py-1 text-center text-lg font-bold border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 outline-none"
-                    />
-                    <span class="text-sm text-gray-500">days</span>
-                  </div>
-                </div>
-
-                <div
-                  *ngIf="leaveSettings.useLevelBasedAllocation"
-                  class="text-sm text-gray-500 italic"
-                >
-                  Configured in allocation matrix
-                </div>
+              <!-- Edit Mode -->
+              <div
+                *ngIf="editingLeaveTypeId === leaveType.id"
+                class="flex items-center gap-4 flex-1"
+              >
+                <input
+                  [(ngModel)]="tempEditLeaveType.name"
+                  type="text"
+                  placeholder="Name"
+                  class="px-2 py-1 border border-gray-300 rounded-md"
+                />
+                <input
+                  [(ngModel)]="tempEditLeaveType.code"
+                  type="text"
+                  placeholder="Code"
+                  class="px-2 py-1 border border-gray-300 rounded-md w-24"
+                />
+                <input
+                  [(ngModel)]="tempEditLeaveType.defaultDays"
+                  type="number"
+                  min="0"
+                  class="px-2 py-1 border border-gray-300 rounded-md w-20"
+                />
+                <input
+                  [(ngModel)]="tempEditLeaveType.description"
+                  type="text"
+                  placeholder="Description"
+                  class="px-2 py-1 border border-gray-300 rounded-md flex-1"
+                />
               </div>
 
               <!-- Action Buttons -->
               <div class="flex gap-2">
-                <div
-                  *ngIf="
-                    editingLeaveId !== leaveType.id &&
-                    !leaveSettings.useLevelBasedAllocation
-                  "
-                >
+                <div *ngIf="editingLeaveTypeId !== leaveType.id">
                   <button
-                    (click)="startEditLeaveDays(leaveType)"
+                    (click)="startEditLeaveType(leaveType)"
                     class="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
                   >
-                    Edit Days
+                    Edit
                   </button>
                 </div>
 
-                <div *ngIf="editingLeaveId === leaveType.id" class="flex gap-2">
+                <div
+                  *ngIf="editingLeaveTypeId === leaveType.id"
+                  class="flex gap-2"
+                >
                   <button
-                    (click)="saveLeaveDays(leaveType)"
+                    (click)="saveLeaveType()"
                     class="px-3 py-1 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-md transition-colors"
                   >
                     Save
                   </button>
                   <button
-                    (click)="cancelEditLeaveDays()"
+                    (click)="cancelEditLeaveType()"
                     class="px-3 py-1 text-sm bg-gray-400 hover:bg-gray-500 text-white rounded-md transition-colors"
                   >
                     Cancel
@@ -372,20 +282,7 @@
                 </div>
 
                 <button
-                  (click)="toggleLeaveType(leaveType)"
-                  [ngClass]="{
-                    'bg-gray-200 hover:bg-gray-300 text-gray-800':
-                      leaveType.isActive,
-                    'bg-teal-600 hover:bg-teal-700 text-white':
-                      !leaveType.isActive,
-                  }"
-                  class="px-3 py-1 text-sm rounded-md transition-colors"
-                >
-                  {{ leaveType.isActive ? "Deactivate" : "Activate" }}
-                </button>
-
-                <button
-                  (click)="deleteLeaveType(leaveType.id)"
+                  (click)="deleteLeaveType(leaveType)"
                   class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
                 >
                   Delete
@@ -394,15 +291,22 @@
             </div>
 
             <div
-              *ngIf="
-                !leaveSettings.leaveTypes ||
-                leaveSettings.leaveTypes.length === 0
-              "
+              *ngIf="!leaveTypes || leaveTypes.length === 0"
               class="py-8 text-center text-gray-500"
             >
               <p class="text-lg">No leave types configured</p>
               <p class="text-sm mt-1">Click "Add Leave Type" to create one</p>
             </div>
+          </div>
+
+          <!-- Configure Allocation Matrix Button -->
+          <div class="mt-6 pt-4 border-t">
+            <button
+              (click)="openAllocationMatrix()"
+              class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md text-sm font-medium transition-colors"
+            >
+              Configure Allocation Matrix
+            </button>
           </div>
         </div>
       </div>
@@ -412,123 +316,59 @@
         <!-- Info Card -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-5">
           <h4 class="font-semibold text-blue-900 mb-3">
-            How Leave Settings Work
+            Level-Based Allocation
           </h4>
           <ul class="text-sm text-blue-800 space-y-2">
-            <li *ngIf="!leaveSettings.useLevelBasedAllocation">
-              • Each leave type has its own separate allocation
-            </li>
-            <li *ngIf="leaveSettings.useLevelBasedAllocation">
-              • Allocation varies by employee level
-            </li>
-            <li *ngIf="leaveSettings.useLevelBasedAllocation">
-              • Higher levels typically get more leave days
-            </li>
-            <li>• Employees get full allocation for each active leave type</li>
-            <li>• Annual Leave, Sick Leave, etc. have independent balances</li>
-            <li *ngIf="!leaveSettings.useLevelBasedAllocation">
-              • Total = {{ totalAllocatedDays }} days across all types
-            </li>
-            <li>• Automatic approval respects each type's remaining balance</li>
+            <li>• Leave allocation varies by employee level</li>
+            <li>• Different levels get different leave amounts</li>
+            <li>• Configure allocations in the matrix</li>
+            <li>• Each level has independent balances</li>
           </ul>
         </div>
 
-        <!-- Active Leave Types Summary -->
-        <div
-          *ngIf="!leaveSettings.useLevelBasedAllocation"
-          class="bg-white rounded-lg border border-gray-200 p-5"
-        >
-          <h4 class="font-semibold text-gray-800 mb-3">
-            Active Leave Types Summary
-          </h4>
+        <!-- Employee Levels Summary -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+          <h4 class="font-semibold text-gray-800 mb-3">Employee Levels</h4>
           <div class="space-y-2">
             <div
-              *ngFor="let leaveType of leaveSettings.leaveTypes"
-              [class.hidden]="!leaveType.isActive"
-              class="flex justify-between items-center text-sm"
-            >
-              <span class="text-gray-700">{{ leaveType.typeName }}</span>
-              <span class="font-semibold text-teal-700">
-                {{ leaveType.allocatedDays }} days
-              </span>
-            </div>
-            <div
-              class="border-t pt-2 mt-2 flex justify-between items-center font-bold"
-            >
-              <span class="text-gray-800">Total</span>
-              <span class="text-teal-700">{{ totalAllocatedDays }} days</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Level-Based Info -->
-        <div
-          *ngIf="leaveSettings.useLevelBasedAllocation"
-          class="bg-white rounded-lg border border-gray-200 p-5"
-        >
-          <h4 class="font-semibold text-gray-800 mb-3">
-            Employee Levels Summary
-          </h4>
-          <div class="space-y-2">
-            <div
-              *ngFor="let level of employeeLevels"
-              [class.hidden]="!level.isActive"
+              *ngFor="let level of levels"
               class="flex justify-between items-center text-sm"
             >
               <div>
                 <span class="text-gray-700 font-medium">{{ level.name }}</span>
                 <span class="text-xs text-gray-500 ml-2"
-                  >(Level {{ level.order }})</span
+                  >({{ level.code }})</span
                 >
               </div>
               <span class="font-semibold text-teal-700">
                 {{ getTotalForLevel(level.id) }} days
               </span>
             </div>
+            <div
+              *ngIf="levels.length === 0"
+              class="text-center text-gray-500 py-4"
+            >
+              <p class="text-sm">No levels configured</p>
+            </div>
           </div>
         </div>
 
-        <!-- Planning Policy Summary -->
+        <!-- Leave Types Summary -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
-          <h4 class="font-semibold text-gray-800 mb-3">
-            Planning Policy Summary
-          </h4>
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600">Planning Window</span>
-              <span class="font-semibold text-gray-800">
-                {{ planningPolicy.planningWindowDays }} days
-              </span>
+          <h4 class="font-semibold text-gray-800 mb-3">Leave Types Summary</h4>
+          <div class="space-y-2">
+            <div
+              *ngFor="let leaveType of leaveTypes"
+              class="flex justify-between items-center text-sm"
+            >
+              <span class="text-gray-700">{{ leaveType.name }}</span>
+              <span class="text-xs text-gray-500">{{ leaveType.code }}</span>
             </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600">Max Days/Month</span>
-              <span class="font-semibold text-gray-800">
-                {{ planningPolicy.maxDaysPerMonth }} days
-              </span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600">Planning Months</span>
-              <span class="font-semibold text-gray-800">
-                {{ planningPolicy.maxPlanningMonths }} months
-              </span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600">Total Allowance</span>
-              <span class="font-semibold text-gray-800">
-                {{ planningPolicy.totalAllowedPlannedDays }} days
-              </span>
-            </div>
-            <div class="flex justify-between items-center pt-2 border-t">
-              <span class="text-gray-600">Edit Approved Plans</span>
-              <span
-                class="font-semibold"
-                [class.text-green-600]="planningPolicy.allowPlanEditing"
-                [class.text-red-600]="!planningPolicy.allowPlanEditing"
-              >
-                {{
-                  planningPolicy.allowPlanEditing ? "Allowed" : "Not Allowed"
-                }}
-              </span>
+            <div
+              *ngIf="leaveTypes.length === 0"
+              class="text-center text-gray-500 py-4"
+            >
+              <p class="text-sm">No leave types configured</p>
             </div>
           </div>
         </div>
@@ -560,10 +400,10 @@
             Level
           </th>
           <th
-            *ngFor="let leaveType of leaveSettings.leaveTypes"
+            *ngFor="let leaveType of leaveTypes"
             class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800"
           >
-            {{ leaveType.typeName }}
+            {{ leaveType.name }}
           </th>
           <th
             class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800"
@@ -573,38 +413,39 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          *ngFor="let level of employeeLevels"
-          [class.bg-gray-50]="!level.isActive"
-        >
+        <tr *ngFor="let level of levels">
           <td class="border border-gray-300 px-4 py-3 font-medium">
             <div class="flex items-center gap-2">
-              <span class="text-sm font-bold text-gray-600">{{
-                level.order
-              }}</span>
-              <span [class.text-gray-400]="!level.isActive">{{
-                level.name
-              }}</span>
+              <span class="text-gray-800">{{ level.name }}</span>
+              <span class="text-xs text-gray-500">({{ level.code }})</span>
             </div>
           </td>
           <td
-            *ngFor="let leaveType of leaveSettings.leaveTypes"
+            *ngFor="let leaveType of leaveTypes"
             class="border border-gray-300 px-2 py-2"
           >
             <input
               type="number"
               min="0"
               [value]="getAllocationForCell(level.id, leaveType.id)"
-              (change)="updateAllocation(level.id, leaveType.id, $event)"
-              [disabled]="!level.isActive"
+              (change)="
+                updateAllocationInMatrix(level.id, leaveType.id, $event)
+              "
               class="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 outline-none"
-              [class.bg-gray-100]="!level.isActive"
             />
           </td>
           <td
             class="border border-gray-300 px-4 py-3 text-center font-bold text-teal-700"
           >
             {{ getTotalForLevel(level.id) }}
+          </td>
+        </tr>
+        <tr *ngIf="levels.length === 0">
+          <td
+            colspan="100"
+            class="border border-gray-300 px-4 py-8 text-center text-gray-500"
+          >
+            No levels found
           </td>
         </tr>
       </tbody>
@@ -622,7 +463,7 @@
       (click)="saveAllocationMatrix()"
       class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
     >
-      Save & Apply to Employees
+      Save Allocation Matrix
     </button>
   </div>
 </app-modal>
@@ -646,10 +487,10 @@
       </label>
       <input
         type="number"
-        [(ngModel)]="planningPolicy.maxDaysPerMonth"
+        [(ngModel)]="policy.maxDaysPerMonth"
         min="1"
-        max="20"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+        max="31"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue outline-none"
       />
       <p class="text-xs text-gray-500 mt-1">
         Maximum days employees can plan in a single month
@@ -658,78 +499,18 @@
 
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-2">
-        Max Planning Months
+        Max Months Per Year
       </label>
       <input
         type="number"
-        [(ngModel)]="planningPolicy.maxPlanningMonths"
+        [(ngModel)]="policy.maxMonthPerYear"
         min="1"
         max="12"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue outline-none"
       />
       <p class="text-xs text-gray-500 mt-1">
         Number of different months employees can plan for
       </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Total Allowed Planned Days
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.totalAllowedPlannedDays"
-        min="1"
-        max="365"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Total days across all months (should equal max days × months)
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Emergency Leave Days Allowed
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.emergencyLeaveDaysAllowed"
-        min="0"
-        max="10"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        Maximum days for emergency leave requests
-      </p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Planning Window (days)
-      </label>
-      <input
-        type="number"
-        [(ngModel)]="planningPolicy.planningWindowDays"
-        min="30"
-        max="365"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-      />
-      <p class="text-xs text-gray-500 mt-1">
-        How far in advance employees can plan
-      </p>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <input
-        type="checkbox"
-        id="allowPlanEditing"
-        [(ngModel)]="planningPolicy.allowPlanEditing"
-        class="w-4 h-4 text-purple-600 border-gray-300 rounded"
-      />
-      <label for="allowPlanEditing" class="text-sm font-medium text-gray-700">
-        Allow employees to edit approved plans
-      </label>
     </div>
 
     <!-- Summary Card -->
@@ -738,23 +519,20 @@
       <ul class="text-sm text-gray-600 space-y-1">
         <li>
           • Employees can plan
-          <strong>{{ planningPolicy.maxDaysPerMonth }} days/month</strong>
+          <strong>{{ policy?.maxDaysPerMonth || 0 }} days/month</strong>
         </li>
         <li>
           • For up to
-          <strong>{{ planningPolicy.maxPlanningMonths }} months</strong>
+          <strong>{{ policy?.maxMonthPerYear || 0 }} months</strong>
         </li>
         <li>
-          • Total:
-          <strong>{{ planningPolicy.totalAllowedPlannedDays }} days</strong>
-        </li>
-        <li>
-          • Emergency leave:
-          <strong>{{ planningPolicy.emergencyLeaveDaysAllowed }} days</strong>
-        </li>
-        <li>
-          • Planning window:
-          <strong>{{ planningPolicy.planningWindowDays }} days ahead</strong>
+          • Total possible:
+          <strong
+            >{{
+              (policy?.maxDaysPerMonth || 0) * (policy?.maxMonthPerYear || 0)
+            }}
+            days</strong
+          >
         </li>
       </ul>
     </div>
@@ -768,7 +546,7 @@
       </button>
       <button
         (click)="savePlanningPolicy()"
-        class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover"
       >
         Save Policy
       </button>
@@ -776,5 +554,5 @@
   </div>
 </app-modal>
 
-<!-- PrimeNG Toast for notifications -->
-<p-toast></p-toast>
+<!-- Toast Notifications -->
+<p-toast position="top-right"></p-toast>

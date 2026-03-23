@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { OfficeHoursService, ScheduleMode } from '../../../../../service/attendance/office-hours.service';
+import { OfficeHoursService /*ScheduleMode*/ } from '../../../../../service/attendance/office-hours.service';
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 
 function officeHoursValidator(control: AbstractControl): ValidationErrors | null {
@@ -43,7 +43,7 @@ export class OfficeHoursComponent implements OnInit{
   editMode = false;
 
   // The three modes the admin can choose from
-  readonly scheduleModes: { value: ScheduleMode; label: string; description: string }[] = [
+  /*readonly scheduleModes: { value: ScheduleMode; label: string; description: string }[] = [
     {
       value: 'office-hours',
       label: 'Fixed Office Hours',
@@ -59,9 +59,9 @@ export class OfficeHoursComponent implements OnInit{
       label: 'Mixed',
       description: 'Shift-assigned employees use their shift; all others use office hours.'
     }
-  ];
+  ];*/
 
-  selectedMode!: ScheduleMode;
+  /*selectedMode!: ScheduleMode;*/
 
 
   constructor(
@@ -71,7 +71,7 @@ export class OfficeHoursComponent implements OnInit{
 
   ngOnInit() {
     const hours = this.officeHoursService.getOfficeHours();
-    this.selectedMode = this.officeHoursService.getScheduleMode();
+    /*this.selectedMode = this.officeHoursService.getScheduleMode();*/
 
     this.form = this.fb.group({
       openingTime: [hours.openingTime],
@@ -82,7 +82,7 @@ export class OfficeHoursComponent implements OnInit{
     {validators: officeHoursValidator});
   }
 
-    setMode(mode: ScheduleMode) {
+    /*setMode(mode: ScheduleMode) {
     this.selectedMode = mode;
   }
 //getter to replace modeLabel pipe
@@ -93,17 +93,18 @@ getModeLabel(modeValue: ScheduleMode): string {
   // Whether the office hours form is relevant given the selected mode
   get officeHoursRelevant(): boolean {
     return this.selectedMode === 'office-hours' || this.selectedMode === 'mixed';
-  }
+  }*/
 
     save() {
-    if (this.officeHoursRelevant && this.form.invalid) {
+    if (/*this.officeHoursRelevant &&*/ this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    this.officeHoursService.setScheduleMode(this.selectedMode);
+    /*this.officeHoursService.setScheduleMode(this.selectedMode);
     if (this.officeHoursRelevant) {
       this.officeHoursService.updateOfficeHours(this.form.value);
-    }
+    }*/
+    this.officeHoursService.updateOfficeHours(this.form.value);
     this.editMode = false;
   }
 

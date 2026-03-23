@@ -1,6 +1,6 @@
 // domain/attendance/working-window.model.ts
 
-export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';
+//export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';
 
 export interface WorkingWindow {
   scheduleType: 'office-hours' | 'shift';

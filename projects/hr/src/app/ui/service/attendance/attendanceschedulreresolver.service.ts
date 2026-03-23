@@ -17,12 +17,12 @@ export class AttendanceScheduleResolverService {
   ) {}
 
   resolve(employeeId: string, date: Date): Observable<WorkingWindow> {
-    const mode = this.officeHoursService.getScheduleMode();
+    /*const mode = this.officeHoursService.getScheduleMode();
 
     // Strict office-hours mode: skip shift lookup entirely
     if (mode === 'office-hours') {
       return of(this.buildOfficeHoursWindow());
-    }
+    }*/
 
     // For 'shift' or 'mixed': use ScheduleserviceService to find
     // if this employee has a shift assigned on this date
@@ -46,12 +46,12 @@ export class AttendanceScheduleResolverService {
     // No shift assigned for this employee today:
     // - 'mixed' mode → fall back to office hours (intended behaviour)
     // - 'shift' mode → also fall back, but flag it so you can surface a warning if needed
-    if (mode === 'shift') {
+    /*if (mode === 'shift') {
       console.warn(
         `[AttendanceResolver] Employee ${employeeId} has no shift assigned on ${dateString}. ` +
         `Falling back to office hours. Consider assigning a shift in Work Schedules.`
       );
-    }
+    }*/
 
     return of(this.buildOfficeHoursWindow());
   }

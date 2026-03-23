@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { LeaveServiceService } from '../../../service/leave-service.service';
-import { PlannedLeave, Employee } from '../../../domain/leave.dto';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { LeaveApiService } from '../../../service/leave-api.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 interface TimelineDay {
   date: Date;
@@ -11,12 +12,12 @@ interface TimelineDay {
 }
 
 interface EmployeeRow {
-  employee: Employee;
+  employee: any;
   leaves: TimelineLeave[];
 }
 
 interface TimelineLeave {
-  leave: PlannedLeave;
+  leave: any;
   startDay: number;
   duration: number;
   leftPosition: number;
@@ -25,6 +26,7 @@ interface TimelineLeave {
 
 interface DepartmentGroup {
   department: string;
+  departmentId: number;
   employees: EmployeeRow[];
   isExpanded: boolean;
   employeeCount: number;
@@ -36,12 +38,11 @@ interface DepartmentGroup {
   templateUrl: './leave-timeline.component.html',
   styleUrls: ['./leave-timeline.component.scss'],
 })
-export class LeaveTimelineComponent implements OnInit {
-  
-
+export class LeaveTimelineComponent implements OnInit, OnDestroy {
   // Data
-  allEmployees: Employee[] = [];
-  allLeaves: PlannedLeave[] = [];
+  allEmployees: any[] = [];
+  allLeaves: any[] = [];
+  allDepartments: any[] = [];
   departmentGroups: DepartmentGroup[] = [];
   
   // Timeline
@@ -54,78 +55,96 @@ export class LeaveTimelineComponent implements OnInit {
   searchQuery: string = '';
   selectedStatus: string = 'all';
   
-  // Config - Responsive
+  // Config
   dayWidth: number = 50;
   rowHeight: number = 50;
   headerHeight: number = 55;
   
-  // Responsive config
   visibleDays: number = 31;
   isMobileView: boolean = false;
 
-  constructor(private leaveService: LeaveServiceService) {}
+  // Modal
+  showLeaveModal: boolean = false;
+  selectedLeave: any = null;
+  selectedEmployee: any = null;
+  rejectionReason: string = '';
+  showRejectionInput: boolean = false;
+
+  // Loading
+  isLoading: boolean = false;
+
+  constructor(private apiService: LeaveApiService) {}
 
   ngOnInit() {
-    console.log('🔍 Custom Timeline Initialized');
+    console.log('Timeline Initialized');
     this.checkScreenSize();
-    this.departments = this.leaveService.getDepartments();
     this.loadData();
     this.generateTimeline();
     
-    // Listen for window resize
     window.addEventListener('resize', () => this.checkScreenSize());
   }
 
+  ngOnDestroy() {
+    window.removeEventListener('resize', () => this.checkScreenSize());
+  }
 
   checkScreenSize() {
     const width = window.innerWidth;
     
     if (width < 768) {
-      // Mobile: Show 7 days
       this.visibleDays = 7;
       this.dayWidth = 45;
       this.isMobileView = true;
     } else if (width < 1024) {
-      // Tablet: Show 15 days
       this.visibleDays = 15;
       this.dayWidth = 48;
       this.isMobileView = false;
     } else if (width < 1440) {
-      // Laptop: Show 20 days
       this.visibleDays = 20;
       this.dayWidth = 50;
       this.isMobileView = false;
     } else {
-      // Desktop: Show all days
       this.visibleDays = 31;
       this.dayWidth = 55;
       this.isMobileView = false;
     }
     
-    console.log(`📱 Screen: ${width}px → Showing ${this.visibleDays} days at ${this.dayWidth}px each`);
+    console.log(`Screen: ${width}px - ${this.dayWidth}px per day`);
   }
 
-
   loadData() {
-    console.log('📊 Loading data...');
+    console.log('Loading data from API...');
+    this.isLoading = true;
     
-    // Load all employees
-    this.allEmployees = this.leaveService.getAllEmployees();
-    
-    // Load all active leaves
-    this.allLeaves = this.leaveService
-      .getAllPlannedLeaves()
-      .filter(
-        (leave) =>
-          leave.status === 'Planned' ||
-          leave.status === 'Pending' ||
-          leave.status === 'Approved',
-      );
-    
-    console.log('👥 Employees:', this.allEmployees.length);
-    console.log('📅 Leaves:', this.allLeaves.length);
-    
-    this.buildDepartmentGroups();
+    forkJoin({
+      employees: this.apiService.getEmployees().pipe(catchError(() => of([]))),
+      departments: this.apiService.getDepartments().pipe(catchError(() => of([]))),
+      leavePlans: this.apiService.getLeavePlanRecords(1, 1000).pipe(catchError(() => of([])))
+    }).subscribe({
+      next: (data) => {
+        this.allEmployees = data.employees || [];
+        this.allDepartments = data.departments || [];
+        this.allLeaves = (data.leavePlans || []).filter((plan: any) => 
+          plan.status === 'PENDING' || plan.status === 'APPROVED'
+        );
+
+        // Extract department names
+        this.departments = this.allDepartments.map(d => d.name).sort();
+
+        console.log('✅ Data loaded:', {
+          employees: this.allEmployees.length,
+          departments: this.allDepartments.length,
+          leavePlans: this.allLeaves.length
+        });
+
+        this.buildDepartmentGroups();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('❌ Failed to load data:', err);
+        this.isLoading = false;
+      }
+    });
   }
 
   generateTimeline() {
@@ -133,15 +152,12 @@ export class LeaveTimelineComponent implements OnInit {
     const year = this.currentMonth.getFullYear();
     const month = this.currentMonth.getMonth();
     
-    // Get first and last day of month
-    const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Generate each day
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
       const dayOfWeek = currentDate.getDay();
@@ -155,7 +171,7 @@ export class LeaveTimelineComponent implements OnInit {
       });
     }
     
-    console.log(' Generated', this.timelineDays.length, 'days for', this.getMonthYearLabel());
+    console.log('Generated', this.timelineDays.length, 'days for', this.getMonthYearLabel());
   }
 
   buildDepartmentGroups() {
@@ -164,52 +180,58 @@ export class LeaveTimelineComponent implements OnInit {
     // Apply search filter
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      employees = employees.filter(emp => 
-        emp.name.toLowerCase().includes(query)
-      );
+      employees = employees.filter(emp => {
+        const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+        return fullName.includes(query);
+      });
     }
     
     // Group by department
-    const deptMap = new Map<string, Employee[]>();
+    const deptMap = new Map<number, any[]>();
     
     employees.forEach(emp => {
-      if (!deptMap.has(emp.department)) {
-        deptMap.set(emp.department, []);
+      if (!emp.department) return;
+      
+      const deptId = emp.department.id;
+      if (!deptMap.has(deptId)) {
+        deptMap.set(deptId, []);
       }
-      deptMap.get(emp.department)!.push(emp);
+      deptMap.get(deptId)!.push(emp);
     });
     
-    // Build department groups
     this.departmentGroups = [];
     
-    // Sort departments alphabetically
-    const sortedDepartments = Array.from(deptMap.keys()).sort();
-    
-    sortedDepartments.forEach(dept => {
-      // Skip if department filter is active and doesn't match
-      if (this.selectedDepartment && dept !== this.selectedDepartment) {
+    // Build department groups
+    this.allDepartments.forEach(dept => {
+      // Apply department filter
+      if (this.selectedDepartment && dept.name !== this.selectedDepartment) {
         return;
       }
       
-      const deptEmployees = deptMap.get(dept)!;
+      const deptEmployees = deptMap.get(dept.id) || [];
       
-      // Sort employees alphabetically within department
-      deptEmployees.sort((a, b) => a.name.localeCompare(b.name));
+      if (deptEmployees.length === 0) return;
       
-      // Build employee rows with leaves
+      // Sort employees by name
+      deptEmployees.sort((a, b) => {
+        const nameA = `${a.firstName} ${a.lastName}`;
+        const nameB = `${b.firstName} ${b.lastName}`;
+        return nameA.localeCompare(nameB);
+      });
+      
       const employeeRows: EmployeeRow[] = deptEmployees.map(employee => {
+        // Find leaves for this employee
         const employeeLeaves = this.allLeaves.filter(
-          leave => leave.employeeId === employee.id
+          leave => leave.createdBy?.id === employee.id
         );
         
         const timelineLeaves = employeeLeaves
           .filter(leave => {
-            // Filter by status
+            // Apply status filter
             if (this.selectedStatus !== 'all' && leave.status !== this.selectedStatus) {
               return false;
             }
             
-            // Check if leave overlaps with current month
             return this.isLeaveInCurrentMonth(leave);
           })
           .map(leave => this.calculateLeavePosition(leave));
@@ -220,27 +242,27 @@ export class LeaveTimelineComponent implements OnInit {
         };
       });
       
-      // Count total leaves for this department
       const totalLeaves = employeeRows.reduce((sum, row) => sum + row.leaves.length, 0);
       
       this.departmentGroups.push({
-        department: dept,
+        department: dept.name,
+        departmentId: dept.id,
         employees: employeeRows,
-        isExpanded: true, // Expanded by default
+        isExpanded: true,
         employeeCount: deptEmployees.length,
         totalLeaves: totalLeaves,
       });
     });
     
-    console.log('✅ Built', this.departmentGroups.length, 'department groups');
+    console.log('Built', this.departmentGroups.length, 'department groups');
   }
 
   toggleDepartment(group: DepartmentGroup) {
     group.isExpanded = !group.isExpanded;
-    console.log(`${group.isExpanded ? '📂' : '📁'} ${group.department}`);
+    console.log(group.department, group.isExpanded ? 'expanded' : 'collapsed');
   }
 
-  isLeaveInCurrentMonth(leave: PlannedLeave): boolean {
+  isLeaveInCurrentMonth(leave: any): boolean {
     const leaveStart = new Date(leave.startDate);
     const leaveEnd = new Date(leave.endDate);
     
@@ -255,11 +277,10 @@ export class LeaveTimelineComponent implements OnInit {
       0
     );
     
-    // Check if leave overlaps with current month
     return leaveStart <= monthEnd && leaveEnd >= monthStart;
   }
 
-  calculateLeavePosition(leave: PlannedLeave): TimelineLeave {
+  calculateLeavePosition(leave: any): TimelineLeave {
     const monthStart = new Date(
       this.currentMonth.getFullYear(),
       this.currentMonth.getMonth(),
@@ -274,7 +295,6 @@ export class LeaveTimelineComponent implements OnInit {
     let leaveStart = new Date(leave.startDate);
     let leaveEnd = new Date(leave.endDate);
     
-    // Clamp to current month
     if (leaveStart < monthStart) {
       leaveStart = monthStart;
     }
@@ -282,14 +302,11 @@ export class LeaveTimelineComponent implements OnInit {
       leaveEnd = monthEnd;
     }
     
-    // Calculate start day (1-based)
     const startDay = leaveStart.getDate();
     
-    // Calculate duration in days
     const diffTime = leaveEnd.getTime() - leaveStart.getTime();
-    const duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
+    const duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     
-    // Calculate position and width
     const leftPosition = (startDay - 1) * this.dayWidth;
     const width = duration * this.dayWidth;
     
@@ -304,12 +321,12 @@ export class LeaveTimelineComponent implements OnInit {
 
   getLeaveColor(status: string): string {
     switch (status) {
-      case 'Planned':
-        return 'bg-blue-500';
-      case 'Pending':
+      case 'PENDING':
         return 'bg-yellow-500';
-      case 'Approved':
+      case 'APPROVED':
         return 'bg-green-500';
+      case 'REJECTED':
+        return 'bg-red-500';
       default:
         return 'bg-gray-500';
     }
@@ -317,11 +334,12 @@ export class LeaveTimelineComponent implements OnInit {
 
   getDepartmentColor(department: string): string {
     const colors: { [key: string]: string } = {
-      'Engineering': 'bg-blue-600',
+      'Information Technology': 'bg-blue-600',
       'Sales': 'bg-green-600',
       'Marketing': 'bg-orange-600',
-      'HR': 'bg-purple-600',
+      'Human Resources': 'bg-purple-600',
       'Finance': 'bg-pink-600',
+      'Administration': 'bg-indigo-600',
     };
     return colors[department] || 'bg-gray-600';
   }
@@ -338,7 +356,6 @@ export class LeaveTimelineComponent implements OnInit {
     });
   }
 
-  // Navigation
   goToPreviousMonth() {
     this.currentMonth = new Date(
       this.currentMonth.getFullYear(),
@@ -347,7 +364,7 @@ export class LeaveTimelineComponent implements OnInit {
     );
     this.generateTimeline();
     this.buildDepartmentGroups();
-    console.log('⬅️ Previous month:', this.getMonthYearLabel());
+    console.log('Previous month:', this.getMonthYearLabel());
   }
 
   goToNextMonth() {
@@ -358,19 +375,18 @@ export class LeaveTimelineComponent implements OnInit {
     );
     this.generateTimeline();
     this.buildDepartmentGroups();
-    console.log('➡️ Next month:', this.getMonthYearLabel());
+    console.log('Next month:', this.getMonthYearLabel());
   }
 
   goToToday() {
     this.currentMonth = new Date();
     this.generateTimeline();
     this.buildDepartmentGroups();
-    console.log('📍 Back to today:', this.getMonthYearLabel());
+    console.log('Back to today:', this.getMonthYearLabel());
   }
 
-  // Filters
   applyFilters() {
-    console.log('🔍 Applying filters...', {
+    console.log('Applying filters...', {
       department: this.selectedDepartment,
       search: this.searchQuery,
       status: this.selectedStatus
@@ -383,10 +399,9 @@ export class LeaveTimelineComponent implements OnInit {
     this.searchQuery = '';
     this.selectedStatus = 'all';
     this.buildDepartmentGroups();
-    console.log('🧹 Filters cleared');
+    console.log('Filters cleared');
   }
 
-  // Helpers
   getTimelineWidth(): number {
     return this.timelineDays.length * this.dayWidth;
   }
@@ -395,21 +410,123 @@ export class LeaveTimelineComponent implements OnInit {
     return this.departmentGroups.reduce((sum, group) => sum + group.employeeCount, 0);
   }
 
-  onLeaveClick(leave: PlannedLeave) {
-    console.log('🖱️ Leave clicked:', {
-      employee: leave.employeeName,
-      type: leave.leaveType,
+  onLeaveClick(leave: any) {
+    const employeeName = leave.createdBy?.fullname || 'Unknown';
+    
+    console.log('Leave clicked:', {
+      employee: employeeName,
+      type: leave.leaveType?.name,
       dates: `${leave.startDate} to ${leave.endDate}`,
       status: leave.status,
-      days: leave.workingDays
+      days: leave.totalDays
     });
-    // You can open a modal here to show full leave details
-    // Example:
-    // this.dialog.open(LeaveDetailsModalComponent, { data: leave });
+    
+    this.selectedLeave = leave;
+    this.selectedEmployee = this.allEmployees.find(emp => emp.id === leave.createdBy?.id) || null;
+    this.showLeaveModal = true;
+    this.rejectionReason = '';
+    this.showRejectionInput = false;
   }
 
-  ngOnDestroy() {
-    // Clean up event listener
-    window.removeEventListener('resize', () => this.checkScreenSize());
+  closeModal() {
+    this.showLeaveModal = false;
+    this.selectedLeave = null;
+    this.selectedEmployee = null;
+    this.rejectionReason = '';
+    this.showRejectionInput = false;
+  }
+
+  approveLeave() {
+    if (!this.selectedLeave) return;
+    
+    const currentUser = this.apiService.getCurrentUserId();
+    
+    const payload = {
+      ...this.selectedLeave,
+      status: 'APPROVED',
+      decisionBy: {
+        id: 1, // You'll need to get this from current user
+        fullname: 'Admin' // Replace with actual admin name
+      },
+      decisionOn: new Date().toISOString()
+    };
+    
+    this.apiService.updateLeavePlanRecord(this.selectedLeave.id, payload).subscribe({
+      next: () => {
+        console.log('Leave approved:', this.selectedLeave.id);
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Failed to approve leave:', err);
+      }
+    });
+  }
+
+  initiateReject() {
+    this.showRejectionInput = true;
+  }
+
+  cancelReject() {
+    this.showRejectionInput = false;
+    this.rejectionReason = '';
+  }
+
+  confirmReject() {
+    if (!this.selectedLeave) return;
+    
+    const payload = {
+      ...this.selectedLeave,
+      status: 'REJECTED',
+      adminComment: this.rejectionReason.trim() || 'No reason provided',
+      decisionBy: {
+        id: 1,
+        fullname: 'Admin'
+      },
+      decisionOn: new Date().toISOString()
+    };
+    
+    this.apiService.updateLeavePlanRecord(this.selectedLeave.id, payload).subscribe({
+      next: () => {
+        console.log('Leave rejected:', this.selectedLeave.id);
+        this.closeModal();
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Failed to reject leave:', err);
+      }
+    });
+  }
+
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  canApproveOrReject(): boolean {
+    if (!this.selectedLeave) return false;
+    return this.selectedLeave.status === 'PENDING';
+  }
+
+  // Helper to format employee name
+  getEmployeeName(employee: any): string {
+    return `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unknown';
+  }
+
+  // Helper to format date
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   }
 }
