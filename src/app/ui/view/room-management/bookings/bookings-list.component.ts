@@ -15,6 +15,7 @@ import {
   templateUrl: './bookings-list.component.html',
 })
 export class BookingsListComponent implements OnInit {
+  protected readonly Math = Math;
   bookings: Booking[] = [];
   filteredBookings: Booking[] = [];
   guests: Guest[] = [];
@@ -29,7 +30,13 @@ export class BookingsListComponent implements OnInit {
   filterFrom = '';
   filterTo = '';
   filterGuest = '';
+  filterRoom = '';
   searchQuery = '';
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 10;
+  totalRecords = 0;
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
@@ -97,23 +104,48 @@ export class BookingsListComponent implements OnInit {
       const guestName = this.getGuestName(b.guest).toLowerCase();
       const matchGuest = !this.filterGuest || guestName.includes(this.filterGuest.toLowerCase());
 
+      const roomNumbers = this.getRoomNumbers(b.rooms).toLowerCase();
+      const matchRoom = !this.filterRoom || roomNumbers.includes(this.filterRoom.toLowerCase());
+
       // Global search matches against guest name, booking ID, room numbers, status
       const matchSearch = !q || 
         guestName.includes(q) ||
         String(b.id || '').includes(q) ||
         (b.status || '').toLowerCase().includes(q) ||
-        this.getRoomNumbers(b.rooms).toLowerCase().includes(q);
+        roomNumbers.includes(q);
 
-      return matchStatus && matchFrom && matchTo && matchGuest && matchSearch;
+      return matchStatus && matchFrom && matchTo && matchGuest && matchRoom && matchSearch;
     });
+    
+    this.totalRecords = this.filteredBookings.length;
+    this.updatePaginatedBookings();
   }
+
+  updatePaginatedBookings(): void {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedBookings = this.filteredBookings.slice(startIndex, endIndex);
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.updatePaginatedBookings();
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalRecords / this.pageSize) || 1;
+  }
+
+  paginatedBookings: Booking[] = [];
 
   clearFilters(): void {
     this.filterStatus = '';
     this.filterFrom = '';
     this.filterTo = '';
     this.filterGuest = '';
+    this.filterRoom = '';
     this.searchQuery = '';
+    this.currentPage = 1;
     this.applyFilters();
   }
 
@@ -293,5 +325,18 @@ export class BookingsListComponent implements OnInit {
     this.toastType = type;
     this.showToast = true;
     setTimeout(() => (this.showToast = false), 3500);
+  }
+
+  navigateToRoomFirst(): void {
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
+  }
+
+  getStats() {
+    return {
+      total: this.bookings.length,
+      confirmed: this.bookings.filter(b => b.status === 'CONFIRMED').length,
+      checkedIn: this.bookings.filter(b => b.status === 'CHECKED_IN').length,
+      cancelled: this.bookings.filter(b => b.status === 'CANCELLED').length
+    };
   }
 }

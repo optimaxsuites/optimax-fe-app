@@ -181,12 +181,19 @@
         </div>
     </div>
 
-    <!-- ============================== STEP 2: GUEST ============================== -->
-    <div *ngIf="step === 2" class="max-w-2xl mx-auto">
+    <div *ngIf="step === 2" class="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-4">
-            <h2 class="text-lg font-semibold text-gray-800 mb-1"><i
-                    class="fa-solid fa-user mr-2 text-customBlue"></i>Select Guest</h2>
-            <p class="text-sm text-gray-400 mb-5">Find an existing guest or create a new profile.</p>
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1"><i
+                            class="fa-solid fa-user mr-2 text-customBlue"></i>Select Guest</h2>
+                    <p class="text-sm text-gray-400">Find an existing guest or create a new profile.</p>
+                </div>
+                <button (click)="skipGuest()" 
+                        class="px-4 py-2 bg-gray-100 text-gray-600 text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-forward-step"></i> Skip for Now
+                </button>
+            </div>
 
             <div class="relative mb-4">
                 <i
@@ -272,7 +279,7 @@
                 class="px-6 py-2.5 text-gray-600 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left"></i> Back
             </button>
-            <button (click)="step = 3" [disabled]="!selectedGuest"
+            <button (click)="step = 3" [disabled]="!selectedGuest && !isGuestSkipped"
                 class="px-6 py-2.5 bg-customBlue text-white rounded-lg text-sm font-medium hover:bg-customBlueHover disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
                 Continue <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -294,8 +301,9 @@
                     <div class="space-y-2 text-sm mb-4">
                         <div class="flex justify-between text-gray-600 pb-2 border-b border-gray-50">
                             <span>Guest</span>
-                            <span class="font-medium text-gray-800">{{ selectedGuest?.title }} {{
-                                selectedGuest?.firstName }} {{ selectedGuest?.lastName }}</span>
+                            <span class="font-medium text-gray-800">
+                                {{ selectedGuest ? (selectedGuest.title + ' ' + selectedGuest.firstName + ' ' + selectedGuest.lastName) : 'Walk-in Guest (Pending Info)' }}
+                            </span>
                         </div>
                         <div class="flex justify-between text-gray-600">
                             <span>Check-In</span><span class="font-medium">{{ datesForm.value.checkinDate }}</span>

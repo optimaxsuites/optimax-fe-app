@@ -53,13 +53,18 @@ export class HospitalityShellComponent implements OnInit {
   updateTabs(): void {
     const uuid = this.uuid;
     // Don't append UUID to routes if it's the default 'optimax' or 'default'
-    const routeSuffix = (uuid === 'optimax' || uuid === 'default' || !uuid) ? '' : '/' + uuid;
+    const routeSuffix = '/' + (uuid || 'optimax');
 
     this.tabsConfig = [
       {
         name: 'Bookings',
         route: 'bookings' + routeSuffix,
         icon: 'fa-solid fa-calendar-check',
+      },
+      {
+        name: 'Quick Book',
+        route: 'bookings/room-select' + routeSuffix,
+        icon: 'fa-solid fa-calendar-plus',
       },
       {
         name: 'Rooms',

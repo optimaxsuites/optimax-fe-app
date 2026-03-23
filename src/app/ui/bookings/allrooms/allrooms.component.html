@@ -25,8 +25,7 @@
       <article *ngFor="let room of filteredRooms" class="room-card">
         <!-- Image Container -->
         <div class="card-media">
-          <img [src]="room.imageURLs?.[0]" 
-               [alt]="room.roomNumber"
+          <img [src]="room.imageURLs[0] || 'https://images.unsplash.com/photo-1590490360182-c33d955f4b48?w=400&h=300&fit=crop'"
                class="room-image">
 
           <!-- Favorite Button -->
@@ -60,9 +59,14 @@
               <span class="amount">₦{{ (room.rate || 25000) | number }}</span>
               <span class="period">per night</span>
             </div>
-            <button (click)="viewRoomDetails(room)" class="btn-primary">
-              View Details
-            </button>
+            <div class="flex gap-2">
+              <button (click)="viewRoomDetails(room)" class="btn-secondary">
+                View Details
+              </button>
+              <button (click)="bookRoom(room)" class="btn-primary">
+                Book Now
+              </button>
+            </div>
           </div>
         </div>
       </article>

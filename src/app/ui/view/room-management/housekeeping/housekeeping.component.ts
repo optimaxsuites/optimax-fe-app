@@ -49,6 +49,12 @@ export class HousekeepingComponent implements OnInit {
   toastType: 'success' | 'error' = 'success';
   uuid = '';
 
+  // Housekeeping Workflow Modal
+  showStatusModal = false;
+  selectedHousekeeping: HousekeepingRecord | null = null;
+  targetStatus = '';
+  statusNotes = '';
+
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
@@ -319,6 +325,44 @@ export class HousekeepingComponent implements OnInit {
         error: () => this.showToastMessage('Creation failed', 'error'),
       });
     }
+  }
+
+  // ── Housekeeping Workflow ──
+  openStatusModal(record: HousekeepingRecord, status: string): void {
+    this.selectedHousekeeping = record;
+    this.targetStatus = status;
+    this.statusNotes = record.notes || '';
+    this.showStatusModal = true;
+  }
+
+  confirmStatusChange(): void {
+    if (!this.selectedHousekeeping || !this.selectedHousekeeping.id) return;
+
+    const updated: HousekeepingRecord = {
+      ...this.selectedHousekeeping,
+      status: this.targetStatus,
+      notes: this.statusNotes,
+      lastCleaned: this.targetStatus === 'CLEANED' ? this.today() : this.selectedHousekeeping.lastCleaned
+    };
+
+    this.hotelService.updateHousekeepingRecord(this.selectedHousekeeping.id, updated).subscribe({
+      next: () => {
+        this.showToastMessage(`Housekeeping status updated to ${this.targetStatus}`, 'success');
+        this.showStatusModal = false;
+        this.loadData();
+        
+        // If Cleaned, set room to AVAILABLE
+        if (this.targetStatus === 'CLEANED') {
+          const room = this.rooms.find(r => r.id === updated.room);
+          if (room) {
+            this.hotelService.updateRoom(room.id, { ...room, roomStatus: 'AVAILABLE' }).subscribe(() => {
+              this.hotelService.refreshRoomsCache();
+            });
+          }
+        }
+      },
+      error: () => this.showToastMessage('Failed to update status', 'error')
+    });
   }
 
   completeTask(record: MaintenainceRequest): void {

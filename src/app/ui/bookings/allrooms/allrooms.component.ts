@@ -77,6 +77,10 @@ export class AllroomsComponent implements OnInit {
     this.router.navigate(['/user/e-bookings/booking-form', room.id, this.uuid]);
   }
 
+  bookRoom(room: Room): void {
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
+  }
+
   getStarRating(rating: number): string {
     const fullStars = Math.floor(rating / 2);
     const halfStar = rating % 2 >= 0.5 ? '½' : '';

@@ -20,52 +20,32 @@ import { SettingsComponent } from './ui/view/room-management/settings/settings.c
 import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'hospitality/rooms', pathMatch: 'full' },
+  { path: '', redirectTo: 'hospitality/rooms/optimax', pathMatch: 'full' },
   
-  // Main hospitality routes
+  // Main hospitality routes with UUID specificity at the end
   {
     path: 'hospitality',
     component: HospitalityShellComponent,
     children: [
-      { path: '', redirectTo: 'rooms', pathMatch: 'full' },
+      { path: '', redirectTo: 'rooms/optimax', pathMatch: 'full' },
       
-
-      { path: 'bookings', component: BookingsListComponent },
-      { path: 'rooms', component: RoomsListComponent },
-      { path: 'room-types', component: RoomTypesListComponent },
-      { path: 'services', component: ServicesListComponent },
-      { path: 'payments', component: PaymentsListComponent },
-      { path: 'housekeeping', component: HousekeepingComponent },
-      { path: 'guests', component: GuestsListComponent },
-      { path: 'room-view', component: HotelAdmintableComponent },
-      { path: 'settings', component: SettingsComponent },
-
-      { path: 'bookings/create/:uuid', component: BookingCreateComponent },
-      { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
-      { path: 'bookings/:id/:uuid', component: BookingDetailComponent },
       { path: 'bookings/:uuid', component: BookingsListComponent },
       { path: 'rooms/:uuid', component: RoomsListComponent },
       { path: 'room-types/:uuid', component: RoomTypesListComponent },
       { path: 'services/:uuid', component: ServicesListComponent },
       { path: 'payments/:uuid', component: PaymentsListComponent },
       { path: 'housekeeping/:uuid', component: HousekeepingComponent },
-      { path: 'guests/:uuid/:id', component: GuestProfileComponent },
       { path: 'guests/:uuid', component: GuestsListComponent },
       { path: 'room-view/:uuid', component: HotelAdmintableComponent },
       { path: 'settings/:uuid', component: SettingsComponent },
+
+      { path: 'bookings/create/:uuid', component: BookingCreateComponent },
+      { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
+      { path: 'bookings/:id/:uuid', component: BookingDetailComponent },
+      { path: 'guests/:uuid/:id', component: GuestProfileComponent },
+      { path: 'service-charges/:uuid', component: ServiceChargesListComponent },
     ]
   },
-
-  { path: 'room-types/:uuid',       component: RoomTypesListComponent },
-  { path: 'rooms/:uuid',            component: RoomsListComponent },
-  { path: 'services/:uuid',         component: ServicesListComponent },
-  { path: 'service-charges',  component: ServiceChargesListComponent },
-  { path: 'payments/:uuid',         component: PaymentsListComponent },
-  { path: 'housekeeping/:uuid',     component: HousekeepingComponent },
-  { path: 'settings',         component: SettingsComponent },
-  { path: 'guests/:uuid/:id',  component: GuestProfileComponent },
-  { path: 'guests/:uuid',      component: GuestsListComponent },
-  { path: 'room-view/:uuid', component: HotelAdmintableComponent },
 ];
 
 @NgModule({

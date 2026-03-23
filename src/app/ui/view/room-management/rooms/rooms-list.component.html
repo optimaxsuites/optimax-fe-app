@@ -89,15 +89,15 @@
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-100">
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Room #</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Floor</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Type</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Rate</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Beds</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Features</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Actions</th>
+                    <tr class="bg-customGreen text-white border-b border-customGreen">
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Room #</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Type</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Rate</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Beds</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Features</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
@@ -133,9 +133,16 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                           <div class="flex justify-end gap-2">
-                            <button (click)="openEditDrawer(room)" class="text-customBlue hover:bg-blue-50 p-2 rounded-lg transition-colors">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </button>
+                                <button (click)="bookRoom(room)"
+                                    class="p-2 text-customGreen hover:bg-emerald-50 rounded-lg transition-all"
+                                    title="Book Room">
+                                    <i class="fa-solid fa-calendar-plus"></i>
+                                </button>
+                                <button (click)="openEditDrawer(room)"
+                                    class="p-2 text-gray-400 hover:text-customGreen hover:bg-emerald-50 rounded-lg transition-all"
+                                    title="Edit Room">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
                             <button (click)="confirmDelete(room)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
