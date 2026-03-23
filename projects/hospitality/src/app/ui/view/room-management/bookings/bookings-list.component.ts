@@ -328,7 +328,7 @@ export class BookingsListComponent implements OnInit {
   }
 
   navigateToRoomFirst(): void {
-    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
+    this.router.navigate(['/user/hospitality', 'bookings', 'room-select', this.uuid]);
   }
 
   getStats() {
