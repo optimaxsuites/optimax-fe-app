@@ -14,45 +14,30 @@ import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
 import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 
-import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
+import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
+import { BookingDetailComponent } from '../ui/view/room-management/booking-detail/booking-detail.component';
+import { BookingRoomFirstComponent } from '../ui/view/room-management/booking-room-first/booking-room-first.component';
+import { BookingsListComponent } from '../ui/view/room-management/bookings/bookings-list.component';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'hospitality',
+    redirectTo: 'e-bookings/rooms/default',
     pathMatch: 'full',
   },
   {
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
+  { path: 'e-bookings/home/:uuid', component: HomeComponent },
+  { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
+  { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
+  { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
-  {
-    path: 'bookings/:uuid',
-    component: BookingsShellComponent,
-    children: [
-      { path: '', redirectTo: 'home', pathMatch: 'full' },
-      { path: 'home', component: HomeComponent },
-      { path: 'rooms', component: AllroomsComponent },
-      { path: 'booking-form/:id', component: BookingformComponent },
-      { path: 'multiple-rooms', component: MultipleBookingsComponent },
-    ],
-  },
-
-  {
-    path: 'services/:uuid',
-    component: RoomSidebarComponent,
-
-    children: [
-      { path: '', component: RoomWelcomeNoteComponent },
-      // { path: 'pastry', component: PastryServiceComponent },
-      { path: 'laundry', component: LaundryServiceComponent },
-      { path: 'room sevice', component: RoomServiceComponent },
-      { path: 'Housekeeping Record', component: HouseKeepingComponent },
-      { path: 'bar', component: BarServiceComponent },
-      // { path: 'admin', component: HotelAdmintableComponent },
-    ],
-  },
+  { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
+  { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
+  { path: 'bookings/:id/:uuid',         component: BookingDetailComponent },
+  { path: 'bookings/:uuid',             component: BookingsListComponent },
 ];
 
 @NgModule({

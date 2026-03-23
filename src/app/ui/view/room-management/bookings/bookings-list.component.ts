@@ -21,6 +21,9 @@ export class BookingsListComponent implements OnInit {
   rooms: Room[] = [];
   roomTypes: RoomTypeDTO[] = [];
   loading = false;
+  viewMode: 'table' | 'grid' = 'table';
+  showDeleteModal = false;
+  selectedBooking: Booking | null = null;
 
   filterStatus = '';
   filterFrom = '';
@@ -162,16 +165,22 @@ export class BookingsListComponent implements OnInit {
     return this.hotelService.calculateNights(checkin, checkout);
   }
 
-  getStatusColor(status: BookingStatus): string {
-    const map: Record<string, string> = {
-      CONFIRMED: 'bg-customBlue text-white',
-      PENDING: 'bg-amber-400 text-white',
-      CANCELLED: 'bg-red-500 text-white',
-      CHECKED_IN: 'bg-customGreen text-white',
-      CHECKED_OUT: 'bg-gray-500 text-white',
-      NO_SHOW: 'bg-orange-500 text-white',
-    };
-    return map[status] ?? 'bg-gray-300 text-white';
+  getStatusClass(status: string): string {
+    const s = status.toUpperCase();
+    if (s === 'CONFIRMED' || s === 'PAID' || s === 'CHECKED_OUT') return 'bg-emerald-100 text-emerald-600';
+    if (s === 'CHECKED_IN' || s === 'IN_PROGRESS') return 'bg-blue-100 text-blue-600';
+    if (s === 'PENDING') return 'bg-amber-100 text-amber-600';
+    if (s === 'CANCELLED' || s === 'OVERDUE') return 'bg-rose-100 text-rose-600';
+    return 'bg-gray-100 text-gray-600';
+  }
+
+  getStatusColor(status: string): string {
+    const s = status.toUpperCase();
+    if (s === 'CONFIRMED' || s === 'PAID' || s === 'CHECKED_OUT') return 'bg-emerald-100 text-emerald-600';
+    if (s === 'CHECKED_IN') return 'bg-blue-100 text-blue-600';
+    if (s === 'PENDING') return 'bg-amber-100 text-amber-600';
+    if (s === 'CANCELLED') return 'bg-rose-100 text-rose-600';
+    return 'bg-gray-100 text-gray-600';
   }
 
   // Summary counts
@@ -181,15 +190,37 @@ export class BookingsListComponent implements OnInit {
   get pendingCount(): number { return this.bookings.filter(b => b.status === 'PENDING').length; }
 
   viewBooking(booking: Booking): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings', booking.id]);
+    this.router.navigate(['/hospitality/bookings', booking.id, this.uuid]);
+  }
+
+  openEditDrawer(booking: Booking): void {
+    // In this simplified version, we just navigate to the detail/edit page
+    this.viewBooking(booking);
+  }
+
+  confirmDelete(booking: Booking): void {
+    this.selectedBooking = booking;
+    this.showDeleteModal = true;
+  }
+
+  deleteBooking(): void {
+    if (!this.selectedBooking?.id) return;
+    this.hotelService.deleteBooking(this.selectedBooking.id).subscribe({
+      next: () => {
+        this.showToastMessage('Booking deleted successfully', 'success');
+        this.showDeleteModal = false;
+        this.loadAll();
+      },
+      error: () => this.showToastMessage('Failed to delete booking', 'error')
+    });
   }
 
   createBooking(): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings', 'create']);
+    this.router.navigate(['/hospitality/bookings/create', this.uuid]);
   }
 
   createRoomFirstBooking(): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings', 'room-select']);
+    this.router.navigate(['/hospitality/bookings/room-select', this.uuid]);
   }
 
   checkIn(booking: Booking, event: Event): void {

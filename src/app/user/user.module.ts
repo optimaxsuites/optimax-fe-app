@@ -78,7 +78,7 @@ import { AppResizeDirective } from '../ui/service/app-resize.directive';
     BadgeModule,
     MenubarModule,
   ],
-  exports: [ ],
+  exports: [],
   providers: [],
 })
 export class UserModule {}

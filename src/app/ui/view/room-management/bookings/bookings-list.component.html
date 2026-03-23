@@ -1,208 +1,171 @@
-<!-- Toast -->
+<!-- Toast Notification -->
 <div *ngIf="showToast"
-    class="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium"
+    class="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300"
     [ngClass]="toastType === 'success' ? 'bg-customGreen' : 'bg-red-500'">
     <i [class]="toastType === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'" class="text-lg"></i>
     <span>{{ toastMessage }}</span>
 </div>
 
-<div class="p-6 max-w-7xl mx-auto">
-
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+<div class="p-6 mx-auto">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
         <div>
             <h1 class="text-2xl font-bold text-gray-800">
                 <i class="fa-solid fa-calendar-check text-customBlue mr-2"></i>Bookings
             </h1>
-            <p class="text-sm text-gray-500 mt-1">Manage reservations — check-in, check-out, view details.</p>
+            <p class="text-sm text-gray-500 mt-1">Monitor and manage all guest reservations and check-in statuses.</p>
         </div>
-        <!-- Split "New Booking" button -->
-        <div class="flex items-stretch rounded-lg shadow-sm overflow-hidden border border-customBlue">
-            <button (click)="createBooking()"
-                class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors border-r border-blue-500">
-                <i class="fa-solid fa-user-plus"></i>
-                Guest-First
-            </button>
-            <button (click)="createRoomFirstBooking()"
-                class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors">
-                <i class="fa-solid fa-door-open"></i>
-                Room-First
-            </button>
-        </div>
-    </div>
-
-    <!-- Stats Strip -->
-    <div class="grid grid-cols-4 gap-4 mb-5">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-list text-gray-500"></i>
-            </div>
-            <div>
-                <p class="text-xs text-gray-400">Total</p>
-                <p class="text-xl font-bold text-gray-800">{{ totalCount }}</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-calendar-check text-customBlue"></i>
-            </div>
-            <div>
-                <p class="text-xs text-gray-400">Confirmed</p>
-                <p class="text-xl font-bold text-customBlue">{{ confirmedCount }}</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-right-to-bracket text-customGreen"></i>
-            </div>
-            <div>
-                <p class="text-xs text-gray-400">Checked-In</p>
-                <p class="text-xl font-bold text-customGreen">{{ checkedInCount }}</p>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-clock text-amber-500"></i>
-            </div>
-            <div>
-                <p class="text-xs text-gray-400">Pending</p>
-                <p class="text-xl font-bold text-amber-500">{{ pendingCount }}</p>
+        <div class="flex items-center gap-4">
+            <div class="flex bg-gray-100 p-1 rounded-lg">
+                <button (click)="viewMode = 'table'" 
+                    class="px-4 py-1.5 rounded-md text-xs font-bold transition-all"
+                    [ngClass]="viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                    TABLE
+                </button>
+                <button (click)="viewMode = 'grid'" 
+                    class="px-4 py-1.5 rounded-md text-xs font-bold transition-all"
+                    [ngClass]="viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'">
+                    GRID
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Filter Bar -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-5 space-y-4">
-        <div class="flex items-center gap-3">
-            <div class="flex-1 relative">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" type="text"
-                    placeholder="Search by ID, Guest Name, Room #, or Status..."
-                    class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-customBlue outline-none" />
-            </div>
-            <button (click)="clearFilters()"
-                class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
-                <i class="fa-solid fa-filter-circle-xmark"></i> Reset
-            </button>
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap items-end gap-6 text-sm">
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Guest Name</label>
+            <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()"
+                placeholder="Search guest..."
+                class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-customBlue transition-all" />
         </div>
-
-        <div class="flex flex-wrap items-end gap-4 border-t border-gray-50 pt-4">
-            <!-- Status -->
-            <div class="min-w-[150px]">
-                <label class="block text-xs font-medium text-gray-500 mb-1.5">Status Filter</label>
-                <select [(ngModel)]="filterStatus" (change)="applyFilters()"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none">
-                    <option value="">All Statuses</option>
-                    <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
-                </select>
-            </div>
-            <!-- Date From -->
-            <div class="min-w-[140px]">
-                <label class="block text-xs font-medium text-gray-500 mb-1.5">Check-In From</label>
-                <input [(ngModel)]="filterFrom" (change)="applyFilters()" type="date"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none" />
-            </div>
-            <!-- Date To -->
-            <div class="min-w-[140px]">
-                <label class="block text-xs font-medium text-gray-500 mb-1.5">Check-In To</label>
-                <input [(ngModel)]="filterTo" (change)="applyFilters()" type="date"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-customBlue outline-none" />
-            </div>
-            <div class="ml-auto text-sm text-gray-400 self-center">
-                Found {{ filteredBookings.length }} booking{{ filteredBookings.length !== 1 ? 's' : '' }}
-            </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Status</label>
+            <select [(ngModel)]="filterStatus" (change)="applyFilters()"
+                class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-customBlue transition-all">
+                <option value="">All Statuses</option>
+                <option value="CONFIRMED">Confirmed</option>
+                <option value="CHECKED_IN">Checked In</option>
+                <option value="CHECKED_OUT">Checked Out</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+        </div>
+        <button (click)="clearFilters()" 
+            class="px-5 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-filter-circle-xmark"></i> Clear
+        </button>
+        <div class="ml-auto text-xs font-bold text-gray-400 uppercase tracking-widest">
+            {{ filteredBookings.length }} bookings
         </div>
     </div>
 
-    <!-- Loading -->
-    <div *ngIf="loading" class="flex justify-center items-center py-20">
-        <i class="fa-solid fa-spinner fa-spin text-3xl text-customBlue"></i>
-    </div>
-
-    <!-- Empty -->
-    <div *ngIf="!loading && filteredBookings.length === 0" class="text-center py-20">
-        <i class="fa-solid fa-calendar-xmark text-5xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500 text-lg">No bookings found</p>
-        <p class="text-gray-400 text-sm mt-1">Try adjusting your filters or search query.</p>
-    </div>
-
-    <!-- Table -->
-    <div *ngIf="!loading && filteredBookings.length > 0"
-        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <!-- Table View -->
+    <div *ngIf="viewMode === 'table'" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full">
                 <thead>
-                    <tr class="bg-gray-50/80 border-b border-gray-100 text-gray-600">
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Booking Info</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Guest</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Room Allocation</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Dates & Nights</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-right">Financials</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-center">Status</th>
-                        <th class="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-right">Actions</th>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Guest</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Room #</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Check-In</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Check-Out</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Total</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    <tr *ngFor="let b of filteredBookings"
-                        class="hover:bg-blue-50/40 transition-colors cursor-pointer group" (click)="viewBooking(b)">
-                        <td class="px-5 py-4">
-                            <span class="text-sm font-bold text-gray-800 block">#{{ b.id }}</span>
-                            <span class="text-[10px] text-gray-400 font-mono">{{ b.checkinDate }}</span>
-                        </td>
-                        <td class="px-5 py-4">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-semibold text-gray-800">{{ getGuestName(b.guest) }}</span>
-                                <span class="text-xs text-gray-400">Identity Verified</span>
+                    <tr *ngFor="let booking of filteredBookings" class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-50 text-customBlue flex items-center justify-center font-bold text-xs uppercase">
+                                    {{ getGuestName(booking.guest)?.substring(0, 2) }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">{{ getGuestName(booking.guest) }}</p>
+                                    <p class="text-[10px] text-gray-400 font-medium">ID: #{{ booking.id }}</p>
+                                </div>
                             </div>
                         </td>
-                        <td class="px-5 py-4">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium text-gray-700">{{ getRoomNumbers(b.rooms) }}</span>
-                                <span class="text-xs text-customBlue">{{ getRoomTypeName(b.rooms) }}</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4">
-                            <div class="text-sm text-gray-600">
-                                <span class="block">In: {{ b.checkinDate }}</span>
-                                <span class="block text-gray-400 text-xs">{{ getNights(b.checkinDate, b.checkoutDate) }}
-                                    Nights</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 text-right">
-                            <span class="text-sm font-bold text-gray-800 block">₦{{ b.total | number }}</span>
-                            <span class="text-xs"
-                                [ngClass]="(b.balanceAmount ?? 0) > 0 ? 'text-red-500 font-medium' : 'text-emerald-500'">
-                                {{ (b.balanceAmount ?? 0) > 0 ? '₦' + (b.balanceAmount | number) + ' due' : 'Paid in
-                                full' }}
+                        <td class="px-6 py-4 text-sm font-bold text-gray-700">{{ getRoomNumbers(booking.rooms) }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ booking.checkinDate | date:'mediumDate' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ booking.checkoutDate | date:'mediumDate' }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase"
+                                [ngClass]="getStatusClass(booking.status)">
+                                {{ booking.status }}
                             </span>
                         </td>
-                        <td class="px-5 py-4 text-center">
-                            <span
-                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase"
-                                [ngClass]="getStatusColor(b.status)">
-                                {{ b.status }}
-                            </span>
-                        </td>
-                        <td class="px-5 py-4 text-right" (click)="$event.stopPropagation()">
-                            <div class="flex items-center justify-end gap-3">
-                                <button *ngIf="b.status === 'CONFIRMED' || b.status === 'PENDING'"
-                                    (click)="checkIn(b, $event)"
-                                    class="text-[10px] px-2.5 py-1.5 bg-customGreen text-white rounded-lg hover:opacity-90 font-bold transition-all shadow-sm">
-                                    CHECK-IN
-                                </button>
-                                <button *ngIf="b.status === 'CHECKED_IN'" (click)="checkOut(b, $event)"
-                                    class="text-[10px] px-2.5 py-1.5 bg-gray-700 text-white rounded-lg hover:opacity-90 font-bold transition-all shadow-sm text-center">
-                                    CHECK-OUT
-                                </button>
-                                <button (click)="viewBooking(b)"
-                                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 group-hover:bg-customBlue group-hover:text-white transition-all">
-                                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                                </button>
-                            </div>
+                        <td class="px-6 py-4 text-right text-sm font-bold text-gray-800">₦{{ booking.total | number }}</td>
+                        <td class="px-6 py-4 text-right">
+                          <div class="flex justify-end gap-2">
+                            <button (click)="openEditDrawer(booking)" class="text-customBlue hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button (click)="confirmDelete(booking)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                          </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Grid View -->
+    <div *ngIf="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <article *ngFor="let booking of filteredBookings" 
+            class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-customBlue flex items-center justify-center font-bold text-sm">
+                        {{ getGuestName(booking.guest)?.substring(0, 1) }}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800">{{ getGuestName(booking.guest) }}</h3>
+                        <p class="text-xs text-gray-400">#{{ booking.id }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase" [ngClass]="getStatusClass(booking.status)">
+                    {{ booking.status }}
+                </span>
+            </div>
+            
+            <div class="space-y-3 py-4 border-y border-gray-50 mb-4">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-400 font-medium">Room</span>
+                    <span class="text-gray-800 font-bold">{{ getRoomNumbers(booking.rooms) }}</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-400 font-medium">Stay</span>
+                    <span class="text-gray-800 font-bold">{{ booking.checkinDate | date:'MMM d' }} - {{ booking.checkoutDate | date:'MMM d' }}</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <span class="font-bold text-gray-800">₦{{ booking.total | number }}</span>
+                <div class="flex gap-1">
+                    <button (click)="openEditDrawer(booking)" class="p-2 text-customBlue hover:bg-blue-50 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button (click)="confirmDelete(booking)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        </article>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="showDeleteModal = false"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Booking?</h3>
+        <p class="text-sm text-gray-500 leading-relaxed mb-8">Are you sure you want to delete Booking #{{ selectedBooking?.id }}? This action cannot be undone.</p>
+        <div class="flex gap-3">
+            <button (click)="showDeleteModal = false" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+            <button (click)="deleteBooking()" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">Delete</button>
         </div>
     </div>
 </div>

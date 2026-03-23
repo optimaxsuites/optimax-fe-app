@@ -58,7 +58,7 @@ export class RoomsListComponent implements OnInit {
     { name: 'Kitchen', icon: 'fa-solid fa-kitchen-set' },
     { name: 'Workspace', icon: 'fa-solid fa-briefcase' },
     { name: 'Lounge', icon: 'fa-solid fa-couch' },
-    { name: 'Laundry', icon: 'fa-solid fa-shirt' }
+    { name: 'Laundry', icon: 'fa-solid fa-shirt' },
   ];
 
   // Dummy images for grid view
@@ -74,12 +74,15 @@ export class RoomsListComponent implements OnInit {
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    this.uuid = this.route.snapshot.paramMap.get('uuid') || 
-                this.route.parent?.snapshot.paramMap.get('uuid') || '';
+    this.uuid =
+      this.route.snapshot.paramMap.get('uuid') ||
+      this.route.parent?.snapshot.paramMap.get('uuid') ||
+      '';
+    console.log('RoomsListComponent loaded with UUID:', this.uuid);
     this.initForm();
     this.loadRooms();
     this.loadRoomTypes();
@@ -93,7 +96,7 @@ export class RoomsListComponent implements OnInit {
       rate: [0, [Validators.required, Validators.min(0)]],
       beds: [1, [Validators.required, Validators.min(1)]],
       maxOccupancy: [1, [Validators.required, Validators.min(1)]],
-      description: [''],
+      description: ['', [Validators.required, Validators.minLength(3)]],
       amenities: [[]],
       imageURLs: [[]],
       accessible: [false],
@@ -104,13 +107,16 @@ export class RoomsListComponent implements OnInit {
 
   loadRooms(): void {
     this.loading = true;
+    console.log('Loading rooms...');
     this.hotelService.getRooms().subscribe({
       next: (data) => {
+        console.log('Rooms loaded successfully:', data);
         this.rooms = data;
         this.applyFilters();
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error loading rooms:', err);
         this.showToastMessage('Failed to load rooms', 'error');
         this.loading = false;
       },
@@ -118,18 +124,26 @@ export class RoomsListComponent implements OnInit {
   }
 
   loadRoomTypes(): void {
+    console.log('Loading room types...');
     this.hotelService.getRoomTypes().subscribe({
-      next: (data) => (this.roomTypes = data),
-      error: () =>
-        this.showToastMessage('Failed to load room types', 'error'),
+      next: (data) => {
+        console.log('Room types loaded successfully:', data);
+        this.roomTypes = data;
+      },
+      error: (err) => {
+        console.error('Error loading room types:', err);
+        this.showToastMessage('Failed to load room types', 'error');
+      },
     });
   }
 
   applyFilters(): void {
     this.filteredRooms = this.rooms.filter((r) => {
-      const matchStatus = !this.filterStatus || r.roomStatus === this.filterStatus;
+      const matchStatus =
+        !this.filterStatus || r.roomStatus === this.filterStatus;
       const matchFloor = !this.filterFloor || r.floor === +this.filterFloor;
-      const matchType = !this.filterRoomType || r.roomType === +this.filterRoomType;
+      const matchType =
+        !this.filterRoomType || r.roomType === +this.filterRoomType;
       return matchStatus && matchFloor && matchType;
     });
   }
@@ -145,25 +159,36 @@ export class RoomsListComponent implements OnInit {
     return this.hotelService.getRoomTypeNameById(id);
   }
 
+  getStatusClass(status: string): string {
+    const s = status.toUpperCase();
+    if (s === 'AVAILABLE') return 'status-success';
+    if (s === 'OCCUPIED' || s === 'STAYOVER') return 'status-danger';
+    if (s === 'MAINTENANCE' || s === 'DIRTY') return 'status-warning';
+    return 'status-info';
+  }
+
   getStatusColor(status: string): string {
-    switch (status) {
-      case 'AVAILABLE': return 'bg-customGreen text-white';
-      case 'OCCUPIED': return 'bg-red-500 text-white';
-      case 'BOOKED': return 'bg-customBlue text-white';
-      case 'UNDER_MAINTENANCE': return 'bg-amber-500 text-white';
-      case 'CLEANING': return 'bg-purple-500 text-white';
-      default: return 'bg-gray-400 text-white';
-    }
+    const s = status.toUpperCase();
+    if (s === 'AVAILABLE' || s === 'AVAILABLE_SMOKING') return 'bg-emerald-100 text-emerald-600';
+    if (s === 'OCCUPIED' || s === 'DIRTY') return 'bg-rose-100 text-rose-600';
+    if (s === 'MAINTENANCE' || s === 'STAYOVER') return 'bg-amber-100 text-amber-600';
+    return 'bg-sky-100 text-sky-600';
   }
 
   getStatusIcon(status: string): string {
     switch (status) {
-      case 'AVAILABLE': return 'fa-solid fa-circle-check';
-      case 'OCCUPIED': return 'fa-solid fa-user';
-      case 'BOOKED': return 'fa-solid fa-calendar-check';
-      case 'UNDER_MAINTENANCE': return 'fa-solid fa-wrench';
-      case 'CLEANING': return 'fa-solid fa-broom';
-      default: return 'fa-solid fa-circle-question';
+      case 'AVAILABLE':
+        return 'fa-solid fa-circle-check';
+      case 'OCCUPIED':
+        return 'fa-solid fa-user';
+      case 'BOOKED':
+        return 'fa-solid fa-calendar-check';
+      case 'UNDER_MAINTENANCE':
+        return 'fa-solid fa-wrench';
+      case 'CLEANING':
+        return 'fa-solid fa-broom';
+      default:
+        return 'fa-solid fa-circle-question';
     }
   }
 

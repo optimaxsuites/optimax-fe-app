@@ -1,6 +1,6 @@
 <!-- Dynamic Navbar Branding -->
 <nav class="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="flex items-center space-x-2 cursor-pointer"
             [ngClass]="branding.logoPosition === 'center' ? 'flex-1 justify-center' : ''">
             <img *ngIf="branding.logo" [src]="branding.logo" class="h-8 w-auto object-contain">
@@ -32,7 +32,7 @@
     <app-heropage></app-heropage>
 
     <!-- Main Content: Sidebar + Room Grid -->
-    <div class="max-w-6xl mx-auto px-6 py-10">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div class="flex flex-col lg:flex-row gap-8">
 
             <!-- LEFT: Filter Sidebar -->
@@ -224,7 +224,7 @@
                                     <p class="text-xl font-black text-gray-900">₦{{ room.price | number }}</p>
                                 </div>
                                 <button (click)="viewRoomDetails(room)"
-                                    class="text-white text-xs font-bold px-5 py-3 rounded-lg transition-all shadow-lg shadow-customGreen/10 hover:shadow-customGreen/20"
+                                    class="text-white text-xs font-bold px-5 py-3 rounded-xl transition-all shadow-lg shadow-customGreen/10 hover:shadow-customGreen/20"
                                     style="background-color:#2EB270;">
                                     View Details
                                 </button>
@@ -242,7 +242,7 @@
                 <!-- Load More Button -->
                 <div class="flex justify-center pb-4" *ngIf="rooms.length > 0">
                     <button
-                        class="px-16 py-3.5 border-2 border-gray-200 rounded-lg text-sm font-bold uppercase tracking-widest text-gray-700 hover:border-[#2EB270] hover:text-[#2EB270] transition-all">
+                        class="px-16 py-3.5 border-2 border-gray-200 rounded-2xl text-sm font-bold uppercase tracking-widest text-gray-700 hover:border-[#2EB270] hover:text-[#2EB270] transition-all">
                         LOAD MORE RESULTS
                     </button>
                 </div>

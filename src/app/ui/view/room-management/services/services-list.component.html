@@ -6,7 +6,7 @@
     <span>{{ toastMessage }}</span>
 </div>
 
-<div class="p-6 max-w-6xl mx-auto">
+<div class="p-6  mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -48,8 +48,8 @@
                 <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ svc.description || 'No description' }}</p>
                 <div class="flex items-center gap-3 mt-2">
                     <span class="text-sm font-bold text-customBlue">₦{{ svc.price | number }}</span>
-                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">per {{ svc.measurements
-                        }}</span>
+                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{
+                        getMeasurementLabel(svc.measurements) | lowercase }}</span>
                 </div>
             </div>
             <!-- Actions -->
@@ -96,8 +96,8 @@
                     <td class="px-5 py-3.5 text-sm text-gray-500 max-w-xs truncate">{{ svc.description || '—' }}</td>
                     <td class="px-5 py-3.5 text-sm font-medium text-gray-800">₦{{ svc.price | number }}</td>
                     <td class="px-5 py-3.5">
-                        <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">{{ svc.measurements
-                            }}</span>
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">{{
+                            getMeasurementLabel(svc.measurements) }}</span>
                     </td>
                     <td class="px-5 py-3.5 text-right">
                         <button (click)="openEditDrawer(svc)"
@@ -142,9 +142,12 @@
 
                 <!-- Description -->
                 <div class="mb-5">
-                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Description</label>
+                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Description <span
+                            class="text-red-500">*</span></label>
                     <textarea formControlName="description" rows="3" placeholder="Brief description of this service..."
                         class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-customBlue outline-none resize-none"></textarea>
+                    <p *ngIf="form.get('description')?.touched && form.get('description')?.invalid"
+                        class="text-red-500 text-xs mt-1">Required (min 3 chars)</p>
                 </div>
 
                 <!-- Price + Measurement -->
@@ -160,7 +163,7 @@
                                 class="text-red-500">*</span></label>
                         <select formControlName="measurements"
                             class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-customBlue outline-none">
-                            <option *ngFor="let m of measurements" [value]="m">{{ m }}</option>
+                            <option *ngFor="let m of measurements" [value]="m.value">{{ m.label }}</option>
                         </select>
                     </div>
                 </div>
