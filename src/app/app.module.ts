@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule } from '@angular/core'; // trigger re-compile 2
 import { BrowserModule } from '@angular/platform-browser';
 // import { NgApexchartsModule } from "ng-apexcharts";
 
@@ -114,6 +114,7 @@ import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-recor
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ConfirmationService } from 'primeng/api';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
+import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 
 @NgModule({
   declarations: [
@@ -151,13 +152,13 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     SmartAccountantAiComponent,
     DeletedRecordsComponent,
     NavTabComponent,
-    SideModalComponent,
     AccountingReportsComponent,
     QuotationModalComponent,
     AddNewClientComponent,
     AddQuotationItemComponent,
     AddShippingDetailsComponent,
-    TransactionsComponent
+    TransactionsComponent,
+    DisbursementComponent
   ],
   imports: [
     BrowserModule,
@@ -223,6 +224,7 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     FileUploadModule,
     ToggleButtonModule,
     PdfViewerModule,
+    SideModalComponent
   ],
   providers: [
     MessageService,

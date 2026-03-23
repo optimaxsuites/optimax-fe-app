@@ -15,7 +15,7 @@ interface Transaction {
   debit?: number;
   credit?: number;
   balance: number;
-  status: 'Posted' | 'Draft' | 'Needs Review' | 'Flagged';
+  status: 'Posted' | 'Draft' | 'Needs Review' | 'Flagged' | 'Approved';
 }
 
 // Bank Statement Upload Interfaces
@@ -82,6 +82,11 @@ export class GeneralTransactionsComponent implements OnInit {
   // Modal State
   showModal: boolean = false;
   modalType: 'income' | 'expense' = 'income';
+
+  // Expense Approval Side Tab state
+  showExpenseDetails: boolean = false;
+  selectedExpense: Transaction | null = null;
+  showExpenseApprovalModal: boolean = false;
 
   // Bank Statement Upload State
   showUploadModal: boolean = false;
@@ -282,6 +287,7 @@ export class GeneralTransactionsComponent implements OnInit {
       case 'Posted': return 'bg-green-100 text-green-800';
       case 'Draft': return 'bg-yellow-100 text-yellow-800';
       case 'Needs Review': return 'bg-blue-100 text-blue-800';
+      case 'Approved': return 'bg-teal-100 text-teal-800 font-bold';
       case 'Flagged': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -295,6 +301,41 @@ export class GeneralTransactionsComponent implements OnInit {
 
   closeModal() {
     this.showModal = false;
+  }
+
+  // --- Expense Approval Actions ---
+  openExpenseDetails(tx: Transaction) {
+    if (tx.type === 'Expense' && (tx.status === 'Needs Review' || tx.status === 'Draft' || tx.status === 'Posted')) {
+      this.selectedExpense = tx;
+      this.showExpenseDetails = true;
+    }
+  }
+
+  closeExpenseDetails() {
+    this.showExpenseDetails = false;
+    this.selectedExpense = null;
+  }
+
+  promptExpenseApproval() {
+    this.showExpenseApprovalModal = true;
+  }
+
+  confirmExpenseApproval() {
+    if (this.selectedExpense) {
+      this.selectedExpense.status = 'Approved';
+    }
+    this.showExpenseApprovalModal = false;
+    this.closeExpenseDetails();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Expense Approved',
+      detail: 'The expense has been approved and moved to disbursement.',
+      life: 3000
+    });
+  }
+
+  cancelExpenseApproval() {
+    this.showExpenseApprovalModal = false;
   }
 
   // ========== BANK STATEMENT UPLOAD METHODS ==========

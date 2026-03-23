@@ -13,7 +13,7 @@ export class NavTabComponent implements OnInit {
   @Input() tabsConfig: TabConfig[] = [];
 
   isDropdownOpen = false;
-  selectedTab: string = '';
+  @Input() selectedTab: string = '';
   selectedSetting: string | null = null;
   selectedDropdownTab: string = '';
   user_role: any = '';
