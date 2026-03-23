@@ -9,7 +9,7 @@ const DEFAULT_OFFICE_HOURS: OfficeHours = {
   latenessGracePeriod: '09:15'
 };
 
-export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';
+/*export type ScheduleMode = 'office-hours' | 'shift' | 'mixed';*/
 
 @Injectable({ providedIn: 'root' })
 export class OfficeHoursService {
@@ -70,14 +70,18 @@ export class OfficeHoursService {
 }
 
 // Inside the class:
-private scheduleMode: ScheduleMode = 'office-hours'; // default
+/*private scheduleMode: ScheduleMode = 'office-hours'; // default
 
 getScheduleMode(): ScheduleMode {
-  return this.scheduleMode;
+  return 'mixed'; 
+}*/
+
+getScheduleMode() {
+  return 'mixed' as const; //fixed at mixed scheduleMode
 }
 
-setScheduleMode(mode: ScheduleMode): void {
+/*setScheduleMode(mode: ScheduleMode): void {
   this.scheduleMode = mode;
-}
+}*/
 
 }

@@ -22,6 +22,7 @@ export class CheckinCheckoutComponent implements OnInit {
   isWithinOfficeHours = true;
   isAfterOpening = true;
   hasCompletedToday = false;
+  isGettingLocation = false;
 
   //later, change to reflect each individual employee
   employeeid = '001';
@@ -53,16 +54,18 @@ export class CheckinCheckoutComponent implements OnInit {
     .subscribe(() => this.checkOfficeHours());
   }
 
-  toggleClock() {
+  async toggleClock() {
     if (this.isAbsentToday) {
     return; // Block action completely
+
+    this.isGettingLocation = true;
   }
 
   if (this.status === 'CLOCKED_OUT') {
     this.status = 'CLOCKED_IN';
     this.attendanceService.setClockStatus('CLOCKED_IN');
 
-    this.attendanceService.clockAction(
+    await this.attendanceService.clockAction(
       this.employeeid,
       this.employeeName,
       this.department,
@@ -81,6 +84,7 @@ export class CheckinCheckoutComponent implements OnInit {
       'OUT'
     );
   }
+  this.isGettingLocation  = false;
 }
 
 /*checkOfficeHours() {

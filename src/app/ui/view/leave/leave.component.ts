@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { LeaveRequestComponent } from './leave-request/leave-request.component';
 import { AssignLeaveComponent } from './assign-leave/assign-leave.component';
-import { ApplyComponent } from './apply/apply.component';
 import { LeaveUsageComponent } from './leave-usage/leave-usage.component';
 import { LeavePolicyComponent } from './leave-policy/leave-policy.component';
 import { LeavePlanComponent } from './leave-plan/leave-plan.component';
@@ -24,42 +23,46 @@ export class LeaveComponent {
     //   role: 'ROLE_ADMIN',
     // },
     // { name: 'Apply', component: ApplyComponent },
-{ 
-  name: 'Leave Plan', 
-  component: LeavePlanComponent, 
-  icon: 'fa fa-calendar-plus'   // planning future leave
-},
-{ 
-  name: 'Plan Dashboard', 
-  component: LeaveTimelineComponent, 
-  icon: 'fa fa-calendar-alt'    // timeline / overview
-},
-{ 
-  name: 'Plan Requests', 
-  component: LeavePlanningDashboardComponent, 
-  icon: 'fa fa-tasks'           // requests awaiting action
-},
-{ 
-  name: 'My Leave', 
-  component: LeaveUsageComponent, 
-  icon: 'fa fa-user-clock'      // personal leave tracking
-},
-{ 
-  name: 'Leave Requests', 
-  component: LeaveRequestComponent, 
-  icon: 'fa fa-envelope-open-text' // submitted requests
-},
-// { 
-//   name: 'Assign Leave', 
-//   component: AssignLeaveComponent, 
-//   icon: 'fa fa-user-plus' 
-// },
-{ 
-  name: 'Leave Policy', 
-  component: LeavePolicyComponent, 
-  icon: 'fa fa-book'            // rules / policy
-},
+    {
+      name: 'Leave Plan',
+      component: LeavePlanComponent,
+      icon: 'fa fa-calendar-plus', // planning future leave
+    },
+    {
+      name: 'My Leave',
+      component: LeaveUsageComponent,
+      icon: 'fa fa-user-clock', // personal leave tracking
+    },
+    {
+      name: 'Plan Dashboard',
+      component: LeaveTimelineComponent,
+      icon: 'fa fa-calendar-alt',
+      role: 'ROLE_ADMIN',
+    },
+    {
+      name: 'Plan Requests',
+      component: LeavePlanningDashboardComponent,
+      icon: 'fa fa-tasks',
+      role: 'ROLE_ADMIN',
+    },
 
+    {
+      name: 'Leave Requests',
+      component: LeaveRequestComponent,
+      icon: 'fa fa-envelope-open-text',
+      role: 'ROLE_ADMIN',
+    },
+    {
+      name: 'Leave Policy',
+      component: LeavePolicyComponent,
+      icon: 'fa fa-book',
+      role: 'ROLE_ADMIN',
+    },
+    // {
+    //   name: 'Assign Leave',
+    //   component: AssignLeaveComponent,
+    //   icon: 'fa fa-user-plus'
+    // },
 
     // { name: 'Apply', component: ApplyComponent, role: 'ROLE_ADMIN' },
     // {

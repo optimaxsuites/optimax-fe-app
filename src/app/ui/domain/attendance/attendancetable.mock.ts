@@ -8,6 +8,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '08:05',
     checkOut: '17:00',
+    checkInLocation: 'nna eh street',
+    checkOutLocation: 'you are a street',
     status: 'PRESENT',
     hours: 8.9
   },
@@ -18,6 +20,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '08:45',
     checkOut: '17:10',
+    checkInLocation: 'nna eh street',
+    checkOutLocation: 'you are a street',
     status: 'LATE',
     hours: 8.4
   },
@@ -28,6 +32,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: null,
     checkIn: null,
     checkOut: null,
+    checkInLocation: null,
+    checkOutLocation: null,
     status: 'ABSENT',
     hours: 0
   },
@@ -38,6 +44,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '07:55',
     checkOut: '16:50',
+    checkInLocation: 'nna eh street',
+    checkOutLocation: 'you are a street',
     status: 'PRESENT',
     hours: 8.8
   },
@@ -48,6 +56,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '09:10',
     checkOut: '17:05',
+    checkInLocation: 'nna eh street',
+    checkOutLocation: 'you are a street',
     status: 'LATE',
     hours: 7.9
   },
@@ -58,6 +68,8 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '08:00',
     checkOut: '17:00',
+    checkInLocation: 'nna eh street',
+    checkOutLocation: 'you are a street',
     status: 'PRESENT',
     hours: 9
   }

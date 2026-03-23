@@ -13,6 +13,8 @@
 <th (click)="sortTable('date')">Date <span *ngIf="sortColumn === 'date'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
 <th (click)="sortTable('checkIn')">In <span *ngIf="sortColumn === 'checkIn'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
 <th (click)="sortTable('checkOut')">Out <span *ngIf="sortColumn === 'checkOut'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
+<th>In Location</th>
+<th>Out Location</th>
 <th (click)="sortTable('status')">Status <span *ngIf="sortColumn === 'status'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
 <th (click)="sortTable('hours')">Hours <span *ngIf="sortColumn === 'hours'"> {{sortDirection === 'asc' ? '▲':'▼'}} </span></th>
 <th>Actions</th>
@@ -28,6 +30,8 @@
     <td>{{ record.date || '-'}}</td>
     <td>{{ record.checkIn || '-' }}</td>
     <td>{{ record.checkOut || '-' }}</td>
+    <td> {{ record.checkInLocation }} </td>
+    <td> {{ record.checkOutLocation }} </td>
 
     <td>
       <span class="status"
@@ -66,28 +70,16 @@
       {{ record.overriddenBy?.adminName || '-'}} <span><br></span>
       <span *ngIf="record.overrideReason">Reason for modification: </span>{{ record.overrideReason || '-' }}
     </td>
-
   </tr>
 
-    <!--<tr *ngFor="let record of attendance$ | async">
-      <td>{{ record.employee }}</td>
-      <td>{{ record.department }}</td>
-      <td>{{ record.checkIn }}</td>
-      <td>{{ record.checkOut }}</td>
-
-      <td>
-        <span class="status" [ngClass]="record.status.toLowerCase()">
-          {{ record.status }}
-        </span>
-      </td>
-
-      <td>{{ record.hours }}</td>
-
-      
-    <td class="actions">
-      <button class="correct-btn" (click)="manualCorrection(record)">Correct</button>
+  <tr *ngIf="filteredAttendance.length === 0">
+    <td colspan="11" class="empty-state">
+      <div class="empty-content">
+        <p class="empty-title">📋 No attendance records found</p>
+        <p class="empty-subtitle">Try adjusting your filters or selecting a different date range</p>
+      </div>
     </td>
-    </tr>-->
+  </tr>
   </tbody>
 </table>
 

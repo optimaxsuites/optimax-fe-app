@@ -14,16 +14,15 @@
     -->
 </div>
 <div>
-    <!-- Temporary: component file is missing in this branch
-    <app-attendancetable (dataChange)="onDataChange($event)"></app-attendancetable>
-    -->
-</div>
-<div>
-    <app-adminexport
+<app-adminexport
   [data]="filteredAttendance"
   [filters]="currentFilters">
 </app-adminexport>
 
+    <app-attendancetable (dataChange)="onDataChange($event)"></app-attendancetable>
+</div>
+<div>
+ 
 </div>
 </div>
 

@@ -51,16 +51,16 @@ const routes: Routes = [
     component: GuarantorConfirmationComponent,
   },
 
-  // {
-  //   path: '',
-  //   redirectTo: 'leave/uu',
-  //   pathMatch: 'full',
-  // },
   {
-    path: 'loan-dashboard',
-    redirectTo: 'loan/uu',
-    pathMatch: 'full'
+    path: '',
+    redirectTo: 'leave/uu',
+    pathMatch: 'full',
   },
+  // {
+  //   path: 'loan-dashboard',
+  //   redirectTo: 'loan/uu',
+  //   pathMatch: 'full'
+  // },
   {
     path: 'loan-dashboard/:legacyId',
     redirectTo: 'loan/uu',

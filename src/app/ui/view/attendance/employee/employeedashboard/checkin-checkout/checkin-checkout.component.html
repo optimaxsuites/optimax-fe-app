@@ -50,9 +50,12 @@
            && !isAbsentToday
            && !hasCompletedToday"
     class="main-btn"
+    [disabled]="isGettingLocation"
     (click)="toggleClock()">
-
-    Clock In
+    <span *ngIf="!isGettingLocation">Clock In</span>
+      <span *ngIf="isGettingLocation" class="location-loading">
+        <span class="spinner"></span> Getting location...
+      </span>
   </button>
 
   <!-- CLOCK OUT (allowed anytime after opening) -->
@@ -61,9 +64,12 @@
            && isAfterOpening
            && !hasCompletedToday"
     class="main-btn"
+    [disabled]="isGettingLocation"
     (click)="toggleClock()">
-
-    Clock Out
+    <span *ngIf="!isGettingLocation">Clock Out</span>
+    <span *ngIf="isGettingLocation" class="location-loading">
+      <span class="spinner"></span> Getting location...
+    </span>
   </button>
 
 </div>

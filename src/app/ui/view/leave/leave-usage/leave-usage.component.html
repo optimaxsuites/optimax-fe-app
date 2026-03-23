@@ -2,14 +2,35 @@
   <div class="grid grid-cols-1 lg:grid-cols-3">
     <div class="lg:col-span-2 space-y-6">
       <!-- Top Stats -->
-       <button
-    (click)="openApplyLeaveModal()"
-    class="flex items-center gap-2 rounded-md bg-customBlue hover:bg-customBlueHover px-4 py-2 mb-2 text-xl font-medium text-white"
-  >
-    <span class="text-lg leading-none">+</span>
-    Apply Leave
-  </button>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <button
+        (click)="openApplyLeaveModal()"
+        class="flex items-center gap-2 rounded-md bg-customBlue hover:bg-customBlueHover px-4 py-2 mb-2 text-xl font-medium text-white"
+      >
+        <span class="text-lg leading-none">+</span>
+        Apply Leave
+      </button>
+
+      <!-- Loading State for Stats -->
+      <div *ngIf="isLoadingStats" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          *ngFor="let i of [1, 2, 3]"
+          class="bg-white rounded-lg p-6 border animate-pulse"
+        >
+          <div class="flex items-start space-x-3">
+            <div class="w-1 h-16 bg-gray-200 rounded-full"></div>
+            <div class="flex-1">
+              <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div class="h-10 bg-gray-200 rounded w-16"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actual Stats -->
+      <div
+        *ngIf="!isLoadingStats"
+        class="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
         <div class="bg-white rounded-lg p-6 border">
           <div class="flex items-start space-x-3">
             <div class="w-1 h-16 bg-customBlue rounded-full"></div>
@@ -50,40 +71,65 @@
         </div>
       </div>
 
-      <!-- Leave Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ng-container *ngFor="let leaveType of employee.leaveTypes">
+      <!-- Loading State for Leave Cards -->
+      <div
+        *ngIf="isLoadingStats"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <div
+          *ngFor="let i of [1, 2, 3, 4]"
+          class="rounded-xl border border-gray-200 bg-white p-4 animate-pulse"
+        >
+          <div class="h-4 bg-gray-200 rounded w-20 mb-3"></div>
+          <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
+          <div class="h-2 bg-gray-200 rounded w-full mb-2"></div>
+          <div class="h-4 bg-gray-200 rounded w-24"></div>
+        </div>
+      </div>
+
+      <!-- Leave Cards from API -->
+      <div
+        *ngIf="!isLoadingStats"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <ng-container *ngFor="let leaveTypeCard of getLeaveTypeCards()">
           <div
-            *ngIf="leaveType.isActive"
+            *ngIf="leaveTypeCard.isActive"
             class="rounded-xl border border-gray-200 bg-white p-4"
           >
             <p class="text-sm uppercase text-gray-500">
-              {{ leaveType.typeName }}
+              {{ leaveTypeCard.typeName }}
             </p>
 
             <div class="mt-3 flex items-end gap-2">
               <span class="text-3xl font-semibold">{{
-                leaveType.allocatedDays - leaveType.daysUsed
+                leaveTypeCard.remainingDays
               }}</span>
               <span class="text-sm text-gray-500"
-                >/ {{ leaveType.allocatedDays }} days</span
+                >/ {{ leaveTypeCard.allocatedDays }} days</span
               >
             </div>
 
             <div class="mt-3 h-2 w-full rounded-full bg-gray-200">
               <div
                 class="h-2 rounded-full bg-teal-500"
-                [style.width.%]="
-                  (leaveType.daysUsed / leaveType.allocatedDays) * 100
-                "
+                [style.width.%]="leaveTypeCard.usedPercentage"
               ></div>
             </div>
 
             <p class="mt-2 text-sm text-gray-500">
-              {{ leaveType.daysUsed }} days used this year
+              {{ leaveTypeCard.daysUsed }} days used this year
             </p>
           </div>
         </ng-container>
+
+        <!-- Empty State -->
+        <div
+          *ngIf="getLeaveTypeCards().length === 0"
+          class="col-span-full text-center py-8"
+        >
+          <p class="text-gray-500">No leave balances found</p>
+        </div>
       </div>
     </div>
 
@@ -98,6 +144,7 @@
     </div>
   </div>
 </div>
+
 <div class="card">
   <div class="flex w-full py-4 items-center justify-between gap-4 px-3">
     <div class="flex gap-4 items-center w-1/2 table-item">
@@ -179,6 +226,7 @@
     </span>
   </p>
 </app-modal>
+
 <app-modal *ngIf="openApplyLeave" (close)="openApplyLeave = false">
   <h3 class="text-lg font-semibold mb-4">Apply for Leave</h3>
 
@@ -318,9 +366,11 @@
           [disabled]="!hasPlannedLeaves"
           (click)="assignLeave()"
         >
-          {{ hasPlannedLeaves ? "Apply" : " Apply (Locked)" }}
+          {{ hasPlannedLeaves ? "Apply" : "Apply (Locked)" }}
         </button>
       </div>
     </div>
   </div>
 </app-modal>
+
+<p-toast position="top-right" key="tl" />

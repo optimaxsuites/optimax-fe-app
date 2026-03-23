@@ -5,6 +5,8 @@ export interface AttendanceTableRecord {
   date: string | null;
   checkIn: string | null;
   checkOut?: string | null;
+  checkInLocation: string | null;
+  checkOutLocation: string | null;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE' | 'OVERTIME';
   hours?: number;
   overrideOpen?: boolean;
