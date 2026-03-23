@@ -374,7 +374,6 @@ export class HotelserviceService {
     private http: HttpClient,
     private messageService: MessageService,
   ) {
-    this.loadInitialRoomTypes();
   }
 
   // ══════════════════════════════════════════════════════

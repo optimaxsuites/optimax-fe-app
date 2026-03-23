@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HotelserviceService, Room as ApiRoom } from '../../hospitality/hotelservice.service';
 
 interface Room {
   id: number;
-  name: string;
+  roomNumber: number;
+  roomType: any;
   description: string;
-  price: number;
+  rate: number;
   capacity: number;
   size: number;
   amenities: string[];
-  imageUrl: string;
+  imageURLs: string[];
   rating: number;
   available: boolean;
 }
@@ -33,89 +34,18 @@ export class AllroomsComponent implements OnInit {
   // Make Math available in template
   Math = Math;
 
-  private readonly sampleRooms: Room[] = [
-    {
-      id: 1,
-      name: 'Luxury Penthouse',
-      description: 'Stunning 4-bedroom penthouse with private pool and panoramic views of the Atlantic',
-      price: 450,
-      capacity: 8,
-      size: 450,
-      amenities: ['Private Pool', 'Ocean View', '24/7 Butler', 'Smart Home', 'High-Speed Wi-Fi'],
-      imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800',
-      rating: 9.8,
-      available: true,
-    },
-    {
-      id: 2,
-      name: 'Victoria Island Executive',
-      description: 'Modern executive suite in the heart of VI business district, perfect for the modern traveler',
-      price: 120,
-      capacity: 2,
-      size: 45,
-      amenities: ['Business Center', 'Gym Access', 'Airport Shuttle', 'King Bed', 'Breakfast Included'],
-      imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=800',
-      rating: 9.2,
-      available: true,
-    },
-    {
-      id: 3,
-      name: 'Lekki Garden Villa',
-      description: 'Serene garden villa with lush greenery and state-of-the-art entertainment system',
-      price: 280,
-      capacity: 4,
-      size: 120,
-      amenities: ['Private Garden', 'Game Room', 'Chef on Call', 'Secure Parking', 'Ultra-fast Wi-Fi 6'],
-      imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=800',
-      rating: 9.5,
-      available: true,
-    },
-    {
-      id: 4,
-      name: 'Ikoyi Heritage Suite',
-      description: 'Classic luxury meets modern comfort in this historic Ikoyi residence',
-      price: 350,
-      capacity: 2,
-      size: 85,
-      amenities: ['Clawfoot Tub', 'Vintage Decor', 'Personal Concierge', 'Tea Room', 'Poolside Lounge'],
-      imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
-      rating: 9.6,
-      available: true,
-    },
-    {
-      id: 5,
-      name: 'Banana Island Retreat',
-      description: 'Exclusive waterfront retreat with unparalleled security and luxury amenities',
-      price: 850,
-      capacity: 6,
-      size: 380,
-      amenities: ['Waterfront', 'Private Yacht Dock', 'Cinema', 'Infinity Pool', 'Helipad Access'],
-      imageUrl: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&q=80&w=800',
-      rating: 9.9,
-      available: true,
-    },
-    {
-      id: 6,
-      name: 'Mainland Cozy Loft',
-      description: 'Chic urban loft for the creative soul, located in the vibrant Ikeja GRA',
-      price: 85,
-      capacity: 2,
-      size: 35,
-      amenities: ['Creative Workspace', 'Rooftop Bar', 'City View', 'Minimalist Design', 'Coffee Bar'],
-      imageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=800',
-      rating: 8.9,
-      available: true,
-    },
-  ];
-
   rooms: Room[] = [];
 
-  constructor(
+   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private hotelService: HotelserviceService
   ) {}
 
+  uuid = '';
+
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
     this.loadRooms();
   }
 
@@ -124,13 +54,14 @@ export class AllroomsComponent implements OnInit {
       next: (apiRooms: ApiRoom[]) => {
         this.rooms = apiRooms.map((room: ApiRoom) => ({
           id: room.id,
-          name: this.hotelService.getRoomTypeNameById(room.roomType),
+          roomNumber: room.roomNumber,
+          roomType: room.roomType,
           description: room.description || 'Experience premium luxury in this meticulously designed space.',
-          price: room.rate,
+          rate: room.rate,
           capacity: room.maxOccupancy,
           size: room.floor * 25 + 30, // Dummy size based on floor
           amenities: room.amenities && room.amenities.length > 0 ? room.amenities : ['Free WiFi', 'Air Conditioning', 'TV'],
-          imageUrl: (room.imageURLs && room.imageURLs.length > 0) ? room.imageURLs[0] : 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
+          imageURLs: room.imageURLs || [],
           rating: 4.5 + (Math.random() * 0.5), // Premium stays get 4.5+ rating
           available: room.roomStatus === 'AVAILABLE'
         }));
@@ -142,8 +73,8 @@ export class AllroomsComponent implements OnInit {
   }
 
   viewRoomDetails(room: any): void {
-    // Navigate to booking form (acting as detail page) with room ID as uuid
-    this.router.navigate(['/user/booking-form', room.id]);
+    // Navigate to booking form with room ID and hotel UUID
+    this.router.navigate(['/user/e-bookings/booking-form', room.id, this.uuid]);
   }
 
   getStarRating(rating: number): string {
@@ -154,8 +85,7 @@ export class AllroomsComponent implements OnInit {
   }
 
   navigateTobooking() {
-    const uuid = 'abc123';
-    this.router.navigate([`/user/multiple-rooms/uuid`]);
+    this.router.navigate([`/user/e-bookings/multiple-rooms/${this.uuid}`]);
   }
 
   getBedType(capacity: number): string {
@@ -178,12 +108,12 @@ export class AllroomsComponent implements OnInit {
 
   sortRooms(): void {
     const sortFunctions: { [key: string]: (a: Room, b: Room) => number } = {
-      'price-low': (a, b) => a.price - b.price,
-      'price-high': (a, b) => b.price - a.price,
+      'price-low': (a, b) => a.rate - b.rate,
+      'price-high': (a, b) => b.rate - a.rate,
       rating: (a, b) => b.rating - a.rating,
       recommended: (a, b) => {
-        const scoreA = a.rating * 0.7 + ((500 - a.price) * 0.3) / 100;
-        const scoreB = b.rating * 0.7 + ((500 - b.price) * 0.3) / 100;
+        const scoreA = a.rating * 0.7 + ((500 - a.rate) * 0.3) / 100;
+        const scoreB = b.rating * 0.7 + ((500 - b.rate) * 0.3) / 100;
         return scoreB - scoreA;
       },
     };
@@ -196,7 +126,7 @@ export class AllroomsComponent implements OnInit {
   filterRooms(): void {
     this.filteredRooms = this.rooms.filter((room) => {
       const priceMatch =
-        room.price >= this.priceRange[0] && room.price <= this.priceRange[1];
+        room.rate >= this.priceRange[0] && room.rate <= this.priceRange[1];
       const capacityMatch =
         this.capacityFilter === 0 || room.capacity >= this.capacityFilter;
       const nameMatch = this.selectedRoom

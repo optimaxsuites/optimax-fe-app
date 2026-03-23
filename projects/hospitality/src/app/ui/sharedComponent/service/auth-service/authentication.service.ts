@@ -1,6 +1,6 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, tap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
@@ -66,7 +66,14 @@ export class AuthenticationService {
   userLogin(data: any): Observable<any> {
     return this.http
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
-        .pipe(catchError(this.handleError));
+        .pipe(
+          tap((response: any) => {
+            if (response.ecode) {
+              localStorage.setItem('tenantId', response.ecode);
+            }
+          }),
+          catchError(this.handleError)
+        );
   }
 
   getUserPrimaryInfoById(data: string): Observable<any>{

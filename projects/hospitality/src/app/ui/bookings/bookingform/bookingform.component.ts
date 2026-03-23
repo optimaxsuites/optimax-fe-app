@@ -44,8 +44,12 @@ export class BookingformComponent implements OnInit {
     private hotelService: HotelserviceService,
   ) {}
 
+  uuid: string = '';
+
   ngOnInit(): void {
-    const roomId = this.route.snapshot.paramMap.get('uuid');
+    const roomId = this.route.snapshot.paramMap.get('id');
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
+    
     if (roomId) {
       this.loadRoomDetails(Number(roomId));
     }

@@ -25,17 +25,41 @@ export class AuthInterceptor implements HttpInterceptor {
             localStorage.getItem("accessToken2") ||
             localStorage.getItem("token");
 
-        // Determine tenant ID from hostname
+        // Determine tenant ID from URL path or hostname
+        const url = window.location.pathname;
         const host = window.location.hostname;
         const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-        let tenantId = 'optimax';
-
-        if (!isLocalhost) {
-            const parts = host.split('.');
-            tenantId = parts[0] || 'optimax';
+        
+        // Extract UUID from path (look for the last part if it looks like a UUID or 'default')
+        const pathParts = url.split('/').filter(p => !!p);
+        let tenantIdFromUrl = '';
+        
+        if (pathParts.length > 0) {
+            const lastPart = pathParts[pathParts.length - 1];
+            // Check if it's a UUID (length > 20) or 'default' or matches certain patterns
+            if (lastPart === 'default' || lastPart.length > 20 || /^[a-f0-9-]{32,}$/.test(lastPart)) {
+                tenantIdFromUrl = lastPart;
+            }
         }
 
-        const defaultTenantEndpoints = ['/auth/register', '/auth/forgot-password'];
+        // Filter out 'default' - it's a placeholder, not a real tenant ID
+        const validPathTenant = (tenantIdFromUrl && tenantIdFromUrl !== 'default') ? tenantIdFromUrl.toLowerCase() : '';
+        
+        // Default to 'optimax' as per POS implementation
+        let tenantId = 'optimax';
+        
+        if (validPathTenant) {
+            tenantId = validPathTenant;
+        } else if (!isLocalhost) {
+            // Only try to parse hostname if NOT on localhost
+            const parts = host.split('.');
+            tenantId = (parts[0] || 'optimax').toLowerCase();
+        }
+        
+        // Note: We deliberately skip localStorage.getItem('tenantId') here if it contains 
+        // numeric IDs like '1306' that we don't want as the default header value on localhost.
+
+        const defaultTenantEndpoints = ['/auth/signin', '/auth/signup', '/auth/register', '/auth/forgot-password'];
         const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
             request.url.includes(url)
         );
@@ -59,6 +83,9 @@ export class AuthInterceptor implements HttpInterceptor {
                 },
             });
         }
+
+        // console.log(`Interceptor: ${request.url} - X-Tenant-ID: ${updatedRequest.headers.get('X-Tenant-ID')}`);
+        // if (accessToken) console.log(`Interceptor: Authorization header added for ${request.url}`);
 
         return next.handle(updatedRequest);
     }

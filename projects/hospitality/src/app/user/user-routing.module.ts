@@ -23,13 +23,17 @@ import { BookingsListComponent } from '../ui/view/room-management/bookings/booki
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'hospitality',
+    redirectTo: 'e-bookings/rooms/default',
     pathMatch: 'full',
   },
   {
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
+  { path: 'e-bookings/home/:uuid', component: HomeComponent },
+  { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
+  { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
+  { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
   // {
   //   path: 'e-bookings',

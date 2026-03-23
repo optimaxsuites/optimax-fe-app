@@ -396,13 +396,13 @@ export class BookingCreateComponent implements OnInit {
     }
     this.showToastMessage('Booking created successfully!', 'success');
     setTimeout(
-      () => this.router.navigate(['/hospitality', this.uuid, 'bookings', bId]),
+      () => this.router.navigate(['/hospitality/bookings', bId, this.uuid]),
       1200,
     );
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings']);
+    this.router.navigate(['/hospitality/bookings', this.uuid]);
   }
 
   showToastMessage(message: string, type: 'success' | 'error'): void {
