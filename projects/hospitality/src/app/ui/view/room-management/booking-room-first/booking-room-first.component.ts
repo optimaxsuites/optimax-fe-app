@@ -128,7 +128,7 @@ export class BookingRoomFirstComponent implements OnInit {
     this.hotelService.getRooms().subscribe({
       next: (rooms) => {
         console.log('DEBUG: BookingRoomFirst — received rooms:', rooms?.length, rooms);
-        // Filter for ONLY available rooms as requested
+        // Revert to ONLY showing available rooms as requested
         this.allRooms = (rooms || []).filter(r => r.roomStatus === 'AVAILABLE')
           .sort((a, b) => a.roomNumber - b.roomNumber);
         this.applyRoomFilter();

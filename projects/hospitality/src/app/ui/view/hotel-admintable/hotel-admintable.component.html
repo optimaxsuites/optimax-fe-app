@@ -246,7 +246,7 @@
           <td class="p-4 border-b">
             <span
               [ngClass]="getStatusBadgeClass(room.roomStatus)"
-              class="px-3 py-1 rounded-full text-xs font-semibold"
+              class="px-3 py-1 rounded-full text-sm font-semibold"
             >
               {{ getStatusText(room.roomStatus) }}
             </span>
@@ -345,7 +345,7 @@
         <h2 class="text-xl font-bold text-gray-800 mb-0.5">
           {{ isEditMode ? "Edit Room" : "Add Room" }}
         </h2>
-        <p class="text-gray-500 text-xs">
+        <p class="text-gray-500 text-base">
           {{
             isEditMode
               ? "Update the details for this room."
@@ -361,21 +361,21 @@
     >
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Room Number*</label
           >
           <input
             type="number"
             formControlName="roomNumber"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter room number"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Room Type*</label
           >
-          <select formControlName="roomType" class="form-input w-full text-sm">
+          <select formControlName="roomType" class="form-input w-full text-base">
             <option value="" disabled>Select room type</option>
             <option *ngFor="let type of roomTypes" [value]="type.id">
               {{ type.name }}
@@ -383,12 +383,12 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Status*</label
           >
           <select
             formControlName="roomStatus"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
           >
             <option *ngFor="let status of roomStatuses" [value]="status">
               {{ status }}
@@ -396,56 +396,56 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Floor*</label
           >
           <input
             type="number"
             formControlName="floor"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter floor number"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Rate*</label
           >
           <input
             type="number"
             formControlName="rate"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter rate"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Beds*</label
           >
           <input
             type="number"
             formControlName="beds"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter number of beds"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Max Occupancy*</label
           >
           <input
             type="number"
             formControlName="maxOccupancy"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter max occupancy"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
+          <label class="block text-base font-medium text-gray-700 mb-1"
             >Description</label
           >
           <textarea
             formControlName="description"
-            class="form-input w-full text-sm"
+            class="form-input w-full text-base"
             placeholder="Enter description"
             rows="2"
           ></textarea>

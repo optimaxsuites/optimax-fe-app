@@ -22,8 +22,15 @@ export class RoomsListComponent implements OnInit {
   isEditing = false;
   selectedRoom: Room | null = null;
   form!: FormGroup;
-  viewMode: 'table' | 'grid' = 'table';
+  viewMode: 'table' | 'grid' = 'grid';
   uuid = '';
+
+  formatStatus(status: string): string {
+    if (!status) return '';
+    return status.split('_')
+                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                 .join(' ');
+  }
 
   // Filters
   filterStatus: string = '';
@@ -170,10 +177,20 @@ export class RoomsListComponent implements OnInit {
 
   getStatusColor(status: string): string {
     const s = status.toUpperCase();
-    if (s === 'AVAILABLE' || s === 'AVAILABLE_SMOKING') return 'bg-emerald-100 text-emerald-600';
-    if (s === 'OCCUPIED' || s === 'DIRTY') return 'bg-rose-100 text-rose-600';
-    if (s === 'MAINTENANCE' || s === 'STAYOVER') return 'bg-amber-100 text-amber-600';
-    return 'bg-sky-100 text-sky-600';
+    if (s === 'AVAILABLE' || s === 'AVAILABLE_SMOKING') return 'bg-emerald-100 text-emerald-600 border-emerald-200';
+    if (s === 'OCCUPIED' || s === 'BOOKED') return 'bg-rose-100 text-rose-600 border-rose-200';
+    if (s === 'CLEANING') return 'bg-sky-100 text-sky-600 border-sky-200';
+    if (s === 'UNDER_MAINTENANCE' || s === 'DIRTY' || s === 'MAINTENANCE') return 'bg-amber-100 text-amber-600 border-amber-200';
+    return 'bg-gray-100 text-gray-600 border-gray-200';
+  }
+
+  getStatusBg(status: string): string {
+    const s = status.toUpperCase();
+    if (s === 'AVAILABLE' || s === 'AVAILABLE_SMOKING') return 'bg-emerald-50/50';
+    if (s === 'OCCUPIED' || s === 'BOOKED') return 'bg-rose-50/50';
+    if (s === 'CLEANING') return 'bg-sky-50/50';
+    if (s === 'UNDER_MAINTENANCE' || s === 'DIRTY' || s === 'MAINTENANCE') return 'bg-amber-50/50';
+    return 'bg-gray-50/50';
   }
 
   getStatusIcon(status: string): string {

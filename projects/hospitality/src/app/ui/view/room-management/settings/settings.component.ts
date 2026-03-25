@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-settings',
@@ -15,6 +15,7 @@ export class SettingsComponent implements OnInit {
   brandForm!: FormGroup;
   logoPreview: string | null = null;
   activeTab: 'brand' | 'config' = 'brand';
+  uuid = 'optimax';
 
   socialIcons = [
     { name: 'Facebook', icon: 'fa-brands fa-facebook', placeholder: 'https://facebook.com/...' },
@@ -24,9 +25,13 @@ export class SettingsComponent implements OnInit {
     { name: 'WhatsApp', icon: 'fa-brands fa-whatsapp', placeholder: '+234...' }
   ];
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    this.uuid =
+      this.route.snapshot.paramMap.get('uuid') ||
+      localStorage.getItem('tenantId') ||
+      'optimax';
     this.initForm();
     this.loadSettings();
   }
