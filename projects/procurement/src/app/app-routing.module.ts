@@ -7,6 +7,9 @@ import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.
 import { RfqComponent } from './ui/view/vendor-portal/rfq/rfq.component';
 import { VendorDetailsComponent } from './ui/view/vendor-management/vendor-details/vendor-details.component';
 import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
+import { VendorPrListComponent } from './ui/view/vendor-portal/vendor-pr-list/vendor-pr-list.component';
+import { VendorQuoteFormComponent } from './ui/view/vendor-portal/vendor-quote-form/vendor-quote-form.component';
+import { VendorQuoteListComponent } from './ui/view/vendor-portal/vendor-quote-list/vendor-quote-list.component';
 
 const routes: Routes = [
   { path: 'pr-management/:uuid', component: ProcurementPageComponent },
@@ -14,6 +17,10 @@ const routes: Routes = [
 
   { path: 'vendor-portal/dashboard/:uuid', component: DashboardComponent },
   { path: 'vendor-portal/rfqs/:uuid', component: RfqComponent },
+  { path: 'vendor-portal/vendor-pr-list/:uuid', component: VendorPrListComponent },
+  { path: 'vendor-portal/vendor-quote-list/:uuid', component: VendorQuoteListComponent },
+
+
   {path: 'vendor-portal/quotations/:uuid', component: RfqComponent}, //change component
   {path: 'vendor-portal/lpo/:uuid', component: RfqComponent}, //change component
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
@@ -21,6 +28,7 @@ const routes: Routes = [
     path: 'vendor-management/:id/review',
     component: VendorDetailsComponent
   },
+  { path: 'vendor-portal/quote-form/:vId/create/:prId', component: VendorQuoteFormComponent },
 
   {
     path: 'vendor-profile-creation', component: VendorProfileFormComponent
