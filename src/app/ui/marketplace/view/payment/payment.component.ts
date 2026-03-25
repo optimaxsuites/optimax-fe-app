@@ -299,7 +299,7 @@ processNewPurchase() {
 
             if(success){
              this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Subscription renewed successfully!', life: 3000, key:"tf" });
-             this.reUnlockModule(15)
+             this.reUnlockModule(16)
              // No need to unlock module, it's already unlocked
              this.router.navigate(['/admin/marketplace/8612bffd-4cbe-41a7-bbb7-19c3655b121b'])
             }else {
