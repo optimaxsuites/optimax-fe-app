@@ -138,3 +138,81 @@ export interface QuotationDTO {
     addressId?: number;
     quotation?: number;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  export interface VendorQuoteLS {
+  id: number;
+
+  // RELATIONSHIPS
+  prId: number;
+  prmNo: string;
+  vendorUuid: string;
+
+  // BASIC INFO (copied from PR)
+  title: string;
+  department: string;
+  requiredByDate: string;
+
+  // STATUS FLOW
+  status: QuoteStatus;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt?: string;
+
+  // REVIEW
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+
+  // VENDOR INPUT
+  deliveryTimeline?: string;
+  validityDate?: string;
+  notes?: string;
+
+  // ITEMS (derived from PR items)
+  items: VendorQuoteItemLS[];
+}
+
+export interface VendorQuoteItemLS {
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitOfMeasure: string;
+  category?: string | null;
+
+  // FROM PR (readonly context)
+  prBudgetCap?: number;
+
+  // VENDOR INPUT
+  unitPrice: number;
+  totalPrice: number;
+  remarks?: string;
+}
+
+export enum QuoteStatus {
+  Draft = 'Draft',
+  Submitted = 'Submitted',
+  UnderReview = 'UnderReview',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+}

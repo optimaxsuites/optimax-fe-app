@@ -41,11 +41,11 @@ export class PrStorageService {
     this.saveAll(list);
   }
 
-  getById(id: string): PurchaseRequisitionLS | undefined {
+  getById(id: number): PurchaseRequisitionLS | undefined {
     return this.getAll().find(x => x.id === id);
   }
 
-  remove(id: string): void {
+  remove(id: number): void {
     this.saveAll(this.getAll().filter(x => x.id !== id));
   }
 }

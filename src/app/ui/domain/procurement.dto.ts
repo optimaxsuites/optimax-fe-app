@@ -71,7 +71,7 @@ export interface PRApproval {
 }
 
 export interface PurchaseRequisitionLS {
-  id: string;
+  id: number;
   prmNo: string;
   title: string;
 
@@ -81,6 +81,8 @@ export interface PurchaseRequisitionLS {
 
   requiredByDate: string;
   justification: string;
+
+  comment: string;
 
   currency: string;
   budgetCapAmount: number;
@@ -95,8 +97,9 @@ export interface PurchaseRequisitionLS {
     quantity: number;
     unitOfMeasure: string;
     category?: string | null;
+    budgetCap: number;
   }>;
 
   approval?: PRApproval;     // added on submit
-  auditTrail: PRAuditItem[]; // always exists
+  // auditTrail: PRAuditItem[]; // always exists
 }

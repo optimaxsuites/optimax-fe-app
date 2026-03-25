@@ -32,7 +32,7 @@ export class PrApprovalWorkflowService {
     };
   }
 
-  submitForApproval(prId: string, requesterUserId: string): void {
+  submitForApproval(prId: number, requesterUserId: string): void {
     const pr = this.store.getById(prId);
     if (!pr) return;
 
@@ -40,12 +40,12 @@ export class PrApprovalWorkflowService {
     pr.submittedAt = new Date().toISOString();
     pr.approval = this.buildApproval();
 
-    pr.auditTrail.push({ action: 'SUBMITTED', by: requesterUserId, at: new Date().toISOString() });
+    // pr.auditTrail.push({ action: 'SUBMITTED', by: requesterUserId, at: new Date().toISOString() });
 
     this.store.update(pr);
   }
 
-  approve(prId: string, approverUserId: string, comment?: string): void {
+  approve(prId: number, approverUserId: string, comment?: string): void {
     const pr = this.store.getById(prId);
     if (!pr?.approval) return;
 
@@ -57,12 +57,12 @@ export class PrApprovalWorkflowService {
     step.actedAt = new Date().toISOString();
     step.comment = comment || null;
 
-    pr.auditTrail.push({
-      action: `APPROVED_LEVEL_${approval.currentLevel}`,
-      by: approverUserId,
-      at: new Date().toISOString(),
-      meta: { comment },
-    });
+    // pr.auditTrail.push({
+    //   action: `APPROVED_LEVEL_${approval.currentLevel}`,
+    //   by: approverUserId,
+    //   at: new Date().toISOString(),
+    //   meta: { comment },
+    // });
 
     if (approval.currentLevel < approval.finalLevel) {
       approval.currentLevel += 1;
@@ -72,7 +72,7 @@ export class PrApprovalWorkflowService {
     } else {
       approval.state = 'Approved';
       pr.status = 'Approved';
-      pr.auditTrail.push({ action: 'FULLY_APPROVED', by: approverUserId, at: new Date().toISOString() });
+      // pr.auditTrail.push({ action: 'FULLY_APPROVED', by: approverUserId, at: new Date().toISOString() });
     }
 
     this.store.update(pr);
@@ -95,7 +95,7 @@ export class PrApprovalWorkflowService {
 }
 
 
-  reject(prId: string, approverUserId: string, reason: string): void {
+  reject(prId: number, approverUserId: string, reason: string): void {
     const pr = this.store.getById(prId);
     if (!pr?.approval) return;
 
@@ -110,12 +110,12 @@ export class PrApprovalWorkflowService {
     approval.state = 'Rejected';
     pr.status = 'Rejected';
 
-    pr.auditTrail.push({
-      action: `REJECTED_LEVEL_${approval.currentLevel}`,
-      by: approverUserId,
-      at: new Date().toISOString(),
-      meta: { reason },
-    });
+    // pr.auditTrail.push({
+    //   action: `REJECTED_LEVEL_${approval.currentLevel}`,
+    //   by: approverUserId,
+    //   at: new Date().toISOString(),
+    //   meta: { reason },
+    // });
 
     this.store.update(pr);
   }
@@ -137,12 +137,12 @@ export class PrApprovalWorkflowService {
 
       if (!pr.approval.escalation.lastEscalatedAt && (now - baseTime > dueMs)) {
         pr.approval.escalation.lastEscalatedAt = new Date().toISOString();
-        pr.auditTrail.push({
-          action: 'ESCALATED',
-          by: 'SYSTEM',
-          at: new Date().toISOString(),
-          meta: { escalatedTo: pr.approval.escalation.escalateToUserId, level: pr.approval.currentLevel },
-        });
+        // pr.auditTrail.push({
+        //   action: 'ESCALATED',
+        //   by: 'SYSTEM',
+        //   at: new Date().toISOString(),
+        //   meta: { escalatedTo: pr.approval.escalation.escalateToUserId, level: pr.approval.currentLevel },
+        // });
         changed = true;
       }
     }

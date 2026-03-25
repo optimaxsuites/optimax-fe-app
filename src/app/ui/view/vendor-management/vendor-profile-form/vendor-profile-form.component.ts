@@ -5,7 +5,7 @@ import {
   VendorDto,
   VendorStatus,
 } from '../../../domain/vendor.dto';
-import emailjs from '@emailjs/browser';
+// import emailjs from '@emailjs/browser';
 
 @Component({
   selector: 'app-vendor-profile-form',
@@ -124,19 +124,19 @@ export class VendorProfileFormComponent {
       password: password,
     };
 
-    emailjs
-      .send(
-        'service_0br6dpa',
-        'template_xch3n8c',
-        templateParams,
-        'TTpd0TR2mf6rJKstH',
-      )
-      .then(() => {
-        console.log('Login email sent successfully');
-      })
-      .catch((err) => {
-        console.error('Email failed', err);
-      });
+    // emailjs
+    //   .send(
+    //     'service_0br6dpa',
+    //     'template_xch3n8c',
+    //     templateParams,
+    //     'TTpd0TR2mf6rJKstH',
+    //   )
+    //   .then(() => {
+    //     console.log('Login email sent successfully');
+    //   })
+    //   .catch((err) => {
+    //     console.error('Email failed', err);
+    //   });
   }
 
   private getVendors(): VendorDto[] {

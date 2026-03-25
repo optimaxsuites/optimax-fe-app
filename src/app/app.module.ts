@@ -72,8 +72,8 @@ import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
 import { RfqFormComponent } from './ui/view/rfq-form/rfq-form.component';
 import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
 import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
-import { VendorQuoteFormComponent } from './ui/view/vendor/vendor-quote-form/vendor-quote-form.component';
-import { VendorQuoteListComponent } from './ui/view/vendor/vendor-quote-list/vendor-quote-list.component';
+import { VendorQuoteFormComponent } from './ui/view/vendor-portal/vendor-quote-form/vendor-quote-form.component';
+import { VendorQuoteListComponent } from './ui/view/vendor-portal/vendor-quote-list/vendor-quote-list.component';
 import { VendorRfqListComponent } from './ui/view/vendor/vendor-rfq-list/vendor-rfq-list.component';
 import { PurchaseReqManagementComponent } from './ui/view/purchase-req-management/purchase-req-management.component';
 import { PrCreateComponent } from './ui/view/purchase-req-management/pr-create/pr-create.component';
@@ -103,6 +103,8 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { SelectButtonModule } from "primeng/selectbutton";
 import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
+import { PrListComponent } from './ui/view/purchase-req-management/pr-list/pr-list.component';
+import { VendorPrListComponent } from './ui/view/vendor-portal/vendor-pr-list/vendor-pr-list.component';
 // import { SelectModule } from 'primeng/select';
 
 
@@ -143,6 +145,8 @@ import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-p
     RejectedVendorComponent,
     TableComponent,
     VendorProfileFormComponent,
+    PrListComponent,
+    VendorPrListComponent,
     
   ],
   imports: [

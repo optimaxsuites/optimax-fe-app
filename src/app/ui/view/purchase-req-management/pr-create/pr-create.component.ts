@@ -729,23 +729,24 @@ export class PrCreateComponent implements OnInit, OnChanges {
     const prmNo = `PR-${Date.now()}`;
 
     const pr: PurchaseRequisitionLS = {
-      id: crypto.randomUUID(),
+      id: Date.now() + Math.floor(Math.random() * 1000),
       prmNo,
       title: formData.title,
       department: formData.departmentId,
       costCenterId: formData.costCenterId,
       requiredByDate: formData.requiredByDate,
       justification: formData.justification,
+      comment:'',
       status: 'Submitted',
       createdAt: new Date().toISOString(),
       items: formData.items,
-      auditTrail: [
-        {
-          action: 'CREATED',
-          by: requesterUserId,
-          at: new Date().toISOString(),
-        },
-      ],
+      // auditTrail: [
+      //   {
+      //     action: 'CREATED',
+      //     by: requesterUserId,
+      //     at: new Date().toISOString(),
+      //   },
+      // ],
       budgetCodeId: '',
       currency: '',
       budgetCapAmount: 0,
