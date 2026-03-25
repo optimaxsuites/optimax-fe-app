@@ -37,26 +37,26 @@ export class LeaveComponent {
       name: 'Plan Dashboard',
       component: LeaveTimelineComponent,
       icon: 'fa fa-calendar-alt',
-      role: 'ROLE_ADMIN',
+      // role: 'ROLE_ADMIN',
     },
     {
       name: 'Plan Requests',
       component: LeavePlanningDashboardComponent,
       icon: 'fa fa-tasks',
-      role: 'ROLE_ADMIN',
+      // role: 'ROLE_ADMIN',
     },
 
     {
       name: 'Leave Requests',
       component: LeaveRequestComponent,
       icon: 'fa fa-envelope-open-text',
-      role: 'ROLE_ADMIN',
+      // role: 'ROLE_ADMIN',
     },
     {
       name: 'Leave Policy',
       component: LeavePolicyComponent,
       icon: 'fa fa-book',
-      role: 'ROLE_ADMIN',
+      // role: 'ROLE_ADMIN',
     },
     // {
     //   name: 'Assign Leave',

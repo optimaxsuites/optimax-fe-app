@@ -339,8 +339,8 @@ import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-co
   ],
 
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
