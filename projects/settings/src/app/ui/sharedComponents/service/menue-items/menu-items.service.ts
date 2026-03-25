@@ -133,6 +133,22 @@ export class MenuItemsService {
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'View and manage LPOs.'
+        },
+         {
+          label: 'Vendor PR List',
+          code: 'Vendor_PR',
+          route: this.navigationLink.getLink('VPLLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage vendor purchase requests.'
+        },
+         {
+          label: 'Vendor Quote List',
+          code: 'Vendor_QL',
+          route: this.navigationLink.getLink('VQLLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage vendor quotations.'
         }
       ]
     },    

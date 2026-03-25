@@ -140,12 +140,10 @@ this.links['vendorLink'] = '/admin/procurement/vendor-portal/dashboard/' +uuidV4
 this.links['rfqLink'] = '/admin/procurement/vendor-portal/rfqs/' +uuidV4();
 this.links['quotationLink'] = '/admin/procurement/vendor-portal/quotations/' +uuidV4();
 this.links['lpoLink'] = '/admin/procurement/vendor-portal/lpo/' +uuidV4();
+this.links['VPLLink'] = '/admin/procurement/vendor-portal/vendor-pr-list/' +uuidV4();
+this.links['VQLLink'] = '/admin/procurement/vendor-portal/vendor-quote-list/' +uuidV4();
 
-
-
-
-
-  }
+}
 
   getLink(linkName: string): string {
     return this.links[linkName];
