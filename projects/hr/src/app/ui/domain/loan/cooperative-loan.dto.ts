@@ -10,7 +10,7 @@ export interface CooperativeLoanGuarantorEntry {
 }
 
 export interface CooperativeLoan {
-  id: string | number;
+  id: any;
   loanCode: string;
   cooperativeMemberId: string | number;
   cooperativeGroupId: string | number;
