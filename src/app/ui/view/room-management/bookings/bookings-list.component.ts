@@ -22,9 +22,16 @@ export class BookingsListComponent implements OnInit {
   rooms: Room[] = [];
   roomTypes: RoomTypeDTO[] = [];
   loading = false;
-  viewMode: 'table' | 'grid' = 'table';
+  viewMode: 'table' | 'grid' = 'grid';
   showDeleteModal = false;
   selectedBooking: Booking | null = null;
+
+  formatStatus(status: string): string {
+    if (!status) return '';
+    return status.split('_')
+                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                 .join(' ');
+  }
 
   filterStatus = '';
   filterFrom = '';

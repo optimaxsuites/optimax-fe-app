@@ -96,6 +96,11 @@ export class HospitalityShellComponent implements OnInit {
         route: 'settings' + routeSuffix,
         icon: 'fa-solid fa-gear',
       },
+      {
+        name: 'E-Booking',
+        route: '/e-booking/' + (uuid || 'optimax'),
+        icon: 'fa-solid fa-globe',
+      },
     ];
   }
 

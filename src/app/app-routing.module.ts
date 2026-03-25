@@ -18,6 +18,7 @@ import { ServiceChargesListComponent } from './ui/view/room-management/service-c
 // import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
 import { SettingsComponent } from './ui/view/room-management/settings/settings.component';
 import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
+import { BookingsShellComponent } from './ui/bookings/bookings-shell/bookings-shell.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'hospitality/rooms/optimax', pathMatch: 'full' },
@@ -46,6 +47,9 @@ const routes: Routes = [
       { path: 'service-charges/:uuid', component: ServiceChargesListComponent },
     ]
   },
+
+  // Public-facing e-booking page (accessible via /e-booking/:uuid)
+  { path: 'e-booking/:uuid', component: BookingsShellComponent },
 ];
 
 @NgModule({
