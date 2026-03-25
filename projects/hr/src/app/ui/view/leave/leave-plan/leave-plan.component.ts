@@ -17,6 +17,7 @@ export class LeavePlanComponent implements OnInit {
   // Current user data
   currentEmployee: any = null;
   currentEmployeeId: number | null = null;
+  currentUserId: number | null = null;
 
   // API Data
   leavePlanRecords: any[] = [];
@@ -117,13 +118,14 @@ export class LeavePlanComponent implements OnInit {
       this.messageService.add({
         ...message,
         key: 'tl',
-        life: 10000, // Show for 10 seconds
+        life: 10000,
         sticky: false
       });
     }
   }
 
   formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -151,8 +153,13 @@ export class LeavePlanComponent implements OnInit {
 
         this.currentEmployee = employee;
         this.currentEmployeeId = employee.id;
+        this.currentUserId = employee.user?.userId || employee.userId;
 
-        console.log('✅ Current employee loaded:', employee);
+        console.log('Current employee loaded:', {
+          employeeId: this.currentEmployeeId,
+          userId: this.currentUserId,
+          employee
+        });
 
         // Load all data
         this.loadAllData();
@@ -179,15 +186,24 @@ export class LeavePlanComponent implements OnInit {
       policies: this.apiService.getLeavePlanPolicies(1, 1).pipe(catchError(() => of([])))
     }).subscribe({
       next: (data) => {
-        // Filter plan records for current employee only
-        const myRecords = (data.planRecords || []).filter(
-          (record: any) => record.createdBy?.id === this.currentEmployeeId
+        console.log('📥 Raw data received:', data);
+
+        // Filter plan records for current user only (by userId)
+        const allRecords = data.planRecords || [];
+        const myRecords = allRecords.filter(
+          (record: any) => record.createdBy?.userId === this.currentUserId
         );
+
+        console.log('📊 Filtered records:', {
+          total: allRecords.length,
+          mine: myRecords.length,
+          currentUserId: this.currentUserId
+        });
 
         // Check for status changes
         this.checkForStatusChanges(myRecords);
 
-        // Update current records
+        // Update current records (already sorted by API service)
         this.leavePlanRecords = myRecords;
 
         this.leaveTypes = data.leaveTypes || [];
@@ -257,8 +273,8 @@ export class LeavePlanComponent implements OnInit {
   updateCalendarEvents() {
     this.calendarEvents = this.leavePlanRecords.map((record) => ({
       title: `${record.leaveType?.name} (${record.totalDays}d)`,
-      start: record.startDate.split('T')[0],
-      end: this.addOneDay(record.endDate.split('T')[0]),
+      start: this.extractDate(record.startDate),
+      end: this.addOneDay(this.extractDate(record.endDate)),
       backgroundColor: this.getStatusColor(record.status),
       borderColor: this.getStatusColor(record.status),
     }));
@@ -267,6 +283,11 @@ export class LeavePlanComponent implements OnInit {
       ...this.calendarOptions,
       events: this.calendarEvents,
     };
+  }
+
+  extractDate(dateString: string): string {
+    if (!dateString) return '';
+    return dateString.split('T')[0];
   }
 
   getStatusColor(status: string): string {
@@ -279,6 +300,7 @@ export class LeavePlanComponent implements OnInit {
   }
 
   addOneDay(date: string): string {
+    if (!date) return '';
     const d = new Date(date);
     d.setDate(d.getDate() + 1);
     return d.toISOString().split('T')[0];
@@ -298,35 +320,29 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
-    if (!this.currentEmployee) {
+    if (!this.currentUserId) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Employee data not loaded',
+        detail: 'User ID not found',
         key: 'tl',
       });
       return;
     }
 
-    // Build createdBy object
-    const fullname = this.currentEmployee.fullname ||
-      `${this.currentEmployee.firstName || ''} ${this.currentEmployee.lastName || ''}`.trim();
-
-    const createdBy = {
-      id: this.currentEmployee.id,
-      fullname: fullname
-    };
-
-    // Build payload
+    // Build payload according to NEW backend format
     const payload = {
-      createdBy: createdBy,
+      createdBy: this.currentUserId, // userId (number)
       startDate: new Date(this.selectedStartDate).toISOString(),
       endDate: new Date(this.selectedEndDate).toISOString(),
       status: 'PENDING',
-      leaveType: this.selectedLeaveTypeObj,
+      leaveTypeId: this.selectedLeaveTypeObj.id, // leaveType ID (number)
       totalDays: this.workingDays,
       planReason: this.planReason || '',
-      attachment: null
+      attachment: '',
+      adminComment: '',
+      decisionBy: null,
+      decisionOn: null
     };
 
     console.log('📤 Submitting leave plan:', payload);
@@ -342,14 +358,14 @@ export class LeavePlanComponent implements OnInit {
           life: 3000,
         });
         this.closePlanModal();
-        this.loadAllData(); // Reload to get updated data
+        this.loadAllData();
       },
       error: (err) => {
         console.error('❌ Failed to create leave plan:', err);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to submit leave plan',
+          detail: 'Failed to submit leave plan. Please try again.',
           key: 'tl',
         });
       }
@@ -392,22 +408,21 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
-    const fullname = this.currentEmployee.fullname ||
-      `${this.currentEmployee.firstName || ''} ${this.currentEmployee.lastName || ''}`.trim();
-
     const payload = {
-      createdBy: {
-        id: this.currentEmployee.id,
-        fullname: fullname
-      },
+      createdBy: this.currentUserId, // userId (number)
       startDate: new Date(this.emergencyLeaveForm.startDate).toISOString(),
       endDate: new Date(this.emergencyLeaveForm.endDate).toISOString(),
       status: 'PENDING',
-      leaveType: this.emergencyLeaveForm.leaveTypeObj,
+      leaveTypeId: this.emergencyLeaveForm.leaveTypeObj.id, // leaveType ID (number)
       totalDays: days,
       planReason: `🚨 EMERGENCY: ${this.emergencyLeaveForm.reason}`,
-      attachment: null
+      attachment: '',
+      adminComment: '',
+      decisionBy: null,
+      decisionOn: null
     };
+
+    console.log('📤 Submitting emergency leave:', payload);
 
     this.apiService.createLeavePlanRecord(payload).subscribe({
       next: () => {
@@ -419,7 +434,7 @@ export class LeavePlanComponent implements OnInit {
           life: 5000,
         });
         this.closeEmergencyModal();
-        this.loadAllData(); // Reload to get updated data
+        this.loadAllData();
       },
       error: (err) => {
         console.error('❌ Failed to submit emergency leave:', err);
@@ -462,7 +477,7 @@ export class LeavePlanComponent implements OnInit {
           detail: 'Leave plan cancelled successfully',
           key: 'tl',
         });
-        this.loadAllData(); // Reload to get updated data
+        this.loadAllData();
       },
       error: (err) => {
         console.error('❌ Failed to cancel plan:', err);
@@ -502,7 +517,7 @@ export class LeavePlanComponent implements OnInit {
   getTotalPlannedDays(): number {
     return this.leavePlanRecords
       .filter(r => r.status === 'APPROVED')
-      .reduce((sum, r) => sum + r.totalDays, 0);
+      .reduce((sum, r) => sum + (r.totalDays || 0), 0);
   }
 
   getPlannedCount(): number {
@@ -559,7 +574,6 @@ export class LeavePlanComponent implements OnInit {
   }
 
   get monthlyPlanSummary() {
-    // Calculate monthly summary from approved plans only
     const monthMap = new Map();
     
     this.leavePlanRecords
@@ -569,7 +583,7 @@ export class LeavePlanComponent implements OnInit {
           month: 'short', 
           year: 'numeric' 
         });
-        monthMap.set(month, (monthMap.get(month) || 0) + record.totalDays);
+        monthMap.set(month, (monthMap.get(month) || 0) + (record.totalDays || 0));
       });
 
     return Array.from(monthMap.entries()).map(([month, daysPlanned]) => ({

@@ -1,25 +1,3 @@
-/*import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
-
-@Component({
-  selector: 'app-monthly-attendance-list',
-  templateUrl: './monthlyattendancelist.component.html',
-  styleUrl: './monthlyattendancelist.component.scss'
-})
-export class MonthlyAttendanceListComponent {
-
-  @Input() data: AttendanceTableRecord[] = [];
-  @Input() selectedMonth!: string;
-
-  @Output() monthChange = new EventEmitter<string>();
-
-  onMonthChange(event: Event) {
-    const value = (event.target as HTMLInputElement).value;
-    this.monthChange.emit(value);
-  }
-}*/
-
-
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { AttendancetableService } from '../../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../../domain/attendance/attendancetable.dto';
@@ -50,7 +28,7 @@ export class MonthlyattendancelistComponent implements OnInit {
   }
 
   loadAttendance() {
-    this.attendanceService.getAttendance().subscribe(data => {
+    this.attendanceService.attendance$.subscribe(data => {
       this.attendanceData = data;
       this.applyMonthFilter();
     });

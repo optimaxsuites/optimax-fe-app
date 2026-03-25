@@ -5,6 +5,7 @@
   </div>
 
   <div *ngIf="!isLoading" class="dashboard-content">
+
     <div class="dashboard-header" *ngIf="group as currentGroup">
       <div>
         <button type="button" class="back-link" (click)="goBack()">
@@ -16,6 +17,13 @@
       </div>
 
       <div class="header-meta">
+        <div class="welcome-block" *ngIf="currentMember as member">
+          <div class="welcome-title">Welcome {{ member.fullName }}</div>
+          <div class="welcome-ids">
+            Employee Id: {{ member.employeeId || '—' }} |
+            Member Id: {{ member.memberId || '—' }}
+          </div>
+        </div>
         <button
           *ngIf="canPostContribution"
           type="button"
@@ -24,7 +32,6 @@
           <i class="fas fa-plus-circle"></i>
           Post Contribution
         </button>
-
         <div class="member-chip" *ngIf="currentMember as member">
           <span class="avatar">{{ getInitials(member.fullName) }}</span>
           <div>

@@ -213,6 +213,58 @@ button {
   }
 }
 
+.location-link {
+  cursor: pointer;
+  color: #10b981;
+  font-size: 1.2rem;
+  text-decoration: underline dotted;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: #065f46;
+  }
+
+  // 👈 blink effect when selected
+  &.active {
+    animation: locationBlink 0.8s ease 3;
+    color: #065f46;
+    font-weight: 600;
+  }
+}
+
+@keyframes locationBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+.map-modal-card {
+  width: 600px;
+  max-width: 95%;
+}
+
+.leaflet-map {
+  height: 400px;
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 0.8rem;
+  z-index: 0;
+}
+
+.map-address {
+  font-size: 1.3rem;
+  color: var(--gray-600);
+  margin: 0.3rem 0;
+  word-break: break-word;
+}
+
+.map-distance {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0.3rem 0;
+}
+
 
 /* ACTION BUTTONS */
 

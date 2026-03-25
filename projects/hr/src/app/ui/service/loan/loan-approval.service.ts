@@ -168,7 +168,14 @@ export class LoanApprovalService {
       status: 'APPROVED',
       notes: notes || 'Loan approved',
       changedAt: new Date().toISOString()
-    });
+    }).pipe(
+      switchMap((app) => {
+        // Force refresh of all applications so dashboard updates
+        return this.loanApplicationService.refreshApplications().pipe(
+          map(() => app)
+        );
+      })
+    );
   }
 
   rejectLoan(loanId: string | number, notes: string): Observable<LoanApplication> {

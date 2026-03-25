@@ -1,12 +1,20 @@
 import { Component, inject, OnInit, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-// import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
-// import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
-import { Observable, switchMap } from 'rxjs';
-import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-// import { MOCK_ATTENDANCE } from '../../../../shared-component/models/attendancetable.mock';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
+import { Observable, switchMap } from 'rxjs';
+import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetable.mock';
 //import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
+import * as L from 'leaflet';
+import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',
+  iconUrl: 'assets/leaflet/marker-icon.png',
+  shadowUrl: 'assets/leaflet/marker-shadow.png'
+});
 
 @Component({
   selector: 'app-attendancetable',
@@ -19,42 +27,6 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
-  attendanceColumns = [
-    { header: 'ID', field: 'id' },
-    {
-      header: 'Employee',
-      formatter: (row: AttendanceTableRecord) => (row as any).employee || (row as any).employeeName || ''
-    },
-    { header: 'Department', field: 'department' },
-    {
-      header: 'Date',
-      formatter: (row: AttendanceTableRecord) => row.date || '-'
-    },
-    {
-      header: 'In',
-      formatter: (row: AttendanceTableRecord) => (row as any).checkIn || '-'
-    },
-    {
-      header: 'Out',
-      formatter: (row: AttendanceTableRecord) => (row as any).checkOut || '-'
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: AttendanceTableRecord) => {
-        if (row.status === 'PRESENT') return 'status present';
-        if (row.status === 'LATE') return 'status late';
-        if (row.status === 'ABSENT') return 'status absent';
-        return 'status';
-      }
-    },
-    { header: 'Hours', field: 'hours' }
-  ];
-
-  attendanceActions = [
-    { id: 'correct', label: 'Correct', className: 'correct-btn' }
-  ];
- 
 
   editingRecord: AttendanceTableRecord | null = null;
 
@@ -64,6 +36,14 @@ editReason = '';
 
 sortColumn: keyof AttendanceTableRecord | '' = '';
 sortDirection: 'asc' | 'desc' = 'asc';
+
+mapModalOpen = false;
+mapAddress = '';
+mapDistance: number | null = null;
+private mapInstance: L.Map | null = null;
+ private officeHoursService = inject(OfficeHoursService);
+
+selectedLocation: { recordId: string; type: 'in' | 'out' } | null = null;
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -93,52 +73,101 @@ openAttendance(record: AttendanceTableRecord) {
   this.attendancetableService.openAttendanceForToday(record.id);
 }
 
-  /*ngOnInit(): void {
-    this.attendancetableService.attendance$.subscribe(data => {
-    this.attendance = data;
-    this.filteredAttendance = [...data];
-  });
-    //this.attendance = MOCK_ATTENDANCE;
-    //this.filteredAttendance = [...this.attendance];
-  }*/
+openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
+  const location = type === 'in' 
+  ? record.checkInLocation 
+  : record.checkOutLocation;
 
-/*manualCorrection(record: any) {
-  console.log('Manual correction:', record);
-  alert(`Editing attendance for ${record.employee}`);
-}*/
+  if (!location) return;
 
-/*manualCorrection(record: any) {
-  const newStatus = prompt(
-    `Change status for ${record.employeeName} (PRESENT / LATE / ABSENT):`,
-    record.status
-  );
+  this.selectedLocation = { recordId: record.id, type };
+  this.mapAddress = location.address;
+  this.mapModalOpen = true;
 
-  if (!newStatus) return;
+  setTimeout(() => this.initMap(location.lat, location.lng), 100);
+}
 
-  const normalizedStatus = newStatus.toUpperCase();
+// helper method
+private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return +(R * c).toFixed(2);
+}
 
-  if (['PRESENT', 'LATE', 'ABSENT'].includes(normalizedStatus)) {
-    record.status = normalizedStatus;
+private async initMap(empLat: number, empLng: number) {
+  if (this.mapInstance) {
+    this.mapInstance.remove();
+    this.mapInstance = null;
+  }
 
-    // Optional: recalculate hours
-    if (normalizedStatus === 'ABSENT') {
-      record.checkIn = null;
-      record.checkOut = null;
-      record.hours = 0;
-    }
+  const officeHours = this.officeHoursService.getOfficeHours();
 
-    console.log('Updated record:', record);
+  //const hasCompany = officeHours?.companyLatitude && officeHours?.companyLongitude;
+
+  this.mapInstance = L.map('leaflet-map').setView([empLat, empLng], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(this.mapInstance);
+
+  // Employee marker
+  const empMarker = L.marker([empLat, empLng]).addTo(this.mapInstance);
+  empMarker.bindPopup('🧑 Employee location').openPopup();
+
+  // Company marker + Line
+  if (officeHours.companyLatitude && officeHours.companyLongitude) {
+
+    const compLat = officeHours.companyLatitude;
+    const compLng = officeHours.companyLongitude;
+
+    L.marker([compLat, compLng],
+      { icon: L.divIcon({ className: 'company-marker', html: '🏢', iconSize: [30, 30] }) }
+    ).addTo(this.mapInstance)
+    .bindPopup(`🏢 ${officeHours.companyName ?? 'Company'}`);
+
+    // Draw a line between them
+    L.polyline(
+      [[empLat, empLng], [compLat, compLng]],
+      { color: '#10b981', weight: 2, dashArray: '6, 6' }
+    ).addTo(this.mapInstance);
+
+    // Calculate distance here
+    this.mapDistance = this.calculateDistance(
+      empLat,
+      empLng,
+      compLat,
+      compLng
+    );
+
+    // Fit both markers in view
+    this.mapInstance.fitBounds([
+      [empLat, empLng],
+      [compLat, compLng]
+    ], { padding: [40, 40] });
   } else {
-    alert('Invalid status. Use PRESENT, LATE, or ABSENT.');
-  }
-}*/
-
-  handleAttendanceAction(event: { actionId: string; row: AttendanceTableRecord }) {
-    // if (event.actionId === 'correct') {
-    //   this.manualCorrection(event.row);
-    // }
+    this.mapDistance = null;
   }
 
+  setTimeout(() => {
+    this.mapInstance?.invalidateSize();
+  }, 0);
+}
+
+closeMap() {
+  this.mapModalOpen = false;
+  this.selectedLocation = null;
+  if (this.mapInstance) {
+    this.mapInstance.remove();
+    this.mapInstance = null;
+  }
+}
+  
 filters: any = {};
 
 onFiltersChange(filters: any) {

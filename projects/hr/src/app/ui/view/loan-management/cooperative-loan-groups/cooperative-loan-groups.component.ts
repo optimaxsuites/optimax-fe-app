@@ -571,7 +571,13 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     const department = String(employee?.department?.name || employee?.department || employee?.unit || 'Unassigned').trim() || 'Unassigned';
     const levelName = String(employee?.level?.name || employee?.level || employee?.jobTitle || '').trim();
     const employmentStartDate = employee?.employementStartDate || employee?.employmentStartDate || employee?.hireDate || employee?.createdAt;
-    const normalizedStartDate = employmentStartDate ? new Date(employmentStartDate).toISOString() : new Date().toISOString();
+    let normalizedStartDate = '';
+    if (employmentStartDate) {
+      const dateObj = new Date(employmentStartDate);
+      normalizedStartDate = !isNaN(dateObj.getTime()) ? dateObj.toISOString() : '';
+    } else {
+      normalizedStartDate = new Date().toISOString();
+    }
 
     return {
       employeeId,

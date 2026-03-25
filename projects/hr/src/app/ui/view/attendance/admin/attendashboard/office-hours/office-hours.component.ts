@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { OfficeHoursService /*ScheduleMode*/ } from '../../../../../service/attendance/office-hours.service';
 import { AbstractControl, ValidationErrors } from '@angular/forms';
+import * as L from 'leaflet';
 
 function officeHoursValidator(control: AbstractControl): ValidationErrors | null {
 
   const opening = control.get('openingTime')?.value;
   const grace = control.get('latenessGracePeriod')?.value;
   const absent = control.get('absentTime')?.value;
-  const closing = control.get('closingTime')?.value;
+  const closing = control.get('closingTime')?.value
 
   if (!opening || !grace || !absent || !closing) return null;
 
@@ -41,6 +42,19 @@ function officeHoursValidator(control: AbstractControl): ValidationErrors | null
 export class OfficeHoursComponent implements OnInit{
   form!: FormGroup;
   editMode = false;
+  companyName = '';
+  companyLatitude: number | null = null;
+  companyLongitude: number | null = null;
+
+  locationPickerOpen = false;
+  private pickerMap!: L.Map;
+  private marker!: L.Marker;
+
+  searchQuery = '';
+  pickedLat!: number;
+  pickedLng!: number;
+
+
 
   // The three modes the admin can choose from
   /*readonly scheduleModes: { value: ScheduleMode; label: string; description: string }[] = [
@@ -73,6 +87,11 @@ export class OfficeHoursComponent implements OnInit{
     const hours = this.officeHoursService.getOfficeHours();
     /*this.selectedMode = this.officeHoursService.getScheduleMode();*/
 
+    // Load saved company location
+  this.companyName = hours.companyName ?? '';
+  this.companyLatitude = hours.companyLatitude ?? null;
+  this.companyLongitude = hours.companyLongitude ?? null;
+
     this.form = this.fb.group({
       openingTime: [hours.openingTime],
       closingTime: [hours.closingTime],
@@ -81,6 +100,88 @@ export class OfficeHoursComponent implements OnInit{
     },
     {validators: officeHoursValidator});
   }
+
+  openLocationPicker() {
+  this.locationPickerOpen = true;
+
+  setTimeout(() => {
+    this.initPickerMap();
+  }, 100);
+}
+
+private initPickerMap() {
+  const container = L.DomUtil.get('company-map');
+  if (container != null) {
+    (container as any)._leaflet_id = null;
+  }
+  
+  //to remove old map instance
+  if (this.pickerMap) {
+    this.pickerMap.remove();
+  }
+
+  //to use saved location or fallback
+  const lat = this.companyLatitude ?? 9.0765;
+  const lng = this.companyLongitude ?? 7.3986;
+
+  this.pickerMap = L.map('company-map').setView([lat, lng], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(this.pickerMap);
+
+  this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.pickerMap);
+
+  //initialize picked values
+  this.pickedLat = lat;
+  this.pickedLng = lng;
+
+  this.marker.on('dragend', () => {
+    const pos = this.marker.getLatLng();
+    this.pickedLat = pos.lat;
+    this.pickedLng = pos.lng;
+  });
+
+  //to force map to render inside modal
+  setTimeout(() => {
+    this.pickerMap?.invalidateSize();
+  }, 0);
+}
+
+/*async searchLocation() {
+  if (!this.searchQuery) return;
+
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.searchQuery)}&format=json&limit=1`
+  );
+
+  const data = await res.json();
+  if (!data.length) return;
+
+  const lat = parseFloat(data[0].lat);
+  const lng = parseFloat(data[0].lon);
+
+  this.pickerMap.setView([lat, lng], 15);
+  this.marker.setLatLng([lat, lng]);
+
+  this.pickedLat = lat;
+  this.pickedLng = lng;
+}*/
+
+savePickedLocation() {
+  if (this.pickedLat == null || this.pickedLng == null) {
+    return; // prevent saving invalid location
+  }
+
+  this.companyLatitude = this.pickedLat;
+  this.companyLongitude = this.pickedLng;
+
+  this.closeLocationPicker();
+}
+
+closeLocationPicker() {
+  this.locationPickerOpen = false;
+}
 
     /*setMode(mode: ScheduleMode) {
     this.selectedMode = mode;
@@ -104,24 +205,34 @@ getModeLabel(modeValue: ScheduleMode): string {
     if (this.officeHoursRelevant) {
       this.officeHoursService.updateOfficeHours(this.form.value);
     }*/
-    this.officeHoursService.updateOfficeHours(this.form.value);
+    this.officeHoursService.updateOfficeHours({
+      ...this.form.value,
+    companyName: this.companyName,
+    companyLatitude: this.companyLatitude,
+    companyLongitude: this.companyLongitude
+  });
     this.editMode = false;
   }
-
- /* save() {
-    if(this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    this.officeHoursService.updateOfficeHours(this.form.value);
-    this.editMode = false;
-  }
-
-  editMode = false;*/
 
 resetDefault() {
-  const defaultHours = { openingTime: '09:00', closingTime: '17:00', absentTime: '10:00', latenessGracePeriod: '09:15' };
-  this.form.setValue(defaultHours);
+  const defaultHours = { 
+    openingTime: '09:00', 
+    closingTime: '17:00', 
+    absentTime: '10:00', 
+    latenessGracePeriod: '09:15',
+    companyName: '',
+    companyLatitude: /*null*/ undefined,
+    companyLongitude: /*null*/ undefined 
+  };
+  this.form.setValue({
+    openingTime: defaultHours.openingTime,
+    closingTime: defaultHours.closingTime,
+    absentTime: defaultHours.absentTime,
+    latenessGracePeriod: defaultHours.latenessGracePeriod
+  });
+  this.companyName = '';
+  this.companyLatitude = null;
+  this.companyLongitude = null;
   this.officeHoursService.updateOfficeHours(defaultHours);
   this.editMode = false;
 }

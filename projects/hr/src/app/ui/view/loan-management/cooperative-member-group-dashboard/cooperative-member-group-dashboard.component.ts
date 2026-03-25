@@ -58,6 +58,16 @@ interface GroupActivityItem {
 })
 export class CooperativeMemberGroupDashboardComponent implements OnInit {
   currentUuid = uuidV4();
+  /**
+   * Call this method after approving a group membership to force the dashboard to reload.
+   * Example usage (after approval):
+   *   dashboardComponent.forceReloadAfterApproval();
+   */
+  forceReloadAfterApproval(): void {
+    this.loadDashboard();
+    this.actionMessageTone = 'success';
+    this.actionMessage = 'Membership approved. Dashboard reloaded.';
+  }
   currentGroupId = '';
   currentMemberId = '';
   isLoading = true;
@@ -102,7 +112,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly cooperativeService: CooperativeService,
+    public readonly cooperativeService: CooperativeService,
     private readonly backNavigationService: BackNavigationService
   ) {}
 
@@ -243,11 +253,12 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
       const monthKey = `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, '0')}`;
       const monthEntries = this.groupContributionEntries.filter(entry => entry.contributionMonth === monthKey);
       const activeContributorIds = new Set(monthEntries.map(entry => entry.memberId));
-
+      const totalContribution = monthEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+      
       points.push({
         monthKey,
-        monthLabel: periodDate.toLocaleString('en-US', { month: 'short' }),
-        totalContribution: monthEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+        monthLabel: this.getContributionMonthLabel(monthKey),
+        totalContribution,
         activeContributorCount: activeContributorIds.size
       });
     }
@@ -255,68 +266,100 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return points;
   }
 
+  /**
+   * Builds the activity feed for the group dashboard
+   * Combines member join activities, loan activities, repayments, and contributions
+   */
   private buildActivityFeed(): GroupActivityItem[] {
-    const joinActivities = this.groupMemberships
-      .map(membership => {
-        const member = this.cooperativeService.getMemberById(membership.memberId);
-        return {
+    const activities: GroupActivityItem[] = [];
+
+    // Add member join activities
+    this.groupMemberships.forEach(membership => {
+      const member = this.cooperativeService.getMemberById(membership.memberId);
+      if (member) {
+        activities.push({
           id: `join-${membership.id}`,
-          type: 'join' as const,
-          title: 'Member Joined Group',
-          description: `${member?.fullName || 'A member'} joined ${this.group?.name || 'this group'}.`,
-          occurredAt: membership.reviewedAt || membership.joinedAt || membership.requestedAt || new Date().toISOString()
-        };
+          type: 'join',
+          title: 'New Member Joined',
+          description: `${member.fullName} joined the group.`,
+          occurredAt: membership.joinedAt || membership.requestedAt || member.joinDate || new Date().toISOString()
+        });
+      }
+    });
+
+    // Add loan activities
+    this.groupLoans.forEach(loan => {
+      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
+      if (loan.status === 'COMPLETED') {
+        activities.push({
+          id: `loan-completed-${loan.id}`,
+          type: 'completion',
+          title: 'Loan Completed',
+          description: `${member?.fullName || 'A member'} completed repayment for loan ${String(loan.loanCode || loan.loanId || loan.id)}.`,
+          occurredAt: loan.completedDate || loan.completionDate || loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+        });
+      } else if (loan.status === 'ACTIVE' && loan.disbursedDate) {
+        activities.push({
+          id: `loan-active-${loan.id}`,
+          type: 'loan',
+          title: 'Loan Disbursed',
+          description: `${member?.fullName || 'A member'} received a loan of ${this.formatCurrency(loan.amount)}.`,
+          occurredAt: loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+        });
+      } else if (loan.status === 'APPROVED') {
+        activities.push({
+          id: `loan-approved-${loan.id}`,
+          type: 'loan',
+          title: 'Loan Approved',
+          description: `${member?.fullName || 'A member'}'s loan application was approved.`,
+          occurredAt: loan.approvedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
+        });
+      }
+    });
+
+    // Add repayment activities
+    this.groupLoans.forEach(loan => {
+      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
+      const repayments = this.cooperativeService.getRepaymentsByLoanId(String(loan.id));
+      repayments.forEach(repayment => {
+        if (repayment.status === 'PAID' && repayment.paidDate) {
+          activities.push({
+            id: `repayment-${repayment.id}`,
+            type: 'repayment',
+            title: 'Repayment Made',
+            description: `${member?.fullName || 'A member'} made a repayment of ${this.formatCurrency(repayment.amount)}.`,
+            occurredAt: repayment.paidDate
+          });
+        } else if (repayment.status === 'OVERDUE') {
+          activities.push({
+            id: `repayment-overdue-${repayment.id}`,
+            type: 'repayment',
+            title: 'Overdue Payment',
+            description: `${member?.fullName || 'A member'}'s repayment of ${this.formatCurrency(repayment.amount)} is overdue.`,
+            occurredAt: repayment.dueDate
+          });
+        }
       });
+    });
 
-    const contributionActivities = this.groupContributionEntries.map(entry => {
+    // Add contribution activities
+    this.groupContributionEntries.forEach(entry => {
       const member = this.cooperativeService.getMemberById(entry.memberId);
-      const monthLabel = this.getContributionMonthLabel(entry.contributionMonth);
-
-      return {
-        id: `contribution-${entry.id}`,
-        type: 'contribution' as const,
-        title: 'Contribution Posted',
-        description: this.isCurrentMember(String(member?.id || ''))
-          ? `You posted your ${monthLabel} contribution.`
-          : `${member?.fullName || 'A member'} posted a ${monthLabel} contribution.`,
-        occurredAt: entry.contributedAt || new Date().toISOString()
-      };
+      if (member) {
+        activities.push({
+          id: `contribution-${entry.id}`,
+          type: 'contribution',
+          title: 'Contribution Posted',
+          description: `${member.fullName} contributed ${this.formatCurrency(entry.amount)} for ${this.getContributionMonthLabel(entry.contributionMonth)}.`,
+          occurredAt: entry.contributedAt
+        });
+      }
     });
 
-    const repaymentActivities = this.groupLoans.flatMap(loan => {
-      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
-      return this.cooperativeService.getRepaymentsByLoanId(String(loan.id))
-        .filter(repayment => !!repayment.paidDate)
-        .map(repayment => ({
-          id: `repayment-${repayment.id}`,
-          type: 'repayment' as const,
-          title: 'Repayment Received',
-          description: this.isCurrentMember(String(member?.id || ''))
-            ? `You made a repayment for ${String(loan.loanCode || loan.loanId || loan.id)}.`
-            : `${member?.fullName || 'A member'} made a repayment in ${this.group?.name || 'the group'}.`,
-          occurredAt: repayment.paidDate || new Date().toISOString()
-        }));
-    });
-
-    const loanActivities = this.groupLoans.map(loan => {
-      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
-      const title = loan.status === 'COMPLETED' ? 'Loan Completed' : 'New Group Loan';
-      const description = loan.status === 'COMPLETED'
-        ? `${member?.fullName || 'A member'} completed repayment for ${String(loan.loanCode || loan.loanId || loan.id)}.`
-        : `${member?.fullName || 'A member'} started a borrowing cycle in ${this.group?.name || 'the group'}.`;
-
-      return {
-        id: `loan-${loan.id}-${loan.status}`,
-        type: loan.status === 'COMPLETED' ? 'completion' as const : 'loan' as const,
-        title,
-        description,
-        occurredAt: loan.completedDate || loan.completionDate || loan.disbursedDate || loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
-      };
-    });
-
-    return [...joinActivities, ...loanActivities, ...repaymentActivities, ...contributionActivities]
+    // Sort by date (most recent first) and limit to 15 activities
+    return activities
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-      .slice(0, 8);
+      .slice(0, 15);
   }
 
   openContributionModal(): void {
@@ -533,7 +576,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  private getContributionMonthLabel(monthKey: string): string {
+  public getContributionMonthLabel(monthKey: string): string {
     if (!/^\d{4}-\d{2}$/.test(monthKey)) {
       return 'selected';
     }
