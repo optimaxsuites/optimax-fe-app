@@ -130,37 +130,50 @@ if (this.hasCompletedToday(employeeid)) {
   const closing = this.convertToDateTime(officeHours.closingTime);
   const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod)
 
+  // Calculate distance if company location is set and we got coords
+  let distance: number | null = null;
+  if (location && officeHours.companyLatitude && officeHours.companyLongitude) {
+    distance = this.calculateDistance(
+      location.lat,
+      location.lng,
+      officeHours.companyLatitude,
+      officeHours.companyLongitude
+    );
+  }
+
   if (action === 'IN') {
 
   record.checkIn = now.toLocaleTimeString();
-  record.checkInLocation = location;  // to store location
+  record.checkInLocation = location
+  ? {
+      address: location.address,
+      lat: location.lat,
+      lng: location.lng
+    }
+  : null;  // to store location
 
   // If admin opened attendance, never mark late
   if (record.overrideOpen) {
     record.status = 'PRESENT';
-
     // Optional cleanup: remove override after successful clock-in
     record.overrideOpen = false;
-
   } else {
-
     const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
      record.status = now <= graceTime ? 'PRESENT' : 'LATE';
-    // Normal Late / Present logic
-    /*if (now > opening) {
-      record.status = 'LATE';
-    } else {
-      record.status = 'PRESENT';
-    }*/
-
   }
 }
 
   if (action === 'OUT') {
     record.checkOut = now.toLocaleTimeString();
-    record.checkOutLocation = location; 
-    record.hours = this.calculateHours(record.checkIn!, record.checkOut);
+    record.checkOutLocation = location
+    ? {
+      address: location.address,
+      lat: location.lat,
+      lng: location.lng
+    }
+  : null;
 
+    record.hours = this.calculateHours(record.checkIn!, record.checkOut);
     // OVERTIME logic (but do not remove LATE)
     if (now > closing) {
       record.status = 'OVERTIME';
@@ -168,6 +181,19 @@ if (this.hasCompletedToday(employeeid)) {
   }
 
   this.attendanceSubject.next(data);
+}
+
+// helper method
+private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return +(R * c).toFixed(2);
 }
 
 private convertToDateTime(time: string): Date {
@@ -300,42 +326,6 @@ private autoMarkAbsentIfNeeded() {
     this.attendanceSubject.next(data);
   }
 
-
-  /*const officeHours = this.officeHoursService.getOfficeHours();
-  const now = new Date();
-
-  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
-
-  const absentTimeToday = new Date();
-  absentTimeToday.setHours(hour, minute, 0, 0);
-
-  if (now < absentTimeToday) return;
-
-  const today = now.toISOString().split('T')[0];
-  const data = [...this.attendanceSubject.value];
-
-  this.registeredEmployees.forEach(emp => {
-
-    const existingRecord = data.find(
-      r => r.id === emp.id && r.date === today
-    );
-
-    if (!existingRecord) {
-      data.unshift({
-        id: emp.id,
-        employee: emp.name,
-        department: emp.department,
-        date: today,
-        checkIn: null,
-        checkOut: null,
-        status: 'ABSENT',
-        hours: 0
-      });
-    }
-
-  });
-
-  this.attendanceSubject.next(data);*/
 }
 
 isEmployeeBlockedToday(employeeId: string): boolean {
@@ -355,17 +345,6 @@ isEmployeeBlockedToday(employeeId: string): boolean {
 
   return false;
 }
-
-  /*isEmployeeAbsentToday(employeeId: string): boolean {
-
-  const today = new Date().toISOString().split('T')[0];
-
-  const record = this.attendanceSubject.value.find(
-    r => r.id === employeeId && r.date === today
-  );
-
-  return record?.status === 'ABSENT';
-}*/
 
 openAttendanceForToday(employeeId: string) {
 
@@ -427,46 +406,30 @@ overrideAttendance(
   this.attendanceSubject.next(data);
 }
 
-private getCurrentLocation(): Promise<string> {
+private getCurrentLocation(): Promise<{ address: string; lat: number; lng: number } | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve('Location unavailable');
+      resolve(null);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const lat = position.coords.latitude.toFixed(5);
-        const lng = position.coords.longitude.toFixed(5);
-        /*resolve(`${lat}, ${lng}`);*/
-        // --- REVERSE GEOCODING GOES HERE ---
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
             { headers: { 'User-Agent': 'YourAppName/1.0' } }
           );
           const json = await response.json();
-          resolve(json.display_name ?? `${lat}, ${lng}`);         // human-readable address, falls back to coords
+          resolve({ address: json.display_name ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });
         } catch {
-          resolve(`${lat}, ${lng}`);                              // if API fails, fall back to raw coords
+          resolve({ address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });                            // if API fails, fall back to raw coords
         }
       },
-      (error) => {
-        // Gracefully handle denial or timeout
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            resolve('Location denied');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            resolve('Location unavailable');
-            break;
-          case error.TIMEOUT:
-            resolve('Location timeout');
-            break;
-          default:
-            resolve('Location error');
-        }
-      },
+      () => resolve(null),
       { timeout: 8000, maximumAge: 0 }
     );
   });

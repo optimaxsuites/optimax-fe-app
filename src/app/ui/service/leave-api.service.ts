@@ -33,11 +33,11 @@ export class LeaveApiService {
   
   // ==================== DEPARTMENTS ====================
 
-getDepartments(): Observable<any> {
-  return this.http
-    .get<any>(`${this.baseUrl}/x/api/v2/hr/departments`)
-    .pipe(catchError(this.handleError));
-}
+  getDepartments(): Observable<any> {
+    return this.http
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/departments`)
+      .pipe(catchError(this.handleError));
+  }
 
   // ==================== LEVELS ====================
 
@@ -146,8 +146,8 @@ getDepartments(): Observable<any> {
 
   createLeaveBalance(data: any): Observable<any> {
     const payload = {
-      employeeId: String(data.employeeId), // Convert to string
-      employee: data.employeeId, // Numeric ID
+      employeeId: String(data.employeeId),
+      employee: data.employeeId,
       leaveTypeId: data.leaveTypeId,
       balance: data.balance,
       usedDays: data.usedDays || 0
@@ -166,13 +166,13 @@ getDepartments(): Observable<any> {
 
   updateLeaveBalance(id: number, data: any): Observable<any> {
     const payload = {
-    id: id,
-    employeeId: data.employeeId,
-    employee: data.employee,
-    leaveTypeId: data.leaveTypeId,
-    balance: data.balance,
-    usedDays: data.usedDays
-  };
+      id: id,
+      employeeId: data.employeeId,
+      employee: data.employee,
+      leaveTypeId: data.leaveTypeId,
+      balance: data.balance,
+      usedDays: data.usedDays
+    };
     return this.http
       .put<any>(`${this.baseUrl}/x/api/v2/hr/leaves/${id}`, payload)
       .pipe(catchError(this.handleError));
@@ -220,91 +220,216 @@ getDepartments(): Observable<any> {
       .pipe(catchError(this.handleError));
   }
 
-  // ==================== LEAVE PLAN RECORDS ====================
+  // ==================== LEAVE PLAN RECORDS (NEW FORMAT) ====================
 
-getLeavePlanRecords(page: number = 1, size: number = 100): Observable<any> {
-  const params = new HttpParams()
-    .set('page', page.toString())
-    .set('size', size.toString());
+  /**
+   * Get all leave plan records with transformation
+   * Converts date arrays to Date objects and sorts by latest first
+   */
+  getLeavePlanRecords(page: number = 1, size: number = 100): Observable<any[]> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
 
-  return this.http
-    .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records`, { params })
-    .pipe(catchError(this.handleError));
-}
-
-getLeavePlanRecordById(id: number): Observable<any> {
-  return this.http
-    .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`)
-    .pipe(catchError(this.handleError));
-}
-
-createLeavePlanRecord(data: any): Observable<any> {
-  // Don't send id - backend generates it
-  const payload = {
-    createdBy: data.createdBy,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    status: data.status || 'PENDING',
-    leaveType: data.leaveType,
-    totalDays: data.totalDays,
-    planReason: data.planReason || '',
-    attachment: data.attachment || null
-  };
-
-  return this.http
-    .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records`, payload)
-    .pipe(catchError(this.handleError));
-}
-
-updateLeavePlanRecord(id: number, data: any): Observable<any> {
-  // Include id in payload for update
-  const payload = {
-    id: id,
-    createdBy: data.createdBy,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    status: data.status,
-    leaveType: data.leaveType,
-    totalDays: data.totalDays,
-    planReason: data.planReason,
-    attachment: data.attachment,
-    adminComment: data.adminComment,
-    decisionBy: data.decisionBy,
-    decisionOn: data.decisionOn
-  };
-
-  return this.http
-    .put<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`, payload)
-    .pipe(catchError(this.handleError));
-}
-
-deleteLeavePlanRecord(id: number): Observable<any> {
-  return this.http
-    .delete<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`)
-    .pipe(catchError(this.handleError));
-}
-
-// ==================== CURRENT EMPLOYEE (if not already added) ====================
-
-getEmployeeByUserId(userId: string): Observable<any> {
-  return this.http
-    .get<any>(`${this.baseUrl}/x/api/v2/hr/employees/employee/by/userId/${userId}`)
-    .pipe(catchError(this.handleError));
-}
-
-getCurrentUserId(): string | null {
-  return sessionStorage.getItem('userid') || localStorage.getItem('userid');
-}
-
-getCurrentEmployee(): Observable<any> {
-  const userId = this.getCurrentUserId();
-  console.log(userId);
-  if (!userId) {
-    console.warn('No userId found');
-    return of(null);
+    return this.http
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records`, { params })
+      .pipe(
+        map(response => {
+          const records = Array.isArray(response) ? response : (response?.data || response?.content || []);
+          return this.transformLeavePlanRecords(records);
+        }),
+        catchError(this.handleError)
+      );
   }
-  return this.getEmployeeByUserId(userId).pipe(
-    map(response => response?.data ?? response ?? null)
-  );
+
+  /**
+   * Get single leave plan record by ID
+   */
+  getLeavePlanRecordById(id: number): Observable<any> {
+    return this.http
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`)
+      .pipe(
+        map(response => this.transformSingleRecord(response)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Create leave plan record
+   * POST expects: createdBy (userId), leaveTypeId (number), dates, status
+   */
+  createLeavePlanRecord(data: any): Observable<any> {
+    const now = new Date().toISOString();
+    
+    const payload = {
+      createdAt: now,
+      createdBy: data.createdBy, // userId (number)
+      startDate: data.startDate, // ISO string
+      endDate: data.endDate, // ISO string
+      status: data.status || 'PENDING',
+      leaveTypeId: data.leaveTypeId, // number
+      totalDays: data.totalDays,
+      planReason: data.planReason || '',
+      attachment: data.attachment || '',
+      adminComment: data.adminComment || '',
+      decisionBy: data.decisionBy || null,
+      decisionOn: data.decisionOn || null
+    };
+
+    console.log('📤 Creating leave plan record:', payload);
+
+    return this.http
+      .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records`, payload)
+      .pipe(
+        map(response => this.transformSingleRecord(response)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Update leave plan record
+   * PUT expects: id + all fields
+   */
+  updateLeavePlanRecord(id: number, data: any): Observable<any> {
+    const payload = {
+      id: id,
+      createdAt: data.createdAt,
+      createdBy: data.createdBy, // userId (number)
+      startDate: data.startDate,
+      endDate: data.endDate,
+      status: data.status,
+      leaveTypeId: data.leaveTypeId, // number
+      totalDays: data.totalDays,
+      planReason: data.planReason,
+      attachment: data.attachment,
+      adminComment: data.adminComment,
+      decisionBy: data.decisionBy,
+      decisionOn: data.decisionOn
+    };
+
+    console.log(' Updating leave plan record:', payload);
+
+    return this.http
+      .put<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`, payload)
+      .pipe(
+        map(response => this.transformSingleRecord(response)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Delete leave plan record
+   */
+  deleteLeavePlanRecord(id: number): Observable<any> {
+    return this.http
+      .delete<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // ==================== DATA TRANSFORMATION HELPERS ====================
+
+  /**
+   * Transform array of leave plan records from backend format to frontend format
+   */
+  private transformLeavePlanRecords(records: any[]): any[] {
+    if (!Array.isArray(records)) {
+      return [];
+    }
+
+    const transformed = records.map(record => this.transformSingleRecord(record));
+    
+    // Sort by createdAt descending (latest first)
+    return transformed.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+  }
+
+  /**
+   * Transform single leave plan record from backend format to frontend format
+   */
+  private transformSingleRecord(record: any): any {
+    if (!record) return null;
+
+    return {
+      id: record.id,
+      createdAt: this.convertDateArrayToISO(record.createdAt),
+      createdBy: {
+        id: record.createdBy?.userId || record.createdBy?.id || record.createdBy,
+        userId: record.createdBy?.userId || record.createdBy?.id || record.createdBy,
+        fullname: record.createdBy?.fullname || record.createdBy?.username || 'Unknown'
+      },
+      startDate: this.convertDateArrayToISO(record.startDate),
+      endDate: this.convertDateArrayToISO(record.endDate),
+      status: record.status,
+      leaveType: {
+        id: record.leaveType?.id || record.leaveTypeId,
+        name: record.leaveType?.name || 'Unknown',
+        code: record.leaveType?.code || '',
+        description: record.leaveType?.description || ''
+      },
+      leaveTypeId: record.leaveType?.id || record.leaveTypeId,
+      totalDays: record.totalDays,
+      planReason: record.planReason || '',
+      attachment: record.attachment || '',
+      adminComment: record.adminComment || '',
+      decisionBy: record.decisionBy ? {
+        id: record.decisionBy?.userId || record.decisionBy?.id || record.decisionBy,
+        userId: record.decisionBy?.userId || record.decisionBy?.id || record.decisionBy,
+        fullname: record.decisionBy?.fullname || record.decisionBy?.username || 'Unknown'
+      } : null,
+      decisionOn: this.convertDateArrayToISO(record.decisionOn)
+    };
+  }
+
+  /**
+   * Convert date array [year, month, day, hour, min, sec, nano] to ISO string
+   */
+  private convertDateArrayToISO(dateArray: any): string {
+    if (!dateArray) return '';
+    
+    // If already a string, return it
+    if (typeof dateArray === 'string') {
+      return dateArray;
+    }
+
+    // If it's an array: [year, month, day, hour, min, sec, nano]
+    if (Array.isArray(dateArray) && dateArray.length >= 3) {
+      const [year, month, day, hour = 0, min = 0, sec = 0] = dateArray;
+      // Month in Date is 0-indexed, backend sends 1-indexed
+      const date = new Date(year, month - 1, day, hour, min, sec);
+      return date.toISOString();
+    }
+
+    return '';
+  }
+
+  // ==================== CURRENT EMPLOYEE ====================
+
+  getEmployeeByUserId(userId: string): Observable<any> {
+    return this.http
+      .get<any>(`${this.baseUrl}/x/api/v2/hr/employees/employee/by/userId/${userId}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getCurrentUserId(): string | null {
+    return sessionStorage.getItem('userid') || localStorage.getItem('userid');
+  }
+
+  getCurrentEmployee(): Observable<any> {
+    const userId = this.getCurrentUserId();
+    console.log('Current userId:', userId);
+    if (!userId) {
+      console.warn('No userId found');
+      return of(null);
+    }
+    return this.getEmployeeByUserId(userId).pipe(
+      map(response => response?.data ?? response ?? null)
+    );
+  }
+  getCurrentUserIdAsNumber(): number | null {
+  const userId = this.getCurrentUserId();
+  return userId ? parseInt(userId, 10) : null;
 }
 }

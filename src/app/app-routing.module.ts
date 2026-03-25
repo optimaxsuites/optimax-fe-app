@@ -50,6 +50,41 @@ const routes: Routes = [
     path: 'guarantor/confirm/:token/:uuid',
     component: GuarantorConfirmationComponent,
   },
+
+  // {
+  //   path: '',
+  //   redirectTo: 'leave/uu',
+  //   pathMatch: 'full',
+  // },
+  // {
+  //   path: 'loan-dashboard',
+  //   redirectTo: 'loan/uu',
+  //   pathMatch: 'full'
+  // },
+  {
+    path: 'loan-dashboard/:legacyId',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-dashboard',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-dashboard/:legacyId',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-management/loan-dashboard',
+    redirectTo: 'loan/uu',
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/hr/loan-management/loan-dashboard/:uuid',
+    component: LoanDashboardComponent,
+  },
   {
     path: 'workschedule-shifts/:uuid',
     component: WorkscheduleShiftsComponent,

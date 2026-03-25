@@ -3,4 +3,7 @@ export interface OfficeHours {
   closingTime: string;
   absentTime: string;
   latenessGracePeriod: string;
+  companyLatitude?: number; 
+  companyLongitude?: number; 
+  companyName?: string;   
 }

@@ -120,6 +120,23 @@ export interface CooperativeNotification {
   read: boolean;
 }
 
+// export interface CooperativeRepayment {
+//   id: string;
+//   loanId: string | number;
+//   amount: number;
+//   dueDate: string;
+//   paidDate?: string;
+//   receiptNumber?: string;
+//   principalComponent?: number;
+//   interestComponent?: number;
+//   lateFeeAmount?: number;
+//   reminderSentAt?: string;
+//   creditReportedAt?: string;
+//   modeofPayment?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
+//   status: 'PENDING' | 'PAID' | 'OVERDUE';
+// }
+
+// In cooperative.types.ts
 export interface CooperativeRepayment {
   id: string;
   loanId: string | number;
@@ -134,6 +151,7 @@ export interface CooperativeRepayment {
   creditReportedAt?: string;
   modeofPayment?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
   status: 'PENDING' | 'PAID' | 'OVERDUE';
+  notes?: string;  // Add this line
 }
 
 export interface CooperativeStats {

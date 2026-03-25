@@ -30,8 +30,28 @@
     <td>{{ record.date || '-'}}</td>
     <td>{{ record.checkIn || '-' }}</td>
     <td>{{ record.checkOut || '-' }}</td>
-    <td> {{ record.checkInLocation }} </td>
-    <td> {{ record.checkOutLocation }} </td>
+
+    <td>
+  <span
+    *ngIf="record.checkInLocation; else noLocation"
+    class="location-link"
+    [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'in'"
+    (click)="openLocationMap(record, 'in')">
+    📍 {{ record.checkInLocation.address | slice:0:30 }}...
+  </span>
+  <ng-template #noLocation>-</ng-template>
+</td>
+
+    <td>
+  <span
+    *ngIf="record.checkOutLocation; else noOutLocation"
+    class="location-link"
+    [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'out'"
+    (click)="openLocationMap(record, 'out')">
+    📍 {{ record.checkOutLocation.address | slice:0:30 }}...
+  </span>
+  <ng-template #noOutLocation>-</ng-template>
+</td>
 
     <td>
       <span class="status"
@@ -73,7 +93,7 @@
   </tr>
 
   <tr *ngIf="filteredAttendance.length === 0">
-    <td colspan="11" class="empty-state">
+    <td colspan="12" class="empty-state">
       <div class="empty-content">
         <p class="empty-title">📋 No attendance records found</p>
         <p class="empty-subtitle">Try adjusting your filters or selecting a different date range</p>
@@ -140,43 +160,23 @@
 
 </div>
 
-<!--<div class="modify-modal" *ngIf="editingRecord">
+<!-- Map Backdrop -->
+<div class="modal-backdrop" *ngIf="mapModalOpen" (click)="closeMap()"></div>
 
-  <div class="modify-card">
-
-    <h3>Modify Attendance</h3>
-
-    <div class="form-group">
-      <label>Status</label>
-      <select [(ngModel)]="editStatus">
-        <option value="PRESENT">PRESENT</option>
-        <option value="LATE">LATE</option>
-        <option value="ABSENT">ABSENT</option>
-        <option value="ON_LEAVE">ON_LEAVE</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label>Check In Time</label>
-      <input type="time" [(ngModel)]="editCheckIn">
-    </div>
-
-    <div class="form-group">
-      <label>Override Reason</label>
-      <textarea [(ngModel)]="editReason" required #reasonField="ngModel"></textarea>
-    </div>
-    <div class="error" *ngIf="reasonField.invalid && reasonField.touched">
-  Reason for modification is required.
-</div>
-
-    <div class="form-actions">
-      <button (click)="saveModification()" [disabled]="!editReason.trim()">Save</button>
-      <button (click)="cancelEdit()">Cancel</button>
-    </div>
-
+<!-- Map Modal -->
+<div class="modal-card map-modal-card" *ngIf="mapModalOpen">
+  <div class="modal-header">
+    <h3>📍 Location</h3>
+    <button class="close-btn" (click)="closeMap()">×</button>
   </div>
 
-</div>-->
+  <p class="map-address">{{ mapAddress }}</p>
+  <p class="map-distance" *ngIf="mapDistance != null">
+    🏢 {{ mapDistance }} km from company
+  </p>
+
+  <div id="leaflet-map" class="leaflet-map"></div>
+</div>
 
     </div>
 </div>

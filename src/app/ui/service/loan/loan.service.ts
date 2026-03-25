@@ -40,31 +40,56 @@ export class LoanService {
   constructor(private http: HttpClient) {}
 
   getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
-    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl).pipe(
+    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl, {
+      responseType: 'json'
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
       catchError(this.handleError)
     );
   }
 
   getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
-    return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`).pipe(
+    return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, {
+      responseType: 'json'
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
       catchError(this.handleError)
     );
   }
 
   createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
-    return this.http.post<AdvanceLoan>(this.standardLoanUrl, payload).pipe(
+    // Ensure payload is an object, not an array
+    const requestBody = Array.isArray(payload) ? payload[0] : payload;
+    
+    return this.http.post<AdvanceLoan>(this.standardLoanUrl, requestBody, {
+      responseType: 'json'
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
       catchError(this.handleError)
     );
   }
 
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
-    return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, payload).pipe(
+    // Ensure payload is an object, not an array
+    const requestBody = Array.isArray(payload) ? payload[0] : payload;
+    
+    if (isDevMode()) {
+      console.log('Update request payload:', requestBody);
+    }
+    
+    return this.http.put<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, requestBody, {
+      responseType: 'json'
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
       catchError(this.handleError)
     );
   }
 
   getAdvanceLoanStats(): Observable<AdvanceLoanStats> {
-    return this.http.get<AdvanceLoanStats>(`${this.standardLoanUrl}/stats`).pipe(
+    return this.http.get<AdvanceLoanStats>(`${this.standardLoanUrl}/stats`, {
+      responseType: 'json'
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
       catchError(this.handleError)
     );
   }
@@ -82,7 +107,7 @@ export class LoanService {
   }
 
   createLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
-    return this.createAdvanceLoan({
+    const payload = {
       employeeId: Number(formData.employeeId || 0),
       amount: formData.amount,
       purpose: formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose,
@@ -90,7 +115,9 @@ export class LoanService {
       repaymentTime: formData.repaymentTime,
       modeOfPayment: formData.modeOfPayment,
       requestDate: formData.requestDate || new Date().toISOString()
-    }).pipe(
+    };
+    
+    return this.createAdvanceLoan(payload).pipe(
       map((loan) => {
         const application = this.toLoanApplication(loan);
         const originalRequestDate = this.normalizeDateValue(loan.requestDate, formData.requestDate || new Date().toISOString());
@@ -122,9 +149,9 @@ export class LoanService {
         }
 
         const payload = this.toUpdatePayload(application, sourceLoan);
-
+        
         if (isDevMode()) {
-          console.log('Advance loan update payload', JSON.parse(JSON.stringify(payload)));
+          console.log('Advance loan update payload:', JSON.stringify(payload, null, 2));
         }
 
         return this.updateAdvanceLoan(
@@ -134,6 +161,48 @@ export class LoanService {
       }),
       map((loan) => this.toLoanApplication(loan))
     );
+  }
+
+  private safeParseResponse(response: any): any {
+    // If response is null or undefined
+    if (!response) {
+      return response;
+    }
+
+    // If response is already an object, return it
+    if (typeof response === 'object') {
+      return response;
+    }
+
+    // If response is a string, try to parse it
+    if (typeof response === 'string') {
+      // Clean the string if needed (remove BOM, extra whitespace)
+      let cleanResponse = response.trim();
+      
+      // Remove BOM if present
+      if (cleanResponse.charCodeAt(0) === 0xFEFF) {
+        cleanResponse = cleanResponse.substring(1);
+      }
+      
+      try {
+        const parsed = JSON.parse(cleanResponse);
+        
+        // Check for common JSON errors
+        if (parsed === null || parsed === undefined) {
+          console.warn('Parsed response is null or undefined');
+        }
+        
+        return parsed;
+      } catch (e) {
+        const error = e as Error;
+        console.error('JSON Parse Error:', error);
+        console.error('Raw response (first 500 chars):', cleanResponse.substring(0, 500));
+        throw new Error(`Invalid JSON response from server: ${error.message}`);
+      }
+    }
+
+    // For any other type, return as is
+    return response;
   }
 
   private getAdvanceLoanByIdentifier(identifier: string): Observable<AdvanceLoan | undefined> {
@@ -493,103 +562,92 @@ export class LoanService {
     return entries;
   }
 
-  /**
-   * Create payload for PUT /advanceLoans/{id}.
-   * Audit history actor fields are excluded because the backend does not
-   * accept its own response shape for those nested objects on update.
-   */
   private toUpdatePayload(application: LoanApplication, sourceLoan: AdvanceLoan): any {
-  const actingUserId = this.getCurrentUserId();
+    const actingUserId = this.getCurrentUserId();
 
-  return {
-    id: Number(sourceLoan.id),
-    loanCode: sourceLoan.loanCode || application.loanCode || String(application.id),
-    employeeId: Number(sourceLoan.employee?.id || application.employeeId || 0),
-    amount: application.amount,
-    purpose: application.purpose,
-    repaymentAmount: application.repaymentAmount,
-    repaymentTime: application.repaymentTime,
-    modeOfPayment: application.modeOfPayment,
-    requestDate: this.toBackendDateTime(this.resolveOriginalRequestDate(application, sourceLoan)),
-    approvedDate: this.toBackendDateTime(application.approvedDate || sourceLoan.approvedDate || ''),
-    //  Send just the ID (Long) for top-level fields
-    approvedBy: this.resolveNullableUserId(
-      application.status === 'APPROVED'
-        ? this.extractUserId(application.approvedBy) || actingUserId
-        : this.extractUserId(sourceLoan.approvedBy)
-    ),
-    disbursedDate: this.toBackendDateTime(application.disbursedDate || sourceLoan.disbursedDate || ''),
-    disbursedBy: this.resolveNullableUserId(
-      application.status === 'ACTIVE'
-        ? this.extractUserId(application.disbursedBy) || actingUserId
-        : this.extractUserId(sourceLoan.disbursedBy)
-    ),
-    completedDate: this.toBackendDateTime(
-      application.status === 'COMPLETED' ? application.completedDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || ''
-    ),
-    rejectedDate: this.toBackendDateTime(
-      application.status === 'REJECTED' ? application.rejectedDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || ''
-    ),
-    rejectedBy: this.resolveNullableUserId(
-      application.status === 'REJECTED'
-        ? this.extractUserId(application.rejectedBy) || actingUserId
-        : this.extractUserId(sourceLoan.rejectedBy)
-    ),
-    status: application.status,
-    adminComment: application.adminComment || sourceLoan.adminComment || this.getLatestStatusNote(application),
-    currentBalance: application.currentBalance,
-    totalPaid: application.totalPaid,
-    totalPrincipalPaid: Number(application.totalPrincipalPaid || sourceLoan.totalPrincipalPaid || 0),
-    totalInterestPaid: Number(application.totalInterestPaid || sourceLoan.totalInterestPaid || 0),
-    outstandingPrincipal: Number(application.outstandingPrincipal || sourceLoan.outstandingPrincipal || application.currentBalance || 0),
-    statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
-    repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
-      id: this.resolveNumericId(sourceLoan.repaymentSchedule?.[index]?.id),
-      installmentNo: item.installmentNo,
-      dueDate: this.toBackendDateTime(item.dueDate),
-      principalAmount: item.principalAmount,
-      interestAmount: item.interestAmount,
-      totalAmount: item.totalAmount,
-      paidAmount: Number(item.paidAmount || 0),
-      remainingBalance: item.remainingBalance,
-      status: item.status
-    })),
-    paymentHistory: (application.paymentHistory || []).map((item, index) => ({
-      id: this.resolveNumericId(sourceLoan.paymentHistory?.[index]?.id),
-      loanId: Number(sourceLoan.id),
-      paidAt: this.toBackendDateTime(item.paidAt),
-      principalAmount: Number(item.principalAmount || 0),
-      interestPaid: Number(item.interestPaid || 0),
-      lateFeeAmount: Number(item.lateFeeAmount || 0),
-      totalAmount: item.totalAmount,
-      remainingBalance: Number(item.remainingBalance || application.currentBalance || 0),
-      paymentMethod: item.paymentMethod,
-      referenceNumber: item.referenceNumber || '',
-      installmentNo: Number(item.installmentNo || 0),
-      notes: item.notes || '',
-      receiptNumber: item.receiptNumber || String(item.id || '')
-    })),
-    statusHistory: [],
-    interestRate: application.interestRate
-  };
-}
+    return {
+      id: Number(sourceLoan.id),
+      loanCode: sourceLoan.loanCode || application.loanCode || String(application.id),
+      employeeId: Number(sourceLoan.employee?.id || application.employeeId || 0),
+      amount: application.amount,
+      purpose: application.purpose,
+      repaymentAmount: application.repaymentAmount,
+      repaymentTime: application.repaymentTime,
+      modeOfPayment: application.modeOfPayment,
+      requestDate: this.toBackendDateTime(this.resolveOriginalRequestDate(application, sourceLoan)),
+      approvedDate: this.toBackendDateTime(application.approvedDate || sourceLoan.approvedDate || ''),
+      approvedBy: this.resolveNullableUserId(
+        application.status === 'APPROVED'
+          ? this.extractUserId(application.approvedBy) || actingUserId
+          : this.extractUserId(sourceLoan.approvedBy)
+      ),
+      disbursedDate: this.toBackendDateTime(application.disbursedDate || sourceLoan.disbursedDate || ''),
+      disbursedBy: this.resolveNullableUserId(
+        application.status === 'ACTIVE'
+          ? this.extractUserId(application.disbursedBy) || actingUserId
+          : this.extractUserId(sourceLoan.disbursedBy)
+      ),
+      completedDate: this.toBackendDateTime(
+        application.status === 'COMPLETED' ? application.completedDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || ''
+      ),
+      rejectedDate: this.toBackendDateTime(
+        application.status === 'REJECTED' ? application.rejectedDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || ''
+      ),
+      rejectedBy: this.resolveNullableUserId(
+        application.status === 'REJECTED'
+          ? this.extractUserId(application.rejectedBy) || actingUserId
+          : this.extractUserId(sourceLoan.rejectedBy)
+      ),
+      status: application.status,
+      adminComment: application.adminComment || sourceLoan.adminComment || this.getLatestStatusNote(application),
+      currentBalance: application.currentBalance,
+      totalPaid: application.totalPaid,
+      totalPrincipalPaid: Number(application.totalPrincipalPaid || sourceLoan.totalPrincipalPaid || 0),
+      totalInterestPaid: Number(application.totalInterestPaid || sourceLoan.totalInterestPaid || 0),
+      outstandingPrincipal: Number(application.outstandingPrincipal || sourceLoan.outstandingPrincipal || application.currentBalance || 0),
+      statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
+      repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
+        id: this.resolveNumericId(sourceLoan.repaymentSchedule?.[index]?.id),
+        installmentNo: item.installmentNo,
+        dueDate: this.toBackendDateTime(item.dueDate),
+        principalAmount: item.principalAmount,
+        interestAmount: item.interestAmount,
+        totalAmount: item.totalAmount,
+        paidAmount: Number(item.paidAmount || 0),
+        remainingBalance: item.remainingBalance,
+        status: item.status
+      })),
+      paymentHistory: (application.paymentHistory || []).map((item, index) => ({
+        id: this.resolveNumericId(sourceLoan.paymentHistory?.[index]?.id),
+        loanId: Number(sourceLoan.id),
+        paidAt: this.toBackendDateTime(item.paidAt),
+        principalAmount: Number(item.principalAmount || 0),
+        interestPaid: Number(item.interestPaid || 0),
+        lateFeeAmount: Number(item.lateFeeAmount || 0),
+        totalAmount: item.totalAmount,
+        remainingBalance: Number(item.remainingBalance || application.currentBalance || 0),
+        paymentMethod: item.paymentMethod,
+        referenceNumber: item.referenceNumber || '',
+        installmentNo: Number(item.installmentNo || 0),
+        notes: item.notes || '',
+        receiptNumber: item.receiptNumber || String(item.id || '')
+      })),
+      statusHistory: [],
+      interestRate: application.interestRate
+    };
+  }
 
-  // Helper method to extract user ID from various formats
   private extractUserId(user: any): number {
     if (user === null || user === undefined) return 0;
     
-    // If it's already a number
     if (typeof user === 'number' && !isNaN(user)) return user;
     
-    // If it's a string, parse it
     if (typeof user === 'string') {
       const parsed = parseInt(user, 10);
       return isNaN(parsed) ? 0 : parsed;
     }
     
-    // If it's an object, try to get id or userId
     if (typeof user === 'object') {
-      // Try different ID fields
       const id = user.id ?? user.userId ?? user.ID ?? user.UserId;
       if (id !== undefined) {
         const parsed = parseInt(id, 10);
@@ -599,102 +657,10 @@ export class LoanService {
     
     return 0;
   }
-  private buildUserObject(user: any, fallbackUser?: any): any {
-  // If it's already a valid user object, return it as-is
-  if (user && typeof user === 'object' && !Array.isArray(user)) {
-    // Make sure all fields have the correct types
-    return {
-      id: Number(user.id || user.userId || 0),
-      userId: Number(user.userId || user.id || 0),
-      fullname: String(user.fullname || user.fullName || user.name || `User ${user.id || ''}`),
-      email: String(user.email || ''),
-      username: String(user.username || ''),
-      clientType: String(user.clientType || ''),
-      gender: String(user.gender || ''),
-      accountId: String(user.accountId || ''),
-      address: String(user.address || ''),
-      city: String(user.city || ''),
-      state: String(user.state || ''),
-      country: String(user.country || ''),
-      phoneNumber: String(user.phoneNumber || user.phone || '')
-    };
-  }
-  
-  // Get the user ID
-  const userId = this.extractUserId(user);
-  
-  // If we have a fallback user, use it as template
-  if (fallbackUser && typeof fallbackUser === 'object') {
-    return {
-      id: Number(fallbackUser.id || userId || 0),
-      userId: Number(fallbackUser.userId || userId || 0),
-      fullname: String(fallbackUser.fullname || fallbackUser.fullName || `User ${userId}`),
-      email: String(fallbackUser.email || ''),
-      username: String(fallbackUser.username || ''),
-      clientType: String(fallbackUser.clientType || ''),
-      gender: String(fallbackUser.gender || ''),
-      accountId: String(fallbackUser.accountId || ''),
-      address: String(fallbackUser.address || ''),
-      city: String(fallbackUser.city || ''),
-      state: String(fallbackUser.state || ''),
-      country: String(fallbackUser.country || ''),
-      phoneNumber: String(fallbackUser.phoneNumber || fallbackUser.phone || '')
-    };
-  }
-  
-  // Create minimal user object with all fields as correct types
-  return {
-    id: Number(userId),
-    userId: Number(userId),
-    fullname: `User ${userId}`,
-    email: '',
-    username: '',
-    clientType: '',
-    gender: '',
-    accountId: '',
-    address: '',
-    city: '',
-    state: '',
-    country: '',
-    phoneNumber: ''
-  };
-}
-
-  private resolveAuditUserId(
-    primaryUser: AdvanceLoanUser | number | string | undefined,
-    fallbackUserId = 0,
-    sourceUser?: AdvanceLoanUser | number
-  ): number {
-    const primaryUserId = this.extractFlexibleUserId(primaryUser);
-    if (primaryUserId > 0) {
-      return primaryUserId;
-    }
-
-    const sourceUserId = this.extractUserId(sourceUser);
-    if (sourceUserId > 0) {
-      return sourceUserId;
-    }
-
-    return fallbackUserId > 0 ? fallbackUserId : 0;
-  }
-
-  private extractFlexibleUserId(user: AdvanceLoanUser | number | string | undefined): number {
-    if (typeof user === 'number' && Number.isFinite(user)) {
-      return user;
-    }
-
-    if (typeof user === 'string') {
-      const parsedUserId = Number(String(user).trim());
-      return Number.isFinite(parsedUserId) ? parsedUserId : 0;
-    }
-
-    return this.extractUserId(user);
-  }
 
   private getCurrentUserId(): number {
     const storedUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
     const parsedUserId = Number(storedUserId);
-
     return Number.isFinite(parsedUserId) ? parsedUserId : 0;
   }
 
@@ -703,7 +669,6 @@ export class LoanService {
     if (!rawValue || !/^\d+$/.test(rawValue)) {
       return null;
     }
-
     const numericValue = Number(rawValue);
     return Number.isFinite(numericValue) ? numericValue : null;
   }
@@ -712,12 +677,10 @@ export class LoanService {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
-
     if (typeof value === 'object' && value !== null && 'id' in value) {
       const nestedId = Number((value as { id?: unknown }).id);
       return Number.isFinite(nestedId) ? nestedId : 0;
     }
-
     const parsedValue = Number(value);
     return Number.isFinite(parsedValue) ? parsedValue : 0;
   }
@@ -731,12 +694,10 @@ export class LoanService {
     if (!employee) {
       return 'Employee';
     }
-
     const fullName = [employee.firstName, employee.lastName]
       .map((part) => String(part || '').trim())
       .filter(Boolean)
       .join(' ');
-
     return fullName || 'Employee';
   }
 
@@ -847,11 +808,9 @@ export class LoanService {
     if (loanId > 0) {
       cache[`id:${loanId}`] = normalizedRequestDate;
     }
-
     if (loanCode) {
       cache[`code:${loanCode}`] = normalizedRequestDate;
     }
-
     this.writeOriginalRequestDateCache(cache);
   }
 
@@ -860,7 +819,6 @@ export class LoanService {
     if (!rawValue) {
       return {};
     }
-
     try {
       const parsedValue = JSON.parse(rawValue);
       return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
@@ -873,7 +831,7 @@ export class LoanService {
     try {
       localStorage.setItem(this.originalRequestDateCacheKey, JSON.stringify(cache));
     } catch {
-      // Ignore storage write failures and continue with in-memory request dates.
+      // Ignore storage write failures
     }
   }
 
@@ -883,7 +841,6 @@ export class LoanService {
   ): { employeeId?: number; fullName?: string; department?: string; requestDate?: string } {
     const cache = this.readLoanMetadataCache();
     const metadata = cache[`id:${loanId}`] || cache[`code:${loanCode}`] || {};
-
     return typeof metadata === 'object' && metadata !== null ? metadata : {};
   }
 
@@ -903,11 +860,9 @@ export class LoanService {
     if (loanId > 0) {
       cache[`id:${loanId}`] = normalizedMetadata;
     }
-
     if (loanCode) {
       cache[`code:${loanCode}`] = normalizedMetadata;
     }
-
     this.writeLoanMetadataCache(cache);
   }
 
@@ -916,7 +871,6 @@ export class LoanService {
     if (!rawValue) {
       return {};
     }
-
     try {
       const parsedValue = JSON.parse(rawValue);
       return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
@@ -931,7 +885,7 @@ export class LoanService {
     try {
       localStorage.setItem(this.loanMetadataCacheKey, JSON.stringify(cache));
     } catch {
-      // Ignore storage write failures and continue with API data only.
+      // Ignore storage write failures
     }
   }
 
@@ -941,7 +895,6 @@ export class LoanService {
 
   private toLoanStatus(status?: string): LoanApplication['status'] {
     const normalizedStatus = String(status || '').toUpperCase();
-
     switch (normalizedStatus) {
       case 'APPROVED':
       case 'REJECTED':
@@ -955,7 +908,6 @@ export class LoanService {
 
   private toRepaymentStatus(status?: string): RepaymentScheduleItem['status'] {
     const normalizedStatus = String(status || '').toUpperCase();
-
     switch (normalizedStatus) {
       case 'PAID':
       case 'OVERDUE':
@@ -1019,19 +971,15 @@ export class LoanService {
     if (String(modeOfPayment || '').toUpperCase() === 'ONE_OFF') {
       return 5;
     }
-
     if (tenureMonths <= 3) {
       return 4.5;
     }
-
     if (tenureMonths <= 6) {
       return 6;
     }
-
     if (tenureMonths <= 12) {
       return 8.5;
     }
-
     return 10.5;
   }
 
@@ -1060,10 +1008,8 @@ export class LoanService {
       const dueDate = new Date(baseDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
       dueDate.setDate(15);
-
       const oneOffInterest = Number((totalAmount * (interestRate / 100)).toFixed(2));
       const oneOffTotal = Number((totalAmount + oneOffInterest).toFixed(2));
-
       return [{
         installmentNo: 1,
         dueDate: dueDate.toISOString(),
@@ -1089,11 +1035,9 @@ export class LoanService {
       const interestPortion = monthlyInterestRate > 0 ? remainingBalance * monthlyInterestRate : 0;
       const principalPortion = monthlyPayment - interestPortion;
       remainingBalance = Math.max(remainingBalance - principalPortion, 0);
-
       const dueDate = new Date(baseDate);
       dueDate.setMonth(dueDate.getMonth() + month);
       dueDate.setDate(15);
-
       schedule.push({
         installmentNo: month,
         dueDate: dueDate.toISOString(),
@@ -1105,7 +1049,6 @@ export class LoanService {
         status: 'PENDING'
       });
     }
-
     return schedule;
   }
 
@@ -1113,34 +1056,27 @@ export class LoanService {
     if (Array.isArray(value)) {
       const [year, month, day, hour = 0, minute = 0, second = 0, nanosecond = 0] = value;
       const numericParts = [year, month, day, hour, minute, second, nanosecond].map((part) => Number(part || 0));
-
       if (numericParts.slice(0, 3).every((part) => Number.isFinite(part) && part > 0)) {
         const [safeYear, safeMonth, safeDay, safeHour, safeMinute, safeSecond, safeNanosecond] = numericParts;
         const millisecond = Math.floor(safeNanosecond / 1000000);
         const normalizedDate = new Date(Date.UTC(safeYear, safeMonth - 1, safeDay, safeHour, safeMinute, safeSecond, millisecond));
         return Number.isNaN(normalizedDate.getTime()) ? fallback : normalizedDate.toISOString();
       }
-
       return fallback;
     }
-
     const rawValue = String(value ?? '').trim();
-
     if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
       return fallback;
     }
-
     const timestamp = new Date(rawValue).getTime();
     return Number.isFinite(timestamp) ? rawValue : fallback;
   }
 
   private toBackendDateTime(value: unknown, fallback: string | null = null): string | null {
     const normalizedValue = this.normalizeDateValue(value, fallback ?? '');
-
     if (!normalizedValue) {
       return fallback;
     }
-
     return /^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)
       ? `${normalizedValue}T00:00:00`
       : normalizedValue;
@@ -1155,10 +1091,15 @@ export class LoanService {
           url: error.url,
           error: error.error
         });
+        if (error.error && typeof error.error === 'string') {
+          console.error('Raw error response:', error.error);
+        }
+        if (error.error && error.error.error instanceof SyntaxError) {
+          console.error('JSON Parse Error - The server returned invalid JSON');
+        }
       }
       return throwError(() => error);
     }
-
     console.error('Advance loan service error', error);
     return throwError(() => error);
   }
