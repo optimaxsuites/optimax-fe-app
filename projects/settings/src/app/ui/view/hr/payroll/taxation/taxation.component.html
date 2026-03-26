@@ -1,4 +1,4 @@
-<form [formGroup]="form" (ngSubmit)="save()" class="space-y-10">
+<form [formGroup]="form" *ngIf="!loading" (ngSubmit)="save()" class="space-y-10">
 
   <section formGroupName="paye" class="space-y-6">
     <div class="border-b border-gray-200 pb-2">
@@ -25,8 +25,8 @@
         <label class="block font-medium text-gray-700 mb-1">Bonus Tax Method</label>
         <select formControlName="bonusTaxMethod"
                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-          <option>Standard</option>
-          <option>Separate</option>
+          <option [value]="null">Select Method</option>
+          <option *ngFor="let method of bonusTaxMethods" [value]="method.value">{{ method.label }}</option>
         </select>
       </div>
 
@@ -118,7 +118,10 @@
         </div>
         <div>
           <label class="block  font-medium text-gray-500 uppercase mb-1">Contribution Base</label>
-          <input type="text" formControlName="base" placeholder="e.g. Basic, Housing, Transport" class="block w-full rounded-md border-gray-300 sm:text-sm">
+          <!-- <input type="text" formControlName="base" placeholder="e.g. Basic, Housing, Transport" class="block w-full rounded-md border-gray-300 sm:text-sm"> -->
+            <ng-select [multiple]="true" formControlName="base" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            <ng-option *ngFor="let type of allowanceTypes" [value]="type">{{ type.name }}</ng-option>
+          </ng-select>
         </div>
       </div>
     </section>
@@ -136,7 +139,10 @@
         </div>
         <div>
           <label class="block  font-medium text-gray-500 uppercase mb-1">Contribution Base</label>
-          <input type="text" formControlName="base" class="block w-full rounded-md border-gray-300 sm:text-sm">
+          <!-- <input type="text" formControlName="base" class="block w-full rounded-md border-gray-300 sm:text-sm"> -->
+          <ng-select [multiple]="true" formControlName="base" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+            <ng-option *ngFor="let type of allowanceTypes" [value]="type">{{ type.name }}</ng-option>
+          </ng-select>
         </div>
       </div>
     </section>
@@ -183,3 +189,10 @@
     </button>
   </div>
 </form>
+
+<div *ngIf="loading" class="flex items-center justify-center h-64">
+  <svg class="animate-spin h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+  </svg>
+</div>

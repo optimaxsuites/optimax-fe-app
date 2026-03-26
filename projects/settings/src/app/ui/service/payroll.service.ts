@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 // import { environment } from '../shared-component/environments/environment';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, forkJoin, Observable, of, throwError } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment';
 // import { environment } from '../sharedComponents/service/environments/environment.prod';
 
@@ -60,14 +60,27 @@ export class PayrollService {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxConfigs`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
+   getTaxConfigById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxConfigs/1`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
 
   getTaxBands(page = 1, size = 10): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxBands`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
 
+  getTaxBandsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxBands/1`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+
   getTaxReliefs(page = 1, size = 10): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxReliefs`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+  getTaxReliefsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/taxReliefs/1`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
 
@@ -77,8 +90,17 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+  getPensionConfigsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/pensionConfigs/1`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+
   getNhfConfigs(page = 1, size = 10): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/nhfConfigs`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+  getNhfConfigsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/nhfConfigs/1`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
 
@@ -87,10 +109,47 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+  getHealthInsuranceConfigsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/healthInsuranceConfigs/1`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+
   getEmployerStatutoryConfigs(page = 1, size = 10): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/employerStatutorys`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
+
+  getEmployerStatutoryConfigsById(page = 1, size = 10): Observable<any> {
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/employerStatutorys/1`, { params: { page, size } })
+      .pipe(catchError(this.handleError));
+  }
+
+ getAllStatutoryConfigs(): Observable<any> {
+  return forkJoin({
+
+
+    taxConfig: this.getTaxConfigById()
+      .pipe(catchError(() => of({}))),
+
+    taxBands: this.getTaxBandsById()
+      .pipe(catchError(() => of([]))),
+
+    taxReliefs: this.getTaxReliefsById()
+      .pipe(catchError(() => of({}))),
+
+    employerStatutory: this.getEmployerStatutoryConfigsById()
+      .pipe(catchError(() => of({}))),
+
+    healthInsurance: this.getHealthInsuranceConfigsById()
+      .pipe(catchError(() => of({}))),
+
+    nhf: this.getNhfConfigsById()
+      .pipe(catchError(() => of({}))),
+
+    pension: this.getPensionConfigsById()
+      .pipe(catchError(() => of({})))
+  });
+}
 
   // --- Payroll Generation ---
   generatePayroll(payload: any): Observable<any> {
