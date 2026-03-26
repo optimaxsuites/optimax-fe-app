@@ -445,7 +445,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   navigateToAnalytics(): void {
-    this.router.navigate(['/admin/expenses/analytics']);
+    this.router.navigate(['/admin/expenses/analytics/all']);
   }
 
   onSearchInputChange(): void {
@@ -860,17 +860,24 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             this.messageService.add({ severity: 'success', summary: 'Expense Approved', detail: `Expense for ${request.merchant?.name ?? ''} has been approved.` });
 
             // Notify submitter
-            const submitterEmail = (request as any).submittedByEmail || (request as any).createdByEmail;
+            // The API returns expenseBy as a full object with email and fullname
+            const submitterEmail = (request as any).expenseBy?.email;
+            const submitterName  = (request as any).expenseBy?.fullname || request.name;
+
             if (submitterEmail) {
+              console.log('[approve] ✅ Sending approval email to expense creator:', submitterEmail);
               this.emailService.sendExpenseNotification(
-                request.name || '',
+                submitterName,
                 submitterEmail,
-                `${request.name} — ${request.amount} ${request.currency}`,
+                `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`,
                 'APPROVED'
               ).subscribe({
-                next: () => console.log('[approve] Approval email sent'),
-                error: (err) => console.error('[approve] Email failed:', err)
+                next: () => console.log('[approve] ✅ Approval email sent to:', submitterEmail),
+                error: (err) => console.error('[approve] ❌ Approval email failed:', err)
               });
+            } else {
+              console.warn('[approve] ⚠️ No submitter email found on expense object. Keys available:', Object.keys(request));
+              console.warn('[approve] Full expense object:', request);
             }
 
             this.loadExpenses();
@@ -910,18 +917,25 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       next: (updatedExpense) => {
         this.messageService.add({ severity: 'warn', summary: 'Expense Rejected', detail: `Expense for ${request.merchant?.name ?? ''} has been rejected.` });
 
-        const submitterEmail = (request as any).submittedByEmail || (request as any).createdByEmail;
+        // The API returns expenseBy as a full object with email and fullname
+        const submitterEmail = (request as any).expenseBy?.email;
+        const submitterName  = (request as any).expenseBy?.fullname || request.name;
+
         if (submitterEmail) {
+          console.log('[reject] ✅ Sending rejection email to expense creator:', submitterEmail);
           this.emailService.sendExpenseNotification(
-            request.name || '',
+            submitterName,
             submitterEmail,
-            `${request.name} — ${request.amount} ${request.currency}`,
+            `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`,
             'REJECTED',
             reason
           ).subscribe({
-            next: () => console.log('[reject] Rejection email sent'),
-            error: (err) => console.error('[reject] Email failed:', err)
+            next: () => console.log('[reject] ✅ Rejection email sent to:', submitterEmail),
+            error: (err) => console.error('[reject] ❌ Rejection email failed:', err)
           });
+        } else {
+          console.warn('[reject] ⚠️ No submitter email found. Keys available:', Object.keys(request));
+          console.warn('[reject] Full expense object:', request);
         }
 
         this.loadExpenses();
