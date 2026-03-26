@@ -35,6 +35,7 @@ const routes: Routes = [
       { path: 'uploadReciept', component: UploadRecieptComponent },
       { path: 'Addperdiem', component: AddPerDiemComponent },
       { path: 'expense-summary', component: ExpenseSummaryComponent },
+      { path: 'analytics/:uuid', component: ExpenseAnalyticsComponent }
     // ],
   // },
 

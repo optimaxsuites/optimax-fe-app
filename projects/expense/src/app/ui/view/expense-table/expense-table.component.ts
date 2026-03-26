@@ -4,6 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { v4 as uuidV4 } from "uuid";
+
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -445,7 +447,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   navigateToAnalytics(): void {
-    this.router.navigate(['/admin/expenses/analytics/all']);
+    this.router.navigate([`/admin/expenses/analytics/` + uuidV4()]);
   }
 
   onSearchInputChange(): void {
