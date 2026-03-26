@@ -2,6 +2,9 @@
     @apply bg-white/80 border border-slate-100 rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5 flex flex-col gap-4;
 }
 
+.btn-navigate {
+    @apply text-sm p-2;
+}
 
 
 :host ::ng-deep .ng-select {
@@ -9,7 +12,7 @@
 }
 
 :host ::ng-deep .ng-select .ng-select-container {
-    @apply bg-white/80 border border-slate-200 rounded-xl min-h-[42px]
+    @apply bg-white/80 border border-slate-200 rounded-xl min-h-[24px]
 }
 
 :host ::ng-deep .ng-select .ng-option {

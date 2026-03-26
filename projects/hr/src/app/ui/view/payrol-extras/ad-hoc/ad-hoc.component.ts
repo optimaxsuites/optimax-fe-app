@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TableColumn } from 'exceljs';
 import { TableAction } from '../../../shared-component/view/table/table.component';
 import { PayrollService } from '../../../service/payroll.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 type QueryStatus = 'Open' | 'Responded' | 'Verdict Passed';
 type QueryVerdict = 'Approved' | 'Rejected' | 'Pending';
@@ -13,6 +14,7 @@ interface QueryRecord {
   reason: string, 
   createdAt: string, 
   applied: boolean
+  employee?: any
 }
 
 @Component({
@@ -27,7 +29,7 @@ export class AdHocComponent {
   currentUserName = this.isAdmin ? 'HR Admin' : 'John Doe';
   showCreateForm = false;
   showDetail = false;
-  selectedQuery: QueryRecord | null = null;
+  selectedQuery: QueryRecord = {} as QueryRecord;
   searchTerm = '';
   statusFilter: QueryStatus | 'All' = 'All';
   activeTab: 'all' | 'mine' = this.isAdmin ? 'all' : 'mine';
@@ -38,7 +40,7 @@ export class AdHocComponent {
   ];
 
   createForm = {
-    employeeId: 0,
+    employeeId: [],
     amount: "",
     reason: "",
   };
@@ -51,10 +53,21 @@ export class AdHocComponent {
   bonusColumns: any[] = [];
   bonusActions: any[] = [];
 
-  constructor(private payrollService: PayrollService){}
+  employees: any[] = []
+
+  constructor(private payrollService: PayrollService, private employeeService: EmployeeService){}
 
   ngOnInit() {
     this.getAdhocs();
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        console.log(data)
+        this.employees = data
+      },
+      error: (err) => {
+        console.log(err)
+      }
+    })
   }
 
   getAdhocs() {
@@ -70,26 +83,44 @@ export class AdHocComponent {
   }
 
   loadTableData() {
- this.filteredBonus = this.bonusRecords.filter((bonus: { createdById: number; employeeId: number; status: string; issue: string; employeeName: string; }) => {
-      const roleMatch = this.isAdmin ? (this.activeTab === 'all' || bonus.createdById === this.currentUserId) : bonus.employeeId === this.currentUserId;
-      const statusMatch = this.statusFilter === 'All' || bonus.status === this.statusFilter;
+ this.filteredBonus = this.bonusRecords.filter((bonus: { createdById: number; employeeId: number; applied: string; issue: string; employeeName: string; employee: any }) => {
+      const roleMatch = this.isAdmin ? (this.activeTab === 'all' || bonus.createdById === this.currentUserId) : bonus.employee.id === this.currentUserId;
+      const statusMatch = this.statusFilter === 'All' || bonus.applied === this.statusFilter;
       const term = this.searchTerm.toLowerCase();
-      const termMatch = !term || bonus.issue.toLowerCase().includes(term) || bonus.employeeName.toLowerCase().includes(term);
+      const termMatch = !term || bonus.employee.firstName.toLowerCase().includes(term) || bonus.employee.lastName.toLowerCase().includes(term);
       return roleMatch && statusMatch && termMatch;
     });
 
     this.bonusColumns =  [
-          { header: 'Employee', field: 'employee.name', sortable: true, className: 'table-item' },
-          { header: 'Department', field: 'employee.department', sortable: true, className: 'table-item' },
-          { header: 'Period', field: 'period', sortable: true, className: 'table-item' },
-          { header: 'Issue', field: 'issue', sortable: true, className: 'table-item' },
-          { header: 'Adjustment', field: 'adjustment', sortable: true, className: 'table-item', formatter: (row: { adjustment: number; }) => this.formatCurrency(row.adjustment) },
-          { header: 'Status', field: 'status', sortable: true, className: 'table-item' },
-          { header: 'Verdict', field: 'verdict', sortable: true, className: 'table-item' }
+          { header: 'Employee', sortable: true, className: 'table-item', formatter: (row: { employee: { firstName: any; lastName: any; }; }) =>
+    `${row.employee?.firstName ?? ''} ${row.employee?.lastName ?? ''}`.trim()},
+          { header: 'Department', field: 'employee.department.name', sortable: true, className: 'table-item' },
+          { header: 'Period', field: 'createdAt', sortable: true, className: 'table-item', formatter: (row: { createdAt?: number[] }) => {
+    const d = row?.createdAt;
+
+    if (!Array.isArray(d) || d.length < 3) return '—';
+
+    const date = new Date(
+      d[0],        // year
+      d[1] - 1,    // month (0-based in JS)
+      d[2]         // day
+    );
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  } },
+          { header: 'Adjustment', field: 'amount', sortable: true, className: 'table-item', formatter: (row: { amount: number; }) => this.formatCurrency(row.amount) },
+          { header: 'Status', field: 'status', sortable: true, className: 'table-item',  formatter: (row: { applied: any; }) => row.applied ? 'Applied' : 'Pending',
+  badgeClass: (row: { applied: any; }) =>
+    row.applied
+      ? 'bg-green-100 text-green-700 px-2 py-1 rounded'
+      : 'bg-yellow-100 text-yellow-700 px-2 py-1 rounded' },
         ]
 
     this.bonusActions =  [
-          { id: 'view', label: 'Review', icon: 'pi pi-eye' },
+          { id: 'view', label: 'View', icon: 'pi pi-eye' },
           
         ]
  
@@ -126,6 +157,34 @@ export class AdHocComponent {
   toggleCreateForm() {
     this.showCreateForm = !this.showCreateForm;
   }
+createAdHoc(): void {
+  if (!this.createForm.employeeId || !this.createForm.amount || !this.createForm.reason) {
+    alert('Please fill all fields');
+    return;
+  }
+
+  this.createForm.employeeId.forEach((id) => {
+    const payload = {
+      employeeId: id,
+      amount: this.createForm.amount,
+      reason: this.createForm.reason,
+      createdAt: new Date().toISOString(),
+      applied: false
+    };
+
+    this.payrollService.postEmployeePayrollBonus(payload).subscribe({
+      next: (res) => {
+        console.log(`Ad Hoc saved for employee ${id}`, res)
+        this.createForm = {
+           employeeId: [],
+          amount: "",
+          reason: "",
+        }
+    },
+      error: (err) => console.error(`Failed to save Ad Hoc for employee ${id}`, err)
+    });
+  });
+}
 
   handleAction(event: { actionId: string; row: QueryRecord }) {
     if (event.actionId === 'review' || event.actionId === 'view' || event.actionId === 'respond') {
@@ -150,7 +209,7 @@ export class AdHocComponent {
 
   closeDetail() {
     this.showDetail = false;
-    this.selectedQuery = null;
+    this.selectedQuery = {} as QueryRecord;
   }
 
   submitResponse() {
@@ -184,34 +243,22 @@ export class AdHocComponent {
   //   }
   // }
 
-  createQuery() {
-    const issue = this.createForm.reason.trim();
-    if (!issue) return;
-    // const employee = this.queryRecords.find(q => q.employeeId === this.createForm.employeeId);
-    // const employeeName = employee?.employeeName ?? `Employee ${this.createForm.employeeId}`;
-    // const department = employee?.department ?? 'Unassigned';
-    const newQuery: QueryRecord = {
-      id: `Q-${Math.floor(1000 + Math.random() * 9000)}`,
-      employeeId: this.createForm.employeeId,
-      // employeeName,
-      // department,
-      // createdById: this.currentUserId,
-      // createdByName: this.currentUserName,
+  formatPeriod(date: string): string {
 
-      // issue: issue,
 
-      // status: 'Open',
-      // verdict: 'Pending',
-      createdAt: new Date().toISOString().slice(0, 10)
-    } as QueryRecord;
-    // this.queryRecords = [newQuery, ...this.queryRecords];
+    if (!Array.isArray(date) || date.length < 3) return '—';
 
-    this.showCreateForm = false;
-        this.getAdhocs();
+    const newDate = new Date(
+      date[0],        // year
+      date[1] - 1,    // month (0-based in JS)
+      date[2]         // day
+    );
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      year: 'numeric'
+    }).format(newDate);
 
   }
-
-  // get employees() {
-  //   // return Array.from(new Map(this.queryRecords.map(query => [query.employeeId, query])).values());
-  // }
+  
 }

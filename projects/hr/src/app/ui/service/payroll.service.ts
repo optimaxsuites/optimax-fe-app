@@ -99,57 +99,57 @@ export class PayrollService {
 
   // ---------------- POST Endpoints ----------------
   postGeneralSettings(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/generalSettingss`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/generalSettingss`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postTaxConfig(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/taxConfigs`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/taxConfigs`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postPensionConfig(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/pensionConfigs`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/pensionConfigs`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postNhfConfig(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/nhfConfigs`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/nhfConfigs`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postHealthInsuranceConfig(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/healthInsuranceConfigs`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/healthInsuranceConfigs`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postEmployerStatutory(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/employerStatutorys`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/employerStatutorys`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postTaxBand(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/taxBands`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/taxBands`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postTaxRelief(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/taxReliefs`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/taxReliefs`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postEmployeePayroll(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/employeePayrolls`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/employeePayrolls`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postEmployeePayrollBonus(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/employeePayrollBonuss`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/employeePayrollBonuss`, payload)
       .pipe(catchError(this.handleError));
   }
 
   postEmployeePayrollDeduction(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/employeePayrollDeductionss`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/employeePayrollDeductionss`, payload)
       .pipe(catchError(this.handleError));
   }
 
@@ -159,7 +159,7 @@ export class PayrollService {
   }
 
   postGeneratePayroll(payload: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/hr/payroll/generate`, payload)
+    return this.http.post(`${this.baseUrl}/x/api/v2/hr/payroll/generate`, payload)
       .pipe(catchError(this.handleError));
   }
 }

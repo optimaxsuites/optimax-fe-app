@@ -12,13 +12,13 @@ export class PayrolExtrasComponent {
 tabsConfig: TabConfig[] = [
   {  name: "Queries",
     component: QueryComponent,
-    icon: "fa fa-search",
+    icon: "fa fa-question-circle",
     hasDropdown: false,
     dropdownOptions: [], 
   },
-  {  name: "AD HOCs",
+  {  name: "Ad HOCs",
     component: AdHocComponent,
-    icon: "fa fa-search",
+    icon: "fa fa-money-bill",
     hasDropdown: false,
     dropdownOptions: [], 
   }
