@@ -16,7 +16,6 @@ import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-m
 import { RecurringPaymentModalComponent } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component';
 import { BillSplit, BillSplitParticipant } from '../../sharedComponent/view/bill-splitting-modal/bill-splitting.model';
 import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-modal.component';
-import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
 import { MatIconModule } from '@angular/material/icon';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ToastModule } from 'primeng/toast';
@@ -41,8 +40,7 @@ import { ConfirmationService } from 'primeng/api';
     DialogModule,
     ConfirmDialogModule,
     RecurringPaymentModalComponent,
-    SideModalComponent,
-    SafeUrlPipe
+    SideModalComponent
   ]
 })
 export class ExpenseFormsModalComponent implements OnInit {
@@ -73,6 +71,9 @@ export class ExpenseFormsModalComponent implements OnInit {
   receiptFile: File | null = null;
   invoiceFile: File | null = null;
   signatureUrl: string | null = null;
+
+  receiptPreviewUrl: string | null = null;
+  employeeReceiptPreviewUrl: string | null = null;
 
   paidBy: 'company' | 'employee' = 'company';
   employeeReceiptFile: File | null = null;
@@ -194,21 +195,51 @@ export class ExpenseFormsModalComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Invalid File Type', detail: 'Only JPG, PNG, and PDF files are allowed' });
       return;
     }
-    if (type === 'receipt')              this.receiptFile = file;
-    else if (type === 'invoice')         this.invoiceFile = file;
-    else if (type === 'employeeReceipt') this.employeeReceiptFile = file;
+
+    if (type === 'receipt') {
+      this.revokeReceiptPreview();
+      this.receiptFile = file;
+      if (this.isImageFile(file)) {
+        this.receiptPreviewUrl = URL.createObjectURL(file);
+      }
+    } else if (type === 'invoice') {
+      this.invoiceFile = file;
+    } else if (type === 'employeeReceipt') {
+      this.revokeEmployeeReceiptPreview();
+      this.employeeReceiptFile = file;
+      if (this.isImageFile(file)) {
+        this.employeeReceiptPreviewUrl = URL.createObjectURL(file);
+      }
+    }
   }
 
-  isImageFile(file: File): boolean { return file.type.startsWith('image/'); }
-  isPdfFile(file: File): boolean   { return file.type === 'application/pdf'; }
-  getFilePreview(file: File): string {
-    return this.isImageFile(file) ? URL.createObjectURL(file) : '';
+  isImageFile(file: File | null): boolean { return !!file && file.type.startsWith('image/'); }
+  isPdfFile(file: File | null): boolean   { return !!file && file.type === 'application/pdf'; }
+
+  private revokeReceiptPreview(): void {
+    if (this.receiptPreviewUrl) {
+      URL.revokeObjectURL(this.receiptPreviewUrl);
+      this.receiptPreviewUrl = null;
+    }
+  }
+
+  private revokeEmployeeReceiptPreview(): void {
+    if (this.employeeReceiptPreviewUrl) {
+      URL.revokeObjectURL(this.employeeReceiptPreviewUrl);
+      this.employeeReceiptPreviewUrl = null;
+    }
   }
 
   removeFile(type: string): void {
-    if (type === 'receipt')              this.receiptFile = null;
-    else if (type === 'invoice')         this.invoiceFile = null;
-    else if (type === 'employeeReceipt') this.employeeReceiptFile = null;
+    if (type === 'receipt') {
+      this.receiptFile = null;
+      this.revokeReceiptPreview();
+    } else if (type === 'invoice') {
+      this.invoiceFile = null;
+    } else if (type === 'employeeReceipt') {
+      this.employeeReceiptFile = null;
+      this.revokeEmployeeReceiptPreview();
+    }
   }
 
   applyFilters(): void {
@@ -235,11 +266,18 @@ export class ExpenseFormsModalComponent implements OnInit {
     this.invoiceFile = null;
     this.employeeReceiptFile = null;
     this.signatureUrl = null;
+    this.revokeReceiptPreview();
+    this.revokeEmployeeReceiptPreview();
   }
 
   formatAmount(value: number | string | null): string {
     const n = Number(value);
     return !isNaN(n) && value !== null ? n.toLocaleString() : '';
+  }
+
+  ngOnDestroy(): void {
+    this.revokeReceiptPreview();
+    this.revokeEmployeeReceiptPreview();
   }
 
   updateAmount(event: any): void {
@@ -510,36 +548,89 @@ export class ExpenseFormsModalComponent implements OnInit {
           summary: 'Expense Submitted',
           detail: 'Your expense has been submitted and is pending review.'
         });
-
-        // Step 2: Send admin notification email and surface the result
-        // FIX #5: Show toast when email succeeds or fails — no longer silent
+ 
         this.isSendingEmail = true;
-        this.emailService.sendExpenseSubmissionAlert(
-          employeeData.name,
-          'admin@optimaxsuites.com',
-          employeeData.amount,
-          this.selectedCurrency
-        ).subscribe({
-          next: () => {
-            this.isSendingEmail = false;
-            // FIX #5: Show confirmation that the notification email was sent
-            this.messageService.add({
-              severity: 'info',
-              summary: 'Notification Sent',
-              detail: 'Admin has been notified of your expense submission via email.'
-            });
-          },
-          error: (err) => {
-            this.isSendingEmail = false;
-            // Don't block the user — expense was saved, email just failed
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Email Not Sent',
-              detail: 'Expense saved, but the admin notification email could not be delivered.'
-            });
-            console.error('[submitExpense] Email failed:', err);
-          }
-        });
+
+        // Pull the logged-in admin's email dynamically from session/local storage
+        const currentUser =
+          JSON.parse(sessionStorage.getItem('user') || '{}') ||
+          JSON.parse(localStorage.getItem('user') || '{}');
+
+        const adminEmail     = currentUser?.email || currentUser?.emailAddress;
+        const adminName      = currentUser?.fullname || currentUser?.name || 'Admin';
+        const submitterEmail = currentUser?.email || currentUser?.emailAddress;
+        const submitterName  = employeeData.name;
+
+        if (!adminEmail) {
+          console.warn('[submitExpense] ⚠️ Could not resolve admin email from session. Check your auth service.');
+        }
+
+        // Primary notification to admin
+        if (adminEmail) {
+          console.log('[submitExpense] 📧 Notifying admin:', adminEmail);
+          this.emailService.sendExpenseSubmissionAlert(
+            submitterName,
+            adminEmail,
+            employeeData.name,
+            employeeData.amount,
+            this.selectedCurrency
+          ).subscribe({
+            next: () => {
+              // Copy to self (same user) when available
+              if (submitterEmail && submitterEmail !== adminEmail) {
+                console.log('[submitExpense] 📧 Sending copy to submitter:', submitterEmail);
+                this.emailService.sendExpenseSubmissionAlert(
+                  submitterName,
+                  submitterEmail,
+                  employeeData.name,
+                  employeeData.amount,
+                  this.selectedCurrency
+                ).subscribe({
+                  next: () => {
+                    this.isSendingEmail = false;
+                    this.messageService.add({
+                      severity: 'info',
+                      summary: 'Notification Sent',
+                      detail: `Admin notification sent to ${adminEmail}, copy sent to ${submitterEmail}.`
+                    });
+                  },
+                  error: (err) => {
+                    this.isSendingEmail = false;
+                    this.messageService.add({
+                      severity: 'warn',
+                      summary: 'Copy Email Failed',
+                      detail: `Admin notified, but copy to ${submitterEmail} failed.`
+                    });
+                    console.error('[submitExpense] Copy email failed:', err);
+                  }
+                });
+              } else {
+                this.isSendingEmail = false;
+                this.messageService.add({
+                  severity: 'info',
+                  summary: 'Notification Sent',
+                  detail: `Admin notification sent to ${adminEmail}.`
+                });
+              }
+            },
+            error: (err) => {
+              this.isSendingEmail = false;
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Email Not Delivered',
+                detail: 'Expense saved but admin notification could not be sent.'
+              });
+              console.error('[submitExpense] ❌ Admin email failed:', err);
+            }
+          });
+        } else {
+          this.isSendingEmail = false;
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Email Not Sent',
+            detail: 'Expense saved but admin user email was not available.'
+          });
+        }
 
         // Step 3: Reset and navigate
         this.resetForm();

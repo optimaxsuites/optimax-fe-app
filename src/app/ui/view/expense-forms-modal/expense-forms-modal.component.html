@@ -145,7 +145,7 @@
               <!-- Employee receipt image preview (if it's an image) -->
               <div *ngIf="employeeReceiptFile && isImageFile(employeeReceiptFile)"
                 class="mt-3 border rounded-lg overflow-hidden w-32 h-32">
-                <img [src]="getFilePreview(employeeReceiptFile)" alt="Employee receipt preview"
+                <img [src]="employeeReceiptPreviewUrl" alt="Employee receipt preview"
                   class="w-full h-full object-contain" />
               </div>
 
@@ -588,7 +588,7 @@
               <!-- Show preview if file is uploaded -->
               <ng-container *ngIf="receiptFile; else noFilePreview">
                 <!-- Image Preview -->
-                <img *ngIf="isImageFile(receiptFile)" [src]="getFilePreview(receiptFile)" alt="Receipt preview"
+                <img *ngIf="isImageFile(receiptFile)" [src]="receiptPreviewUrl" alt="Receipt preview"
                   class="w-full h-full object-contain" />
 
                 <!-- PDF Icon -->

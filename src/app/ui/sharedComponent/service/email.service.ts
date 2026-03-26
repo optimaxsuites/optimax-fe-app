@@ -98,6 +98,7 @@ export class EmailService {
   sendExpenseSubmissionAlert(
     submitterName: string,
     adminEmail: string,
+    expenseName: string,
     amount: number,
     currency: string = 'NGN'
   ): Observable<EmailResponse> {
@@ -107,6 +108,7 @@ export class EmailService {
       subject: 'New Expense Submitted — Pending Review',
       body: `<p>A new expense has been submitted and is awaiting your review.</p>
              <p><strong>Submitted by:</strong> ${submitterName}</p>
+             <p><strong>Expense name:</strong> ${expenseName}</p>
              <p><strong>Amount:</strong> ${currency} ${amount.toLocaleString()}</p>
              <p>Please log in to the ERP portal to review and action this expense.</p>
              <br/><p>Optimax ERP System</p>`
