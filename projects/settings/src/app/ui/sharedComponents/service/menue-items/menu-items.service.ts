@@ -242,7 +242,7 @@ export class MenuItemsService {
           description: 'Monitor employee performance, set goals, and conduct evaluations.'
         },
         {
-          label: 'Query',
+          label: 'Payroll Operations',
           code: 'HR_QUERY',
           route: this.navigationLink.getLink('queryLink'),
           roles: ['ROLE_USER'],
