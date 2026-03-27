@@ -178,18 +178,37 @@ employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/v
 triggeredGeneration = false;
 
 currentUser: Employee = {} as Employee;
+actionItems: any = []
 // payrollRecords: any[] = []
 constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService) {
     this.generateYears();
-    this.selectedMonth = this.months[new Date().getMonth()]; 
+    this.selectedMonth = this.months[new Date().getMonth()];
+    
+    this.actionItems=[
+{
+        label: `Generate ${this.currentMonthName} ${this.currentYear} Payroll`,
+        icon: 'pi pi-cog',
+        command: () => this.generatePayrollSummary()
+      },
+            {
+        label: `View Summary`,
+        icon: 'pi pi-chart-bar',
+        command: () => this.viewSummary()
+      },
+      {
+        label: 'Download CSV',
+        icon: 'pi pi-download',
+        command: () => this.generateCSV()
+      }
+    ];
      
 }
 ngOnInit(){
     // this.handlePeriodChange()
     //    this.fetchEmployees()
-  const userId = sessionStorage.getItem('userId')
-  this.employeeService.getEmployeeById(Number(userId)).subscribe({  
-    next: data => {this.currentUser = data},
+  const userId = sessionStorage.getItem('userid')
+  this.employeeService.getEmployeeByUserId(Number(userId)).subscribe({  
+    next: data => {this.currentUser = data; console.log(data)},
     error: err => console.log(err)
   })
   this.generatePayrolls()    
@@ -1012,4 +1031,6 @@ calculatePayroll(){
         );
         return currentPeriod?.employees || [];
     }
+
+    
 }

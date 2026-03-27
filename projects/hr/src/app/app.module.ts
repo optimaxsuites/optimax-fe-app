@@ -202,6 +202,7 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
+import { MenuModule } from 'primeng/menu';
 
 @NgModule({
   declarations: [
@@ -397,6 +398,7 @@ import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component'
     FullCalendarModule,
     LargeSideModalComponent,
     FooterComponent,
+    MenuModule,
   ],
   providers: [
     {

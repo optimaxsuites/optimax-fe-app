@@ -5,7 +5,7 @@
         <ng-template pTemplate="left">
         <div class="flex gap-3 text-gray-700 items-center">
             <p class="text-gray-700  text-[20px]">Payroll for {{currentMonthName}} {{currentYear}}</p>
-            <div class="flex items-center gap-4">
+            <!-- <div class="flex items-center gap-4">
                 <label for="calendar" (click)="toggleCalendar()"><i class="fa-solid fa-calendar-days text-[20px] text-gray-500 cursor-pointer "></i></label>
                 <div *ngIf="showCalendar" class="calendar-modal">
                     <div class="calendar-header table-item">
@@ -19,26 +19,29 @@
                         </select>
                     </div>
                 </div>
-              </div>
+              </div> -->
         </div>
          
           </ng-template>
       <ng-template pTemplate="right">
-        <app-button  [text]="'View ' + selectedMonth + ' ' + selectedYear + ' Summary'"  class="btn-navigate gap-2"  (click)="viewSummary()"></app-button>
-        <app-button  [text]="'Generate ' + currentMonthName + ' ' + currentYear + ' Payroll'"  class="btn-navigate gap-2"  (click)="generatePayrollSummary()"></app-button>
 
-        <!-- <app-button
-          [text]="isApplyingLoanDeductions ? 'Applying Loan Deductions...' : 'Apply Loan Deductions'"
-          class="btn-navigate gap-2"
-          (click)="applyLoanDeductionsToPayroll({ month: selectedMonth, year: selectedYear })">
-        </app-button> -->
-        <app-button  text="Download CSV"  class="btn-navigate gap-2" (click)="generateCSV()"><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
-      </ng-template>
+        <p-button
+            label="Actions"
+            icon="pi pi-bars"
+            class="btn-navigate"
+            (click)="menu.toggle($event)">
+        </p-button>
+
+        <p-menu
+            #menu
+            [model]="actionItems"
+            [popup]="true"
+            styleClass="payroll-menu">
+
+        </p-menu>
+
+        </ng-template>
     </p-toolbar>
-
-    <!-- <p *ngIf="loanDeductionSyncMessage" class="px-3 pb-2 text-[12px] text-gray-600">
-      {{ loanDeductionSyncMessage }}
-    </p> -->
 
     <div class="flex w-full justify-between gap-4 px-3">
     <div class="flex gap-4 w-1/2">

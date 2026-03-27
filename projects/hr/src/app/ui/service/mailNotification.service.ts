@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../shared-component/environments/environment';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 
 @Injectable({
@@ -23,7 +23,11 @@ export class MailNotificationService {
   }
 
    sendMail(body: any): Observable<any> {
-    return this.http.post(`https://automation.optimaxsuites.com/webhook/735f4d81-3f63-4390-9b03-098be2a31469`, body)
+      const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'x-api-key': environment.apiKey
+    });
+    return this.http.post(`https://automation.optimaxsuites.com/webhook/735f4d81-3f63-4390-9b03-098be2a31469`, body, { headers })
       .pipe(catchError(this.handleError));
   }
 
