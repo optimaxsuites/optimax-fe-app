@@ -25,7 +25,7 @@
           </ng-template>
       <ng-template pTemplate="right">
         <app-button  [text]="'View ' + selectedMonth + ' ' + selectedYear + ' Summary'"  class="btn-navigate gap-2"  (click)="viewSummary()"></app-button>
-        <app-button  [text]="'Generate ' + currentMonthName + ' ' + currentYear + ' Payroll'"  class="btn-navigate gap-2"  (click)="generatePayroll()"></app-button>
+        <app-button  [text]="'Generate ' + currentMonthName + ' ' + currentYear + ' Payroll'"  class="btn-navigate gap-2"  (click)="generatePayrollSummary()"></app-button>
 
         <!-- <app-button
           [text]="isApplyingLoanDeductions ? 'Applying Loan Deductions...' : 'Apply Loan Deductions'"
@@ -98,7 +98,7 @@
         [rowsPerPage]="10"
         [rowClickable]="true"
         [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
-        [emptyMessage]="'No request made yet'"
+        [emptyMessage]="'No payrolls generated yet'"
         (rowClick)="viewEmployeePaySLip($event)"
         (actionClick)="handlePayrollAction($event)"
         >
@@ -407,3 +407,17 @@
 
     
   </app-large-side-modal>
+
+
+  <app-modal *ngIf="triggeredGeneration" (close)="triggeredGeneration = false">
+    <div class="flex flex-col items-center gap-4 py-5">
+        <i class="fa-solid fa-spinner animate-spin text-customBlue text-[30px]"></i>
+        <p class="text-gray-700 text-[14px]">
+        Generating payroll for {{ currentMonthName }} {{ currentYear }}…
+        </p>
+
+        <p class="text-gray-700 text-[14px] text-center">
+        You may leave this page. You will be notified once generation is complete.
+        </p>
+    </div>
+  </app-modal>

@@ -159,7 +159,7 @@ export class AdHocComponent {
   }
 createAdHoc(): void {
   if (!this.createForm.employeeId || !this.createForm.amount || !this.createForm.reason) {
-    alert('Please fill all fields');
+    // alert('Please fill all fields');
     return;
   }
 

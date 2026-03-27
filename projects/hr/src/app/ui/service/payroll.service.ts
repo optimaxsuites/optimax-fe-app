@@ -162,4 +162,6 @@ export class PayrollService {
     return this.http.post(`${this.baseUrl}/x/api/v2/hr/payroll/generate`, payload)
       .pipe(catchError(this.handleError));
   }
+
+
 }
