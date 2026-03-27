@@ -140,15 +140,15 @@ overtimeOverrides: Record<number, number> = {
 };
 
   payrollColumns: TableColumn[] = [
-    { header: 'Employee', sortable: true, className: 'table-item', formatter: (row: { employee: { employee:any }; }) =>
-    `${row.employee?.employee.firstName ?? ''} ${row.employee?.employee.lastName ?? ''}`.trim()},
-    { header: 'Level', field: 'employee.employee.level.name', sortable: true, className: 'table-item' },
-    { header: 'Department', field: 'employee.employee.department.name', sortable: true, className: 'table-item' },
-    { header: 'Days worked', field: 'employee.daysWorked',  className: 'table-item' },
-    { header: 'Base Pay', field: 'employee.basePay',  className: 'table-item' },
-    { header: 'Gross Pay', field: 'employee.grossPay', className: 'table-item' },
-    { header: 'Total Deductions', field: 'employee.totalDeductions', className: 'table-item' },
-    { header: 'Net Payable', field: 'employee.netPayable', className: 'table-item' },
+    { header: 'Employee', sortable: true, className: 'table-item', formatter: (row: { employee: { firstName: string; lastName: string } }) =>
+    `${row.employee.firstName ?? ''} ${row.employee.lastName ?? ''}`.trim()},
+    { header: 'Level', field: 'employee.level.name', sortable: true, className: 'table-item' },
+    { header: 'Department', field: 'employee.department.name', sortable: true, className: 'table-item' },
+    { header: 'Days worked', field: 'daysWorked',  className: 'table-item' },
+    { header: 'Base Pay', field: 'basePay',  className: 'table-item' },
+    { header: 'Gross Pay', field: 'grossPay', className: 'table-item' },
+    { header: 'Total Deductions', field: 'totalDeductions', className: 'table-item' },
+    { header: 'Net Payable', field: 'netPayable', className: 'table-item' },
   
 ];
 
@@ -225,13 +225,15 @@ generatePayrolls(){
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
             this.payrollRecords = response
-
+            console.log("records", response)
+            this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1].employees : []
+            console.log("filtered", this.filteredEmployeePayroll)
             this.years =  Array.from(new Set(this.payrollRecords.map((emp: { year: number }) => emp.year))).sort((a, b) => a - b);
             const monthIndices = Array.from(new Set(this.payrollRecords.map((emp: { month: number }) => emp.month - 1))); 
             this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b))
             this.selectedMonth = this.months[this.months.length - 1]
             this.selectedYear = this.years[this.years.length - 1]
-            this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[0].employees : [];
+            
         },
         error: err => console.log(err)
     })
