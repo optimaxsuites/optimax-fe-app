@@ -95,6 +95,8 @@ import { MetadataComponent } from './ui/view/hr/metadata/metadata.component';
 import { PayrollComponent } from './ui/view/hr/payroll/payroll.component';
 import { GeneralComponent } from './ui/view/hr/payroll/general/general.component';
 import { TaxationComponent } from './ui/view/hr/payroll/taxation/taxation.component';
+import { BankTellerMappingComponent } from './ui/view/hr/payroll/bank-teller-mapping/bank-teller-mapping.component';
+import { DropdownModule } from 'primeng/dropdown';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -136,7 +138,8 @@ import { TaxationComponent } from './ui/view/hr/payroll/taxation/taxation.compon
     MetadataComponent,
     PayrollComponent,
     GeneralComponent,
-    TaxationComponent
+    TaxationComponent,
+    BankTellerMappingComponent
   ],
   imports: [
     // BrowserModule,
@@ -179,6 +182,7 @@ import { TaxationComponent } from './ui/view/hr/payroll/taxation/taxation.compon
     MatInputModule,
     MatIconModule,
     MatTabsModule,
+    DropdownModule,
     MatDatepickerModule,
     MatSelectModule,
     MatTooltipModule,

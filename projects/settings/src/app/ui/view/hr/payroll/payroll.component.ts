@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-type MetaTab = 'general' | 'taxation' | 'religions' | 'departments' | 'jobTypes' | 'relationships';
+type MetaTab = 'general' | 'taxation' | 'bankTellerMapping' | 'departments' | 'jobTypes' | 'relationships';
 
 
 @Component({

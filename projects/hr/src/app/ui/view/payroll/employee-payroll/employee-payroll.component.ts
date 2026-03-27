@@ -20,6 +20,7 @@ interface Allowances {
 type PenaltyType = 'fixed' | 'percentage';
 type PayType = 'monthly' | 'daily' | 'hourly' | 'project';
 
+
 interface AttendanceSummary {
   lateDays: number;
   absentDays: number;
@@ -199,6 +200,10 @@ constructor(   private employeeService: EmployeeService,  private sanitizer: Dom
         label: 'Download CSV',
         icon: 'pi pi-download',
         command: () => this.generateCSV()
+      },
+      { label: 'Download Bank CSV',
+        icon: 'pi pi-download',
+        command: () => this.downloadBankCSV()
       }
     ];
      
@@ -1032,5 +1037,15 @@ calculatePayroll(){
         return currentPeriod?.employees || [];
     }
 
-    
+    downloadBankCSV() {
+        const template = this.payrollService.getTemplates()[0]; // select a template
+        const csv = this.payrollService.generateCSV(this.payrollRecords[0].employees, template);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${template.name}-${this.currentMonthName}-${this.currentYear}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
 }

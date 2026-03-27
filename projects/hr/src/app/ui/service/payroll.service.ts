@@ -2,6 +2,34 @@ import { Injectable } from '@angular/core';
 import { environment } from '../shared-component/environments/environment';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
+import { EmployeePayroll } from '../domain/payroll.dto';
+
+export type PayrollExportField =
+  | 'employeeName'
+  | 'accountNumber'
+  | 'bankCode'
+  | 'bankName'
+  | 'amount'
+  | 'narration'
+  | 'reference'
+  | 'email'
+  | 'phone'
+  | 'paymentDate';
+
+export interface BankExportColumn {
+  header: string;
+  field: PayrollExportField;
+  staticValue?: string;  // optional fixed value
+  format?: string;       // optional formatting
+}
+
+export interface BankExportTemplate {
+  id: number;
+  name: string;
+  delimiter: ',' | ';' | '\t';
+  includeHeader: boolean;
+  columns: BankExportColumn[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -163,5 +191,41 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+
+  generateCSV(employees: EmployeePayroll[], template: BankExportTemplate): string {
+    const rows = employees.map(emp => {
+      const row: any = {};
+      template.columns.forEach(col => {
+        row[col.header] = col.staticValue ?? this.resolveField(emp, col.field);
+      });
+      return row;
+    });
+
+    const headers = template.includeHeader ? template.columns.map(c => c.header) : [];
+    const csvRows = rows.map(r => template.columns.map(c => r[c.header]).join(template.delimiter));
+
+    return template.includeHeader ? [headers.join(template.delimiter), ...csvRows].join('\n') : csvRows.join('\n');
+  }
+
+  private resolveField(emp: EmployeePayroll, field: PayrollExportField) {
+    switch (field) {
+      case 'employeeName': return `${emp.employee.firstName} ${emp.employee.lastName}`;
+      case 'accountNumber': return emp.employee.accountNumber;
+      case 'bankName': return emp.employee.bankName;
+      case 'bankCode': return emp.employee.bvn ?? '';
+      case 'amount': return emp.netPayable;
+      case 'narration': return `Salary ${emp.month}/${emp.year}`;
+      case 'email': return emp.employee.email;
+      case 'phone': return emp.employee.phone;
+      case 'paymentDate': return new Date(emp.generatedAt).toISOString().split('T')[0];
+      case 'reference': return `PAY${emp.id}`;
+      default: return '';
+    }
+  }
+
+   getTemplates(): BankExportTemplate[] {
+    const data = localStorage.getItem("bankTemplates");
+    return data ? JSON.parse(data) : [];
+  }
 
 }
