@@ -43,6 +43,8 @@ mapDistance: number | null = null;
 private mapInstance: L.Map | null = null;
  private officeHoursService = inject(OfficeHoursService);
 
+ private closingTimer: any;
+
 selectedLocation: { recordId: string; type: 'in' | 'out' } | null = null;
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
@@ -51,14 +53,33 @@ selectedLocation: { recordId: string; type: 'in' | 'out' } | null = null;
   @Output() dataChange = new EventEmitter<{ data: AttendanceTableRecord[], filters: any }>();
  
   ngOnInit(): void {
-  this.attendancetableService.attendance$.subscribe(data => {
+      this.startClosingWatcher();
+      this.attendancetableService.attendance$.subscribe(data => {
+      this.attendance = data;
+
+      // Reapply filters instead of resetting table
+      const hasFilters =
+        this.filters?.dateFrom ||
+        this.filters?.dateTo ||
+        this.filters?.id ||
+        this.filters?.employee ||
+        this.filters?.department ||
+        this.filters?.status;
+
+    if (hasFilters) {
+      this.applyFilters();
+    } else {
+      this.resetToToday();
+    }
+  });
+  /*this.attendancetableService.attendance$.subscribe(data => {
     const today = new Date().toISOString().split('T')[0];
 
     this.attendance = data;
 
     // Default = today only
     this.filteredAttendance = data.filter(record => record.date === today);
-  });
+  });*/
 }
 
 isToday(date: string | null): boolean {
@@ -66,6 +87,28 @@ isToday(date: string | null): boolean {
   
   const today = new Date().toISOString().split('T')[0];
   return date === today;
+}
+
+isOfficeClosed(): boolean {
+
+  const officeHours = this.officeHoursService.getOfficeHours();
+
+  const [hour, minute] = officeHours.closingTime.split(':').map(Number);
+
+  const closing = new Date();
+  closing.setHours(hour, minute, 0, 0);
+
+  return new Date() >= closing;
+}
+
+private startClosingWatcher() {
+
+  this.closingTimer = setInterval(() => {
+
+    // force change detection
+    this.filteredAttendance = [...this.filteredAttendance];
+
+  }, 60000); // check every minute
 }
 
 openAttendance(record: AttendanceTableRecord) {

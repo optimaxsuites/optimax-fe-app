@@ -145,7 +145,7 @@ private initPickerMap() {
   //to force map to render inside modal
   setTimeout(() => {
     this.pickerMap?.invalidateSize();
-  }, 0);
+  }, 200);
 }
 
 /*async searchLocation() {

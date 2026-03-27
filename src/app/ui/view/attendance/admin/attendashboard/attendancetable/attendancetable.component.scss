@@ -138,13 +138,17 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   margin-bottom: 1rem;
 
   h3 {
     font-size: 2.0rem;
     font-weight: 600;
     color: var(--gray-900);
+
+    i {
+      margin-right: 6px;
+      color: #64748b;
+    }
   }
 
   .close-btn {
@@ -220,12 +224,20 @@ button {
   text-decoration: underline dotted;
   transition: all 0.2s ease;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  i {
+    font-size: 12px;
+    opacity: 0.9;
+  }
 
   &:hover {
     color: #065f46;
   }
 
-  // 👈 blink effect when selected
+  //blink effect when selected
   &.active {
     animation: locationBlink 0.8s ease 3;
     color: #065f46;
@@ -263,7 +275,13 @@ button {
   font-weight: 600;
   color: #10b981;
   margin: 0.3rem 0;
+
+  i {
+    margin-right: 4px;
+    color: #64748b;
+  }
 }
+
 
 
 /* ACTION BUTTONS */

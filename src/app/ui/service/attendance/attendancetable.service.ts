@@ -406,6 +406,46 @@ overrideAttendance(
   this.attendanceSubject.next(data);
 }
 
+importAttendance(records: AttendanceTableRecord[]) {
+  const current = [...this.attendanceSubject.value];
+
+  records.forEach(newRecord => {
+
+    // Normalize missing fields (safety)
+    newRecord.checkIn = newRecord.checkIn || null;
+    newRecord.checkOut = newRecord.checkOut || null;
+
+    // calculate hours here (central logic)
+    if (newRecord.checkIn && newRecord.checkOut) {
+      newRecord.hours = this.calculateHours(
+        newRecord.checkIn,
+        newRecord.checkOut
+      );
+    }
+
+    //Ensure status fallback
+    if (!newRecord.status) {
+      newRecord.status = 'ABSENT';
+    }
+
+    //to check if record already exists (same ID+ date)
+    const exists = current.find(
+      r => r.id === newRecord.id && r.date === newRecord.date
+    );
+
+    if (!exists) {
+      current.unshift(newRecord); // preserve date grouping
+    } else {
+      // Optional: overwrite existing record
+      Object.assign(exists, {
+        ...exists,
+        ...newRecord});
+    }
+  });
+
+  this.attendanceSubject.next(current);
+}
+
 private getCurrentLocation(): Promise<{ address: string; lat: number; lng: number } | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {

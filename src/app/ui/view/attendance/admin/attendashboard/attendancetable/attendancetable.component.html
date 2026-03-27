@@ -37,7 +37,8 @@
     class="location-link"
     [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'in'"
     (click)="openLocationMap(record, 'in')">
-    📍 {{ record.checkInLocation.address | slice:0:30 }}...
+    <i class="fa-solid fa-location-dot"></i>
+    {{ record.checkInLocation.address | slice:0:30 }}...
   </span>
   <ng-template #noLocation>-</ng-template>
 </td>
@@ -48,7 +49,8 @@
     class="location-link"
     [class.active]="selectedLocation?.recordId === record.id && selectedLocation?.type === 'out'"
     (click)="openLocationMap(record, 'out')">
-    📍 {{ record.checkOutLocation.address | slice:0:30 }}...
+    <i class="fa-solid fa-location-dot"></i>
+    {{ record.checkOutLocation.address | slice:0:30 }}...
   </span>
   <ng-template #noOutLocation>-</ng-template>
 </td>
@@ -67,21 +69,24 @@
     <td>{{ record.hours }}</td>
 
     <td class="actions">
-        <!--<button class="view-btn">View</button> (click)=""-->
-        <button
-  *ngIf="isToday(record.date) && 
-  record.status === 'ABSENT' &&
-  !record.overrideOpen"
-  (click)="openAttendance(record)">
-  Open
-</button>
-<span
-  *ngIf="isToday(record.date) &&
-    record.status === 'ABSENT' &&
-    record.overrideOpen"
-  class="opened-label">
-  Opened
-</span>
+    <!--<button class="view-btn">View</button> (click)=""-->
+    <button
+      *ngIf="
+      isToday(record.date) && 
+      record.status === 'ABSENT' &&
+      !record.overrideOpen &&
+      !isOfficeClosed() 
+      "
+      (click)="openAttendance(record)">
+      Open
+    </button>
+    <span
+      *ngIf="isToday(record.date) &&
+        record.status === 'ABSENT' &&
+        record.overrideOpen"
+      class="opened-label">
+      Opened
+    </span>
 <button class="modify-btn" (click)="openModifyForm(record)">
   Modify
 </button>
@@ -95,7 +100,9 @@
   <tr *ngIf="filteredAttendance.length === 0">
     <td colspan="12" class="empty-state">
       <div class="empty-content">
-        <p class="empty-title">📋 No attendance records found</p>
+        <p class="empty-title">
+          <i class="fa-solid fa-clipboard-list"></i>
+          No attendance records found</p>
         <p class="empty-subtitle">Try adjusting your filters or selecting a different date range</p>
       </div>
     </td>
@@ -166,13 +173,16 @@
 <!-- Map Modal -->
 <div class="modal-card map-modal-card" *ngIf="mapModalOpen">
   <div class="modal-header">
-    <h3>📍 Location</h3>
+    <h3>
+      <i class="fa-solid fa-location-dot"></i>
+      Location</h3>
     <button class="close-btn" (click)="closeMap()">×</button>
   </div>
 
   <p class="map-address">{{ mapAddress }}</p>
   <p class="map-distance" *ngIf="mapDistance != null">
-    🏢 {{ mapDistance }} km from company
+    <i class="fa-solid fa-building"></i>
+    {{ mapDistance }} km from company
   </p>
 
   <div id="leaflet-map" class="leaflet-map"></div>
