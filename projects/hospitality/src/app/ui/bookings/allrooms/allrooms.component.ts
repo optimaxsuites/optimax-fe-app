@@ -73,8 +73,8 @@ export class AllroomsComponent implements OnInit {
   }
 
   viewRoomDetails(room: any): void {
-    // Navigate to booking form with room ID and hotel UUID
-    this.router.navigate(['/user/e-bookings/booking-form', room.id, this.uuid]);
+    // Navigate to the NEW dedicated room details page
+    this.router.navigate(['/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: Room): void {
@@ -89,7 +89,7 @@ export class AllroomsComponent implements OnInit {
   }
 
   navigateTobooking() {
-    this.router.navigate([`/user/e-bookings/multiple-rooms/${this.uuid}`]);
+    this.router.navigate([`/e-bookings/multiple-rooms/${this.uuid}`]);
   }
 
   getBedType(capacity: number): string {

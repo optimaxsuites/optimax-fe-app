@@ -10,7 +10,7 @@
     <!-- Content centered -->
     <div class="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
       <!-- Main heading -->
-      <h1 class="text-white text-4xl font-bold mb-2 tracking-tight">
+      <h1 class="text-white text-3xl sm:text-4xl font-bold mb-2 tracking-tight">
         Find your perfect stay with our AI
       </h1>
 
@@ -19,10 +19,10 @@
         Try: "Room under ₦80,000 for 3 nights near the pool"
       </p>
 
-      <!-- Search bar — WHITE background as requested -->
-      <div class="w-full max-w-xl bg-white rounded-2xl flex items-center px-4 py-1 shadow-xl">
-        <!-- Sparkle icon in customGreen -->
-        <svg class="w-5 h-5 flex-shrink-0 mr-3" style="color:#2EB270;" fill="none" stroke="currentColor"
+      <!-- Search bar — WHITE background — Horizontal on mobile -->
+      <div class="w-full max-w-xl bg-white rounded-2xl flex items-center px-3 py-1 sm:px-4 sm:py-1 shadow-xl">
+        <!-- Sparkle icon -->
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mr-2 sm:mr-3" style="color:#2EB270;" fill="none" stroke="currentColor"
           viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
@@ -30,12 +30,12 @@
 
         <!-- Input -->
         <input type="text" [placeholder]="searchPlaceholder"
-          class="flex-1 bg-transparent border-none text-gray-800 placeholder-gray-400 text-sm py-3 focus:ring-0"
+          class="flex-1 bg-transparent border-none text-gray-800 placeholder-gray-400 text-xs sm:text-sm py-2 sm:py-3 focus:ring-0"
           style="outline: none;" (keyup.enter)="onSearch()">
 
-        <!-- Search button in customGreen -->
+        <!-- Search button — Smaller on mobile -->
         <button (click)="onSearch()"
-          class="text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-colors ml-2"
+          class="text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl transition-colors ml-1 sm:ml-2"
           style="background-color:#2EB270;">
           Search
         </button>

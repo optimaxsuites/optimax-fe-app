@@ -13,6 +13,7 @@ import { HomeComponent } from '../ui/bookings/home/home.component';
 import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
 import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
+import { RoomDetailsComponent } from '../ui/bookings/room-details/room-details.component';
 
 import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
 import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
@@ -33,6 +34,7 @@ const routes: Routes = [
   { path: 'e-bookings/home/:uuid', component: HomeComponent },
   { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
   { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
+  { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },
   { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
   // {

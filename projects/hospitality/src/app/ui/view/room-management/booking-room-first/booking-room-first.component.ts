@@ -203,7 +203,7 @@ export class BookingRoomFirstComponent implements OnInit {
   skipGuest(): void {
     this.selectedGuest = null;
     this.isGuestSkipped = true;
-    this.step = 3;
+    this.goToStep(3);
     this.showToastMessage('Guest info skipped (Walk-in)', 'success');
   }
 
@@ -229,6 +229,13 @@ export class BookingRoomFirstComponent implements OnInit {
   }
   get roomSubtotal(): number { return this.selectedRooms.reduce((s, r) => s + r.rate * (this.nights || 1), 0); }
   get grandTotal(): number { return this.roomSubtotal; }
+
+  goToStep(n: number): void {
+    this.step = n;
+    if (this.step === 3) {
+      this.paymentForm.patchValue({ depositAmount: this.grandTotal });
+    }
+  }
 
   get changeDue(): number {
     const overpaid = this.totalBatchAmount - this.grandTotal;
