@@ -553,6 +553,9 @@ export class PrCreateComponent implements OnInit, OnChanges {
       requiredByDate: ['', Validators.required],
       justification: ['', [Validators.required, Validators.maxLength(2000)]],
       items: this.fb.array([this.createItem()]),
+      currency: ['NGN', Validators.required],
+// budgetCodeId: ['', Validators.required],
+// budgetCapAmount: [0, Validators.required],
     });
   }
 
@@ -683,25 +686,39 @@ export class PrCreateComponent implements OnInit, OnChanges {
       const updatedList = existing.map((pr: any) => {
         if (pr.id !== this.purchaseReqData.id) return pr;
 
+        // return {
+        //   ...pr,
+        //   title: formData.title,
+        //   department: formData.departmentId,
+        //   costCenterId: formData.costCenterId,
+        //   requiredByDate: formData.requiredByDate,
+        //   justification: formData.justification,
+        //   items: formData.items,
+        //   updatedAt: new Date().toISOString(),
+        //   status: 'UnderReview'
+        //   // auditTrail: [
+        //   //   ...(pr.auditTrail || []),
+        //   //   {
+        //   //     action: 'UPDATED',
+        //   //     by: requesterUserId,
+        //   //     at: new Date().toISOString(),
+        //   //   },
+        //   // ],
+        // };
         return {
-          ...pr,
-          title: formData.title,
-          department: formData.departmentId,
-          costCenterId: formData.costCenterId,
-          requiredByDate: formData.requiredByDate,
-          justification: formData.justification,
-          items: formData.items,
-          updatedAt: new Date().toISOString(),
-          status: 'UnderReview'
-          // auditTrail: [
-          //   ...(pr.auditTrail || []),
-          //   {
-          //     action: 'UPDATED',
-          //     by: requesterUserId,
-          //     at: new Date().toISOString(),
-          //   },
-          // ],
-        };
+  ...pr,
+  title: formData.title,
+  department: formData.departmentId,
+  costCenterId: formData.costCenterId,
+  requiredByDate: formData.requiredByDate,
+  justification: formData.justification,
+  items: formData.items,
+  currency: formData.currency,
+  budgetCodeId: formData.budgetCodeId,
+  budgetCapAmount: formData.budgetCapAmount,
+  updatedAt: new Date().toISOString(),
+  status: 'UnderReview'
+};
       });
 
       localStorage.setItem(
@@ -728,29 +745,46 @@ export class PrCreateComponent implements OnInit, OnChanges {
     this.status = 'Submitted';
     const prmNo = `PR-${Date.now()}`;
 
+    // const pr: PurchaseRequisitionLS = {
+    //   id: Date.now() + Math.floor(Math.random() * 1000),
+    //   prmNo,
+    //   title: formData.title,
+    //   department: formData.departmentId,
+    //   costCenterId: formData.costCenterId,
+    //   requiredByDate: formData.requiredByDate,
+    //   justification: formData.justification,
+    //   comment:'',
+    //   status: 'Submitted',
+    //   createdAt: new Date().toISOString(),
+    //   items: formData.items,
+    //   // auditTrail: [
+    //   //   {
+    //   //     action: 'CREATED',
+    //   //     by: requesterUserId,
+    //   //     at: new Date().toISOString(),
+    //   //   },
+    //   // ],
+    //   budgetCodeId: '',
+    //   currency: '',
+    //   budgetCapAmount: 0,
+    // };
+
     const pr: PurchaseRequisitionLS = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      prmNo,
-      title: formData.title,
-      department: formData.departmentId,
-      costCenterId: formData.costCenterId,
-      requiredByDate: formData.requiredByDate,
-      justification: formData.justification,
-      comment:'',
-      status: 'Submitted',
-      createdAt: new Date().toISOString(),
-      items: formData.items,
-      // auditTrail: [
-      //   {
-      //     action: 'CREATED',
-      //     by: requesterUserId,
-      //     at: new Date().toISOString(),
-      //   },
-      // ],
-      budgetCodeId: '',
-      currency: '',
-      budgetCapAmount: 0,
-    };
+  id: Date.now() + Math.floor(Math.random() * 1000),
+  prmNo,
+  title: formData.title,
+  department: formData.departmentId,
+  costCenterId: formData.costCenterId,
+  budgetCodeId: formData.budgetCodeId,
+  requiredByDate: formData.requiredByDate,
+  justification: formData.justification,
+  comment: '',
+  currency: formData.currency,
+  budgetCapAmount: formData.budgetCapAmount ?? 0,
+  status: 'Submitted',
+  createdAt: new Date().toISOString(),
+  items: formData.items,
+};
 
     this.store.add(pr);
     this.workflow.submitForApproval(pr.id, requesterUserId);
@@ -779,17 +813,32 @@ export class PrCreateComponent implements OnInit, OnChanges {
       const updated = existing.map((pr: any) => {
         if (pr.id !== this.purchaseReqData.id) return pr;
 
+        // return {
+        //   ...pr,
+        //   title: formData.title || pr.title || '(Draft)',
+        //   department: formData.departmentId,
+        //   costCenterId: formData.costCenterId,
+        //   requiredByDate: formData.requiredByDate,
+        //   justification: formData.justification,
+        //   status: 'Draft',
+        //   items: formData.items,
+        //   updatedAt: new Date().toISOString(),
+        // };
+
         return {
-          ...pr,
-          title: formData.title || pr.title || '(Draft)',
-          department: formData.departmentId,
-          costCenterId: formData.costCenterId,
-          requiredByDate: formData.requiredByDate,
-          justification: formData.justification,
-          status: 'Draft',
-          items: formData.items,
-          updatedAt: new Date().toISOString(),
-        };
+  ...pr,
+  title: formData.title || pr.title || '(Draft)',
+  department: formData.departmentId,
+  costCenterId: formData.costCenterId,
+  budgetCodeId: formData.budgetCodeId,
+  requiredByDate: formData.requiredByDate,
+  justification: formData.justification,
+  currency: formData.currency,
+  budgetCapAmount: formData.budgetCapAmount ?? pr.budgetCapAmount ?? 0,
+  status: 'Draft',
+  items: formData.items,
+  updatedAt: new Date().toISOString(),
+};
       });
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -810,18 +859,35 @@ export class PrCreateComponent implements OnInit, OnChanges {
       return;
     }
 
-    const prPayload = {
-      id: crypto.randomUUID(),
-      prmNo: `PR-${Date.now()}`,
-      title: formData.title || '(Draft)',
-      department: formData.departmentId,
-      costCenterId: formData.costCenterId,
-      requiredByDate: formData.requiredByDate,
-      justification: formData.justification,
-      status: this.status,
-      createdAt: new Date().toISOString(),
-      items: formData.items,
-    };
+    // const prPayload = {
+    //   id: crypto.randomUUID(),
+    //   prmNo: `PR-${Date.now()}`,
+    //   title: formData.title || '(Draft)',
+    //   department: formData.departmentId,
+    //   costCenterId: formData.costCenterId,
+    //   requiredByDate: formData.requiredByDate,
+    //   justification: formData.justification,
+    //   status: this.status,
+    //   createdAt: new Date().toISOString(),
+    //   items: formData.items,
+    // };
+
+    const prPayload: PurchaseRequisitionLS = {
+  id: Date.now() + Math.floor(Math.random() * 1000),
+  prmNo: `PR-${Date.now()}`,
+  title: formData.title || '(Draft)',
+  department: formData.departmentId,
+  costCenterId: formData.costCenterId,
+  budgetCodeId: formData.budgetCodeId,
+  requiredByDate: formData.requiredByDate,
+  justification: formData.justification,
+  comment: '',
+  currency: formData.currency,
+  budgetCapAmount: formData.budgetCapAmount ?? 0,
+  status: 'Draft',
+  createdAt: new Date().toISOString(),
+  items: formData.items,
+};
 
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     existing.push(prPayload);

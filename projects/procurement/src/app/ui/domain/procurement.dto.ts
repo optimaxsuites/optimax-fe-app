@@ -39,12 +39,6 @@ export type PRStatus =
 
 export type ApprovalStepStatus = 'NotStarted' | 'Pending' | 'Approved' | 'Rejected';
 
-export interface PRAuditItem {
-  action: string;
-  by: string;        // userId or "SYSTEM"
-  at: string;        // ISO datetime
-  meta?: any;
-}
 
 export interface PRApprovalStep {
   level: number;
@@ -70,12 +64,46 @@ export interface PRApproval {
   escalation: PREscalationRule;
 }
 
+// export interface PurchaseRequisitionLS {
+//   id: number;
+//   prmNo: string;
+//   title: string;
+
+//   department: string; // store departmentId
+//   costCenterId: string;
+//   budgetCodeId: string;
+
+//   requiredByDate: string;
+//   justification: string;
+
+//   comment: string;
+
+//   currency: string;
+//   budgetCapAmount: number;
+
+//   status: PRStatus;
+//   createdAt: string;
+//   submittedAt?: string;
+
+//   items: Array<{
+//     name: string;
+//     description?: string | null;
+//     quantity: number;
+//     unitOfMeasure: string;
+//     category?: string | null;
+//     budgetCap: number;
+//   }>;
+
+//   approval?: PRApproval;     // added on submit
+//   // auditTrail: PRAuditItem[]; // always exists
+// }
+
 export interface PurchaseRequisitionLS {
   id: number;
   prmNo: string;
   title: string;
 
-  department: string; // store departmentId
+  department: string;
   costCenterId: string;
   budgetCodeId: string;
 
@@ -100,6 +128,9 @@ export interface PurchaseRequisitionLS {
     budgetCap: number;
   }>;
 
-  approval?: PRApproval;     // added on submit
-  // auditTrail: PRAuditItem[]; // always exists
+  approval?: PRApproval;
+
+    selectedQuoteId?: number;
+  selectedVendorUuid?: string;
+  quoteDecisionAt?: string;
 }

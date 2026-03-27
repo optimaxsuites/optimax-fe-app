@@ -23,6 +23,8 @@ const routes: Routes = [
 
   {path: 'vendor-portal/quotations/:uuid', component: RfqComponent}, //change component
   {path: 'vendor-portal/lpo/:uuid', component: RfqComponent}, //change component
+
+  
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
   {
     path: 'vendor-management/:id/review',

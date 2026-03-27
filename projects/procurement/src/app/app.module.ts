@@ -105,6 +105,7 @@ import { SelectButtonModule } from "primeng/selectbutton";
 import { VendorProfileFormComponent } from './ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 import { PrListComponent } from './ui/view/purchase-req-management/pr-list/pr-list.component';
 import { VendorPrListComponent } from './ui/view/vendor-portal/vendor-pr-list/vendor-pr-list.component';
+import { PrQuoteReviewComponent } from './ui/view/purchase-req-management/pr-quote-review/pr-quote-review.component';
 // import { SelectModule } from 'primeng/select';
 
 
@@ -147,6 +148,7 @@ import { VendorPrListComponent } from './ui/view/vendor-portal/vendor-pr-list/ve
     VendorProfileFormComponent,
     PrListComponent,
     VendorPrListComponent,
+    PrQuoteReviewComponent,
     
   ],
   imports: [
