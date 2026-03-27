@@ -216,3 +216,16 @@ export enum QuoteStatus {
   Approved = 'Approved',
   Rejected = 'Rejected',
 }
+
+export interface ProcurementPrQuoteReviewRow {
+  id: number;
+  prId: number;
+  prmNo: string;
+  title: string;
+  department: string;
+  requiredByDate?: string;
+  quoteCount: number;
+  lowestQuote: number;
+  highestQuote: number;
+  decisionStatus: string;
+}

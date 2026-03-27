@@ -11,22 +11,30 @@ import { PurchaseReqManagementComponent } from './purchase-req-management/purcha
 import { PrApprovalInboxComponent } from './purchase-req-management/pr-approval-inbox/pr-approval-inbox.component';
 import { VendorListComponent } from './vendor-management/vendor-list/vendor-list.component';
 import { VendorApprovalComponent } from './vendor-management/vendor-approval/vendor-approval.component';
+import { PrQuoteReviewComponent } from './purchase-req-management/pr-quote-review/pr-quote-review.component';
 
 @Component({
   selector: 'app-procurement.page',
   templateUrl: './procurement.page.component.html',
-  styleUrl: './procurement.page.component.scss'
+  styleUrl: './procurement.page.component.scss',
 })
 export class ProcurementPageComponent {
   tabsConfig: TabConfig[] = [
-
-
-  { icon: 'pi pi-list', name: 'PR List',  component: PurchaseReqManagementComponent },
-  { icon: 'pi pi-check-circle', name: 'PR Approval',  component: PrApprovalInboxComponent },
-
-
-
-
+    {
+      icon: 'pi pi-list',
+      name: 'PR List',
+      component: PurchaseReqManagementComponent,
+    },
+    {
+      icon: 'pi pi-check-circle',
+      name: 'PR Approval',
+      component: PrApprovalInboxComponent,
+    },
+    {
+      icon: 'pi pi-briefcase',
+      name: 'Quote Review',
+      component: PrQuoteReviewComponent,
+    },
 
     // {
     //   name: 'LPO',
