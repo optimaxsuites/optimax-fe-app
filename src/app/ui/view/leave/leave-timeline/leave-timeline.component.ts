@@ -349,7 +349,7 @@ export class LeaveTimelineComponent implements OnInit, OnDestroy {
             // Check if leave is in current month
             const inMonth = this.isLeaveInCurrentMonth(leave);
             if (!inMonth) {
-              console.log(`    🚫 Leave not in current month (${this.getMonthYearLabel()})`);
+              console.log(`    Leave not in current month (${this.getMonthYearLabel()})`);
             }
             
             return inMonth;
