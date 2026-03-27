@@ -298,7 +298,7 @@ export class LeaveApiService {
       startDate: data.startDate,
       endDate: data.endDate,
       status: data.status,
-      leaveTypeId: data.leaveTypeId, // number
+      leaveType: data.leaveTypeId, // number
       totalDays: data.totalDays,
       planReason: data.planReason,
       attachment: data.attachment,
@@ -310,13 +310,24 @@ export class LeaveApiService {
     console.log(' Updating leave plan record:', payload);
 
     return this.http
-      .put<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records/${id}`, payload)
+      .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-plan-records`, payload)
       .pipe(
         map(response => this.transformSingleRecord(response)),
         catchError(this.handleError)
       );
   }
-
+reateLeaveType(data: any): Observable<any> {
+    const payload = {
+      name: data.name,
+      defaultDays: data.defaultDays,
+      code: data.code,
+      description: data.description
+    };
+    
+    return this.http
+      .post<any>(`${this.baseUrl}/x/api/v2/hr/leaveTypes`, payload)
+      .pipe(catchError(this.handleError));
+  }
   /**
    * Delete leave plan record
    */
@@ -431,5 +442,165 @@ export class LeaveApiService {
   getCurrentUserIdAsNumber(): number | null {
   const userId = this.getCurrentUserId();
   return userId ? parseInt(userId, 10) : null;
+}
+// ==================== LEAVE REQUEST RECORDS ====================
+
+/**
+ * Get all leave request records with transformation
+ */
+getLeaveRequestRecords(page: number = 1, size: number = 100): Observable<any[]> {
+  const params = new HttpParams()
+    .set('page', page.toString())
+    .set('size', size.toString());
+
+  return this.http
+    .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records`, { params })
+    .pipe(
+      map(response => {
+        const records = Array.isArray(response) ? response : (response?.data || response?.content || []);
+        return this.transformLeaveRequestRecords(records);
+      }),
+      catchError(this.handleError)
+    );
+}
+
+/**
+ * Get single leave request record by ID
+ */
+getLeaveRequestRecordById(id: number): Observable<any> {
+  return this.http
+    .get<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records/${id}`)
+    .pipe(
+      map(response => this.transformSingleRequestRecord(response)),
+      catchError(this.handleError)
+    );
+}
+
+/**
+ * Create leave request record
+ * POST expects: createdBy (userId), leaveTypeId (number), dates, status
+ */
+createLeaveRequestRecord(data: any): Observable<any> {
+  const now = new Date().toISOString();
+  
+  const payload = {
+    createdAt: now,
+    createdBy: data.createdBy, // userId (number)
+    leaveTypeId: data.leaveTypeId, // number
+    startDate: data.startDate, // ISO string
+    endDate: data.endDate, // ISO string
+    totalDays: data.totalDays,
+    status: 'PENDING',
+    leaveReason: data.leaveReason || '',
+    attachment: data.attachment || '',
+    adminComment: '',
+    decisionBy: null,
+    decisionOn: null
+  };
+
+  console.log('📤 Creating leave request record:', payload);
+
+  return this.http
+    .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records`, payload)
+    .pipe(
+      map(response => this.transformSingleRequestRecord(response)),
+      catchError(this.handleError)
+    );
+}
+
+/**
+ * Update leave request record (for approve/reject)
+ */
+updateLeaveRequestRecord(id: number, data: any): Observable<any> {
+  const payload = {
+    id: id,
+    createdAt: data.createdAt,
+    createdBy: data.createdBy, // userId (number)
+    leaveTypeId: data.leaveTypeId, // number
+    startDate: data.startDate,
+    endDate: data.endDate,
+    totalDays: data.totalDays,
+    status: data.status,
+    leaveReason: data.leaveReason,
+    attachment: data.attachment,
+    adminComment: data.adminComment,
+    decisionBy: data.decisionBy,
+    decisionOn: data.decisionOn
+  };
+
+  console.log(' Updating leave request record:', payload);
+
+  return this.http
+    .post<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records`, payload)
+    .pipe(
+      map(response => this.transformSingleRequestRecord(response)),
+      catchError(this.handleError)
+    );
+}
+
+/**
+ * Delete leave request record
+ */
+deleteLeaveRequestRecord(id: number): Observable<any> {
+  return this.http
+    .delete<any>(`${this.baseUrl}/x/api/v2/hr/leave-request-records/${id}`)
+    .pipe(catchError(this.handleError));
+}
+
+// ==================== LEAVE REQUEST TRANSFORMATION ====================
+
+/**
+ * Transform array of leave request records
+ */
+private transformLeaveRequestRecords(records: any[]): any[] {
+  if (!Array.isArray(records)) {
+    return [];
+  }
+
+  const transformed = records.map(record => this.transformSingleRequestRecord(record));
+  
+  // Sort by createdAt descending (latest first)
+  return transformed.sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA;
+  });
+}
+
+/**
+ * Transform single leave request record
+ */
+private transformSingleRequestRecord(record: any): any {
+  if (!record) return null;
+
+  return {
+    id: record.id,
+    createdAt: this.convertDateArrayToISO(record.createdAt),
+    createdBy: {
+      id: record.createdBy?.userId || record.createdBy?.id || record.createdBy,
+      userId: record.createdBy?.userId || record.createdBy?.id || record.createdBy,
+      fullname: record.createdBy?.fullname || record.createdBy?.username || 'Unknown'
+    },
+    leaveType: {
+      id: record.leaveType?.id || record.leaveTypeId,
+      name: record.leaveType?.name || 'Unknown',
+      code: record.leaveType?.code || '',
+      description: record.leaveType?.description || ''
+    },
+    leaveTypeId: record.leaveType?.id || record.leaveTypeId,
+    startDate: this.convertDateArrayToISO(record.startDate),
+    endDate: this.convertDateArrayToISO(record.endDate),
+    totalDays: record.totalDays,
+    status: record.status,
+    leaveReason: record.leaveReason || '',
+    attachment: record.attachment || '',
+    adminComment: record.adminComment || '',
+    decisionBy: record.decisionBy ? {
+      id: record.decisionBy?.userId || record.decisionBy?.id || record.decisionBy,
+      userId: record.decisionBy?.userId || record.decisionBy?.id || record.decisionBy,
+      fullname: record.decisionBy?.fullname || record.decisionBy?.username || 'Unknown'
+    } : null,
+    decisionOn: this.convertDateArrayToISO(record.decisionOn)
+  };
 }
 }

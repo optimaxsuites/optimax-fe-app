@@ -43,6 +43,13 @@ export class LeavePlanComponent implements OnInit {
     reason: '',
     leaveTypeObj: null as any,
   };
+  today = new Date();
+  todayStr =
+    this.today.getFullYear() +
+    '-' +
+    String(this.today.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(this.today.getDate()).padStart(2, '0');
 
   // Calendar
   calendarEvents: EventInput[] = [];
@@ -60,7 +67,7 @@ export class LeavePlanComponent implements OnInit {
     },
     height: 'auto',
     validRange: {
-      start: new Date().toISOString().split('T')[0],
+      start: this.todayStr,
       end: this.getFutureDate(365),
     },
   };
@@ -70,7 +77,7 @@ export class LeavePlanComponent implements OnInit {
 
   constructor(
     private messageService: MessageService,
-    private apiService: LeaveApiService
+    private apiService: LeaveApiService,
   ) {}
 
   ngOnInit() {
@@ -87,8 +94,10 @@ export class LeavePlanComponent implements OnInit {
     }
 
     newRecords.forEach((newRecord: any) => {
-      const oldRecord = this.previousRecords.find((r: any) => r.id === newRecord.id);
-      
+      const oldRecord = this.previousRecords.find(
+        (r: any) => r.id === newRecord.id,
+      );
+
       if (oldRecord && oldRecord.status !== newRecord.status) {
         // Status changed - show notification!
         this.showStatusChangeNotification(newRecord, oldRecord.status);
@@ -101,16 +110,16 @@ export class LeavePlanComponent implements OnInit {
 
   showStatusChangeNotification(record: any, oldStatus: string) {
     const statusMessages: any = {
-      'APPROVED': {
+      APPROVED: {
         severity: 'success',
         summary: '✅ Leave Plan Approved!',
-        detail: `Your ${record.leaveType?.name} plan (${record.totalDays} days) from ${this.formatDate(record.startDate)} to ${this.formatDate(record.endDate)} has been approved.`
+        detail: `Your ${record.leaveType?.name} plan (${record.totalDays} days) from ${this.formatDate(record.startDate)} to ${this.formatDate(record.endDate)} has been approved.`,
       },
-      'REJECTED': {
+      REJECTED: {
         severity: 'error',
         summary: '❌ Leave Plan Rejected',
-        detail: `Your ${record.leaveType?.name} plan was rejected. ${record.adminComment ? 'Reason: ' + record.adminComment : ''}`
-      }
+        detail: `Your ${record.leaveType?.name} plan was rejected. ${record.adminComment ? 'Reason: ' + record.adminComment : ''}`,
+      },
     };
 
     const message = statusMessages[record.status];
@@ -119,7 +128,7 @@ export class LeavePlanComponent implements OnInit {
         ...message,
         key: 'tl',
         life: 10000,
-        sticky: false
+        sticky: false,
       });
     }
   }
@@ -129,7 +138,7 @@ export class LeavePlanComponent implements OnInit {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -145,7 +154,7 @@ export class LeavePlanComponent implements OnInit {
             severity: 'error',
             summary: 'Not Logged In',
             detail: 'Please log in to view leave plans',
-            key: 'tl'
+            key: 'tl',
           });
           this.isLoading = false;
           return;
@@ -158,7 +167,7 @@ export class LeavePlanComponent implements OnInit {
         console.log('Current employee loaded:', {
           employeeId: this.currentEmployeeId,
           userId: this.currentUserId,
-          employee
+          employee,
         });
 
         // Load all data
@@ -171,9 +180,9 @@ export class LeavePlanComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to load employee data',
-          key: 'tl'
+          key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -181,23 +190,29 @@ export class LeavePlanComponent implements OnInit {
     this.isLoading = true;
 
     forkJoin({
-      planRecords: this.apiService.getLeavePlanRecords().pipe(catchError(() => of([]))),
-      leaveTypes: this.apiService.getLeaveTypes().pipe(catchError(() => of([]))),
-      policies: this.apiService.getLeavePlanPolicies(1, 1).pipe(catchError(() => of([])))
+      planRecords: this.apiService
+        .getLeavePlanRecords()
+        .pipe(catchError(() => of([]))),
+      leaveTypes: this.apiService
+        .getLeaveTypes()
+        .pipe(catchError(() => of([]))),
+      policies: this.apiService
+        .getLeavePlanPolicies(1, 1)
+        .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
-        console.log('📥 Raw data received:', data);
+
 
         // Filter plan records for current user only (by userId)
         const allRecords = data.planRecords || [];
         const myRecords = allRecords.filter(
-          (record: any) => record.createdBy?.userId === this.currentUserId
+          (record: any) => record.createdBy?.userId === this.currentUserId,
         );
 
         console.log('📊 Filtered records:', {
           total: allRecords.length,
           mine: myRecords.length,
-          currentUserId: this.currentUserId
+          currentUserId: this.currentUserId,
         });
 
         // Check for status changes
@@ -207,20 +222,21 @@ export class LeavePlanComponent implements OnInit {
         this.leavePlanRecords = myRecords;
 
         this.leaveTypes = data.leaveTypes || [];
-        this.planningPolicy = data.policies && data.policies.length > 0
-          ? data.policies[0]
-          : { 
-              maxDaysPerMonth: 10, 
-              maxMonthPerYear: 3, 
-              emergencyLeaveDaysAllowed: 5,
-              totalAllowedPlannedDays: 30,
-              planningWindowDays: 90
-            };
+        this.planningPolicy =
+          data.policies && data.policies.length > 0
+            ? data.policies[0]
+            : {
+                maxDaysPerMonth: 10,
+                maxMonthPerYear: 3,
+                emergencyLeaveDaysAllowed: 5,
+                totalAllowedPlannedDays: 30,
+                planningWindowDays: 90,
+              };
 
         console.log('✅ Data loaded:', {
           planRecords: this.leavePlanRecords.length,
           leaveTypes: this.leaveTypes.length,
-          policy: this.planningPolicy
+          policy: this.planningPolicy,
         });
 
         this.updateCalendarEvents();
@@ -233,9 +249,9 @@ export class LeavePlanComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to load leave plan data',
-          key: 'tl'
+          key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -244,15 +260,28 @@ export class LeavePlanComponent implements OnInit {
   getFutureDate(days: number): string {
     const date = new Date();
     date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+    return (
+      date.getFullYear() +
+      '-' +
+      String(date.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(date.getDate()).padStart(2, '0')
+    );
   }
 
   handleDateSelect(selectInfo: DateSelectArg) {
     this.selectedStartDate = selectInfo.startStr;
 
-    const endDate = new Date(selectInfo.end);
-    endDate.setDate(endDate.getDate() - 1);
-    this.selectedEndDate = endDate.toISOString().split('T')[0];
+    // Use endStr (safe string) instead of Date object
+    const end = new Date(selectInfo.endStr);
+    end.setDate(end.getDate() - 1);
+
+    this.selectedEndDate =
+      end.getFullYear() +
+      '-' +
+      String(end.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(end.getDate()).padStart(2, '0');
 
     this.calculateWorkingDays();
     this.showPlanModal = true;
@@ -264,10 +293,11 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
-    const start = new Date(this.selectedStartDate);
-    const end = new Date(this.selectedEndDate);
-    const timeDiff = end.getTime() - start.getTime();
-    this.workingDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+    const start = new Date(this.selectedStartDate + 'T12:00:00');
+const end = new Date(this.selectedEndDate + 'T12:00:00');
+
+    const diff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+    this.workingDays = diff + 1;
   }
 
   updateCalendarEvents() {
@@ -292,18 +322,24 @@ export class LeavePlanComponent implements OnInit {
 
   getStatusColor(status: string): string {
     const colors: any = {
-      'PENDING': '#EAB308',
-      'APPROVED': '#22C55E',
-      'REJECTED': '#EF4444'
+      PENDING: '#EAB308',
+      APPROVED: '#22C55E',
+      REJECTED: '#EF4444',
     };
     return colors[status] || '#6B7280';
   }
 
   addOneDay(date: string): string {
-    if (!date) return '';
-    const d = new Date(date);
+    const d = new Date(date + 'T12:00:00');
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+
+    return (
+      d.getFullYear() +
+      '-' +
+      String(d.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(d.getDate()).padStart(2, '0')
+    );
   }
 
   // ==================== SUBMIT PLAN ====================
@@ -330,11 +366,14 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
+    const toSafeISO = (date: string) =>
+      new Date(date + 'T12:00:00').toISOString();
+
     // Build payload according to NEW backend format
     const payload = {
       createdBy: this.currentUserId, // userId (number)
-      startDate: new Date(this.selectedStartDate).toISOString(),
-      endDate: new Date(this.selectedEndDate).toISOString(),
+      startDate: toSafeISO(this.selectedStartDate),
+      endDate: toSafeISO(this.selectedEndDate),
       status: 'PENDING',
       leaveTypeId: this.selectedLeaveTypeObj.id, // leaveType ID (number)
       totalDays: this.workingDays,
@@ -342,14 +381,12 @@ export class LeavePlanComponent implements OnInit {
       attachment: '',
       adminComment: '',
       decisionBy: null,
-      decisionOn: null
+      decisionOn: null,
     };
 
-    console.log('📤 Submitting leave plan:', payload);
 
     this.apiService.createLeavePlanRecord(payload).subscribe({
       next: (created) => {
-        console.log('✅ Leave plan created:', created);
         this.messageService.add({
           severity: 'success',
           summary: 'Leave Planned',
@@ -361,14 +398,14 @@ export class LeavePlanComponent implements OnInit {
         this.loadAllData();
       },
       error: (err) => {
-        console.error('❌ Failed to create leave plan:', err);
+        console.error(' Failed to create leave plan:', err);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to submit leave plan. Please try again.',
           key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -396,7 +433,8 @@ export class LeavePlanComponent implements OnInit {
 
     const start = new Date(this.emergencyLeaveForm.startDate);
     const end = new Date(this.emergencyLeaveForm.endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+    const days =
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
 
     if (days > (this.planningPolicy?.emergencyLeaveDaysAllowed || 5)) {
       this.messageService.add({
@@ -407,11 +445,13 @@ export class LeavePlanComponent implements OnInit {
       });
       return;
     }
+    const toSafeISO = (date: string) =>
+      new Date(date + 'T12:00:00').toISOString();
 
     const payload = {
       createdBy: this.currentUserId, // userId (number)
-      startDate: new Date(this.emergencyLeaveForm.startDate).toISOString(),
-      endDate: new Date(this.emergencyLeaveForm.endDate).toISOString(),
+      startDate: toSafeISO(this.emergencyLeaveForm.startDate),
+      endDate: toSafeISO(this.emergencyLeaveForm.endDate),
       status: 'PENDING',
       leaveTypeId: this.emergencyLeaveForm.leaveTypeObj.id, // leaveType ID (number)
       totalDays: days,
@@ -419,7 +459,7 @@ export class LeavePlanComponent implements OnInit {
       attachment: '',
       adminComment: '',
       decisionBy: null,
-      decisionOn: null
+      decisionOn: null,
     };
 
     console.log('📤 Submitting emergency leave:', payload);
@@ -429,7 +469,8 @@ export class LeavePlanComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Emergency Leave Submitted',
-          detail: 'Your emergency leave request has been sent for immediate review',
+          detail:
+            'Your emergency leave request has been sent for immediate review',
           key: 'tl',
           life: 5000,
         });
@@ -444,7 +485,7 @@ export class LeavePlanComponent implements OnInit {
           detail: 'Failed to submit emergency leave',
           key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -465,9 +506,6 @@ export class LeavePlanComponent implements OnInit {
       return;
     }
 
-    if (!confirm(`Cancel this leave plan (${plan.totalDays} days)?`)) {
-      return;
-    }
 
     this.apiService.deleteLeavePlanRecord(plan.id).subscribe({
       next: () => {
@@ -487,7 +525,7 @@ export class LeavePlanComponent implements OnInit {
           detail: 'Failed to cancel leave plan',
           key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -516,24 +554,24 @@ export class LeavePlanComponent implements OnInit {
 
   getTotalPlannedDays(): number {
     return this.leavePlanRecords
-      .filter(r => r.status === 'APPROVED')
+      .filter((r) => r.status === 'APPROVED')
       .reduce((sum, r) => sum + (r.totalDays || 0), 0);
   }
 
   getPlannedCount(): number {
-    return this.leavePlanRecords.filter(r => r.status === 'PENDING').length;
+    return this.leavePlanRecords.filter((r) => r.status === 'PENDING').length;
   }
 
   getPendingCount(): number {
-    return this.leavePlanRecords.filter(r => r.status === 'PENDING').length;
+    return this.leavePlanRecords.filter((r) => r.status === 'PENDING').length;
   }
 
   getApprovedCount(): number {
-    return this.leavePlanRecords.filter(r => r.status === 'APPROVED').length;
+    return this.leavePlanRecords.filter((r) => r.status === 'APPROVED').length;
   }
 
   getRejectedCount(): number {
-    return this.leavePlanRecords.filter(r => r.status === 'REJECTED').length;
+    return this.leavePlanRecords.filter((r) => r.status === 'REJECTED').length;
   }
 
   getPlannedPercentage(): number {
@@ -559,13 +597,13 @@ export class LeavePlanComponent implements OnInit {
   // ==================== COMPUTED PROPERTIES ====================
 
   get plannedLeaves() {
-    return this.leavePlanRecords.map(record => ({
+    return this.leavePlanRecords.map((record) => ({
       ...record,
       startDate: this.formatDate(record.startDate),
       endDate: this.formatDate(record.endDate),
       leaveType: record.leaveType?.name || 'N/A',
       workingDays: record.totalDays,
-      notes: record.planReason
+      notes: record.planReason,
     }));
   }
 
@@ -575,22 +613,26 @@ export class LeavePlanComponent implements OnInit {
 
   get monthlyPlanSummary() {
     const monthMap = new Map();
-    
+
     this.leavePlanRecords
-      .filter(r => r.status === 'APPROVED')
-      .forEach(record => {
-        const month = new Date(record.startDate).toLocaleDateString('en-US', { 
-          month: 'short', 
-          year: 'numeric' 
+      .filter((r) => r.status === 'APPROVED')
+      .forEach((record) => {
+        const month = new Date(record.startDate).toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric',
         });
-        monthMap.set(month, (monthMap.get(month) || 0) + (record.totalDays || 0));
+        monthMap.set(
+          month,
+          (monthMap.get(month) || 0) + (record.totalDays || 0),
+        );
       });
 
     return Array.from(monthMap.entries()).map(([month, daysPlanned]) => ({
       month,
       daysPlanned,
       maxDays: this.planningPolicy?.maxDaysPerMonth || 10,
-      remaining: (this.planningPolicy?.maxDaysPerMonth || 10) - (daysPlanned as number)
+      remaining:
+        (this.planningPolicy?.maxDaysPerMonth || 10) - (daysPlanned as number),
     }));
   }
 }

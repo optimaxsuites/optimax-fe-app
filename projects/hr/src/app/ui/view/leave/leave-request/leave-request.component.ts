@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { LeaveServiceService } from '../../../service/leave-service.service';
-import { LeaveRequest } from '../../../domain/leave.dto';
+import { LeaveApiService } from '../../../service/leave-api.service';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-leave-request',
@@ -11,500 +11,463 @@ import { TableAction, TableColumn } from '../../../shared-component/view/table/t
   styleUrl: './leave-request.component.scss',
   providers: [MessageService],
 })
-export class LeaveRequestComponent {
-  // employees = [
-  //   {
-  //     id: 'EMP-001',
-  //     totalLeaveAllowed: 21,
-  //     leaveUsed: 0,
-  //   },
-  // ];
-  statuses: string[] = ['Pending Approval', 'Approved', 'Rejected'];
-  leaveTypes!: string[];
-  selectedLeaveType!: string[];
+export class LeaveRequestComponent implements OnInit {
+  // Current admin user
+  currentAdminUserId: number | null = null;
+
+  // Data
+  allEmployees: any[] = [];
+  allLeaveRequests: any[] = [];
+  leaveBalances: any[] = [];
+  leaveTypes: any[] = [];
+  filteredRequests: any[] = [];
+  displayedRequests: any[] = [];
+
+  // Filters
+  statuses: string[] = ['PENDING', 'APPROVED', 'REJECTED'];
+  selectedLeaveType: string[] = [];
   selectedStatus: string[] = [];
-  acceptModal = false;
-  selectedRequest!: LeaveRequest | null;
-  selectedEmployee: any = null;
   searchTerm: string = '';
 
-  comment: string = '';
-  employeeInView: any;
-  openViewEmployee: boolean = false;
-  savedEmployees: any[] = [];
-  allLeaveRequest: LeaveRequest[] = [];
-  filteredCandidates: LeaveRequest[] = [];
+  // Modal
+  showActionModal: boolean = false;
+  selectedRequest: any = null;
+  selectedEmployee: any = null;
+  adminComment: string = '';
+  showViewModal: boolean = false;
+  requestInView: any = null;
+
+  // Loading
+  isLoading: boolean = false;
+
+  // Table config
   leaveRequestColumns: TableColumn[] = [
-    { header: 'Employee', field: 'Employee', sortable: true, className: 'table-item' },
-    { header: 'Date Applied for', field: 'Date', sortable: true, className: 'table-item' },
-    { header: 'Leave Type', field: 'LeaveType', sortable: true, className: 'table-item' },
-    { header: 'Net Leave Balance', field: 'NetLeaveBalance', sortable: true, className: 'table-item' },
-    { header: 'Requested Duration', field: 'RequestedDuration', sortable: true, className: 'table-item' },
-    { header: 'Status', field: 'Status', sortable: true, className: 'table-item' },
+    { header: 'Employee', field: 'employeeName', sortable: true, className: 'table-item' },
+    { header: 'Period', field: 'period', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'leaveTypeName', sortable: true, className: 'table-item' },
+    { header: 'Days', field: 'totalDays', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'status', sortable: true, className: 'table-item' },
   ];
+
   leaveRequestActions: TableAction[] = [
     { id: 'view', label: 'View', icon: 'pi pi-eye' },
     {
-      id: 'approveReject',
+      id: 'action',
       label: 'Approve/Reject',
-      icon: 'pi pi-download',
-      visible: (row) => row?.Status?.includes('Pending Approval'),
+      icon: 'pi pi-ellipsis-v',
+      visible: (row) => row.status === 'PENDING',
     }
   ];
 
   constructor(
     private messageService: MessageService,
-    private token: RandomTokenService,
-    private leaveService: LeaveServiceService,
+    private apiService: LeaveApiService,
   ) {}
+
   ngOnInit() {
-    this.allLeaveRequest = this.leaveService.getAllLeaveRequests();
-    this.leaveTypes = this.getLeaveTypes();
-    this.filteredCandidates = [...this.allLeaveRequest];
-    // this.savedEmployees = JSON.parse(
-    //   localStorage.getItem('leaveRequest') || '[]',
-    // );
-    // this.filteredCandidates = [...this.savedEmployees];
-    this.sortByStatus();
+    this.loadCurrentAdminUser();
+    this.loadData();
   }
-  getLeaveTypes() {
-    // return this.allLeaveRequest.map((request) => request.LeaveType);
-    return this.leaveService
-      .getLeaveSettings()
-      .leaveTypes.map((lt) => lt.typeName);
-  }
-  // getEmployeebyId(employeeId: string) {
-  //   return this.employees.find((emp) => emp.id === employeeId);
-  // }
-  sortByStatus() {
-    this.filteredCandidates.sort((a, b) => {
-      const statusA = a.Status.includes('Pending Approval') ? 0 : 1;
-      const statusB = b.Status.includes('Pending Approval') ? 0 : 1;
 
-      if (statusA !== statusB) {
-        return statusA - statusB;
+  // ==================== LOAD CURRENT ADMIN USER ====================
+
+  loadCurrentAdminUser() {
+    this.apiService.getCurrentEmployee().subscribe({
+      next: (employee) => {
+        if (employee && employee.user) {
+          this.currentAdminUserId = employee.user.id || employee.user.userId;
+          console.log('✅ Current admin user ID:', this.currentAdminUserId);
+        }
+      },
+      error: (err) => {
+        console.error('❌ Failed to load current admin user:', err);
       }
-
-      const dateA = new Date(a.AppliedOn);
-      const dateB = new Date(b.AppliedOn);
-
-      return dateB.getTime() - dateA.getTime();
     });
+  }
+
+  // ==================== LOAD DATA ====================
+
+  loadData() {
+    console.log('🔄 Loading leave requests data...');
+    this.isLoading = true;
+
+    forkJoin({
+      employees: this.apiService.getEmployees().pipe(catchError(() => of([]))),
+      leaveRequests: this.apiService.getLeaveRequestRecords(1, 1000).pipe(catchError(() => of([]))),
+      leaveBalances: this.apiService.getLeaveBalances().pipe(catchError(() => of([]))),
+      leaveTypes: this.apiService.getLeaveTypes().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: (data) => {
+        this.allEmployees = data.employees || [];
+        this.allLeaveRequests = data.leaveRequests || [];
+        this.leaveBalances = data.leaveBalances || [];
+        this.leaveTypes = data.leaveTypes || [];
+
+        console.log('📊 Leave Requests:', this.allLeaveRequests);
+        console.log('👥 Employees:', this.allEmployees.length);
+        console.log('💰 Leave Balances:', this.leaveBalances.length);
+
+        // Link each request to its employee
+        this.allLeaveRequests = this.allLeaveRequests.map(request => {
+          const employee = this.findEmployeeForRequest(request);
+          return {
+            ...request,
+            _linkedEmployee: employee
+          };
+        });
+
+        this.buildDisplayData();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('❌ Failed to load data:', err);
+        this.isLoading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load leave requests',
+          key: 'tl'
+        });
+      }
+    });
+  }
+
+  findEmployeeForRequest(request: any): any | null {
+    const requestUserId = request.createdBy?.userId || request.createdBy?.id;
+
+    const employee = this.allEmployees.find(emp => {
+      const empUserId = emp.user?.userId || emp.user?.id;
+      return empUserId === requestUserId;
+    });
+
+    if (!employee) {
+      console.warn(`⚠️ Request #${request.id} has no matching employee (userId: ${requestUserId})`);
+    }
+
+    return employee || null;
+  }
+
+  // ==================== BUILD DISPLAY DATA ====================
+
+  buildDisplayData() {
+    this.filteredRequests = this.allLeaveRequests.map(request => {
+      const employeeName = request._linkedEmployee
+        ? `${request._linkedEmployee.firstName} ${request._linkedEmployee.lastName}`
+        : request.createdBy?.fullname || 'Unknown';
+
+      return {
+        id: request.id,
+        employeeName: employeeName,
+        period: `${this.extractDate(request.startDate)} to ${this.extractDate(request.endDate)}`,
+        leaveTypeName: request.leaveType?.name || 'Unknown',
+        totalDays: request.totalDays,
+        status: request.status,
+        _rawRequest: request
+      };
+    });
+
+    this.displayedRequests = [...this.filteredRequests];
+    this.applyFilters();
+  }
+
+  extractDate(dateString: string): string {
+    if (!dateString) return '';
+    return dateString.split('T')[0];
+  }
+
+  // ==================== FILTERS ====================
+
+  applyFilters() {
+    this.displayedRequests = this.filteredRequests.filter((req) => {
+      const matchesSearch = req.employeeName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                           req.period.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+      const matchesLeaveType = this.selectedLeaveType.length === 0 ||
+                               this.selectedLeaveType.includes(req.leaveTypeName);
+
+      const matchesStatus = this.selectedStatus.length === 0 ||
+                           this.selectedStatus.includes(req.status);
+
+      return matchesSearch && matchesLeaveType && matchesStatus;
+    });
+
+    console.log(`🔍 Filtered: ${this.displayedRequests.length} of ${this.filteredRequests.length} requests`);
   }
 
   filterCandidates() {
-    this.filteredCandidates = this.allLeaveRequest.filter((employee) =>
-      employee.EmployeeId.toLowerCase().includes(this.searchTerm.toLowerCase()),
-    );
-    this.filteredCandidates = this.allLeaveRequest.filter((employee) => {
-      const matchesSearchTerm = employee.EmployeeId.toLowerCase().includes(
-        this.searchTerm.toLowerCase(),
-      );
-      const matchesLeaveType =
-        this.selectedLeaveType.length === 0 ||
-        this.selectedLeaveType.includes(employee.LeaveType);
-      const matchesStatus =
-        this.selectedStatus.length === 0 ||
-        this.selectedStatus.includes(employee.Status);
-      return matchesSearchTerm && matchesLeaveType && matchesStatus;
-    });
-    this.sortByStatus();
+    this.applyFilters();
   }
-  filterBySelectedStatus() {
-    if (this.selectedStatus.length == 0) {
-      this.filteredCandidates = [...this.allLeaveRequest];
-    } else {
-      this.filteredCandidates = this.allLeaveRequest.filter(
-        (employee: { Status: string }) =>
-          this.selectedStatus.some((status) =>
-            employee.Status.toLowerCase().includes(status.toLowerCase()),
-          ),
-      );
-    }
 
-    if (this.searchTerm && this.searchTerm.trim() !== '') {
-      this.filterCandidates();
-    }
-    this.sortByStatus();
+  filterBySelectedStatus() {
+    this.applyFilters();
   }
 
   filterBySelectedLeaveType() {
-    if (this.selectedLeaveType.length == 0) {
-      this.filteredCandidates = [...this.allLeaveRequest];
-    } else {
-      this.filteredCandidates = this.allLeaveRequest.filter(
-        (employee: { LeaveType: string }) =>
-          this.selectedLeaveType.some((status) =>
-            employee.LeaveType.toLowerCase().includes(status.toLowerCase()),
-          ),
-      );
-    }
-
-    if (this.searchTerm && this.searchTerm.trim() !== '') {
-      this.filterCandidates();
-    }
-    this.sortByStatus();
-  }
-  openAcceptRejectModal(employee: any) {
-    this.openViewEmployee = false;
-    this.selectedRequest = employee;
-    this.selectedEmployee = employee;
-    this.acceptModal = true;
+    this.applyFilters();
   }
 
-  acceptLeave() {
-     if (!this.selectedEmployee) return;
-
-    if (!this.selectedEmployee.Status.includes('Pending')) return;
-
-    const employee = this.leaveService.getEmployeeById(
-      this.selectedEmployee.EmployeeId,
-    );
-    if (!employee) return;
-
-    const requestedDays = Number(
-      parseFloat(this.selectedEmployee.RequestedDuration),
-    );
-
-    const leaveType = employee.leaveTypes.find(
-      (lt) => lt.typeName === this.selectedEmployee.LeaveType,
-    );
-
-    // if (!this.selectedRequest) return;
-
-    // if (!this.selectedRequest.Status.includes('Pending')) return;
-
-    // const employee = this.leaveService.getEmployeeById(
-    //   this.selectedRequest.EmployeeId,
-    // );
-    // if (!employee) return;
-
-    // const requestedDays = Number(
-    //   parseFloat(this.selectedRequest.RequestedDuration),
-    // );
-
-    // const leaveType = employee.leaveTypes.find(
-    //   (lt) => lt.typeName === this.selectedRequest?.LeaveType,
-    // );
-
-    if (!leaveType) {
-      // this.rejectWithComment('Invalid leave type');
-      return;
-    }
-
-    const remaining = leaveType.allocatedDays - leaveType.daysUsed;
-
-    if (requestedDays > remaining) {
-      // this.rejectWithComment('Insufficient leave balance');
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Leave',
-        detail: `${this.selectedEmployee?.EmployeeId} has insufficient leave balance`,
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
-    // ✅ Apply approval
-    leaveType.daysUsed += requestedDays;
-    employee.leaveUsed += requestedDays;
-
-    this.leaveService.updateEmployee(employee);
-
-    // this.selectedRequest.Status = 'Approved';
-    // this.selectedRequest.ApprovalComment = this.comment || 'No comment';
-      this.selectedEmployee.Status = 'Approved';
-    this.selectedEmployee.ApprovalComment = this.comment || 'No comment';
-
-    this.updateLocalStorage();
-
-    this.comment = '';
-    this.closeModal();
-  }
-
-  rejectLeave() {
-    // if (
-    //   this.selectedRequest &&
-    //   this.selectedRequest.Status.includes('Pending Approval')
-    // ) {
-    //   this.selectedRequest.Status = 'Rejected';
-
-    //   this.selectedRequest.ApprovalComment = this.comment
-    //     ? this.comment
-    //     : 'No comment';
-
-    //   this.comment = '';
-    //   this.messageService.add({
-    //     severity: 'warn',
-    //     summary: 'Leave',
-    //     detail: `${this.selectedRequest?.EmployeeId}'s leave has been rejected`,
-    //     key: 'tl',
-    //     life: 3000,
-    //   });
-
-     if (
-      this.selectedEmployee &&
-      this.selectedEmployee.Status.includes('Pending Approval')
-    ) {
-      this.selectedEmployee.Status = 'Rejected';
-
-      this.selectedEmployee.ApprovalComment = this.comment
-        ? this.comment
-        : 'No comment';
-
-      this.comment = '';
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Leave',
-        detail: `${this.selectedEmployee?.Employee}'s leave has been rejected`,
-        key: 'tl',
-        life: 3000,
-      });
-
-      this.closeModal();
-      this.updateLocalStorage();
-
-      this.sortByStatus();
-    }
-  }
-
-  closeModal() {
-    this.acceptModal = false;
-    this.selectedEmployee = null;
-    this.selectedRequest = null;
-  }
-
-  selectedRequests: LeaveRequest[] = [];
-    selectedEmployees: any[] = [];
-
-  bulkApprove() {
-  // Check if any requests selected
-  if (this.selectedEmployees.length == 0) return;
-    if (
-      this.selectedEmployees.every(
-        (emp) =>
-          emp.Status.includes('Approved') || emp.Status.includes('Rejected'),
-      )
-) {
-this.selectedEmployees = [];
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Leave',
-      detail: `Selected leave(s) has already been decided`,
-      key: 'tl',
-      life: 3000,
-    });
-    return;
-  }
-
-  // Filter only pending requests
-  const pendingRequests = this.selectedEmployee.filter((req: { Status: string | string[]; }) =>
-    req.Status.includes('Pending Approval')
-  );
-
-  // Check if all selected are already processed
-  if (pendingRequests.length === 0) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Already Processed',
-      detail: 'Selected requests have already been decided',
-      key: 'tl',
-      life: 3000,
-    });
-    this.selectedEmployee = [];
-    return;
-  }
-
-  let approvedCount = 0;
-  let rejectedCount = 0;
-  const rejectionReasons: string[] = [];
-
-  // Process each pending request
-  pendingRequests.forEach((request: { EmployeeId: string; RequestedDuration: string; LeaveType: string; Status: string; ApprovalComment: string; }) => {
-    const employee = this.leaveService.getEmployeeById(request.EmployeeId);
-    
-    if (!employee) {
-      rejectedCount++;
-      rejectionReasons.push(`${request.EmployeeId}: Employee not found`);
-      return;
-    }
-
-    const requestedDays = parseFloat(request.RequestedDuration);
-
-    // Find the leave type for this request
-    const leaveType = employee.leaveTypes.find(
-      (lt) => lt.typeName === request.LeaveType
-    );
-
-    if (!leaveType) {
-      // Auto-reject if leave type not found
-      request.Status = 'Rejected';
-      request.ApprovalComment = 'Leave type not found in employee records';
-      rejectedCount++;
-      rejectionReasons.push(`${request.EmployeeId} (${request.LeaveType}): Leave type not found`);
-      return;
-    }
-
-    const remaining = leaveType.allocatedDays - leaveType.daysUsed;
-
-    // Check if sufficient balance
-    if (requestedDays > remaining) {
-      // Auto-reject if insufficient balance
-      request.Status = 'Rejected';
-      request.ApprovalComment = `Insufficient balance. Only ${remaining} days remaining for ${request.LeaveType}`;
-      rejectedCount++;
-      rejectionReasons.push(
-        `${request.EmployeeId} (${request.LeaveType}): Only ${remaining} days remaining`
-      );
-    } else {
-      // Approve and update balance
-      leaveType.daysUsed += requestedDays;
-      employee.leaveUsed += requestedDays;
-      
-      // Update employee in service
-      this.leaveService.updateEmployee(employee);
-      
-      // Update request status
-      request.Status = 'Approved';
-      request.ApprovalComment = 'Bulk approved by admin';
-      approvedCount++;
-    }
-  });
-
-  // Save all updated requests to localStorage
-  localStorage.setItem('leaveRequest', JSON.stringify(this.allLeaveRequest));
-
-  // Show detailed summary message
-  if (approvedCount > 0 && rejectedCount === 0) {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Bulk Approval Complete',
-      detail: `${approvedCount} request(s) approved successfully`,
-      key: 'tl',
-      life: 4000,
-    });
-  } else if (approvedCount === 0 && rejectedCount > 0) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Bulk Approval Failed',
-      detail: `${rejectedCount} request(s) rejected due to insufficient balance`,
-      key: 'tl',
-      life: 4000,
-    });
-  } else if (approvedCount > 0 && rejectedCount > 0) {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Bulk Approval Completed',
-      detail: `${approvedCount} approved, ${rejectedCount} rejected (insufficient balance)`,
-      key: 'tl',
-      life: 5000,
-    });
-  }
-
-  // Log rejection reasons for debugging
-  if (rejectionReasons.length > 0) {
-    console.warn('Bulk Approval - Rejected Requests:', rejectionReasons);
-  }
-
-  // Clear selection and reload data
-  this.selectedRequests = [];
-    this.selectedEmployees = [];
-  this.ngOnInit(); // Reload data to refresh the view
-}
-
-  bulkReject() {
-  // Check if any requests selected
-  if (this.selectedEmployees.length === 0) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'No Selection',
-      detail: 'Please select requests to reject',
-      key: 'tl',
-      life: 3000,
-    });
-    return;
-  }
-
-  // Filter only pending requests
-  const pendingRequests = this.selectedEmployees.filter(req =>
-    req.Status.includes('Pending Approval')
-  );
-
-  // Check if all selected are already processed
-  if (pendingRequests.length === 0) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Already Processed',
-      detail: 'Selected requests have already been decided',
-      key: 'tl',
-      life: 3000,
-    });
-    this.selectedRequests = [];
-    return;
-  }
-
-  // Reject all pending requests
-  pendingRequests.forEach((request) => {
-    request.Status = 'Rejected';
-    request.ApprovalComment = 'Bulk rejected by admin';
-  });
-
-  // Save all updated requests to localStorage
-  localStorage.setItem('leaveRequest', JSON.stringify(this.allLeaveRequest));
-
-  // Show success message
-  this.messageService.add({
-    severity: 'warn',
-    summary: 'Bulk Rejection Complete',
-    detail: `${pendingRequests.length} request(s) rejected`,
-    key: 'tl',
-    life: 3000,
-  });
-
-  // Clear selection and reload data
-  this.selectedRequests = [];
-    this.selectedEmployees = [];
-  this.ngOnInit(); // Reload data to refresh the view
-}
-
-  updateLocalStorage() {
-    localStorage.setItem(
-      'leaveRequest',
-      JSON.stringify(this.filteredCandidates),
-    );
-  }
-
-  viewEmployee(employee: any, op?: any) {
-    this.employeeInView = employee;
-    console.log(employee);
-    this.openViewEmployee = true;
-    op?.hide?.();
-  }
+  // ==================== TABLE ACTIONS ====================
 
   handleLeaveRequestAction(event: { actionId: string; row: any }) {
     if (event.actionId === 'view') {
-      this.viewEmployee(event.row);
-    }
-    if (event.actionId === 'approveReject') {
-      this.openAcceptRejectModal(event.row);
+      this.viewRequest(event.row);
+    } else if (event.actionId === 'action') {
+      this.openActionModal(event.row);
     }
   }
 
-  downloadAttachment(leaveRequest: any) {
-    if (leaveRequest.Attachment != 'Null') {
-      const link = document.createElement('a');
-      link.href = leaveRequest.Attachment.fileData;
-      link.download = leaveRequest.Attachment.fileName;
-      link.click();
-    } else {
+  viewRequest(row: any) {
+    this.requestInView = row._rawRequest;
+    this.selectedEmployee = row._rawRequest._linkedEmployee;
+    this.showViewModal = true;
+  }
+
+  openActionModal(row: any) {
+    const request = row._rawRequest;
+    
+    console.log('👆 Selected Request:', request);
+
+    this.selectedRequest = request;
+    this.selectedEmployee = request._linkedEmployee;
+    this.adminComment = '';
+    this.showActionModal = true;
+  }
+
+  closeActionModal() {
+    this.showActionModal = false;
+    this.selectedRequest = null;
+    this.selectedEmployee = null;
+    this.adminComment = '';
+  }
+
+  closeViewModal() {
+    this.showViewModal = false;
+    this.requestInView = null;
+    this.selectedEmployee = null;
+  }
+
+  // ==================== APPROVE LOGIC ====================
+
+  approveLeave() {
+    if (!this.selectedRequest || !this.currentAdminUserId) {
+      console.error('❌ Cannot approve: missing request or admin user ID');
       this.messageService.add({
-        severity: 'info',
-        summary: 'No Attachment',
-        detail: 'No file attached to this request.',
-        key: 'tl',
-        life: 3000,
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Cannot approve leave request',
+        key: 'tl'
       });
+      return;
     }
+
+    const request = this.selectedRequest;
+    const requestedDays = request.totalDays;
+    const leaveTypeId = request.leaveTypeId;
+
+    console.log('🔍 Checking balance for approval:', {
+      requestId: request.id,
+      employee: this.selectedEmployee ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}` : 'Unknown',
+      leaveType: request.leaveType?.name,
+      requestedDays: requestedDays
+    });
+
+    // Find employee's balance for this leave type
+    const employeeBalance = this.leaveBalances.find(balance =>
+      balance.employee === this.selectedEmployee?.id &&
+      balance.leaveTypeId === leaveTypeId
+    );
+
+    if (!employeeBalance) {
+      console.warn('⚠️ No balance record found for employee');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Balance Error',
+        detail: 'No leave balance found for this employee and leave type',
+        key: 'tl',
+        life: 5000
+      });
+      return;
+    }
+
+    console.log('💰 Employee Balance:', {
+      leaveType: request.leaveType?.name,
+      available: employeeBalance.balance,
+      used: employeeBalance.usedDays,
+      requested: requestedDays
+    });
+
+    // CRITICAL VALIDATION: Check if employee has enough balance
+    if (requestedDays > employeeBalance.balance) {
+      console.warn('⚠️ Insufficient balance for leave request:', {
+        available: employeeBalance.balance,
+        requested: requestedDays,
+        shortfall: requestedDays - employeeBalance.balance
+      });
+
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Insufficient Balance',
+        detail: `Employee has only ${employeeBalance.balance} days remaining for ${request.leaveType?.name}. Cannot approve ${requestedDays} days.`,
+        key: 'tl',
+        life: 6000
+      });
+      return;
+    }
+
+    // ✅ APPROVED - Update request status
+    const payload = {
+      id: request.id,
+      createdAt: request.createdAt,
+      createdBy: request.createdBy?.userId || request.createdBy?.id,
+      leaveTypeId: request.leaveTypeId,
+      startDate: request.startDate,
+      endDate: request.endDate,
+      totalDays: request.totalDays,
+      status: 'APPROVED',
+      leaveReason: request.leaveReason,
+      attachment: request.attachment,
+      adminComment: this.adminComment.trim() || '',
+      decisionBy: this.currentAdminUserId,
+      decisionOn: new Date().toISOString()
+    };
+
+    console.log('📤 Approving request:', payload);
+
+    this.apiService.updateLeaveRequestRecord(request.id, payload).subscribe({
+      next: () => {
+        // Update employee balance
+        const updatedBalance = {
+          ...employeeBalance,
+          balance: employeeBalance.balance - requestedDays,
+          usedDays: employeeBalance.usedDays + requestedDays
+        };
+
+        console.log('💰 Updating balance:', {
+          old: { balance: employeeBalance.balance, used: employeeBalance.usedDays },
+          new: { balance: updatedBalance.balance, used: updatedBalance.usedDays }
+        });
+
+        this.apiService.updateLeaveBalance(employeeBalance.id, updatedBalance).subscribe({
+          next: () => {
+            console.log('✅ Leave request approved and balance updated');
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Request Approved',
+              detail: `Leave request approved. Balance updated: ${updatedBalance.balance} days remaining.`,
+              key: 'tl',
+              life: 4000
+            });
+            this.closeActionModal();
+            this.loadData();
+          },
+          error: (err) => {
+            console.error('❌ Failed to update balance:', err);
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Partial Success',
+              detail: 'Request approved but balance update failed',
+              key: 'tl'
+            });
+            this.closeActionModal();
+            this.loadData();
+          }
+        });
+      },
+      error: (err) => {
+        console.error('❌ Failed to approve request:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to approve leave request',
+          key: 'tl'
+        });
+      }
+    });
+  }
+
+  // ==================== REJECT LOGIC ====================
+
+  rejectLeave() {
+    if (!this.selectedRequest || !this.currentAdminUserId) {
+      console.error('❌ Cannot reject: missing request or admin user ID');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Cannot reject leave request',
+        key: 'tl'
+      });
+      return;
+    }
+
+    const request = this.selectedRequest;
+    const reason = this.adminComment.trim() || 'No reason provided';
+
+    const payload = {
+      id: request.id,
+      createdAt: request.createdAt,
+      createdBy: request.createdBy?.userId || request.createdBy?.id,
+      leaveTypeId: request.leaveTypeId,
+      startDate: request.startDate,
+      endDate: request.endDate,
+      totalDays: request.totalDays,
+      status: 'REJECTED',
+      leaveReason: request.leaveReason,
+      attachment: request.attachment,
+      adminComment: reason,
+      decisionBy: this.currentAdminUserId,
+      decisionOn: new Date().toISOString()
+    };
+
+    console.log('📤 Rejecting request:', payload);
+
+    this.apiService.updateLeaveRequestRecord(request.id, payload).subscribe({
+      next: () => {
+        console.log('✅ Leave request rejected');
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Request Rejected',
+          detail: 'Leave request has been rejected',
+          key: 'tl',
+          life: 3000
+        });
+        this.closeActionModal();
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('❌ Failed to reject request:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to reject leave request',
+          key: 'tl'
+        });
+      }
+    });
+  }
+
+  // ==================== HELPERS ====================
+
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  formatDateTime(dateString: string): string {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getStatusCount(status: string): number {
+    return this.filteredRequests.filter(req => req.status === status).length;
   }
 }

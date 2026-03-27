@@ -61,7 +61,7 @@
           </h2>
 
           <p-table
-            [value]="plannedLeaves"
+            [value]="leavePlanRecords"
             [paginator]="true"
             [rows]="10"
             styleClass="p-datatable-sm"
@@ -80,10 +80,10 @@
 
             <ng-template pTemplate="body" let-plan>
               <tr>
-                <td class="text-sm">{{ plan.startDate }}</td>
-                <td class="text-sm">{{ plan.endDate }}</td>
-                <td class="text-sm">{{ plan.leaveType }}</td>
-                <td class="text-sm font-semibold">{{ plan.workingDays }}</td>
+                <td class="text-sm">{{ formatDate(plan.startDate) }}</td>
+                <td class="text-sm">{{ formatDate(plan.endDate) }}</td>
+                <td class="text-sm">{{ plan.leaveType?.name }}</td>
+                <td class="text-sm font-semibold">{{ plan.totalDays }}</td>
                 <td>
                   <span
                     [ngClass]="{
@@ -97,7 +97,7 @@
                     {{ plan.status }}
                   </span>
                 </td>
-                <td class="text-sm">{{ plan.notes || "-" }}</td>
+                <td class="text-sm">{{ plan.planReason || "-" }}</td>
                 <td>
                   <div class="flex gap-2">
                     <button
@@ -131,7 +131,7 @@
 
         <!-- Planning Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Plans by Status -->
+          <!-- Plans by Status-->
           <div class="bg-white rounded-lg border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">
               Plans by Status
@@ -356,11 +356,11 @@
 
 <!-- Emergency Leave Modal -->
 <app-modal *ngIf="showEmergencyModal" (close)="closeEmergencyModal()">
-  <h3 class="text-2xl font-semibold mb-4 text-red-600">🚨 Emergency Leave</h3>
+  <h3 class="text-2xl font-semibold mb-4 text-red-600"> Emergency Leave</h3>
 
   <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
     <p class="text-sm text-red-800">
-      <strong>⚠️ Important:</strong> Emergency leave requests bypass the
+      <strong> Important:</strong> Emergency leave requests bypass the
       planning window and go directly for approval.
       <br />
       <strong
