@@ -20,7 +20,7 @@
           <p><strong>Applicant:</strong> {{ selectedMember.fullName }} ({{ selectedMember.memberId }})</p>
           <p><strong>Email:</strong> {{ selectedMember.email }}</p>
           <p><strong>Available shares:</strong> {{ formatCurrency(selectedMember.shareCapital) }}</p>
-          <p><strong>Membership tenure:</strong> {{ getMemberTenureMonths(selectedMember.id) }} month(s)</p>
+          <p><strong>Membership tenure:</strong> {{ getMemberTenureMonths(selectedMember && selectedMember.id ? selectedMember.id.toString() : '') }} month(s)</p>
         </div>
         <div class="eligibility-note blocked" *ngIf="!selectedMember">
           Select a member to view the loan groups they belong to.

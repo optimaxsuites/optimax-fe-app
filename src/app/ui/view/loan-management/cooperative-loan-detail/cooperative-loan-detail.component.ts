@@ -40,19 +40,21 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
-      const id = params['id'];
+      const id = Number(params['id']);
       this.currentUuid = params['uuid'] || this.currentUuid;
       this.loadLoan(id);
     });
   }
 
-  loadLoan(id: string): void {
+  loadLoan(id: number): void {
     this.isLoading = true;
     this.cooperativeService.loadLoanById(id).subscribe(loan => {
       if (loan) {
         this.loan = loan;
-        this.member = this.cooperativeService.getMemberById(String(loan.cooperativeMemberId || loan.memberId || ''));
-        this.group = loan.cooperativeGroupId ? this.cooperativeService.getGroupById(String(loan.cooperativeGroupId || loan.groupId || '')) : undefined;
+        const memberId = loan.cooperativeMemberId ?? loan.memberId;
+        this.member = memberId !== undefined ? this.cooperativeService.getMemberById(memberId) : undefined;
+        const groupId = loan.cooperativeGroupId ?? loan.groupId;
+        this.group = groupId !== undefined ? this.cooperativeService.getGroupById(groupId) : undefined;
         this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
         this.guarantors = this.normalizeGuarantors(loan.guarantors);
         this.seedPaymentDefaults();
@@ -95,7 +97,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
         return;
       }
 
-      const latest = this.cooperativeService.getLoanById(String(this.loan.id));
+      const latest = this.cooperativeService.getLoanById(this.loan.id);
       if (latest) {
         this.loan = latest;
       }
@@ -151,7 +153,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   approveLoan(): void {
-    this.cooperativeService.approveLoan(String(this.loan.id)).subscribe((updated) => {
+    this.cooperativeService.approveLoan(this.loan.id).subscribe((updated) => {
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -177,7 +179,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   rejectLoan(): void {
     if (this.rejectionReason.trim()) {
-      this.cooperativeService.rejectLoan(String(this.loan.id), this.rejectionReason).subscribe((updated) => {
+      this.cooperativeService.rejectLoan(this.loan.id, this.rejectionReason).subscribe((updated) => {
         if (!updated) {
           this.messages = [{
             severity: 'warn',
@@ -214,7 +216,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   disburseLoan(): void {
     const beforeStats = this.cooperativeService.getStats();
     const beforeAvailable = Math.max(beforeStats.totalFund - beforeStats.loanPortfolio, 0);
-    this.cooperativeService.disburseLoan(String(this.loan.id)).subscribe((updated) => {
+    this.cooperativeService.disburseLoan(this.loan.id).subscribe((updated) => {
       const afterStats = this.cooperativeService.getStats();
       const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
 
@@ -253,7 +255,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    this.cooperativeService.requestLoanChanges(String(this.loan.id), this.requestChangesNote).subscribe((updated) => {
+    this.cooperativeService.requestLoanChanges(this.loan.id, this.requestChangesNote).subscribe((updated) => {
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -303,7 +305,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   setPendingReview(): void {
-    this.cooperativeService.setLoanPendingReview(String(this.loan.id), 'Application kept pending for further admin validation.').subscribe((updated) => {
+    this.cooperativeService.setLoanPendingReview(this.loan.id, 'Application kept pending for further admin validation.').subscribe((updated) => {
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -322,8 +324,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
     });
   }
 
-  approveGuarantor(memberId: string): void {
-    this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'APPROVED').subscribe((updated) => {
+  approveGuarantor(memberId: number): void {
+    this.cooperativeService.submitGuarantorDecision(this.loan.id, memberId, 'APPROVED').subscribe((updated) => {
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -343,8 +345,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
     });
   }
 
-  rejectGuarantor(memberId: string): void {
-    this.cooperativeService.submitGuarantorDecision(String(this.loan.id), memberId, 'REJECTED').subscribe((updated) => {
+  rejectGuarantor(memberId: number): void {
+    this.cooperativeService.submitGuarantorDecision(this.loan.id, memberId, 'REJECTED').subscribe((updated) => {
       if (!updated) {
         this.messages = [{
           severity: 'warn',
@@ -382,8 +384,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return `status-${status.toLowerCase()}`;
   }
 
-  getGuarantorMemberName(memberId: string): string {
-    return this.cooperativeService.getMemberById(memberId)?.fullName || memberId;
+  getGuarantorMemberName(memberId: number): string {
+    return this.cooperativeService.getMemberById(memberId)?.fullName || memberId.toString();
   }
 
   getmodeofPaymentLabel(method?: CooperativeRepayment['modeofPayment']): string {
@@ -538,8 +540,8 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   private normalizeGuarantors(guarantors: CooperativeLoan['guarantors'] | undefined): CooperativeLoanGuarantor[] {
     return (guarantors || []).map((guarantor) => ({
-      memberId: String(guarantor.memberId || ''),
-      guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
+      memberId: Number(guarantor.memberId ?? 0),
+      guaranteedAmount: Number(guarantor.guaranteedAmount ?? 0),
       status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
       requestedAt: guarantor.requestedAt || new Date().toISOString(),
       decidedAt: guarantor.decidedAt,

@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import {
+  CooperativeLoanGroup
+} from '../../../service/loan/cooperative-loan/cooperative.types';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeGroupMembership, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
@@ -114,13 +117,13 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   }
 
   approveApplication(id: string, note = ''): void {
-    const updatedMembership = this.cooperativeService.approveGroupMembership(id, note);
+    const updatedMembership = this.cooperativeService.approveGroupMembership(Number(id), note);
     if (!updatedMembership) {
       this.actionMessage = 'Unable to approve the selected join request.';
       return;
     }
 
-    const memberName = this.resolveMember(updatedMembership.memberId)?.fullName || 'Member';
+    const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
     const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
     this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
     this.loadApplications();
@@ -133,13 +136,13 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       return;
     }
 
-    const updatedMembership = this.cooperativeService.rejectGroupMembership(id, trimmedReason);
+    const updatedMembership = this.cooperativeService.rejectGroupMembership(Number(id), trimmedReason);
     if (!updatedMembership) {
       this.actionMessage = 'Unable to reject the selected join request.';
       return;
     }
 
-    const memberName = this.resolveMember(updatedMembership.memberId)?.fullName || 'Member';
+    const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
     const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
     this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
     this.loadApplications();
@@ -213,19 +216,18 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
 
   private loadApplications(): void {
     const members = this.cooperativeService.getMembersSnapshot();
-    const memberMap = new Map(members.map(member => [member.id, member]));
-    const groupMap = new Map(this.cooperativeService.getGroups().map(group => [group.id, group]));
+    const memberMap = new Map<number, CooperativeMember>(members.map((member: CooperativeMember) => [member.id, member]));
+    const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeService.getGroups().map((group: CooperativeLoanGroup) => [group.id, group]));
 
     this.applications = this.cooperativeService.getGroupMemberships()
-      .map(membership => {
-        const member = memberMap.get(membership.memberId);
-        const group = groupMap.get(membership.groupId);
-
+      .map((membership: CooperativeGroupMembership) => {
+        const member = memberMap.get(membership.memberId) || {} as CooperativeMember;
+        const group = groupMap.get(membership.groupId) || {} as CooperativeLoanGroup;
         return {
-          id: membership.id,
-          memberId: membership.memberId,
+          id: String(membership.id),
+          memberId: String(membership.memberId),
           memberName: member?.fullName || 'Unknown member',
-          memberCode: member?.memberId || membership.memberId,
+          memberCode: String(member?.memberId || membership.memberId),
           groupName: group?.name || 'Unknown group',
           status: membership.status,
           requestedAt: membership.requestedAt || membership.joinedAt || new Date().toISOString(),
@@ -234,10 +236,10 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           rejectionReason: membership.rejectionReason
         };
       })
-      .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+      .sort((a: GroupJoinHistoryRow, b: GroupJoinHistoryRow) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
   }
 
   private resolveMember(memberId: string): CooperativeMember | undefined {
-    return this.cooperativeService.getMembersSnapshot().find(member => member.id === memberId || member.memberId === memberId);
+    return this.cooperativeService.getMembersSnapshot().find((member: CooperativeMember) => String(member.id) === memberId || String(member.memberId) === memberId);
   }
 }

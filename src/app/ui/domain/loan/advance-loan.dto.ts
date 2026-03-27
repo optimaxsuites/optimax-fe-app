@@ -151,7 +151,7 @@ export interface AdvanceLoanScheduleStatusHistory {
 
 export interface AdvanceLoanPaymentHistory {
   id: number;
-  loanId: AdvanceLoanScheduleLoan | number;
+  loanId: number;
   paidAt: string;
   principalAmount: number;
   interestPaid: number;

@@ -184,6 +184,10 @@
     </div>
   </app-modal>
 
+  <app-modal *ngIf="showMembershipApplicationsModal" [header]="'Pending Membership Applications'" (close)="closeMembershipApplicationsModal()">
+    <app-cooperative-membership-applications></app-cooperative-membership-applications>
+  </app-modal>
+
   <!-- Loading State -->
   <div *ngIf="!isLoading" class="dashboard-content">
     <!-- Header -->
@@ -191,7 +195,7 @@
       <div class="dashboard-title-group">
         <div class="dashboard-switcher">
           <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
-            <i class="fas fa-hand-holding-heart"></i> Co-operative Dashboard
+            <i class="fas fa-hand-holding-dollar"></i> Co-operative Loans Dashboard
           </button>
           <button
             type="button"
@@ -295,12 +299,18 @@
               </thead>
               <tbody>
                 <tr *ngFor="let loan of recentLoans">
-                  <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
+                  <td class="loan-id" [title]="getLoanDisplayId(loan)">{{ getLoanDisplayId(loan) }}</td>
                   <td>{{ getLoanGroupName(loan) }}</td>
-                  <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                  <td><span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">{{ loan.status }}</span></td>
-                  <td>{{ (loan.requestDate || loan.applicationDate) | date:'mediumDate' }}</td>
-                  <td class="actions-col"><button class="icon-btn" (click)="viewLoan(loan.id.toString())"><i class="pi pi-eye"></i></button></td>
+                  <td class="amount">{{ loan?.amount != null ? formatCurrency(loan.amount) : '' }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="loan?.status ? 'status-' + loan.status.toLowerCase() : ''">
+                      {{ loan?.status || '' }}
+                    </span>
+                  </td>
+                  <td>{{ loan?.requestDate ? (loan.requestDate | date:'mediumDate') : (loan?.applicationDate ? (loan.applicationDate | date:'mediumDate') : '') }}</td>
+                  <td class="actions-col">
+                    <button class="icon-btn" *ngIf="loan?.id !== undefined && loan?.id !== null" (click)="viewLoan(loan.id)"><i class="pi pi-eye"></i></button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -353,6 +363,13 @@
                 <strong>Join Requests</strong>
                 <small>Review pending group join requests</small>
                 <span class="count-badge" *ngIf="pendingGroupJoinCount > 0">{{ pendingGroupJoinCount }}</span>
+              </span>
+            </div>
+            <div class="command-pill" role="button" tabindex="0" (click)="openMembershipApplicationsModal()" (keydown.enter)="openMembershipApplicationsModal()" (keydown.space)="openMembershipApplicationsModal()">
+              <span class="command-icon"><i class="pi pi-user-plus"></i></span>
+              <span class="command-copy">
+                <strong>Membership Applications</strong>
+                <small>Review pending cooperative membership requests</small>
               </span>
             </div>
           </section>

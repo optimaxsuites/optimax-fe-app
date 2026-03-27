@@ -4,17 +4,20 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { EmployeeService } from '../../../service/employee.service';
-import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import {
-  CooperativeStats,
+  CooperativeLoanGroup,
+  CooperativeRepayment,
   CooperativeMember,
+  CooperativeStats,
   CooperativeEmployeeProfile,
   CooperativeMembershipEligibility,
   CooperativeGroupMembership
 } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { EmployeeService } from '../../../service/employee.service';
+import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { CooperativeMembershipApplicationsComponent } from '../cooperative-membership-applications/cooperative-membership-applications.component';
 
 interface DashboardActivity {
   icon: string;
@@ -30,7 +33,7 @@ interface DashboardAlert {
 type PatronageDistributionMethod = 'ADD_TO_SHARES' | 'CASH_PAYOUT' | 'APPLY_TO_LOAN';
 
 interface MemberPatronageRow {
-  memberId: string;
+  memberId: number;
   memberName: string;
   interestPaid: number;
   patronageAmount: number;
@@ -44,11 +47,11 @@ interface InviteCandidateRow {
 }
 
 interface GroupJoinApplicationRow {
-  id: string;
-  memberId: string;
+  id: number;
+  memberId: number;
   memberName: string;
-  memberCode: string;
-  groupId: string;
+  memberCode: number;
+  groupId: number;
   groupName: string;
   status: CooperativeGroupMembership['status'];
   requestDate: string;
@@ -59,9 +62,19 @@ interface GroupJoinApplicationRow {
 @Component({
   selector: 'app-cooperative-dashboard',
   templateUrl: './cooperative-dashboard.component.html',
-  styleUrls: ['./cooperative-dashboard.component.scss']
+  styleUrls: ['./cooperative-dashboard.component.scss'],
+  // Add the new component to the view providers if needed
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
+    /**
+     * Returns a safe display string for a loan's ID/code, truncated if needed.
+     */
+    getLoanDisplayId(loan: CooperativeLoan | undefined | null): string {
+      if (!loan) return '';
+      const id = loan.loanCode ?? loan.loanId ?? '';
+      const str = id?.toString() ?? '';
+      return str.length > 11 ? str.slice(0, 11) + '...' : str;
+    }
   currentUuid = uuidV4();
   selectedDashboard: 'advance' | 'cooperative' = 'cooperative';
   isDashboardMenuOpen = false;
@@ -86,7 +99,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   selectedLoanForSummary: CooperativeLoan | null = null;
   employeeDirectory: CooperativeEmployeeProfile[] = [];
   inviteCandidates: InviteCandidateRow[] = [];
-  selectedInviteEmployeeIds = new Set<string>();
+  selectedInviteEmployeeIds = new Set<number>();
   inviteMessage = '';
   groupJoinActionMessage = '';
   showInviteMembersModal = false;
@@ -95,6 +108,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   groupJoinReviewNote = '';
   groupJoinReviewError = '';
   selectedGroupJoinApplication: GroupJoinApplicationRow | null = null;
+  showMembershipApplicationsModal = false;
 
   private allLoans: CooperativeLoan[] = [];
   private allMembers: CooperativeMember[] = [];
@@ -119,6 +133,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       this.selectedDashboard = params.get('dashboard') === 'advance' ? 'advance' : 'cooperative';
     }));
 
+    this.stats = this.cooperativeService.getStats();
     this.loadDashboard();
     this.loadEmployeeDirectory();
   }
@@ -178,24 +193,20 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     forkJoin({
       groups: this.cooperativeService.loadGroups(),
-      stats: this.cooperativeService.loadStats(),
       loans: this.cooperativeService.getLoans(),
       members: this.cooperativeService.getMembers()
-    }).subscribe(({ groups, stats, loans, members }) => {
+    }).subscribe(({ groups, loans, members }: { groups: any; loans: CooperativeLoan[]; members: CooperativeMember[] }) => {
       // Groups
       // (groups are loaded for side effects, no assignment needed here)
-
-      // Stats
-      this.stats = stats;
 
       // Loans
       this.allLoans = [...loans];
       this.recentLoans = [...loans]
-        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
+        .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
       this.pendingApprovals = loans
-        .filter(loan => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
-        .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
+        .filter((loan: CooperativeLoan) => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
+        .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
         .slice(0, 5);
       this.patronageEstimate = this.estimatePatronage();
       this.refreshPatronageYearOptions();
@@ -203,7 +214,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       // Members
       this.allMembers = [...members];
       this.recentMembers = [...members]
-        .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+        .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
         .slice(0, 5);
 
       // Dependent refreshes
@@ -227,7 +238,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   get pendingGroupJoinCount(): number {
-    return this.cooperativeService.getGroupMemberships().filter(item => item.status === 'PENDING').length;
+    return this.cooperativeService.getGroupMemberships().filter((item: CooperativeGroupMembership) => item.status === 'PENDING').length;
   }
 
   get isAllInviteCandidatesSelected(): boolean {
@@ -247,8 +258,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     if (latestLoan) {
       const memberId = this.getLoanMemberId(latestLoan);
       const groupId = this.getLoanGroupId(latestLoan);
-      const member = memberId ? memberMap.get(memberId) : undefined;
-      const group = groupId ? this.cooperativeService.getGroupById(groupId) : undefined;
+      const member = memberId ? memberMap.get(Number(memberId)) : undefined;
+      const group = groupId ? this.cooperativeService.getGroupById(Number(groupId)) : undefined;
       activities.push({
         icon: 'fas fa-file-signature',
         message: `${member?.fullName || 'A member'} applied for ${this.formatCurrency(latestLoan.amount)} (${group?.name || 'Loan'})`,
@@ -268,7 +279,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const activeLoan = this.allLoans.find(loan => loan.status === 'ACTIVE');
     if (activeLoan) {
       const memberId = this.getLoanMemberId(activeLoan);
-      const member = memberId ? memberMap.get(memberId) : undefined;
+      const member = memberId ? memberMap.get(Number(memberId)) : undefined;
       activities.push({
         icon: 'fas fa-money-check-alt',
         message: `${member?.fullName || 'A member'} made payment of ${this.formatCurrency(activeLoan.repaymentAmount || activeLoan.repaymentAmount || 0)}`,
@@ -376,7 +387,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewMember(id: string): void {
+  viewMember(id: number): void {
     this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });
@@ -414,15 +425,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     }
 
     if (this.groupJoinReviewAction === 'approve') {
-      this.approveGroupJoinApplication(this.selectedGroupJoinApplication.id, this.groupJoinReviewNote.trim());
+      this.approveGroupJoinApplication(Number(this.selectedGroupJoinApplication.id), this.groupJoinReviewNote.trim());
     } else {
-      this.rejectGroupJoinApplication(this.selectedGroupJoinApplication.id, this.groupJoinReviewNote.trim());
+      this.rejectGroupJoinApplication(Number(this.selectedGroupJoinApplication.id), this.groupJoinReviewNote.trim());
     }
 
     this.closeGroupJoinReviewModal();
   }
 
-  approveGroupJoinApplication(id: string, note = ''): void {
+  approveGroupJoinApplication(id: number, note = ''): void {
     const membership = this.cooperativeService.approveGroupMembership(id, note);
     if (!membership) {
       this.groupJoinActionMessage = 'Unable to approve the selected group join request.';
@@ -434,7 +445,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.loadDashboard();
   }
 
-  rejectGroupJoinApplication(id: string, reason: string): void {
+  rejectGroupJoinApplication(id: number, reason: string): void {
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
       this.groupJoinActionMessage = 'A rejection reason is required.';
@@ -452,12 +463,12 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.loadDashboard();
   }
 
-  viewLoan(id: string | number): void {
-    const loan = this.allLoans.find(item => String(item.id) === String(id));
+  viewLoan(id: number | undefined | null): void {
+    if (typeof id !== 'number') return;
+    const loan = this.allLoans.find(item => item.id === id);
     if (!loan) {
       return;
     }
-
     this.selectedLoanForSummary = loan;
     this.showLoanSummaryModal = true;
   }
@@ -482,13 +493,13 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     const groupId = this.selectedLoanForSummary ? this.getLoanGroupId(this.selectedLoanForSummary) : '';
     return groupId
-      ? this.cooperativeService.getGroupById(groupId)?.name || 'N/A'
+      ? this.cooperativeService.getGroupById(Number(groupId))?.name || 'N/A'
       : 'N/A';
   }
 
   getLoanGroupName(loan: CooperativeLoan): string {
     const groupId = this.getLoanGroupId(loan);
-    return groupId ? this.cooperativeService.getGroupById(groupId)?.name || 'Unknown Group' : 'Ungrouped';
+    return groupId ? this.cooperativeService.getGroupById(Number(groupId))?.name || 'Unknown Group' : 'Ungrouped';
   }
 
   openCooperativeApprovalForm(loan: CooperativeLoan): void {
@@ -536,16 +547,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.showInviteMembersModal = false;
   }
 
-  toggleInviteSelection(employeeId: string): void {
+  toggleInviteSelection(employeeId: number): void {
     if (this.selectedInviteEmployeeIds.has(employeeId)) {
       this.selectedInviteEmployeeIds.delete(employeeId);
       return;
     }
-
     this.selectedInviteEmployeeIds.add(employeeId);
   }
 
-  isInviteSelected(employeeId: string): boolean {
+  isInviteSelected(employeeId: number): boolean {
     return this.selectedInviteEmployeeIds.has(employeeId);
   }
 
@@ -555,7 +565,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.selectedInviteEmployeeIds = new Set(this.inviteCandidates.map(item => item.employee.employeeId));
+    this.selectedInviteEmployeeIds = new Set<number>(this.inviteCandidates.map(item => item.employee.employeeId));
   }
 
   inviteSelectedCandidates(): void {
@@ -597,13 +607,13 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   calculatePatronage(): void {
-    const loansById = new Map(this.allLoans.map(loan => [String(loan.id), loan]));
+    const loansById = new Map(this.allLoans.map(loan => [loan.id, loan]));
     const memberById = new Map(this.allMembers.map(member => [member.id, member]));
-    const activeLoanMembers = new Set(
+    const activeLoanMembers = new Set<number>(
       this.allLoans
         .filter(loan => loan.status === 'ACTIVE')
         .map(loan => this.getLoanMemberId(loan))
-        .filter((memberId): memberId is string => !!memberId)
+        .filter((memberId): memberId is number => typeof memberId === 'number' && !isNaN(memberId))
     );
 
     const paidRepayments = this.allLoans
@@ -616,10 +626,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
         return new Date(repayment.paidDate).getFullYear() === this.patronageYear;
       });
 
-    const interestByMember = new Map<string, number>();
+    const interestByMember = new Map<number, number>();
 
     paidRepayments.forEach(repayment => {
-      const loan = loansById.get(String(repayment.loanId));
+      const loan = loansById.get(repayment.loanId);
       if (!loan || !loan.totalRepayment) {
         return;
       }
@@ -627,7 +637,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       const interestRatio = Math.max((loan.totalRepayment - loan.amount) / loan.totalRepayment, 0);
       const interestPortion = Number((repayment.amount * interestRatio).toFixed(2));
       const memberId = this.getLoanMemberId(loan);
-      if (!memberId) {
+      if (typeof memberId !== 'number' || isNaN(memberId)) {
         return;
       }
 
@@ -642,9 +652,9 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     this.patronageRows = Array.from(memberById.values())
       .map(member => {
-        const interestPaid = interestByMember.get(member.id) || 0;
+        const interestPaid = interestByMember.get(Number(member.id)) || 0;
         const patronageAmount = Number((interestPaid * (this.patronageRate / 100)).toFixed(2));
-        const hasActiveLoan = activeLoanMembers.has(member.id);
+        const hasActiveLoan = activeLoanMembers.has(Number(member.id));
         return {
           memberId: member.id,
           memberName: member.fullName,
@@ -681,7 +691,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       }
 
       if (row.distributionMethod === 'APPLY_TO_LOAN') {
-        this.cooperativeService.applyPatronageToMemberLoan(row.memberId, row.patronageAmount).subscribe((result) => {
+        this.cooperativeService.applyPatronageToMemberLoan(Number(row.memberId), row.patronageAmount).subscribe((result: { appliedAmount: number; loanId?: number }) => {
           if (result.appliedAmount <= 0) {
             member.shareCapital = Number((member.shareCapital + row.patronageAmount).toFixed(2));
             this.cooperativeService.updateMember({ ...member }).subscribe();
@@ -744,7 +754,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const yearSet = new Set<number>([currentYear]);
 
     this.allLoans.forEach(loan => {
-      this.cooperativeService.getRepaymentsByLoanId(loan.id).forEach(repayment => {
+      this.cooperativeService.getRepaymentsByLoanId(loan.id).forEach((repayment: CooperativeRepayment) => {
         if (repayment.paidDate) {
           yearSet.add(new Date(repayment.paidDate).getFullYear());
         }
@@ -758,27 +768,25 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  goToPendingApproval(loanId: string): void {
+  goToPendingApproval(loanId: number): void {
     this.router.navigate([`/admin/hr/cooperative/loans/${loanId}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
-  getMemberName(memberId: string | number | undefined): string {
-    if (memberId === undefined || memberId === null || memberId === '') {
+  getMemberName(memberId: number | undefined): string {
+    if (memberId === undefined || memberId === null) {
       return 'Unknown member';
     }
-
-    const normalizedMemberId = String(memberId);
-    return this.allMembers.find(member => member.id === normalizedMemberId || member.memberId === normalizedMemberId)?.fullName || normalizedMemberId;
+    return this.allMembers.find(member => member.id === memberId || member.memberId === memberId)?.fullName || memberId.toString();
   }
 
-  private getLoanMemberId(loan: CooperativeLoan): string {
-    return String(loan.memberId || loan.cooperativeMemberId || '');
+  private getLoanMemberId(loan: CooperativeLoan): number {
+    return loan.memberId || loan.cooperativeMemberId || 0;
   }
 
-  private getLoanGroupId(loan: CooperativeLoan): string {
-    return String(loan.groupId || loan.cooperativeGroupId || '');
+  private getLoanGroupId(loan: CooperativeLoan): number {
+    return loan.groupId || loan.cooperativeGroupId || 0;
   }
 
   getInviteTenureLabel(employee: CooperativeEmployeeProfile): string {
@@ -799,10 +807,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   private loadRecentGroupJoinApplications(): void {
     const memberMap = new Map(this.allMembers.map(member => [member.id, member]));
-    const groupMap = new Map(this.cooperativeService.getGroups().map(group => [group.id, group]));
+    const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeService.getGroups().map((group: CooperativeLoanGroup) => [group.id, group]));
 
     this.recentGroupJoinApplications = this.cooperativeService.getGroupMemberships()
-      .map(membership => {
+      .map((membership: CooperativeGroupMembership) => {
         const member = memberMap.get(membership.memberId);
         const group = groupMap.get(membership.groupId);
 
@@ -819,7 +827,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
           rejectionReason: membership.rejectionReason
         } satisfies GroupJoinApplicationRow;
       })
-      .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
+      .sort((a: any, b: any) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
       .slice(0, 5);
   }
 
@@ -885,7 +893,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       employee?.employementStartDate || employee?.employmentStartDate || employee?.hireDate || employee?.createdAt;
 
     return {
-      employeeId,
+      employeeId: Number(employeeId),
       fullName,
       email,
       phone: String(employee?.phone || '').trim(),
@@ -936,5 +944,12 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
+  }
+
+  openMembershipApplicationsModal(): void {
+    this.showMembershipApplicationsModal = true;
+  }
+  closeMembershipApplicationsModal(): void {
+    this.showMembershipApplicationsModal = false;
   }
 }

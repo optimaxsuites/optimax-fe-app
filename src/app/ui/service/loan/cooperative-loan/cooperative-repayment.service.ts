@@ -183,13 +183,13 @@ export class CooperativeRepaymentService {
       : `Reminder: Your next repayment for loan ${this.getLoanCode(loan)} is due on the 15th repayment cycle.`;
 
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_REPAYMENT_REMINDER',
       recipient: 'MEMBER',
       title: 'Loan Repayment Reminder',
       message,
       loanId: loan.id,
-      memberId: this.getLoanMemberId(loan),
+      memberId: Number(this.getLoanMemberId(loan)),
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -213,13 +213,13 @@ export class CooperativeRepaymentService {
     loan.updatedAt = new Date().toISOString();
 
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_DEFAULTED',
       recipient: 'MEMBER',
       title: 'Loan Marked as Defaulted',
       message: `Your loan ${this.getLoanCode(loan)} has been marked as defaulted. Please contact the cooperative admin immediately.`,
       loanId: loan.id,
-      memberId: this.getLoanMemberId(loan),
+      memberId: Number(this.getLoanMemberId(loan)),
       createdAt: new Date().toISOString(),
       read: false
     });
@@ -360,7 +360,7 @@ export class CooperativeRepaymentService {
       const installmentAmount = this.roundCurrency(principalComponent + interestComponent);
 
       context.repayments.push({
-        id: `${loan.id}-RP-${installment}`,
+        id: Number(`${loan.id}${installment}`),
         loanId: loan.id,
         amount: installmentAmount,
         dueDate: dueDate.toISOString(),
@@ -395,10 +395,8 @@ export class CooperativeRepaymentService {
     const nowIso = new Date().toISOString();
 
     context.repayments.forEach(item => {
-      if (loanId && item.loanId !== loanId) {
-        if (loanId && String(item.loanId) !== loanId) {
-          return;
-        }
+      if (loanId && String(item.loanId) !== String(loanId)) {
+        return;
       }
 
       if (item.status === 'PAID') {

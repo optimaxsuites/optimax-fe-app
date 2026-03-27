@@ -18,8 +18,8 @@ export class LoanRepaymentService {
   constructor(private loanApplicationService: LoanApplicationService) {}
 
   // Get repayment schedule for a loan
-  getRepaymentSchedule(loanId: string): Observable<RepaymentScheduleItem[]> {
-    return this.loanApplicationService.getApplicationById(loanId).pipe(
+  getRepaymentSchedule(loanId: number): Observable<RepaymentScheduleItem[]> {
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((loan) => {
         if (!loan) {
           return of([]);
@@ -35,10 +35,10 @@ export class LoanRepaymentService {
 
   // Record a payment
   recordPayment(
-    loanId: string,
+    loanId: number,
     payment: Partial<PaymentRecord> & { totalAmount?: number; paymentMethod?: string; paidAt?: string }
   ): Observable<LoanApplication> {
-    return this.loanApplicationService.getApplicationById(loanId).pipe(
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((loan) => {
         if (!loan) {
           return throwError(() => new Error('Loan not found'));
@@ -65,7 +65,7 @@ export class LoanRepaymentService {
         }
 
         const paymentDate = payment.paidAt || new Date().toISOString();
-        const receiptNumber = this.generateReceiptNumber(String(loan.id));
+        const receiptNumber = this.generateReceiptNumber(loan.id);
         const extraAmount = this.roundCurrency(Math.max(paidAmount - nextDue.totalAmount, 0));
         const principalPaid = this.roundCurrency((nextDue.principalAmount || 0) + extraAmount);
         const interestPaid = this.roundCurrency(nextDue.interestAmount || 0);
@@ -195,7 +195,7 @@ export class LoanRepaymentService {
     });
   }
 
-  private generateReceiptNumber(loanId: string): string {
+  private generateReceiptNumber(loanId: number): string {
     return `PAY-${loanId}-${Date.now()}`;
   }
 
@@ -204,15 +204,15 @@ export class LoanRepaymentService {
   }
 
   // Get payment history for a loan
-  getPaymentHistory(loanId: string): Observable<PaymentRecord[]> {
-    return this.loanApplicationService.getApplicationById(loanId).pipe(
+  getPaymentHistory(loanId: number): Observable<PaymentRecord[]> {
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       map((loan) => loan?.paymentHistory || [])
     );
   }
 
   // Check if loan is overdue
-  isLoanOverdue(loanId: string): Observable<boolean> {
-    return this.loanApplicationService.getApplicationById(loanId).pipe(
+  isLoanOverdue(loanId: number): Observable<boolean> {
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((loan) => {
         if (!loan) {
           return of(false);

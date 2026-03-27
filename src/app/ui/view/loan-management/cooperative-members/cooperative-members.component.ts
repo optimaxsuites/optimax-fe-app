@@ -64,7 +64,7 @@ export class CooperativeMembersComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       results = results.filter(m => 
         m.fullName.toLowerCase().includes(term) ||
-        m.memberId.toLowerCase().includes(term) ||
+        m.memberId.toString().toLowerCase().includes(term) ||
         m.email.toLowerCase().includes(term)
       );
     }
@@ -143,13 +143,13 @@ export class CooperativeMembersComponent implements OnInit {
     this.applyFilters();
   }
 
-  viewMember(id: string): void {
+  viewMember(id: number): void {
     this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
-  viewLoanHistory(memberId: string, event: Event): void {
+  viewLoanHistory(memberId: number, event: Event): void {
     event.stopPropagation();
     this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${this.currentUuid}`], {
       queryParams: { tab: 'loans', dashboard: 'cooperative' }

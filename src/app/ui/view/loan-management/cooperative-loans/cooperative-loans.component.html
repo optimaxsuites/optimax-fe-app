@@ -94,7 +94,7 @@
       <button class="status-pill all" [class.active]="groupFilter === ''" (click)="groupFilter = ''; applyFilters()">
         All Groups
       </button>
-      <button class="status-pill" *ngFor="let group of groupOptions" [class.active]="groupFilter === group.id" (click)="groupFilter = group.id; applyFilters()">
+      <button class="status-pill" *ngFor="let group of groupOptions" [class.active]="groupFilter === toStringId(group.id)" (click)="groupFilter = toStringId(group.id); applyFilters()">
         {{ group.name }}
       </button>
     </div>
@@ -153,7 +153,9 @@
         </thead>
         <tbody>
           <tr *ngFor="let loan of filteredLoans">
-            <td class="loan-id" [title]="loan.loanCode || loan.loanId">{{ ((loan.loanCode || loan.loanId || '').length > 11) ? ((loan.loanCode || loan.loanId || '') | slice:0:11) + '...' : (loan.loanCode || loan.loanId) }}</td>
+            <td class="loan-id" [title]="loan.loanCode ? loan.loanCode : (loan.loanId ? loan.loanId.toString() : '')">
+              {{ getLoanIdDisplay(loan) }}
+            </td>
             <td>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</td>
             <td>{{ getGroupName(loan.groupId || loan.cooperativeGroupId) }}</td>
             <td class="amount">{{ formatCurrency(loan.amount) }}</td>

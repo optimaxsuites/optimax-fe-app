@@ -19,8 +19,8 @@
           </div>
         </div>
 
-        <span class="eligibility-pill" [class.open]="isEligible(group.id)">
-          {{ isEligible(group.id) ? 'Open for application' : 'Not eligible' }}
+        <span class="eligibility-pill" [class.open]="isEligible(group.id.toString())">
+          {{ isEligible(group.id.toString()) ? 'Open for application' : 'Not eligible' }}
         </span>
       </div>
 
@@ -53,9 +53,9 @@
         <button
           type="button"
           class="apply-btn"
-          [disabled]="!isEligible(group.id)"
-          (click)="onApply(group.id)">
-          {{ isEligible(group.id) ? 'Apply to Join' : 'Unavailable' }}
+          [disabled]="!isEligible(group.id.toString())"
+          (click)="onApply(group.id.toString())">
+          {{ isEligible(group.id.toString()) ? 'Apply to Join' : 'Unavailable' }}
         </button>
       </div>
     </article>

@@ -11,8 +11,8 @@ export class NavbarComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
   @Input() sidebarHidden!: boolean;
 
-  userInfoRegData: any[] = [];
-  userRegData: any = { };
+  userInfoRegData: any = {};
+  userRegData: any = {};
 
   constructor(
     private router: Router,
@@ -36,7 +36,7 @@ export class NavbarComponent {
     }
 
     this.userInfoRegData = this.readUserRegData();
-    this.userRegData = this.userInfoRegData;
+    this.userRegData = this.userInfoRegData && Array.isArray(this.userInfoRegData) && this.userInfoRegData.length > 0 ? this.userInfoRegData[0] : this.userInfoRegData;
 
     // console.log("testing client types", this.userInfoRegData);
 }

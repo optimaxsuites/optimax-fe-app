@@ -10,9 +10,9 @@ import {
   CooperativeStaffRank
 } from './cooperative.types';
 
-interface PendingMembershipApplication {
-  id: string;
-  employeeId: string;
+export interface PendingMembershipApplication {
+  id: number;
+  employeeId: number;
   fullName: string;
   requestedTier: string;
   source: 'SELF' | 'ADMIN_INVITE';
@@ -33,10 +33,8 @@ export interface CooperativeMembershipContext {
 })
 export class CooperativeMembershipService {
   checkMembershipEligibility(employee: CooperativeEmployeeProfile): CooperativeMembershipEligibility {
-    const tenureMonths = this.calculateTenureMonths(employee.employmentStartDate);
-    const probationCompleted = this.isProbationCompleted(employee);
     const policy = this.getTierPolicy(employee.rank);
-
+    // Only block contract/intern or those with active disciplinary issues
     if (employee.employmentType === 'CONTRACT' || employee.employmentType === 'INTERN') {
       return {
         canApply: false,
@@ -47,13 +45,12 @@ export class CooperativeMembershipService {
         isOnHold: false,
         isBlocked: true,
         rank: employee.rank,
-        tenureMonths,
-        probationCompleted,
+        tenureMonths: 0,
+        probationCompleted: true,
         policy,
         message: 'Contract and intern staff cannot join the cooperative, and managers cannot invite them.'
       };
     }
-
     if (employee.hasActiveDisciplinaryIssue) {
       return {
         canApply: false,
@@ -64,64 +61,13 @@ export class CooperativeMembershipService {
         isOnHold: false,
         isBlocked: true,
         rank: employee.rank,
-        tenureMonths,
-        probationCompleted,
+        tenureMonths: 0,
+        probationCompleted: true,
         policy,
         message: 'Membership is blocked due to active disciplinary issues.'
       };
     }
-
-    if (tenureMonths < 12 || !probationCompleted) {
-      return {
-        canApply: false,
-        canBeInvited: false,
-        requiresInvite: false,
-        requiresManagerApproval: false,
-        autoApprove: false,
-        isOnHold: true,
-        isBlocked: false,
-        rank: employee.rank,
-        tenureMonths,
-        probationCompleted,
-        policy,
-        message: 'Membership is on hold until at least 1 year in service and probation completion.'
-      };
-    }
-
-    if (employee.rank === 'JUNIOR') {
-      return {
-        canApply: false,
-        canBeInvited: true,
-        requiresInvite: true,
-        requiresManagerApproval: false,
-        autoApprove: false,
-        isOnHold: false,
-        isBlocked: false,
-        rank: employee.rank,
-        tenureMonths,
-        probationCompleted,
-        policy,
-        message: 'Junior staff can only join through admin invitation.'
-      };
-    }
-
-    if (employee.rank === 'MID') {
-      return {
-        canApply: true,
-        canBeInvited: false,
-        requiresInvite: false,
-        requiresManagerApproval: true,
-        autoApprove: false,
-        isOnHold: false,
-        isBlocked: false,
-        rank: employee.rank,
-        tenureMonths,
-        probationCompleted,
-        policy,
-        message: 'Mid-level staff can self-apply and require manager approval.'
-      };
-    }
-
+    // Allow all other employees to apply regardless of rank, tenure, or probation
     return {
       canApply: true,
       canBeInvited: false,
@@ -131,10 +77,10 @@ export class CooperativeMembershipService {
       isOnHold: false,
       isBlocked: false,
       rank: employee.rank,
-      tenureMonths,
-      probationCompleted,
+      tenureMonths: 0,
+      probationCompleted: true,
       policy,
-      message: 'Senior management and executives are automatically eligible members.'
+      message: 'All employees are eligible to apply for cooperative membership.'
     };
   }
 
@@ -174,7 +120,7 @@ export class CooperativeMembershipService {
 
     if (!existingPending) {
       const pendingItem: PendingMembershipApplication = {
-        id: `MPA-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        id: Date.now(),
         employeeId: application.employee.employeeId,
         fullName: application.employee.fullName,
         requestedTier: application.requestedTier || eligibility.policy.tier,
@@ -186,12 +132,12 @@ export class CooperativeMembershipService {
 
       context.pendingMembershipApplications.unshift(pendingItem);
       context.notifications.unshift({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: Date.now(),
         type: 'LOAN_STATUS_UPDATE',
         recipient: 'ADMIN',
         title: 'Membership Approval Pending',
         message: `${pendingItem.fullName} (${pendingItem.employeeId}) submitted a cooperative membership request and is pending manager approval.`,
-        loanId: '',
+        loanId: 0,
         memberId: pendingItem.employeeId,
         createdAt: new Date().toISOString(),
         read: false
@@ -242,12 +188,12 @@ export class CooperativeMembershipService {
 
     const activationPath = '/member/cooperative/dashboard';
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_STATUS_UPDATE',
       recipient: 'MEMBER',
       title: 'Congratulations! You Are Invited',
       message: `Congratulations ${employee.fullName}! You are eligible for cooperative membership. Activate your membership here: ${activationPath}`,
-      loanId: '',
+      loanId: 0,
       memberId: employee.employeeId,
       createdAt: new Date().toISOString(),
       read: false
@@ -355,7 +301,8 @@ export class CooperativeMembershipService {
 
     const newMember: CooperativeMember = {
       id: employee.employeeId,
-      memberId: `COP-${String(context.members.length + 1).padStart(3, '0')}`,
+      employeeId: employee.employeeId,
+      memberId: employee.employeeId,
       fullName: employee.fullName,
       email: employee.email,
       phone: employee.phone || '',
@@ -370,5 +317,64 @@ export class CooperativeMembershipService {
     context.members.push(newMember);
     context.saveToStorage();
     return { ...newMember };
+  }
+
+  approvePendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
+    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (idx === -1) {
+      return {
+        success: false,
+        status: 'REJECTED',
+        message: 'Application not found or already processed.',
+        eligibility: undefined as any
+      };
+    }
+    const application = context.pendingMembershipApplications[idx];
+    // Simulate finding employee profile (in real app, fetch from DB)
+    const employee: CooperativeEmployeeProfile = {
+      employeeId: application.employeeId,
+      fullName: application.fullName,
+      email: '',
+      phone: '',
+      department: '',
+      rank: 'MID',
+      employmentType: 'PERMANENT',
+      employmentStartDate: '',
+      onProbation: false,
+      probationEndDate: undefined,
+      hasActiveDisciplinaryIssue: false,
+      managerId: undefined
+    };
+    const eligibility = this.checkMembershipEligibility(employee);
+    const member = this.createOrUpdateMemberFromEmployee(context, employee, eligibility.policy.minShares);
+    context.pendingMembershipApplications.splice(idx, 1);
+    context.saveToStorage();
+    return {
+      success: true,
+      status: 'AUTO_APPROVED',
+      message: 'Membership approved and member activated.',
+      eligibility,
+      member
+    };
+  }
+
+  rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
+    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (idx === -1) {
+      return {
+        success: false,
+        status: 'REJECTED',
+        message: 'Application not found or already processed.',
+        eligibility: undefined as any
+      };
+    }
+    context.pendingMembershipApplications.splice(idx, 1);
+    context.saveToStorage();
+    return {
+      success: true,
+      status: 'REJECTED',
+      message: 'Membership application rejected.',
+      eligibility: undefined as any
+    };
   }
 }
