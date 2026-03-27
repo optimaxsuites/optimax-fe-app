@@ -84,7 +84,7 @@ export class CooperativeGroupService {
     }
   getEligibleGroupsForMember(
     context: CooperativeGroupContext,
-    memberId: string,
+    memberId: number,
     monthlySalary = 0
   ): CooperativeLoanGroup[] {
     const member = context.members.find(item => item.id === memberId);
@@ -101,7 +101,7 @@ export class CooperativeGroupService {
       .map(item => ({ ...item }));
   }
 
-  getGroupMembershipsByMember(context: CooperativeGroupContext, memberId: string): CooperativeGroupMembership[] {
+  getGroupMembershipsByMember(context: CooperativeGroupContext, memberId: number): CooperativeGroupMembership[] {
     return context.groupMemberships
       .filter(item => item.memberId === memberId)
       .map(item => ({ ...item }));
@@ -111,7 +111,7 @@ export class CooperativeGroupService {
     return context.groupMemberships.map(item => ({ ...item }));
   }
 
-  getContributionEntriesByGroup(context: CooperativeGroupContext, groupId: string): CooperativeContributionEntry[] {
+  getContributionEntriesByGroup(context: CooperativeGroupContext, groupId: number): CooperativeContributionEntry[] {
     return context.contributionEntries
       .filter(item => item.groupId === groupId)
       .map(item => ({ ...item }));
@@ -119,16 +119,16 @@ export class CooperativeGroupService {
 
   getGroupMembership(
     context: CooperativeGroupContext,
-    memberId: string,
-    groupId: string
+    memberId: number,
+    groupId: number
   ): CooperativeGroupMembership | undefined {
     return context.groupMemberships.find(item => item.memberId === memberId && item.groupId === groupId);
   }
 
   applyForGroupMembership(
     context: CooperativeGroupContext,
-    memberId: string,
-    groupId: string
+    memberId: number,
+    groupId: number
   ): CooperativeGroupMembership {
     const now = new Date().toISOString();
     const existing = this.getGroupMembership(context, memberId, groupId);
@@ -146,7 +146,7 @@ export class CooperativeGroupService {
 
     const group = this.getGroupById(context, groupId);
     const membership: CooperativeGroupMembership = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       memberId,
       groupId: groupId,
       status: 'PENDING',
@@ -163,7 +163,7 @@ export class CooperativeGroupService {
 
   approveGroupMembership(
     context: CooperativeGroupContext,
-    membershipId: string,
+    membershipId: number,
     note?: string
   ): CooperativeGroupMembership | undefined {
     const membership = context.groupMemberships.find(item => item.id === membershipId);
@@ -182,7 +182,7 @@ export class CooperativeGroupService {
 
   recordContribution(
     context: CooperativeGroupContext,
-    membershipId: string,
+    membershipId: number,
     payload: { amount: number; contributionMonth: string; contributedAt?: string }
   ): CooperativeContributionEntry | undefined {
     const membership = context.groupMemberships.find(item => item.id === membershipId && item.status === 'ACTIVE');
@@ -203,7 +203,7 @@ export class CooperativeGroupService {
 
     const contributedAt = payload.contributedAt || new Date().toISOString();
     const entry: CooperativeContributionEntry = {
-      id: `${membershipId}-${contributionMonth}`,
+      id: Date.now(),
       membershipId,
       memberId: membership.memberId,
       groupId: membership.groupId,
@@ -223,7 +223,7 @@ export class CooperativeGroupService {
 
   rejectGroupMembership(
     context: CooperativeGroupContext,
-    membershipId: string,
+    membershipId: number,
     reason?: string
   ): CooperativeGroupMembership | undefined {
     const membership = context.groupMemberships.find(item => item.id === membershipId);
@@ -239,7 +239,7 @@ export class CooperativeGroupService {
     return { ...membership };
   }
 
-  getMaxBorrowableAmountForGroup(context: CooperativeGroupContext, memberId: string, groupId: string): number {
+  getMaxBorrowableAmountForGroup(context: CooperativeGroupContext, memberId: number, groupId: number): number {
     const group = this.getGroupById(context, groupId);
     const membership = this.getGroupMembership(context, memberId, groupId);
 
@@ -250,7 +250,7 @@ export class CooperativeGroupService {
     return Number(((membership.totalContribution || 0) * (Number(group.maxBorrowingPercentage || 0) / 100)).toFixed(2));
   }
 
-  getMemberTenureMonths(context: CooperativeGroupContext, memberId: string): number {
+  getMemberTenureMonths(context: CooperativeGroupContext, memberId: number): number {
     const member = context.members.find(item => item.id === memberId);
     if (!member) {
       return 0;
@@ -264,7 +264,7 @@ export class CooperativeGroupService {
   }
 
 
-  getGroupById(context: CooperativeGroupContext, id: string): CooperativeLoanGroup | undefined {
+  getGroupById(context: CooperativeGroupContext, id: number): CooperativeLoanGroup | undefined {
     return context.groups.find(p => p.id === id);
   }
 
@@ -272,7 +272,7 @@ export class CooperativeGroupService {
   addGroup(context: CooperativeGroupContext, group: Omit<CooperativeLoanGroup, 'id'>): CooperativeLoanGroup {
     const newGroup: CooperativeLoanGroup = {
       ...group,
-      id: Date.now().toString(),
+      id: Date.now(),
       minEligibleSalary: Number(group.minEligibleSalary || 0),
       monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
       maxBorrowingPercentage: Number(group.maxBorrowingPercentage || 0),
@@ -309,7 +309,7 @@ export class CooperativeGroupService {
   }
 
 
-  setGroupStatus(context: CooperativeGroupContext, id: string, status: 'ACTIVE' | 'INACTIVE'): void {
+  setGroupStatus(context: CooperativeGroupContext, id: number, status: 'ACTIVE' | 'INACTIVE'): void {
     const group = context.groups.find(p => p.id === id);
     if (!group) {
       return;

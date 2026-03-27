@@ -203,6 +203,7 @@ import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-co
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
 import { MenuModule } from 'primeng/menu';
+import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 
 @NgModule({
   declarations: [
@@ -341,6 +342,7 @@ import { MenuModule } from 'primeng/menu';
     ShiftCalendarComponent,
     PayrolExtrasComponent,
     AdHocComponent,
+    CooperativeMembershipApplicationsComponent,
   ],
 
   imports: [

@@ -158,7 +158,7 @@
           <span>· {{ selectedInviteCount }} selected</span>
         </div>
 
-        <button type="button" class="secondary" (click)="toggleSelectAllVisibleInviteEmployees()" [disabled]="selectableFilteredInviteEmployees.length === 0">
+        <button type="button" class="secondary" (click)="toggleAllVisibleInviteSelection()" [disabled]="selectableFilteredInviteEmployees.length === 0">
           {{ getVisibleInviteSelectionLabel() }}
         </button>
       </div>

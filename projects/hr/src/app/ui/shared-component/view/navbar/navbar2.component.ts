@@ -1,3 +1,4 @@
+// Removed duplicate import
 import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthenticationService } from '../../service/auth-service/authentication.service';
@@ -8,6 +9,19 @@ import { AuthenticationService } from '../../service/auth-service/authentication
   styleUrls: ['./navbar2.component.scss', './navbar.component.scss']
 })
 export class Navbar2Component {
+  isDashboardMenuOpen = false;
+
+  @Output() dashboardSwitch = new EventEmitter<'advance' | 'cooperative'>();
+
+  toggleDashboardMenu(event: Event): void {
+    event.stopPropagation();
+    this.isDashboardMenuOpen = !this.isDashboardMenuOpen;
+  }
+
+  switchDashboard(value: 'advance' | 'cooperative'): void {
+    this.isDashboardMenuOpen = false;
+    this.dashboardSwitch.emit(value);
+  }
 
   // constructor(
   //   public navbar: NavbarComponent,
@@ -17,7 +31,7 @@ export class Navbar2Component {
 
   @Output() toggleSidebar = new EventEmitter<void>();
 
-  userInfoRegData: any[] = [];
+  userInfoRegData: any = {};
   userRegData: any = {};
   
 
@@ -43,7 +57,7 @@ export class Navbar2Component {
     }
 
     this.userInfoRegData = this.readUserRegData();
-    this.userRegData = this.userInfoRegData;
+    this.userRegData = this.userInfoRegData && Array.isArray(this.userInfoRegData) && this.userInfoRegData.length > 0 ? this.userInfoRegData[0] : this.userInfoRegData;
 
     console.log("testing client types", this.userInfoRegData);
 }

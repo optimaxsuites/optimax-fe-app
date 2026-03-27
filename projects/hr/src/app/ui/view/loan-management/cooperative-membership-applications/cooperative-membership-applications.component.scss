@@ -1,0 +1,40 @@
+.membership-applications {
+  padding: 1.5rem;
+}
+
+.pending-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.pending-table th, .pending-table td {
+  border: 1px solid #e0e0e0;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+.approve-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.8rem;
+  margin-right: 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.reject-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.action-message {
+  margin-bottom: 1rem;
+  color: #1976d2;
+}
+.empty-state {
+  margin-top: 2rem;
+  color: #888;
+  font-style: italic;
+}

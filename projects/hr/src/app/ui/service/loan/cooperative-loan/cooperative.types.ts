@@ -1,7 +1,7 @@
 export interface CooperativeMember {
-  id: string;
-  employeeId?: string;
-  memberId: string;
+  id: number;
+  employeeId: number;
+  memberId: number;
   fullName: string;
   email: string;
   phone: string;
@@ -19,7 +19,7 @@ export interface CooperativeMember {
 }
 
 export interface CooperativeLoanGroup {
-  id: string;
+  id: number;
   name: string;
   description: string;
   minEligibleSalary?: number;
@@ -41,9 +41,9 @@ export interface CooperativeLoanGroup {
 }
 
 export interface CooperativeGroupMembership {
-  id: string;
-  memberId: string;
-  groupId: string;
+  id: number;
+  memberId: number;
+  groupId: number;
   status: 'PENDING' | 'ACTIVE' | 'REJECTED';
   monthlyContributionAmount: number;
   totalContribution: number;
@@ -56,10 +56,10 @@ export interface CooperativeGroupMembership {
 }
 
 export interface CooperativeContributionEntry {
-  id: string;
-  membershipId: string;
-  memberId: string;
-  groupId: string;
+  id: number;
+  membershipId: number;
+  memberId: number;
+  groupId: number;
   amount: number;
   contributionMonth: string;
   contributedAt: string;
@@ -67,9 +67,9 @@ export interface CooperativeContributionEntry {
 }
 
 export interface CooperativeGroupInviteHistoryEntry {
-  id: string;
-  groupId: string;
-  employeeId: string;
+  id: number;
+  groupId: number;
+  employeeId: number;
   employeeName: string;
   employeeEmail: string;
   department: string;
@@ -80,16 +80,18 @@ export interface CooperativeGroupInviteHistoryEntry {
   message: string;
 }
 
+
 export type CooperativeGuarantorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 export interface CooperativeLoanGuarantor {
-  memberId: string;
+  memberId: number;
   guaranteedAmount: number;
   status: CooperativeGuarantorStatus;
   requestedAt: string;
   decidedAt?: string;
   note?: string;
 }
+
 
 export type CooperativeLoanApplicationStage =
   | 'PENDING_GUARANTOR_APPROVAL'
@@ -98,8 +100,9 @@ export type CooperativeLoanApplicationStage =
   | 'INFO_REQUESTED';
 
 
+
 export interface CooperativeNotification {
-  id: string;
+  id: number;
   type:
     | 'LOAN_PENDING_APPROVAL'
     | 'GROUP_JOIN_REQUEST'
@@ -114,15 +117,15 @@ export interface CooperativeNotification {
   recipient: 'ADMIN' | 'MEMBER';
   title: string;
   message: string;
-  loanId: string | number;
-  memberId: string;
+  loanId: number;
+  memberId: number;
   createdAt: string;
   read: boolean;
 }
 
 // export interface CooperativeRepayment {
 //   id: string;
-//   loanId: string | number;
+//   loanId: number;
 //   amount: number;
 //   dueDate: string;
 //   paidDate?: string;
@@ -137,9 +140,10 @@ export interface CooperativeNotification {
 // }
 
 // In cooperative.types.ts
+
 export interface CooperativeRepayment {
-  id: string;
-  loanId: string | number;
+  id: number;
+  loanId: number;
   amount: number;
   dueDate: string;
   paidDate?: string;
@@ -151,7 +155,7 @@ export interface CooperativeRepayment {
   creditReportedAt?: string;
   modeofPayment?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
   status: 'PENDING' | 'PAID' | 'OVERDUE';
-  notes?: string;  // Add this line
+  notes?: string;
 }
 
 export interface CooperativeStats {
@@ -171,7 +175,7 @@ export type CooperativeEmploymentType = 'PERMANENT' | 'CONTRACT' | 'INTERN';
 export type CooperativeMembershipTier = 'STANDARD' | 'GOLD' | 'EXECUTIVE';
 
 export interface CooperativeEmployeeProfile {
-  employeeId: string;
+  employeeId: number;
   fullName: string;
   email: string;
   monthlySalary?: number;

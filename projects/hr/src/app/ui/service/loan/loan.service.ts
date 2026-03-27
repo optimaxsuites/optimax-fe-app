@@ -121,14 +121,6 @@ export class LoanService {
       map((loan) => {
         const application = this.toLoanApplication(loan);
         const originalRequestDate = this.normalizeDateValue(loan.requestDate, formData.requestDate || new Date().toISOString());
-        this.persistOriginalRequestDate(loan.id, loan.loanCode, originalRequestDate);
-        this.persistLoanMetadata(loan.id, loan.loanCode, {
-          employeeId: Number(formData.employeeId || 0),
-          fullName: formData.employeeName || application.fullName || 'Employee',
-          department: formData.department ?? application.department ?? '',
-          requestDate: originalRequestDate
-        });
-
         return {
           ...application,
           requestDate: originalRequestDate,
@@ -246,13 +238,7 @@ export class LoanService {
       (loan.statusHistory || []).map((item) => this.toStatusChange(item, loan))
     );
     const employee = loan.employee;
-    const requestDate = this.resolveCachedOriginalRequestDate(
-      Number(loan.id || 0),
-      String(loan.loanCode || loan.id),
-      this.normalizeDateValue(loan.requestDate, new Date().toISOString()),
-      statusHistory
-    );
-    const cachedMetadata = this.getPersistedLoanMetadata(Number(loan.id || 0), String(loan.loanCode || loan.id));
+    const requestDate = this.normalizeDateValue(loan.requestDate, new Date().toISOString());
     const interestRate = this.deriveInterestRate(loan, statusHistory);
     const repaymentSchedule = mappedRepaymentSchedule.length > 0
       ? mappedRepaymentSchedule
@@ -261,16 +247,9 @@ export class LoanService {
     const resolvedTotalPaid = this.resolveTotalPaid(loan, paymentHistory, repaymentSchedule);
     const resolvedCurrentBalance = this.resolveCurrentBalance(loan, repaymentSchedule, resolvedTotalPaid, normalizedStatus);
     const resolvedOutstandingPrincipal = this.resolveOutstandingPrincipal(loan, repaymentSchedule, resolvedTotalPaid, normalizedStatus);
-    const resolvedEmployeeId = Number(employee?.id || cachedMetadata.employeeId || 0);
-    const resolvedFullName = this.getEmployeeFullName(employee) || cachedMetadata.fullName || 'Employee';
-    const resolvedDepartment = employee?.department?.name ?? cachedMetadata.department ?? '';
-
-    this.persistLoanMetadata(Number(loan.id || 0), String(loan.loanCode || loan.id), {
-      employeeId: resolvedEmployeeId,
-      fullName: resolvedFullName,
-      department: resolvedDepartment,
-      requestDate
-    });
+    const resolvedEmployeeId = Number(employee?.id || 0);
+    const resolvedFullName = this.getEmployeeFullName(employee) || 'Employee';
+    const resolvedDepartment = employee?.department?.name ?? '';
 
     return {
       id: Number(loan.id || 0),
@@ -433,7 +412,7 @@ export class LoanService {
   private toPaymentRecord(item: AdvanceLoanPaymentHistory, index: number): PaymentRecord {
     return {
       id: Number(item.id || index + 1),
-      loanId: typeof item.loanId === 'number' ? item.loanId : item.loanId?.id,
+      loanId: item.loanId,
       paidAt: item.paidAt,
       principalAmount: Number(item.principalAmount || 0),
       interestPaid: Number(item.interestPaid || 0),
@@ -607,7 +586,7 @@ export class LoanService {
       outstandingPrincipal: Number(application.outstandingPrincipal || sourceLoan.outstandingPrincipal || application.currentBalance || 0),
       statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
       repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
-        id: this.resolveNumericId(sourceLoan.repaymentSchedule?.[index]?.id),
+        id: this.parseNumericId(item.id),
         installmentNo: item.installmentNo,
         dueDate: this.toBackendDateTime(item.dueDate),
         principalAmount: item.principalAmount,
@@ -618,7 +597,7 @@ export class LoanService {
         status: item.status
       })),
       paymentHistory: (application.paymentHistory || []).map((item, index) => ({
-        id: this.resolveNumericId(sourceLoan.paymentHistory?.[index]?.id),
+        id: this.parseNumericId(item.id),
         loanId: Number(sourceLoan.id),
         paidAt: this.toBackendDateTime(item.paidAt),
         principalAmount: Number(item.principalAmount || 0),
@@ -671,18 +650,6 @@ export class LoanService {
     }
     const numericValue = Number(rawValue);
     return Number.isFinite(numericValue) ? numericValue : null;
-  }
-
-  private resolveNumericId(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === 'object' && value !== null && 'id' in value) {
-      const nestedId = Number((value as { id?: unknown }).id);
-      return Number.isFinite(nestedId) ? nestedId : 0;
-    }
-    const parsedValue = Number(value);
-    return Number.isFinite(parsedValue) ? parsedValue : 0;
   }
 
   private resolveNullableUserId(value: unknown): number | null {
@@ -743,8 +710,6 @@ export class LoanService {
 
   private resolveOriginalRequestDate(application: LoanApplication, sourceLoan: AdvanceLoan): string {
     const candidateDates = [
-      this.getPersistedOriginalRequestDate(application.id, application.loanCode),
-      this.getPersistedOriginalRequestDate(Number(sourceLoan.id || 0), String(sourceLoan.loanCode || sourceLoan.id)),
       this.normalizeDateValue(application.requestDate),
       this.normalizeDateValue(sourceLoan.requestDate),
       ...((application.statusHistory || [])
@@ -761,133 +726,9 @@ export class LoanService {
       (first, second) => new Date(first).getTime() - new Date(second).getTime()
     )[0];
 
-    this.persistOriginalRequestDate(
-      application.id || Number(sourceLoan.id || 0),
-      application.loanCode || String(sourceLoan.loanCode || sourceLoan.id),
-      originalRequestDate
-    );
-
     return originalRequestDate;
   }
 
-  private resolveCachedOriginalRequestDate(
-    loanId: number,
-    loanCode: string,
-    requestDate: string,
-    statusHistory: StatusChange[]
-  ): string {
-    const candidateDates = [
-      this.getPersistedOriginalRequestDate(loanId, loanCode),
-      requestDate,
-      ...statusHistory
-        .filter((item) => item.status === 'PENDING')
-        .map((item) => this.normalizeDateValue(item.changedAt))
-        .filter(Boolean)
-    ].filter(Boolean);
-
-    const originalRequestDate = candidateDates.length
-      ? [...candidateDates].sort((first, second) => new Date(first).getTime() - new Date(second).getTime())[0]
-      : requestDate;
-
-    this.persistOriginalRequestDate(loanId, loanCode, originalRequestDate);
-    return originalRequestDate;
-  }
-
-  private getPersistedOriginalRequestDate(loanId: number, loanCode: string): string {
-    const cache = this.readOriginalRequestDateCache();
-    return String(cache[`id:${loanId}`] || cache[`code:${loanCode}`] || '').trim();
-  }
-
-  private persistOriginalRequestDate(loanId: number, loanCode: string, requestDate: string): void {
-    const normalizedRequestDate = this.normalizeDateValue(requestDate);
-    if (!normalizedRequestDate) {
-      return;
-    }
-
-    const cache = this.readOriginalRequestDateCache();
-    if (loanId > 0) {
-      cache[`id:${loanId}`] = normalizedRequestDate;
-    }
-    if (loanCode) {
-      cache[`code:${loanCode}`] = normalizedRequestDate;
-    }
-    this.writeOriginalRequestDateCache(cache);
-  }
-
-  private readOriginalRequestDateCache(): Record<string, string> {
-    const rawValue = localStorage.getItem(this.originalRequestDateCacheKey);
-    if (!rawValue) {
-      return {};
-    }
-    try {
-      const parsedValue = JSON.parse(rawValue);
-      return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private writeOriginalRequestDateCache(cache: Record<string, string>): void {
-    try {
-      localStorage.setItem(this.originalRequestDateCacheKey, JSON.stringify(cache));
-    } catch {
-      // Ignore storage write failures
-    }
-  }
-
-  private getPersistedLoanMetadata(
-    loanId: number,
-    loanCode: string
-  ): { employeeId?: number; fullName?: string; department?: string; requestDate?: string } {
-    const cache = this.readLoanMetadataCache();
-    const metadata = cache[`id:${loanId}`] || cache[`code:${loanCode}`] || {};
-    return typeof metadata === 'object' && metadata !== null ? metadata : {};
-  }
-
-  private persistLoanMetadata(
-    loanId: number,
-    loanCode: string,
-    metadata: { employeeId?: number; fullName?: string; department?: string; requestDate?: string }
-  ): void {
-    const cache = this.readLoanMetadataCache();
-    const normalizedMetadata = {
-      employeeId: Number(metadata.employeeId || 0),
-      fullName: String(metadata.fullName || '').trim(),
-      department: typeof metadata.department === 'string' ? metadata.department : String(metadata.department ?? '').trim(),
-      requestDate: this.normalizeDateValue(metadata.requestDate)
-    };
-
-    if (loanId > 0) {
-      cache[`id:${loanId}`] = normalizedMetadata;
-    }
-    if (loanCode) {
-      cache[`code:${loanCode}`] = normalizedMetadata;
-    }
-    this.writeLoanMetadataCache(cache);
-  }
-
-  private readLoanMetadataCache(): Record<string, { employeeId?: number; fullName?: string; department?: string; requestDate?: string }> {
-    const rawValue = localStorage.getItem(this.loanMetadataCacheKey);
-    if (!rawValue) {
-      return {};
-    }
-    try {
-      const parsedValue = JSON.parse(rawValue);
-      return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private writeLoanMetadataCache(
-    cache: Record<string, { employeeId?: number; fullName?: string; department?: string; requestDate?: string }>
-  ): void {
-    try {
-      localStorage.setItem(this.loanMetadataCacheKey, JSON.stringify(cache));
-    } catch {
-      // Ignore storage write failures
-    }
-  }
 
   private fromBackendPaymentMode(paymentMode?: string): 'MONTHLY' | 'ONE_OFF' {
     return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';

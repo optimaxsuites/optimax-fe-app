@@ -1,3 +1,8 @@
+// Minimal interface for pending membership application
+interface PendingMembershipApplication {
+  employeeId: number;
+  fullName: string;
+}
 import { Injectable } from '@angular/core';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import {
@@ -9,23 +14,14 @@ import {
   CooperativeGroupMembership
 } from './cooperative.types';
 
-interface PendingMembershipApplication {
-  id: string;
-  employeeId: string;
-  fullName: string;
-  requestedTier: string;
-  source: 'SELF' | 'ADMIN_INVITE';
-  requestDate: string;
-  note?: string;
-  status: 'PENDING_MANAGER_APPROVAL';
-}
+
 
 export interface CooperativeNotificationContext {
   notifications: CooperativeNotification[];
   saveToStorage: () => void;
-  getMemberById: (id: string) => CooperativeMember | undefined;
-  getLoanById: (id: string) => CooperativeLoan | undefined;
-  getGroupById: (id: string) => CooperativeLoanGroup | undefined;
+  getMemberById: (id: number) => CooperativeMember | undefined;
+  getLoanById: (id: number) => CooperativeLoan | undefined;
+  getGroupById: (id: number) => CooperativeLoanGroup | undefined;
   formatCurrency: (amount: number) => string;
 }
 
@@ -37,12 +33,11 @@ export class CooperativeNotificationService {
     return [...context.notifications];
   }
 
-  markNotificationAsRead(context: CooperativeNotificationContext, id: string): void {
+  markNotificationAsRead(context: CooperativeNotificationContext, id: number): void {
     const notification = context.notifications.find(item => item.id === id);
     if (!notification) {
       return;
     }
-
     notification.read = true;
     context.saveToStorage();
   }
@@ -53,7 +48,7 @@ export class CooperativeNotificationService {
     const groupId = this.getLoanGroupId(loan);
     const group = groupId ? context.getGroupById(groupId) : undefined;
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_PENDING_APPROVAL',
       recipient: 'ADMIN',
       title: 'Loan Pending Approval',
@@ -67,12 +62,12 @@ export class CooperativeNotificationService {
 
   createPendingMembershipApprovalNotification(context: CooperativeNotificationContext, item: PendingMembershipApplication): void {
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_STATUS_UPDATE',
       recipient: 'ADMIN',
       title: 'Membership Approval Pending',
       message: `${item.fullName} (${item.employeeId}) submitted a cooperative membership request and is pending manager approval.`,
-      loanId: '',
+      loanId: 0,
       memberId: item.employeeId,
       createdAt: new Date().toISOString(),
       read: false
@@ -84,7 +79,7 @@ export class CooperativeNotificationService {
     const group = context.getGroupById(membership.groupId);
 
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'GROUP_JOIN_REQUEST',
       recipient: 'ADMIN',
       title: 'Group Join Request',
@@ -103,7 +98,7 @@ export class CooperativeNotificationService {
     message: string
   ): void {
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'GROUP_JOIN_STATUS_UPDATE',
       recipient: 'MEMBER',
       title,
@@ -123,7 +118,7 @@ export class CooperativeNotificationService {
   ): void {
     const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_STATUS_UPDATE',
       recipient: 'MEMBER',
       title,
@@ -138,7 +133,7 @@ export class CooperativeNotificationService {
   createGuarantorNotifications(context: CooperativeNotificationContext, loan: CooperativeLoan): void {
     (loan.guarantors || []).forEach((guarantor) => {
       const normalizedGuarantor: CooperativeLoanGuarantor = {
-        memberId: String(guarantor.memberId || ''),
+        memberId: Number(guarantor.memberId || 0),
         guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
         status: (guarantor.status as CooperativeLoanGuarantor['status']) || 'PENDING',
         requestedAt: guarantor.requestedAt || new Date().toISOString(),
@@ -156,7 +151,7 @@ export class CooperativeNotificationService {
 
       const guarantorMember = context.getMemberById(normalizedGuarantor.memberId);
       context.notifications.unshift({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: Date.now(),
         type: 'GUARANTOR_REQUEST',
         recipient: 'MEMBER',
         title: 'Guarantor Request',
@@ -174,14 +169,14 @@ export class CooperativeNotificationService {
     repayment: CooperativeRepayment,
     message: string
   ): void {
-    const loan = context.getLoanById(String(repayment.loanId));
+    const loan = context.getLoanById(repayment.loanId);
     if (!loan) {
       return;
     }
 
     const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_REPAYMENT_REMINDER',
       recipient: 'MEMBER',
       title: 'Repayment Reminder',
@@ -194,14 +189,14 @@ export class CooperativeNotificationService {
   }
 
   createCreditReportNotification(context: CooperativeNotificationContext, repayment: CooperativeRepayment): void {
-    const loan = context.getLoanById(String(repayment.loanId));
+    const loan = context.getLoanById(repayment.loanId);
     if (!loan) {
       return;
     }
 
     const memberId = this.getLoanMemberId(loan);
     context.notifications.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: Date.now(),
       type: 'LOAN_STATUS_UPDATE',
       recipient: 'MEMBER',
       title: 'Credit Bureau Alert',
@@ -213,12 +208,12 @@ export class CooperativeNotificationService {
     });
   }
 
-  private getLoanMemberId(loan: CooperativeLoan): string {
-    return String(loan.memberId || loan.cooperativeMemberId || '');
+  private getLoanMemberId(loan: CooperativeLoan): number {
+    return loan.memberId || loan.cooperativeMemberId || 0;
   }
 
-  private getLoanGroupId(loan: CooperativeLoan): string {
-    return String(loan.groupId || loan.cooperativeGroupId || '');
+  private getLoanGroupId(loan: CooperativeLoan): number {
+    return loan.groupId || loan.cooperativeGroupId || 0;
   }
 
   private getLoanCode(loan: CooperativeLoan): string {

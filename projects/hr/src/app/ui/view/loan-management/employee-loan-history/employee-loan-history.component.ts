@@ -121,7 +121,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
 
   private loadCooperativeHistory(): void {
     this.isLoading = true;
-    const member = this.cooperativeService.getMemberById(this.employeeId);
+    const member = this.cooperativeService.getMemberById(Number(this.employeeId));
 
     if (!member) {
       this.employeeLoans = [];
@@ -150,7 +150,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
 
   private mapCooperativeLoanToLoanApplication(loan: CooperativeLoan, member: CooperativeMember): LoanApplication {
     const repayments = this.cooperativeService
-      .getRepaymentsByLoanId(loan.id.toString())
+      .getRepaymentsByLoanId(loan.id)
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const totalPaid = repayments

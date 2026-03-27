@@ -14,7 +14,7 @@ import {
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 
 interface GroupBorrowerRow {
-  memberId: string;
+  memberId: number;
   memberName: string;
   loanId: string;
   status: string;
@@ -28,9 +28,9 @@ interface GroupBorrowerRow {
 }
 
 interface GroupContributionRow {
-  memberId: string;
+  memberId: number;
   memberName: string;
-  memberCode: string;
+  memberCode: number;
   monthlyContribution: number;
   totalContribution: number;
   joinedAt: string;
@@ -187,7 +187,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     this.isLoading = true;
     this.actionMessage = '';
 
-    this.cooperativeService.loadGroupById(this.currentGroupId).subscribe(group => {
+    this.cooperativeService.loadGroupById(Number(this.currentGroupId)).subscribe(group => {
       this.group = group;
       if (!this.group) {
         this.actionMessage = 'This group could not be found.';
@@ -203,9 +203,9 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
         .map(item => this.cooperativeService.getMemberById(item.memberId))
         .filter((member): member is CooperativeMember => !!member);
 
-      this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(this.currentGroupId);
+      this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(Number(this.currentGroupId));
 
-      this.currentMember = this.cooperativeService.getMemberById(this.currentMemberId);
+      this.currentMember = this.cooperativeService.getMemberById(Number(this.currentMemberId));
       this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
 
       this.recentJoiners = [...this.groupMembers]
@@ -219,9 +219,9 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
           .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
 
         return {
-          memberId: membership.memberId,
+          memberId: Number(membership.memberId),
           memberName: member?.fullName || 'Unknown member',
-          memberCode: member?.memberId || membership.memberId,
+          memberCode: member?.memberId ? Number(member.memberId) : Number(membership.memberId),
           monthlyContribution: Number(membership.monthlyContributionAmount || 0),
           totalContribution: totalContribution || Number(membership.totalContribution || 0),
           joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
@@ -289,7 +289,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
 
     // Add loan activities
     this.groupLoans.forEach(loan => {
-      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
+      const member = this.cooperativeService.getMemberById(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
       if (loan.status === 'COMPLETED') {
         activities.push({
           id: `loan-completed-${loan.id}`,
@@ -319,8 +319,8 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
 
     // Add repayment activities
     this.groupLoans.forEach(loan => {
-      const member = this.cooperativeService.getMemberById(String(loan.memberId || loan.cooperativeMemberId || ''));
-      const repayments = this.cooperativeService.getRepaymentsByLoanId(String(loan.id));
+      const member = this.cooperativeService.getMemberById(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
+      const repayments = this.cooperativeService.getRepaymentsByLoanId(Number(loan.id));
       repayments.forEach(repayment => {
         if (repayment.status === 'PAID' && repayment.paidDate) {
           activities.push({
@@ -427,9 +427,9 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
   }
 
   private toBorrowerRow(loan: CooperativeLoan): GroupBorrowerRow {
-    const memberId = String(loan.memberId || loan.cooperativeMemberId || '');
+    const memberId = Number(loan.memberId ?? loan.cooperativeMemberId ?? 0);
     const member = this.cooperativeService.getMemberById(memberId);
-    const repayments = this.cooperativeService.getRepaymentsByLoanId(String(loan.id));
+    const repayments = this.cooperativeService.getRepaymentsByLoanId(Number(loan.id));
     const totalPaid = repayments
       .filter(item => item.status === 'PAID')
       .reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -513,7 +513,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
       return false;
     });
 
-    return matched?.id || '';
+    return matched ? String(matched.id) : '';
   }
 
   openMemberLoanHistory(memberId: string): void {
@@ -563,8 +563,8 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return 'fas fa-hand-holding-dollar';
   }
 
-  isCurrentMember(memberId: string): boolean {
-    return !!this.currentMember && this.currentMember.id === memberId;
+  isCurrentMember(memberId: number): boolean {
+    return !!this.currentMember && String(this.currentMember.id) === String(memberId);
   }
 
   canViewBorrowerAmounts(row: GroupBorrowerRow): boolean {

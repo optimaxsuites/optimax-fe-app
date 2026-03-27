@@ -422,7 +422,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.loanRepaymentService.recordPayment(this.selectedPaymentLoanId, {
+    this.loanRepaymentService.recordPayment(Number(this.selectedPaymentLoanId), {
       totalAmount: this.autoMonthlyAmount,
       paymentMethod: this.selectedmodeofPayment,
       paidAt: new Date().toISOString(),

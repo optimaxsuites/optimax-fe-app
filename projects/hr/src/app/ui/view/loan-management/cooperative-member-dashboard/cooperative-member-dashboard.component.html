@@ -1,19 +1,11 @@
 <div class="member-dashboard-container">
-  <!-- Demo data warning banner -->
-  <div *ngIf="!usingRealData && !isLoading" class="demo-data-banner">
-    <i class="fas fa-exclamation-triangle"></i>
-    <div>
-      <strong>⚠️ Using Demo Data</strong>
-      <p>Real employee data from backend is not available. Please check authentication and backend connection.</p>
-    </div>
-  </div>
 
   <app-modal *ngIf="showMyGroupsModal" [header]="'My Groups'" (close)="closeMyGroupsModal()">
     <div class="my-groups-modal">
       <p class="modal-copy">Choose a group to open its dedicated mini dashboard.</p>
 
       <div class="group-selector-list" *ngIf="memberGroups.length > 0; else noMemberGroups">
-        <button type="button" class="group-selector-card" *ngFor="let group of memberGroups" (click)="openGroupDashboard(group.membership.groupId)">
+        <button type="button" class="group-selector-card" *ngFor="let group of memberGroups" (click)="openGroupDashboard(+group.membership.groupId)">
           <div>
             <strong>{{ group.groupName }}</strong>
             <span>{{ formatCurrency(group.membership.monthlyContributionAmount) }}/month</span>
@@ -125,7 +117,7 @@
     <app-cooperative-loan-application
       [isModal]="true"
       [isSelfService]="true"
-      [prefillMemberId]="member?.id || currentMemberId"
+      [prefillMemberId]="(member?.id || currentMemberId).toString()"
       (formCancelled)="closeApplicationModal()"
       (applicationSubmitted)="onApplicationSubmitted()">
     </app-cooperative-loan-application>
@@ -134,7 +126,7 @@
   <app-modal *ngIf="showJoinGroupModal" [header]="'Apply to Join Group'" (close)="closeJoinGroupModal()">
     <app-join-cooperative-group
       [availableGroups]="availableJoinGroups"
-      [eligibleGroupIds]="eligibleJoinGroupIds"
+      [eligibleGroupIds]="eligibleJoinGroupIdsAsString"
       (applyToGroup)="applyToJoinGroup($event)"
       (closeModal)="closeJoinGroupModal()">
     </app-join-cooperative-group>
@@ -151,16 +143,7 @@
 
     <div *ngIf="!member" class="membership-card">
       <div class="membership-card-header">
-        <h2><i class="fas fa-user-cog"></i> Membership Eligibility</h2>
-        <div class="role-switcher">
-          <label for="rolePreviewSelectNoMember">Switch Role</label>
-          <select
-            id="rolePreviewSelectNoMember"
-            [ngModel]="selectedPreviewRole"
-            (ngModelChange)="onPreviewRoleChange($event)">
-            <option *ngFor="let role of previewRoles" [ngValue]="role.value">{{ role.label }}</option>
-          </select>
-        </div>
+        <h2><i class="fas fa-user-cog"></i> Membership Application</h2>
       </div>
 
       <p class="action-message" *ngIf="membershipMessage">{{ membershipMessage }}</p>
@@ -172,13 +155,6 @@
           (click)="submitMembershipApplication()">
           <i class="fas fa-user-plus"></i>
           Apply for Membership
-        </button>
-        <button
-          class="quick-action-btn"
-          type="button"
-          (click)="requestInvite()">
-          <i class="fas fa-envelope-open-text"></i>
-          Request Invite
         </button>
       </div>
     </div>
@@ -256,6 +232,14 @@
             </span>
           </button>
 
+          <button class="quick-action-btn" (click)="openJoinGroupModal()">
+            <span class="action-icon"><i class="fas fa-users"></i></span>
+            <span class="action-copy">
+              <strong>Apply for Membership</strong>
+              <small>Join a new cooperative group</small>
+            </span>
+          </button>
+
           <!-- My Groups Button - Disabled when no groups -->
           <button 
             class="quick-action-btn" 
@@ -276,13 +260,13 @@
             </span>
           </button>
 
-          <button class="quick-action-btn" (click)="openJoinGroupModal()">
+          <!-- <button class="quick-action-btn" (click)="openJoinGroupModal()">
             <span class="action-icon"><i class="fas fa-users"></i></span>
             <span class="action-copy">
               <strong>Apply to Join Group</strong>
               <small>Join a new cooperative group</small>
             </span>
-          </button>
+          </button> -->
 
           <button class="quick-action-btn" (click)="toggleLoanHistory()">
             <span class="action-icon"><i class="fas fa-history"></i></span>
@@ -372,13 +356,13 @@
                 <span class="separator">|</span>
                 Monthly: <strong>{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</strong>
                 <span class="separator">|</span>
-                Next: <strong>{{ getNextDueDate(loan.id.toString()) ? (getNextDueDate(loan.id.toString()) | date:'dd/MM/yyyy') : '-' }}</strong>
+                Next: <strong>{{ getNextDueDate(loan.id) ? (getNextDueDate(loan.id) | date:'dd/MM/yyyy') : '-' }}</strong>
               </p>
               <p class="last-payment-line">
-                Last payment: <strong>{{ getLastPaymentDate(loan.id.toString()) ? (getLastPaymentDate(loan.id.toString()) | date:'dd/MM/yyyy') : 'No payment yet' }}</strong>
+                Last payment: <strong>{{ getLastPaymentDate(loan.id) ? (getLastPaymentDate(loan.id) | date:'dd/MM/yyyy') : 'No payment yet' }}</strong>
               </p>
               <div class="loan-actions">
-                <button class="btn-secondary" (click)="viewLoanDetails(loan.id.toString())">View Details</button>
+                <button class="btn-secondary" (click)="viewLoanDetails(loan.id)">View Details</button>
                 <button class="btn-primary" (click)="openPaymentModal(loan)">Make Payment</button>
               </div>
             </div>
@@ -405,8 +389,8 @@
                     </td>
                     <td>{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
                     <td class="actions-col">
-                      <button class="icon-btn" (click)="viewLoanDetails(loan.id.toString())"><i class="fas fa-eye"></i></button>
-                      <button class="icon-btn" (click)="viewRepaymentHistory(loan.id.toString())" title="View Repayment History" aria-label="View Repayment History">
+                      <button class="icon-btn" (click)="viewLoanDetails(loan.id)"><i class="fas fa-eye"></i></button>
+                      <button class="icon-btn" (click)="viewRepaymentHistory(loan.id)" title="View Repayment History" aria-label="View Repayment History">
                         <i class="fas fa-history"></i>
                       </button>
                     </td>

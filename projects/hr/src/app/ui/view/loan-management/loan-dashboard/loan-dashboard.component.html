@@ -244,37 +244,11 @@
     <div>
         <header class="dashboard-header lm-header-card">
             <div class="dashboard-title-group">
-                <div class="dashboard-switcher">
-                    <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
-                        <i class="fas fa-hand-holding-heart"></i> Advance Dashboard
-                    </button>
-                    <button
-                        type="button"
-                        class="dashboard-menu-toggle"
-                        aria-label="Open dashboard menu"
-                        [attr.aria-expanded]="isDashboardMenuOpen"
-                        (click)="toggleDashboardMenu($event)">
-                        <i class="fas fa-caret-down" [class.open]="isDashboardMenuOpen"></i>
-                    </button>
-
-                    <div class="dashboard-menu" *ngIf="isDashboardMenuOpen">
-                        <button type="button" class="dashboard-menu-item active" (click)="switchDashboard('advance')">
-                            Manage Advanced Loans
-                        </button>
-                        <button type="button" class="dashboard-menu-item" (click)="switchDashboard('cooperative')">
-                            Manage Cooperative Loans
-                        </button>
-                    </div>
-                </div>
+                <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
+                    <i class="fas fa-hand-holding-dollar"></i> Advanced Loans Dashboard
+                </button>
             </div>
         </header>
-
-        <section class="alerts-section" *ngIf="alerts.length > 0">
-            <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
-                <i class="fas" [ngClass]="alert.level === 'danger' ? 'fa-exclamation-triangle' : 'fa-bell'"></i>
-                <span>{{ alert.message }}</span>
-            </div>
-        </section>
 
         <!-- Stats Cards with Icons -->
         <section class="stats-section">
@@ -306,6 +280,14 @@
                         ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
                     </p> 
                 </div>
+            </div>
+        </section>
+
+        <!-- Move alerts-section below stats-section -->
+        <section class="alerts-section" *ngIf="alerts.length > 0">
+            <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
+                <i class="fas" [ngClass]="alert.level === 'danger' ? 'fa-exclamation-triangle' : 'fa-bell'"></i>
+                <span>{{ alert.message }}</span>
             </div>
         </section>
 

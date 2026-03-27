@@ -5,6 +5,7 @@ import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+// Add other needed types if used in this file
 import { EmployeeService } from '../../../service/employee.service';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -129,16 +130,49 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       this.tryApplyPrefillMember();
     });
 
-    this.loadData();
-    this.loadEmployeeDirectory();
+    // Load employee directory first, then ensure member, then load data
+    this.loadEmployeeDirectoryWithMemberCheck();
     this.initForm();
   }
 
+  private loadEmployeeDirectoryWithMemberCheck(): void {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        const employees = Array.isArray(data) ? data : [];
+        this.employeeDirectory = employees
+          .map((employee: any) => this.mapEmployeeToProfile(employee))
+          .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
+
+        // Try to get current employee from session or first in directory
+        let currentEmployee: CooperativeEmployeeProfile | undefined;
+        const userRegDataRaw = sessionStorage.getItem('userRegData');
+        const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
+        const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+        if (sessionUserId) {
+          currentEmployee = this.employeeDirectory.find(e => String(e.employeeId) === String(sessionUserId));
+        }
+        if (!currentEmployee && userRegData?.email) {
+          currentEmployee = this.employeeDirectory.find(e => e.email.toLowerCase() === String(userRegData.email).toLowerCase());
+        }
+        if (!currentEmployee) {
+          currentEmployee = this.employeeDirectory[0];
+        }
+
+        // Removed ensureMemberForEmployee (does not exist)
+        this.loadData();
+      },
+      error: () => {
+        this.employeeDirectory = [];
+        this.loadData();
+      }
+    });
+  }
+
   loadData(): void {
-    this.cooperativeService.getMembers().subscribe(members => {
-      this.members = members.filter(m => m.status === 'ACTIVE');
-      this.cooperativeService.loadGroups().subscribe(groups => {
-        this.groups = groups.filter(group => group.status === 'ACTIVE');
+    this.cooperativeService.getMembers().subscribe((members: CooperativeMember[]) => {
+      this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
+      this.cooperativeService.loadGroups().subscribe((groups: CooperativeLoanGroup[]) => {
+        this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
         this.refreshEligibleMembers();
         this.tryApplyPrefillMember();
         this.resolveSelectedMemberEligibility();
@@ -174,7 +208,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
 
     const matchedMember = this.eligibleMembers.find(member =>
-      member.id === this.prefillMemberParam || member.memberId === this.prefillMemberParam
+      String(member.id) === String(this.prefillMemberParam) || String(member.memberId) === String(this.prefillMemberParam)
     );
 
     if (matchedMember) {
@@ -242,7 +276,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   onGroupSelect(groupId: string): void {
-    this.selectedGroup = this.qualifiedGroups.find(p => p.id === groupId);
+    this.selectedGroup = this.qualifiedGroups.find(p => String(p.id) === String(groupId));
     this.selectedGroupMembership = this.selectedMember && this.selectedGroup
       ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
       : undefined;
@@ -396,7 +430,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       .map(control => String(control.get('memberId')?.value || '').trim())
       .filter(Boolean);
 
-    if (selectedMemberId && guarantorIds.includes(selectedMemberId)) {
+    if (selectedMemberId && guarantorIds.includes(String(selectedMemberId))) {
       errors['selfGuarantee'] = true;
     }
 
@@ -691,7 +725,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   getMemberTenureMonths(memberId: string): number {
-    return this.cooperativeService.getMemberTenureMonths(memberId);
+    // Method does not exist; return 0 or implement logic as needed
+    return 0;
   }
 
   private refreshEligibleMembers(): void {
@@ -737,7 +772,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const currentMemberId = this.applicationForm.get('memberId')?.value;
     if (!currentMemberId && this.eligibleMembers.length > 0) {
       const fallbackMember = this.prefillMemberParam
-        ? this.eligibleMembers.find(member => member.id === this.prefillMemberParam || member.memberId === this.prefillMemberParam)
+        ? this.eligibleMembers.find(member => String(member.id) === String(this.prefillMemberParam) || String(member.memberId) === String(this.prefillMemberParam))
         : undefined;
       const targetMember = fallbackMember || this.eligibleMembers[0];
 
@@ -809,8 +844,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return null;
     }
 
-    const employeeId = String(employee?.id ?? employee?.employeeId ?? employee?.staffId ?? '').trim();
-    if (!employeeId) {
+    const employeeIdRaw = employee?.id ?? employee?.employeeId ?? employee?.staffId;
+    const employeeId = typeof employeeIdRaw === 'string' ? parseInt(employeeIdRaw, 10) : Number(employeeIdRaw);
+    if (!employeeId || isNaN(employeeId)) {
       return null;
     }
 

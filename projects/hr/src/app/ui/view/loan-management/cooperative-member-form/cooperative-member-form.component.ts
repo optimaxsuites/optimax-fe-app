@@ -41,7 +41,7 @@ export class CooperativeMemberFormComponent implements OnInit {
   loadNextMemberId(): void {
     this.cooperativeService.getMembers().subscribe(members => {
       const maxSequence = members.reduce((max, member) => {
-        const match = member.memberId?.match(/COP-(\d+)/);
+        const match = String(member.memberId).match(/COP-(\d+)/);
         const sequence = match ? parseInt(match[1], 10) : 0;
         return Math.max(max, sequence);
       }, 0);
@@ -77,9 +77,9 @@ export class CooperativeMemberFormComponent implements OnInit {
 
   loadMember(): void {
     this.isLoading = true;
-    this.cooperativeService.loadMemberById(this.memberId!).subscribe(member => {
+    this.cooperativeService.loadMemberById(Number(this.memberId!)).subscribe(member => {
       if (member) {
-        this.existingMemberCode = member.memberId;
+        this.existingMemberCode = String(member.memberId);
         this.memberForm.patchValue({
           employeeId: member.employeeId || '',
           fullName: member.fullName,
@@ -122,7 +122,7 @@ export class CooperativeMemberFormComponent implements OnInit {
       }
 
       if (this.isEdit && this.memberId) {
-        const existing = this.cooperativeService.getMemberById(this.memberId);
+        const existing = this.cooperativeService.getMemberById(Number(this.memberId));
         if (existing) {
           const updated = { ...existing, ...memberData };
           this.cooperativeService.updateMember(updated).subscribe(() => {

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { EmployeeService } from '../../../service/employee.service';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+// Add other needed types if used in this file
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import {
   CooperativeEmployeeProfile,
@@ -22,7 +23,7 @@ interface GroupMetrics {
 }
 
 interface GroupTableRow {
-  id: string;
+  id: number;
   name: string;
   memberCount: number;
   totalContribution: number;
@@ -35,7 +36,7 @@ interface GroupTableRow {
 type InviteTenureFilter = 'ALL' | 'UNDER_6_MONTHS' | 'SIX_TO_TWELVE_MONTHS' | 'ONE_TO_THREE_YEARS' | 'OVER_THREE_YEARS';
 
 interface GroupInviteEmployeeRow {
-  employeeId: string;
+  employeeId: number;
   fullName: string;
   email: string;
   department: string;
@@ -54,7 +55,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   groups: CooperativeLoanGroup[] = [];
   members: CooperativeMember[] = [];
   employeeDirectory: GroupInviteEmployeeRow[] = [];
-  groupMetricsById: Record<string, GroupMetrics> = {};
+  groupMetricsById: Record<number, GroupMetrics> = {};
   groupSummaryRows: GroupTableRow[] = [];
   showGroupForm = false;
   showGroupDetails = false;
@@ -62,12 +63,12 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   selectedGroupForDetails: CooperativeLoanGroup | null = null;
   selectedGroupForInvite: CooperativeLoanGroup | null = null;
   selectedGroupInviteHistory: CooperativeGroupInviteHistoryEntry[] = [];
-  editingGroupId: string | null = null;
+  editingGroupId: number | null = null;
   groupForm!: FormGroup;
   inviteDepartmentFilter = 'ALL';
   inviteRankFilter: CooperativeEmployeeProfile['rank'] | 'ALL' = 'ALL';
   inviteTenureFilter: InviteTenureFilter = 'ALL';
-  selectedInviteEmployeeIds = new Set<string>();
+  selectedInviteEmployeeIds = new Set<number>();
   inviteMessage = '';
 
   readonly inviteTenureOptions: Array<{ value: InviteTenureFilter; label: string }> = [
@@ -142,7 +143,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   loadMembers(): void {
-    this.cooperativeService.getMembers().subscribe(members => {
+    this.cooperativeService.getMembers().subscribe((members: CooperativeMember[]) => {
       this.members = members;
       this.rebuildGroupMetrics();
     });
@@ -188,7 +189,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   loadGroups(): void {
-    this.cooperativeService.loadGroups().subscribe(groups => {
+    this.cooperativeService.loadGroups().subscribe((groups: CooperativeLoanGroup[]) => {
       this.groups = groups;
       this.rebuildGroupMetrics();
     });
@@ -227,7 +228,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       };
 
       return acc;
-    }, {} as Record<string, GroupMetrics>);
+    }, {} as Record<number, GroupMetrics>);
 
     this.groupSummaryRows = this.groups.map(group => ({
       id: group.id,
@@ -241,7 +242,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     }));
   }
 
-  getGroupMetrics(groupId: string): GroupMetrics {
+  getGroupMetrics(groupId: number): GroupMetrics {
     return this.groupMetricsById[groupId] || { memberCount: 0, totalContribution: 0, members: [] };
   }
 
@@ -435,25 +436,24 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     return !this.isEmployeeAlreadyInSelectedGroup(employee);
   }
 
-  isInviteSelected(employeeId: string): boolean {
+  isInviteSelected(employeeId: number): boolean {
     return this.selectedInviteEmployeeIds.has(employeeId);
   }
 
-  toggleInviteSelection(employeeId: string): void {
+  toggleInviteSelection(employeeId: number): void {
     if (this.selectedInviteEmployeeIds.has(employeeId)) {
       this.selectedInviteEmployeeIds.delete(employeeId);
       return;
     }
-
     this.selectedInviteEmployeeIds.add(employeeId);
   }
 
-  toggleSelectAllVisibleInviteEmployees(): void {
+
+  toggleAllVisibleInviteSelection(): void {
     if (this.isAllVisibleInviteEmployeesSelected) {
       this.selectableFilteredInviteEmployees.forEach(employee => this.selectedInviteEmployeeIds.delete(employee.employeeId));
       return;
     }
-
     this.selectableFilteredInviteEmployees.forEach(employee => this.selectedInviteEmployeeIds.add(employee.employeeId));
   }
 
@@ -562,7 +562,11 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     const fallbackName = String(employee?.fullName || '').trim();
     const fullName = `${firstName} ${lastName}`.trim() || fallbackName;
     const email = String(employee?.email || employee?.workEmail || '').trim();
-    const employeeId = String(employee?.id ?? employee?.employeeId ?? employee?.staffId ?? '').trim();
+    const employeeIdRaw = employee?.id ?? employee?.employeeId ?? employee?.staffId;
+    const employeeId = typeof employeeIdRaw === 'string' ? parseInt(employeeIdRaw, 10) : Number(employeeIdRaw);
+    if (!employeeId || isNaN(employeeId)) {
+      return null;
+    }
 
     if (!fullName || !email || !employeeId) {
       return null;

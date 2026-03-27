@@ -1,4 +1,11 @@
 <div class="header">
+
+  <div class="items hamburger" >
+    <button class="hamburger-icon" (click)="onToggleSidebar()">
+      <i class="pi pi-bars"></i>
+    </button>
+  </div>
+
   <div class="header-center">
     <div class="searchbar-container">
       <img src="/assets/Logo-green.png" alt="" width="15%" />
@@ -6,6 +13,24 @@
   </div>
 
   <div class="header-end">
+    <div class="dashboard-navbar-menu">
+      <button
+        type="button"
+        class="dashboard-menu-toggle"
+        aria-label="Open dashboard menu"
+        [attr.aria-expanded]="isDashboardMenuOpen"
+        (click)="toggleDashboardMenu($event)">
+        <i class="fas fa-caret-down" [class.open]="isDashboardMenuOpen"></i>
+      </button>
+      <div class="dashboard-menu" *ngIf="isDashboardMenuOpen">
+        <button type="button" class="dashboard-menu-item active" (click)="switchDashboard('advance')">
+          Manage Advanced Loans
+        </button>
+        <button type="button" class="dashboard-menu-item" (click)="switchDashboard('cooperative')">
+          Manage Cooperative Loans
+        </button>
+      </div>
+    </div>
     <div (click)="op.toggle($event)" class="items profile-item">
       <div class="profile-img-container">
         <img src="/assets/profile.jpg" alt="" class="profile-img" />
@@ -22,9 +47,9 @@
         </div>
         <p-divider></p-divider>
         <div>
-          <h4 routerLink="/settings" class="settings">
+          <a routerLink="/settings" class="settings">
             <i class="pi pi-cog"></i>Settings
-          </h4>
+          </a>
           <h4 (click)="logout()" class="logout">
             <i class="pi pi-sign-out"></i> Sign Out
           </h4>

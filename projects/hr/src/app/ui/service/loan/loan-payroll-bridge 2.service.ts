@@ -7,7 +7,7 @@ import { EmployeeService } from '../employee.service';
 import { LoanService } from './loan.service';
 
 export interface PayrollLoanDeduction {
-  loanId: string;
+  loanId: number;
   amount: number;
   reason: string;
   dueDate?: string;
@@ -43,7 +43,7 @@ export class LoanPayrollBridgeService {
         .map((loan) => this.toDeduction(loan))
         .filter((deduction): deduction is PayrollLoanDeduction => !!deduction);
       const cooperativeLoans: CooperativeLoan[] = this.cooperativeService.getLoansByMember(
-        String(employeeDetails.employeeId || employeeDetails.memberId || employeeDetails.id || '')
+        Number(employeeDetails.employeeId || employeeDetails.memberId || employeeDetails.id || 0)
       );
       const cooperativeDeductions: PayrollLoanDeduction[] = [];
 
@@ -52,14 +52,14 @@ export class LoanPayrollBridgeService {
           continue;
         }
 
-        const repayments = this.cooperativeService.getRepaymentsByLoanId(String(loan.id));
+        const repayments = this.cooperativeService.getRepaymentsByLoanId(loan.id);
         const nextRepayment = repayments.find((repayment) => repayment.status === 'PENDING' || repayment.status === 'OVERDUE');
         if (!nextRepayment || nextRepayment.amount <= 0) {
           continue;
         }
 
         cooperativeDeductions.push({
-          loanId: String(loan.id),
+          loanId: loan.id,
           amount: Number(nextRepayment.amount || 0),
           reason: `Cooperative loan repayment (${loan.loanCode || loan.loanId || loan.id})`,
           dueDate: nextRepayment.dueDate
@@ -133,10 +133,10 @@ export class LoanPayrollBridgeService {
     return Number(value.toFixed(2));
   }
 
-  private buildPayrollReference(loanId: string, period: { month: string; year: number }): string {
-    const normalizedMonth = String(period.month || '')
-      .toUpperCase()
-      .replace(/\s+/g, '-');
-    return `PAYROLL-${period.year}-${normalizedMonth}-${loanId}`;
-  }
+  private buildPayrollReference(loanId: number, period: { month: string; year: number }): string {
+      const normalizedMonth = String(period.month || '')
+        .toUpperCase()
+        .replace(/\s+/g, '-');
+      return `PAYROLL-${period.year}-${normalizedMonth}-${loanId}`;
+    }
 }

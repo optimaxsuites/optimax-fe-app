@@ -5,7 +5,8 @@ import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
-import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 
 @Component({
@@ -14,6 +15,13 @@ import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../servic
   styleUrls: ['./cooperative-loans.component.scss']
 })
 export class CooperativeLoansComponent implements OnInit {
+  toStringId(id: string | number | undefined): string {
+    return id !== undefined && id !== null ? String(id) : '';
+  }
+  getLoanIdDisplay(loan: CooperativeLoan): string {
+    const code = loan.loanCode ? loan.loanCode : (loan.loanId ? loan.loanId.toString() : '');
+    return code.length > 11 ? code.slice(0, 11) + '...' : code;
+  }
   currentUuid = uuidV4();
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
@@ -80,15 +88,15 @@ export class CooperativeLoansComponent implements OnInit {
 
   loadLoans(): void {
     this.isLoading = true;
-    this.cooperativeService.loadGroups().subscribe(groups => {
+    this.cooperativeService.loadGroups().subscribe((groups: CooperativeLoanGroup[]) => {
       this.groups = groups;
     });
 
-    this.cooperativeService.getMembers().subscribe(members => {
+    this.cooperativeService.getMembers().subscribe((members: CooperativeMember[]) => {
       this.members = members;
     });
 
-    this.cooperativeService.getLoans().subscribe(loans => {
+    this.cooperativeService.getLoans().subscribe((loans: CooperativeLoan[]) => {
       this.loans = loans;
       this.applyFilters();
       this.isLoading = false;
@@ -252,7 +260,7 @@ export class CooperativeLoansComponent implements OnInit {
       return;
     }
 
-    this.cooperativeService.disburseLoan(String(this.selectedDisbursementLoan.id)).subscribe((updated) => {
+    this.cooperativeService.disburseLoan(Number(this.selectedDisbursementLoan.id)).subscribe((updated: CooperativeLoan | undefined) => {
       if (!updated) {
         return;
       }
@@ -313,9 +321,12 @@ export class CooperativeLoansComponent implements OnInit {
       return 'Unknown member';
     }
 
-    const normalizedMemberId = String(memberId);
-    const member = this.members.find(item => item.id === normalizedMemberId || item.memberId === normalizedMemberId);
-    return member?.fullName || normalizedMemberId;
+    const normalizedMemberId = Number(memberId);
+    const member = this.members.find(item => {
+      const idNum = typeof item.id === 'number' ? item.id : Number(item.id);
+      return idNum === normalizedMemberId;
+    });
+    return (member && 'fullName' in member ? (member as any).fullName : undefined) || String(normalizedMemberId);
   }
 
   getGroupName(groupId: string | number | undefined): string {

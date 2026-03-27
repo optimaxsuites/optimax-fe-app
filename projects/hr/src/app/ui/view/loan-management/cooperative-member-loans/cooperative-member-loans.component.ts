@@ -14,7 +14,7 @@ import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooper
 })
 export class CooperativeMemberLoansComponent implements OnInit {
   currentUuid = uuidV4();
-  currentMemberId = '';
+  currentMemberId = 0;
   member?: CooperativeMember;
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
@@ -44,16 +44,16 @@ export class CooperativeMemberLoansComponent implements OnInit {
       next: (members) => {
         this.currentMemberId = this.resolveCurrentMemberId(members);
         this.member = members.find(item => item.id === this.currentMemberId || item.memberId === this.currentMemberId);
-        this.redirectToSharedHistory(this.member?.id || this.currentMemberId || '1');
+        this.redirectToSharedHistory(this.member?.id ?? this.currentMemberId ?? 1);
       },
       error: () => {
-        this.member = this.cooperativeService.getMemberById(this.currentMemberId || '1');
-        this.redirectToSharedHistory(this.member?.id || this.currentMemberId || '1');
+        this.member = this.cooperativeService.getMemberById(this.currentMemberId || 1);
+        this.redirectToSharedHistory(this.member?.id ?? this.currentMemberId ?? 1);
       }
     });
   }
 
-  private redirectToSharedHistory(memberId: string): void {
+  private redirectToSharedHistory(memberId: number): void {
     this.isLoading = false;
     this.router.navigate(['/admin/hr/loan-management/employee-loan-history', memberId, this.currentUuid], {
       state: { source: 'employee', cooperative: true, uuid: this.currentUuid },
@@ -61,16 +61,16 @@ export class CooperativeMemberLoansComponent implements OnInit {
     });
   }
 
-  private resolveCurrentMemberId(members: CooperativeMember[]): string {
-    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
+  private resolveCurrentMemberId(members: CooperativeMember[]): number {
+    const sessionUserId = Number(sessionStorage.getItem('userid') || 0);
     const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
     const userRegRaw = sessionStorage.getItem('userRegData');
     const userRegData = userRegRaw ? JSON.parse(userRegRaw) : null;
     const regEmail = String(userRegData?.email || '').trim().toLowerCase();
 
     const matched = members.find(member => {
-      const memberId = String(member.id || '').trim();
-      const memberCode = String(member.memberId || '').trim();
+      const memberId = member.id;
+      const memberCode = member.memberId;
       const memberEmail = String(member.email || '').trim().toLowerCase();
       const memberName = String(member.fullName || '').trim().toLowerCase();
 
@@ -89,7 +89,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
       return false;
     });
 
-    return matched?.id || members[0]?.id || '1';
+    return matched?.id ?? members[0]?.id ?? 1;
   }
 
   applyFilters(): void {

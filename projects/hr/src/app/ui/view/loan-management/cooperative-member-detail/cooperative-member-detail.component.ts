@@ -44,7 +44,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
 
   loadMember(id: string): void {
     this.isLoading = true;
-    this.cooperativeService.loadMemberById(id).subscribe(member => {
+    this.cooperativeService.loadMemberById(Number(id)).subscribe(member => {
       if (!member) {
         this.isLoading = false;
         return;
@@ -52,7 +52,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
 
       this.member = member;
       this.cooperativeService.getLoans().subscribe(loans => {
-        this.memberLoans = loans.filter(loan => String(loan.memberId || loan.cooperativeMemberId || '') === member.id);
+        this.memberLoans = loans.filter(loan => (loan.memberId || loan.cooperativeMemberId) === member.id);
         this.isLoading = false;
       });
     });
