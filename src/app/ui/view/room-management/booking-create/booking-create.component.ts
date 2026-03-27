@@ -235,6 +235,9 @@ export class BookingCreateComponent implements OnInit {
       return;
     }
     this.step++;
+    if (this.step === 3) {
+      this.paymentForm.patchValue({ depositAmount: this.grandTotal });
+    }
   }
 
   addToBatch(): void {

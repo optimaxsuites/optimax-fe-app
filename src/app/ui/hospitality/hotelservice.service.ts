@@ -62,7 +62,7 @@ export interface Guest {
   phone: string;
   country: string;
   idNumber: string;
-  gender: string;
+  gender: string | string[];
 }
 
 export interface Booking {
@@ -834,8 +834,12 @@ export class HotelserviceService {
   }
 
   createGuest(guest: Guest): Observable<Guest> {
+    const payload = { ...guest };
+    if (payload.gender && typeof payload.gender === 'string') {
+      payload.gender = [payload.gender];
+    }
     return this.http
-      .post<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests`, guest, {
+      .post<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests`, payload, {
         headers: this.headers,
       })
       .pipe(
@@ -847,8 +851,12 @@ export class HotelserviceService {
 
   updateGuest(id: any, guest: Guest): Observable<Guest> {
     const fixedId = this.getId(id);
+    const payload = { ...guest };
+    if (payload.gender && typeof payload.gender === 'string') {
+      payload.gender = [payload.gender];
+    }
     return this.http
-      .put<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${fixedId}`, guest, {
+      .put<Guest>(`${this.apiUrl}/x/api/v2/hsp/guests/${fixedId}`, payload, {
         headers: this.headers,
       })
       .pipe(

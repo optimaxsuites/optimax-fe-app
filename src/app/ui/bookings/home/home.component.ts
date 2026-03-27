@@ -1,16 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HotelserviceService, Room as ApiRoom } from '../../hospitality/hotelservice.service';
+import { forkJoin, switchMap, tap } from 'rxjs';
 
 interface DisplayRoom {
   id: number;
   roomNumber: string | number;
   name: string;
+  typeId: number;
   description: string;
   price: number;
   capacity: number;
   amenities: { name: string, icon: string }[];
-  imageUrl: string;
+  images: string[];
+  activeImageIndex: number;
   available: boolean;
 }
 
@@ -19,13 +22,21 @@ interface DisplayRoom {
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   rooms: DisplayRoom[] = [];
+  filteredRooms: DisplayRoom[] = [];
+  roomTypes: { id: number; name: string }[] = [];
+  selectedCategory: string | number = 'All Rooms';
+  maxPrice = 200000;
+  selectedAmenities: string[] = [];
+  isMenuOpen = false;
   branding: any = {
     companyName: 'OptimaxHospitality',
     logo: null,
     logoPosition: 'left'
   };
+  uuid = 'default';
+  private slideInterval: any;
 
   private readonly fallbackImages = [
     'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
@@ -55,18 +66,28 @@ export class HomeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
     this.loadBranding();
-    this.hotelService.getRooms().subscribe({
+    
+    // Use switchMap to ensure room types are loaded BEFORE mapping rooms
+    this.hotelService.getRoomTypes().pipe(
+      tap(types => this.roomTypes = types as any),
+      switchMap(() => this.hotelService.getRooms())
+    ).subscribe({
       next: (apiRooms: ApiRoom[]) => {
         if (apiRooms && apiRooms.length > 0) {
           this.rooms = this.mapRooms(apiRooms);
         } else {
           this.rooms = this.getDummyRooms();
         }
+        this.filteredRooms = [...this.rooms];
+        this.startAutoSlide();
       },
       error: (err: any) => {
         console.error('Error loading rooms:', err);
         this.rooms = this.getDummyRooms();
+        this.filteredRooms = [...this.rooms];
+        this.startAutoSlide();
       }
     });
   }
@@ -79,19 +100,25 @@ export class HomeComponent implements OnInit {
   }
 
   private mapRooms(apiRooms: ApiRoom[]): DisplayRoom[] {
-    return apiRooms.map((room, i) => ({
-      id: room.id,
-      roomNumber: room.roomNumber,
-      name: this.hotelService.getRoomTypeNameById(room.roomType),
-      description: room.description || 'A premium room experience awaits.',
-      price: room.rate,
-      capacity: room.maxOccupancy,
-      amenities: this.mapAmenities(room.amenities),
-      imageUrl: (room.imageURLs && room.imageURLs.length > 0)
-        ? room.imageURLs[0]
-        : this.fallbackImages[i % this.fallbackImages.length],
-      available: room.roomStatus === 'AVAILABLE'
-    }));
+    return apiRooms.map((room, i) => {
+      const images = (room.imageURLs && room.imageURLs.length > 0)
+        ? room.imageURLs
+        : [this.fallbackImages[i % this.fallbackImages.length], ...this.fallbackImages.filter((_, idx) => idx !== (i % this.fallbackImages.length))];
+      
+      return {
+        id: room.id,
+        roomNumber: room.roomNumber,
+        name: this.hotelService.getRoomTypeNameById(room.roomType),
+        typeId: room.roomType,
+        description: room.description || 'A premium room experience awaits.',
+        price: room.rate,
+        capacity: room.maxOccupancy,
+        amenities: this.mapAmenities(room.amenities),
+        images: images,
+        activeImageIndex: 0,
+        available: room.roomStatus === 'AVAILABLE'
+      };
+    });
   }
 
   private mapAmenities(amenities: any[]): { name: string, icon: string }[] {
@@ -118,14 +145,38 @@ export class HomeComponent implements OnInit {
   }
 
   private getDummyRooms(): DisplayRoom[] {
-    return [
-      { id: 101, roomNumber: 'D101', name: 'Deluxe Suite', description: 'Luxury suite with city view', price: 95000, capacity: 2, amenities: this.mapAmenities(['WiFi', 'AC', 'Breakfast']), imageUrl: this.fallbackImages[0], available: true },
-      { id: 102, roomNumber: 'P202', name: 'Poolside Studio', description: 'Direct access to pool', price: 75000, capacity: 2, amenities: this.mapAmenities(['WiFi', 'Pool', 'Mini Bar']), imageUrl: this.fallbackImages[1], available: true },
-      { id: 103, roomNumber: 'H303', name: 'Penthouse Loft', description: 'Stunning terrace view', price: 150000, capacity: 3, amenities: this.mapAmenities(['WiFi', 'Kitchen', 'Gym']), imageUrl: this.fallbackImages[2], available: true },
-      { id: 104, roomNumber: 'S404', name: 'Premium Studio', description: 'Modern and minimalist', price: 65000, capacity: 2, amenities: this.mapAmenities(['WiFi', 'Workspace']), imageUrl: this.fallbackImages[0], available: true },
-      { id: 105, roomNumber: 'E505', name: 'Executive Suite', description: 'Perfect for business stays', price: 110000, capacity: 2, amenities: this.mapAmenities(['WiFi', 'Lounge']), imageUrl: this.fallbackImages[1], available: true },
-      { id: 106, roomNumber: 'F606', name: 'Family Room', description: 'Spacious for everyone', price: 120000, capacity: 4, amenities: this.mapAmenities(['WiFi', 'TV', 'Laundry']), imageUrl: this.fallbackImages[2], available: true }
+    const dummyData = [
+      { id: 101, roomNumber: 'D101', name: 'Deluxe Suite', description: 'Luxury suite with city view', price: 95000, capacity: 2, amenities: ['WiFi', 'AC', 'Breakfast'] },
+      { id: 102, roomNumber: 'P202', name: 'Poolside Studio', description: 'Direct access to pool', price: 75000, capacity: 2, amenities: ['WiFi', 'Pool', 'Mini Bar'] },
+      { id: 103, roomNumber: 'H303', name: 'Penthouse Loft', description: 'Stunning terrace view', price: 150000, capacity: 3, amenities: ['WiFi', 'Kitchen', 'Gym'] },
+      { id: 104, roomNumber: 'S404', name: 'Premium Studio', description: 'Modern and minimalist', price: 65000, capacity: 2, amenities: ['WiFi', 'Workspace'] },
+      { id: 105, roomNumber: 'E505', name: 'Executive Suite', description: 'Perfect for business stays', price: 110000, capacity: 2, amenities: ['WiFi', 'Lounge'] },
+      { id: 106, roomNumber: 'F606', name: 'Family Room', description: 'Spacious for everyone', price: 120000, capacity: 4, amenities: ['WiFi', 'TV', 'Laundry'] }
     ];
+
+    return dummyData.map((d, i) => ({
+      ...d,
+      typeId: (d.id % 4) + 1, // Mock typeId for dummy rooms
+      amenities: this.mapAmenities(d.amenities),
+      images: [this.fallbackImages[i % 3], this.fallbackImages[(i+1)%3], this.fallbackImages[(i+2)%3]],
+      activeImageIndex: 0,
+      available: true
+    }));
+  }
+
+  private startAutoSlide(): void {
+    if (this.slideInterval) clearInterval(this.slideInterval);
+    this.slideInterval = setInterval(() => {
+      this.rooms.forEach(room => {
+        if (room.images.length > 1) {
+          room.activeImageIndex = (room.activeImageIndex + 1) % room.images.length;
+        }
+      });
+    }, 4000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.slideInterval) clearInterval(this.slideInterval);
   }
 
   getCategory(room: DisplayRoom): string {
@@ -139,7 +190,52 @@ export class HomeComponent implements OnInit {
   }
 
   viewRoomDetails(room: DisplayRoom): void {
-    // Navigate relatively to the booking-form within the same bookings/:uuid shell
-    this.router.navigate(['../booking-form', room.id], { relativeTo: this.route });
+    // Navigate to the NEW dedicated room details page
+    this.router.navigate(['/e-bookings/rooms/details', room.id, this.uuid]);
+  }
+
+  bookRoom(room: DisplayRoom): void {
+    // Navigate directly to the booking form (with the sidebar)
+    this.router.navigate(['/e-bookings/booking-form', room.id, this.uuid]);
+  }
+
+  setCategory(category: string | number): void {
+    this.selectedCategory = category;
+    this.applyFilters();
+  }
+
+  applyFilters(): void {
+    this.filteredRooms = this.rooms.filter(room => {
+      // Category Filter
+      let categoryMatch = true;
+      if (this.selectedCategory !== 'All Rooms') {
+        categoryMatch = room.typeId === Number(this.selectedCategory);
+      }
+
+      // Price Filter
+      const priceMatch = room.price <= this.maxPrice;
+
+      // Amenities Filter
+      const amenityMatch = this.selectedAmenities.length === 0 || 
+        this.selectedAmenities.every(sa => room.amenities.some(ra => ra.name.toLowerCase().includes(sa.toLowerCase())));
+
+      return categoryMatch && priceMatch && amenityMatch;
+    });
+  }
+
+  toggleAmenity(amenity: string): void {
+    const idx = this.selectedAmenities.indexOf(amenity);
+    if (idx >= 0) this.selectedAmenities.splice(idx, 1);
+    else this.selectedAmenities.push(amenity);
+    this.applyFilters();
+  }
+
+  updatePrice(event: any): void {
+    this.maxPrice = event.target.value;
+    this.applyFilters();
+  }
+
+  toggleMenu(): void {
+    this.isMenuOpen = !this.isMenuOpen;
   }
 }
