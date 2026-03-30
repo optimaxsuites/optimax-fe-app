@@ -243,30 +243,10 @@
 
     <div>
         <header class="dashboard-header lm-header-card">
-            <div class="dashboard-title-group" style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Only one instance of the dashboard title button is needed; removed duplicate -->
-                <div class="dashboard-switcher">
-                    <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
-                        <i class="fas fa-hand-holding-dollar"></i> Advanced Loans Dashboard
-                    </button>
-                    <button
-                        type="button"
-                        class="dashboard-menu-toggle"
-                        aria-label="Open dashboard menu"
-                        [attr.aria-expanded]="isDashboardMenuOpen"
-                        (click)="toggleDashboardMenu($event)">
-                        <i class="fas fa-caret-down" [class.open]="isDashboardMenuOpen"></i>
-                    </button>
-
-                    <div class="dashboard-menu" *ngIf="isDashboardMenuOpen">
-                        <button type="button" class="dashboard-menu-item active" (click)="switchDashboard('advance')">
-                            Manage Advanced Loans
-                        </button>
-                        <button type="button" class="dashboard-menu-item" (click)="switchDashboard('cooperative')">
-                            Manage Cooperative Loans
-                        </button>
-                    </div>
-                </div>
+            <div class="dashboard-title-group">
+                <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
+                    <i class="fas fa-hand-holding-dollar"></i> Advanced Loans Dashboard
+                </button>
             </div>
         </header>
 
