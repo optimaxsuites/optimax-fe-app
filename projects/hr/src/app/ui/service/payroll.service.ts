@@ -3,6 +3,17 @@ import { environment } from '../shared-component/environments/environment';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { EmployeePayroll } from '../domain/payroll.dto';
+import { DatePipe } from '@angular/common';
+
+export type MappingType = 'dynamic' | 'static';
+
+export interface BankExportColumn {
+  header: string;
+  type: MappingType;
+  field?: PayrollExportField;
+  staticValue?: string; // For values like "SALARY" or "001"
+  dateFormat?: string;  // e.g., 'ddMMyyyy' or 'yyyy-MM-dd'
+}
 
 export type PayrollExportField =
   | 'employeeName'
@@ -15,13 +26,6 @@ export type PayrollExportField =
   | 'email'
   | 'phone'
   | 'paymentDate';
-
-export interface BankExportColumn {
-  header: string;
-  field: PayrollExportField;
-  staticValue?: string;  // optional fixed value
-  format?: string;       // optional formatting
-}
 
 export interface BankExportTemplate {
   id: number;
@@ -37,7 +41,7 @@ export interface BankExportTemplate {
 export class PayrollService {
   private baseUrl = environment.apiBaseUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private datePipe: DatePipe) {}
 
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
@@ -192,40 +196,79 @@ export class PayrollService {
   }
 
 
-  generateCSV(employees: EmployeePayroll[], template: BankExportTemplate): string {
-    const rows = employees.map(emp => {
-      const row: any = {};
-      template.columns.forEach(col => {
-        row[col.header] = col.staticValue ?? this.resolveField(emp, col.field);
-      });
-      return row;
+generateCSV(employees: EmployeePayroll[], template: BankExportTemplate): string {
+  const rows = employees.map(emp => {
+    const row: any = {};
+    template.columns.forEach(col => {
+      // Use the new resolve logic that handles static vs dynamic
+      row[col.header] = this.resolveField(emp, col);
     });
+    return row;
+  });
 
-    const headers = template.includeHeader ? template.columns.map(c => c.header) : [];
-    const csvRows = rows.map(r => template.columns.map(c => r[c.header]).join(template.delimiter));
+  const headers = template.includeHeader ? template.columns.map(c => c.header) : [];
+  const csvRows = rows.map(r => 
+    template.columns.map(c => r[c.header]).join(template.delimiter)
+  );
 
-    return template.includeHeader ? [headers.join(template.delimiter), ...csvRows].join('\n') : csvRows.join('\n');
+  return template.includeHeader 
+    ? [headers.join(template.delimiter), ...csvRows].join('\n') 
+    : csvRows.join('\n');
+}
+
+private resolveField(emp: EmployeePayroll, col: BankExportColumn): string | number {
+  // Handle Static Values (e.g., Reference or Fixed Codes)
+  if (col.type === 'static') {
+    return col.staticValue ?? '';
   }
 
-  private resolveField(emp: EmployeePayroll, field: PayrollExportField) {
-    switch (field) {
-      case 'employeeName': return `${emp.employee.firstName} ${emp.employee.lastName}`;
-      case 'accountNumber': return emp.employee.accountNumber;
-      case 'bankName': return emp.employee.bankName;
-      case 'bankCode': return emp.employee.bvn ?? '';
-      case 'amount': return emp.netPayable;
-      case 'narration': return `Salary ${emp.month}/${emp.year}`;
-      case 'email': return emp.employee.email;
-      case 'phone': return emp.employee.phone;
-      case 'paymentDate': return new Date(emp.generatedAt).toISOString().split('T')[0];
-      case 'reference': return `PAY${emp.id}`;
-      default: return '';
+  // Handle Dynamic Fields
+  switch (col.field) {
+    case 'employeeName': 
+      return `${emp.employee.firstName} ${emp.employee.lastName}`;
+    case 'accountNumber': 
+      return emp.employee.accountNumber;
+    case 'bankName': 
+      return emp.employee.bankName;
+    case 'bankCode': 
+      return emp.employee.bvn ?? '';
+    case 'amount': 
+      return emp.netPayable;
+    case 'narration': 
+      return `Salary ${emp.month}/${emp.year}`;
+    case 'email': 
+      return emp.employee.email;
+    case 'phone': 
+      return emp.employee.phone;
+    case 'paymentDate': {
+      const date = this.arrayToDate(emp.generatedAt);
+      if (!date) return '';
+      // If a custom format exists (e.g., 'ddMMyyyy'), use it. Otherwise, default to ISO.
+      return col.dateFormat 
+        ? this.datePipe.transform(date, col.dateFormat) || '' 
+        : date.toISOString().split('T')[0];
     }
+    case 'reference': 
+      return `PAY${emp.id}`;
+    default:
+      return '';
+  }
+}
+
+
+   getTemplate(): any{
+    const data = localStorage.getItem("bankTemplate");
+    return data ? JSON.parse(data) : null;
   }
 
-   getTemplates(): BankExportTemplate[] {
-    const data = localStorage.getItem("bankTemplates");
-    return data ? JSON.parse(data) : [];
+  private arrayToDate(arr: number[] | null | undefined): Date | null {
+    if (!arr || !arr.length) return null;
+
+    // backend array: [year, month, day, hour, minute, second, nanoseconds]
+    const [year, month, day, hour = 0, minute = 0, second = 0] = arr;
+
+    // JS month is 0-based
+    return new Date(year, month - 1, day, hour, minute, second);
   }
 
 }

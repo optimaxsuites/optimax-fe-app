@@ -978,18 +978,7 @@ download(format: string) {
     this.showDropdown = false;
 }
 
-generatePayroll() {
-    this.fetchEmployeeLoading = true
-    this.fetchEmployees()
-  const payrollData = this.calculatePayroll(); // your local calculation function
-  localStorage.setItem('generatedPayroll', JSON.stringify(payrollData));
-//   this.filteredEmployeePayroll = payrollData;
-//   this.payrollSummary = this.generateSummary(payrollData);
-}
 
-calculatePayroll(){
-
-}
 
   private resetPagination() {
     this.currentPage = 1;
@@ -1040,8 +1029,8 @@ calculatePayroll(){
     }
 
     downloadBankCSV() {
-        const template = this.payrollService.getTemplates()[0]; // select a template
-        const csv = this.payrollService.generateCSV(this.payrollRecords[0].employees, template);
+        const template = this.payrollService.getTemplate(); // select a template
+        const csv = this.payrollService.generateCSV(this.filteredEmployeePayroll, template);
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

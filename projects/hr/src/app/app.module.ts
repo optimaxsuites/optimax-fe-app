@@ -51,7 +51,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
 import { AttendanceComponent } from './ui/view/attendance/attendance.component';
@@ -416,6 +416,7 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
+    DatePipe
   ],
   bootstrap: [AppHrComponent],
 })
