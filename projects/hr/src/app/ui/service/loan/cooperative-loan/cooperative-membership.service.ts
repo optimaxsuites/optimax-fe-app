@@ -67,70 +67,90 @@ export class CooperativeMembershipService {
         message: 'Membership is blocked due to active disciplinary issues.'
       };
     }
-    // Allow all other employees to apply, but require admin approval
+    // Allow all other employees to apply regardless of rank, tenure, or probation
     return {
       canApply: true,
       canBeInvited: false,
       requiresInvite: false,
-      requiresManagerApproval: true,
-      autoApprove: false,
+      requiresManagerApproval: false,
+      autoApprove: true,
       isOnHold: false,
       isBlocked: false,
       rank: employee.rank,
       tenureMonths: 0,
       probationCompleted: true,
       policy,
-      message: 'All employees are eligible to apply for cooperative membership. Admin approval is required.'
+      message: 'All employees are eligible to apply for cooperative membership.'
     };
   }
 
   applyForMembership(
     context: CooperativeMembershipContext,
-    application: CooperativeMembershipApplication,
-    apiService: any // CooperativeLoanApiService
-  ): Promise<CooperativeMembershipActionResult> {
+    application: CooperativeMembershipApplication
+  ): CooperativeMembershipActionResult {
     const eligibility = this.checkMembershipEligibility(application.employee);
 
     if (application.source === 'ADMIN_INVITE') {
-      return Promise.resolve(this.inviteEmployee(context, application.employee));
+      return this.inviteEmployee(context, application.employee);
     }
 
     if (!eligibility.canApply) {
-      return Promise.resolve({
+      return {
         success: false,
         status: eligibility.isOnHold ? 'ON_HOLD' : eligibility.requiresInvite ? 'INVITE_REQUIRED' : 'REJECTED',
         message: eligibility.message,
         eligibility
-      });
+      };
     }
 
     if (eligibility.autoApprove) {
-      // Directly create member in backend
-      return apiService.createMember({
-        employeeId: application.employee.employeeId,
-        fullName: application.employee.fullName,
-        email: application.employee.email,
-        phone: application.employee.phone,
-        shareCapital: eligibility.policy.minShares,
-        address: application.employee.department,
-        status: 'ACTIVE'
-      }).toPromise().then((createdMember: any) => ({
+      const member = this.createOrUpdateMemberFromEmployee(context, application.employee, eligibility.policy.minShares);
+      return {
         success: true,
         status: 'AUTO_APPROVED',
         message: 'Membership approved automatically based on rank policy.',
         eligibility,
-        member: createdMember
-      }));
+        member
+      };
     }
 
-    // Simulate pending application (should be sent to backend in real app)
-    // Here, just return pending status
-    return Promise.resolve({
+    const existingPending = context.pendingMembershipApplications.find(
+      item => item.employeeId === application.employee.employeeId && item.status === 'PENDING_MANAGER_APPROVAL'
+    );
+
+    if (!existingPending) {
+      const pendingItem: PendingMembershipApplication = {
+        id: Date.now(),
+        employeeId: application.employee.employeeId,
+        fullName: application.employee.fullName,
+        requestedTier: application.requestedTier || eligibility.policy.tier,
+        source: application.source,
+        requestDate: new Date().toISOString(),
+        note: application.note,
+        status: 'PENDING_MANAGER_APPROVAL'
+      };
+
+      context.pendingMembershipApplications.unshift(pendingItem);
+      context.notifications.unshift({
+        id: Date.now(),
+        type: 'LOAN_STATUS_UPDATE',
+        recipient: 'ADMIN',
+        title: 'Membership Approval Pending',
+        message: `${pendingItem.fullName} (${pendingItem.employeeId}) submitted a cooperative membership request and is pending manager approval.`,
+        loanId: 0,
+        memberId: pendingItem.employeeId,
+        createdAt: new Date().toISOString(),
+        read: false
+      });
+      context.saveToStorage();
+    }
+
+    return {
       success: true,
       status: 'PENDING_MANAGER_APPROVAL',
       message: 'Membership application submitted and pending manager approval.',
       eligibility
-    });
+    };
   }
 
   inviteEmployee(
@@ -299,52 +319,62 @@ export class CooperativeMembershipService {
     return { ...newMember };
   }
 
-  approvePendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number, apiService: any): Promise<CooperativeMembershipActionResult> {
-    // In a real app, fetch application from backend, here just simulate
-    const application = context.pendingMembershipApplications.find(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
-    if (!application) {
-      return Promise.resolve({
+  approvePendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
+    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (idx === -1) {
+      return {
         success: false,
         status: 'REJECTED',
         message: 'Application not found or already processed.',
         eligibility: undefined as any
-      });
+      };
     }
-    // Create member in backend
-    return apiService.createMember({
+    const application = context.pendingMembershipApplications[idx];
+    // Simulate finding employee profile (in real app, fetch from DB)
+    const employee: CooperativeEmployeeProfile = {
       employeeId: application.employeeId,
       fullName: application.fullName,
       email: '',
       phone: '',
-      shareCapital: 25000, // Use default or fetch from eligibility
-      address: '',
-      status: 'ACTIVE'
-    }).toPromise().then((createdMember: any) => ({
+      department: '',
+      rank: 'MID',
+      employmentType: 'PERMANENT',
+      employmentStartDate: '',
+      onProbation: false,
+      probationEndDate: undefined,
+      hasActiveDisciplinaryIssue: false,
+      managerId: undefined
+    };
+    const eligibility = this.checkMembershipEligibility(employee);
+    const member = this.createOrUpdateMemberFromEmployee(context, employee, eligibility.policy.minShares);
+    context.pendingMembershipApplications.splice(idx, 1);
+    context.saveToStorage();
+    return {
       success: true,
       status: 'AUTO_APPROVED',
       message: 'Membership approved and member activated.',
-      eligibility: undefined,
-      member: createdMember
-    }));
+      eligibility,
+      member
+    };
   }
 
-  rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number, apiService: any): Promise<CooperativeMembershipActionResult> {
-    // In a real app, update application status in backend
-    const application = context.pendingMembershipApplications.find(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
-    if (!application) {
-      return Promise.resolve({
+  rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
+    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (idx === -1) {
+      return {
         success: false,
         status: 'REJECTED',
         message: 'Application not found or already processed.',
         eligibility: undefined as any
-      });
+      };
     }
-    // Simulate rejection (should call backend API)
-    return Promise.resolve({
+    context.pendingMembershipApplications.splice(idx, 1);
+    context.saveToStorage();
+    return {
       success: true,
       status: 'REJECTED',
       message: 'Membership application rejected.',
       eligibility: undefined as any
-    });
+    };
   }
 }

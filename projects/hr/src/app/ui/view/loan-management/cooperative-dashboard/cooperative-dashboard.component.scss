@@ -1,101 +1,5 @@
-// ==========================================
-// @use rules MUST be at the top (only once)
-// ==========================================
 @use '../loan-status-badges' as loanStatus;
 
-// ==========================================
-// Refined Membership Application Modal Styles
-// ==========================================
-.refined-modal {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px rgba(46, 98, 118, 0.13);
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 0 0 28px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.refined-modal-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 36px 28px 14px 28px;
-  h2 {
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: #2E6276;
-    margin: 14px 0 0 0;
-    text-align: center;
-  }
-  .modal-icon {
-    font-size: 3rem;
-    margin-bottom: 6px;
-    color: #2E6276;
-  }
-}
-.refined-modal-body {
-  padding: 22px 28px 0 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.refined-applicant-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  .label {
-    color: #6b7280;
-    font-size: 1rem;
-    font-weight: 600;
-  }
-  .value {
-    color: #2E6276;
-    font-size: 1.08rem;
-    font-weight: 700;
-  }
-}
-.refined-modal-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  margin: 24px 28px 0 28px;
-}
-.refined-btn-approve {
-  background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 28px;
-  font-size: 1.08rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(46, 178, 112, 0.10);
-  transition: background 0.2s, box-shadow 0.2s;
-  &:hover, &:focus {
-    background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
-    box-shadow: 0 4px 16px rgba(46, 178, 112, 0.16);
-  }
-}
-.refined-btn-reject {
-  background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 28px;
-  font-size: 1.08rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.10);
-  transition: background 0.2s, box-shadow 0.2s;
-  &:hover, &:focus {
-    background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%);
-    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.16);
-  }
-}
-
-// ==========================================
-// Main Dashboard Container
-// ==========================================
 .dashboard-container {
   padding: 24px;
   min-height: 100vh;
@@ -107,121 +11,49 @@
     width: min(980px, 100%);
   }
 
-  .membership-review-modal {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 32px rgba(46, 98, 118, 0.10);
-    padding: 0 0 24px 0;
-    max-width: 420px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    .modal-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 32px 24px 12px 24px;
-      h2 {
-        font-size: 1.35rem;
-        font-weight: 800;
-        color: #2E6276;
-        margin: 12px 0 0 0;
-        text-align: center;
-      }
-      .modal-icon {
-        font-size: 2.8rem;
-        margin-bottom: 4px;
-        &.icon-approve { color: #2EB270; }
-        &.icon-reject { color: #e74c3c; }
-      }
-    }
-    .modal-divider {
-      height: 1px;
-      background: #e3eef0;
-      margin: 0 24px 0 24px;
-    }
-    .modal-body {
-      padding: 18px 24px 0 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      .applicant-info {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        .label {
-          color: #6b7280;
-          font-size: 0.92rem;
-          font-weight: 600;
-        }
-        .value {
-          color: #2E6276;
-          font-size: 1.05rem;
-          font-weight: 700;
-        }
-      }
-      .review-field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        .label {
-          color: #2E6276;
-          font-weight: 600;
-        }
-        textarea {
-          border: 1px solid #d7e7ec;
-          border-radius: 8px;
-          padding: 10px 12px;
-          font: inherit;
-          resize: vertical;
-          min-height: 70px;
-          font-size: 1rem;
-        }
-      }
-      .review-error {
-        color: #e74c3c;
-        font-size: 0.98rem;
+  .group-join-review-modal {
+    display: grid;
+    gap: 14px;
+    padding: 4px 0;
+
+    .review-summary {
+      border: 1px solid #e3eef0;
+      border-radius: 10px;
+      background: #f8feff;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+
+      p {
         margin: 0;
+        color: #2f3b45;
       }
     }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 18px 24px 0 24px;
-      .btn-primary {
-        min-width: 110px;
-        padding: 10px 0;
-        font-size: 1.08rem;
-        font-weight: 700;
+
+    .review-field {
+      display: grid;
+      gap: 6px;
+      color: #2E6276;
+      font-weight: 600;
+
+      textarea {
+        border: 1px solid #d7e7ec;
         border-radius: 8px;
-        background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
-        color: #fff;
-        border: none;
-        box-shadow: 0 2px 8px rgba(46, 178, 112, 0.10);
-        cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s;
-        &:hover, &:focus {
-          background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
-          box-shadow: 0 4px 16px rgba(46, 178, 112, 0.16);
-        }
+        padding: 10px 12px;
+        font: inherit;
+        resize: vertical;
+        min-height: 110px;
       }
-      .btn-secondary {
-        min-width: 90px;
-        padding: 10px 0;
-        font-size: 1.08rem;
-        font-weight: 700;
-        border-radius: 8px;
-        background: #e3eef0;
-        color: #2E6276;
-        border: none;
-        cursor: pointer;
-        transition: background 0.2s;
-        &:hover, &:focus {
-          background: #d7e7ec;
-        }
-      }
+    }
+
+    .btn-primary {
+      background: #2EB270;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #2E6276;
+      color: #fff;
     }
   }
 
@@ -1076,7 +908,7 @@
     }
   }
 
-  // Quick action buttons styling
+  // Quick action buttons styling - properly nested inside .dashboard-container
   .command-bar {
     background: white;
     border-radius: 12px;
@@ -1152,7 +984,6 @@
     }
   }
 
-  // Responsive Styles
   @media (max-width: 1024px) {
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -1181,9 +1012,7 @@
           justify-content: space-between;
         }
 
-        .dashboard-title-link {
-          font-size: 1.5rem;
-        }
+        h1 { font-size: 1.5rem; }
       }
 
       .dashboard-menu {
@@ -1246,180 +1075,6 @@
         h2 {
           font-size: 1.05rem;
         }
-      }
-    }
-  }
-}
-
-// ==========================================
-// Membership Applications Modal (outside dashboard-container)
-// ==========================================
-.membership-applications-modal {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px rgba(46, 98, 118, 0.13);
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 0 24px 0;
-  .modal-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 32px 24px 12px 24px;
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: #2E6276;
-      margin: 12px 0 0 0;
-      text-align: center;
-    }
-    .modal-icon {
-      font-size: 2.8rem;
-      margin-bottom: 4px;
-      &.icon-pending { color: #fbbf24; }
-    }
-  }
-  .modal-divider {
-    height: 1px;
-    background: #e3eef0;
-    margin: 0 24px 0 24px;
-  }
-  .modal-body {
-    padding: 18px 24px 0 24px;
-    .membership-table {
-      width: 100%;
-      border-collapse: collapse;
-      th, td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #e3eef0;
-        font-size: 1.08rem;
-      }
-      th {
-        background: #f8feff;
-        color: #2E6276;
-        font-weight: 700;
-      }
-      td {
-        color: #2E6276;
-      }
-      .btn-view {
-        background: linear-gradient(90deg, #2E6276 0%, #4291b1 100%);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 8px 18px;
-        font-weight: 700;
-        font-size: 1.02rem;
-        cursor: pointer;
-        transition: background 0.2s;
-        &:hover, &:focus {
-          background: linear-gradient(90deg, #4291b1 0%, #2E6276 100%);
-        }
-      }
-    }
-    .empty-state {
-      color: #888;
-      font-style: italic;
-      margin-top: 2rem;
-      text-align: center;
-    }
-  }
-}
-
-// ==========================================
-// Membership Application Details Modal
-// ==========================================
-.membership-application-details-modal {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px rgba(46, 98, 118, 0.13);
-  max-width: 420px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  .modal-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 32px 24px 12px 24px;
-    h2 {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: #2E6276;
-      margin: 12px 0 0 0;
-      text-align: center;
-    }
-    .modal-icon {
-      font-size: 2.8rem;
-      margin-bottom: 4px;
-      &.icon-info { color: #4291b1; }
-    }
-  }
-  .modal-divider {
-    height: 1px;
-    background: #e3eef0;
-    margin: 0 24px 0 24px;
-  }
-  .modal-body {
-    padding: 18px 24px 0 24px;
-    .applicant-details {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      .label {
-        color: #6b7280;
-        font-size: 0.98rem;
-        font-weight: 600;
-      }
-      .value {
-        color: #2E6276;
-        font-size: 1.12rem;
-        font-weight: 700;
-      }
-    }
-  }
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-    padding: 18px 24px 0 24px;
-    .btn-approve {
-      min-width: 110px;
-      padding: 10px 0;
-      font-size: 1.08rem;
-      font-weight: 700;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
-      color: #fff;
-      border: none;
-      box-shadow: 0 2px 8px rgba(46, 178, 112, 0.10);
-      cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      &:hover, &:focus {
-        background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
-        box-shadow: 0 4px 16px rgba(46, 178, 112, 0.16);
-      }
-    }
-    .btn-reject {
-      min-width: 90px;
-      padding: 10px 0;
-      font-size: 1.08rem;
-      font-weight: 700;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.2s;
-      &:hover, &:focus {
-        background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%);
       }
     }
   }

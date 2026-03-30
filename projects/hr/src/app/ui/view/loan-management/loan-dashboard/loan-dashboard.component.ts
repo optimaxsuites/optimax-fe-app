@@ -1,4 +1,3 @@
-// ...existing code...
 import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -44,10 +43,6 @@ interface LoanRecentActivity {
   styleUrls: ['./loan-dashboard.component.scss']
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
-    onDashboardSwitch(event: Event): void {
-      const value = (event.target as HTMLSelectElement).value;
-      this.onDashboardSelect(value);
-    }
   readonly recentLoanLimit = 10;
   isLoading = false;
   selectedDashboard: 'advance' | 'cooperative' = 'advance';
