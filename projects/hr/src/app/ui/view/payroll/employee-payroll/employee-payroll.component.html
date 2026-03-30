@@ -117,12 +117,12 @@
             <p class="bg-customGreen px-2 py-3 text-gray-50 rounded-md w-[50%] font-semibold">Employee Information</p>
             <div class="flex flex-col gap-2 px-2">
                 <p class="font-semibold text-[15px] py-1">{{currentEmployeeInView.employee.firstName}} {{currentEmployeeInView.employee.lastName}}</p>
-                <p><span>ID: </span>{{currentEmployeeInView.id}}</p>
+                <p><span>ID: </span>{{currentEmployeeInView.employee.id}}</p>
                 <p><span>Level: </span>{{currentEmployeeInView.employee.level.name}}</p>
                 <p><span>Department: </span>{{currentEmployeeInView.employee.department.name}}</p>
                 <p><span>Account Number: </span>{{currentEmployeeInView.accountNumber}}</p>
                 <p><span>Bank Name: </span>{{currentEmployeeInView.bank}}</p>
-                <p><span>Days worked: </span>{{ currentEmployeeInView.daysWorked ?? payrollSettings.paySchedule.workingDaysPerPeriod }}</p>
+                <p><span>Days worked: </span>{{ currentEmployeeInView.daysWorked }}</p>
             </div>
         
         </div>
@@ -136,7 +136,7 @@
                     10/27/2024
                 </p>
             </div>
-            <div>
+            <!-- <div>
                 <p class="title">
                     Pay Type
                 </p>
@@ -151,13 +151,13 @@
                 <p class="titleLight">
                     OCT24
                 </p>
-            </div>
+            </div> -->
             <div>
                 <p class="title">
                     Payroll ID #
                 </p>
                 <p class="titleLight">
-                    1012OCT
+                    {{currentEmployeeInView.id }}
                 </p>
             </div>
             <div>
