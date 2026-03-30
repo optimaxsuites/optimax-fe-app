@@ -178,6 +178,7 @@ export class ExpenseService {
     this.loadExpenses();
   }
 
+  // ─── Auth helpers ─────────────────────────────────────────────────────────
 
   private getHeaders(): HttpHeaders {
     const authToken =
@@ -212,7 +213,6 @@ export class ExpenseService {
     const tenantId =
       sessionStorage.getItem('tenantId') || localStorage.getItem('tenantId') || 'mod';
 
-
     let headers = new HttpHeaders({ 'X-Tenant-ID': tenantId });
 
     if (authToken) {
@@ -230,7 +230,67 @@ export class ExpenseService {
     return throwError(() => new Error(error.message || 'Something bad happened; please try again later.'));
   }
 
+  // ─── Resolve the logged-in user's AUTH id (the id the backend uses for
+  //    expenseBy / approvedBy / rejectedBy).
+  //
+  //  Session storage layout (confirmed from DevTools):
+  //
+  //    userPrimaryInfoRegData = {
+  //      "id": 32,           ← PROFILE id  — NOT what the backend uses
+  //      "fullname": "...",
+  //      "user": {
+  //        "id": 48,         ← AUTH / user-account id  ← we want THIS
+  //        "username": "developer"
+  //      }
+  //    }
+  //    userRegData = { "id": 48, "username": "developer", ... }
+  //    userid      = "48"    ← flat string fallback
+  //
+  //  Priority: userPrimaryInfoRegData.user.id
+  //          → userRegData.id
+  //          → userid (string key)
+  private resolveCurrentUserId(): number | null {
+    try {
+      // 1️⃣ Try the nested user.id inside userPrimaryInfoRegData
+      const primaryRaw =
+        sessionStorage.getItem('userPrimaryInfoRegData') ||
+        localStorage.getItem('userPrimaryInfoRegData');
+      const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
+      if (primary?.user?.id && typeof primary.user.id === 'number') {
+        console.log('[ExpenseService] resolveCurrentUserId → (primary.user.id)', primary.user.id);
+        return primary.user.id;
+      }
 
+      // 2️⃣ Try userRegData.id (set at login)
+      const regRaw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      const reg = regRaw ? JSON.parse(regRaw) : null;
+      if (reg?.id && typeof reg.id === 'number') {
+        console.log('[ExpenseService] resolveCurrentUserId → (userRegData.id)', reg.id);
+        return reg.id;
+      }
+
+      // 3️⃣ Fall back to the flat "userid" string key
+      const storedId =
+        sessionStorage.getItem('userid') ||
+        localStorage.getItem('userid');
+      if (storedId) {
+        const n = Number(storedId);
+        if (!isNaN(n) && n > 0) {
+          console.log('[ExpenseService] resolveCurrentUserId → (userid key)', n);
+          return n;
+        }
+      }
+
+      console.warn('[ExpenseService] resolveCurrentUserId → could not resolve, returning null');
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // ─── Resolve the original submitter ID from an expense object ─────────────
   private resolveExpenseById(expense: Expense): number | null {
     const eb = expense.expenseBy as any;
     if (!eb) return null;
@@ -238,7 +298,6 @@ export class ExpenseService {
     if (typeof eb === 'object') return eb.id ?? eb.userId ?? null;
     return null;
   }
-
 
   private normaliseEventDate(eventDate: any): string {
     if (!eventDate) return new Date().toISOString();
@@ -264,6 +323,7 @@ export class ExpenseService {
     return formData;
   }
 
+  // ─── Data loading ─────────────────────────────────────────────────────────
 
   private loadExpenses(): void {
     const params = new HttpParams().set('page', '1').set('size', '1000');
@@ -330,6 +390,7 @@ export class ExpenseService {
       );
   }
 
+  // ─── CRUD ─────────────────────────────────────────────────────────────────
 
   addExpense(expense: any, companyReceipt?: File, employeeReceipt?: File): Observable<Expense> {
     console.log('📤 Creating expense:', JSON.stringify(expense, null, 2));
@@ -339,7 +400,7 @@ export class ExpenseService {
       .post<Expense>(this.expenseUrl, formData, { headers: this.getMultipartHeaders() })
       .pipe(
         tap((response) => {
-          console.log(' Expense created:', response);
+          console.log('✅ Expense created:', response);
           this.loadExpenses();
           this.expensesUpdatedSubject.next();
         }),
@@ -351,7 +412,6 @@ export class ExpenseService {
     return this.addExpense(expense, companyReceipt, employeeReceipt);
   }
 
-  
   updateExpense(id: number, updatedExpense: Expense | any): Observable<Expense> {
     const payload: any = {
       id,
@@ -378,7 +438,7 @@ export class ExpenseService {
       })
       .pipe(
         tap((response) => {
-          console.log(' Expense updated:', response);
+          console.log('✅ Expense updated:', response);
           this.loadExpenses();
           this.expensesUpdatedSubject.next();
         }),
@@ -386,46 +446,63 @@ export class ExpenseService {
       );
   }
 
+  // ─── FIXED: approveExpense ────────────────────────────────────────────────
+  //
+  // Bugs fixed:
+  //   1. Was reading currentUserId from sessionStorage.getItem('userDetails')
+  //      which is never set → fell back to hardcoded id 48 (Damilola Awe).
+  //      Now uses resolveCurrentUserId() which reads 'userPrimaryInfoRegData'.
+  //
+  //   2. Was setting expenseBy = currentUserId (the ADMIN), replacing the
+  //      original submitter. Now preserves the original expenseBy from the
+  //      fetched record and sets approvedBy = currentUserId instead.
+  //
+  //   3. approvedBy and approvedAt were never sent — now included in payload.
   approveExpense(expense: Expense): Observable<Expense> {
-    const currentUser = JSON.parse(sessionStorage.getItem('userDetails') || '{}');
-    const currentUserId = currentUser.id || 48;
+    // ── Use the SAME storage key as the rest of the app ──────────────────
+    const currentUserId = this.resolveCurrentUserId();
 
     console.log('🔍 Fetching full expense before approval, ID:', expense.id);
+    console.log('👤 Admin (approvedBy) ID:', currentUserId);
 
     return this.getExpenseById(expense.id).pipe(
-      // If the individual GET fails fall back to the object we already have
       catchError(() => {
         console.warn('⚠️ Could not fetch full expense — using list-level object as fallback');
         return of(expense);
       }),
       switchMap((full: Expense) => {
-        const expenseById = this.resolveExpenseById(full);
+        // Preserve the ORIGINAL submitter — do NOT overwrite with admin id
+        const originalSubmitterId = this.resolveExpenseById(full);
 
-        if (expenseById === null) {
-          console.error('❌ expenseBy resolved to null. The DB NOT NULL constraint will reject this.');
+        if (originalSubmitterId === null) {
+          console.error('❌ expenseBy resolved to null on the fetched record.');
         } else {
-          console.log('👤 expenseBy ID for approval:', expenseById);
+          console.log('👤 Original submitter (expenseBy) ID:', originalSubmitterId);
         }
 
         const payload: any = {
-          id: full.id,
-          name: full.name,
-          description: full.description,
-          eventDate: this.normaliseEventDate(full.eventDate),
-          quantity: full.quantity,
-          currency: full.currency,
-          amount: full.amount,
-          status: ExpenseStatus.APPROVED,
-          paidBy: full.paidBy,
-          receiptReference: full.receiptReference || '',
-          merchantId: full.merchantId ?? full.merchant?.id,
-          categoryId: full.categoryId ?? full.category?.id,
-          taxId: full.taxId ?? full.tax?.id ?? 1,
+          id:                 full.id,
+          name:               full.name,
+          description:        full.description,
+          eventDate:          this.normaliseEventDate(full.eventDate),
+          quantity:           full.quantity,
+          currency:           full.currency,
+          amount:             full.amount,
+          status:             ExpenseStatus.APPROVED,
+          paidBy:             full.paidBy,
+          receiptReference:   full.receiptReference || '',
+          merchantId:         full.merchantId ?? full.merchant?.id,
+          categoryId:         full.categoryId ?? full.category?.id,
+          taxId:              full.taxId ?? full.tax?.id ?? 1,
           scheduledPaymentId: full.scheduledPaymentId || null,
-          expenseBy: currentUserId
+          // ── FIXED: preserve original submitter ───────────────────────
+          expenseBy:          originalSubmitterId,
+          // ── FIXED: record who approved and when ──────────────────────
+          approvedBy:         currentUserId,
+          approvedAt:         new Date().toISOString(),
         };
 
-        console.log(' Approval payload:', JSON.stringify(payload, null, 2));
+        console.log('✅ Approval payload:', JSON.stringify(payload, null, 2));
 
         return this.http.post<Expense>(
           this.expenseUrl,
@@ -434,7 +511,7 @@ export class ExpenseService {
         );
       }),
       tap((response) => {
-        console.log(' Expense approved:', response);
+        console.log('✅ Expense approved:', response);
         this.loadExpenses();
         this.messageService.add({
           severity: 'success',
@@ -454,11 +531,17 @@ export class ExpenseService {
     );
   }
 
+  // ─── FIXED: rejectExpense ─────────────────────────────────────────────────
+  //
+  // Same fixes as approveExpense:
+  //   1. resolveCurrentUserId() instead of hardcoded fallback to 48.
+  //   2. Preserves original expenseBy; sets rejectedBy = currentUserId.
+  //   3. rejectedBy and rejectedAt now included in payload.
   rejectExpense(expense: Expense, reason?: string): Observable<Expense> {
-    const currentUser = JSON.parse(sessionStorage.getItem('userDetails') || '{}');
-    const currentUserId = currentUser.id || 48;
+    const currentUserId = this.resolveCurrentUserId();
 
     console.log('🔍 Fetching full expense before rejection, ID:', expense.id);
+    console.log('👤 Admin (rejectedBy) ID:', currentUserId);
 
     return this.getExpenseById(expense.id).pipe(
       catchError(() => {
@@ -466,31 +549,35 @@ export class ExpenseService {
         return of(expense);
       }),
       switchMap((full: Expense) => {
-        const expenseById = this.resolveExpenseById(full);
+        const originalSubmitterId = this.resolveExpenseById(full);
 
-        if (expenseById === null) {
-          console.error('❌ expenseBy resolved to null. The DB NOT NULL constraint will reject this.');
+        if (originalSubmitterId === null) {
+          console.error('❌ expenseBy resolved to null on the fetched record.');
         } else {
-          console.log('👤 expenseBy ID for rejection:', expenseById);
+          console.log('👤 Original submitter (expenseBy) ID:', originalSubmitterId);
         }
 
         const payload: any = {
-          id: full.id,
-          name: full.name,
-          description: full.description,
-          eventDate: this.normaliseEventDate(full.eventDate),
-          quantity: full.quantity,
-          currency: full.currency,
-          amount: full.amount,
-          status: ExpenseStatus.REJECTED,
-          paidBy: full.paidBy,
-          receiptReference: full.receiptReference || '',
-          merchantId: full.merchantId ?? full.merchant?.id,
-          categoryId: full.categoryId ?? full.category?.id,
-          taxId: full.taxId ?? full.tax?.id ?? 1,
+          id:                 full.id,
+          name:               full.name,
+          description:        full.description,
+          eventDate:          this.normaliseEventDate(full.eventDate),
+          quantity:           full.quantity,
+          currency:           full.currency,
+          amount:             full.amount,
+          status:             ExpenseStatus.REJECTED,
+          paidBy:             full.paidBy,
+          receiptReference:   full.receiptReference || '',
+          merchantId:         full.merchantId ?? full.merchant?.id,
+          categoryId:         full.categoryId ?? full.category?.id,
+          taxId:              full.taxId ?? full.tax?.id ?? 1,
           scheduledPaymentId: full.scheduledPaymentId || null,
-          rejectionReason: reason || 'No reason provided',
-          expenseBy: currentUserId
+          rejectionReason:    reason || 'No reason provided',
+          // ── FIXED: preserve original submitter ───────────────────────
+          expenseBy:          originalSubmitterId,
+          // ── FIXED: record who rejected and when ──────────────────────
+          rejectedBy:         currentUserId,
+          rejectedAt:         new Date().toISOString(),
         };
 
         console.log('❌ Rejection payload:', JSON.stringify(payload, null, 2));
@@ -502,7 +589,7 @@ export class ExpenseService {
         );
       }),
       tap((response) => {
-        console.log(' Expense rejected:', response);
+        console.log('✅ Expense rejected:', response);
         this.loadExpenses();
         this.messageService.add({
           severity: 'success',
@@ -522,6 +609,7 @@ export class ExpenseService {
     );
   }
 
+  // ─── File / receipt helpers ───────────────────────────────────────────────
 
   deleteExpense(id: number): Observable<void> {
     return this.http
@@ -579,6 +667,7 @@ export class ExpenseService {
       .pipe(catchError(this.handleError));
   }
 
+  // ─── Lookups ──────────────────────────────────────────────────────────────
 
   getCategories(): Observable<CategoryDTO[]> {
     return this.http
@@ -592,7 +681,6 @@ export class ExpenseService {
       .pipe(catchError(this.handleError));
   }
 
-
   getMerchants(): Observable<MerchantDTO[]> {
     return this.http
       .get<MerchantDTO[]>(this.merchantUrl, { headers: this.getHeaders() })
@@ -605,7 +693,6 @@ export class ExpenseService {
       .pipe(catchError(this.handleError));
   }
 
-
   getTaxRates(): Observable<TaxDTO[]> {
     return this.http
       .get<TaxDTO[]>(this.taxUrl, { headers: this.getHeaders() })
@@ -617,7 +704,6 @@ export class ExpenseService {
       .post<TaxDTO>(this.taxUrl, tax, { headers: this.getHeaders() })
       .pipe(catchError(this.handleError));
   }
-
 
   convertToWebUrl(path: string): string {
     if (!path) return '';

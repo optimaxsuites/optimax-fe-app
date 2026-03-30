@@ -1,13 +1,11 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&display=swap" rel="stylesheet">
 
-<body class="font-['DM_Sans'] bg-gray-100 min-h-screen p-8">
-
-<p-confirmDialog header="Confirm Action" icon="pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-confirmDialog header="Confirm Action" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 <p-toast position="top-right"></p-toast>
 
 <div class="w-full max-w-full p-8 m-0">
 
-  <!-- HEADER + ADD BUTTON -->
+  <!-- HEADER + ACTION BUTTONS -->
   <div class="flex justify-between items-center mb-10 w-full max-md:flex-col max-md:items-start max-md:gap-4">
     <div>
       <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Expenses</h1>
@@ -18,16 +16,20 @@
         <i class="pi pi-plus text-lg"></i>
         Add Expense
       </button>
-      <button (click)="toggleViewAll()"
+
+      <!-- My Expenses / All Employees toggle — only shown to users with canViewAll (admins/managers) -->
+      <button *ngIf="canViewAll"
+        (click)="toggleViewAll()"
         class="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg transition"
-        [class.bg-blue-50]="viewAllUsers"
-        [class.border-blue-400]="viewAllUsers"
-        [class.text-blue-700]="viewAllUsers"
+        [class.bg-teal-50]="viewAllUsers"
+        [class.border-teal-400]="viewAllUsers"
+        [class.text-teal-700]="viewAllUsers"
         [class.border-gray-300]="!viewAllUsers"
         [class.text-gray-600]="!viewAllUsers">
         <i class="pi" [class.pi-users]="!viewAllUsers" [class.pi-user]="viewAllUsers"></i>
         {{ viewAllUsers ? 'My Expenses' : 'All Employees' }}
       </button>
+
       <button (click)="openImportModal()"
         class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
         <i class="pi pi-upload"></i> Import
@@ -39,58 +41,87 @@
     </div>
   </div>
 
-  <!-- SUMMARY CARDS -->
+  <!-- SUMMARY CARDS — clickable, filter the table by status -->
   <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
-    <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-blue-50 border-blue-200">
+
+    <!-- Total — clicking clears the status filter (shows all) -->
+    <div (click)="filterByStatus('ALL')"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter('ALL')
+        ? 'bg-blue-100 border-blue-400 shadow-md ring-2 ring-blue-300'
+        : 'bg-blue-50 border-blue-200'">
       <div>
         <p class="text-base font-semibold mb-2 opacity-90 text-blue-800">Total Expenses</p>
         <h3 class="text-3xl font-bold mb-1 leading-tight text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</h3>
         <p class="text-sm text-blue-600 m-0">{{ getExpenseCount() }} total records</p>
       </div>
-      <div class="w-14 h-14 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter('ALL') ? 'bg-blue-200 text-blue-700' : 'bg-blue-100 text-blue-600'">
         <i class="pi pi-chart-line text-2xl"></i>
       </div>
     </div>
 
-    <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-green-50 border-green-200">
+    <!-- Approved -->
+    <div (click)="filterByStatus(ExpenseStatus.APPROVED)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.APPROVED)
+        ? 'bg-green-100 border-green-400 shadow-md ring-2 ring-green-300'
+        : 'bg-green-50 border-green-200'">
       <div>
         <p class="text-base font-semibold mb-2 opacity-90 text-green-800">Approved</p>
         <h3 class="text-3xl font-bold mb-1 leading-tight text-green-900">{{ getApprovedCount() }}</h3>
         <p class="text-sm text-green-600 m-0">{{ getApprovedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
-      <div class="w-14 h-14 rounded-full flex items-center justify-center bg-green-100 text-green-600">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.APPROVED) ? 'bg-green-200 text-green-700' : 'bg-green-100 text-green-600'">
         <i class="pi pi-check-circle text-2xl"></i>
       </div>
     </div>
 
-    <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-amber-50 border-amber-200">
+    <!-- Pending -->
+    <div (click)="filterByStatus(ExpenseStatus.PENDING)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.PENDING)
+        ? 'bg-amber-100 border-amber-400 shadow-md ring-2 ring-amber-300'
+        : 'bg-amber-50 border-amber-200'">
       <div>
         <p class="text-base font-semibold mb-2 opacity-90 text-amber-800">Pending</p>
         <h3 class="text-3xl font-bold mb-1 leading-tight text-amber-900">{{ getPendingCount() }}</h3>
         <p class="text-sm text-amber-600 m-0">{{ getPendingAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
-      <div class="w-14 h-14 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.PENDING) ? 'bg-amber-200 text-amber-700' : 'bg-amber-100 text-amber-600'">
         <i class="pi pi-clock text-2xl"></i>
       </div>
     </div>
 
-    <div class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg bg-red-50 border-red-200">
+    <!-- Rejected -->
+    <div (click)="filterByStatus(ExpenseStatus.REJECTED)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.REJECTED)
+        ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-300'
+        : 'bg-red-50 border-red-200'">
       <div>
         <p class="text-base font-semibold mb-2 opacity-90 text-red-800">Rejected</p>
         <h3 class="text-3xl font-bold mb-1 leading-tight text-red-900">{{ getRejectedCount() }}</h3>
         <p class="text-sm text-red-600 m-0">{{ getRejectedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
       </div>
-      <div class="w-14 h-14 rounded-full flex items-center justify-center bg-red-100 text-red-600">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.REJECTED) ? 'bg-red-200 text-red-700' : 'bg-red-100 text-red-600'">
         <i class="pi pi-times-circle text-2xl"></i>
       </div>
     </div>
+
+  </div>
+
+  <!-- Active filter indicator -->
+  <div *ngIf="selectedStatus && selectedStatus !== 'ALL'" class="flex items-center gap-2 mb-4 text-sm text-gray-500">
+    <i class="pi pi-filter-fill text-teal-600"></i>
+    <span>Filtered by status: <strong class="text-gray-800">{{ selectedStatus | titlecase }}</strong></span>
+    <button (click)="filterByStatus('ALL')" class="ml-1 text-xs text-teal-600 hover:text-teal-800 underline font-medium">Clear filter</button>
   </div>
 
   <!-- FILTER BAR + BULK ACTIONS -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-8 w-full">
     <div class="flex flex-wrap justify-between items-center gap-6 max-lg:flex-col max-lg:items-stretch">
       <div class="flex flex-wrap gap-4 flex-1 max-lg:flex-col">
-        <!-- search -->
+        <!-- Search -->
         <div class="relative min-w-[280px] max-lg:w-full">
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 flex items-center">
             <i class="pi pi-search"></i>
@@ -104,9 +135,9 @@
           <option *ngFor="let cat of categoryNames" [value]="cat">{{ cat }}</option>
         </select>
 
-        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
-          <option value="">All Status</option>
-          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        <select [(ngModel)]="selectedStatus" (change)="selectStatus(selectedStatus)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
+          <option value="ALL">All Status</option>
+          <option *ngFor="let status of statuses" [value]="status">{{ status | titlecase }}</option>
         </select>
 
         <select [(ngModel)]="dateRangeType" (ngModelChange)="selectDateRange($event)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
@@ -124,7 +155,7 @@
         </div>
       </div>
 
-      <!-- bulk actions -->
+      <!-- Bulk actions -->
       <div *ngIf="selectedExpenses.length > 0" class="flex items-center gap-3 p-2 bg-gray-50 rounded-xl flex-wrap">
         <span class="py-2 px-4 bg-gray-200 rounded-lg text-sm font-medium text-gray-700">{{ selectedExpenses.length }} selected</span>
         <button (click)="bulkApprove()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
@@ -180,7 +211,6 @@
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Category</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-right">Amount</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Status</th>
-          <!-- ✅ ACTIONS COLUMN RESTORED -->
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-center" style="min-width:160px">Actions</th>
         </tr>
       </ng-template>
@@ -233,55 +263,46 @@
             </span>
           </td>
 
-          <!--  ACTIONS CELL — FULLY RESTORED -->
           <td class="py-4 px-4">
             <div class="flex items-center justify-center gap-1">
-
-              <!-- View Details — always visible for all statuses -->
               <button pTooltip="View Details" tooltipPosition="top"
-                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                 (click)="viewExpenseApproval(expense)">
-                <i class="pi pi-eye text-sm"></i>
+                <i class="pi pi-eye text-gray-500 text-sm"></i>
               </button>
 
-              <!-- Edit — only for PENDING expenses -->
               <button *ngIf="canApproveOrReject(expense)"
                 pTooltip="Edit Expense" tooltipPosition="top"
-                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                 (click)="openEditModal(expense)">
-                <i class="pi pi-pencil text-sm"></i>
+                <i class="pi pi-pencil text-gray-500 text-sm"></i>
               </button>
 
-              <!-- Lock indicator — shown for APPROVED or REJECTED (cannot edit) -->
               <span *ngIf="isLocked(expense)"
                 pTooltip="Locked — already {{ expense.status | titlecase }}" tooltipPosition="top"
-                class="expense-actions-lock w-8 h-8 flex items-center justify-center cursor-default">
+                class="w-8 h-8 flex items-center justify-center cursor-default">
                 <i class="pi pi-lock text-gray-400 text-sm"></i>
               </span>
 
-              <!-- Approve — quick approve button, only for PENDING -->
               <button *ngIf="canApproveOrReject(expense)"
                 pTooltip="Approve" tooltipPosition="top"
-                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200"
                 (click)="approve(expense)">
-                <i class="pi pi-check text-sm"></i>
+                <i class="pi pi-check text-green-600 text-sm"></i>
               </button>
 
-              <!-- Reject — quick reject button, only for PENDING -->
               <button *ngIf="canApproveOrReject(expense)"
                 pTooltip="Reject" tooltipPosition="top"
-                class="expense-actions-btn w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
                 (click)="openRejectionDialog(expense)">
-                <i class="pi pi-times text-sm"></i>
+                <i class="pi pi-times text-red-500 text-sm"></i>
               </button>
 
-              <!-- Delete — always visible -->
               <button pTooltip="Delete" tooltipPosition="top"
                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
                 (click)="confirmDelete(expense)">
                 <i class="pi pi-trash text-red-400 text-sm"></i>
               </button>
-
             </div>
           </td>
 
@@ -293,10 +314,13 @@
           <td colspan="9" class="py-20 text-center">
             <div class="flex flex-col items-center justify-center gap-4">
               <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-                <i class="pi pi-receipt text-5xl text-gray-300"></i>
+                <i class="pi pi-inbox text-5xl text-gray-300"></i>
               </div>
               <h3 class="text-xl font-semibold text-gray-800">No expenses found</h3>
-              <p class="text-gray-500 m-0">Adjust your filters or add a new expense.</p>
+              <p class="text-gray-500 m-0">
+                <ng-container *ngIf="selectedStatus !== 'ALL'">No <strong>{{ selectedStatus | titlecase }}</strong> expenses. </ng-container>
+                Adjust your filters or add a new expense.
+              </p>
             </div>
           </td>
         </tr>
@@ -316,7 +340,6 @@
     </div>
 
     <form *ngIf="selectedExpense" #editForm="ngForm" class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Expense Name</label>
         <input [(ngModel)]="selectedExpense.name" name="name"
@@ -407,7 +430,6 @@
         <span>This expense has been approved and cannot be edited.</span>
       </div>
 
-      <!-- Status banner -->
       <div class="flex items-center gap-4 p-5 rounded-xl border mb-6"
            [ngClass]="{
              'bg-green-50 border-green-200': selectedExpense?.status === 'APPROVED',
@@ -420,7 +442,7 @@
                'bg-amber-100 text-amber-600': selectedExpense?.status === 'PENDING',
                'bg-red-100 text-red-600': selectedExpense?.status === 'REJECTED'
              }">
-          <i class="pi" [ngClass]="{
+          <i class="pi text-xl" [ngClass]="{
             'pi-check-circle': selectedExpense?.status === 'APPROVED',
             'pi-clock': selectedExpense?.status === 'PENDING',
             'pi-times-circle': selectedExpense?.status === 'REJECTED'
@@ -428,10 +450,8 @@
         </div>
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Status</p>
-          <p class="text-xl font-bold m-0">{{ selectedExpense?.status }}</p>
+          <p class="text-xl font-bold m-0">{{ selectedExpense?.status | titlecase }}</p>
         </div>
-
-        <!-- Quick actions in detail view for PENDING -->
         <div *ngIf="selectedExpense && canApproveOrReject(selectedExpense)" class="ml-auto flex gap-2">
           <button (click)="approve(selectedExpense!); closeModal()"
             class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors">
@@ -497,7 +517,6 @@
           </div>
         </div>
 
-        <!-- Financials -->
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Financials</label>
           <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
@@ -506,8 +525,7 @@
               <span class="font-medium">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
             </div>
             <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
-              <span>
-                Tax
+              <span>Tax
                 <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)" class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs ml-2">
                   {{ getTaxRateDisplayValue(selectedExpense?.tax) }}%
                 </span>
@@ -536,7 +554,6 @@
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Receipts</label>
           <div class="grid grid-cols-2 gap-3 max-md:grid-cols-1">
 
-            <!-- Company Receipt -->
             <div class="flex flex-col gap-1.5">
               <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
                 <i class="pi pi-building text-sm"></i> Company Receipt
@@ -547,23 +564,12 @@
                 </div>
                 <ng-container *ngIf="!companyReceiptLoading">
                   <ng-container *ngIf="companyReceiptUrl; else noCompanyReceipt">
-                    <div *ngIf="companyReceiptUrl.toLowerCase().endsWith('.pdf'); else companyImg" class="flex flex-col items-center gap-2 p-4 text-center">
-                      <i class="pi pi-file-pdf text-4xl text-red-500"></i>
-                      <a [href]="companyReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-xs font-medium underline">View PDF</a>
-                    </div>
-                    <ng-template #companyImg>
-                      <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(companyReceiptUrl!, 'Company Receipt')">
-                        <img [src]="companyReceiptUrl" alt="Company Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'company')" />
-                        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
-                          <i class="pi pi-search-plus text-2xl"></i>
-                          <span>View full size</span>
-                        </div>
+                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(companyReceiptUrl!, 'Company Receipt')">
+                      <img [src]="companyReceiptUrl" alt="Company Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'company')" />
+                      <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                        <i class="pi pi-search-plus text-2xl"></i>
+                        <span>View full size</span>
                       </div>
-                    </ng-template>
-                    <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-0.5 text-xs shadow-sm">
-                      <a [href]="companyReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
-                        <i class="pi pi-external-link text-xs align-middle"></i> Open
-                      </a>
                     </div>
                   </ng-container>
                   <ng-template #noCompanyReceipt>
@@ -576,7 +582,6 @@
               </div>
             </div>
 
-            <!-- Employee Receipt -->
             <div class="flex flex-col gap-1.5">
               <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
                 <i class="pi pi-user text-sm"></i> Employee Receipt
@@ -587,23 +592,12 @@
                 </div>
                 <ng-container *ngIf="!employeeReceiptLoading">
                   <ng-container *ngIf="employeeReceiptUrl; else noEmployeeReceipt">
-                    <div *ngIf="employeeReceiptUrl.toLowerCase().endsWith('.pdf'); else employeeImg" class="flex flex-col items-center gap-2 p-4 text-center">
-                      <i class="pi pi-file-pdf text-4xl text-red-500"></i>
-                      <a [href]="employeeReceiptUrl" target="_blank" class="text-teal-600 hover:text-teal-700 text-xs font-medium underline">View PDF</a>
-                    </div>
-                    <ng-template #employeeImg>
-                      <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(employeeReceiptUrl!, 'Employee Receipt')">
-                        <img [src]="employeeReceiptUrl" alt="Employee Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'employee')" />
-                        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
-                          <i class="pi pi-search-plus text-2xl"></i>
-                          <span>View full size</span>
-                        </div>
+                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(employeeReceiptUrl!, 'Employee Receipt')">
+                      <img [src]="employeeReceiptUrl" alt="Employee Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'employee')" />
+                      <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                        <i class="pi pi-search-plus text-2xl"></i>
+                        <span>View full size</span>
                       </div>
-                    </ng-template>
-                    <div class="absolute bottom-1 right-1 bg-white/90 rounded px-2 py-0.5 text-xs shadow-sm">
-                      <a [href]="employeeReceiptUrl" target="_blank" class="flex items-center gap-1 text-teal-600 hover:text-teal-700">
-                        <i class="pi pi-external-link text-xs align-middle"></i> Open
-                      </a>
                     </div>
                   </ng-container>
                   <ng-template #noEmployeeReceipt>
@@ -634,7 +628,6 @@
   (onHide)="onImportCancelled()">
 
   <div class="p-4">
-    <!-- Drop zone -->
     <div class="border-2 border-dashed rounded-xl p-8 text-center mb-6 transition-all"
          [ngClass]="importDragging ? 'border-teal-500 bg-teal-50' : 'border-gray-300 bg-gray-50 hover:border-teal-400'"
          (dragover)="onImportDragOver($event)"
@@ -650,11 +643,9 @@
       </label>
     </div>
 
-    <!-- File preview -->
     <div *ngIf="importFile" class="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl mb-4">
-      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-           [ngClass]="importFile.name.endsWith('.csv') ? 'bg-green-100' : 'bg-blue-100'">
-        <i class="pi" [ngClass]="importFile.name.endsWith('.csv') ? 'pi-table' : 'pi-table'"></i>
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100">
+        <i class="pi pi-table text-green-600"></i>
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-semibold text-gray-800 m-0 truncate">{{ importFile.name }}</p>
@@ -665,14 +656,12 @@
       </button>
     </div>
 
-    <!-- Template download -->
     <div class="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
       <i class="pi pi-info-circle text-blue-500"></i>
       <span>Need a template?</span>
       <button (click)="downloadImportTemplate()" class="font-semibold underline hover:text-blue-900 ml-1">Download sample CSV</button>
     </div>
 
-    <!-- Import progress -->
     <div *ngIf="importLoading" class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
       <div class="flex items-center gap-3 mb-2">
         <i class="pi pi-spin pi-spinner text-teal-700"></i>
@@ -684,7 +673,6 @@
       <p class="text-xs text-gray-500 mt-1.5">{{ importProgress }}% complete</p>
     </div>
 
-    <!-- Import result -->
     <div *ngIf="importResult" class="mt-4 p-4 rounded-xl border"
          [ngClass]="importResult.errors > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
       <p class="font-semibold text-sm m-0 mb-2" [ngClass]="importResult.errors > 0 ? 'text-amber-800' : 'text-green-800'">
@@ -736,7 +724,7 @@
   </ng-template>
 </p-dialog>
 
-<!-- ========== RECEIPT IMAGE MODAL ========== -->
+<!-- RECEIPT IMAGE MODAL -->
 <div *ngIf="showReceiptModal"
   class="fixed inset-0 bg-black/90 flex items-center justify-center z-[10000] p-8"
   style="animation: fadeIn 0.2s ease"
@@ -775,4 +763,3 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
-```

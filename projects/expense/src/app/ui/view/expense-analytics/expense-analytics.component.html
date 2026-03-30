@@ -6,7 +6,7 @@
   <div class="bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between sticky top-0 z-10">
     <div class="flex items-center gap-4">
       <button (click)="goBack()" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-gray-600">
-        <span class="material-icons text-lg">arrow_back</span>
+        <i class="pi pi-arrow-left text-base"></i>
       </button>
       <div>
         <h1 class="text-2xl font-bold text-gray-900 m-0">Expense Analytics</h1>
@@ -30,11 +30,11 @@
       <!-- Export buttons -->
       <button (click)="exportCSV()" [disabled]="isExporting || isLoading"
         class="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 text-gray-700 transition-colors font-medium">
-        <span class="material-icons text-base">download</span> Summary CSV
+        <i class="pi pi-download text-sm"></i> Summary CSV
       </button>
       <button (click)="exportDetailedCSV()" [disabled]="isExporting || isLoading"
         class="flex items-center gap-2 px-4 py-2.5 bg-teal-800 text-white rounded-lg text-sm hover:bg-teal-700 transition-colors font-medium">
-        <span class="material-icons text-base">table_view</span> Detailed CSV
+        <i class="pi pi-table text-sm"></i> Detailed CSV
       </button>
     </div>
   </div>
@@ -54,7 +54,7 @@
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div class="flex items-start justify-between mb-4">
             <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center">
-              <span class="material-icons text-blue-600 text-xl">account_balance_wallet</span>
+              <i class="pi pi-wallet text-blue-600 text-xl"></i>
             </div>
             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total</span>
           </div>
@@ -65,7 +65,7 @@
         <div class="bg-white rounded-xl border border-green-200 p-6 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-green-50">
           <div class="flex items-start justify-between mb-4">
             <div class="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center">
-              <span class="material-icons text-green-600 text-xl">check_circle</span>
+              <i class="pi pi-check-circle text-green-600 text-xl"></i>
             </div>
             <span class="text-xs font-semibold text-green-600 uppercase tracking-wider">{{ approvalRate }}% rate</span>
           </div>
@@ -76,7 +76,7 @@
         <div class="bg-white rounded-xl border border-amber-200 p-6 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-amber-50">
           <div class="flex items-start justify-between mb-4">
             <div class="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center">
-              <span class="material-icons text-amber-600 text-xl">hourglass_top</span>
+              <i class="pi pi-clock text-amber-600 text-xl"></i>
             </div>
             <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Awaiting</span>
           </div>
@@ -87,7 +87,7 @@
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div class="flex items-start justify-between mb-4">
             <div class="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center">
-              <span class="material-icons text-purple-600 text-xl">bar_chart</span>
+              <i class="pi pi-chart-bar text-purple-600 text-xl"></i>
             </div>
             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Avg</span>
           </div>
@@ -140,7 +140,7 @@
 
         <!-- Empty state -->
         <div *ngIf="stats.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-          <span class="material-icons text-5xl text-gray-200 mb-3">bar_chart</span>
+          <i class="pi pi-chart-bar text-5xl text-gray-200 mb-3"></i>
           <p class="text-gray-400 text-sm m-0">No expense data available for {{ selectedYear }}</p>
         </div>
 

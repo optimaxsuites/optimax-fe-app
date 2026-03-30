@@ -22,8 +22,6 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
-import { MatIconModule } from '@angular/material/icon';
-
 import { debounceTime, Subject, takeUntil } from 'rxjs';
 
 import {
@@ -39,7 +37,7 @@ import {
 
 import { EmailService } from '../../sharedComponent/service/email.service';
 import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-modal.component';
-import { ExpenseImportService, ParsedExpenseRow, ImportResult } from '../../service/expense-import.service';
+import { ExpenseImportService, ImportResult } from '../../service/expense-import.service';
 
 @Component({
   selector: 'app-expense-table',
@@ -48,36 +46,21 @@ import { ExpenseImportService, ParsedExpenseRow, ImportResult } from '../../serv
   standalone: true,
   providers: [ConfirmationService, MessageService],
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    ConfirmDialogModule,
-    ToastModule,
-    InputTextModule,
-    InputNumberModule,
-    TooltipModule,
-    MatIconModule,
-    SideModalComponent,
-    DialogModule,
-    DropdownModule,
-    FileUploadModule,
-    InputTextareaModule,
-    ProgressSpinnerModule,
-    SkeletonModule,
+    CommonModule, ReactiveFormsModule, FormsModule,
+    TableModule, ButtonModule, ConfirmDialogModule, ToastModule,
+    InputTextModule, InputNumberModule, TooltipModule, SideModalComponent,
+    DialogModule, DropdownModule, FileUploadModule,
+    InputTextareaModule, ProgressSpinnerModule, SkeletonModule,
   ],
 })
 export class ExpenseTableComponent implements OnInit, OnDestroy {
   [x: string]: any;
 
-  // Data
+  // ─── Data ────────────────────────────────────────────────────────────────
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
   selectedExpenses: Expense[] = [];
   selectedExpense: Expense | null = null;
-
-  // FIX #1: Loading state guards stat cards and table from showing NaN/empty before data arrives
   isLoading = true;
 
   // Pagination
@@ -87,81 +70,67 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   totalPages = 0;
 
   // Search
-  searchTerm: string = '';
-  private searchTermSubject: Subject<string> = new Subject();
+  searchTerm = '';
+  private searchTermSubject = new Subject<string>();
 
-  // Track selected IDs for the edit form dropdowns
   editMerchantId: number | null = null;
   editCategoryId: number | null = null;
 
-  // Modals
-  isModalOpen: boolean = false;
-  isModalOpen2: boolean = false;
-  showReceiptModal: boolean = false;
+  // ─── Modals ───────────────────────────────────────────────────────────────
+  isModalOpen = false;
+  isModalOpen2 = false;
+  showReceiptModal = false;
   isEditMode = false;
 
-  // Extra actions
+  // ─── View toggle ─────────────────────────────────────────────────────────
   viewAllUsers = false;
+  canViewAll = false;
+  currentUserId: number | null = null;
+
   showImportModal = false;
 
-  // Receipt modal properties
-  receiptModalUrl: string = '';
-  receiptModalTitle: string = '';
-  receiptImageLoading: boolean = false;
-  receiptImageError: string = '';
+  // ─── Receipt modal ────────────────────────────────────────────────────────
+  receiptModalUrl = '';
+  receiptModalTitle = '';
+  receiptImageLoading = false;
+  receiptImageError = '';
   receiptImageUrl: SafeUrl | null = null;
   receiptBlobUrl: string | null = null;
-
-  // Receipt preview blob URLs for the detail view modal
   companyReceiptUrl: string | null = null;
   employeeReceiptUrl: string | null = null;
-  companyReceiptLoading: boolean = false;
-  employeeReceiptLoading: boolean = false;
+  companyReceiptLoading = false;
+  employeeReceiptLoading = false;
 
-  // Forms
+  // ─── Forms ───────────────────────────────────────────────────────────────
   expenseForm!: FormGroup;
 
-  // Filters
-  dropdownOpen = {
-    category: false,
-    status: false,
-    dateRange: false,
-  };
-
+  // ─── Filters ─────────────────────────────────────────────────────────────
+  dropdownOpen = { category: false, status: false, dateRange: false };
   selectedCategory: string | null = null;
   selectedStatus: ExpenseStatus | 'ALL' = 'ALL';
-
   dateRangeType: string | null = null;
   dateFrom: string | null = null;
   dateTo: string | null = null;
 
-  // Dropdown data
+  // ─── Dropdown data ────────────────────────────────────────────────────────
   categoryNames: string[] = [];
   categories: CategoryDTO[] = [];
   merchants: MerchantDTO[] = [];
   taxes: TaxDTO[] = [];
 
-  // Enums for template
   ExpenseStatus = ExpenseStatus;
   PaidBy = PaidBy;
   Currency = Currency;
 
-  // Actions menu
   activeMenuExpenseId: number | null = null;
-
   statuses = Object.values(ExpenseStatus);
+  colorClasses = ['color-lightblue', 'color-lightgreen', 'color-lightyellow', 'color-lightcoral', 'color-lightpink'];
 
-  colorClasses: string[] = [
-    'color-lightblue', 'color-lightgreen', 'color-lightyellow',
-    'color-lightcoral', 'color-lightpink',
-  ];
-
-  // FIX #8: Rejection reason captured in component state, not via browser prompt()
-  rejectionReason: string = '';
+  rejectionReason = '';
   showRejectionDialog = false;
   pendingRejectRequest: Expense | null = null;
 
-  // --- Import Modal Fields ---
+  // ─── Import ───────────────────────────────────────────────────────────────
   importDragging = false;
   importFile: File | null = null;
   importLoading = false;
@@ -186,67 +155,162 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.resolveCanViewAll();
     this.loadExpenses();
     this.loadCategories();
     this.loadMerchants();
     this.loadTaxes();
-
-    this.searchTermSubject.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
-      this.applyFilters();
-    });
-
-    this.expenseService.expensesUpdated$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.loadExpenses());
+    this.searchTermSubject.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => this.applyFilters());
+    this.expenseService.expensesUpdated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadExpenses());
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.receiptBlobUrl) URL.revokeObjectURL(this.receiptBlobUrl);
-    if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl);
+    if (this.receiptBlobUrl)     URL.revokeObjectURL(this.receiptBlobUrl);
+    if (this.companyReceiptUrl)  URL.revokeObjectURL(this.companyReceiptUrl);
     if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
+  }
+
+  private resolveCanViewAll(): void {
+    try {
+      // ── userPrimaryInfoRegData layout (confirmed from session storage):
+      //   { "id": 32 (profile),  "fullname": "...", "clientType": "Individual",
+      //     "user": { "id": 48 (auth id), "username": "developer", "roles": [{name:"ROLE_USER"}] } }
+      //
+      // ── userRegData layout:
+      //   { "id": 48, "username": "developer", "roles": ["ROLE_USER"] }
+      //
+      // ── Flat keys:
+      //   role = "ROLE_USER"    userid = "48"    username = "developer"
+
+      const primaryRaw =
+        sessionStorage.getItem('userPrimaryInfoRegData') ||
+        localStorage.getItem('userPrimaryInfoRegData');
+      const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
+
+      const regRaw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      const reg = regRaw ? JSON.parse(regRaw) : null;
+
+      const storedId =
+        sessionStorage.getItem('userid') ||
+        localStorage.getItem('userid');
+
+      // ── Resolve the AUTH user id (nested user.id takes priority over profile id)
+      this.currentUserId =
+        (primary?.user?.id  && typeof primary.user.id  === 'number') ? primary.user.id  :
+        (reg?.id            && typeof reg.id            === 'number') ? reg.id            :
+        storedId ? (Number(storedId) || null) : null;
+
+      // ── Resolve role from every possible location
+      //   1. flat "role" key in session storage  → e.g. "ROLE_USER"
+      //   2. userPrimaryInfoRegData.user.roles[0].name
+      //   3. userRegData.roles[0]  (array of strings)
+      //   4. userPrimaryInfoRegData.clientType / role / userType
+      //   5. username contains admin hint (e.g. "developer", "admin")
+      const flatRole      = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+      const primaryRoles: string[] = (primary?.user?.roles || []).map((r: any) =>
+        typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase());
+      const regRoles: string[]     = (reg?.roles || []).map((r: any) =>
+        typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase());
+      const clientType    = (primary?.clientType || primary?.role || primary?.userType || '').toUpperCase();
+      const usernameHint  = (sessionStorage.getItem('username') || localStorage.getItem('username') || '').toUpperCase();
+
+      const allRoles = [flatRole, ...primaryRoles, ...regRoles, clientType, usernameHint].filter(Boolean);
+      console.log('[resolveCanViewAll] allRoles:', allRoles, '| userId:', this.currentUserId);
+
+      // Admin roles — includes ROLE_ADMIN variants and username hints
+      const adminPatterns = ['ADMIN', 'MANAGER', 'DEVELOPER', 'HR', 'FINANCE', 'ROLE_ADMIN', 'SUPERUSER'];
+      this.canViewAll = allRoles.some(r => adminPatterns.some(p => r.includes(p)));
+
+      console.log(`[resolveCanViewAll] userId=${this.currentUserId} canViewAll=${this.canViewAll}`);
+    } catch (e) {
+      console.error('[resolveCanViewAll] Error:', e);
+      this.canViewAll = false;
+      this.currentUserId = null;
+    }
+  }
+
+  /** Returns { fullname, email } of the logged-in user (the admin taking action). */
+  private resolveCurrentUserDetails(): { fullname: string; email: string } {
+    try {
+      const primaryRaw =
+        sessionStorage.getItem('userPrimaryInfoRegData') ||
+        localStorage.getItem('userPrimaryInfoRegData');
+      const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
+
+      // fullname: userPrimaryInfoRegData.fullname is reliable
+      // email:    flat "email" key or userPrimaryInfoRegData.email
+      const fullname =
+        primary?.fullname ||
+        primary?.name ||
+        sessionStorage.getItem('username') ||
+        localStorage.getItem('username') ||
+        'Admin';
+
+      const email =
+        primary?.email ||
+        sessionStorage.getItem('email') ||
+        localStorage.getItem('email') ||
+        '';
+
+      return { fullname, email };
+    } catch { return { fullname: 'Admin', email: '' }; }
   }
 
   initForm(): void {
     this.expenseForm = this.fb.group({
-      name: ['', Validators.required],
-      description: ['', Validators.required],
-      eventDate: ['', Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      currency: [Currency.NGN, Validators.required],
-      amount: [0, [Validators.required, Validators.min(0)]],
-      paidBy: [PaidBy.COMPANY, Validators.required],
-      receiptReference: [''],
-      merchantId: [null, Validators.required],
-      categoryId: [null, Validators.required],
-      taxId: [null],
-      scheduledPaymentId: [null],
-      companyReceiptFile: [null],
-      expenseReceiptFile: [null]
+      name: ['', Validators.required], description: ['', Validators.required],
+      eventDate: ['', Validators.required], quantity: [1, [Validators.required, Validators.min(1)]],
+      currency: [Currency.NGN, Validators.required], amount: [0, [Validators.required, Validators.min(0)]],
+      paidBy: [PaidBy.COMPANY, Validators.required], receiptReference: [''],
+      merchantId: [null, Validators.required], categoryId: [null, Validators.required],
+      taxId: [null], scheduledPaymentId: [null],
+      companyReceiptFile: [null], expenseReceiptFile: [null]
     });
   }
 
   loadExpenses(): void {
-    // FIX #1: Set loading true before fetch so skeleton shows
     this.isLoading = true;
 
-    const source$ = (this.selectedStatus && this.selectedStatus !== 'ALL')
-      ? this.expenseService.getExpensesByStatus(this.selectedStatus as ExpenseStatus)
-      : (this.viewAllUsers ? this.expenseService.getAllExpenses() : this.expenseService.getExpenses());
+    const source$ = this.viewAllUsers
+      ? this.expenseService.getAllExpenses()
+      : this.expenseService.getExpenses();
 
     source$.pipe(takeUntil(this.destroy$)).subscribe({
       next: (expenses) => {
-        this.expenses = expenses.sort((a, b) => b.id - a.id);
-        this.totalElements = expenses.length;
-        this.totalPages = Math.ceil(expenses.length / this.pageSize);
+        let filtered = expenses;
+
+        // ── FIXED: client-side user filter ───────────────────────────────
+        // Only filter down to the current user's expenses in "my expenses" mode.
+        // When viewAllUsers=true (admin toggled on) we show everything.
+        if (!this.viewAllUsers) {
+          if (this.currentUserId !== null) {
+            filtered = expenses.filter(e => {
+              // expenseBy can be a full UserDTO object or just a plain number id
+              const uid =
+                typeof e.expenseBy === 'object' && e.expenseBy !== null
+                  ? (e.expenseBy as any).id ?? (e.expenseBy as any).userId
+                  : Number(e.expenseBy);
+              return uid === this.currentUserId;
+            });
+          } else {
+            console.warn('[loadExpenses] currentUserId null; hiding expenses until auth resolves.');
+            filtered = [];
+          }
+        }
+
+        this.expenses = filtered.sort((a, b) => b.id - a.id);
+        this.totalElements = this.expenses.length;
+        this.totalPages = Math.ceil(this.expenses.length / this.pageSize);
         this.applyFilters();
-        // FIX #1: Turn off loading only after data is set
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: (error) => {
-        console.error('Error loading expenses:', error);
+      error: (err) => {
+        console.error('Error loading expenses:', err);
         this.isLoading = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load expenses' });
       }
@@ -255,230 +319,303 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   private loadCategories(): void {
     this.expenseService.getCategories().subscribe({
-      next: (categories) => {
-        this.categories = categories;
-        this.categoryNames = categories.map((c) => c.name);
-      },
-      error: (err) => { console.error('Error loading categories:', err); this.categories = []; }
+      next: (c) => { this.categories = c; this.categoryNames = c.map(x => x.name); },
+      error: (err) => { console.error(err); this.categories = []; }
     });
   }
 
   private loadMerchants(): void {
     this.expenseService.getMerchants().subscribe({
-      next: (merchants) => { this.merchants = merchants; },
-      error: (err) => { console.error('Error loading merchants:', err); this.merchants = []; }
+      next: (m) => { this.merchants = m; },
+      error: (err) => { console.error(err); this.merchants = []; }
     });
   }
 
   private loadTaxes(): void {
     this.expenseService.getTaxRates().subscribe({
-      next: (taxes) => { this.taxes = taxes; },
-      error: (err) => { console.error('Error loading taxes:', err); this.taxes = []; }
+      next: (t) => { this.taxes = t; },
+      error: (err) => { console.error(err); this.taxes = []; }
     });
   }
 
-  toggleViewAll(): void {
-    this.viewAllUsers = !this.viewAllUsers;
-    this.loadExpenses();
+  toggleViewAll(): void { this.viewAllUsers = !this.viewAllUsers; this.loadExpenses(); }
+
+  filterByStatus(status: ExpenseStatus | 'ALL'): void {
+    this.selectedStatus = status;
+    this.currentPage = 0;
+    this.applyFilters();
   }
 
-  openImportModal(): void {
-    this.showImportModal = true;
-    this.importFile = null;
-    this.importResult = null;
-    this.importProgress = 0;
-  }
+  isActiveStatusFilter(status: ExpenseStatus | 'ALL'): boolean { return this.selectedStatus === status; }
 
-  onImportCancelled(): void {
-    this.showImportModal = false;
-    this.clearImportFile();
-  }
+  // VIEW DETAIL — fetch full record so approvedBy / approvedAt / rejectedBy populate
+  viewExpenseApproval(expense: Expense): void {
+    this.companyReceiptUrl = null; this.employeeReceiptUrl = null;
+    this.companyReceiptLoading = false; this.employeeReceiptLoading = false;
+    this.selectedExpense = { ...expense };
+    this.isModalOpen2 = true;
 
-  clearImportFile(): void {
-    this.importFile = null;
-    this.importResult = null;
-    this.importProgress = 0;
-  }
-
-  onImportDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.importDragging = true;
-  }
-
-  onImportDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.importDragging = false;
-  }
-
-  onImportDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.importDragging = false;
-    const file = event.dataTransfer?.files[0];
-    if (file) this.setImportFile(file);
-  }
-
-  onImportFileSelect(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files?.[0]) this.setImportFile(input.files[0]);
-  }
-
-  private setImportFile(file: File): void {
-    const validTypes = ['.csv', '.xlsx', '.xls'];
-    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!validTypes.includes(ext)) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid File', detail: 'Only CSV, XLSX, and XLS files are supported.' });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      this.messageService.add({ severity: 'error', summary: 'File Too Large', detail: 'File must be under 10MB.' });
-      return;
-    }
-    this.importFile = file;
-    this.importResult = null;
-  }
-
-  downloadImportTemplate(): void {
-    this.importService.downloadTemplate();
-  }
-
-  async processImport(): Promise<void> {
-    if (!this.importFile || this.importLoading) return;
-
-    this.importLoading = true;
-    this.importProgress = 10;
-    this.importResult = null;
-
-    try {
-      const rows = await this.importService.parseFile(this.importFile);
-      this.importProgress = 40;
-
-      const result: ImportResult = { total: rows.length, success: 0, errors: 0, errorMessages: [] };
-
-      // Validate merchants and categories from the loaded lists
-      const validRows = rows.filter(row => {
-        if (!row.isValid) {
-          result.errors++;
-          result.errorMessages.push(`Row ${row.rowNumber}: ${row.validationErrors.join(', ')}`);
-          return false;
+    this.expenseService.getExpenseById(expense.id).subscribe({
+      next: (full: Expense) => {
+        full.merchant = full.merchant ?? ({ id: 0, name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' } as MerchantDTO);
+        full.category = full.category ?? ({ id: 0, name: '' } as CategoryDTO);
+        this.selectedExpense = full;
+        this.cdr.detectChanges();
+        this._loadReceiptThumbnails(full);
+      },
+      error: (err) => {
+        console.warn('[viewExpenseApproval] Detail fetch failed, using list data:', err);
+        if (this.selectedExpense) {
+          this.selectedExpense.merchant = this.selectedExpense.merchant ?? ({ id: 0, name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' } as MerchantDTO);
+          this.selectedExpense.category = this.selectedExpense.category ?? ({ id: 0, name: '' } as CategoryDTO);
         }
+        this._loadReceiptThumbnails(expense);
+      }
+    });
+  }
 
-        const merchant = this.merchants.find(m => m.name.toLowerCase() === row.merchant.toLowerCase());
-        const category = this.categories.find(c => c.name.toLowerCase() === row.category.toLowerCase());
-
-        if (!merchant) {
-          result.errors++;
-          result.errorMessages.push(`Row ${row.rowNumber}: Merchant "${row.merchant}" not found. Add it first.`);
-          return false;
-        }
-        if (!category) {
-          result.errors++;
-          result.errorMessages.push(`Row ${row.rowNumber}: Category "${row.category}" not found. Add it first.`);
-          return false;
-        }
-
-        // Attach resolved IDs to row
-        (row as any).merchantId = merchant.id;
-        (row as any).categoryId = category.id;
-        return true;
+  private _loadReceiptThumbnails(expense: Expense): void {
+    if (expense.companyReceipt?.url) {
+      this.companyReceiptLoading = true;
+      this.http.get(this.convertToWebUrl(expense.companyReceipt.url), { responseType: 'blob' }).subscribe({
+        next: (b) => { if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl); this.companyReceiptUrl = URL.createObjectURL(b); this.companyReceiptLoading = false; this.cdr.detectChanges(); },
+        error: (err) => { console.error(err); this.companyReceiptLoading = false; this.cdr.detectChanges(); }
       });
-
-      this.importProgress = 60;
-
-      // Submit valid rows one by one
-      let processed = 0;
-      for (const row of validRows) {
-        const payload = {
-          name: row.name,
-          description: row.description || '',
-          eventDate: new Date(row.eventDate).toISOString(),
-          quantity: 1,
-          currency: row.currency,
-          amount: row.amount,
-          status: 'PENDING',
-          paidBy: row.paidBy,
-          receiptReference: row.receiptReference,
-          merchantId: (row as any).merchantId,
-          categoryId: (row as any).categoryId,
-          taxId: null,
-          scheduledPaymentId: null
-        };
-
-        try {
-          await this.expenseService.addExpense(payload).toPromise();
-          result.success++;
-        } catch (err: any) {
-          result.errors++;
-          result.errorMessages.push(`Row ${row.rowNumber}: API error — ${err?.message || 'Unknown error'}`);
-        }
-
-        processed++;
-        this.importProgress = 60 + Math.round((processed / validRows.length) * 35);
-      }
-
-      this.importProgress = 100;
-      this.importResult = result;
-      this.importLoading = false;
-
-      if (result.success > 0) {
-        this.loadExpenses();
-        this.messageService.add({
-          severity: result.errors > 0 ? 'warn' : 'success',
-          summary: 'Import Complete',
-          detail: `${result.success} expense(s) imported successfully${result.errors > 0 ? `, ${result.errors} failed` : ''}.`
-        });
-      } else {
-        this.messageService.add({ severity: 'error', summary: 'Import Failed', detail: 'No expenses could be imported. Check the error details.' });
-      }
-
-    } catch (err: any) {
-      this.importLoading = false;
-      this.importProgress = 0;
-      this.messageService.add({ severity: 'error', summary: 'Parse Error', detail: err.message || 'Failed to read the file.' });
+    }
+    if (expense.expenseReceipt?.url) {
+      this.employeeReceiptLoading = true;
+      this.http.get(this.convertToWebUrl(expense.expenseReceipt.url), { responseType: 'blob' }).subscribe({
+        next: (b) => { if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl); this.employeeReceiptUrl = URL.createObjectURL(b); this.employeeReceiptLoading = false; this.cdr.detectChanges(); },
+        error: (err) => { console.error(err); this.employeeReceiptLoading = false; this.cdr.detectChanges(); }
+      });
     }
   }
 
-  onImportComplete(imported: any): void {
-    this.showImportModal = false;
-    this.messageService.add({ severity: 'success', summary: 'Import Complete', detail: 'Expenses imported successfully.' });
-    this.loadExpenses();
+  openReceiptModal(apiUrl: string, title: string): void {
+    if (!apiUrl) { this.messageService.add({ severity: 'warn', summary: 'No Receipt', detail: 'Receipt URL not available.' }); return; }
+    this.receiptModalTitle = title; this.receiptModalUrl = '';
+    this.receiptImageLoading = true; this.receiptImageError = ''; this.showReceiptModal = true;
+    this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
+      next: (b) => { if (this.receiptBlobUrl) URL.revokeObjectURL(this.receiptBlobUrl); this.receiptBlobUrl = URL.createObjectURL(b); this.receiptImageUrl = this.sanitizer.bypassSecurityTrustUrl(this.receiptBlobUrl); this.receiptModalUrl = this.receiptBlobUrl; this.receiptImageLoading = false; this.cdr.detectChanges(); },
+      error: (err) => { console.error(err); this.receiptImageLoading = false; this.receiptImageError = 'Could not load receipt. Use "Open in New Tab".'; this.cdr.detectChanges(); }
+    });
   }
 
   navigateToAnalytics(): void {
     this.router.navigate([`/admin/expenses/analytics/` + uuidV4()]);
   }
 
-  onSearchInputChange(): void {
-    this.searchTermSubject.next(this.searchTerm);
+  closeReceiptModal(): void {
+    this.showReceiptModal = false;
+    if (this.receiptBlobUrl) { URL.revokeObjectURL(this.receiptBlobUrl); this.receiptBlobUrl = null; }
+    this.receiptImageUrl = null; this.receiptModalUrl = ''; this.receiptModalTitle = '';
+    this.receiptImageLoading = false; this.receiptImageError = '';
   }
 
+  // APPROVE
+  approve(request: Expense): void {
+    if (!this.canApproveOrReject(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' }); return;
+    }
+    const merchantId = request.merchantId || request.merchant?.id;
+    const categoryId = request.categoryId || request.category?.id;
+    if (!merchantId || !categoryId) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Approve', detail: 'Missing Merchant or Category. Please edit first.' }); return;
+    }
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to approve this expense?',
+      header: `Approve — ${request.merchant?.name ?? ''}`,
+      icon: 'pi pi-check-circle', acceptButtonStyleClass: 'p-button-success',
+      rejectButtonStyleClass: 'p-button-secondary', acceptLabel: 'Approve', rejectLabel: 'Cancel',
+      accept: () => {
+        this.expenseService.approveExpense(request).subscribe({
+          next: (updated) => {
+            this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Expense approved.' });
+
+            const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
+            const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
+            const admin = this.resolveCurrentUserDetails();
+            const label = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
+
+            if (submitterEmail) {
+              this.emailService.sendExpenseApprovedNotification(submitterName, submitterEmail, label, admin.fullname)
+                .subscribe({ error: (e: any) => console.error('[approve] email failed:', e) });
+            }
+
+            this.loadExpenses();
+            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
+          },
+          error: (err) => { this.messageService.add({ severity: 'error', summary: 'Approval Failed', detail: err?.error?.message || 'Failed to approve.' }); }
+        });
+      }
+    });
+  }
+
+  // REJECT
+  openRejectionDialog(request: Expense): void {
+    if (!this.canApproveOrReject(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'Already approved or rejected.' }); return;
+    }
+    this.pendingRejectRequest = request; this.rejectionReason = ''; this.showRejectionDialog = true;
+  }
+
+  confirmRejection(): void {
+    const request = this.pendingRejectRequest; if (!request) return;
+    const reason = this.rejectionReason.trim() || 'Rejected by manager';
+    this.showRejectionDialog = false; this.pendingRejectRequest = null;
+
+    this.expenseService.rejectExpense(request, reason).subscribe({
+      next: (updated) => {
+        this.messageService.add({ severity: 'warn', summary: 'Rejected', detail: 'Expense rejected.' });
+
+        const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
+        const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
+        const admin = this.resolveCurrentUserDetails();
+        const label = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
+
+        if (submitterEmail) {
+          this.emailService.sendExpenseRejectedNotification(submitterName, submitterEmail, label, admin.fullname, reason)
+            .subscribe({ error: (e: any) => console.error('[reject] email failed:', e) });
+        }
+
+        this.loadExpenses();
+        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
+      },
+      error: (err) => { this.messageService.add({ severity: 'error', summary: 'Rejection Failed', detail: err?.error?.message || 'Failed to reject.' }); }
+    });
+  }
+
+  cancelRejection(): void { this.showRejectionDialog = false; this.pendingRejectRequest = null; this.rejectionReason = ''; }
+  reject(request: Expense): void { this.openRejectionDialog(request); }
+
+  // EDIT / SAVE
+  openEditModal(expense: Expense): void {
+    if (this.isApproved(expense)) { this.messageService.add({ severity: 'warn', summary: 'Locked', detail: 'Approved expenses cannot be edited.' }); return; }
+    this.isEditMode = true; this.selectedExpense = expense;
+    this.expenseForm.patchValue({
+      name: expense.name, description: expense.description,
+      eventDate: this.formatEventDateForInput(expense.eventDate),
+      quantity: expense.quantity, currency: expense.currency, amount: expense.amount,
+      paidBy: expense.paidBy, receiptReference: expense.receiptReference,
+      merchantId: expense.merchantId || expense.merchant?.id,
+      categoryId: expense.categoryId || expense.category?.id,
+      taxId: expense.taxId || expense.tax?.id || 1,
+      scheduledPaymentId: expense.scheduledPaymentId
+    });
+    this.editMerchantId = expense.merchantId || expense.merchant?.id || null;
+    this.editCategoryId = expense.categoryId || expense.category?.id || null;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false; this.isModalOpen2 = false;
+    this.selectedExpense = null; this.editMerchantId = null; this.editCategoryId = null;
+    this.expenseForm.reset();
+    if (this.companyReceiptUrl)  { URL.revokeObjectURL(this.companyReceiptUrl);  this.companyReceiptUrl  = null; }
+    if (this.employeeReceiptUrl) { URL.revokeObjectURL(this.employeeReceiptUrl); this.employeeReceiptUrl = null; }
+  }
+
+  onSubmit(): void {
+    if (this.expenseForm.invalid) {
+      Object.keys(this.expenseForm.controls).forEach(k => this.expenseForm.get(k)?.markAsTouched());
+      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Please fill in all required fields.' }); return;
+    }
+    const fv = this.expenseForm.value;
+    if (this.isEditMode && this.selectedExpense) {
+      const payload: any = {
+        name: fv.name, description: fv.description, eventDate: new Date(fv.eventDate).toISOString(),
+        quantity: fv.quantity, currency: fv.currency, amount: Number(fv.amount) || 0,
+        status: this.selectedExpense.status, paidBy: fv.paidBy, receiptReference: fv.receiptReference || '',
+        merchantId: Number(fv.merchantId), categoryId: Number(fv.categoryId),
+        taxId: fv.taxId ?? null, scheduledPaymentId: fv.scheduledPaymentId || null
+      };
+      this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
+        next: () => { this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Expense updated.' }); this.closeModal(); this.loadExpenses(); },
+        error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err?.error?.message || 'Update failed.' }); }
+      });
+    } else {
+      // ── FIXED: include expenseBy so the expense is attributed to the
+      //    current user, not whoever the backend defaults to.
+      this.expenseService.addExpense({
+        ...fv,
+        eventDate: new Date(fv.eventDate).toISOString(),
+        expenseBy: this.currentUserId,   // ← ADDED
+      }, fv.companyReceiptFile, fv.expenseReceiptFile)
+        .pipe(takeUntil(this.destroy$)).subscribe({
+          next: () => { this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Expense created.' }); this.closeModal(); this.loadExpenses(); },
+          error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err.message || 'Creation failed.' }); }
+        });
+    }
+  }
+
+  editExpense(expense: Expense): void { this.openEditModal(expense); }
+  saveEditedExpense(): void { this.onSubmit(); }
+
+  // DELETE
+  confirmDelete(expense: Expense): void {
+    this.confirmationService.confirm({
+      message: 'Delete this expense?', header: `Delete — ${expense.merchant?.name ?? ''}`,
+      icon: 'pi pi-exclamation-triangle', acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Delete', rejectLabel: 'Cancel', accept: () => this.deleteExpense(expense)
+    });
+  }
+
+  deleteExpense(expense: Expense): void {
+    this.expenseService.deleteExpense(expense.id).subscribe({
+      next: () => { this.loadExpenses(); this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Expense deleted.' }); },
+      error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err.message || 'Delete failed.' }); }
+    });
+  }
+
+  deleteSelectedExpenses() {
+    if (!this.selectedExpenses.length) return;
+    this.confirmationService.confirm({
+      message: `Delete ${this.selectedExpenses.length} expenses?`, header: 'Bulk Delete',
+      icon: 'pi pi-exclamation-triangle', acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Delete', rejectLabel: 'Cancel',
+      accept: () => { this.selectedExpenses.forEach(e => this.deleteExpense(e)); this.selectedExpenses = []; }
+    });
+  }
+
+  // BULK ACTIONS
+  bulkApprove(): void {
+    if (!this.selectedExpenses.length) { this.messageService.add({ severity: 'warn', summary: 'None Selected', detail: 'Select at least one expense.' }); return; }
+    this.confirmationService.confirm({
+      message: `Approve ${this.selectedExpenses.length} selected?`, header: 'Bulk Approve',
+      icon: 'pi pi-check-circle', acceptButtonStyleClass: 'p-button-success', acceptLabel: 'Approve All', rejectLabel: 'Cancel',
+      accept: () => { this.selectedExpenses.filter(e => this.canApproveOrReject(e)).forEach(e => this.approve(e)); this.selectedExpenses = []; }
+    });
+  }
+
+  bulkReject(): void {
+    if (!this.selectedExpenses.length) { this.messageService.add({ severity: 'warn', summary: 'None Selected', detail: 'Select at least one expense.' }); return; }
+    this.confirmationService.confirm({
+      message: `Reject ${this.selectedExpenses.length} selected?`, header: 'Bulk Reject',
+      icon: 'pi pi-exclamation-triangle', acceptButtonStyleClass: 'p-button-danger', acceptLabel: 'Reject All', rejectLabel: 'Cancel',
+      accept: () => { this.selectedExpenses.filter(e => this.canApproveOrReject(e)).forEach(e => this.reject(e)); this.selectedExpenses = []; }
+    });
+  }
+
+  // FILTERS
+  onSearchInputChange(): void { this.searchTermSubject.next(this.searchTerm); }
+
   applyFilters(): void {
-    this.filteredExpenses = this.expenses.filter((expense) => {
-      const merchantName = (expense.merchant as MerchantDTO)?.name || '';
-      const categoryName = (expense.category as CategoryDTO)?.name || '';
-      const amountStr = Math.floor(Number(expense.amount)).toString();
+    this.filteredExpenses = this.expenses.filter((e) => {
+      const merchant = (e.merchant as MerchantDTO)?.name || '';
+      const category = (e.category as CategoryDTO)?.name || '';
+      const amount   = Math.floor(Number(e.amount)).toString();
 
       if (this.searchTerm) {
-        const term = this.searchTerm.toLowerCase().trim();
-        const matchesName = (expense.name || '').toLowerCase().includes(term);
-        const matchesAmount = amountStr.includes(term);
-        const matchesMerchant = merchantName.toLowerCase().includes(term);
-        const matchesCategory = categoryName.toLowerCase().includes(term);
-        const matchesId = expense.id.toString().includes(term);
-        if (!matchesName && !matchesAmount && !matchesMerchant && !matchesCategory && !matchesId) return false;
+        const t = this.searchTerm.toLowerCase().trim();
+        if (!(e.name || '').toLowerCase().includes(t) && !amount.includes(t) &&
+            !merchant.toLowerCase().includes(t) && !category.toLowerCase().includes(t) &&
+            !e.id.toString().includes(t)) return false;
       }
-
-      if (this.selectedCategory && categoryName !== this.selectedCategory) return false;
-
-      if (this.selectedStatus && this.selectedStatus !== 'ALL' && expense.status !== this.selectedStatus) return false;
-
+      if (this.selectedCategory && category !== this.selectedCategory) return false;
+      if (this.selectedStatus && this.selectedStatus !== 'ALL' && e.status !== this.selectedStatus) return false;
       if (this.dateFrom && this.dateTo) {
-        const fromDate = new Date(this.dateFrom);
-        const toDate = new Date(this.dateTo + 'T23:59:59');
-        const expenseDate = new Date(expense.eventDate);
-        if (expenseDate < fromDate || expenseDate > toDate) return false;
+        const d = new Date(e.eventDate);
+        if (d < new Date(this.dateFrom) || d > new Date(this.dateTo + 'T23:59:59')) return false;
       }
       return true;
     });
@@ -486,651 +623,183 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   applyDateRange(): void {
     if (!this.dateRangeType) { this.applyFilters(); return; }
-    const today = new Date();
-    let fromDate = new Date();
-    let toDate = new Date();
-
-    switch (this.dateRangeType) {
-      case 'today':
-        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-        break;
-      case 'week':
-        const dayOfWeek = today.getDay();
-        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
-        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-        break;
-      case 'month':
-        fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
-        break;
-      case 'custom':
-        if (!this.dateFrom || !this.dateTo) { this.applyFilters(); return; }
-        fromDate = new Date(this.dateFrom);
-        toDate = new Date(this.dateTo + 'T23:59:59');
-        break;
-      default:
-        this.applyFilters();
-        return;
-    }
-
-    if (this.dateRangeType !== 'custom') {
-      this.dateFrom = fromDate.toISOString().split('T')[0];
-      this.dateTo = toDate.toISOString().split('T')[0];
-    }
+    const t = new Date();
+    let from = new Date(), to = new Date();
+    if (this.dateRangeType === 'today')  { from = new Date(t.getFullYear(), t.getMonth(), t.getDate()); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
+    else if (this.dateRangeType === 'week')  { const d = t.getDay() === 0 ? 6 : t.getDay() - 1; from = new Date(t.getFullYear(), t.getMonth(), t.getDate() - d); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
+    else if (this.dateRangeType === 'month') { from = new Date(t.getFullYear(), t.getMonth(), 1); to = new Date(t.getFullYear(), t.getMonth() + 1, 0, 23, 59, 59); }
+    else if (this.dateRangeType === 'custom') { if (!this.dateFrom || !this.dateTo) { this.applyFilters(); return; } from = new Date(this.dateFrom); to = new Date(this.dateTo + 'T23:59:59'); }
+    if (this.dateRangeType !== 'custom') { this.dateFrom = from.toISOString().split('T')[0]; this.dateTo = to.toISOString().split('T')[0]; }
     this.applyFilters();
   }
 
+  applyCustomDateRange(): void { if (this.dateFrom && this.dateTo) { if (new Date(this.dateFrom) > new Date(this.dateTo)) { const tmp = this.dateFrom; this.dateFrom = this.dateTo; this.dateTo = tmp; } this.applyFilters(); } }
   clearSearch(): void { this.searchTerm = ''; this.applyFilters(); }
 
   toggleDropdown(type: 'category' | 'status' | 'dateRange'): void {
-    Object.keys(this.dropdownOpen).forEach((key) => {
-      if (key !== type) this.dropdownOpen[key as keyof typeof this.dropdownOpen] = false;
-    });
+    Object.keys(this.dropdownOpen).forEach(k => { if (k !== type) this.dropdownOpen[k as keyof typeof this.dropdownOpen] = false; });
     this.dropdownOpen[type] = !this.dropdownOpen[type];
   }
 
-  selectCategory(category: string | null): void {
-    this.selectedCategory = category;
-    this.dropdownOpen.category = false;
-    this.applyFilters();
+  selectCategory(c: string | null): void { this.selectedCategory = c; this.dropdownOpen.category = false; this.applyFilters(); }
+  selectStatus(s: ExpenseStatus | 'ALL'): void { this.selectedStatus = s; this.dropdownOpen.status = false; this.currentPage = 0; this.applyFilters(); }
+  selectDateRange(r: string | null): void { this.dateRangeType = r; this.dropdownOpen.dateRange = false; if (r !== 'custom') { this.dateFrom = null; this.dateTo = null; } this.applyDateRange(); }
+
+  get dateRangeLabel(): string { const m: any = { today: 'Today', week: 'This Week', month: 'This Month', custom: 'Custom Range' }; return this.dateRangeType ? (m[this.dateRangeType] || 'Date Range') : 'Date Range'; }
+
+  onRowSelect(e: any)   { this.selectedExpenses = e.value; }
+  onRowUnselect(e: any) { this.selectedExpenses = e.value; }
+
+  // IMPORT
+  openImportModal(): void { this.showImportModal = true; this.importFile = null; this.importResult = null; this.importProgress = 0; }
+  onImportCancelled(): void { this.showImportModal = false; this.clearImportFile(); }
+  clearImportFile(): void { this.importFile = null; this.importResult = null; this.importProgress = 0; }
+  onImportDragOver(e: DragEvent): void { e.preventDefault(); e.stopPropagation(); this.importDragging = true; }
+  onImportDragLeave(e: DragEvent): void { e.preventDefault(); e.stopPropagation(); this.importDragging = false; }
+  onImportDrop(e: DragEvent): void { e.preventDefault(); e.stopPropagation(); this.importDragging = false; const f = e.dataTransfer?.files[0]; if (f) this.setImportFile(f); }
+  onImportFileSelect(e: Event): void { const i = e.target as HTMLInputElement; if (i.files?.[0]) this.setImportFile(i.files[0]); }
+
+  private setImportFile(file: File): void {
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!['.csv', '.xlsx', '.xls'].includes(ext)) { this.messageService.add({ severity: 'error', summary: 'Invalid File', detail: 'Only CSV, XLSX, XLS supported.' }); return; }
+    if (file.size > 10 * 1024 * 1024) { this.messageService.add({ severity: 'error', summary: 'Too Large', detail: 'Max 10 MB.' }); return; }
+    this.importFile = file; this.importResult = null;
   }
 
-  selectStatus(status: ExpenseStatus | 'ALL'): void {
-    this.selectedStatus = status;
-    this.dropdownOpen.status = false;
-    this.currentPage = 0;
-    this.loadExpenses();
-  }
+  downloadImportTemplate(): void { this.importService.downloadTemplate(); }
 
-  selectDateRange(range: string | null): void {
-    this.dateRangeType = range;
-    this.dropdownOpen.dateRange = false;
-    if (range !== 'custom') { this.dateFrom = null; this.dateTo = null; }
-    this.applyDateRange();
-  }
-
-  applyCustomDateRange(): void {
-    if (this.dateFrom && this.dateTo) {
-      if (new Date(this.dateFrom) > new Date(this.dateTo)) {
-        const temp = this.dateFrom; this.dateFrom = this.dateTo; this.dateTo = temp;
-      }
-      this.applyFilters();
-    }
-  }
-
-  get dateRangeLabel(): string {
-    if (!this.dateRangeType) return 'Date Range';
-    const labels: { [key: string]: string } = {
-      today: 'Today', week: 'This Week', month: 'This Month', custom: 'Custom Range',
-    };
-    return labels[this.dateRangeType] || 'Date Range';
-  }
-
-  onRowSelect(event: any) { this.selectedExpenses = event.value; }
-  onRowUnselect(event: any) { this.selectedExpenses = event.value; }
-
-  openCreateModal(): void {
-    this.isEditMode = false;
-    this.expenseForm.reset({ currency: Currency.NGN, paidBy: PaidBy.COMPANY, quantity: 1, taxId: null });
-    this.isModalOpen = true;
-  }
-
-  openEditModal(expense: Expense): void {
-    if (this.isApproved(expense)) {
-      this.messageService.add({ severity: 'warn', summary: 'Edit Not Allowed', detail: 'Approved expenses cannot be edited.' });
-      return;
-    }
-
-    this.isEditMode = true;
-    this.selectedExpense = expense;
-    const eventDate = this.formatEventDateForInput(expense.eventDate);
-
-    this.expenseForm.patchValue({
-      name: expense.name,
-      description: expense.description,
-      eventDate: eventDate,
-      quantity: expense.quantity,
-      currency: expense.currency,
-      amount: expense.amount,
-      paidBy: expense.paidBy,
-      receiptReference: expense.receiptReference,
-      merchantId: expense.merchantId || expense.merchant?.id,
-      categoryId: expense.categoryId || expense.category?.id,
-      taxId: expense.taxId || expense.tax?.id || 1,
-      scheduledPaymentId: expense.scheduledPaymentId
-    });
-
-    this.editMerchantId = expense.merchantId || expense.merchant?.id || null;
-    this.editCategoryId = expense.categoryId || expense.category?.id || null;
-    this.isModalOpen = true;
-  }
-
-  closeModal(): void {
-    this.isModalOpen = false;
-    this.isModalOpen2 = false;
-    this.selectedExpense = null;
-    this.editMerchantId = null;
-    this.editCategoryId = null;
-    this.expenseForm.reset();
-    if (this.companyReceiptUrl) { URL.revokeObjectURL(this.companyReceiptUrl); this.companyReceiptUrl = null; }
-    if (this.employeeReceiptUrl) { URL.revokeObjectURL(this.employeeReceiptUrl); this.employeeReceiptUrl = null; }
-  }
-
-  viewExpenseApproval(expense: Expense): void {
-    this.selectedExpense = { ...expense };
-    this.selectedExpense.merchant = this.selectedExpense.merchant ?? ({ id: 0, name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' } as MerchantDTO);
-    this.selectedExpense.category = this.selectedExpense.category ?? ({ id: 0, name: '' } as CategoryDTO);
-
-    this.companyReceiptUrl = null;
-    this.employeeReceiptUrl = null;
-    this.companyReceiptLoading = false;
-    this.employeeReceiptLoading = false;
-
-    if (this.selectedExpense.companyReceipt?.url) {
-      const apiUrl = this.convertToWebUrl(this.selectedExpense.companyReceipt.url);
-      this.companyReceiptLoading = true;
-      this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
-        next: (blob) => {
-          if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl);
-          this.companyReceiptUrl = URL.createObjectURL(blob);
-          this.companyReceiptLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => { console.error('Failed to load company receipt:', err); this.companyReceiptLoading = false; this.cdr.detectChanges(); }
+  async processImport(): Promise<void> {
+    if (!this.importFile || this.importLoading) return;
+    this.importLoading = true; this.importProgress = 10; this.importResult = null;
+    try {
+      const rows = await this.importService.parseFile(this.importFile);
+      this.importProgress = 40;
+      const result: ImportResult = { total: rows.length, success: 0, errors: 0, errorMessages: [] };
+      const valid = rows.filter(row => {
+        if (!row.isValid) { result.errors++; result.errorMessages.push(`Row ${row.rowNumber}: ${row.validationErrors.join(', ')}`); return false; }
+        const m = this.merchants.find((x: MerchantDTO) => x.name.toLowerCase() === row.merchant.toLowerCase());
+        const c = this.categories.find((x: CategoryDTO) => x.name.toLowerCase() === row.category.toLowerCase());
+        if (!m) { result.errors++; result.errorMessages.push(`Row ${row.rowNumber}: Merchant "${row.merchant}" not found.`); return false; }
+        if (!c) { result.errors++; result.errorMessages.push(`Row ${row.rowNumber}: Category "${row.category}" not found.`); return false; }
+        (row as any).merchantId = m.id; (row as any).categoryId = c.id; return true;
       });
-    }
-
-    if (this.selectedExpense.expenseReceipt?.url) {
-      const apiUrl = this.convertToWebUrl(this.selectedExpense.expenseReceipt.url);
-      this.employeeReceiptLoading = true;
-      this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
-        next: (blob) => {
-          if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
-          this.employeeReceiptUrl = URL.createObjectURL(blob);
-          this.employeeReceiptLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => { console.error('Failed to load employee receipt:', err); this.employeeReceiptLoading = false; this.cdr.detectChanges(); }
-      });
-    }
-
-    this.isModalOpen2 = true;
-  }
-
-  openReceiptModal(apiUrl: string, title: string): void {
-    if (!apiUrl) {
-      this.messageService.add({ severity: 'warn', summary: 'No Receipt', detail: 'Receipt URL is not available.' });
-      return;
-    }
-
-    this.receiptModalTitle = title;
-    this.receiptModalUrl = '';
-    this.receiptImageLoading = true;
-    this.receiptImageError = '';
-    this.showReceiptModal = true;
-
-    this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        if (this.receiptBlobUrl) URL.revokeObjectURL(this.receiptBlobUrl);
-        this.receiptBlobUrl = URL.createObjectURL(blob);
-        this.receiptImageUrl = this.sanitizer.bypassSecurityTrustUrl(this.receiptBlobUrl);
-        this.receiptModalUrl = this.receiptBlobUrl;
-        this.receiptImageLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Failed to fetch receipt:', err);
-        this.receiptImageLoading = false;
-        this.receiptImageError = 'The receipt could not be loaded. Use "Open in New Tab" to view it directly.';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  closeReceiptModal(): void {
-    this.showReceiptModal = false;
-    if (this.receiptBlobUrl) { URL.revokeObjectURL(this.receiptBlobUrl); this.receiptBlobUrl = null; }
-    this.receiptImageUrl = null;
-    this.receiptModalUrl = '';
-    this.receiptModalTitle = '';
-    this.receiptImageLoading = false;
-    this.receiptImageError = '';
-  }
-
-  // ============================================
-  // CRUD OPERATIONS
-  // ============================================
-
-  onSubmit(): void {
-    if (this.expenseForm.invalid) {
-      Object.keys(this.expenseForm.controls).forEach(key => {
-        this.expenseForm.get(key)?.markAsTouched();
-      });
-      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Please fill in all required fields.' });
-      return;
-    }
-
-    const formValue = this.expenseForm.value;
-    const eventDate = new Date(formValue.eventDate).toISOString();
-    const expenseData = { ...formValue, eventDate };
-
-    if (this.isEditMode && this.selectedExpense) {
-      const updatedExpense: any = {
-        name: expenseData.name,
-        description: expenseData.description,
-        eventDate: expenseData.eventDate,
-        quantity: expenseData.quantity,
-        currency: expenseData.currency,
-        amount: Number(expenseData.amount) || 0,
-        status: this.selectedExpense.status,
-        paidBy: expenseData.paidBy,
-        receiptReference: expenseData.receiptReference || '',
-        merchantId: Number(expenseData.merchantId),
-        categoryId: Number(expenseData.categoryId),
-        taxId: expenseData.taxId ?? null,
-        scheduledPaymentId: expenseData.scheduledPaymentId || null,
-      };
-
-      this.expenseService.updateExpense(this.selectedExpense.id, updatedExpense).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Expense Updated', detail: 'Expense has been successfully updated.' });
-          this.closeModal();
-          this.loadExpenses();
-        },
-        error: (error) => {
-          console.error('Update error:', error);
-          this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: error?.error?.message || 'Failed to update expense.' });
+      this.importProgress = 60;
+      for (let i = 0; i < valid.length; i++) {
+        const row = valid[i];
+        try {
+          // ── FIXED: include expenseBy so imported expenses are attributed
+          //    to the logged-in user, not the backend default.
+          await this.expenseService.addExpense({
+            name: row.name,
+            description: row.description || '',
+            eventDate: new Date(row.eventDate).toISOString(),
+            quantity: 1,
+            currency: row.currency,
+            amount: row.amount,
+            status: 'PENDING',
+            paidBy: row.paidBy,
+            receiptReference: row.receiptReference,
+            merchantId: (row as any).merchantId,
+            categoryId: (row as any).categoryId,
+            taxId: null,
+            scheduledPaymentId: null,
+            expenseBy: this.currentUserId,   // ← ADDED
+          }).toPromise();
+          result.success++;
         }
-      });
-    } else {
-      const companyReceipt = formValue.companyReceiptFile;
-      const expenseReceipt = formValue.expenseReceiptFile;
-
-      this.expenseService.addExpense(expenseData, companyReceipt, expenseReceipt)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Expense Created', detail: 'Expense has been successfully created.' });
-            this.closeModal();
-            this.loadExpenses();
-          },
-          error: (error) => {
-            console.error('Error creating expense:', error);
-            this.messageService.add({ severity: 'error', summary: 'Creation Failed', detail: error.message || 'Failed to create expense.' });
-          }
-        });
-    }
-  }
-
-  confirmDelete(expense: Expense): void {
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete this expense?`,
-      header: `Delete Expense — ${expense.merchant?.name ?? ''}`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-warning',
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: () => this.deleteExpense(expense),
-    });
-  }
-
-  deleteExpense(expense: Expense): void {
-    this.expenseService.deleteExpense(expense.id).subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.messageService.add({ severity: 'success', summary: 'Expense Deleted', detail: `Expense for ${expense.merchant?.name ?? ''} has been deleted.` });
-      },
-      error: (error) => {
-        console.error('Delete error:', error);
-        this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: error.message || 'Failed to delete expense.' });
+        catch (e: any) { result.errors++; result.errorMessages.push(`Row ${row.rowNumber}: ${e?.message || 'API error'}`); }
+        this.importProgress = 60 + Math.round(((i + 1) / valid.length) * 35);
       }
-    });
+      this.importProgress = 100; this.importResult = result; this.importLoading = false;
+      if (result.success > 0) { this.loadExpenses(); this.messageService.add({ severity: result.errors > 0 ? 'warn' : 'success', summary: 'Import Complete', detail: `${result.success} imported${result.errors > 0 ? `, ${result.errors} failed` : ''}.` }); }
+      else { this.messageService.add({ severity: 'error', summary: 'Import Failed', detail: 'No expenses imported.' }); }
+    } catch (e: any) { this.importLoading = false; this.importProgress = 0; this.messageService.add({ severity: 'error', summary: 'Parse Error', detail: e.message || 'Could not read file.' }); }
   }
 
-  deleteSelectedExpenses() {
-    if (!this.selectedExpenses.length) return;
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.selectedExpenses.length} expenses?`,
-      header: `Delete Selected Expenses`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        this.selectedExpenses.forEach((exp) => this.deleteExpense(exp));
-        this.selectedExpenses = [];
-      }
-    });
-  }
+  onImportComplete(): void { this.showImportModal = false; this.loadExpenses(); }
 
-  // ============================================
-  // APPROVAL / REJECTION
-  // ============================================
+  // ─── Status helpers ───────────────────────────────────────────────────────
+  private normalizeStatus(s: string | ExpenseStatus | null | undefined): string { return s ? String(s).trim().toUpperCase() : ''; }
+  isApproved(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.APPROVED; }
+  isRejected(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.REJECTED; }
+  isLocked(e: Expense): boolean { return this.isApproved(e) || this.isRejected(e); }
+  canApproveOrReject(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.PENDING; }
 
-  private normalizeStatus(status: string | ExpenseStatus | null | undefined): string {
-    if (!status) {
-      return '';
-    }
-    return String(status).trim().toUpperCase();
-  }
-
-  isApproved(expense: Expense): boolean {
-    return this.normalizeStatus(expense?.status) === ExpenseStatus.APPROVED;
-  }
-
-  isRejected(expense: Expense): boolean {
-    return this.normalizeStatus(expense?.status) === ExpenseStatus.REJECTED;
-  }
-
-  isLocked(expense: Expense): boolean {
-    return this.isApproved(expense) || this.isRejected(expense);
-  }
-
-  canApproveOrReject(expense: Expense): boolean {
-    return this.normalizeStatus(expense?.status) === ExpenseStatus.PENDING;
-  }
-
-  approve(request: Expense): void {
-    // FIX #3: Hard guard — prevents double-approving
-    if (!this.canApproveOrReject(request)) {
-      this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' });
-      return;
-    }
-
-    const merchantId = request.merchantId || request.merchant?.id;
-    const categoryId = request.categoryId || request.category?.id;
-
-    if (!merchantId || !categoryId) {
-      this.messageService.add({ severity: 'warn', summary: 'Cannot Approve', detail: 'This expense is missing a Merchant or Category. Please edit it first.' });
-      return;
-    }
-
-    this.confirmationService.confirm({
-      message: `Are you sure you want to approve this expense?`,
-      header: `Approve Expense — ${request.merchant?.name ?? ''}`,
-      icon: 'pi pi-check-circle',
-      acceptButtonStyleClass: 'p-button-success',
-      rejectButtonStyleClass: 'p-button-secondary',
-      acceptLabel: 'Approve',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        this.expenseService.approveExpense(request).subscribe({
-          next: (updatedExpense) => {
-            this.messageService.add({ severity: 'success', summary: 'Expense Approved', detail: `Expense for ${request.merchant?.name ?? ''} has been approved.` });
-
-            // Notify submitter
-            // The API returns expenseBy as a full object with email and fullname
-            const submitterEmail = (request as any).expenseBy?.email;
-            const submitterName  = (request as any).expenseBy?.fullname || request.name;
-
-            if (submitterEmail) {
-              console.log('[approve] ✅ Sending approval email to expense creator:', submitterEmail);
-              this.emailService.sendExpenseNotification(
-                submitterName,
-                submitterEmail,
-                `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`,
-                'APPROVED'
-              ).subscribe({
-                next: () => console.log('[approve] ✅ Approval email sent to:', submitterEmail),
-                error: (err) => console.error('[approve] ❌ Approval email failed:', err)
-              });
-            } else {
-              console.warn('[approve] ⚠️ No submitter email found on expense object. Keys available:', Object.keys(request));
-              console.warn('[approve] Full expense object:', request);
-            }
-
-            this.loadExpenses();
-            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-              this.selectedExpense = updatedExpense;
-            }
-          },
-          error: (error) => {
-            console.error('Approve error:', error);
-            this.messageService.add({ severity: 'error', summary: 'Approval Failed', detail: error?.error?.message || 'Failed to approve expense.' });
-          }
-        });
-      }
-    });
-  }
-
-  // FIX #8: Rejection dialog — no more browser prompt()
-  openRejectionDialog(request: Expense): void {
-    if (!this.canApproveOrReject(request)) {
-      this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' });
-      return;
-    }
-    this.pendingRejectRequest = request;
-    this.rejectionReason = '';
-    this.showRejectionDialog = true;
-  }
-
-  confirmRejection(): void {
-    const request = this.pendingRejectRequest;
-    if (!request) return;
-
-    const reason = this.rejectionReason.trim() || 'Rejected by manager';
-    this.showRejectionDialog = false;
-    this.pendingRejectRequest = null;
-
-    this.expenseService.rejectExpense(request, reason).subscribe({
-      next: (updatedExpense) => {
-        this.messageService.add({ severity: 'warn', summary: 'Expense Rejected', detail: `Expense for ${request.merchant?.name ?? ''} has been rejected.` });
-
-        // The API returns expenseBy as a full object with email and fullname
-        const submitterEmail = (request as any).expenseBy?.email;
-        const submitterName  = (request as any).expenseBy?.fullname || request.name;
-
-        if (submitterEmail) {
-          console.log('[reject] ✅ Sending rejection email to expense creator:', submitterEmail);
-          this.emailService.sendExpenseNotification(
-            submitterName,
-            submitterEmail,
-            `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`,
-            'REJECTED',
-            reason
-          ).subscribe({
-            next: () => console.log('[reject] ✅ Rejection email sent to:', submitterEmail),
-            error: (err) => console.error('[reject] ❌ Rejection email failed:', err)
-          });
-        } else {
-          console.warn('[reject] ⚠️ No submitter email found. Keys available:', Object.keys(request));
-          console.warn('[reject] Full expense object:', request);
-        }
-
-        this.loadExpenses();
-        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-          this.selectedExpense = updatedExpense;
-        }
-      },
-      error: (error) => {
-        console.error('Reject error:', error);
-        this.messageService.add({ severity: 'error', summary: 'Rejection Failed', detail: error?.error?.message || 'Failed to reject expense.' });
-      }
-    });
-  }
-
-  cancelRejection(): void {
-    this.showRejectionDialog = false;
-    this.pendingRejectRequest = null;
-    this.rejectionReason = '';
-  }
-
-  // Keep reject() as an alias for backward-compat with bulk reject
-  reject(request: Expense): void {
-    this.openRejectionDialog(request);
-  }
-
-  bulkApprove(): void {
-    if (!this.selectedExpenses.length) {
-      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense.' });
-      return;
-    }
-    this.confirmationService.confirm({
-      message: `Approve ${this.selectedExpenses.length} selected expenses?`,
-      header: 'Bulk Approve',
-      icon: 'pi pi-check-circle',
-      acceptButtonStyleClass: 'p-button-success',
-      acceptLabel: 'Approve All',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        // FIX #3: Only attempt to approve PENDING ones
-        this.selectedExpenses.filter(e => this.canApproveOrReject(e)).forEach(exp => this.approve(exp));
-        this.selectedExpenses = [];
-      }
-    });
-  }
-
-  bulkReject(): void {
-    if (!this.selectedExpenses.length) {
-      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense.' });
-      return;
-    }
-    this.confirmationService.confirm({
-      message: `Reject ${this.selectedExpenses.length} selected expenses?`,
-      header: 'Bulk Reject',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      acceptLabel: 'Reject All',
-      rejectLabel: 'Cancel',
-      accept: () => {
-        this.selectedExpenses.filter(e => this.canApproveOrReject(e)).forEach(exp => this.reject(exp));
-        this.selectedExpenses = [];
-      }
-    });
-  }
-
-  onCompanyReceiptChange(event: any): void {
-    const file = event.target.files[0];
-    if (file) this.expenseForm.patchValue({ companyReceiptFile: file });
-  }
-
-  onExpenseReceiptChange(event: any): void {
-    const file = event.target.files[0];
-    if (file) this.expenseForm.patchValue({ expenseReceiptFile: file });
-  }
-
-  onPageChange(page: number): void { this.currentPage = page; }
-
-  get paginatedExpenses(): Expense[] {
-    const start = this.currentPage * this.pageSize;
-    return this.filteredExpenses.slice(start, start + this.pageSize);
-  }
-
+  // ─── Calculations / formatting ────────────────────────────────────────────
+  onPageChange(p: number): void { this.currentPage = p; }
+  get paginatedExpenses(): Expense[] { const s = this.currentPage * this.pageSize; return this.filteredExpenses.slice(s, s + this.pageSize); }
   nextPage(): void { if (this.currentPage < this.totalPages - 1) this.currentPage++; }
   previousPage(): void { if (this.currentPage > 0) this.currentPage--; }
 
   getExpenseCount(): number { return this.expenses?.length || 0; }
-  getTotalAmount(): number { return this.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0); }
+  getTotalAmount(): number { return this.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
   getApprovedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).length; }
   getApprovedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
   getPendingCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).length; }
   getPendingAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
   getRejectedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).length; }
   getRejectedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
+  calculateDisplayAmount(e: Expense): number { return Number(e.amount) || 0; }
 
-  // FIX #10: Table now shows base amount (consistent with detail view)
-  calculateDisplayAmount(expense: Expense): number {
-    return Number(expense.amount) || 0;
+  getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
+    if (tax === undefined || tax === null) return undefined;
+    return typeof tax === 'object' ? tax.rate : tax;
   }
 
-  getTaxRateDisplayValue(taxPercentage: TaxDTO | number | undefined): number | undefined {
-    if (taxPercentage === undefined || taxPercentage === null) return undefined;
-    return typeof taxPercentage === 'object' ? taxPercentage.rate : taxPercentage;
+  formatAmount(v: number | string | null | undefined): string {
+    const n = Number(v); return !isNaN(n) && v !== null && v !== undefined ? n.toLocaleString() : '';
   }
 
-  formatAmount(value: number | string | null | undefined): string {
-    const n = Number(value);
-    return !isNaN(n) && value !== null && value !== undefined ? n.toLocaleString() : '';
+  formatEventDate(d: any): string | Date {
+    if (!d) return '';
+    if (typeof d === 'string' || d instanceof Date) return d;
+    if (Array.isArray(d)) { const [y, mo, day, h = 0, mi = 0, s = 0] = d; return new Date(y, mo - 1, day, h, mi, s); }
+    return d;
   }
 
-  generateRandomColor(): string {
-    const colors = ['#ADD8E6', '#90EE90', '#FFFFE0', '#F08080', '#FFB6C1'];
-    return colors[Math.floor(Math.random() * colors.length)];
+  formatEventDateForInput(d: any): string {
+    if (!d) return '';
+    const dt = this.formatEventDate(d);
+    if (dt instanceof Date) return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    if (typeof dt === 'string') return dt.split('T')[0];
+    return '';
   }
 
-  navigateToexpense(): void { this.router.navigate(['/admin/expenses/expense-summary']); }
-  navigateToForm(): void { this.router.navigate(['/admin/expenses/expensesForm']); }
-
-  updateEditAmount(event: any): void {
-    if (this.selectedExpense) {
-      const raw = (event.target.value || '').toString().replace(/,/g, '');
-      const num = Number(raw);
-      this.selectedExpense.amount = !isNaN(num) ? num : 0;
-    }
-  }
-
-  onlyNumbers(event: KeyboardEvent): void {
-    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
-    if (allowedKeys.includes(event.key) || (event.ctrlKey && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))) return;
-    if (!/[0-9]/.test(event.key)) event.preventDefault();
-  }
-
-  onTaxInputChange(event: Event): void {
+  updateEditAmount(e: any): void {
     if (!this.selectedExpense) return;
-    const input = event.target as HTMLInputElement;
-    this.selectedExpense.tax = { id: this.selectedExpense.tax?.id || 0, name: 'Custom', rate: parseFloat(input.value) || 0, description: 'Custom tax rate' };
+    const n = Number((e.target.value || '').toString().replace(/,/g, ''));
+    this.selectedExpense.amount = !isNaN(n) ? n : 0;
   }
 
-  onDateInputChange(event: Event): void {
+  onlyNumbers(e: KeyboardEvent): void {
+    const allow = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
+    if (allow.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) return;
+    if (!/[0-9]/.test(e.key)) e.preventDefault();
+  }
+
+  onTaxInputChange(e: Event): void {
     if (!this.selectedExpense) return;
-    this.selectedExpense.eventDate = (event.target as HTMLInputElement).value;
+    const v = parseFloat((e.target as HTMLInputElement).value) || 0;
+    this.selectedExpense.tax = { id: this.selectedExpense.tax?.id || 0, name: 'Custom', rate: v, description: '' };
   }
 
+  onDateInputChange(e: Event): void { if (this.selectedExpense) this.selectedExpense.eventDate = (e.target as HTMLInputElement).value; }
   onReceiptImageLoad(): void { this.receiptImageLoading = false; }
-
-  onReceiptImageError(event: any): void {
-    this.receiptImageLoading = false;
-    this.receiptImageError = 'Preview unavailable for this file type. Use "Open in New Tab" to download it.';
-  }
-
-  onReceiptThumbnailError(event: any, type: 'company' | 'employee'): void {
-    const img = event.target as HTMLImageElement;
-    if (img) img.style.display = 'none';
-  }
+  onReceiptImageError(e: any): void { this.receiptImageLoading = false; this.receiptImageError = 'Preview unavailable. Use "Open in New Tab".'; }
+  onReceiptThumbnailError(e: any, type: 'company' | 'employee'): void { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }
 
   private convertToWebUrl(path: string): string {
     if (!path) return '';
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const filename = path.split('/').pop();
-    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${filename}`;
+    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${path.split('/').pop()}`;
   }
 
-  formatEventDate(eventDate: any): string | Date {
-    if (!eventDate) return '';
-    if (typeof eventDate === 'string' || eventDate instanceof Date) return eventDate;
-    if (Array.isArray(eventDate)) {
-      const [year, month, day, hour = 0, minute = 0, second = 0] = eventDate;
-      return new Date(year, month - 1, day, hour, minute, second);
-    }
-    return eventDate;
-  }
-
-  formatEventDateForInput(eventDate: any): string {
-    if (!eventDate) return '';
-    const date = this.formatEventDate(eventDate);
-    if (date instanceof Date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    if (typeof date === 'string') return date.split('T')[0];
-    return '';
-  }
-
-  getStatusBadgeClass(status: ExpenseStatus): string {
-    switch (status) {
-      case ExpenseStatus.PENDING: return 'badge-warning';
-      case ExpenseStatus.APPROVED: return 'badge-success';
-      case ExpenseStatus.REJECTED: return 'badge-danger';
-      default: return 'badge-secondary';
-    }
-  }
-
-  editExpense(expense: Expense): void { this.openEditModal(expense); }
-  saveEditedExpense(): void { this.onSubmit(); }
+  getStatusBadgeClass(s: ExpenseStatus): string { return { [ExpenseStatus.PENDING]: 'badge-warning', [ExpenseStatus.APPROVED]: 'badge-success', [ExpenseStatus.REJECTED]: 'badge-danger' }[s] || 'badge-secondary'; }
+  generateRandomColor(): string { return ['#ADD8E6', '#90EE90', '#FFFFE0', '#F08080', '#FFB6C1'][Math.floor(Math.random() * 5)]; }
+  navigateToForm(): void { this.router.navigate(['/admin/expenses/expensesForm']); }
+  navigateToexpense(): void { this.router.navigate(['/admin/expenses/expense-summary']); }
+  openCreateModal(): void { this.isEditMode = false; this.expenseForm.reset({ currency: Currency.NGN, paidBy: PaidBy.COMPANY, quantity: 1, taxId: null }); this.isModalOpen = true; }
+  onCompanyReceiptChange(e: any): void { if (e.target.files[0]) this.expenseForm.patchValue({ companyReceiptFile: e.target.files[0] }); }
+  onExpenseReceiptChange(e: any): void { if (e.target.files[0]) this.expenseForm.patchValue({ expenseReceiptFile: e.target.files[0] }); }
   get receiptApiUrl(): string { return this.receiptModalUrl; }
 }
