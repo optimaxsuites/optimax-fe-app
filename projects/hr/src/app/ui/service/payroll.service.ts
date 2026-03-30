@@ -183,7 +183,7 @@ export class PayrollService {
 
   postDeductionDetail(payload: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/hr/deductionDetails`, payload)
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(this.handleError))
   }
 
   postGeneratePayroll(payload: any): Observable<any> {
