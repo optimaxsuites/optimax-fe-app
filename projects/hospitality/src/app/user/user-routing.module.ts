@@ -32,18 +32,13 @@ const routes: Routes = [
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
-  {
-    path: '',
-    component: BookingsShellComponent,
-    children: [
+
       { path: 'e-bookings/home/:uuid', component: HomeComponent },
       { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
       { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },
       { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
       { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
       { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
-    ]
-  },
 
   { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
   { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
