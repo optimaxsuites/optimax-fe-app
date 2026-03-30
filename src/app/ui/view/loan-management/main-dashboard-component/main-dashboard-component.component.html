@@ -1,0 +1,19 @@
+<div class="main-dashboard-wrapper">
+  <div class="dashboard-switcher" style="margin-bottom: 1rem;">
+    <label for="dashboardSelect" style="margin-right: 0.5rem;">Switch admin dashboards:</label>
+    <!-- Use $any() to bypass type checking -->
+    <select id="dashboardSelect" [value]="selectedDashboard" 
+            (change)="onDashboardChange($any($event.target).value)">
+      <option value="advance">Advance Loans.</option>
+      <option value="cooperative">Cooperative Loans.</option>
+    </select>
+  </div>
+  
+  <section class="dashboard-section" *ngIf="selectedDashboard === 'advance'">
+    <app-loan-dashboard></app-loan-dashboard>
+  </section>
+
+  <section class="dashboard-section" *ngIf="selectedDashboard === 'cooperative'">
+    <app-cooperative-dashboard></app-cooperative-dashboard>
+  </section>
+</div>
