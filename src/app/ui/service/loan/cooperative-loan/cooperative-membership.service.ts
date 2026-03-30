@@ -316,7 +316,7 @@ export class CooperativeMembershipService {
       fullName: application.fullName,
       email: '',
       phone: '',
-      shareCapital: 25000, // Use default or fetch from eligibility
+      shareCapital: 25000, 
       address: '',
       status: 'ACTIVE'
     }).toPromise().then((createdMember: any) => ({
