@@ -91,7 +91,7 @@
     <!-- Company location fields inside the edit form -->
   <div class="input-group">
     <label>Company Name (for map)</label>
-    <input type="text" [(ngModel)]="companyName" [ngModelOptions]="{standalone: true}" placeholder="e.g. Acme HQ" />
+    <input type="text" [(ngModel)]="companyName" placeholder="e.g. Acme HQ" />
   </div>
   <div class="input-group">
     <label>Company Location</label>
@@ -131,7 +131,7 @@
     (keyup.enter)="searchLocation()"
   />-->
 
-  <div id="company-map" class="leaflet-pic"></div>
+  <div id="company-map" class="leaflet-map"></div>
 
   <button class="primary" (click)="savePickedLocation()">
     Save Location

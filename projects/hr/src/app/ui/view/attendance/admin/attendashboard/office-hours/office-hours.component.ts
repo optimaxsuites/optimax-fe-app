@@ -101,12 +101,27 @@ export class OfficeHoursComponent implements OnInit{
     {validators: officeHoursValidator});
   }
 
-  openLocationPicker() {
+  /*openLocationPicker() {
   this.locationPickerOpen = true;
 
   setTimeout(() => {
     this.initPickerMap();
-  }, 100);
+    this.pickerMap?.invalidateSize();
+  }, 300); //not 100, to give more time
+}*/
+
+openLocationPicker() {
+  console.log('OPEN CLICKED');
+  this.locationPickerOpen = true;
+
+  setTimeout(() => {
+    this.initPickerMap();
+
+    // force proper rendering
+    setTimeout(() => {
+      this.pickerMap?.invalidateSize();
+    }, 200);
+  }, 200);
 }
 
 private initPickerMap() {
@@ -114,11 +129,12 @@ private initPickerMap() {
   if (container != null) {
     (container as any)._leaflet_id = null;
   }
-  
-  //to remove old map instance
-  if (this.pickerMap) {
-    this.pickerMap.remove();
-  }
+
+
+if(this.pickerMap) {
+  this.pickerMap.off();
+  this.pickerMap.remove();
+}
 
   //to use saved location or fallback
   const lat = this.companyLatitude ?? 9.0765;
@@ -144,8 +160,8 @@ private initPickerMap() {
 
   //to force map to render inside modal
   setTimeout(() => {
-    this.pickerMap?.invalidateSize();
-  }, 200);
+    this.pickerMap.invalidateSize(true);
+  }, 300);
 }
 
 /*async searchLocation() {
