@@ -5,7 +5,7 @@ import { AttendanceTableRecord } from '../../../../../domain/attendance/attendan
 import { Observable, switchMap } from 'rxjs';
 import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetable.mock';
 //import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
-import * as L from 'leaflet';
+import * as L from 'leaflet'
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;

@@ -298,7 +298,7 @@ export class LeaveApiService {
       startDate: data.startDate,
       endDate: data.endDate,
       status: data.status,
-      leaveType: data.leaveTypeId, // number
+      leaveTypeId: data.leaveTypeId, // number
       totalDays: data.totalDays,
       planReason: data.planReason,
       attachment: data.attachment,
