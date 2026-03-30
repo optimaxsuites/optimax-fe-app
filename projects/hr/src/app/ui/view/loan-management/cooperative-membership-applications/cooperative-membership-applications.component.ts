@@ -23,13 +23,13 @@ export class CooperativeMembershipApplicationsComponent implements OnInit {
 
 
   approveApplication(applicationId: number): void {
-    const result = this.cooperativeService.approveMembershipApplication(applicationId);
+    const result: any = this.cooperativeService.approveMembershipApplication(applicationId);
     this.actionMessage = result.message;
     this.loadPendingApplications();
   }
 
   rejectApplication(applicationId: number): void {
-    const result = this.cooperativeService.rejectMembershipApplication(applicationId);
+    const result: any = this.cooperativeService.rejectMembershipApplication(applicationId);
     this.actionMessage = result.message;
     this.loadPendingApplications();
   }
