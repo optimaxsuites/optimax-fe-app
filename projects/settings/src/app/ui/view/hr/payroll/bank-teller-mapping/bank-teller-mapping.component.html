@@ -1,86 +1,69 @@
 <div class="space-y-6">
-
-  <p-table 
-    [value]="template.columns || []" 
-    styleClass="p-datatable-sm"
-    class="block border border-gray-100 rounded-lg overflow-hidden">
-
-    <!-- HEADER -->
+  <p-table [value]="template.columns || []" styleClass="p-datatable-sm" class="block border border-gray-100 rounded-lg overflow-hidden">
     <ng-template pTemplate="header">
       <tr class="bg-gray-50/50">
-        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase border-b">
-          Bank Column
-        </th>
-        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase border-b">
-          System Field
-        </th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase border-b">Bank Column</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase border-b">Mapping Type</th>
+        <th class="px-4 py-3 text-xs font-semibold text-gray-500 uppercase border-b">Value / Field</th>
         <th class="w-[50px] border-b"></th>
       </tr>
     </ng-template>
 
-    <!-- BODY -->
     <ng-template pTemplate="body" let-col let-i="rowIndex">
       <tr class="hover:bg-gray-50/80 transition-colors">
-
-        <!-- COLUMN NAME -->
         <td class="px-3 py-2 border-b border-gray-100">
-          <input
-            type="text"
-            pInputText
-            [(ngModel)]="col.header"
-            placeholder="Enter column name"
-            class="w-full p-inputtext-sm border-transparent bg-transparent hover:border-gray-300 focus:bg-white editInput"
-          />
+          <input type="text" pInputText [(ngModel)]="col.header" placeholder="Column Header" class="editInput w-full p-inputtext-sm" />
         </td>
 
-        <!-- FIELD SELECT -->
         <td class="px-3 py-2 border-b border-gray-100">
-          <p-dropdown
-            [options]="systemFields"
-            [(ngModel)]="col.field"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select Field"
-            appendTo="body"
-            class="w-full"
-          ></p-dropdown>
+          <select [(ngModel)]="col.type" class="w-full p-2 text-sm border rounded-md bg-white">
+            <option value="dynamic">System Field</option>
+            <option value="static">Static Value</option>
+          </select>
         </td>
 
-        <!-- DELETE -->
+        <td class="px-3 py-2 border-b border-gray-100">
+          <div class="flex flex-col gap-2">
+            <p-dropdown 
+              *ngIf="col.type === 'dynamic'"
+              [options]="systemFields" 
+              [(ngModel)]="col.field" 
+              optionLabel="label" 
+              optionValue="value"
+              placeholder="Select Field" 
+              appendTo="body" 
+              class="w-full">
+            </p-dropdown>
+
+            <input 
+              *ngIf="col.type === 'static'"
+              type="text" 
+              pInputText 
+              [(ngModel)]="col.staticValue" 
+              placeholder="Enter fixed value" 
+              class="w-full editInput p-inputtext-sm" />
+
+            <input 
+              *ngIf="col.type === 'dynamic' && col.field === 'paymentDate'"
+              type="text" 
+              pInputText 
+              [(ngModel)]="col.dateFormat" 
+              placeholder="Format (e.g. ddMMyyyy)" 
+              class="w-full p-inputtext-sm editInput border-blue-200 bg-blue-50" />
+          </div>
+        </td>
+
         <td class="text-center border-b">
-          <button
-            type="button"
-            (click)="removeColumn(i)"
-            class="text-red-500 hover:text-red-700"
-          >
+          <button type="button" (click)="removeColumn(i)" class="text-red-500 hover:text-red-700">
             <i class="pi pi-trash"></i>
           </button>
         </td>
-
       </tr>
     </ng-template>
-
   </p-table>
 
-  <!-- ACTIONS -->
   <div class="flex justify-between items-center pt-2">
-
-    <button
-      pButton
-      label="Add Column"
-      icon="pi pi-plus"
-      (click)="addColumn()"
-      class="bg-gray-100 px-4 py-2 rounded-md text-sm"
-    ></button>
-
-    <button
-      pButton
-      label="Save Template"
-      icon="pi pi-check"
-      (click)="saveTemplate()"
-      class="bg-customBlue px-6 py-3 text-white text-sm rounded-md"
-    ></button>
-
+    <button pButton label="Add Column" icon="pi pi-plus" (click)="addColumn()" class="bg-gray-100 px-4 py-2 rounded-md text-sm"></button>
+    <button pButton label="Save Template" icon="pi pi-check" (click)="saveTemplate()" class="bg-customBlue px-6 py-3 text-white text-sm rounded-md"></button>
   </div>
-
 </div>

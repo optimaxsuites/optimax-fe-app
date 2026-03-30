@@ -102,7 +102,7 @@ export type EmployeePayroll = {
   employee: Employee;
   year: number;
   month: number;
-  generatedAt: string;
+  generatedAt: any;
   daysWorked: number;
   basePay: number;
   allowances: Allowance;
