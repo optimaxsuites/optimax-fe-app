@@ -140,7 +140,7 @@ export class RoomDetailsComponent implements OnInit {
     const serviceIds = Array.from(this.selectedServices).join(',');
     const extras = serviceIds ? { services: serviceIds } : {};
     this.router.navigate(
-      ['/e-bookings/checkout', this.room.id, this.uuid],
+      ['user/hospitality/e-bookings/checkout', this.room.id, this.uuid],
       { queryParams: extras }
     );
   }
@@ -178,7 +178,7 @@ export class RoomDetailsComponent implements OnInit {
 
   bookNow(): void {
     // Navigate to the booking form
-    this.router.navigate(['/e-bookings/booking-form', this.room.id, this.uuid]);
+    this.router.navigate(['user/hospitality/e-bookings/booking-form', this.room.id, this.uuid]);
   }
 
   goBack(): void {

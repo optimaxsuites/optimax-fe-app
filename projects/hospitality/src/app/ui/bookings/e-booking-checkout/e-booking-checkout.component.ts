@@ -13,6 +13,9 @@ export class EBookingCheckoutComponent implements OnInit {
   room: any = null;
   uuid = 'default';
   loading = true;
+  isSubmitting = false;
+  showSuccessModal = false;
+  confirmedBooking: any = null;
   isMenuOpen = false;
 
   // Booking form state
@@ -142,10 +145,76 @@ export class EBookingCheckoutComponent implements OnInit {
   }
 
   confirmBooking(): void {
-    // In a real app this would POST a booking to the API
-    // For now navigate back home with success
-    alert('Booking request submitted! We will contact you shortly.');
-    this.router.navigate(['/e-bookings/home', this.uuid]);
+    if (!this.room || this.isSubmitting) return;
+
+    // Simple validation
+    if (!this.firstName || !this.lastName || !this.email || !this.phone) {
+      alert('Please fill in all required guest information fields.');
+      return;
+    }
+
+    this.isSubmitting = true;
+
+    // 1. Create/Identify Guest
+    const guestData: any = {
+      title: 'Mr/Ms', // Default or could be added to form
+      firstName: this.firstName,
+      lastName: this.lastName,
+      email: this.email,
+      phone: this.phone,
+      country: 'Nigeria', // Default
+      idNumber: 'N/A',
+      gender: 'PREFER_NOT_TO_SAY'
+    };
+
+    console.log('DEBUG: E-Booking — Creating guest:', guestData);
+    
+    this.hotelService.createGuest(guestData).subscribe({
+      next: (createdGuest) => {
+        console.log('DEBUG: E-Booking — Guest created:', createdGuest);
+        
+        // 2. Create Booking
+        const bookingData: any = {
+          checkinDate: this.checkinDate,
+          checkoutDate: this.checkoutDate,
+          adults: this.adults,
+          children: this.children,
+          specialRequests: this.specialRequests,
+          subTotal: this.roomTotal,
+          total: this.grandTotal,
+          status: 'PENDING',
+          guest: createdGuest.id,
+          rooms: [this.room.id]
+        };
+
+        console.log('DEBUG: E-Booking — Creating booking:', bookingData);
+
+        this.hotelService.createBooking(bookingData).subscribe({
+          next: (res) => {
+            console.log('DEBUG: E-Booking — SUCCESS:', res);
+            this.confirmedBooking = res;
+            this.showSuccessModal = true;
+            this.isSubmitting = false;
+          },
+          error: (err) => {
+            console.error('DEBUG: E-Booking — Booking failed:', err);
+            alert('Failed to create reservation. Please try again or contact support.');
+            this.isSubmitting = false;
+          }
+        });
+      },
+      error: (err) => {
+        console.error('DEBUG: E-Booking — Guest creation failed:', err);
+        alert('Failed to register guest details. Please check your information.');
+        this.isSubmitting = false;
+      }
+    });
+  }
+
+  finishBooking(): void {
+    this.showSuccessModal = false;
+    // Navigate home using the restored flat absolute path
+    this.router.navigate(['e-bookings/home', this.uuid]);
   }
 
   goBack(): void {

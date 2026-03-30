@@ -30,6 +30,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   maxPrice = 200000;
   selectedAmenities: string[] = [];
   isMenuOpen = false;
+  showAuthModal = false;
+  selectedRoomForAuth: DisplayRoom | null = null;
   branding: any = {
     companyName: 'OptimaxHospitality',
     logo: null,
@@ -190,13 +192,29 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   viewRoomDetails(room: DisplayRoom): void {
-    // Navigate to the NEW dedicated room details page
+    // Navigate using the restored flat absolute path
     this.router.navigate(['user/hospitality/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: DisplayRoom): void {
     // Navigate directly to the booking form (with the sidebar)
     this.router.navigate(['user/hospitality/e-bookings/booking-form', room.id, this.uuid]);
+  }
+
+  openAuthModal(room: DisplayRoom): void {
+    this.selectedRoomForAuth = room;
+    this.showAuthModal = true;
+  }
+
+  closeAuthModal(): void {
+    this.showAuthModal = false;
+    this.selectedRoomForAuth = null;
+  }
+
+  proceedToCheckout(mode: 'signin' | 'signup' | 'guest'): void {
+    if (!this.selectedRoomForAuth) return;
+    this.showAuthModal = false;
+    this.router.navigate(['user/hospitality/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
   }
 
   setCategory(category: string | number): void {

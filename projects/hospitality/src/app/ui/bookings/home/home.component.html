@@ -1,32 +1,4 @@
 <div class="home-wrapper">
-  <!-- Dynamic Navbar Branding -->
-  <nav class="navbar">
-    <div class="nav-container">
-      <div class="logo-area">
-        <img *ngIf="branding.logo" [src]="branding.logo" class="logo-img">
-        <span *ngIf="!branding.logo">
-          {{ branding.companyName.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
-        </span>
-      </div>
-
-      <div class="nav-links" [class.active]="isMenuOpen">
-        <a routerLink="/e-bookings/home/{{uuid}}" class="active">Explore</a>
-        <a href="javascript:void(0)">My Bookings</a>
-        <a href="javascript:void(0)">Favorites</a>
-        <button class="btn-signin mobile-only">Sign In</button>
-      </div>
-
-      <div class="nav-actions">
-        <button class="btn-signin desktop-only">Sign In</button>
-        <button class="btn-user">
-          <i class="fa-solid fa-circle-user"></i>
-        </button>
-        <button class="btn-hamburger" (click)="toggleMenu()">
-          <i class="fa-solid" [class.fa-bars]="!isMenuOpen" [class.fa-xmark]="isMenuOpen"></i>
-        </button>
-      </div>
-    </div>
-  </nav>
 
   <div class="page-content">
     <!-- Hero Card -->
@@ -128,10 +100,10 @@
                         [class.active]="i === room.activeImageIndex"></span>
                 </div>
 
-                <span class="room-pill sticky-pill">{{ room.name }}</span>
-                <button class="btn-fav">
+                <span class="room-pill">{{ room.name }}</span>
+                <!-- <button class="btn-fav">
                   <i class="fa-regular fa-heart"></i>
-                </button>
+                </button> -->
               </div>
 
               <!-- Card Body -->
@@ -159,7 +131,7 @@
                     <button (click)="viewRoomDetails(room)" class="btn-action secondary">
                       Details
                     </button>
-                    <button (click)="bookRoom(room)" class="btn-action primary">
+                    <button (click)="openAuthModal(room)" class="btn-action primary">
                       Book Now
                     </button>
                   </div>
@@ -184,48 +156,55 @@
     </div>
   </div>
 
-  <!-- Dynamic Footer -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-grid">
-        <div class="brand-col">
-          <div class="logo">
-            {{ branding.companyName.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
-          </div>
-          <p class="desc">{{ branding.footerDescription || 'Redefining hospitality booking in Nigeria through AI-driven search and minimalist design.' }}</p>
-          <div class="socials">
-            <a *ngIf="branding.facebook" [href]="branding.facebook" class="social-link"><i class="fa-brands fa-facebook-f"></i></a>
-            <a *ngIf="branding.instagram" [href]="branding.instagram" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            <a *ngIf="branding.twitter" [href]="branding.twitter" class="social-link"><i class="fa-brands fa-x-twitter"></i></a>
-            <a *ngIf="branding.whatsapp" [href]="'https://wa.me/' + branding.whatsapp" class="social-link"><i class="fa-brands fa-whatsapp"></i></a>
-          </div>
-        </div>
-        
-        <div class="link-col">
-          <h4>Explore</h4>
-          <ul>
-            <li><a href="javascript:void(0)">Our Rooms</a></li>
-            <li><a href="javascript:void(0)">Special Offers</a></li>
-            <li><a href="javascript:void(0)">Reviews</a></li>
-          </ul>
-        </div>
 
-        <div class="link-col">
-          <h4>Contact</h4>
-          <ul>
-            <li><a href="javascript:void(0)">Lagos, Nigeria</a></li>
-            <li><a href="javascript:void(0)">hello&#64;optimax.ng</a></li>
-          </ul>
-        </div>
+  <!-- Auth Choice Modal -->
+  <div class="auth-modal-backdrop" *ngIf="showAuthModal" (click)="closeAuthModal()">
+    <div class="auth-modal" (click)="$event.stopPropagation()">
+      <button class="auth-close" (click)="closeAuthModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="auth-header">
+        <div class="auth-icon"><i class="fa-solid fa-door-open"></i></div>
+        <h3>Ready to Reserve?</h3>
+        <p>Sign in for a faster checkout, or continue as a guest.</p>
       </div>
 
-      <div class="footer-bottom">
-        <p class="copyright">© 2026 {{ branding.companyName }} Group. All rights reserved.</p>
-        <div class="legal">
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-        </div>
+      <div class="auth-options">
+        <button class="auth-btn signin" (click)="proceedToCheckout('signin')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Sign In</span>
+            <span class="sub">Access your bookings & preferences</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
+
+        <button class="auth-btn signup" (click)="proceedToCheckout('signup')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-user-plus"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Create Account</span>
+            <span class="sub">Get exclusive member deals</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <button class="auth-btn guest" (click)="proceedToCheckout('guest')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-user-secret"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Continue as Guest</span>
+            <span class="sub">No account needed, quick & easy</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
       </div>
+
+      <p class="auth-note">
+        <i class="fa-solid fa-shield-halved"></i>
+        Your information is always secure with us
+      </p>
     </div>
-  </footer>
+  </div>
 </div>

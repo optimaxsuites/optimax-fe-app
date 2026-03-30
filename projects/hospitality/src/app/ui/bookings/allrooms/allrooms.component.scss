@@ -14,9 +14,8 @@ $white: #ffffff;
 }
 
 .rooms-container {
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 3rem 1.5rem;
+  width: 100%;
+  padding: 3rem 2rem;
 }
 
 .rooms-header {
@@ -75,15 +74,15 @@ $white: #ffffff;
 
 .room-grid {
   display: grid;
-  grid-template-cols: 1fr;
+  grid-template-columns: 1fr;
   gap: 2rem;
 
   @media (min-width: 768px) {
-    grid-template-cols: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   @media (min-width: 1024px) {
-    grid-template-cols: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

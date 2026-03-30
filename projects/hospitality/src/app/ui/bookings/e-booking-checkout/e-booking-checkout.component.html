@@ -1,22 +1,4 @@
 <div class="checkout-page" *ngIf="!loading">
-  <!-- Navbar -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <div class="logo" style="cursor:pointer" (click)="router.navigate(['/e-bookings/home', uuid])">
-        <ng-container *ngIf="branding.logo">
-          <img [src]="branding.logo" class="logo-img" alt="logo">
-        </ng-container>
-        <ng-container *ngIf="!branding.logo">
-          {{ branding.companyName?.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
-        </ng-container>
-      </div>
-      <div class="nav-actions">
-        <button class="btn-back-nav" (click)="goBack()">
-          <i class="fa-solid fa-arrow-left"></i> Back
-        </button>
-      </div>
-    </div>
-  </nav>
 
   <!-- Breadcrumb -->
   <div class="breadcrumb-bar">
@@ -107,7 +89,7 @@
             </div>
             <div class="field">
               <label>Email</label>
-              <input type="email" [(ngModel)]="email" placeholder="amara@email.com" class="text-input">
+              <input type="email" [(ngModel)]="email" placeholder="amara&#64;email.com" class="text-input">
             </div>
             <div class="field">
               <label>Phone</label>
@@ -188,9 +170,10 @@
             <span class="total-amount">₦{{ grandTotal | number }}</span>
           </div>
 
-          <button class="btn-confirm" (click)="confirmBooking()">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span>Confirm Booking</span>
+          <button class="btn-confirm" (click)="confirmBooking()" [disabled]="isSubmitting">
+            <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            <i class="fa-solid fa-shield-halved" *ngIf="!isSubmitting"></i>
+            <span>{{ isSubmitting ? 'Processing...' : 'Confirm Booking' }}</span>
           </button>
 
           <p class="no-charge-note">
@@ -209,13 +192,45 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="checkout-footer">
-    <p>© 2026 {{ branding.companyName }}. All rights reserved. &nbsp;·&nbsp;
-      <a href="#">Privacy</a> &nbsp;·&nbsp;
-      <a href="#">Terms</a>
-    </p>
-  </footer>
+
+  <!-- Success Modal -->
+  <div class="success-modal-backdrop" *ngIf="showSuccessModal">
+    <div class="success-modal">
+      <div class="success-icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>Reservation Confirmed!</h2>
+      <p class="success-msg">Your stay at {{ branding.companyName }} has been successfully booked.</p>
+      
+      <div class="booking-details-card">
+        <div class="detail-row">
+          <span class="label">Booking ID</span>
+          <span class="value">#{{ confirmedBooking?.id || 'HSP-' + (confirmedBooking?.bookingId || '7721') }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Room</span>
+          <span class="value">Room {{ room?.roomNumber }} ({{ room?.roomTypeName }})</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Dates</span>
+          <span class="value">{{ checkinDate | date:'mediumDate' }} - {{ checkoutDate | date:'mediumDate' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Total Amount</span>
+          <span class="value">{{ grandTotal | currency:'NGN':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <div class="success-note">
+        <i class="fa-solid fa-envelope"></i>
+        A confirmation email has been sent to <strong>{{ email }}</strong>
+      </div>
+
+      <button class="btn-finish" (click)="finishBooking()">
+        Return to Home <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Loading -->

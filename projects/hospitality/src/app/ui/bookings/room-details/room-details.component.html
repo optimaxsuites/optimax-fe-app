@@ -1,38 +1,10 @@
 <div class="page-wrapper" *ngIf="!loading">
-  <!-- Dynamic Navbar Branding -->
-  <nav class="navbar">
-    <div class="nav-container">
-      <div class="logo-area" routerLink="user/hospitality/e-bookings/home/{{uuid}}">
-        <img *ngIf="branding.logo" [src]="branding.logo" class="logo-img">
-        <span *ngIf="!branding.logo">
-          {{ branding.companyName.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
-        </span>
-      </div>
-
-      <div class="nav-links" [class.active]="isMenuOpen">
-        <a routerLink="user/hospitality/e-bookings/home/{{uuid}}">Explore</a>
-        <a href="javascript:void(0)">My Bookings</a>
-        <a href="javascript:void(0)">Favorites</a>
-        <button class="btn-signin mobile-only">Sign In</button>
-      </div>
-
-      <div class="nav-actions">
-        <button class="btn-signin desktop-only">Sign In</button>
-        <button class="btn-user">
-          <i class="fa-solid fa-circle-user"></i>
-        </button>
-        <button class="btn-hamburger" (click)="toggleMenu()">
-          <i class="fa-solid" [class.fa-bars]="!isMenuOpen" [class.fa-xmark]="isMenuOpen"></i>
-        </button>
-      </div>
-    </div>
-  </nav>
 
   <div class="room-details-page">
     <div class="container">
       <!-- Header -->
       <header class="page-header">
-        <button class="btn-back" routerLink="user/hospitality/e-bookings/home/{{uuid}}">
+        <button class="btn-back" [routerLink]="['/e-bookings/home', uuid]">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Back to Explore</span>
         </button>
@@ -190,7 +162,7 @@
         <p class="section-sub">Other premium rooms available for your dates</p>
         <div class="recommended-grid">
           <div class="rec-card" *ngFor="let rec of recommendedRooms"
-               [routerLink]="['user/hospitality/e-bookings/rooms/details', rec.id, uuid]">
+               [routerLink]="['/e-bookings/rooms/details', rec.id, uuid]">
             <div class="rec-image">
               <img [src]="rec.coverImage" [alt]="'Room ' + rec.roomNumber">
               <span class="rec-pill">{{ rec.roomTypeName }}</span>
@@ -265,50 +237,6 @@
     </div>
   </div>
 
-  <!-- Dynamic Footer -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-grid">
-        <div class="brand-col">
-          <div class="logo">
-            {{ branding.companyName.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
-          </div>
-          <p class="desc">{{ branding.footerDescription || 'Redefining hospitality booking in Nigeria through AI-driven search and minimalist design.' }}</p>
-          <div class="socials">
-            <a *ngIf="branding.facebook" [href]="branding.facebook" class="social-link"><i class="fa-brands fa-facebook-f"></i></a>
-            <a *ngIf="branding.instagram" [href]="branding.instagram" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            <a *ngIf="branding.twitter" [href]="branding.twitter" class="social-link"><i class="fa-brands fa-x-twitter"></i></a>
-            <a *ngIf="branding.whatsapp" [href]="'https://wa.me/' + branding.whatsapp" class="social-link"><i class="fa-brands fa-whatsapp"></i></a>
-          </div>
-        </div>
-        
-        <div class="link-col">
-          <h4>Explore</h4>
-          <ul>
-            <li><a href="javascript:void(0)">Our Rooms</a></li>
-            <li><a href="javascript:void(0)">Special Offers</a></li>
-            <li><a href="javascript:void(0)">Reviews</a></li>
-          </ul>
-        </div>
-
-        <div class="link-col">
-          <h4>Contact</h4>
-          <ul>
-            <li><a href="javascript:void(0)">Lagos, Nigeria</a></li>
-            <li><a href="javascript:void(0)">hello&#64;optimax.ng</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <p class="copyright">© 2026 {{ branding.companyName }} Group. All rights reserved.</p>
-        <div class="legal">
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-        </div>
-      </div>
-    </div>
-  </footer>
 </div>
 
 <div class="loading-state" *ngIf="loading">
