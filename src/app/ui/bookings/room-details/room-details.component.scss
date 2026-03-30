@@ -506,3 +506,251 @@ $radius-lg: 0.5rem;
 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes scaleIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ========= AUTH MODAL ========= */
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.auth-modal {
+  background: $white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 26rem;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .auth-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: $bg-light;
+    border: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    color: $text-sub;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    &:hover { background: $border-light; }
+  }
+
+  .auth-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .auth-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      background: $premium-green-fade;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.5rem;
+      color: $premium-green;
+    }
+
+    h3 { font-size: 1.25rem; font-weight: 800; color: $text-dark; margin-bottom: 0.4rem; }
+    p { font-size: 0.875rem; color: $text-sub; }
+  }
+
+  .auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .auth-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.875rem;
+    border: 1.5px solid $border-light;
+    background: $white;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s;
+
+    .auth-btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .auth-btn-text {
+      flex: 1;
+      .title { display: block; font-size: 0.9375rem; font-weight: 700; color: $text-dark; }
+      .sub { display: block; font-size: 0.75rem; color: $text-sub; margin-top: 0.1rem; }
+    }
+
+    .auth-arrow { color: $border-light; font-size: 0.8rem; transition: color 0.2s; }
+
+    &.signin {
+      .auth-btn-icon { background: #eff6ff; color: #2563eb; }
+      &:hover { border-color: #2563eb; .auth-arrow { color: #2563eb; } }
+    }
+    &.signup {
+      .auth-btn-icon { background: $premium-green-fade; color: $premium-green; }
+      &:hover { border-color: $premium-green; .auth-arrow { color: $premium-green; } }
+    }
+    &.guest {
+      .auth-btn-icon { background: #f5f3ff; color: #7c3aed; }
+      &:hover { border-color: #7c3aed; .auth-arrow { color: #7c3aed; } }
+    }
+  }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: $text-sub;
+    font-size: 0.75rem;
+    &::before, &::after { content: ''; flex: 1; height: 1px; background: $border-light; }
+    span { white-space: nowrap; }
+  }
+
+  .auth-note {
+    text-align: center;
+    font-size: 0.75rem;
+    color: $text-sub;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    i { color: $premium-green; }
+  }
+}
+
+/* ========= RECOMMENDED ROOMS ========= */
+.recommended-section {
+  margin-top: 1.5rem;
+
+  .section-sub {
+    font-size: 0.875rem;
+    color: $text-sub;
+    margin-top: -0.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.recommended-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+
+  @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 1024px) { grid-template-columns: repeat(4, 1fr); }
+}
+
+.rec-card {
+  background: $white;
+  border: 1px solid $border-light;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    border-color: $premium-green;
+  }
+
+  .rec-image {
+    position: relative;
+    height: 10rem;
+    overflow: hidden;
+
+    img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    &:hover img { transform: scale(1.06); }
+
+    .rec-pill {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: $white;
+      font-size: 0.625rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2rem;
+    }
+  }
+
+  .rec-body {
+    padding: 0.875rem 1rem;
+
+    h4 { font-size: 0.9375rem; font-weight: 700; color: $text-dark; margin-bottom: 0.3rem; }
+
+    .rec-meta {
+      font-size: 0.75rem;
+      color: $text-sub;
+      margin-bottom: 0.75rem;
+      i { color: $premium-green; font-size: 0.6875rem; }
+    }
+
+    .rec-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rec-price {
+      font-size: 1rem;
+      font-weight: 800;
+      color: $text-dark;
+      .rec-night { font-size: 0.75rem; font-weight: 400; color: $text-sub; }
+    }
+
+    .btn-view {
+      background: $premium-green-fade;
+      color: $premium-green;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+
+      &:hover { background: $premium-green; color: $white; }
+      i { font-size: 0.6875rem; }
+    }
+  }
+}

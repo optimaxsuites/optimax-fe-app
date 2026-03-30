@@ -14,6 +14,7 @@ import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
 import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 import { RoomDetailsComponent } from '../ui/bookings/room-details/room-details.component';
+import { EBookingCheckoutComponent } from '../ui/bookings/e-booking-checkout/e-booking-checkout.component';
 
 import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
 import { BookingDetailComponent } from '../ui/view/room-management/booking-detail/booking-detail.component';
@@ -35,6 +36,7 @@ const routes: Routes = [
   { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
   { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },
   { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
+  { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
 
   { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
   { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },

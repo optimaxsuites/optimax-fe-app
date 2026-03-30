@@ -48,18 +48,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { HotelReceptionistComponent } from './ui/view/hotel-receptionist/hotel-receptionist.component';
 import { DialogService } from 'primeng/dynamicdialog';
 import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
-import { HomeComponent } from './ui/bookings/home/home.component';
-import { NavbarComponent } from './ui/bookings/navbar/navbar.component';
-import { ThemeComponent } from './ui/bookings/theme/theme.component';
-import { HeropageComponent } from './ui/bookings/heropage/heropage.component';
-import { AboutpageComponent } from './ui/bookings/aboutpage/aboutpage.component';
-import { RoomsCarouselComponent } from './ui/bookings/rooms-carousel/rooms-carousel.component';
-import { AllroomsComponent } from './ui/bookings/allrooms/allrooms.component';
-import { RoomsheroComponent } from './ui/bookings/roomshero/roomshero.component';
-import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.component';
-import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
 
-import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -106,17 +95,7 @@ import { ServicesListComponent } from './ui/view/room-management/services/servic
     HotelRoomsComponent,
     HotelReceptionistComponent,
     HotelAdmintableComponent,
-    HomeComponent,
-    NavbarComponent,
-    ThemeComponent,
-    HeropageComponent,
-    AboutpageComponent,
-    RoomsCarouselComponent,
-    AllroomsComponent,
-    RoomsheroComponent,
-    RoomdesignComponent,
-    RoomfooterComponent,
-    MultipleBookingsComponent,
+
     RoomTypesListComponent,
     RoomsListComponent,
     ServicesListComponent,
