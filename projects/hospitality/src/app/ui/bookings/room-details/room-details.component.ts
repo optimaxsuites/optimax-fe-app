@@ -8,8 +8,6 @@ import { switchMap } from 'rxjs';
   selector: 'app-room-details',
   templateUrl: './room-details.component.html',
   styleUrls: ['./room-details.component.scss'],
-  standalone: true,
-  imports: [CommonModule, RouterModule],
 })
 export class RoomDetailsComponent implements OnInit {
   room: any = null;
@@ -20,6 +18,8 @@ export class RoomDetailsComponent implements OnInit {
   selectedServices: Set<number> = new Set();
   totalPrice = 0;
   isMenuOpen = false;
+  showAuthModal = false;
+  recommendedRooms: any[] = [];
   branding: any = {
     companyName: 'OptimaxHospitality',
     logo: null,
@@ -43,6 +43,7 @@ export class RoomDetailsComponent implements OnInit {
         if (roomId) {
           this.loadRoomDetails(Number(roomId));
           this.loadServices();
+          this.loadRecommendedRooms(Number(roomId));
         }
       }
     });
@@ -99,11 +100,49 @@ export class RoomDetailsComponent implements OnInit {
 
   loadServices(): void {
     this.hotelService.getAdditionalDetails().subscribe({
-      next: (services) => {
-        this.additionalServices = services;
-      },
+      next: (services) => { this.additionalServices = services; },
       error: (err) => console.error('Error loading services:', err)
     });
+  }
+
+  loadRecommendedRooms(currentRoomId: number): void {
+    this.hotelService.getRooms().subscribe({
+      next: (rooms: any[]) => {
+        const testImages = [
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=600',
+        ];
+        this.recommendedRooms = rooms
+          .filter(r => r.id !== currentRoomId && r.roomStatus === 'AVAILABLE')
+          .slice(0, 4)
+          .map((r, i) => ({
+            ...r,
+            roomTypeName: this.hotelService.getRoomTypeNameById(r.roomType),
+            displayPrice: r.rate || 0,
+            coverImage: (r.imageURLs && r.imageURLs[0]) || testImages[i % testImages.length],
+          }));
+      }
+    });
+  }
+
+  openAuthModal(): void {
+    this.showAuthModal = true;
+  }
+
+  closeAuthModal(): void {
+    this.showAuthModal = false;
+  }
+
+  proceedToCheckout(mode: 'signin' | 'signup' | 'guest'): void {
+    this.showAuthModal = false;
+    const serviceIds = Array.from(this.selectedServices).join(',');
+    const extras = serviceIds ? { services: serviceIds } : {};
+    this.router.navigate(
+      ['/e-bookings/checkout', this.room.id, this.uuid],
+      { queryParams: extras }
+    );
   }
 
   toggleService(serviceId: number): void {

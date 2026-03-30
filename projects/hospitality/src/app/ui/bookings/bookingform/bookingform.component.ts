@@ -10,8 +10,6 @@ import {
   selector: 'app-bookingform',
   templateUrl: './bookingform.component.html',
   styleUrls: ['./bookingform.component.scss'],
-  standalone: true,
-  imports: [CommonModule],
 })
 export class BookingformComponent implements OnInit {
   @Input() roomName: string = 'Executive Ocean View Suite';
