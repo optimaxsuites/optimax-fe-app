@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavTabComponent } from '../../../sharedComponent/view/nav-tab/nav-tab.component';
 import { TabConfig } from '../../../sharedComponent/service/interface/data';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-hospitality-shell',
@@ -13,13 +14,19 @@ import { TabConfig } from '../../../sharedComponent/service/interface/data';
 export class HospitalityShellComponent implements OnInit {
   uuid = '';
   tabsConfig: TabConfig[] = [];
+  currentUser = '';
+  currentRole = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
+    this.currentUser = sessionStorage.getItem('username') || 'Administrator';
+    this.currentRole = sessionStorage.getItem('role') || 'Admin';
+
     // Read uuid from current or child route
     this.uuid =
       this.route.snapshot.paramMap.get('uuid') ||
@@ -104,4 +111,7 @@ export class HospitalityShellComponent implements OnInit {
     ];
   }
 
+  goBack(): void {
+    this.location.back();
+  }
 }
