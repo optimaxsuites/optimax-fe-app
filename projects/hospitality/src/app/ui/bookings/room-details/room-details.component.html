@@ -2,7 +2,7 @@
   <!-- Dynamic Navbar Branding -->
   <nav class="navbar">
     <div class="nav-container">
-      <div class="logo-area" routerLink="/e-bookings/home/{{uuid}}">
+      <div class="logo-area" routerLink="user/hospitality/e-bookings/home/{{uuid}}">
         <img *ngIf="branding.logo" [src]="branding.logo" class="logo-img">
         <span *ngIf="!branding.logo">
           {{ branding.companyName.split('Hospitality')[0] }}<span class="accent">Hospitality</span>
@@ -10,7 +10,7 @@
       </div>
 
       <div class="nav-links" [class.active]="isMenuOpen">
-        <a routerLink="/e-bookings/home/{{uuid}}">Explore</a>
+        <a routerLink="user/hospitality/e-bookings/home/{{uuid}}">Explore</a>
         <a href="javascript:void(0)">My Bookings</a>
         <a href="javascript:void(0)">Favorites</a>
         <button class="btn-signin mobile-only">Sign In</button>
@@ -32,7 +32,7 @@
     <div class="container">
       <!-- Header -->
       <header class="page-header">
-        <button class="btn-back" routerLink="/e-bookings/home/{{uuid}}">
+        <button class="btn-back" routerLink="user/hospitality/e-bookings/home/{{uuid}}">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Back to Explore</span>
         </button>
@@ -190,7 +190,7 @@
         <p class="section-sub">Other premium rooms available for your dates</p>
         <div class="recommended-grid">
           <div class="rec-card" *ngFor="let rec of recommendedRooms"
-               [routerLink]="['/e-bookings/rooms/details', rec.id, uuid]">
+               [routerLink]="['user/hospitality/e-bookings/rooms/details', rec.id, uuid]">
             <div class="rec-image">
               <img [src]="rec.coverImage" [alt]="'Room ' + rec.roomNumber">
               <span class="rec-pill">{{ rec.roomTypeName }}</span>

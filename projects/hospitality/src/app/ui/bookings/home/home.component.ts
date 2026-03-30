@@ -191,12 +191,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   viewRoomDetails(room: DisplayRoom): void {
     // Navigate to the NEW dedicated room details page
-    this.router.navigate(['/e-bookings/rooms/details', room.id, this.uuid]);
+    this.router.navigate(['user/hospitality/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: DisplayRoom): void {
     // Navigate directly to the booking form (with the sidebar)
-    this.router.navigate(['/e-bookings/booking-form', room.id, this.uuid]);
+    this.router.navigate(['user/hospitality/e-bookings/booking-form', room.id, this.uuid]);
   }
 
   setCategory(category: string | number): void {
