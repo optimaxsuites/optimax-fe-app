@@ -97,18 +97,19 @@ export class CooperativeLoanDetailComponent implements OnInit {
         return;
       }
 
-      const latest = this.cooperativeService.getLoanById(this.loan.id);
-      if (latest) {
-        this.loan = latest;
-      }
-      this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
-      this.showRecordPaymentModal = false;
+      this.cooperativeService.getLoanById(this.loan.id).subscribe((latest) => {
+        if (latest) {
+          this.loan = latest;
+        }
+        this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+        this.showRecordPaymentModal = false;
 
-      this.messages = [{
-        severity: 'success',
-        summary: 'Payment Recorded',
-        detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
-      }];
+        this.messages = [{
+          severity: 'success',
+          summary: 'Payment Recorded',
+          detail: `${this.formatCurrency(recorded.amount)} recorded via ${this.getmodeofPaymentLabel(recorded.modeofPayment)}.`
+        }];
+      });
     });
   }
 
