@@ -319,43 +319,32 @@ export class CooperativeMembershipService {
     return { ...newMember };
   }
 
-  approvePendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
-    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
-    if (idx === -1) {
-      return {
+  approvePendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number, apiService: any): Promise<CooperativeMembershipActionResult> {
+    const application = context.pendingMembershipApplications.find(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (!application) {
+      return Promise.resolve({
         success: false,
         status: 'REJECTED',
         message: 'Application not found or already processed.',
         eligibility: undefined as any
-      };
+      });
     }
-    const application = context.pendingMembershipApplications[idx];
-    // Simulate finding employee profile (in real app, fetch from DB)
-    const employee: CooperativeEmployeeProfile = {
-      employeeId: application.employeeId,
+
+    return apiService.createMember({
+     employeeId: application.employeeId,
       fullName: application.fullName,
       email: '',
       phone: '',
-      department: '',
-      rank: 'MID',
-      employmentType: 'PERMANENT',
-      employmentStartDate: '',
-      onProbation: false,
-      probationEndDate: undefined,
-      hasActiveDisciplinaryIssue: false,
-      managerId: undefined
-    };
-    const eligibility = this.checkMembershipEligibility(employee);
-    const member = this.createOrUpdateMemberFromEmployee(context, employee, eligibility.policy.minShares);
-    context.pendingMembershipApplications.splice(idx, 1);
-    context.saveToStorage();
-    return {
+      shareCapital: 25000,
+      address: '',
+      status: 'ACTIVE'
+    }).toPromise().then((createdMember: any) => ({
       success: true,
       status: 'AUTO_APPROVED',
       message: 'Membership approved and member activated.',
-      eligibility,
-      member
-    };
+      eligibility: undefined,
+      member: createdMember
+    }))
   }
 
   rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
