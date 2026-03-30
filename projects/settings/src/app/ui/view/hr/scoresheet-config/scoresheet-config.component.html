@@ -1,0 +1,137 @@
+<p-confirmDialog
+  header="Confirm Deletion"
+  icon="pi pi-exclamation-triangle"
+  styleClass="custom-confirm-dialog"
+></p-confirmDialog>
+<p-toast></p-toast>
+<div class="flex gap-4 items-center">
+  <i class="fas fa-clipboard-list text-4xl text-customBlue"></i>
+  <div>
+    <p class="text-customBlue/60">Human Resources</p>
+    <p class="text-customBlue font-semibold text-[17px]">
+      Score Sheet Criteria
+    </p>
+  </div>
+</div>
+<hr />
+
+<div class="mb-4 mt-3 px-3 flex justify-between items-center">
+  <p class="text-2xl font-semibold text-customBlue">
+    <span *ngIf="showAddForm">New</span> Criteria
+  </p>
+  <button
+    class="bg-customBlue text-white font-bold p-3 rounded-xl"
+    (click)="toogleForm()"
+  >
+    {{ showAddForm ? "Cancel" : "Create New" }}
+  </button>
+</div>
+
+<div
+  *ngIf="questions.length === 0 && !showAddForm"
+  class="text-gray-500 text-center my-4"
+>
+  No Criteria Added Yet
+</div>
+
+<mat-accordion *ngIf="showAddForm == false">
+  <mat-expansion-panel *ngFor="let question of questions; let i = index" #panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <p class="text-gray-600 font-bold text-[14px]">{{ question.title }}</p>
+      </mat-panel-title>
+      <mat-panel-description class="action-buttons">
+        <button
+          (click)="editQuestion(question)"
+          class="text-customGreen hover:bg-green-50 p-3 rounded-xl"
+        >
+          <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i
+          ><span *ngIf="panel.expanded">Edit</span>
+        </button>
+        <button
+          (click)="confirmQuestionDelete(question)"
+          class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
+        >
+          <i class="fa-solid fa-trash text-2xl pr-2"></i
+          ><span *ngIf="panel.expanded">Delete</span>
+        </button>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="text-gray-700 flex flex-col gap-2">
+      <hr />
+      <p><strong>Criterias</strong></p>
+      <ul>
+        <li *ngFor="let item of question.questions">- {{ item.text }}</li>
+      </ul>
+    </div>
+  </mat-expansion-panel>
+</mat-accordion>
+
+<div *ngIf="showAddForm">
+  <div
+    class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70"
+  >
+    <div class="mb-4">
+      <label for="title" class="block text-[14px] font-medium capitalize"
+        >Title</label
+      >
+      <input
+        [(ngModel)]="questionData.title"
+        id="title"
+        class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"
+        type="text"
+        placeholder="Enter title"
+      />
+    </div>
+
+    <div>
+      <form (ngSubmit)="addQuestion()" class="mb-4">
+        <label for="question" class="block text-[14px] font-medium"
+          >Criteria</label
+        >
+        <input
+          [(ngModel)]="currentQuestion"
+          class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"
+          placeholder="Enter question"
+          name="currentQuestion"
+        />
+        <button
+          type="submit"
+          class="text-customGreen text-nowrap text-[12px] mt-2"
+        >
+          + Add Criteria
+        </button>
+      </form>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[14px] font-medium">Criteria List</label>
+      <ul>
+        <li
+          *ngFor="let question of questionData.questions; let i = index"
+          class="d-flex justify-between editInput mb-4"
+        >
+          <span>{{ question.text }}</span>
+          <button
+            type="button"
+            (click)="deleteQuestionArray(i)"
+            class="text-red-500 text-[12px] mt-1 ml-2"
+          >
+            Delete
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="text-right">
+      <button
+        type="submit"
+        (click)="onSubmit()"
+        class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+      >
+        Submit
+      </button>
+    </div>
+  </div>
+</div>

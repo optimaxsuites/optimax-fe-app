@@ -1,0 +1,570 @@
+.loan-detail-container {
+  padding: 24px;
+  min-height: 100vh;
+  background-color: #f8feff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #B6D6E2;
+      border-top: 3px solid #2E6276;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    p { color: #2E6276; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 12px;
+    padding: 16px 18px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .record-btn {
+        border: none;
+        border-radius: 6px;
+        background: #2E6276;
+        color: #fff;
+        padding: 8px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    }
+
+    h1 {
+      color: #2E6276;
+      font-size: 1.35rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      i {
+        color: #FFA500;
+      }
+    }
+
+    .status-badge {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      &.status-pending { background-color: rgba(231, 222, 101, 0.2); color: #8f8500; border: 1px solid rgba(231, 222, 101, 0.3); }
+      &.status-approved { background-color: rgba(46, 178, 112, 0.1); color: #1e7e4a; border: 1px solid rgba(46, 178, 112, 0.3); }
+      &.status-rejected { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+      &.status-active { background-color: rgba(46, 98, 118, 0.1); color: #1e4a5a; border: 1px solid rgba(46, 98, 118, 0.3); }
+      &.status-completed { background-color: rgba(128, 128, 128, 0.1); color: #4d4d4d; border: 1px solid rgba(128, 128, 128, 0.3); }
+      &.status-defaulted { background-color: rgba(233, 55, 55, 0.1); color: #b30000; border: 1px solid rgba(233, 55, 55, 0.3); }
+    }
+  }
+
+  .details-panel {
+    display: grid;
+    gap: 14px;
+  }
+
+  .overview-card,
+  .repayment-card,
+  .info-card,
+  .actions-card,
+  .timeline-card {
+    background: #fff;
+    border: 1px solid #e3eef0;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .overview-card {
+    .top-line {
+      color: #2f3b45;
+      margin-bottom: 8px;
+      line-height: 1.45;
+
+      .separator {
+        margin: 0 8px;
+        color: #8a8a8a;
+      }
+    }
+
+    .purpose-line {
+      margin-bottom: 0;
+    }
+  }
+
+  .info-card,
+  .repayment-card,
+  .actions-card,
+  .timeline-card {
+    h3 {
+      margin: 0 0 12px;
+      color: #2E6276;
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .repayment-card {
+    .repayment-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+      .record-btn {
+        border: none;
+        border-radius: 8px;
+        background: #2E6276;
+        color: #fff;
+        padding: 8px 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    }
+
+    .loan-summary-line {
+      color: #2f3b45;
+      margin-bottom: 6px;
+
+      &.monthly {
+        margin-bottom: 14px;
+      }
+    }
+
+    .progress-wrap {
+      margin-bottom: 14px;
+
+      .progress-label {
+        color: #2E6276;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 14px;
+        background: #e3eef0;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: #2E6276;
+      }
+
+      .progress-meta {
+        margin-top: 8px;
+        color: #2f3b45;
+        font-weight: 600;
+      }
+
+      .progress-amounts {
+        margin-top: 4px;
+        color: #2f3b45;
+
+        .separator {
+          margin: 0 8px;
+          color: #8a8a8a;
+        }
+      }
+    }
+
+    .repayment-alert {
+      background: rgba(255, 165, 0, 0.12);
+      color: #b87c00;
+      border: 1px solid rgba(255, 165, 0, 0.35);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 0 0 10px;
+      color: #2E6276;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      font-size: 0.95rem;
+    }
+  }
+
+  .guarantor-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+
+    li {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #e3eef0;
+      border-radius: 8px;
+      background: #f8feff;
+      color: #2f3b45;
+    }
+
+    .guarantor-status {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(46, 178, 112, 0.12);
+      color: #1e7e4a;
+
+      &.status-pending {
+        background: rgba(255, 165, 0, 0.12);
+        color: #b87c00;
+      }
+
+      &.status-rejected,
+      &.status-expired {
+        background: rgba(233, 55, 55, 0.12);
+        color: #b30000;
+      }
+    }
+
+    .guarantor-actions {
+      display: flex;
+      gap: 6px;
+
+      button {
+        border: none;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .approve-btn {
+        background: #2EB270;
+        color: #fff;
+      }
+
+      .reject-btn {
+        background: #d9534f;
+        color: #fff;
+      }
+    }
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: #495057;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+    }
+
+    .approve-btn {
+      background: #2EB270;
+      color: #fff;
+    }
+
+    .reject-btn {
+      background: #d9534f;
+      color: #fff;
+    }
+
+    .changes-btn {
+      background: #2E6276;
+      color: #fff;
+    }
+
+    .disburse-btn {
+      background: #2E6276;
+      color: #fff;
+    }
+  }
+
+  .reason-input {
+    margin-top: 12px;
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #495057;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #d7e7ec;
+      border-radius: 8px;
+      padding: 9px 10px;
+    }
+  }
+
+  .schedule-table-wrap {
+    overflow-x: auto;
+
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #e3eef0;
+        text-align: left;
+      }
+
+      th {
+        color: #2E6276;
+        background: #f8feff;
+      }
+
+      .repayment-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .status-paid {
+        background: rgba(46,178,112,0.12);
+        color: #1e7e4a;
+      }
+
+      .status-overdue {
+        background: rgba(233,55,55,0.12);
+        color: #b30000;
+      }
+
+      .status-pending {
+        background: rgba(46,98,118,0.12);
+        color: #1e4a5a;
+      }
+    }
+  }
+
+  .repayment-actions {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+    }
+
+    .ghost-btn {
+      background: #f8feff;
+      border: 1px solid #d7e7ec;
+      color: #495057;
+    }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      width: 500px;
+      max-width: 90%;
+
+      h3 {
+        color: #2E6276;
+        margin: 0 0 16px 0;
+      }
+
+      textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e3eef0;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-family: inherit;
+        &:focus { outline: none; border-color: #2E6276; }
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 20px;
+
+        label {
+          display: grid;
+          gap: 6px;
+          color: #495057;
+          font-weight: 600;
+        }
+
+        input,
+        select {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #e3eef0;
+          border-radius: 6px;
+          font-family: inherit;
+
+          &:focus {
+            outline: none;
+            border-color: #2E6276;
+          }
+        }
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+
+        button {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          &.cancel-btn {
+            background: #f8feff;
+            border: 1px solid #e3eef0;
+            color: #495057;
+            &:hover { background: #e3eef0; }
+          }
+          &.confirm-btn {
+            background: #2E6276;
+            color: white;
+            &:disabled { opacity: 0.5; cursor: not-allowed; }
+          }
+        }
+      }
+    }
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      
+      .timeline-dot {
+        position: absolute;
+        left: -30px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #e3eef0;
+        border: 2px solid #2E6276;
+        
+        &.approved { background: #2EB270; border-color: #2EB270; }
+        &.active { background: #2E6276; border-color: #2E6276; }
+        &.completed { background: #2EB270; border-color: #2EB270; }
+      }
+
+      .timeline-content {
+        .timeline-date {
+          color: #8a8a8a;
+          font-size: 0.85rem;
+        }
+        .timeline-title {
+          color: #2E6276;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .loan-detail-container {
+    padding: 16px;
+
+    .detail-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-actions {
+        width: 100%;
+
+        .record-btn,
+        .back-btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      h1 {
+        font-size: 1.15rem;
+      }
+    }
+
+    .action-buttons {
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

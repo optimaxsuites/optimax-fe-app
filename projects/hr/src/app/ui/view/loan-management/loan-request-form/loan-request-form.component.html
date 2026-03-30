@@ -1,0 +1,151 @@
+<div class="loan-application-container" [class.modal-mode]="isModal">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <form [formGroup]="loanRequestForm" (ngSubmit)="onSubmit()" class="loan-request-form">
+    <div class="application-header lm-header-card" *ngIf="!isModal">
+      <div class="header-copy">
+        <h1><i class="fas fa-file-signature"></i> Employee Loan Application</h1>
+        <p class="confidential">Complete the request with the required financial details and supporting records.</p>
+        <div class="header-meta" *ngIf="employeeName || employeeId || department">
+          <span class="meta-chip" *ngIf="employeeName"><i class="fas fa-user"></i> {{ employeeName }}</span>
+          <span class="meta-chip" *ngIf="employeeId"><i class="fas fa-id-badge"></i> {{ employeeId }}</span>
+          <span class="meta-chip" *ngIf="department"><i class="fas fa-building"></i> {{ department }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="compact-intro" *ngIf="isModal">
+      <h1><i class="fas fa-file-circle-plus"></i> New Loan Request</h1>
+      <p>Fill in the details below to submit your loan request.</p>
+    </div>
+
+    <div class="form-layout">
+      <div class="form-section wide">
+        <h2><i class="fas fa-pen-ruler"></i> 1. Loan Details</h2>
+        <p class="section-copy">Provide the core details of the request below. Fields are arranged in the order HR and Finance review them.</p>
+
+        <div class="details-grid">
+          <div class="form-group purpose-group">
+            <label>Requested Purpose <span class="required">*</span></label>
+            <select formControlName="purpose" class="form-select">
+              <option value="">Select Purpose</option>
+              <option value="medical">Medical Emergency</option>
+              <option value="education">Education/Professional Development</option>
+              <option value="housing">Housing/Home Renovation</option>
+              <option value="vehicle">Vehicle Purchase</option>
+              <option value="debt_consolidation">Debt Consolidation</option>
+              <option value="personal">Personal/Family Needs</option>
+              <option value="other">Other (Please specify)</option>
+            </select>
+            <div class="error" *ngIf="purpose?.invalid && purpose?.touched">Loan purpose is required</div>
+          </div>
+
+          <div class="form-group amount-group">
+            <label>Loan Amount Requested (₦) <span class="required">*</span></label>
+            <input type="number" formControlName="amount" class="form-input" placeholder="₦0.00" min="10000" max="50000000">
+            <div class="error" *ngIf="amount?.invalid && amount?.touched">
+              <span *ngIf="amount?.errors?.['required']">Loan amount is required</span>
+              <span *ngIf="amount?.errors?.['min']">Minimum loan amount is ₦10,000</span>
+              <span *ngIf="amount?.errors?.['max']">Maximum loan amount is ₦50,000,000</span>
+            </div>
+          </div>
+
+          <div class="form-group other-purpose-group" *ngIf="showOtherPurpose">
+            <div class="other-purpose">
+              <label>Specify Other Purpose</label>
+              <input type="text" formControlName="otherPurpose" class="form-input" placeholder="Describe the purpose in a few words">
+              <div class="error" *ngIf="otherPurpose?.invalid && otherPurpose?.touched">Please specify other loan purpose</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Repayment Period (Months) <span class="required">*</span></label>
+            <select formControlName="repaymentTime" class="form-select">
+              <option value="">Select Period</option>
+              <option value="6">6 Months</option>
+              <option value="12">12 Months</option>
+              <option value="18">18 Months</option>
+              <option value="24">24 Months</option>
+              <option value="36">36 Months</option>
+            </select>
+            <div class="error" *ngIf="repaymentTime?.invalid && repaymentTime?.touched">Repayment period is required</div>
+          </div>
+
+          <div class="form-group mode-group">
+            <label>Mode of Repayment <span class="required">*</span></label>
+            <select formControlName="modeOfPayment" class="form-select">
+              <option value="">Select Mode of Repayment</option>
+              <option value="MONTHLY">Monthly Installments</option>
+              <option value="ONE_OFF">One-off Payment</option>
+            </select>
+            <div class="field-hint" *ngIf="!repaymentTime?.value">Select the repayment period first to choose a payment mode.</div>
+            <div class="error" *ngIf="modeOfPayment?.invalid && modeOfPayment?.touched && repaymentTime?.value">Please select a repayment mode</div>
+            <div class="payment-info" *ngIf="modeOfPayment?.value">
+              <span *ngIf="modeOfPayment?.value === 'MONTHLY'">Payments will be spread over {{ repaymentTime?.value || 'selected' }} months.</span>
+              <span *ngIf="modeOfPayment?.value === 'ONE_OFF'">Full payment of ₦{{ amount?.value || '0' }} due in one lump sum.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2><i class="fas fa-chart-line"></i> 2. Repayment Preview</h2>
+        <p class="section-copy">This updates automatically from the amount, duration, and repayment mode you select.</p>
+        <div class="calculated-field-wrapper">
+          <input type="number" formControlName="repaymentAmountAmount" class="form-input calculated" readonly placeholder="Automatically calculated">
+          <span class="calculated-badge">Calculated</span>
+        </div>
+        <div class="field-hint">Based on your selected loan amount and repayment period.</div>
+      </div>
+
+      <div class="form-section">
+        <h2><i class="fas fa-paperclip"></i> 3. Supporting Documents</h2>
+        <p class="section-copy">Attach any evidence that supports the request so the review team does not need to follow up for basics.</p>
+        <div class="document-upload-box">
+          <input
+            type="file"
+            id="supportingDocuments"
+            class="form-input doc-upload-input"
+            multiple
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            (change)="onDocumentsSelected($event)">
+          <p class="field-hint">Upload any relevant files (ID, payslip, invoices, medical reports, etc.).</p>
+
+          <ul class="uploaded-documents" *ngIf="supportingDocuments.length > 0">
+            <li *ngFor="let document of supportingDocuments; let i = index" class="document-item">
+              <span class="document-name">{{ document.name }}</span>
+              <button type="button" class="remove-document" (click)="removeDocument(i)">Remove</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="form-section wide acknowledgement-section">
+        <h2><i class="fas fa-shield-check"></i> 4. Acknowledgement</h2>
+        <p class="section-copy">Review the declarations below before you submit the application.</p>
+        <p class="acknowledgement-intro">I understand and agree that:</p>
+        <ul class="terms-list">
+          <li>The final loan terms are subject to company approval.</li>
+          <li>Interest rates will be applied as per company policy.</li>
+          <li>Late payments may incur additional charges.</li>
+          <li>Approval is conditional upon credit assessment.</li>
+          <li *ngIf="modeOfPayment?.value === 'ONE_OFF'">One-off payment must be made in full by the due date.</li>
+          <li *ngIf="modeOfPayment?.value === 'MONTHLY'">Monthly payments are due on the 1st of each month.</li>
+        </ul>
+        <div class="checkbox-group">
+          <input type="checkbox" id="acknowledgment" formControlName="acknowledgment" class="form-checkbox">
+          <label for="acknowledgment">I acknowledge and agree to the above statements <span class="required">*</span></label>
+        </div>
+        <div class="error" *ngIf="acknowledgment?.invalid && acknowledgment?.touched">You must agree to the declaration to proceed</div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="cancel-button" (click)="onCancel()" [disabled]="isLoading">Cancel</button>
+      <button type="submit" class="submit-button" [disabled]="!loanRequestForm.valid || isLoading">
+        <span *ngIf="!isLoading">Submit Application</span>
+        <span *ngIf="isLoading" class="loading">Processing...</span>
+      </button>
+    </div>
+  </form>
+</div>

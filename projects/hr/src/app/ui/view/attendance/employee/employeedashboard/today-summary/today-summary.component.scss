@@ -1,0 +1,36 @@
+.summary-card {
+  margin-left: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  .summary-item {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid #eef2f7;
+
+    span {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    strong {
+      display: block;
+      font-size: 1.85rem;
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+
+    &.late strong {
+      color: #dc2626;
+    }
+
+    &.overtime strong {
+      color: #16a34a;
+    }
+  }
+}

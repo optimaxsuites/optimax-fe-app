@@ -1,0 +1,25 @@
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+  margin-top: 20px;
+
+  @media (min-width: 992px) {
+    grid-template-columns: 2fr 2fr;
+  }
+}
+
+.chart-card {
+  background: #f3f4f6;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  position: relative;
+  min-height: 400px;
+}
+
+.chart-wrapper {
+  width: 80%;
+  height: 100%;
+}
+

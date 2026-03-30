@@ -1,0 +1,15 @@
+.employee-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .mid-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /*.bottom-row {
+    width: 100%;
+  }*/
+}

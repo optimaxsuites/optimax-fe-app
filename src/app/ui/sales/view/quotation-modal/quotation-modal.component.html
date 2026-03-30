@@ -1,0 +1,624 @@
+<div class="sales-form-wrapper ">
+  <app-back-button></app-back-button>
+  <div class="contain ">
+    <div class="modal-wrapper  card p-4" #contentToPrint>
+      <div class="header-section">
+        <section class="title-section">
+          <p class="form-title">{{isEdit ? 'Edit Quotation' : 'Quotation'}}</p>
+        </section>
+      </div>
+  
+      <div class="info-section">
+        <section class="first-info-section">
+          <div class="right">
+            <div class="input-container-100">
+              <label for="qNo">Quotation No</label>
+              <input type="text" name="any" id="qNo" [(ngModel)]="quotationData.quotationNo" class="editInput" />
+            </div>
+            <div class="d-flex gap-4 my-4">
+              <div class="input-container-50">
+                <label for="qDate">Date</label>
+                <input type="datetime-local" name="any" id="qDate" [(ngModel)]="quotationData.quotationDate" class="editInput" />
+              </div>
+              <div class="input-container-50">
+                <label for="qDueDate">Due Date</label>
+                <input type="datetime-local" name="any" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="editInput" />
+              </div>
+            </div>
+            <div class="input-container-100">
+              <label for="projectTitle">Project Title</label>
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="quotationData.projectTitle" class="editInput" />
+            </div>
+            <div class="editInput mt-2">
+              <button class="add-btn" (click)="addField()">
+                <i class="fas fa-plus me-2"></i>Add More Field
+              </button>
+              <div *ngFor="let field of quotationData.field; let i = index" class="input-container-100 editable-label-container gap-4 my-4">
+                <div class="editable-label">
+                  <input type="text" name="any" [(ngModel)]="field.title" class="editInput" placeholder="Title" />
+                </div>
+                <div class="editable-label-input">
+                  <input type="text" name="any" [(ngModel)]="field.description" class="editInput" placeholder="Description" />
+                  <i (click)="removeField(i)" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- client details starts -->
+          <!-- <div class="left">
+            <div class="top-container"></div>
+            <div class="bottom-container">
+              <div class="top-container">
+                <div class="billing-selection">
+                  <div>
+                    <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
+                    <ng-select 
+                    [items]="customerOptions"
+                    bindLabel="firstname"
+                    bindValue="id"
+                    [(ngModel)]="quotationData.customer"
+                    (ngModelChange)="onCustomerChange($event)"
+                    placeholder="Select Customer">
+                    </ng-select>
+                  </div>
+                </div>
+              </div>
+              <div class="info-bottom-section">
+                <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                  <p>Select Client From List</p>
+                  <p class="">Or</p>
+                  <button class="add-btn" (click)="openAddClient=true"> <i class="fas fa-plus me-2"></i> Add New Client</button>
+                </div>
+                <div class="second-component" *ngIf="showSecondComponent">
+                  <p><b>Client Details</b></p>
+                  <div class="business-info">
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.firstname" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="customerData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="customerData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="customerData.email" disabled />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> -->
+          <!-- client details ends -->
+        </section>
+
+        <hr>
+
+        <!-- second-info-section -->
+        <section class="second-info-section">
+          <!-- company details start -->
+          <div class="right">
+            <div class="top-container">
+              <div class="billing-selection">
+                <div>
+                  <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
+                  <!-- dropdown start -->
+                  <ng-select 
+                  [items]="companyOptions"
+                  bindLabel="name"
+                  bindValue="id"
+                  name="any"
+                  [(ngModel)]="selectedCompanyId"
+                  (change)="onCompanyChange($event)"
+                  placeholder="Select Company">
+                  </ng-select>
+                  <!-- dropdown ends -->
+                </div>
+              </div>
+            </div>
+          
+            <!-- display company info -->
+            <div class="info-bottom-section" > <!--*ngIf="selectedCompanyId"-->
+              <div class="bottom-container">
+                <p><b>Business Details</b></p>
+                <div class="business-info">
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="companyData.name" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="companyData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="companyData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="companyData.email" disabled />
+                </div>
+              </div>
+            </div>
+            <!-- display company info -->
+          </div>
+          <!-- company details ends -->
+          
+          <!-- client details starts -->
+          <div class="left">
+            <div class="top-container"></div>
+            <div class="bottom-container">
+              <div class="top-container">
+                <div class="billing-selection">
+                  <div>
+                    <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
+                    <!-- dropdown start -->
+                    <ng-select 
+                    [items]="customerOptions"
+                    bindLabel="firstname"
+                    bindValue="id"
+                    [(ngModel)]="quotationData.customer"
+                    (ngModelChange)="onCustomerChange($event)"
+                    placeholder="Select Customer">
+                    </ng-select>
+                    <!-- dropdown ends -->
+                  </div>
+                </div>
+              </div>
+              <div class="info-bottom-section">
+                <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                  <p>Select Client From List</p>
+                  <p class="">Or</p>
+                  <button class="add-btn" (click)="openAddClient=true"> <i class="fas fa-plus me-2"></i> Add New Client</button>
+                </div>
+                <div class="second-component" *ngIf="showSecondComponent">
+                  <p><b>Client Details</b></p>
+                  <div class="business-info">
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.firstname" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="customerData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="customerData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="customerData.email" disabled />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- client details ends -->
+          </section>
+         <!-- second-info-section -->
+
+
+        <hr>
+
+        <!-- shipping-details-container -->
+        <section class="shipping-details-container">
+          <div class="shipping-wrapper editInput">
+            <button class="add-btn" (click)="toggleForm()" >
+              <i class="fas fa-plus me-2"></i> Add Shipping Details
+            </button>
+
+            <!-- <button class="add-btn" (click)="openAddShipping=true"> <i class="fas fa-plus me-2"></i> Add Shipping Info</button> -->
+  
+            <div *ngIf="isFormVisible" class="second-info-section mt-4">
+              <!-- shipping from starts -->
+              <div class="right">
+                <div class="shipping-header-wrapper">
+                  <p><b>Shipped From</b></p>
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Business / Freelancer Name" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                </div>
+                <div class="d-flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                  </div>
+                </div>
+              </div>
+              <!-- shipping from ends -->
+
+              <!-- shipping to starts -->
+              <div class="left">
+                <div class="shipping-header-wrapper">
+                  <p><b>Shipped To</b></p>
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Client's Business Name" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                </div>
+                <div class="d-flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                  </div>
+                </div>
+              </div>
+              <!-- shipping to ends -->
+            </div>
+          </div>
+        </section>
+        <hr>
+      </div>
+      <!-- shipping-details-container ends -->
+  
+      <div class="card mb-4">
+        <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <div>
+          <p-table 
+          [value]="items"
+          [paginator]="true" 
+          dataKey="id"
+          responsiveLayout="stack" 
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+          [rows]="5"
+          >
+            <ng-template pTemplate="header" let-columns>
+              <tr>
+                <th class="table-item">Item</th>
+                <th class="table-item">Tax Rate</th>
+                <th class="table-item">Quantity</th>
+                <th class="table-item">Rate</th>
+                <th class="table-item">Amount</th>
+                <th class="table-item">Tax</th>
+                <th class="table-item">Total</th>
+                <th class="table-item">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item >
+                <tr>
+                  <td class="table-item"><span class="p-column-title">Item</span>{{ item.name}}</td>
+                  <td class="table-item"><span class="p-column-title">Tax Rate</span>{{ item.taxRate }}</td>
+                  <td class="table-item"><span class="p-column-title">Quantity</span>{{item.qty}}</td>
+                  <td class="table-item"><span class="p-column-title">Rate</span>{{ item.rate }}</td>
+                  <td class="table-item"><span class="p-column-title">Amount</span>{{ item.amount }}</td>
+                  <td class="table-item"><span class="p-column-title">Tax</span> {{ item.tax }}</td>
+                  <td class="table-item"><span class="p-column-title">Total</span> {{ item.total }}</td>
+                  <td class="actions table-item">
+                    <span class="p-column-title">Action</span>
+                    <i class="pi pi-pen-to-square table-item" ></i>
+                    <i class="pi pi-trash table-item" ></i>
+                  </td>
+                </tr>                            
+            </ng-template>
+        </p-table>
+        </div>
+      </div>
+  
+      <div>
+
+
+
+
+  
+        <div class="calculated-container">
+          <div class="calculated-wrapper " >
+            <div class="amount-total editInput mb-3">
+              <p><b>Amount</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ totalAmount }} NGN</span>
+              </p>
+            </div>
+            <div class="amount-total editInput mb-3">
+              <p><b>Tax</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ totalTax }} NGN</span>
+              </p>
+            </div>
+  
+            <div class="discount-container editInput mb-3">
+              <div class="amount-total mb-2" *ngFor="let discount of discounts; let i = index">
+                <p><b>Discount Amount</b></p>
+                <div class="value">
+                  <p class="me-2">NGN</p>
+                  <div class="d-flex gap-4">
+                    <input type="number" name="any" [(ngModel)]="discount.value" class="editInput" />
+                  </div>
+                  <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+              </div>
+              
+              <div class="discount-btn-wrapper d-block">
+                <button class="add-btn" (click)="addDiscount()">
+                  <i class="fas fa-plus me-2"></i>Add Discount
+                </button>
+              </div>
+            </div>
+
+
+            <div class="discount-container editInput mb-3">
+              <div class="amount-total" *ngFor="let charge of charges; let i = index">
+                <p><b>Additional Charges Amount</b></p>
+                <div class="value d-flex">
+                  <p class="me-2">NGN</p>
+                  <div class="d-flex">
+                    <input type="number" name="any" [(ngModel)]="charge.value" class="editInput"/>
+                  </div>
+                  <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+              </div>
+
+              <div class="discount-btn-wrapper d-block">
+                <button class="add-btn" (click)="addCharge()">
+                  <i class="fas fa-plus me-2"></i>Add Additional Charges
+                </button>
+              </div>
+            </div>
+
+            <div class="amount-total editInput mb-3">
+              <p><b>Total</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ grandTotal }} NGN</span>
+              </p>
+            </div>
+  
+            <div class="editInput my-4" *ngIf="showAmountWord">
+              <div class="d-flex justify-content-between">
+                <p><b>Amount In Words</b></p>
+                <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i>
+              </div>
+              <div class="value d-flex">
+                <textarea name="" id="" class="editInput" disabled>{{ totalAmountInWords }}</textarea>
+              </div>
+            </div>
+            <div class="editInput d-block my-4" *ngIf="!showAmountWord">
+              <button class="add-btn" (click)="showAmountWord = true">
+                <i class="fas fa-plus me-2"></i>Add Amount In Words
+              </button>
+            </div>
+  
+            <div class="signature-upload-container editInput mb-4">
+              <div class="wrapper" *ngIf="showSignatureButton">
+                <div class="btn-sign">
+                  <input type="file" name="any" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
+                  <button class="add-btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Upload Signature
+                  </button>
+                </div>
+                <div class="signature-wrapper">
+                  <img *ngIf="signatureUrl" [src]="signatureUrl" [(ngModel)]="quotationData.signature" alt="Signature" class="signature" />
+                </div>
+                <i (click)="clearSignature()" class="pi pi-times-circle table-item p-2"></i>
+              </div>
+
+              <div class="" *ngIf="!showSignatureButton" >
+                <button class="add-btn"  (click)="showSignatureButton = true" >
+                  <i class="fas fa-plus me-2"></i>Add Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="form-buttom-section editInput mb-2">
+        <!-- Button to show "Add Terms & Conditions" -->
+        <div class="btn-bottom-container" *ngIf="!showTermsConditionButton">
+          <button class="add-btn" (click)="addTermGroup()">
+            <i class="fas fa-plus me-2"></i> Add Terms & Conditions
+          </button>
+        </div>
+      
+        <!-- Terms and Conditions section -->
+        <div class="contents-wrapper" *ngIf="showTermsConditionButton">
+          <div class="terms-condition-wrapper" *ngFor="let termGroup of termsGroup; let groupIndex = index">
+            <div class="top">
+              <div class="label mb-4">
+                <p><b>Terms and Conditions</b></p>
+              </div>
+              <i class="pi pi-times-circle table-item p-2" (click)="removeTermGroup(groupIndex)"></i>
+            </div>
+      
+            <div class="d-flex mb-4" *ngFor="let term of termGroup; let termIndex = index">
+              <textarea type="text" name="any" class="editInput" [(ngModel)]="term.term_des"></textarea>
+              <i class="pi pi-times-circle table-item p-2" (click)="removeTerm(termIndex)"></i>
+            </div>
+      
+            <button class="add-btn" (click)="addTerm()">
+              <i class="fas fa-plus me-2"></i>Add New Term
+            </button>
+          </div>
+        </div>
+      </div>
+      
+
+      <div class="form-buttom-section editInput mb-2">
+        <div class="btn-bottom-container" *ngIf="!showNotes">
+          <button class="add-btn "  (click)="showNotes = true">
+            <i class="fas fa-plus me-2"></i> Add Notes
+          </button>
+        </div>
+  
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showNotes">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label mb-4"><p><b>Add Notes</b></p></div>
+                <i (click)="cancelNotes()" class="pi pi-times-circle table-item p-2"></i>
+              </div>
+              <textarea class="textarea editInput" placeholder="'Enter text here...'" [(ngModel)]="quotationData.quotationNote"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="form-bottom-section editInput mb-2">
+        <div class="btn-bottom-container" *ngIf="!showAttachments">
+          <button class="add-btn" (click)="showAttachments = true">
+            <i class="fas fa-plus me-2"></i> Add Attachments
+          </button>
+        </div>
+      
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showAttachments">
+            <div class="terms-condition-wrapper">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label">
+                    <p><b>Add Attachments</b></p>
+                  </div>
+                  <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="content">
+                  <p>Add any other attachments that are necessary for the quotation</p>
+      
+                  <div class="file-upload-continer">
+                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                    <button class="add-btn" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i> Browse
+                    </button>
+                  </div>
+      
+                  <ul class="uploaded-files">
+                    <li *ngFor="let file of quotationData.attachments; let i = index" [class]="file.status" class="uploaded-file">
+                      <div class="file-details">
+                        <div class="file-name">{{ file.name }}</div>
+                        <div class="file-progress">
+                          <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                        </div>
+                        <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                      </div>
+                      <div class="file-icons">
+                        <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+
+
+
+
+
+
+      <!-- <div class="form-buttom-section editInput mb-2">
+        <div class="btn-bottom-container" *ngIf="!showAttachments">
+          <button class="add-btn " (click)="showAttachments = true" >
+            <i class="fas fa-plus me-2"></i> Add Attachments
+          </button>
+        </div>
+  
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showAttachments">
+            <div class="terms-condition-wrapper">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label"><p><b>Add Attachments</b></p></div>
+                  <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="content">
+                  <p>Add any other attachments that are necessary for the quotation</p>
+
+                  <div class="file-upload-continer">
+                    <input type="file" name="any" #fileInput (change)="fileInputChange($event)" style="display: none"/>
+                    <button class="add-btn" (click)="fileInput.click()" >
+                      <i class="fas fa-plus me-2"></i> Browse
+                    </button>
+                  </div>
+  
+                  <ul class="uploaded-files">
+                    <li *ngFor="let file of attachment; let i = index" [class]="file.status" class="uploaded-file" >
+                      <div class="file-details">
+                        <div class="file-name">{{ file.name }}</div>
+                        <div class="file-progress">
+                          <div
+                            class="file-progress-bar"
+                            [style.width.%]="file.progress"
+                          ></div>
+                        </div>
+                        <div class="file-size">
+                          {{ (file.size / (1024 * 1024)).toFixed(2) }} MB
+                        </div>
+                      </div>
+                      <div class="file-icons">
+                        <i
+                          (click)="cancelUpload(i)"
+                          class="pi pi-times-circle table-item p-2"
+                        ></i>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> -->
+  
+      <div class="btn-wrapper">
+        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-side-modal *ngIf="openAddClient" (close)="!openAddClient = false">
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Add Client</h2>
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddClient=false">Cancel</button>
+    </div>
+  </div>
+  <app-add-new-client></app-add-new-client>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddShipping" (close)="!openAddShipping = false" >
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Add Shipping Details</h2>
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddShipping=false">Cancel</button>
+    </div>
+  </div>
+  <app-add-shipping-details></app-add-shipping-details>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddItem" (close)="openAddItem = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add New Item</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddItem = false">Cancel</button>
+    </div>
+  </div>
+  <app-add-quotation-item></app-add-quotation-item>
+</app-side-modal>
+
+
+<!-- <span class="me-2">{{
+  extractCurrencyCode(getSelectedItem$("currency") | async)
+}}</span
+> -->

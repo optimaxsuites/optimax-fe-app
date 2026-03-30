@@ -1,0 +1,142 @@
+<div class="office-hours-card">
+  <div class="header">
+    <div class="title">
+      <span class="icon">
+        <i class="fa-regular fa-clock"></i>
+      </span>
+      <h3>Office Hours</h3>
+    </div>
+    <button class="edit-btn" (click)="editMode = !editMode">
+      {{ editMode ? 'Cancel' : 'Edit' }}
+    </button>
+  </div>
+
+  <!-- SCHEDULE MODE INFO BANNER -->
+  <div class="schedule-mode-banner">
+    <div class="banner-row">
+      <span class="banner-label">Attendance mode</span>
+      <span class="mode-badge mode-badge--mixed">
+        <span class="mode-badge__dot"></span>
+        Mixed
+      </span>
+    </div>
+    <p class="banner-desc">
+      Employees assigned to a shift in <strong>Work Schedules</strong> will have
+      their attendance evaluated against their shift times. All other employees
+      are evaluated against the office hours set below.
+    </p>
+  </div>
+
+  <!-- HOURS DISPLAY (read-only) -->
+  <div class="hours-display" *ngIf="!editMode">
+    <div class="hour-item">
+      <span class="label">
+        <i class="fa-solid fa-door-open"></i>
+        Opening Time</span>
+      <span class="value">{{ form.value.openingTime }}</span>
+    </div>
+    <div class="hour-item">
+      <span class="label">
+        <i class="fa-solid fa-user-clock"></i>
+        Late After</span>
+      <span class="value">{{ form.value.latenessGracePeriod }}</span>
+    </div>
+    <div class="hour-item">
+      <span class="label">
+        <i class="fa-solid fa-user-xmark"></i>
+        Absent After</span>
+      <span class="value">{{ form.value.absentTime }}</span>
+    </div>
+    <div class="hour-item">
+      <span class="label">
+        <i class="fa-solid fa-door-closed"></i>
+        Closing Time</span>
+      <span class="value">{{ form.value.closingTime }}</span>
+    </div>
+    <!-- Read-only company location display -->
+  <div class="hour-item" *ngIf="companyName">
+    <span class="label">
+      <i class="fa-solid fa-building"></i>
+      Company</span>
+    <span class="value">{{ companyName }}</span>
+  </div>
+  <div class="hour-item" *ngIf="companyLatitude && companyLongitude">
+    <span class="label">
+      <i class="fa-solid fa-location-dot"></i>
+      Company Location</span>
+    <span class="value">{{ companyLatitude }}, {{ companyLongitude }}</span>
+  </div>
+</div>
+
+
+  <!-- EDIT FORM -->
+  <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
+    <div class="input-group">
+      <label>Opening Time</label>
+      <input type="time" formControlName="openingTime" />
+    </div>
+    <div class="input-group">
+      <label>Late After</label>
+      <input type="time" formControlName="latenessGracePeriod" />
+    </div>
+    <div class="input-group">
+      <label>Mark Absent After</label>
+      <input type="time" formControlName="absentTime" />
+    </div>
+    <div class="input-group">
+      <label>Closing Time</label>
+      <input type="time" formControlName="closingTime" />
+    </div>
+
+    <!-- Company location fields inside the edit form -->
+  <div class="input-group">
+    <label>Company Name (for map)</label>
+    <input type="text" [(ngModel)]="companyName" placeholder="e.g. Acme HQ" />
+  </div>
+  <div class="input-group">
+    <label>Company Location</label>
+    <button type="button" class="location-btn" (click)="openLocationPicker()">Set Company Location</button>
+    <p class="location-preview" *ngIf="companyLatitude && companyLongitude">
+      {{ companyLatitude }}, {{ companyLongitude }}
+    </p>
+  </div>
+
+    <div class="error" *ngIf="form.errors?.['invalidOfficeHours'] && form.touched">
+      Please ensure:<br>
+      • Grace period is after Opening Time<br>
+      • Absent Time is after Grace Period<br>
+      • Closing Time is after Absent Time
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">Save Changes</button>
+      <button type="button" class="secondary" (click)="resetDefault()">Reset Default</button>
+    </div>
+  </form>
+
+  <!-- Backdrop -->
+<div class="import-backdrop" *ngIf="locationPickerOpen" (click)="closeLocationPicker()"></div>
+
+<!-- Modal -->
+<div class="import-modal-card" *ngIf="locationPickerOpen">
+  <div class="head-modal">
+    <h3>Select Company Location</h3>
+    <button (click)="closeLocationPicker()">×</button>
+  </div>
+
+  <!-- Search -->
+  <!--<input
+    type="text"
+    placeholder="Search location..."
+    [(ngModel)]="searchQuery"
+    (keyup.enter)="searchLocation()"
+  />-->
+
+  <div id="company-map" class="leaflet-map"></div>
+
+  <button class="primary" (click)="savePickedLocation()">
+    Save Location
+  </button>
+</div>
+
+  <p class="hint">Default office hours: 09:00 AM – 05:00 PM</p>
+</div>

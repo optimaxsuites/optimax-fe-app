@@ -1,0 +1,127 @@
+.filters {
+  background: #ffffff;
+  //border: 1px solid #e5e7eb;
+  //border-radius: 16px;
+  padding: 1rem 1.2rem;
+  //box-shadow: 0 10px 28px rgba(0, 0, 0, 0.04);
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem 0.9rem;
+  align-items: center;
+}
+
+/* Input & Select Styling */
+.filters input,
+.filters select {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 1.2rem;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: #9ca3af;
+    font-size: 1.2rem;
+  }
+
+  &:focus {
+    border-color: #10b981;
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+  }
+}
+
+/* Select arrow improvement */
+.filters select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 14px;
+  padding-right: 1.6rem;
+}
+
+.buttonslol {
+  display: flex;
+  gap: 8px; // controls spacing between buttons
+  align-items: center;
+  margin-top: 12px;
+  height: 30;
+}
+
+.apply-btn,
+.reset-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+/* Apply button (primary) */
+.apply-btn {
+  background-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+  color: black;
+
+  &:hover {
+    background-color: #d1d5db;
+  }
+}
+
+/* Reset button (secondary) */
+.reset-btn {
+  background-color: #e5e7eb;
+  color: black;
+  border: 1px solid #d1d5db;
+
+  &:hover {
+    background-color: #d1d5db;
+  }
+}
+
+/* Apply Button */
+/*.filters button {
+  grid-column: span 2;
+  justify-self: end;
+  width:50%;
+
+  background: #e5e7eb;//#1f9254/*linear-gradient(135deg, #10b981, #34d399)*
+  border: 1px solid #e5e7eb;//none;
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;//0.45rem 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: black;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}*/
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  .filters {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .filters button {
+    grid-column: span 1;
+    justify-self: stretch;
+    width: 80%;
+  }
+}

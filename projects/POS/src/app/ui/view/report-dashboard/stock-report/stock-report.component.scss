@@ -1,0 +1,53 @@
+th {
+    background-color: transparent;
+}
+
+@media print {
+    app-sidebar, 
+    app-header, 
+    .sidebar, 
+    .header, 
+    .nav, 
+    .navbar,
+    nav,
+    header,
+    aside {
+      display: none !important;
+    }
+  
+    button, 
+    .flex.space-x-3,
+    .print-hidden,
+    .no-print {
+      display: none !important;
+    }
+
+    body, 
+    html,
+    .bg-gray-50.min-h-screen {
+      background-color: white !important;
+      min-height: auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+  
+    main,
+    .main-content,
+    app-stock-report {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: block !important;
+      visibility: visible !important;
+    }
+  
+    .container, .w-full {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .break-before {
+        page-break-before: always;
+    }
+}
