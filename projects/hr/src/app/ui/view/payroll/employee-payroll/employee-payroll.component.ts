@@ -1050,4 +1050,21 @@ calculatePayroll(){
         a.click();
         window.URL.revokeObjectURL(url);
     }
+
+    get earningsList() {
+      const e = this.currentEmployeeInView;
+      return [
+        { name: 'Base Pay', amount: e.basePay },
+        ...(e.allowances ? [{ name: e.allowances.allowanceType?.name, amount: e.allowances.amount }] : []),
+        ...e.bonuses.map((b: { reason: any; amount: any; }) => ({ name: b.reason, amount: b.amount })),
+        ...(e.overtimePay ? [{ name: 'Overtime', amount: e.overtimePay }] : [])
+      ];
+    }
+
+    formatDate(arr: number[]): string {
+      if (!arr) return '';
+      const [year, month, day] = arr;
+      return new Date(year, month - 1, day).toLocaleDateString();
+    }
+
 }

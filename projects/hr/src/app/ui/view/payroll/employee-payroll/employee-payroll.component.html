@@ -110,211 +110,120 @@
 </div>
 
   <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false">
-    <div class="py-3 text-customBlue table-item">
-        <p class="text-center text-[20px] font-semibold">Payslip for the period of {{selectedMonth}} {{selectedYear}}</p>
-        <div class="my-5 px-5 flex justify-between w-full gap-10">
-        <div class="w-1/2">
-            <p class="bg-customGreen px-2 py-3 text-gray-50 rounded-md w-[50%] font-semibold">Employee Information</p>
-            <div class="flex flex-col gap-2 px-2">
-                <p class="font-semibold text-[15px] py-1">{{currentEmployeeInView.employee.firstName}} {{currentEmployeeInView.employee.lastName}}</p>
-                <p><span>ID: </span>{{currentEmployeeInView.employee.id}}</p>
-                <p><span>Level: </span>{{currentEmployeeInView.employee.level.name}}</p>
-                <p><span>Department: </span>{{currentEmployeeInView.employee.department.name}}</p>
-                <p><span>Account Number: </span>{{currentEmployeeInView.accountNumber}}</p>
-                <p><span>Bank Name: </span>{{currentEmployeeInView.bank}}</p>
-                <p><span>Days worked: </span>{{ currentEmployeeInView.daysWorked }}</p>
-            </div>
-        
-        </div>
+    <div class="py-6 text-slate-800 bg-white table-item">
 
-        <div class="w-1/2 grid grid-cols-3 gap-y-0">
-            <div>
-                <p class="title">
-                    Pay Date
-                </p>
-                <p class="titleLight">
-                    10/27/2024
-                </p>
-            </div>
-            <!-- <div>
-                <p class="title">
-                    Pay Type
-                </p>
-                <p class="titleLight">
-                    {{currentEmployeeInView.type}}
-                </p>
-            </div>
-            <div>
-                <p class="title">
-                    Period
-                </p>
-                <p class="titleLight">
-                    OCT24
-                </p>
-            </div> -->
-            <div>
-                <p class="title">
-                    Payroll ID #
-                </p>
-                <p class="titleLight">
-                    {{currentEmployeeInView.id }}
-                </p>
-            </div>
-            <div>
-                <p class="title">
-                    Pay Method
-                </p>
-                <p class="titleLight">
-                    Bank Transfer
-                </p>
-            </div>
-            <div>
-                <p class="title">
-                Tax Code
-                </p>
-                <p class="titleLight">
-                    1250L
-                </p>
-            </div>
-        </div>
-        </div>
+  <div class="text-center mb-8">
+    <h2 class="text-2xl font-bold text-customBlue uppercase tracking-tight">Payslip</h2>
+    <p class="text-slate-500 font-medium">{{ selectedMonth }} {{ selectedYear }}</p>
+  </div>
 
-        <div class="px-5">
-            <p-table 
-        [value]="[currentEmployeeInView]" 
-        styleClass="" 
-        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
-        [rows]="10"
-    
-        >
-        
-        <ng-template pTemplate="header">
-        <tr>
-            <th class="table-item" pSortableColumn="Employee" style="width: 60%;">Earnings</th>
-            <th class="table-item" pSortableColumn="Level" style="width: 20%;">Amount</th>
-            <th class="table-item " pSortableColumn="Department" style="width: 20%;">Payable</th>
-           
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        <tr *ngIf="employee.payType !== 'project'"  class="p-table-row bg-gray-50 "> 
-            <td class="table-item capitalize" style="width: 60%;">{{ employee.basePayLabel }}</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.basePay | number: '1.2-2' }}</td>
-            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.basePay | number: '1.2-2'}}</td>
-        </tr>
-        <ng-container *ngIf="employee.type === 'project-based'">
-            <ng-container *ngFor="let project of employee.projects">
-                <tr class="p-table-row bg-gray-50">
-                    <td class="table-item capitalize" style="width: 60%;">{{ project.projectName }}</td>
-                    <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ project.projectPay | number: '1.2-2' }}</td>
-                    <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ project.projectPay | number: '1.2-2' }}</td>
-                </tr>
-            </ng-container>
-        </ng-container>
-            <tr  *ngFor="let allowance of employee.allowances | keyvalue" class="p-table-row bg-gray-50 " >
-            <td class="table-item capitalize" style="width: 60%;">{{ toTitleCaseWithSpace(allowance.key) }}</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ allowance.value }}</td>
-            <td class="table-item capitalize bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ allowance.value }}</td>
-        </tr>
-        <tr *ngFor="let bonus of employee.bonuses" class="p-table-row bg-gray-50 ">
-            <td class="table-item capitalize" style="width: 60%;">{{ bonus.reason }}</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
-            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
-        </tr>
-        <tr *ngIf="employee.overtimePay > 0" class="p-table-row bg-gray-50 ">
-            <td class="table-item capitalize" style="width: 60%;">Overtime ({{ employee.overtimeHours }} hrs)</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.overtimePay | number: '1.2-2'}}</td>
-            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.overtimePay | number: '1.2-2'}}</td>
-        </tr>
-        <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
-            <td class="table-item capitalize" style="width: 60%;"></td>
-            <td class="table-item capitalize" style="width: 20%;">Gross Pay</td>
-            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>{{ employee.grossPay | number: '1.2-2'}}</td>
-        </tr>
-        </ng-template>
-
-        
-    </p-table>
-        </div>
-
-        <div class="px-5 my-5" >
-            <p-table 
-        [value]="currentEmployeeInView?.deductions?.length > 1 ? [currentEmployeeInView] : []" 
-        styleClass="" 
-        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
-        [rows]="10"
-    
-        >
-        
-        <ng-template pTemplate="header">
-        <tr>
-            <th class="table-item" pSortableColumn="Employee" style="width: 60%;">Deductions</th>
-            <th class="table-item" pSortableColumn="Level" style="width: 20%;">Amount</th>
-            <th class="table-item " pSortableColumn="Department" style="width: 20%;">Deductable</th>
-           
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        
-            <tr  *ngFor="let deduction of employee.deductions " class="p-table-row bg-gray-50 " >
-            <td class="table-item capitalize" style="width: 60%;">{{ deduction.reason }}</td>
-            <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ deduction.amount | number: '1.2-2'}}</td>
-            <td class="table-item capitalize bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ deduction.amount| number: '1.2-2' }}</td>
-        </tr>
-        <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
-            <td class="table-item capitalize" style="width: 60%;"></td>
-            <td class="table-item capitalize" style="width: 20%;">Total Deduction</td>
-            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>{{ employee.totalDeductions | number: '1.2-2' }}</td>
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="8" class="text-center text-[14px] py-4"> 
-                No deduction recorded
-              </td>
-            </tr>
-          </ng-template>
-    </p-table>
-        </div>
-
-        <div class="px-5 my-7" >
-            <p-table 
-        [value]="[currentEmployeeInView]" 
-        styleClass="" 
-        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
-        [rows]="10"
-    
-        >
-        
-        <ng-template pTemplate="header">
-        <tr>
-            <!-- <th class="table-item" pSortableColumn="Employee" style="width: 60%;"></th>
-            <th class="table-item" pSortableColumn="Level" style="width: 20%;">NetPay</th>
-            <th class="table-item " pSortableColumn="Department" style="width: 20%;">Deductable</th>
-             -->
-        </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        
-        <tr   class="p-table-row bg-customGreen text-gray-50 font-bold text-[12px] "> 
-            <td class="table-item capitalize" style="width: 60%;"></td>
-            <td class="table-item capitalize" style="width: 20%;">Net Pay</td>
-            <td class="table-item capitalize   font-semiBold" style="width: 20%;"><span class="text-3xl">₦</span>{{employee.netPayable | number: '1.2-2'}}</td>
-        </tr>
-        </ng-template>
-
-        
-    </p-table>
-        </div>
-
-       
+  <div class="px-8 grid grid-cols-2 gap-12 mb-8">
+    <div class="space-y-4">
+      <h3 class=" font-bold text-slate-400 uppercase tracking-widest border-b pb-1">
+        Employee Details
+      </h3>
+      <div class="grid grid-cols-1 gap-1 text-sm">
+        <p class="font-bold text-lg text-customBlue">
+          {{ currentEmployeeInView.employee.firstName }} {{ currentEmployeeInView.employee.lastName }}
+        </p>
+        <p><span class="text-slate-400">ID:</span> {{ currentEmployeeInView.employee.id }}</p>
+        <p><span class="text-slate-400">Dept:</span> {{ currentEmployeeInView.employee.department?.name }}</p>
+        <p><span class="text-slate-400">Bank:</span> {{ currentEmployeeInView.employee.bankName }} ({{ currentEmployeeInView.employee.accountNumber }})</p>
+      </div>
     </div>
 
+    <div class="space-y-4">
+      <h3 class=" font-bold text-slate-400 uppercase tracking-widest border-b pb-1">
+        Payment Summary
+      </h3>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p class="text-slate-400 ">Pay Date</p>
+          <p class="font-semibold">{{ formatDate(currentEmployeeInView.generatedAt) }}</p>
+        </div>
+        <div>
+          <p class="text-slate-400 ">Payroll ID</p>
+          <p class="font-semibold">#{{ currentEmployeeInView.id }}</p>
+        </div>
+        <div>
+          <p class="text-slate-400 ">Method</p>
+          <p class="font-semibold">Bank Transfer</p>
+        </div>
+        <div>
+          <p class="text-slate-400 ">Days Worked</p>
+          <p class="font-semibold">{{ currentEmployeeInView.daysWorked }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-8 space-y-6">
     
+    <p-table [value]="[currentEmployeeInView]" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50">
+          <th class="py-3 px-4 text-slate-600 border-y">Earnings Description</th>
+          <th class="py-3 px-4 text-right text-slate-600 border-y">Amount</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-employee>
+        <tr class="border-b border-slate-100">
+          <td class="px-4 py-2">Base Salary</td>
+          <td class="px-4 py-2 text-right">₦{{ employee.basePay | number:'1.2-2' }}</td>
+        </tr>
+        <tr *ngIf="employee.allowances?.amount > 0" class="border-b border-slate-100">
+          <td class="px-4 py-2">Allowance</td>
+          <td class="px-4 py-2 text-right">₦{{ employee.allowances.amount | number:'1.2-2' }}</td>
+        </tr>
+        <tr *ngFor="let bonus of employee.bonuses" class="border-b border-slate-100">
+          <td class="px-4 py-2">{{ bonus.reason }}</td>
+          <td class="px-4 py-2 text-right">₦{{ bonus.amount | number:'1.2-2' }}</td>
+        </tr>
+        <tr *ngIf="employee.overtimePay > 0" class="border-b border-slate-100">
+          <td class="px-4 py-2">Overtime ({{ employee.overtimeHours }} hrs)</td>
+          <td class="px-4 py-2 text-right">₦{{ employee.overtimePay | number:'1.2-2' }}</td>
+        </tr>
+        <tr class="font-bold text-slate-900 bg-slate-50/50">
+          <td class="px-4 py-3 text-right">Gross Earnings</td>
+          <td class="px-4 py-3 text-right text-customBlue">₦{{ employee.grossPay | number:'1.2-2' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-table [value]="currentEmployeeInView?.deductions?.details || []" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50">
+          <th class="py-3 px-4 text-slate-600 border-y">Deductions</th>
+          <th class="py-3 px-4 text-right text-slate-600 border-y">Amount</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-d>
+        <tr class="border-b border-slate-100">
+          <td class="px-4 py-2 text-slate-600">{{ d.name }}</td>
+          <td class="px-4 py-2 text-right text-slate-600">₦{{ d.amount | number:'1.2-2' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="footer">
+        <tr class="font-bold">
+          <td class="px-4 py-3 text-right text-slate-500">Total Deductions</td>
+          <td class="px-4 py-3 text-right text-red-500 italic">(-₦{{ currentEmployeeInView.totalDeductions | number:'1.2-2' }})</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="mt-10 p-6 bg-slate-900 text-white rounded-lg flex justify-between items-center shadow-lg">
+      <div>
+        <p class="text-slate-200  uppercase tracking-widest font-bold">Total Net Payable</p>
+        <p class=" text-slate-200 italic">This is your final take-home pay after all deductions.</p>
+      </div>
+      <div class="text-3xl font-black" [ngClass]="currentEmployeeInView.netPayable < 0 ? 'text-red-400' : 'text-white'">
+        ₦{{ currentEmployeeInView.netPayable | number:'1.2-2' }}
+      </div>
+    </div>
+
+  </div>
+</div>
   </app-large-side-modal>
 
   <app-large-side-modal *ngIf="openSummary" (close)="openSummary = false">
