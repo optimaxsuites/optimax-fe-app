@@ -1,0 +1,78 @@
+<app-navbar></app-navbar>
+<app-roomshero></app-roomshero>
+
+<div class="rooms-page">
+  <div class="rooms-container">
+    <!-- Header Section -->
+    <header class="rooms-header">
+      <div class="header-content">
+        <h2 class="section-title">Recommended for you</h2>
+        <p class="section-subtitle">Based on your preferences and location</p>
+      </div>
+      <div class="header-actions">
+        <span class="results-count">{{ filteredRooms.length }} results found</span>
+        <select class="sort-dropdown">
+          <option>Sort by: Popularity</option>
+          <option>Sort by: Rating</option>
+          <option>Price: Low to High</option>
+          <option>Price: High to Low</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- Room Grid -->
+    <div class="room-grid">
+      <article *ngFor="let room of filteredRooms" class="room-card">
+        <!-- Image Container -->
+        <div class="card-media">
+          <img [src]="room.imageURLs[0] || 'https://images.unsplash.com/photo-1590490360182-c33d955f4b48?w=400&h=300&fit=crop'"
+               class="room-image">
+
+          <!-- Favorite Button -->
+          <button class="btn-favorite" aria-label="Add to favorites">
+            <i class="fa-regular fa-heart"></i>
+          </button>
+
+          <!-- Rating Badge -->
+          <div class="rating-badge">
+            <span class="star">★</span>
+            <span class="score">{{ room.rating || 4.5 }}</span>
+          </div>
+        </div>
+
+        <!-- Room Body -->
+        <div class="card-content">
+          <div class="card-header">
+            <h3 class="room-title">Room {{ room.roomNumber }} - {{ room.roomType?.name || 'Deluxe' }}</h3>
+            <div class="location">
+              <i class="fa-solid fa-location-dot"></i>
+              Lagos, Nigeria
+            </div>
+          </div>
+
+          <p class="room-description">
+            {{ room.description || 'Experience comfort and luxury in our well-appointed room featuring modern amenities and elegant decor.' }}
+          </p>
+
+          <div class="card-footer">
+            <div class="price-box">
+              <span class="amount">₦{{ (room.rate || 25000) | number }}</span>
+              <span class="period">per night</span>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="viewRoomDetails(room)" class="btn-secondary">
+                View Details
+              </button>
+              <button (click)="bookRoom(room)" class="btn-primary">
+                Book Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+
+<app-roomdesign></app-roomdesign>
+<app-roomfooter></app-roomfooter>

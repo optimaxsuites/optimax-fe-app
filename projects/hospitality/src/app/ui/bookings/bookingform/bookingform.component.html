@@ -1,0 +1,131 @@
+<div class="booking-page">
+  <div class="page-container">
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumb">
+      <a routerLink="/" class="link">Home</a>
+      <span class="sep">/</span>
+      <a class="link">Lagos Stays</a>
+      <span class="sep">/</span>
+      <span class="current">{{ roomName }}</span>
+    </nav>
+
+    <!-- Gallery Grid -->
+    <div class="gallery-grid">
+      <div class="main-image">
+        <img [src]="galleryImages[0]" [alt]="roomName">
+      </div>
+      <div class="side-image">
+        <img [src]="galleryImages[1]" alt="Room interior">
+      </div>
+      <div class="side-image">
+        <img [src]="galleryImages[2]" alt="Room view">
+      </div>
+      <div class="side-image more-photos">
+        <img [src]="galleryImages[3]" alt="More photos">
+        <div class="overlay">
+          <i class="fa-solid fa-images"></i>
+          <span class="label">View 12+ Photos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-layout">
+      <!-- Left Column: Info -->
+      <main class="main-content">
+        <div class="room-header">
+          <div class="title-row">
+            <h1 class="room-title">{{ roomName }}</h1>
+            <div class="action-buttons">
+              <button class="btn-icon"><i class="fa-solid fa-share-nodes"></i></button>
+              <button class="btn-icon"><i class="fa-regular fa-heart"></i></button>
+            </div>
+          </div>
+          <div class="meta-row">
+            <div class="rating">
+              <span class="star">★</span> {{ rating }} 
+              <span class="reviews">({{ reviews }} Reviews)</span>
+            </div>
+            <span class="dot">•</span>
+            <div class="location">
+              <i class="fa-solid fa-location-dot"></i>
+              {{ location }}
+            </div>
+          </div>
+        </div>
+
+        <section class="description-section">
+          <h2 class="section-title">Description</h2>
+          <p class="description-text">{{ description }}</p>
+        </section>
+
+        <section class="amenities-section">
+          <h2 class="section-title">What this room offers</h2>
+          <div class="amenity-grid">
+            <div *ngFor="let amenity of amenities" class="amenity-item">
+              <div class="amenity-icon">
+                <i [class]="'fa-solid ' + (amenity.icon === 'wifi' ? 'fa-wifi' : 
+                                            amenity.icon === 'climate' ? 'fa-wind' : 
+                                            amenity.icon === 'tv' ? 'fa-tv' : 
+                                            amenity.icon === 'coffee' ? 'fa-mug-hot' : 'fa-check')"></i>
+              </div>
+              <span class="amenity-label">{{ amenity.label }}</span>
+            </div>
+          </div>
+          <button class="btn-outline">Show all amenities</button>
+        </section>
+      </main>
+
+      <!-- Right Column: Sidebar -->
+      <aside class="booking-sidebar-container">
+        <div class="booking-card sticky-sidebar">
+          <div class="card-header">
+            <div class="price-info">
+              <span class="amount">₦{{ price | number }}</span>
+              <span class="period">/ night</span>
+            </div>
+          </div>
+
+          <div class="form-container">
+            <div class="date-inputs">
+              <div class="input-group">
+                <label>Check-in</label>
+                <div class="val">Oct 24, 2023</div>
+              </div>
+              <div class="input-group">
+                <label>Check-out</label>
+                <div class="val">Oct 27, 2023</div>
+              </div>
+            </div>
+            <div class="input-group full">
+              <label>Guests</label>
+              <div class="val">2 Adults, 1 Child</div>
+            </div>
+          </div>
+
+          <div class="calculation-summary">
+            <div class="calc-row">
+              <span class="label">₦{{ price | number }} x 3 nights</span>
+              <span class="value">₦{{ (price * 3) | number }}</span>
+            </div>
+            <div class="calc-row">
+              <span class="label">Service charge</span>
+              <span class="value">₦12,500</span>
+            </div>
+            <div class="calc-row total">
+              <span class="label">Total</span>
+              <span class="value">₦{{ (price * 3 + 12500) | number }}</span>
+            </div>
+          </div>
+
+          <button class="btn-book">
+            <span>Book Now</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          
+          <p class="guarantee">You won't be charged yet</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,49 @@
+/* Main container for flex layout */
+.form-container {
+    margin-bottom: 1rem;
+  }
+
+  .flex-item{
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  
+.note{
+  font-size: var(--sm-font);
+}
+.remove-mb{
+  margin: 0;
+}
+
+.btn-container-btn{
+  display: flex;
+  justify-content: end;
+}
+.btn-container{
+  display: flex;
+  justify-content: end;
+  position: fixed;
+  bottom: 0;
+  margin-bottom: 1rem;
+}
+
+.dropdown-with-add{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdown-with-add ng-select{
+  flex: 1;
+}
+
+.add-dropdown-btn{
+  min-width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
