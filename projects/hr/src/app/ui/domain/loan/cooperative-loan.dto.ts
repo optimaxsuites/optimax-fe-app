@@ -10,7 +10,51 @@ export interface CooperativeLoanGuarantorEntry {
 }
 
 export interface CooperativeLoan {
-  id: any;
+  id: number;
+  loanCode: string;
+  cooperativeMemberId: number;
+  cooperativeGroupId: number;
+  amount: number;
+  purpose: string;
+  repaymentAmount: number;
+  repaymentTime: number;
+  modeOfPayment: string;
+  requestDate: string;
+  approvedDate: string;
+  disbursedDate: string;
+  completedDate: string;
+  rejectedDate: string;
+  status: string;
+  adminComment: string;
+  applicationStage?: string;
+  guarantors: CooperativeLoanGuarantorEntry[];
+  guarantorApproval?: boolean;
+  totalPaid: number;
+  totalPrincipalPaid: number;
+  totalInterestPaid: number;
+  outstandingPrincipal: number;
+  paymentHistory: PaymentHistory[];
+  statusHistory: StatusHistory[];
+  loanId?: number;
+  memberId?: number;
+  groupId?: number;
+  duration?: number;
+  interestRate?: number;
+  totalRepayment?: number;
+  applicationDate?: string;
+  completionDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  adminRequestNote?: string;
+  rejectionReason?: string;
+  infoRequestedDate?: string;
+  defaultedDate?: string;
+  fundsReserved?: boolean;
+  legacyGuarantor?: Guarantor;
+}
+
+export interface CooperativeLoan {
+  id: number;
   loanCode: string;
   cooperativeMemberId: number;
   cooperativeGroupId: number;

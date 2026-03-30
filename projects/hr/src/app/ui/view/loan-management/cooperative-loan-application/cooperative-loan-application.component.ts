@@ -15,6 +15,15 @@ import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, Co
   styleUrls: ['./cooperative-loan-application.component.scss']
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
+  get controlNames(): string[] {
+    return Object.keys(this.applicationForm?.controls || {});
+  }
+  // Expose Object to the template for Object.keys usage
+  Object = Object;
+    errorKeys(errors: any): string[] {
+      if (!errors) return [];
+      return Object.keys(errors);
+    }
   // Utility to format currency
   formatCurrency(value: number | undefined): string {
     if (typeof value !== 'number' || isNaN(value)) return '₦0';
@@ -92,15 +101,11 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   submitSuccessMessage = '';
   isSubmitting = false;
 
-  purposeType: string = '';
-  showOtherPurpose: boolean = false;
+  // Removed purposeType and showOtherPurpose for free-text purpose
   estimatedAnnualPatronageRefund: number = 0;
   guarantorCandidates: CooperativeMember[] = [];
 
-  onPurposeTypeChange(value: string): void {
-    this.purposeType = value;
-    this.showOtherPurpose = value === 'other';
-  }
+  // Removed onPurposeTypeChange
 
   get guarantorsArray(): FormArray {
     return this.applicationForm.get('guarantors') as FormArray;
@@ -223,7 +228,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       groupId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(1000)]],
       purpose: ['', Validators.required],
-      purposeType: ['', Validators.required],
       duration: ['', [Validators.required, Validators.min(1)]],
       useSharesAsCollateral: [false],
       pledgedSharesAmount: [0],
@@ -232,10 +236,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       acceptAcknowledgement: [false, Validators.requiredTrue]
     });
 
-    this.applicationForm.get('purposeType')?.valueChanges.subscribe((value) => {
-      this.purposeType = value;
-      this.showOtherPurpose = value === 'other';
-    });
+    // Removed purposeType logic; only free-text purpose is used
 
     // Watch for changes
     this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
@@ -627,6 +628,24 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.submitSuccessMessage = '';
 
     if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByRank || !this.validateBeforeSubmit()) {
+      // Debug: Log invalid controls and errors
+      const invalidControls = Object.keys(this.applicationForm.controls).filter(key => this.applicationForm.get(key)?.invalid);
+      console.warn('Form invalid. Invalid controls:', invalidControls);
+      invalidControls.forEach(key => {
+        const control = this.applicationForm.get(key);
+        if (control) {
+          console.warn(`Control '${key}' errors:`, control.errors);
+        }
+      });
+      if (!this.selectedGroup) {
+        console.warn('No group selected.');
+      }
+      if (!this.canSubmitByRank) {
+        console.warn('Cannot submit by rank.');
+      }
+      if (!this.validateBeforeSubmit()) {
+        console.warn('Custom validation failed.');
+      }
       return;
     }
 
@@ -697,17 +716,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
   // Utility for confirmation label
-  getPurposeLabel(purposeType: string): string {
-    switch (purposeType) {
-      case 'school_fees': return 'School Fees';
-      case 'renovation': return 'Renovation';
-      case 'medical': return 'Medical Emergency';
-      case 'vehicle': return 'Vehicle Purchase/Repair';
-      case 'business': return 'Business Capital';
-      case 'other': return 'Other';
-      default: return purposeType;
-    }
-  }
+  // Removed getPurposeLabel
 
   get guarantorRequirementLabel(): string {
     if (!this.selectedGroup?.requiresGuarantors) {

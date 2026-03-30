@@ -3,12 +3,11 @@ import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http
 import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
-import { environment } from '../shared-component/environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class EmployeeService {
- baseurl = environment.apiBaseUrl;
+ baseurl = 'https://be.optimaxsuites.com'
  vettingWebhookUrl = 'https://automation.optimaxsuites.com/webhook/a6eb636c-407e-49e1-9810-ee852b4a2a22'
   private employeesSubject = new BehaviorSubject<any[]>([]);
   employees$ = this.employeesSubject.asObservable();

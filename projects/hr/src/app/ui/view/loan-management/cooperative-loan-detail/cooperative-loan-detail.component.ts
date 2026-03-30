@@ -180,7 +180,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   rejectLoan(): void {
     if (this.rejectionReason.trim()) {
-      this.cooperativeService.rejectLoan(this.loan.id, this.rejectionReason).subscribe((updated) => {
+      this.cooperativeService.rejectLoan(this.loan.id, this.rejectionReason).subscribe((updated: CooperativeLoan | undefined) => {
         if (!updated) {
           this.messages = [{
             severity: 'warn',
@@ -217,7 +217,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   disburseLoan(): void {
     const beforeStats = this.cooperativeService.getStats();
     const beforeAvailable = Math.max(beforeStats.totalFund - beforeStats.loanPortfolio, 0);
-    this.cooperativeService.disburseLoan(this.loan.id).subscribe((updated) => {
+    this.cooperativeService.disburseLoan(this.loan.id).subscribe((updated: CooperativeLoan | undefined) => {
       const afterStats = this.cooperativeService.getStats();
       const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
 
