@@ -59,6 +59,8 @@ interface GroupJoinApplicationRow {
   rejectionReason?: string;
 }
 
+// --- Membership Applications Modal Logic ---
+
 @Component({
   selector: 'app-cooperative-dashboard',
   templateUrl: './cooperative-dashboard.component.html',
@@ -66,6 +68,11 @@ interface GroupJoinApplicationRow {
   // Add the new component to the view providers if needed
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
+      // Membership Applications Modal Logic
+      pendingMembershipApplications: any[] = [];
+      showMembershipApplicationsModal = false;
+      showMembershipApplicationViewModal = false;
+      selectedMembershipApplication: any = null;
     /**
      * Returns a safe display string for a loan's ID/code, truncated if needed.
      */
@@ -108,7 +115,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   groupJoinReviewNote = '';
   groupJoinReviewError = '';
   selectedGroupJoinApplication: GroupJoinApplicationRow | null = null;
-  showMembershipApplicationsModal = false;
 
   private allLoans: CooperativeLoan[] = [];
   private allMembers: CooperativeMember[] = [];
@@ -947,9 +953,39 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   openMembershipApplicationsModal(): void {
+    this.loadPendingMembershipApplications();
     this.showMembershipApplicationsModal = true;
   }
+
   closeMembershipApplicationsModal(): void {
     this.showMembershipApplicationsModal = false;
+  }
+
+  loadPendingMembershipApplications(): void {
+    this.pendingMembershipApplications = this.cooperativeService.getPendingMembershipApplications();
+  }
+
+  openMembershipApplicationView(application: any): void {
+    this.selectedMembershipApplication = application;
+    this.showMembershipApplicationViewModal = true;
+  }
+
+  closeMembershipApplicationViewModal(): void {
+    this.showMembershipApplicationViewModal = false;
+    this.selectedMembershipApplication = null;
+  }
+
+  approveMembershipApplication(applicationId: number): void {
+    this.cooperativeService.approveMembershipApplication(applicationId).then(() => {
+      this.loadPendingMembershipApplications();
+      this.closeMembershipApplicationViewModal();
+    });
+  }
+
+  rejectMembershipApplication(applicationId: number): void {
+    this.cooperativeService.rejectMembershipApplication(applicationId).then(() => {
+      this.loadPendingMembershipApplications();
+      this.closeMembershipApplicationViewModal();
+    });
   }
 }

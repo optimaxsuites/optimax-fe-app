@@ -22,6 +22,7 @@ import { PendingMembershipApplication } from '../../../service/loan/cooperative-
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { CooperativeMembershipRequestSource } from '../../../service/loan/cooperative-loan/cooperative.types';
 
 @Component({
   selector: 'app-cooperative-member-dashboard',
@@ -29,6 +30,7 @@ import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.uti
   styleUrls: ['./cooperative-member-dashboard.component.scss']
 })
 export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
+  showMembershipConfirmationModal = false;
   currentUuid = uuidV4();
   currentMemberId: number = 1;
   
@@ -38,6 +40,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   isLoading = true;
   showApplicationModal = false;
   showJoinGroupModal = false;
+  joinGroupConfirmationMessage = '';
   showMyGroupsModal = false;
   showPaymentModal = false;
   showLoanHistory = true;
@@ -188,10 +191,38 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
         console.log('Using real API data:', this.cooperativeService.isUsingRealData());
         this.usingRealData = this.cooperativeService.isUsingRealData();
 
-        // Only use member if found by currentMemberId
-        const member = this.cooperativeService.getMemberById(Number(this.currentMemberId));
+        // Try to find member by currentMemberId
+        let member = this.cooperativeService.getMemberById(Number(this.currentMemberId));
 
-        if (member) {
+        // If not found, try to find by email or username (for fallback)
+        if (!member) {
+          member = members.find(m =>
+            m.email?.toLowerCase() === this.currentEmployeeProfile.email?.toLowerCase() ||
+            m.fullName?.toLowerCase() === this.currentEmployeeProfile.fullName?.toLowerCase()
+          );
+        }
+
+        // If still not found, auto-create member for signed-in user
+        if (!member) {
+          const newMember: Omit<CooperativeMember, 'id' | 'memberId' | 'createdAt' | 'updatedAt'> = {
+            employeeId: this.currentEmployeeProfile.employeeId,
+            fullName: this.currentEmployeeProfile.fullName,
+            email: this.currentEmployeeProfile.email,
+            phone: this.currentEmployeeProfile.phone || '',
+            joinDate: new Date().toISOString(),
+            status: 'ACTIVE',
+            shareCapital: 0,
+            address: this.currentEmployeeProfile.department,
+            emergencyContact: undefined
+          };
+          this.cooperativeService.addMember(newMember).subscribe(() => {
+            // After creation, reload member data
+            this.loadMemberData();
+          });
+          return;
+        }
+
+        if (member && member.status === 'ACTIVE') {
           this.member = member;
           this.currentEmployeeProfile = {
             ...this.currentEmployeeProfile,
@@ -274,16 +305,37 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
     const application: CooperativeMembershipApplication = {
       employee: this.currentEmployeeProfile,
-      source: 'SELF'
+      source: 'SELF' as CooperativeMembershipRequestSource
     };
 
-    const result = this.cooperativeService.applyForMembership(application);
-    this.membershipMessage = result.message;
+    this.cooperativeService.applyForMembership(application).then(result => {
+      this.membershipMessage = result.message;
+      if (result.member) {
+        this.member = result.member;
+        this.loadMemberData();
+      }
+    });
+  }
 
-    if (result.member) {
-      this.member = result.member;
-      this.loadMemberData();
-    }
+  applyForMembership(): void {
+    const application = {
+      employee: this.currentEmployeeProfile,
+      source: 'SELF' as CooperativeMembershipRequestSource
+    };
+    this.cooperativeService.applyForMembership(application).then(result => {
+      if (result.success) {
+        this.actionMessage = '';
+        this.actionMessageTone = 'success';
+        this.showMembershipConfirmationModal = true;
+      } else {
+        this.actionMessage = result.message;
+        this.actionMessageTone = 'error';
+      }
+    });
+  }
+
+  closeMembershipConfirmationModal(): void {
+    this.showMembershipConfirmationModal = false;
   }
 
 
@@ -523,6 +575,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   closeJoinGroupModal(): void {
     this.showJoinGroupModal = false;
+    this.joinGroupConfirmationMessage = '';
   }
 
   applyToJoinGroup(groupId: string | number): void {
@@ -536,12 +589,17 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     const membership = this.cooperativeService.applyForGroupMembership(Number(this.member.id), groupIdNum);
     const groupName = this.cooperativeService.getGroupById(groupIdNum)?.name || 'the selected group';
 
-    this.closeJoinGroupModal();
-    this.loadMemberData();
-    this.actionMessage = membership.status === 'ACTIVE'
+    // Show confirmation message in modal, don't close yet
+    this.joinGroupConfirmationMessage = membership.status === 'ACTIVE'
       ? `You have successfully joined ${groupName}.`
       : `Your application to join ${groupName} has been submitted for admin approval.`;
     this.actionMessageTone = 'success';
+  }
+
+  confirmJoinGroupAndRefresh(): void {
+    this.closeJoinGroupModal();
+    setTimeout(() => this.loadMemberData(), 200);
+    // Removed extra closing curly brace to restore class structure
   }
 
   setGroupDashboard(groupId: number | string): void {
@@ -836,6 +894,9 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     if (link.startsWith('/member/cooperative/dashboard')) {
       this.router.navigate(['/member/cooperative/dashboard', this.currentUuid], {
         queryParams: { activateMembership: 'true' }
+      }).then(() => {
+        // After navigation, refresh member data
+        setTimeout(() => this.loadMemberData(), 500);
       });
       return;
     }
@@ -846,6 +907,8 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.router.navigateByUrl(link);
+    // Also refresh member data in case of in-app navigation
+    setTimeout(() => this.loadMemberData(), 500);
   }
 
   private updateMemberStatusUpdates(source?: CooperativeNotification[]): void {

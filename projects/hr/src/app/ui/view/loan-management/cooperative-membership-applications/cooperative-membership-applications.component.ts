@@ -22,14 +22,14 @@ export class CooperativeMembershipApplicationsComponent implements OnInit {
   }
 
 
-  approveApplication(applicationId: number): void {
-    const result = this.cooperativeService.approveMembershipApplication(applicationId);
+  async approveApplication(applicationId: number): Promise<void> {
+    const result = await this.cooperativeService.approveMembershipApplication(applicationId);
     this.actionMessage = result.message;
     this.loadPendingApplications();
   }
 
-  rejectApplication(applicationId: number): void {
-    const result = this.cooperativeService.rejectMembershipApplication(applicationId);
+  async rejectApplication(applicationId: number): Promise<void> {
+    const result = await this.cooperativeService.rejectMembershipApplication(applicationId);
     this.actionMessage = result.message;
     this.loadPendingApplications();
   }
