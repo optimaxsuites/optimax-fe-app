@@ -227,9 +227,6 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     AssignLeaveComponent,
     // ApplyComponent,
     PerformanceComponent,
-    AppraisallistComponent,
-    AppraisalcycleComponent,
-    AttendanceSheetsComponent,
     NotificationComponent,
     TimeSheetComponent,
     MyAttendanceComponent,
@@ -292,7 +289,6 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     SchedulesComponent,
     SchedulingComponent,
     AdminexportComponent,
-    LoanBalanceIndicatorsComponent,
     RepaymentScheduleViewComponent,
     LoanRequestFormComponent,
     LoanDashboardComponent,
@@ -339,7 +335,6 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
   ],
-
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

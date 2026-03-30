@@ -405,7 +405,7 @@ export class LeaveUsageComponent implements OnInit {
       arg.el.style.backgroundColor = '#f5f5f5';
       arg.el.style.color = '#999';
       arg.el.style.cursor = 'not-allowed';
-    } else if (!isAllowed) {
+    } else if (isAllowed) {
       arg.el.style.backgroundColor = '#fee';
       arg.el.style.color = '#999';
       arg.el.style.cursor = 'not-allowed';
