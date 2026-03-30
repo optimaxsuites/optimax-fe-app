@@ -118,8 +118,8 @@
             <div class="flex flex-col gap-2 px-2">
                 <p class="font-semibold text-[15px] py-1">{{currentEmployeeInView.employee.firstName}} {{currentEmployeeInView.employee.lastName}}</p>
                 <p><span>ID: </span>{{currentEmployeeInView.id}}</p>
-                <p><span>Level: </span>{{currentEmployeeInView.level}}</p>
-                <p><span>Department: </span>{{currentEmployeeInView.department}}</p>
+                <p><span>Level: </span>{{currentEmployeeInView.employee.level.id}}</p>
+                <p><span>Department: </span>{{currentEmployeeInView.employee.department.id}}</p>
                 <p><span>Account Number: </span>{{currentEmployeeInView.accountNumber}}</p>
                 <p><span>Bank Name: </span>{{currentEmployeeInView.bank}}</p>
                 <p><span>Days worked: </span>{{ currentEmployeeInView.daysWorked ?? payrollSettings.paySchedule.workingDaysPerPeriod }}</p>

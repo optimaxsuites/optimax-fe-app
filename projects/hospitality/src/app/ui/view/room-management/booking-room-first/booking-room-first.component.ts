@@ -324,7 +324,7 @@ export class BookingRoomFirstComponent implements OnInit {
       return;
     }
     this.showToastMessage('Booking created successfully!', 'success');
-    setTimeout(() => this.router.navigate(['/hospitality/bookings', bId, this.uuid]), 1200);
+    setTimeout(() => this.router.navigate(['user/hospitality/bookings', bId, this.uuid]), 1200);
   }
 
   addToBatch(): void {
@@ -355,7 +355,7 @@ export class BookingRoomFirstComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality/bookings', this.uuid]);
+    this.router.navigate(['user/hospitality/bookings', this.uuid]);
   }
 
   showToastMessage(msg: string, type: 'success' | 'error'): void {
