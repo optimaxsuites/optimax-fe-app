@@ -100,7 +100,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'leave/uu',
+    redirectTo: 'loan/uu',
     pathMatch: 'full',
   },
   // {

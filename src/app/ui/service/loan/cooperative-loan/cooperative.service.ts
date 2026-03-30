@@ -43,15 +43,23 @@ export class CooperativeService {
   /**
    * Approve a pending cooperative membership application by ID
    */
-  approveMembershipApplication(applicationId: number) {
-    return this.cooperativeMembershipService.approvePendingMembershipApplication(this.getMembershipContext(), applicationId);
+  async approveMembershipApplication(applicationId: number) {
+    return await this.cooperativeMembershipService.approvePendingMembershipApplication(
+      this.getMembershipContext(),
+      applicationId,
+      this.cooperativeLoanApiService
+    );
   }
 
   /**
    * Reject a pending cooperative membership application by ID
    */
-  rejectMembershipApplication(applicationId: number) {
-    return this.cooperativeMembershipService.rejectPendingMembershipApplication(this.getMembershipContext(), applicationId);
+  async rejectMembershipApplication(applicationId: number) {
+    return await this.cooperativeMembershipService.rejectPendingMembershipApplication(
+      this.getMembershipContext(),
+      applicationId,
+      this.cooperativeLoanApiService
+    );
   }
 
   /**
@@ -113,144 +121,14 @@ export class CooperativeService {
   private groupApiRecords: Record<string, CooperativeGroupApiResponse> = {};
 
   // Track if we're using real API data or local fallback
-  usingRealApiData = false;
+  usingRealApiData = true;
 
   // ==================== INITIALIZATION ====================
 
-  private loadFromStorage(): void {
-    const stored = localStorage.getItem(this.storageKey);
-    if (stored) {
-      try {
-        let hasNormalizedLoanIds = false;
-        const data = JSON.parse(stored);
-        this.members = data.members || [];
-        this.loans = data.loans || [];
-        this.groups = (data.groups || []).map((group: any) => ({
-          ...group,
-          minEligibleSalary: Number(group.minEligibleSalary || 0),
-          monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
-          maxBorrowingPercentage: Number(group.maxBorrowingPercentage || 0),
-          minMemberTenureMonths: group.minMemberTenureMonths ?? 6,
-          patronageEligible: group.patronageEligible ?? true,
-          patronageRate: group.patronageRate ?? 0,
-          requiresGuarantors: group.requiresGuarantors ?? false,
-          minimumGuarantors: group.minimumGuarantors ?? 0,
-          quickDisbursement: group.quickDisbursement ?? false
-        }));
-        this.loans = (data.loans || []).map((loan: any, idx: number) => ({
-          ...loan,
-          loanCode: String(loan.loanCode || loan.loanId || ''),
-          loanId: Number(loan.loanId || loan.loanCode || idx + 1),
-          cooperativeMemberId: Number(loan.cooperativeMemberId || loan.memberId || 0),
-          memberId: Number(loan.memberId || loan.cooperativeMemberId || 0),
-          cooperativeGroupId: Number(loan.cooperativeGroupId || loan.groupId || 0),
-          groupId: Number(loan.groupId || loan.cooperativeGroupId || 0),
-          repaymentAmount: Number(loan.repaymentAmount || 0),
-          repaymentTime: Number((loan.repaymentTime ?? loan.duration) || 0),
-          duration: Number((loan.duration ?? loan.repaymentTime) || 0),
-          requestDate: loan.requestDate || loan.applicationDate || new Date().toISOString(),
-          applicationDate: loan.applicationDate || loan.requestDate || new Date().toISOString(),
-          disbursedDate: loan.disbursedDate || '',
-          completedDate: loan.completedDate || loan.completionDate || '',
-          completionDate: loan.completionDate || loan.completedDate || '',
-          adminComment: loan.adminComment || loan.adminRequestNote || '',
-          adminRequestNote: loan.adminRequestNote || loan.adminComment || '',
-          totalPaid: Number(loan.totalPaid || 0),
-          totalRepayment: Number(loan.totalRepayment || 0),
-          interestRate: Number(loan.interestRate || 0),
-          modeOfPayment: loan.modeOfPayment || 'MONTHLY',
-          totalPrincipalPaid: Number(loan.totalPrincipalPaid || 0),
-          totalInterestPaid: Number(loan.totalInterestPaid || 0),
-          outstandingPrincipal: Number(loan.outstandingPrincipal ?? loan.amount ?? 0),
-          applicationStage:
-            loan.applicationStage ||
-            (loan.status === 'PENDING' ? 'READY_FOR_ADMIN_REVIEW' : undefined),
-          guarantors: (loan.guarantors || []).map((guarantor: any) => ({
-            memberId: Number(guarantor.memberId || 0),
-            guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
-            status: guarantor.status || 'PENDING',
-            requestedAt: guarantor.requestedAt || loan.applicationDate || loan.requestDate || new Date().toISOString(),
-            decidedAt: guarantor.decidedAt,
-            note: guarantor.note
-          }))
-        }));
-        this.repayments = data.repayments || [];
-        this.repayments = (data.repayments || []).map((repayment: any) => ({
-          ...repayment,
-          amount: Number(repayment.amount || 0),
-          principalComponent: Number(repayment.principalComponent || 0),
-          interestComponent: Number(repayment.interestComponent || 0),
-          lateFeeAmount: Number(repayment.lateFeeAmount || 0),
-          receiptNumber: repayment.receiptNumber || undefined,
-          reminderSentAt: repayment.reminderSentAt || undefined,
-          creditReportedAt: repayment.creditReportedAt || undefined
-        }));
-        this.notifications = (data.notifications || []).map((notification: any, idx: number) => ({
-          ...notification,
-          id: Number(notification.id || idx + 1),
-          type: notification.type || 'LOAN_PENDING_APPROVAL',
-          recipient: notification.recipient || 'ADMIN',
-          loanId: Number(notification.loanId || 0)
-        }));
-        this.pendingMembershipApplications = (data.pendingMembershipApplications || []).map((item: any) => ({
-          id: Number(item.id),
-          employeeId: Number(item.employeeId),
-          fullName: String(item.fullName || 'Employee'),
-          requestedTier: String(item.requestedTier || 'STANDARD'),
-          source: item.source === 'ADMIN_INVITE' ? 'ADMIN_INVITE' : 'SELF',
-          requestDate: item.requestDate || new Date().toISOString(),
-          note: item.note,
-          status: 'PENDING_MANAGER_APPROVAL'
-        }));
-        this.groupMemberships = (data.groupMemberships || []).map((membership: any) => ({
-          id: Number(membership.id),
-          memberId: Number(membership.memberId),
-          groupId: Number(membership.groupId),
-          status: membership.status || 'PENDING',
-          monthlyContributionAmount: Number(membership.monthlyContributionAmount || 0),
-          totalContribution: Number(membership.totalContribution || 0),
-          joinedAt: membership.joinedAt || '',
-          requestedAt: membership.requestedAt || membership.joinedAt || new Date().toISOString(),
-          reviewedAt: membership.reviewedAt,
-          reviewNote: membership.reviewNote,
-          rejectionReason: membership.rejectionReason,
-          lastContributionDate: membership.lastContributionDate
-        }));
-        this.contributionEntries = (data.contributionEntries || []).map((entry: any) => ({
-          id: Number(entry.id),
-          membershipId: Number(entry.membershipId),
-          memberId: Number(entry.memberId),
-          groupId: Number(entry.groupId),
-          amount: Number(entry.amount || 0),
-          contributionMonth: String(entry.contributionMonth || ''),
-          contributedAt: entry.contributedAt || new Date().toISOString(),
-          status: 'POSTED'
-        }));
-        this.groupInviteHistory = (data.groupInviteHistory || []).map((entry: any) => ({
-          id: Number(entry.id),
-          groupId: Number(entry.groupId),
-          employeeId: Number(entry.employeeId),
-          employeeName: String(entry.employeeName || 'Employee'),
-          employeeEmail: String(entry.employeeEmail || ''),
-          department: String(entry.department || 'Unassigned'),
-          rank: entry.rank || 'JUNIOR',
-          tenureMonths: Number(entry.tenureMonths || 0),
-          sentAt: entry.sentAt || new Date().toISOString(),
-          subject: String(entry.subject || 'New cooperative group available'),
-          message: String(entry.message || '')
-        }));
-
-        hasNormalizedLoanIds = this.normalizeLoanIdentifiers();
-        if (hasNormalizedLoanIds) {
-          this.saveToStorage();
-        }
-      } catch (e) {
-        console.error('Failed to load data', e);
-      }
-    }
-  }
-
-  private normalizeLoanIdentifiers(): boolean {
+  // Removed localStorage: always use backend APIs
+      if (changed) {
+        // saveToStorage: removed for backend-only persistence
+        // this.saveToStorage();
     let changed = false;
     const usedInternalIds = new Set(this.loans.map(loan => String(loan.id || '')));
     const usedLoanCodes = new Set(this.loans.map(loan => String(loan.loanCode || loan.loanId || '')));
@@ -260,7 +138,7 @@ export class CooperativeService {
       const loan = this.loans[i];
       const originalInternalId = String(loan.id || '');
       const originalLoanCode = String(loan.loanCode || loan.loanId || '');
-      const originalMemberId = String(loan.cooperativeMemberId || loan.memberId || '');
+        // saveToStorage: removed for backend-only persistence
 
       const requiresInternalIdRefresh =
         !originalInternalId ||
@@ -290,14 +168,14 @@ export class CooperativeService {
         loan.loanCode = refreshedLoanCode;
         loan.loanId = Number(refreshedLoanCode.replace(/\D/g, ''));
         usedLoanCodes.add(refreshedLoanCode);
-        changed = true;
+      // saveToStorage: removed for backend-only persistence
       }
     }
 
     if (internalIdRemap.size > 0) {
       this.repayments = this.repayments.map(repayment => ({
         ...repayment,
-        loanId: Number(internalIdRemap.get(String(repayment.loanId)) || repayment.loanId)
+      // saveToStorage: removed for backend-only persistence
       }));
 
       this.notifications = this.notifications.map(notification => ({
@@ -336,34 +214,9 @@ export class CooperativeService {
     return candidate;
   }
 
-  private saveToStorage(): void {
-    const hasNormalizedLoanIds = this.normalizeLoanIdentifiers();
-    const payload = {
-      members: this.members,
-      loans: this.loans,
-      groups: this.groups,
-      contributionEntries: this.contributionEntries,
-      groupInviteHistory: this.groupInviteHistory,
-      repayments: this.repayments,
-      notifications: this.notifications,
-      pendingMembershipApplications: this.pendingMembershipApplications,
-      groupMemberships: this.groupMemberships
-    };
+  // Removed localStorage: always use backend APIs
 
-    localStorage.setItem(this.storageKey, JSON.stringify(payload));
-    this.publishState();
-
-    if (hasNormalizedLoanIds) {
-      localStorage.setItem(this.storageKey, JSON.stringify({
-        ...payload,
-        loans: this.loans,
-        repayments: this.repayments,
-        notifications: this.notifications
-      }));
-    }
-  }
-
-  private applyDashboardTestingReset(): void {
+      // saveToStorage: removed for backend-only persistence
     const stored = localStorage.getItem(this.storageKey);
     if (!stored || localStorage.getItem(this.dashboardTestingResetKey)) {
       return;
@@ -675,41 +528,8 @@ export class CooperativeService {
   }
 
   private initializeSampleData(): void {
-    const shouldSkipGroupMembershipSeed = localStorage.getItem(this.skipGroupMembershipSeedKey) === 'true';
-    const hasUpdatedGroups = this.ensureDefaultGroups();
-
-    if (this.members.length === 0) {
-      this.createSampleMembers();
-      this.createSampleLoans();
-      if (!shouldSkipGroupMembershipSeed && this.groupMemberships.length === 0) {
-        this.createSampleGroupMemberships();
-      }
-      this.saveToStorage();
-    } else if (this.groups.length === 0) {
-      this.saveToStorage();
-    } else if (!shouldSkipGroupMembershipSeed && this.groupMemberships.length === 0) {
-      this.createSampleGroupMemberships();
-      this.saveToStorage();
-    } else if (hasUpdatedGroups) {
-      this.saveToStorage();
-    }
-
-    const seedVersionKey = `${this.storageKey}_loan_group_seed_v2`;
-    if (!shouldSkipGroupMembershipSeed && !localStorage.getItem(seedVersionKey)) {
-      this.ensureDefaultGroups();
-      this.createSampleGroupMemberships();
-      localStorage.setItem(seedVersionKey, 'true');
-      this.saveToStorage();
-    }
-
-    if (this.groupMemberships.length === 0 && this.contributionEntries.length > 0) {
-      this.contributionEntries = [];
-      this.saveToStorage();
-    } else if (this.groupMemberships.length > 0 && this.contributionEntries.length === 0) {
-      this.createContributionLedgerFromMemberships();
-      this.saveToStorage();
-    }
-
+    // Removed: all localStorage and saveToStorage logic (backend-only)
+    // If needed, implement backend seeding logic here.
     this.publishState();
   }
 
@@ -1010,21 +830,13 @@ export class CooperativeService {
   getLoans(): Observable<CooperativeLoan[]> {
     return this.cooperativeLoanApiService.getAllLoans().pipe(
       map((rawLoans) => {
-        console.log('Raw loans from API:', rawLoans);
-        
-        if (!rawLoans || rawLoans.length === 0) {
-          console.warn('No loans found in backend. Using local loans.');
-          return [...this.loans];
-        }
-        
-        this.mergeLoanReferenceData(rawLoans);
         const loans = rawLoans.map((loan) => this.mapApiLoanToLoan(loan));
         this.syncLoanCache(loans);
         return loans;
       }),
       catchError((error) => {
         console.error('Failed to load cooperative loans', error);
-        return of([...this.loans]);
+        return of([]);
       })
     );
   }
@@ -1033,8 +845,14 @@ export class CooperativeService {
     return this.loansSubject.asObservable();
   }
 
-  getLoanById(id: number): CooperativeLoan | undefined {
-    return this.loans.find(l => l.loanId === id || l.id === id);
+  getLoanById(id: number): Observable<CooperativeLoan | undefined> {
+    return this.cooperativeLoanApiService.getLoanById(id).pipe(
+      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
+      catchError((error) => {
+        console.error('Failed to load cooperative loan', error);
+        return of(undefined);
+      })
+    );
   }
 
   getLoansByMember(memberId: number): CooperativeLoan[] {
@@ -1043,26 +861,20 @@ export class CooperativeService {
 
   addLoan(loan: Omit<CooperativeLoan, 'id' | 'loanId' | 'createdAt' | 'updatedAt'>): Observable<CooperativeLoan> {
     return this.cooperativeLoanApiService.createLoan(this.buildCreateLoanPayload(loan)).pipe(
-      map((rawLoan) => {
-        this.mergeLoanReferenceData([rawLoan]);
-        const createdLoan = this.mapApiLoanToLoan(rawLoan);
-        this.upsertLoanInCache(createdLoan);
-        this.createPendingApprovalNotification(createdLoan);
-        if ((createdLoan.guarantors || []).length > 0) {
-          this.createGuarantorNotifications(createdLoan);
-        }
-        return createdLoan;
+      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
+      catchError((error) => {
+        console.error('Failed to create cooperative loan', error);
+        throw error;
       })
     );
   }
 
   updateLoan(loan: CooperativeLoan): Observable<CooperativeLoan> {
     return this.cooperativeLoanApiService.updateLoan(Number(loan.id), this.buildUpdateLoanPayload(loan)).pipe(
-      map((rawLoan) => {
-        this.mergeLoanReferenceData([rawLoan]);
-        const updatedLoan = this.mapApiLoanToLoan(rawLoan);
-        this.upsertLoanInCache(updatedLoan);
-        return updatedLoan;
+      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
+      catchError((error) => {
+        console.error('Failed to update cooperative loan', error);
+        throw error;
       })
     );
   }
@@ -1941,8 +1753,12 @@ export class CooperativeService {
     return this.cooperativeMembershipService.checkMembershipEligibility(employee);
   }
 
-  applyForMembership(application: CooperativeMembershipApplication): CooperativeMembershipActionResult {
-    return this.cooperativeMembershipService.applyForMembership(this.getMembershipContext(), application);
+  async applyForMembership(application: CooperativeMembershipApplication) {
+    return await this.cooperativeMembershipService.applyForMembership(
+      this.getMembershipContext(),
+      application,
+      this.cooperativeLoanApiService
+    );
   }
 
   inviteEmployee(employee: CooperativeEmployeeProfile): CooperativeMembershipActionResult {
