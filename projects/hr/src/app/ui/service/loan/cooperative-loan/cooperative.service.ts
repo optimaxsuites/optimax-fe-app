@@ -127,19 +127,20 @@ export class CooperativeService {
     return candidate;
   }
 
-  private saveToStorage(): void {
-    const hasNormalizedLoanIds = this.normalizeLoanIdentifiers();
-    const payload = {
-      members: this.members,
-      loans: this.loans,
-      groups: this.groups,
-      contributionEntries: this.contributionEntries,
-      groupInviteHistory: this.groupInviteHistory,
-      repayments: this.repayments,
-      notifications: this.notifications,
-      pendingMembershipApplications: this.pendingMembershipApplications,
-      groupMemberships: this.groupMemberships
-    };
+  // private saveToStorage(): void {
+  //   const hasNormalizedLoanIds = this.normalizeLoanIdentifiers();
+  //   const payload = {
+  //     members: this.members,
+  //     loans: this.loans,
+  //     groups: this.groups,
+  //     contributionEntries: this.contributionEntries,
+  //     groupInviteHistory: this.groupInviteHistory,
+  //     repayments: this.repayments,
+  //     notifications: this.notifications,
+  //     pendingMembershipApplications: this.pendingMembershipApplications,
+  //     groupMemberships: this.groupMemberships
+  //   };
+  // }
 
   /**
    * Resets dashboard data in localStorage if needed. Call this method from initialization if required.

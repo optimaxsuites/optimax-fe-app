@@ -347,23 +347,23 @@ export class CooperativeMembershipService {
     }))
   }
 
-  rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number): CooperativeMembershipActionResult {
-    const idx = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
-    if (idx === -1) {
-      return {
+  rejectPendingMembershipApplication(context: CooperativeMembershipContext, applicationId: number, apiService: any): Promise<CooperativeMembershipActionResult>{
+    const application = context.pendingMembershipApplications.findIndex(app => app.id === applicationId && app.status === 'PENDING_MANAGER_APPROVAL');
+    if (application === -1) {
+      return Promise.resolve({
         success: false,
         status: 'REJECTED',
         message: 'Application not found or already processed.',
         eligibility: undefined as any
-      };
+      });
     }
-    context.pendingMembershipApplications.splice(idx, 1);
+    context.pendingMembershipApplications.splice(application, 1);
     context.saveToStorage();
-    return {
+    return Promise.resolve({
       success: true,
       status: 'REJECTED',
       message: 'Membership application rejected.',
       eligibility: undefined as any
-    };
+    });
   }
 }
