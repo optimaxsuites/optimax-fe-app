@@ -300,44 +300,60 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   saveGroup(): void {
-    if (this.groupForm.invalid) {
-      this.groupForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.groupForm.value;
-    if (Number(formValue.minAmount) > Number(formValue.maxAmount)) {
-      this.groupForm.get('maxAmount')?.setErrors({ range: true });
-      return;
-    }
-
-    if (Number(formValue.minDuration) > Number(formValue.maxDuration)) {
-      this.groupForm.get('maxDuration')?.setErrors({ range: true });
-      return;
-    }
-
-    const payload = {
-      ...formValue,
-      minEligibleSalary: Number(formValue.minEligibleSalary),
-      monthlyContributionAmount: Number(formValue.monthlyContributionAmount),
-      maxBorrowingPercentage: Number(formValue.maxBorrowingPercentage),
-      minAmount: Number(formValue.minAmount),
-      maxAmount: Number(formValue.maxAmount),
-      interestRate: Number(formValue.interestRate),
-      minDuration: Number(formValue.minDuration),
-      maxDuration: Number(formValue.maxDuration),
-      patronageRate: Number(formValue.patronageRate)
-    } as Omit<CooperativeLoanGroup, 'id'>;
-
-    const request = this.editingGroupId
-      ? this.cooperativeService.updateGroup({ id: this.editingGroupId, ...payload })
-      : this.cooperativeService.addGroup(payload);
-
-    request.subscribe(() => {
-      this.cancelForm();
-      this.loadGroups();
-    });
+  if (this.groupForm.invalid) {
+    this.groupForm.markAllAsTouched();
+    return;
   }
+
+  const formValue = this.groupForm.value;
+  if (Number(formValue.minAmount) > Number(formValue.maxAmount)) {
+    this.groupForm.get('maxAmount')?.setErrors({ range: true });
+    return;
+  }
+
+  if (Number(formValue.minDuration) > Number(formValue.maxDuration)) {
+    this.groupForm.get('maxDuration')?.setErrors({ range: true });
+    return;
+  }
+
+  const payload = {
+    ...formValue,
+    minEligibleSalary: Number(formValue.minEligibleSalary),
+    monthlyContributionAmount: Number(formValue.monthlyContributionAmount),
+    maxBorrowingPercentage: Number(formValue.maxBorrowingPercentage),
+    minAmount: Number(formValue.minAmount),
+    maxAmount: Number(formValue.maxAmount),
+    interestRate: Number(formValue.interestRate),
+    minDuration: Number(formValue.minDuration),
+    maxDuration: Number(formValue.maxDuration),
+    patronageRate: Number(formValue.patronageRate)
+  } as Omit<CooperativeLoanGroup, 'id'>;
+
+  const request = this.editingGroupId
+    ? this.cooperativeService.updateGroup({ id: this.editingGroupId, ...payload })
+    : this.cooperativeService.createGroup(payload); // Use createGroup instead of addGroup
+
+  request.subscribe({
+    next: () => {
+      this.cancelForm();
+      this.loadGroups(); // This will refresh groups from backend
+      this.showMessage('Group saved successfully!', 'success');
+    },
+    error: (error) => {
+      console.error('Error saving group:', error);
+      this.showMessage('Failed to save group. Check console for details.', 'error');
+    }
+  });
+}
+
+// Add this helper method to show messages (if not already present)
+private showMessage(message: string, type: 'success' | 'error'): void {
+  // You can use a toast service or set a message variable
+  console.log(message);
+  // If you have a message variable in your component, set it here
+  // this.actionMessage = message;
+  // this.actionMessageTone = type;
+}
 
   toggleGroupStatus(group: CooperativeLoanGroup): void {
     const nextStatus = group.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';

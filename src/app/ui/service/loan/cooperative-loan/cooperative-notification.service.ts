@@ -68,7 +68,7 @@ export class CooperativeNotificationService {
       title: 'Membership Approval Pending',
       message: `${item.fullName} (${item.employeeId}) submitted a cooperative membership request and is pending manager approval.`,
       loanId: 0,
-      memberId: item.employeeId,
+      memberId: 0, // Placeholder until backend assigns real memberId
       createdAt: new Date().toISOString(),
       read: false
     });

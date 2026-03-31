@@ -5,7 +5,6 @@ import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-// Add other needed types if used in this file
 import { EmployeeService } from '../../../service/employee.service';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 
@@ -15,9 +14,25 @@ import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, Co
   styleUrls: ['./cooperative-loan-application.component.scss']
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
+    // Stepper state for multi-step form
+    stepIndex: number = 0;
+
   get controlNames(): string[] {
     return Object.keys(this.applicationForm?.controls || {});
   }
+    // Stepper navigation methods
+    nextStep(): void {
+      // Maximum step is 4 (0-based index for 5 steps)
+      if (this.stepIndex < 4) {
+        this.stepIndex++;
+      }
+    }
+
+    prevStep(): void {
+      if (this.stepIndex > 0) {
+        this.stepIndex--;
+      }
+    }
   // Expose Object to the template for Object.keys usage
   Object = Object;
     errorKeys(errors: any): string[] {
@@ -129,6 +144,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     if (this.prefillMemberId) {
       this.prefillMemberParam = this.prefillMemberId;
     }
+
+    // Reset stepper on init
+    this.stepIndex = 0;
 
     this.route.queryParamMap.subscribe(params => {
       this.prefillMemberParam = params.get('memberId') || this.prefillMemberId;
@@ -903,4 +921,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       this.router.navigate(['../'], { relativeTo: this.route });
     }
   }
+  // Optionally, reset stepper on cancel
+  // goBack() could also reset stepIndex if needed
 }

@@ -40,39 +40,15 @@ import { CooperativeRepaymentService } from './cooperative-repayment.service';
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
-    // No-op for backend-only persistence
-    private saveToStorage(): void {}
+  // No-op for backend-only persistence
+  private saveToStorage(): void {}
   // Subject to emit group membership changes
   private groupMembershipChangedSubject = new Subject<void>();
 
   public getGroupMembershipChangedObservable(): Observable<void> {
     return this.groupMembershipChangedSubject.asObservable();
   }
-  /**
-   * Approve a pending cooperative membership application by ID
-   */
-  public async approveMembershipApplication(applicationId: number) {
-    const result = await this.cooperativeMembershipService.approvePendingMembershipApplication(
-      this.getMembershipContext(),
-      applicationId,
-      this.cooperativeLoanApiService
-    );
-    this.groupMembershipChangedSubject.next();
-    return result;
-  }
 
-  /**
-   * Reject a pending cooperative membership application by ID
-   */
-  public async rejectMembershipApplication(applicationId: number) {
-    const result = await this.cooperativeMembershipService.rejectPendingMembershipApplication(
-      this.getMembershipContext(),
-      applicationId,
-      this.cooperativeLoanApiService
-    );
-    this.groupMembershipChangedSubject.next();
-    return result;
-  }
   private readonly cooperativeMembershipService = inject(CooperativeMembershipService);
   private readonly cooperativeNotificationService = inject(CooperativeNotificationService);
   private readonly cooperativeLoanApiService = inject(CooperativeLoanApiService);
@@ -107,71 +83,6 @@ export class CooperativeService {
   // Track if we're using real API data or local fallback
   usingRealApiData = true;
 
-  // ==================== INITIALIZATION ====================
-  // Removed localStorage: always use backend APIs
-  // Initialization logic moved to methods if needed.
-
-  private generateNextInternalLoanId(existingIds?: Set<string>): string {
-    const usedIds = existingIds || new Set(this.loans.map(item => String(item.id || '')));
-    let sequence = this.loans.length + 1;
-    let candidate = '';
-
-    do {
-      candidate = `CLN-${String(sequence).padStart(3, '0')}`;
-      sequence += 1;
-    } while (usedIds.has(candidate));
-
-    return candidate;
-  }
-
-  private generateNextPublicLoanCode(existingCodes?: Set<string>): string {
-    const usedCodes = existingCodes || new Set(this.loans.map(item => String(item.loanCode || item.loanId || '')));
-    let sequence = this.loans.length + 1;
-    let candidate = '';
-
-    do {
-      candidate = `COPLO-${String(sequence).padStart(3, '0')}`;
-      sequence += 1;
-    } while (usedCodes.has(candidate));
-
-    return candidate;
-  }
-
-  // Removed localStorage: always use backend APIs
-
-  /**
-   * Resets dashboard data in localStorage if needed. Call this method from initialization if required.
-   */
-  private resetDashboardIfNeeded(): void {
-    // saveToStorage: removed for backend-only persistence
-    const stored = localStorage.getItem(this.storageKey);
-    if (!stored || localStorage.getItem(this.dashboardTestingResetKey)) {
-      return;
-    }
-
-    const hasLoans = this.loans.length > 0;
-    const hasGroupJoinData = this.groupMemberships.length > 0;
-
-    if (!hasLoans && !hasGroupJoinData) {
-      localStorage.setItem(this.dashboardTestingResetKey, new Date().toISOString());
-      return;
-    }
-
-    this.loans = [];
-    this.contributionEntries = [];
-    this.repayments = [];
-    this.groupMemberships = [];
-    this.notifications = this.notifications.filter(notification =>
-      notification.type !== 'LOAN_PENDING_APPROVAL' &&
-      notification.type !== 'GROUP_JOIN_REQUEST' &&
-      notification.type !== 'GROUP_JOIN_STATUS_UPDATE'
-    );
-
-    localStorage.setItem(this.skipGroupMembershipSeedKey, 'true');
-    localStorage.setItem(this.dashboardTestingResetKey, new Date().toISOString());
-    this.saveToStorage();
-  }
-
   private publishState(): void {
     this.membersSubject.next([...this.members]);
     this.loansSubject.next([...this.loans]);
@@ -191,7 +102,6 @@ export class CooperativeService {
 
     const derivedKeys = new Set(derivedNotifications.map((notification) => this.getNotificationStateKey(notification)));
     const persistedNotifications = this.notifications.filter((notification) => {
-      // Remove derived notifications (previously used string IDs)
       if (typeof notification.id !== 'number') {
         return false;
       }
@@ -206,7 +116,7 @@ export class CooperativeService {
 
   private buildDerivedNotifications(): CooperativeNotification[] {
     const derivedNotifications: CooperativeNotification[] = [];
-    let derivedIdCounter = 100000; // Start derived IDs at a high number to avoid collision
+    let derivedIdCounter = 100000;
 
     this.pendingMembershipApplications.forEach((application) => {
       derivedNotifications.push({
@@ -376,320 +286,17 @@ export class CooperativeService {
     return `${notification.type}:${normalizedLoanId}:${normalizedMemberId}`;
   }
 
-  private ensureDefaultGroups(): boolean {
-    const defaultGroups = this.getDefaultGroups();
-    const existingGroupIds = new Set(this.groups.map(group => String(group.id)));
-    const missingGroups = defaultGroups.filter(group => !existingGroupIds.has(String(group.id)));
-
-    if (missingGroups.length === 0) {
-      return false;
-    }
-
-    this.groups = [...this.groups, ...missingGroups];
-    return true;
-  }
-
-  private getDefaultGroups(): CooperativeLoanGroup[] {
-    return [
-      {
-        id: 1,
-        name: 'Home Renovation Group',
-        description: 'Supports housing upgrades, rent support, and essential home improvement projects.',
-        minEligibleSalary: 120000,
-        monthlyContributionAmount: 15000,
-        maxBorrowingPercentage: 220,
-        minAmount: 50000,
-        maxAmount: 1200000,
-        interestRate: 5,
-        minDuration: 3,
-        maxDuration: 24,
-        minMemberTenureMonths: 6,
-        requiresShares: false,
-        requiresGuarantors: false,
-        minimumGuarantors: 0,
-        patronageEligible: true,
-        patronageRate: 12,
-        status: 'ACTIVE'
-      },
-      {
-        id: 2,
-        name: 'Education Support Group',
-        description: 'Designed for school fees, certification programs, and other education expenses.',
-        minEligibleSalary: 100000,
-        monthlyContributionAmount: 10000,
-        maxBorrowingPercentage: 180,
-        minAmount: 30000,
-        maxAmount: 750000,
-        interestRate: 8,
-        minDuration: 3,
-        maxDuration: 18,
-        minMemberTenureMonths: 6,
-        requiresShares: false,
-        requiresGuarantors: true,
-        minimumGuarantors: 2,
-        patronageEligible: true,
-        patronageRate: 10,
-        status: 'ACTIVE'
-      },
-      {
-        id: 3,
-        name: 'Medical Emergency Group',
-        description: 'Fast-response lending for urgent medical and emergency family needs.',
-        minEligibleSalary: 80000,
-        monthlyContributionAmount: 8000,
-        maxBorrowingPercentage: 150,
-        minAmount: 20000,
-        maxAmount: 500000,
-        interestRate: 6.5,
-        minDuration: 1,
-        maxDuration: 12,
-        minMemberTenureMonths: 3,
-        requiresShares: false,
-        requiresGuarantors: false,
-        minimumGuarantors: 0,
-        patronageEligible: false,
-        patronageRate: 0,
-        status: 'ACTIVE'
-      }
-    ];
-  }
-
-  private initializeSampleData(): void {
-    // Removed: all localStorage and saveToStorage logic (backend-only)
-    // If needed, implement backend seeding logic here.
-    this.publishState();
-  }
-
-  private createSampleGroupMemberships(): void {
-    const now = new Date();
-    const activeGroups = this.groups.filter(group => group.status === 'ACTIVE');
-
-    if (activeGroups.length === 0 || this.members.length === 0) {
-      this.groupMemberships = [];
-      return;
-    }
-
-    let membershipIdCounter = 1;
-    this.groupMemberships = this.members.flatMap((member, memberIndex) => {
-      const firstGroup = activeGroups[memberIndex % activeGroups.length];
-      const secondGroup = activeGroups[(memberIndex + 2) % activeGroups.length];
-      const thirdGroup = activeGroups[(memberIndex + 4) % activeGroups.length];
-      const joinedGroups = [firstGroup, secondGroup, thirdGroup].filter(
-        (group, index, self) => self.findIndex(item => item.id === group.id) === index
-      );
-
-      return joinedGroups.map((group, groupIndex) => {
-        const monthsContributed = 5 + ((memberIndex + groupIndex) % 9);
-        const joinedAt = new Date(now);
-        joinedAt.setMonth(joinedAt.getMonth() - monthsContributed);
-
-        return {
-          id: membershipIdCounter++,
-          memberId: member.id,
-          groupId: group.id,
-          status: 'ACTIVE' as const,
-          monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
-          totalContribution: Number((group.monthlyContributionAmount || 0) * monthsContributed),
-          joinedAt: joinedAt.toISOString(),
-          requestedAt: joinedAt.toISOString(),
-          reviewedAt: joinedAt.toISOString(),
-          reviewNote: 'Seeded active membership',
-          lastContributionDate: now.toISOString()
-        };
-      });
-    });
-  }
-
-  private createContributionLedgerFromMemberships(): void {
-    let contributionIdCounter = 1;
-    this.contributionEntries = this.groupMemberships.flatMap(membership => {
-      if (membership.status !== 'ACTIVE') {
-        return [];
-      }
-
-      const monthlyContribution = Number(membership.monthlyContributionAmount || 0);
-      const totalContribution = Number(membership.totalContribution || 0);
-      if (monthlyContribution <= 0 || totalContribution <= 0) {
-        return [];
-      }
-
-      const lastContributionDate = new Date(membership.lastContributionDate || membership.joinedAt || membership.requestedAt || new Date().toISOString());
-      const entryAmounts: number[] = [];
-      let remaining = totalContribution;
-
-      while (remaining > 0) {
-        const entryAmount = Math.min(monthlyContribution, remaining);
-        entryAmounts.unshift(Number(entryAmount.toFixed(2)));
-        remaining = Number((remaining - entryAmount).toFixed(2));
-      }
-
-      return entryAmounts.map((amount, index) => {
-        const contributedAt = new Date(lastContributionDate);
-        contributedAt.setMonth(lastContributionDate.getMonth() - (entryAmounts.length - index - 1));
-
-        return {
-          id: contributionIdCounter++,
-          membershipId: membership.id,
-          memberId: membership.memberId,
-          groupId: membership.groupId,
-          amount,
-          contributionMonth: `${contributedAt.getFullYear()}-${String(contributedAt.getMonth() + 1).padStart(2, '0')}`,
-          contributedAt: contributedAt.toISOString(),
-          status: 'POSTED' as const
-        };
-      });
-    });
-  }
-
-  private createSampleMembers(): void {
-    const now = new Date().toISOString();
-    this.members = [
-      {
-        id: 1,
-        memberId: 1,
-        employeeId: 1,
-        fullName: 'Samuel Bamidele',
-        email: 'samuel.bamidele@example.com',
-        phone: '+234 803 123 4567',
-        joinDate: '2022-11-15T10:30:00Z',
-        status: 'ACTIVE',
-        shareCapital: 280000,
-        address: '23 Bourdillon Road, Ikoyi, Lagos',
-        emergencyContact: {
-          name: 'Temi Bamidele',
-          phone: '+234 803 234 5678',
-          relationship: 'Spouse'
-        },
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: 2,
-        memberId: 2,
-        employeeId: 2,
-        fullName: 'Ruth Ekanem',
-        email: 'ruth.ekanem@example.com',
-        phone: '+234 803 234 5678',
-        joinDate: '2023-01-20T09:15:00Z',
-        status: 'ACTIVE',
-        shareCapital: 220000,
-        address: '15 Awolowo Road, Ikoyi, Lagos',
-        emergencyContact: {
-          name: 'Bassey Ekanem',
-          phone: '+234 803 345 6789',
-          relationship: 'Spouse'
-        },
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: 3,
-        memberId: 3,
-        employeeId: 3,
-        fullName: 'Aisha Mohammed',
-        email: 'aisha.mohammed@example.com',
-        phone: '+234 803 345 6789',
-        joinDate: '2023-03-10T14:30:00Z',
-        status: 'ACTIVE',
-        shareCapital: 160000,
-        address: '7 Kano Street, Alimosho, Lagos',
-        emergencyContact: {
-          name: 'Ibrahim Mohammed',
-          phone: '+234 803 456 7890',
-          relationship: 'Brother'
-        },
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
-  }
-
-  private createSampleLoans(): void {
-    const now = new Date().toISOString();
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    
-    this.loans = [];
-    for (let i = 0; i < 5; i++) {
-      this.loans.push({
-        id: i + 1,
-        loanCode: `COPLO-00${i + 1}`,
-        loanId: i + 1,
-        cooperativeMemberId: i + 1,
-        memberId: i + 1,
-        cooperativeGroupId: 1,
-        groupId: 1,
-        amount: 350000,
-        purpose: 'Home renovation',
-        repaymentAmount: 30625,
-        duration: 12,
-        repaymentTime: 12,
-        interestRate: 5,
-        totalRepayment: 367500,
-        totalPaid: 0,
-        totalPrincipalPaid: 0,
-        totalInterestPaid: 0,
-        outstandingPrincipal: 350000,
-        modeOfPayment: 'MONTHLY',
-        status: 'ACTIVE',
-        applicationStage: 'READY_FOR_ADMIN_REVIEW',
-        requestDate: sixMonthsAgo.toISOString(),
-        applicationDate: sixMonthsAgo.toISOString(),
-        approvedDate: sixMonthsAgo.toISOString(),
-        disbursedDate: sixMonthsAgo.toISOString(),
-        completedDate: '',
-        rejectedDate: '',
-        adminComment: '',
-        guarantors: [],
-        paymentHistory: [],
-        statusHistory: [],
-        createdAt: now,
-        updatedAt: now
-      });
-    }
-  }
-
   // ==================== MEMBER METHODS ====================
 
   public getMembers(): Observable<CooperativeMember[]> {
+    this.debugTokenStatus();
+    this.checkUserPermissions();
+    console.log('=== Getting members from API ===');
     return this.cooperativeLoanApiService.getAllMembers().pipe(
       map((rawMembers) => {
         console.log('Raw members from API:', rawMembers);
-        if (!rawMembers || rawMembers.length === 0) {
-          console.warn('No members found in backend. Using local sample data.');
-          // Force-add a sample member and group membership for UI testing
-          const now = new Date().toISOString();
-          const sampleMember: CooperativeMember = {
-            id: 1001,
-            memberId: 1001,
-            employeeId: 1001,
-            fullName: 'Test User',
-            email: 'test.user@example.com',
-            phone: '+234 800 000 0000',
-            joinDate: now,
-            status: 'ACTIVE',
-            shareCapital: 50000,
-            address: 'Test Department',
-            emergencyContact: undefined,
-            createdAt: now,
-            updatedAt: now
-          };
-          this.members = [sampleMember];
-          this.groupMemberships = [{
-            id: 2001,
-            memberId: 1001,
-            groupId: 1,
-            status: 'ACTIVE',
-            monthlyContributionAmount: 10000,
-            totalContribution: 50000,
-            joinedAt: now,
-            requestedAt: now,
-            reviewedAt: now,
-            reviewNote: 'Seeded active membership',
-            lastContributionDate: now
-          }];
-          this.usingRealApiData = false;
-          return [sampleMember];
+        if (!rawMembers || rawMembers.length === 0 || (rawMembers as any).error) {
+          throw new Error('No members found or API error.');
         }
         this.usingRealApiData = true;
         const members = rawMembers.map((member) => this.mapApiMemberToMember(member));
@@ -698,43 +305,31 @@ export class CooperativeService {
       }),
       catchError((error) => {
         console.error('Failed to load cooperative members', error);
-        console.error('Error status:', error.status);
-        console.error('Error message:', error.message);
-        // Force-add a sample member and group membership for UI testing on error
-        const now = new Date().toISOString();
-        const sampleMember: CooperativeMember = {
-          id: 1001,
-          memberId: 1001,
-          employeeId: 1001,
-          fullName: 'Test User',
-          email: 'test.user@example.com',
-          phone: '+234 800 000 0000',
-          joinDate: now,
-          status: 'ACTIVE',
-          shareCapital: 50000,
-          address: 'Test Department',
-          emergencyContact: undefined,
-          createdAt: now,
-          updatedAt: now
-        };
-        this.members = [sampleMember];
-        this.groupMemberships = [{
-          id: 2001,
-          memberId: 1001,
-          groupId: 1,
-          status: 'ACTIVE',
-          monthlyContributionAmount: 10000,
-          totalContribution: 50000,
-          joinedAt: now,
-          requestedAt: now,
-          reviewedAt: now,
-          reviewNote: 'Seeded active membership',
-          lastContributionDate: now
-        }];
-        this.usingRealApiData = false;
-        return of([sampleMember]);
+        throw error;
       })
     );
+  }
+
+  private getLocalMemberData(userId: number, username: string, email: string): CooperativeMember[] {
+    const now = new Date().toISOString();
+    const sampleMember: CooperativeMember = {
+      id: userId,
+      memberId: userId,
+      employeeId: userId,
+      fullName: username,
+      email: email,
+      phone: '',
+      joinDate: now,
+      status: 'ACTIVE',
+      shareCapital: 50000,
+      address: 'Current Department',
+      emergencyContact: undefined,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.members = [sampleMember];
+    this.usingRealApiData = false;
+    return [sampleMember];
   }
 
   public getMembersObservable(): Observable<CooperativeMember[]> {
@@ -750,7 +345,6 @@ export class CooperativeService {
   }
 
   public addMember(member: Omit<CooperativeMember, 'id' | 'memberId' | 'createdAt' | 'updatedAt'>): Observable<CooperativeMember> {
-    // Always set memberId = employeeId
     const patchedMember = {
       ...member,
       memberId: member.employeeId
@@ -765,7 +359,6 @@ export class CooperativeService {
   }
 
   public updateMember(member: CooperativeMember): Observable<CooperativeMember> {
-    // Always set memberId = employeeId
     const patchedMember = {
       ...member,
       memberId: member.employeeId
@@ -797,14 +390,290 @@ export class CooperativeService {
     );
   }
 
-  public deleteMember(id: number): boolean {
-    const index = this.members.findIndex(m => m.memberId === id);
-    if (index !== -1) {
-      this.members.splice(index, 1);
-      this.saveToStorage();
-      return true;
+  // ==================== GROUP METHODS ====================
+
+  public loadGroups(): Observable<CooperativeLoanGroup[]> {
+    console.log('[CooperativeService] Loading groups from backend');
+    
+    return this.cooperativeGroupService.getAllCooperativeGroups().pipe(
+      map((rawGroups) => {
+        console.log('[CooperativeService] Raw groups from API:', rawGroups);
+        
+        if (rawGroups && (rawGroups as any).error) {
+          console.error('[CooperativeService] API returned error for groups:', (rawGroups as any).error);
+          return [];
+        }
+        
+        if (!rawGroups || rawGroups.length === 0) {
+          console.warn('[CooperativeService] No groups found in backend.');
+          return [];
+        }
+        
+        const groups = rawGroups.map((group) => this.mapApiGroupToGroup(group));
+        this.syncGroupCache(groups, rawGroups);
+        console.log('[CooperativeService] Processed groups:', groups);
+        return groups;
+      }),
+      catchError((error) => {
+        console.error('[CooperativeService] Failed to load cooperative groups:', error);
+        return of([]);
+      })
+    );
+  }
+
+  public loadGroupById(id: number): Observable<CooperativeLoanGroup | undefined> {
+    if (!Number.isFinite(id)) {
+      return of(this.getGroupById(id));
     }
-    return false;
+
+    return this.cooperativeGroupService.getCooperativeGroupById(id).pipe(
+      map((rawGroup) => {
+        const group = this.mapApiGroupToGroup(rawGroup);
+        this.upsertGroupInCache(group, true, rawGroup);
+        return group;
+      }),
+      catchError((error) => {
+        console.error('Failed to load cooperative group', error);
+        return of(this.getGroupById(id));
+      })
+    );
+  }
+
+  public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<CooperativeLoanGroup> {
+  console.log('[CooperativeService] Creating group via API:', group);
+  
+    // Format payload to match what the backend expects
+    const payload = {
+      name: group.name,
+      description: group.description || '',
+      monthlyAmount: group.monthlyContributionAmount,
+      withdrawCap: group.maxAmount,
+      interestRate: group.interestRate,
+      status: 'ACTIVE',
+      memberLimit: 100,
+      currentBalance: 0,
+      contributionHistory: [],
+      loanHistory: [],
+      patronageRate: group.patronageRate || 0,
+      patronageAmount: 0
+    };
+    
+    console.log('[CooperativeService] Sending payload:', payload);
+    
+    return this.cooperativeGroupService.createCooperativeGroup(payload).pipe(
+      map((rawGroup) => {
+        console.log('[CooperativeService] Group created successfully:', rawGroup);
+        const newGroup = this.mapApiGroupToGroup(rawGroup);
+        this.upsertGroupInCache(newGroup, true, rawGroup);
+        this.publishState();
+        return newGroup;
+      }),
+      catchError((error) => {
+        console.error('[CooperativeService] Failed to create group:', error);
+        console.error('[CooperativeService] Error details:', error.message);
+        throw error;
+      })
+    );
+  }
+
+  public updateGroup(group: CooperativeLoanGroup): Observable<CooperativeLoanGroup> {
+    console.log('[CooperativeService] Updating group via API:', group);
+    
+    const payload = {
+      id: group.id,
+      name: group.name,
+      description: group.description || '',
+      monthlyAmount: group.monthlyContributionAmount,
+      withdrawCap: group.maxAmount,
+      interestRate: group.interestRate,
+      status: group.status,
+      memberLimit: 100,
+      currentBalance: 0,
+      contributionHistory: [],
+      loanHistory: [],
+      patronageRate: group.patronageRate || 0,
+      patronageAmount: 0
+    };
+    
+    return this.cooperativeGroupService.updateCooperativeGroup(group.id, payload).pipe(
+      map((rawGroup) => {
+        console.log('[CooperativeService] Group updated successfully:', rawGroup);
+        const updatedGroup = this.mapApiGroupToGroup(rawGroup);
+        this.upsertGroupInCache(updatedGroup, true, rawGroup);
+        this.publishState();
+        return updatedGroup;
+      }),
+      catchError((error) => {
+        console.error('[CooperativeService] Failed to update group:', error);
+        throw error;
+      })
+    );
+  }
+
+  public setGroupStatus(id: number, status: 'ACTIVE' | 'INACTIVE'): Observable<CooperativeLoanGroup | undefined> {
+    const group = this.getGroupById(id);
+    if (!group) {
+      return of(undefined);
+    }
+    
+    const updatedGroup = { ...group, status };
+    return this.updateGroup(updatedGroup);
+  }
+
+  public getGroups(): CooperativeLoanGroup[] {
+    return [...this.groups];
+  }
+
+  public getGroupById(id: number): CooperativeLoanGroup | undefined {
+    return this.groups.find(g => g.id === id);
+  }
+
+  public addGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<CooperativeLoanGroup> {
+    return this.createGroup(group);
+  }
+
+  public getGroupInviteHistory(groupId: number): CooperativeGroupInviteHistoryEntry[] {
+    return this.groupInviteHistory
+      .filter(entry => entry.groupId === groupId)
+      .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+  }
+
+  public recordGroupInvites(groupId: number, invites: Array<Omit<CooperativeGroupInviteHistoryEntry, 'id' | 'groupId' | 'sentAt'>>): CooperativeGroupInviteHistoryEntry[] {
+    const createdEntries = invites.map(invite => ({
+      ...invite,
+      id: Date.now(),
+      groupId,
+      sentAt: new Date().toISOString()
+    }));
+
+    this.groupInviteHistory = [...createdEntries, ...this.groupInviteHistory];
+    this.saveToStorage();
+    return createdEntries;
+  }
+
+  // ==================== GROUP MEMBERSHIP METHODS ====================
+
+  public getGroupMemberships(): CooperativeGroupMembership[] {
+    return this.groupMemberships.map(item => ({ ...item }));
+  }
+
+  public getGroupMembershipsByMember(memberId: number): CooperativeGroupMembership[] {
+    return this.groupMemberships.filter(item => item.memberId === memberId);
+  }
+
+  public getGroupMembership(memberId: number, groupId: number): CooperativeGroupMembership | undefined {
+    return this.groupMemberships.find(item => item.memberId === memberId && item.groupId === groupId);
+  }
+
+  public applyForGroupMembership(memberId: number, groupId: number): CooperativeGroupMembership {
+    const existing = this.getGroupMembership(memberId, groupId);
+    if (existing) {
+      if (existing.status === 'REJECTED') {
+        existing.status = 'PENDING';
+        existing.requestedAt = new Date().toISOString();
+        existing.reviewedAt = undefined;
+        existing.rejectionReason = undefined;
+        this.saveToStorage();
+      }
+      return { ...existing };
+    }
+
+    const group = this.getGroupById(groupId);
+    const membership: CooperativeGroupMembership = {
+      id: Date.now(),
+      memberId,
+      groupId,
+      status: 'PENDING',
+      monthlyContributionAmount: Number(group?.monthlyContributionAmount || 0),
+      totalContribution: 0,
+      joinedAt: '',
+      requestedAt: new Date().toISOString()
+    };
+
+    this.groupMemberships.push(membership);
+    this.saveToStorage();
+    return { ...membership };
+  }
+
+  public approveGroupMembership(id: number, note?: string): CooperativeGroupMembership | undefined {
+    const membership = this.groupMemberships.find(m => m.id === id);
+    if (!membership) {
+      return undefined;
+    }
+
+    membership.status = 'ACTIVE';
+    membership.joinedAt = new Date().toISOString();
+    membership.reviewedAt = membership.joinedAt;
+    membership.reviewNote = note?.trim() || undefined;
+    membership.rejectionReason = undefined;
+    this.saveToStorage();
+    this.groupMembershipChangedSubject.next();
+    return { ...membership };
+  }
+
+  public rejectGroupMembership(id: number, reason: string): CooperativeGroupMembership | undefined {
+    const membership = this.groupMemberships.find(m => m.id === id);
+    if (!membership) {
+      return undefined;
+    }
+
+    membership.status = 'REJECTED';
+    membership.reviewedAt = new Date().toISOString();
+    membership.reviewNote = reason.trim() || undefined;
+    membership.rejectionReason = reason.trim() || undefined;
+    this.saveToStorage();
+    this.groupMembershipChangedSubject.next();
+    return { ...membership };
+  }
+
+  public getContributionEntriesByGroup(groupId: number): CooperativeContributionEntry[] {
+    return this.contributionEntries.filter(entry => entry.groupId === groupId);
+  }
+
+  public recordGroupContribution(membershipId: number, payload: { amount: number; contributionMonth: string; contributedAt?: string }): CooperativeContributionEntry | undefined {
+    const membership = this.groupMemberships.find(m => m.id === membershipId && m.status === 'ACTIVE');
+    if (!membership) {
+      return undefined;
+    }
+
+    const amount = Number(payload.amount || 0);
+    const contributionMonth = String(payload.contributionMonth || '').trim();
+    if (amount <= 0 || !/^\d{4}-\d{2}$/.test(contributionMonth)) {
+      return undefined;
+    }
+
+    const hasExistingEntry = this.contributionEntries.some(entry => entry.membershipId === membershipId && entry.contributionMonth === contributionMonth);
+    if (hasExistingEntry) {
+      return undefined;
+    }
+
+    const contributedAt = payload.contributedAt || new Date().toISOString();
+    const entry: CooperativeContributionEntry = {
+      id: Date.now(),
+      membershipId,
+      memberId: membership.memberId,
+      groupId: membership.groupId,
+      amount,
+      contributionMonth,
+      contributedAt,
+      status: 'POSTED'
+    };
+
+    this.contributionEntries.push(entry);
+    membership.totalContribution = Number((Number(membership.totalContribution || 0) + amount).toFixed(2));
+    membership.lastContributionDate = contributedAt;
+    this.saveToStorage();
+
+    return { ...entry };
+  }
+
+  public getMaxBorrowableAmountForGroup(memberId: number, groupId: number): number {
+    const group = this.getGroupById(groupId);
+    const membership = this.getGroupMembership(memberId, groupId);
+    if (!group || !membership || membership.status !== 'ACTIVE') {
+      return 0;
+    }
+    return Number(((membership.totalContribution || 0) * (Number(group.maxBorrowingPercentage || 0) / 100)).toFixed(2));
   }
 
   // ==================== LOAN METHODS ====================
@@ -812,6 +681,10 @@ export class CooperativeService {
   public getLoans(): Observable<CooperativeLoan[]> {
     return this.cooperativeLoanApiService.getAllLoans().pipe(
       map((rawLoans) => {
+        if (rawLoans && (rawLoans as any).error) {
+          console.warn('API returned error for loans:', (rawLoans as any).error);
+          return [];
+        }
         const loans = rawLoans.map((loan) => this.mapApiLoanToLoan(loan));
         this.syncLoanCache(loans);
         return loans;
@@ -825,16 +698,6 @@ export class CooperativeService {
 
   public getLoansObservable(): Observable<CooperativeLoan[]> {
     return this.loansSubject.asObservable();
-  }
-
-  public getLoanById(id: number): Observable<CooperativeLoan | undefined> {
-    return this.cooperativeLoanApiService.getLoanById(id).pipe(
-      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
-      catchError((error) => {
-        console.error('Failed to load cooperative loan', error);
-        return of(undefined);
-      })
-    );
   }
 
   public getLoansByMember(memberId: number): CooperativeLoan[] {
@@ -861,7 +724,15 @@ export class CooperativeService {
     );
   }
 
-  // ==================== LOAN DETAIL METHODS ====================
+  public getLoanById(id: number): Observable<CooperativeLoan | undefined> {
+    return this.cooperativeLoanApiService.getLoanById(id).pipe(
+      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
+      catchError((error) => {
+        console.error('Failed to load cooperative loan', error);
+        return of(undefined);
+      })
+    );
+  }
 
   public loadLoanById(id: number): Observable<CooperativeLoan | undefined> {
     if (!Number.isFinite(id)) {
@@ -1016,236 +887,6 @@ export class CooperativeService {
     return false;
   }
 
-  // ==================== GROUP METHODS ====================
-
-  public loadGroups(): Observable<CooperativeLoanGroup[]> {
-    return this.cooperativeGroupService.getAllCooperativeGroups().pipe(
-      map((rawGroups) => {
-        console.log('Raw groups from API:', rawGroups);
-        
-        if (!rawGroups || rawGroups.length === 0) {
-          console.warn('No groups found in backend. Using local groups.');
-          return this.getGroups();
-        }
-        
-        const groups = rawGroups.map((group) => this.mapApiGroupToGroup(group));
-        this.syncGroupCache(groups, rawGroups);
-        return groups;
-      }),
-      catchError((error) => {
-        console.error('Failed to load cooperative groups', error);
-        return of(this.getGroups());
-      })
-    );
-  }
-
-  public loadGroupById(id: number): Observable<CooperativeLoanGroup | undefined> {
-    if (!Number.isFinite(id)) {
-      return of(this.getGroupById(id));
-    }
-
-    return this.cooperativeGroupService.getCooperativeGroupById(id).pipe(
-      map((rawGroup) => {
-        const group = this.mapApiGroupToGroup(rawGroup);
-        this.upsertGroupInCache(group, true, rawGroup);
-        return group;
-      }),
-      catchError((error) => {
-        console.error('Failed to load cooperative group', error);
-        return of(this.getGroupById(id));
-      })
-    );
-  }
-
-  public getGroups(): CooperativeLoanGroup[] {
-    return [...this.groups];
-  }
-
-  public getGroupById(id: number): CooperativeLoanGroup | undefined {
-    return this.groups.find(g => g.id === id);
-  }
-
-  public addGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<CooperativeLoanGroup> {
-    const newGroup: CooperativeLoanGroup = {
-      ...group,
-      id: Date.now(),
-      minEligibleSalary: Number(group.minEligibleSalary || 0),
-      monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
-      maxBorrowingPercentage: Number(group.maxBorrowingPercentage || 0),
-      minMemberTenureMonths: Number(group.minMemberTenureMonths || 0),
-      requiresGuarantors: Boolean(group.requiresGuarantors),
-      minimumGuarantors: Number(group.minimumGuarantors || 0),
-      quickDisbursement: Boolean(group.quickDisbursement),
-      patronageRate: group.patronageEligible ? group.patronageRate : 0
-    };
-    
-    this.groups.push(newGroup);
-    this.saveToStorage();
-    return of({ ...newGroup });
-  }
-
-  public updateGroup(group: CooperativeLoanGroup): Observable<CooperativeLoanGroup> {
-    const index = this.groups.findIndex(g => g.id === group.id);
-    if (index !== -1) {
-      this.groups[index] = { ...group };
-      this.saveToStorage();
-    }
-    return of({ ...group });
-  }
-
-  public setGroupStatus(id: number, status: 'ACTIVE' | 'INACTIVE'): Observable<CooperativeLoanGroup | undefined> {
-    const group = this.getGroupById(id);
-    if (!group) {
-      return of(undefined);
-    }
-    
-    group.status = status;
-    this.saveToStorage();
-    return of(group);
-  }
-
-  public getGroupInviteHistory(groupId: number): CooperativeGroupInviteHistoryEntry[] {
-    return this.groupInviteHistory
-      .filter(entry => entry.groupId === groupId)
-      .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-  }
-
-  public recordGroupInvites(groupId: number, invites: Array<Omit<CooperativeGroupInviteHistoryEntry, 'id' | 'groupId' | 'sentAt'>>): CooperativeGroupInviteHistoryEntry[] {
-    const createdEntries = invites.map(invite => ({
-      ...invite,
-      id: Date.now(),
-      groupId,
-      sentAt: new Date().toISOString()
-    }));
-
-    this.groupInviteHistory = [...createdEntries, ...this.groupInviteHistory];
-    this.saveToStorage();
-    return createdEntries;
-  }
-
-  // ==================== GROUP MEMBERSHIP METHODS ====================
-
-  public getGroupMemberships(): CooperativeGroupMembership[] {
-    return this.groupMemberships.map(item => ({ ...item }));
-  }
-
-  public getGroupMembershipsByMember(memberId: number): CooperativeGroupMembership[] {
-    return this.groupMemberships.filter(item => item.memberId === memberId);
-  }
-
-  public getGroupMembership(memberId: number, groupId: number): CooperativeGroupMembership | undefined {
-    return this.groupMemberships.find(item => item.memberId === memberId && item.groupId === groupId);
-  }
-
-  public getContributionEntriesByGroup(groupId: number): CooperativeContributionEntry[] {
-    return this.contributionEntries.filter(entry => entry.groupId === groupId);
-  }
-
-  public getMaxBorrowableAmountForGroup(memberId: number, groupId: number): number {
-    const group = this.getGroupById(groupId);
-    const membership = this.getGroupMembership(memberId, groupId);
-    if (!group || !membership || membership.status !== 'ACTIVE') {
-      return 0;
-    }
-    return Number(((membership.totalContribution || 0) * (Number(group.maxBorrowingPercentage || 0) / 100)).toFixed(2));
-  }
-
-  public applyForGroupMembership(memberId: number, groupId: number): CooperativeGroupMembership {
-    const existing = this.getGroupMembership(memberId, groupId);
-    if (existing) {
-      if (existing.status === 'REJECTED') {
-        existing.status = 'PENDING';
-        existing.requestedAt = new Date().toISOString();
-        existing.reviewedAt = undefined;
-        existing.rejectionReason = undefined;
-        this.saveToStorage();
-      }
-      return { ...existing };
-    }
-
-    const group = this.getGroupById(groupId);
-    const membership: CooperativeGroupMembership = {
-      id: Date.now(),
-      memberId,
-      groupId,
-      status: 'PENDING',
-      monthlyContributionAmount: Number(group?.monthlyContributionAmount || 0),
-      totalContribution: 0,
-      joinedAt: '',
-      requestedAt: new Date().toISOString()
-    };
-
-    this.groupMemberships.push(membership);
-    this.saveToStorage();
-    return { ...membership };
-  }
-
-  public approveGroupMembership(id: number, note?: string): CooperativeGroupMembership | undefined {
-    const membership = this.groupMemberships.find(m => m.id === id);
-    if (!membership) {
-      return undefined;
-    }
-
-    membership.status = 'ACTIVE';
-    membership.joinedAt = new Date().toISOString();
-    membership.reviewedAt = membership.joinedAt;
-    membership.reviewNote = note?.trim() || undefined;
-    membership.rejectionReason = undefined;
-    this.saveToStorage();
-    return { ...membership };
-  }
-
-  public rejectGroupMembership(id: number, reason: string): CooperativeGroupMembership | undefined {
-    const membership = this.groupMemberships.find(m => m.id === id);
-    if (!membership) {
-      return undefined;
-    }
-
-    membership.status = 'REJECTED';
-    membership.reviewedAt = new Date().toISOString();
-    membership.reviewNote = reason.trim() || undefined;
-    membership.rejectionReason = reason.trim() || undefined;
-    this.saveToStorage();
-    return { ...membership };
-  }
-
-  public recordGroupContribution(membershipId: number, payload: { amount: number; contributionMonth: string; contributedAt?: string }): CooperativeContributionEntry | undefined {
-    const membership = this.groupMemberships.find(m => m.id === membershipId && m.status === 'ACTIVE');
-    if (!membership) {
-      return undefined;
-    }
-
-    const amount = Number(payload.amount || 0);
-    const contributionMonth = String(payload.contributionMonth || '').trim();
-    if (amount <= 0 || !/^\d{4}-\d{2}$/.test(contributionMonth)) {
-      return undefined;
-    }
-
-    const hasExistingEntry = this.contributionEntries.some(entry => entry.membershipId === membershipId && entry.contributionMonth === contributionMonth);
-    if (hasExistingEntry) {
-      return undefined;
-    }
-
-    const contributedAt = payload.contributedAt || new Date().toISOString();
-    const entry: CooperativeContributionEntry = {
-      id: Date.now(),
-      membershipId,
-      memberId: membership.memberId,
-      groupId: membership.groupId,
-      amount,
-      contributionMonth,
-      contributedAt,
-      status: 'POSTED'
-    };
-
-    this.contributionEntries.push(entry);
-    membership.totalContribution = Number((Number(membership.totalContribution || 0) + amount).toFixed(2));
-    membership.lastContributionDate = contributedAt;
-    this.saveToStorage();
-
-    return { ...entry };
-  }
-
   // ==================== REPAYMENT METHODS ====================
 
   public getRepaymentsByLoanId(loanId: number): CooperativeRepayment[] {
@@ -1316,6 +957,36 @@ export class CooperativeService {
     };
   }
 
+  // ==================== MEMBERSHIP APPLICATION METHODS ====================
+
+  /**
+   * Approve a pending cooperative membership application by ID
+   */
+  public async approveMembershipApplication(applicationId: number, note?: string): Promise<CooperativeMembershipActionResult> {
+    const result = await this.cooperativeMembershipService.approvePendingMembershipApplication(
+      this.getMembershipContext(),
+      applicationId,
+      this.cooperativeLoanApiService,
+      note
+    );
+    this.groupMembershipChangedSubject.next();
+    return result;
+  }
+
+  /**
+   * Reject a pending cooperative membership application by ID
+   */
+  public async rejectMembershipApplication(applicationId: number, reason?: string): Promise<CooperativeMembershipActionResult> {
+    const result = await this.cooperativeMembershipService.rejectPendingMembershipApplication(
+      this.getMembershipContext(),
+      applicationId,
+      this.cooperativeLoanApiService,
+      reason
+    );
+    this.groupMembershipChangedSubject.next();
+    return result;
+  }
+
   // ==================== UTILITY METHODS ====================
 
   public formatCurrency(amount: number): string {
@@ -1360,33 +1031,6 @@ export class CooperativeService {
     };
   }
 
-  private getRepaymentContext(): CooperativeRepaymentContext {
-    return {
-      loans: this.loans,
-      repayments: this.repayments,
-      notifications: this.notifications,
-      repaymentDueDay: this.repaymentDueDay,
-      repaymentGraceDays: this.repaymentGraceDays,
-      repaymentOverdueDays: this.repaymentOverdueDays,
-      lateFeeRate: this.lateFeeRate,
-      creditReportDays: this.creditReportDays,
-      saveToStorage: () => this.saveToStorage(),
-      formatCurrency: (amount) => this.formatCurrency(amount),
-      createMemberStatusNotification: (loan, title, message) => this.createMemberStatusNotification(loan, title, message),
-      createRepaymentReminderNotification: (repayment, message) => this.cooperativeNotificationService.createRepaymentReminderNotification(this.getNotificationContext(), repayment, message),
-      createCreditReportNotification: (repayment) => this.cooperativeNotificationService.createCreditReportNotification(this.getNotificationContext(), repayment)
-    };
-  }
-
-
-  private generateMemberCode(id: number | string): string {
-    const numericId = Number(id);
-    if (Number.isFinite(numericId) && numericId > 0) {
-      return `COP-${String(numericId).padStart(3, '0')}`;
-    }
-    return `COP-${String(id)}`;
-  }
-
   private mapApiMemberToMember(rawMember: CooperativeLoanApiMemberRef): CooperativeMember {
     return {
       id: Number(rawMember.id),
@@ -1410,7 +1054,7 @@ export class CooperativeService {
       description: String(rawGroup.description || ''),
       minEligibleSalary: 0,
       monthlyContributionAmount: Number(rawGroup.monthlyAmount || 0),
-      maxBorrowingPercentage: 0,
+      maxBorrowingPercentage: 100,
       minAmount: 0,
       maxAmount: Number(rawGroup.withdrawCap || 0),
       interestRate: Number(rawGroup.interestRate || 0),
@@ -1466,68 +1110,8 @@ export class CooperativeService {
   }
 
   private buildCreateLoanPayload(loan: Omit<CooperativeLoan, 'id' | 'loanId' | 'createdAt' | 'updatedAt'>): CooperativeLoanApiCreatePayload {
-    const now = new Date().toISOString();
-    this.members = [
-      {
-        id: 1,
-        memberId: 1,
-        employeeId: 1,
-        fullName: 'Samuel Bamidele',
-        email: 'samuel.bamidele@example.com',
-        phone: '+234 803 123 4567',
-        joinDate: '2022-11-15T10:30:00Z',
-        status: 'ACTIVE',
-        shareCapital: 280000,
-        address: '23 Bourdillon Road, Ikoyi, Lagos',
-        emergencyContact: {
-          name: 'Temi Bamidele',
-          phone: '+234 803 234 5678',
-          relationship: 'Spouse'
-        },
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: 2,
-        memberId: 2,
-        employeeId: 2,
-        fullName: 'Ruth Ekanem',
-        email: 'ruth.ekanem@example.com',
-        phone: '+234 803 234 5678',
-        joinDate: '2023-01-20T09:15:00Z',
-        status: 'ACTIVE',
-        shareCapital: 220000,
-        address: '15 Awolowo Road, Ikoyi, Lagos',
-        emergencyContact: {
-          name: 'Bassey Ekanem',
-          phone: '+234 803 345 6789',
-          relationship: 'Spouse'
-        },
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: 3,
-        memberId: 3,
-        employeeId: 3,
-        fullName: 'Aisha Mohammed',
-        email: 'aisha.mohammed@example.com',
-        phone: '+234 803 345 6789',
-        joinDate: '2023-03-10T14:30:00Z',
-        status: 'ACTIVE',
-        shareCapital: 160000,
-        address: '7 Kano Street, Alimosho, Lagos',
-        emergencyContact: {
-          name: 'Ibrahim Mohammed',
-          phone: '+234 803 456 7890',
-          relationship: 'Brother'
-        },
-        createdAt: now,
-        updatedAt: now
-      }
-    ];
     return {
-      id: 0, // API will assign
+      id: 0,
       loanCode: loan.loanCode,
       cooperativeMemberId: { id: loan.cooperativeMemberId },
       cooperativeGroupId: { id: loan.cooperativeGroupId },
@@ -1560,40 +1144,6 @@ export class CooperativeService {
       ...loan,
       cooperativeMemberId: loan.cooperativeMemberId,
       cooperativeGroupId: loan.cooperativeGroupId
-    };
-  }
-
-  private mergeLoanReferenceData(rawLoans: CooperativeLoanApiResponse[]): void {
-    rawLoans.forEach((loan) => {
-      const mappedMember = this.mapBackendMemberToLocal(loan.cooperativeMemberId);
-      if (mappedMember) {
-        const existingMemberIndex = this.members.findIndex((member) => member.id === mappedMember.id);
-        if (existingMemberIndex === -1) {
-          this.members = [...this.members, mappedMember];
-        }
-      }
-    });
-    this.publishState();
-  }
-
-  private mapBackendMemberToLocal(memberRef: CooperativeLoanApiMemberRef | number | string | undefined): CooperativeMember | undefined {
-    if (!memberRef || typeof memberRef !== 'object' || !('id' in memberRef)) {
-      return undefined;
-    }
-    const employee = memberRef.employee;
-    const fullName = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || `Member ${memberRef.id}`;
-    return {
-      id: Number(memberRef.id),
-      employeeId: Number(memberRef.employeeId),
-      memberId: Number(memberRef.id),
-      fullName,
-      email: String(employee?.workEmail || employee?.email || ''),
-      phone: String(employee?.phone || ''),
-      joinDate: new Date().toISOString(),
-      status: (memberRef.status as CooperativeMember['status']) || 'ACTIVE',
-      shareCapital: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
     };
   }
 
@@ -1645,6 +1195,55 @@ export class CooperativeService {
     this.publishState();
   }
 
+  private syncLoanCache(loans: CooperativeLoan[]): void {
+    this.loans = [...loans];
+    this.publishState();
+  }
+
+  private upsertLoanInCache(loan: CooperativeLoan): void {
+    const existingIndex = this.loans.findIndex((item) => String(item.id) === String(loan.id));
+    if (existingIndex === -1) {
+      this.loans = [loan, ...this.loans];
+    } else {
+      this.loans = this.loans.map((item, index) => (index === existingIndex ? loan : item));
+    }
+    this.publishState();
+  }
+
+  private mergeLoanReferenceData(rawLoans: CooperativeLoanApiResponse[]): void {
+    rawLoans.forEach((loan) => {
+      const mappedMember = this.mapBackendMemberToLocal(loan.cooperativeMemberId);
+      if (mappedMember) {
+        const existingMemberIndex = this.members.findIndex((member) => member.id === mappedMember.id);
+        if (existingMemberIndex === -1) {
+          this.members = [...this.members, mappedMember];
+        }
+      }
+    });
+    this.publishState();
+  }
+
+  private mapBackendMemberToLocal(memberRef: CooperativeLoanApiMemberRef | number | string | undefined): CooperativeMember | undefined {
+    if (!memberRef || typeof memberRef !== 'object' || !('id' in memberRef)) {
+      return undefined;
+    }
+    const employee = memberRef.employee;
+    const fullName = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || `Member ${memberRef.id}`;
+    return {
+      id: Number(memberRef.id),
+      employeeId: Number(memberRef.employeeId),
+      memberId: Number(memberRef.id),
+      fullName,
+      email: String(employee?.workEmail || employee?.email || ''),
+      phone: String(employee?.phone || ''),
+      joinDate: new Date().toISOString(),
+      status: (memberRef.status as CooperativeMember['status']) || 'ACTIVE',
+      shareCapital: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
   private mergeMemberLocalFields(member: CooperativeMember, existingMember?: Partial<CooperativeMember>): CooperativeMember {
     return {
       ...member,
@@ -1671,21 +1270,6 @@ export class CooperativeService {
     };
   }
 
-  private syncLoanCache(loans: CooperativeLoan[]): void {
-    this.loans = [...loans];
-    this.publishState();
-  }
-
-  private upsertLoanInCache(loan: CooperativeLoan): void {
-    const existingIndex = this.loans.findIndex((item) => String(item.id) === String(loan.id));
-    if (existingIndex === -1) {
-      this.loans = [loan, ...this.loans];
-    } else {
-      this.loans = this.loans.map((item, index) => (index === existingIndex ? loan : item));
-    }
-    this.publishState();
-  }
-
   private appendLoanStatusHistory(loan: CooperativeLoan, status: string, notes: string, changedAt = new Date().toISOString()): void {
     loan.statusHistory = [
       {
@@ -1703,16 +1287,26 @@ export class CooperativeService {
     ];
   }
 
-  private createPendingApprovalNotification(loan: CooperativeLoan): void {
-    this.cooperativeNotificationService.createPendingApprovalNotification(this.getNotificationContext(), loan);
+  private debugTokenStatus(): void {
+    const token = sessionStorage.getItem('token');
+    const Token = sessionStorage.getItem('Token');
+    const accessToken = sessionStorage.getItem('accessToken');
+    
+    console.log('=== Token Debug ===');
+    console.log('token (lowercase):', token ? `${token.substring(0, 50)}...` : 'NOT FOUND');
+    console.log('Token (capital T):', Token ? `${Token.substring(0, 50)}...` : 'NOT FOUND');
+    console.log('accessToken:', accessToken ? `${accessToken.substring(0, 50)}...` : 'NOT FOUND');
+    console.log('User:', sessionStorage.getItem('username'));
+    console.log('User ID:', sessionStorage.getItem('userid'));
+    console.log('Role:', sessionStorage.getItem('role'));
+    console.log('==================');
   }
 
-  private createMemberStatusNotification(loan: CooperativeLoan, title: string, message: string): void {
-    this.cooperativeNotificationService.createMemberStatusNotification(this.getNotificationContext(), loan, title, message);
-  }
-
-  private createGuarantorNotifications(loan: CooperativeLoan): void {
-    this.cooperativeNotificationService.createGuarantorNotifications(this.getNotificationContext(), loan);
+  private checkUserPermissions(): boolean {
+    const role = sessionStorage.getItem('role');
+    console.log('Checking user permissions for cooperative access...');
+    console.log('User role:', role);
+    return true;
   }
 
   // Membership methods
@@ -1736,5 +1330,4 @@ export class CooperativeService {
     return this.cooperativeMembershipService.getPendingMembershipApplications(this.getMembershipContext());
   }
 }
-// Ensure this file is treated as a module
 export {};
