@@ -1,6 +1,7 @@
 import { Injectable, isDevMode } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLoanGroup, CooperativeMember } from './cooperative.types';
 
@@ -30,21 +31,21 @@ export interface CooperativeGroupApiResponse {
 }
 
 export interface CooperativeGroupApiPayload {
-  id: number;
+  id?: number;
   code?: string;
   name: string;
   monthlyAmount: number;
-  memberIds: number[];
-  memberLimit: number;
+  memberIds?: number[];
+  memberLimit?: number;
   withdrawCap: number;
   interestRate: number;
-  currentBalance: number;
-  contributionHistory: CooperativeGroupApiContributionHistory[];
-  loanHistory: any[];
-  status: string;
-  description: string;
-  patronageRate: number;
-  patronageAmount: number;
+  currentBalance?: number;
+  contributionHistory?: CooperativeGroupApiContributionHistory[];
+  loanHistory?: any[];
+  status?: string;
+  description?: string;
+  patronageRate?: number;
+  patronageAmount?: number;
 }
 
 export interface CooperativeGroupContext {
@@ -59,7 +60,9 @@ export interface CooperativeGroupContext {
   providedIn: 'root'
 })
 export class CooperativeGroupService {
-    private readonly groupUrl = `${this.getBaseApiUrl()}/x/api/v2/hr/cooperativeGroups`;
+    // Use the same base URL structure that works for members
+    private readonly baseUrl = `${this.getBaseApiUrl()}/x/api/v2/hr/cooperativeLoans`;
+    private readonly groupUrl = `${this.baseUrl}/groups`;
 
     constructor(private http: HttpClient) {}
 
@@ -67,21 +70,83 @@ export class CooperativeGroupService {
       return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
     }
 
+    private getAuthHeaders(): HttpHeaders {
+      const token = sessionStorage.getItem('token') || sessionStorage.getItem('Token');
+      return new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+    }
+
     getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
-      return this.http.get<CooperativeGroupApiResponse[]>(this.groupUrl);
+      console.log('[CooperativeGroupService] Fetching all groups from:', this.groupUrl);
+      const headers = this.getAuthHeaders();
+      return this.http.get<CooperativeGroupApiResponse[]>(this.groupUrl, { headers }).pipe(
+        map((groups) => {
+          console.log('[CooperativeGroupService] Groups received:', groups);
+          return groups;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          console.error('[CooperativeGroupService] Error fetching groups:', error);
+          console.error('[CooperativeGroupService] Error status:', error.status);
+          console.error('[CooperativeGroupService] Error message:', error.message);
+          console.error('[CooperativeGroupService] Error URL:', this.groupUrl);
+          return of([]);
+        })
+      );
     }
 
     getCooperativeGroupById(id: number): Observable<CooperativeGroupApiResponse> {
-      return this.http.get<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`);
+      console.log(`[CooperativeGroupService] Fetching group by ID: ${id} from: ${this.groupUrl}/${id}`);
+      const headers = this.getAuthHeaders();
+      return this.http.get<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`, { headers }).pipe(
+        map((group) => {
+          console.log(`[CooperativeGroupService] Group received:`, group);
+          return group;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          console.error(`[CooperativeGroupService] Error fetching group ${id}:`, error);
+          return throwError(() => error);
+        })
+      );
     }
 
     createCooperativeGroup(payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
-      return this.http.post<CooperativeGroupApiResponse>(this.groupUrl, payload);
+      console.log('[CooperativeGroupService] Creating group with payload:', payload);
+      console.log('[CooperativeGroupService] POST URL:', this.groupUrl);
+      const headers = this.getAuthHeaders();
+      return this.http.post<CooperativeGroupApiResponse>(this.groupUrl, payload, { headers }).pipe(
+        map((group) => {
+          console.log('[CooperativeGroupService] Group created successfully:', group);
+          return group;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          console.error('[CooperativeGroupService] Error creating group:', error);
+          console.error('[CooperativeGroupService] Error status:', error.status);
+          console.error('[CooperativeGroupService] Error message:', error.message);
+          console.error('[CooperativeGroupService] Request URL:', this.groupUrl);
+          console.error('[CooperativeGroupService] Request payload:', payload);
+          return throwError(() => error);
+        })
+      );
     }
 
     updateCooperativeGroup(id: number, payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
-      return this.http.put<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`, payload);
+      console.log(`[CooperativeGroupService] Updating group ${id} with payload:`, payload);
+      const headers = this.getAuthHeaders();
+      return this.http.put<CooperativeGroupApiResponse>(`${this.groupUrl}/${id}`, payload, { headers }).pipe(
+        map((group) => {
+          console.log(`[CooperativeGroupService] Group ${id} updated successfully:`, group);
+          return group;
+        }),
+        catchError((error: HttpErrorResponse) => {
+          console.error(`[CooperativeGroupService] Error updating group ${id}:`, error);
+          return throwError(() => error);
+        })
+      );
     }
+
+  // Local group management methods (for fallback when API is unavailable)
   getEligibleGroupsForMember(
     context: CooperativeGroupContext,
     memberId: number,
@@ -263,11 +328,9 @@ export class CooperativeGroupService {
     return [...context.groups];
   }
 
-
   getGroupById(context: CooperativeGroupContext, id: number): CooperativeLoanGroup | undefined {
     return context.groups.find(p => p.id === id);
   }
-
 
   addGroup(context: CooperativeGroupContext, group: Omit<CooperativeLoanGroup, 'id'>): CooperativeLoanGroup {
     const newGroup: CooperativeLoanGroup = {
@@ -288,7 +351,6 @@ export class CooperativeGroupService {
     return { ...newGroup };
   }
 
-
   updateGroup(context: CooperativeGroupContext, group: CooperativeLoanGroup): CooperativeLoanGroup {
     const index = context.groups.findIndex(p => p.id === group.id);
     if (index !== -1) {
@@ -308,7 +370,6 @@ export class CooperativeGroupService {
     return { ...group };
   }
 
-
   setGroupStatus(context: CooperativeGroupContext, id: number, status: 'ACTIVE' | 'INACTIVE'): void {
     const group = context.groups.find(p => p.id === id);
     if (!group) {
@@ -318,7 +379,6 @@ export class CooperativeGroupService {
     group.status = status;
     context.saveToStorage();
   }
-
 
   private calculateTenureMonths(employmentStartDate: string): number {
     const start = new Date(employmentStartDate);

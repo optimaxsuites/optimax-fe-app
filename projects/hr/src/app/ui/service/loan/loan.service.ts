@@ -1,7 +1,7 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import {
   AdvanceLoan,
   AdvanceLoanPaymentHistory,
@@ -39,14 +39,49 @@ export class LoanService {
 
   constructor(private http: HttpClient) {}
 
-  getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
-    return this.http.get<AdvanceLoan[]>(this.standardLoanUrl, {
+ getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
+  const tenantId = 'optimax';
+  const token = sessionStorage.getItem('token');
+  
+  const fetchPage = (page: number): Observable<AdvanceLoan[]> => {
+    return this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': tenantId
+      },
       responseType: 'json'
     }).pipe(
       map(response => this.safeParseResponse(response)),
-      catchError(this.handleError)
+      switchMap(data => {
+        // When requesting a specific page, the API returns an array directly
+        if (Array.isArray(data)) {
+          console.log(`Page ${page}: ${data.length} loans`);
+          
+          // If we got a full page (10 items), there might be more pages
+          if (data.length === 10) {
+            return fetchPage(page + 1).pipe(
+              map(nextPageLoans => [...data, ...nextPageLoans])
+            );
+          }
+          // Last page (less than 10 items), return current page
+          return of(data);
+        }
+        return of([]);
+      })
     );
-  }
+  };
+  
+  // Start at page 1, not 0
+  return fetchPage(1).pipe(
+    tap(loans => {
+      console.log(` Total loans loaded: ${loans.length}`);
+    }),
+    catchError((error) => {
+      console.error('Failed to load loans from API:', error.status);
+      return of([]);
+    })
+  );
+}
 
   getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
     return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, {
@@ -58,19 +93,36 @@ export class LoanService {
   }
 
   createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
-    // Ensure payload is an object, not an array
-    const requestBody = Array.isArray(payload) ? payload[0] : payload;
+    let requestBody = Array.isArray(payload) ? payload[0] : payload;
     
-    return this.http.post<AdvanceLoan>(this.standardLoanUrl, requestBody, {
-      responseType: 'json'
+    const formattedPayload = {
+      employeeId: Number(requestBody.employeeId),
+      amount: Number(requestBody.amount),
+      purpose: String(requestBody.purpose || ''),
+      repaymentAmount: Number(requestBody.repaymentAmount),
+      repaymentTime: Number(requestBody.repaymentTime),
+      modeOfPayment: requestBody.modeOfPayment || 'MONTHLY',
+      requestDate: requestBody.requestDate || new Date().toISOString(),
+      status: 'PENDING'
+    };
+    
+    console.log('Sending payload:', formattedPayload);
+    
+    return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
+      headers: { 
+        'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
     }).pipe(
       map(response => this.safeParseResponse(response)),
+      tap((response: AdvanceLoan) => {
+        console.log('Loan created:', response.id, 'Status:', response.status);
+      }),
       catchError(this.handleError)
     );
   }
 
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
-    // Ensure payload is an object, not an array
     const requestBody = Array.isArray(payload) ? payload[0] : payload;
     
     if (isDevMode()) {
@@ -96,7 +148,14 @@ export class LoanService {
 
   listLoanApplications(): Observable<LoanApplication[]> {
     return this.getAllAdvanceLoans().pipe(
-      map((loans) => loans.map((loan) => this.toLoanApplication(loan)))
+      map((loans) => {
+        console.log('Converting loans to applications:', loans.length);
+        return loans.map((loan) => this.toLoanApplication(loan));
+      }),
+      catchError((error) => {
+        console.error('Error listing loan applications:', error);
+        return of([]);
+      })
     );
   }
 
@@ -109,13 +168,16 @@ export class LoanService {
   createLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
     const payload = {
       employeeId: Number(formData.employeeId || 0),
-      amount: formData.amount,
+      amount: Number(formData.amount),
       purpose: formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose,
-      repaymentAmount: formData.repaymentAmount,
-      repaymentTime: formData.repaymentTime,
+      repaymentAmount: Number(formData.repaymentAmount),
+      repaymentTime: Number(formData.repaymentTime),
       modeOfPayment: formData.modeOfPayment,
-      requestDate: formData.requestDate || new Date().toISOString()
+      requestDate: formData.requestDate || new Date().toISOString(),
+      status: 'PENDING'
     };
+    
+    console.log('Creating loan with payload:', payload);
     
     return this.createAdvanceLoan(payload).pipe(
       map((loan) => {
@@ -156,22 +218,17 @@ export class LoanService {
   }
 
   private safeParseResponse(response: any): any {
-    // If response is null or undefined
     if (!response) {
       return response;
     }
 
-    // If response is already an object, return it
     if (typeof response === 'object') {
       return response;
     }
 
-    // If response is a string, try to parse it
     if (typeof response === 'string') {
-      // Clean the string if needed (remove BOM, extra whitespace)
       let cleanResponse = response.trim();
       
-      // Remove BOM if present
       if (cleanResponse.charCodeAt(0) === 0xFEFF) {
         cleanResponse = cleanResponse.substring(1);
       }
@@ -179,7 +236,6 @@ export class LoanService {
       try {
         const parsed = JSON.parse(cleanResponse);
         
-        // Check for common JSON errors
         if (parsed === null || parsed === undefined) {
           console.warn('Parsed response is null or undefined');
         }
@@ -193,7 +249,6 @@ export class LoanService {
       }
     }
 
-    // For any other type, return as is
     return response;
   }
 
@@ -728,7 +783,6 @@ export class LoanService {
 
     return originalRequestDate;
   }
-
 
   private fromBackendPaymentMode(paymentMode?: string): 'MONTHLY' | 'ONE_OFF' {
     return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';

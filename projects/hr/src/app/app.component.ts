@@ -10,7 +10,7 @@ import { environment } from './ui/shared-component/service/environments/environm
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  styleUrls: ['./app.component.scss'],
 })
 export class AppHrComponent {
   messageService: any;
@@ -25,11 +25,10 @@ export class AppHrComponent {
   ngOnInit(): void {
     this.userLoginAction();
 
-    // if (this.authenticationService.isAuthenticated()) {
-    //   this.metadataService.fetchMetaData(true);
-    //   return;
-    // }
-
+// if (this.authenticationService.isAuthenticated()) {
+//   this.metadataService.fetchMetaData(true);
+//   return;
+// }
   }
 
   async userLoginAction(): Promise<void> {
@@ -42,30 +41,30 @@ export class AppHrComponent {
       apiKey: environment.apiKey,
     };
 
-    if (!loginDetails.username || !loginDetails.password) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Username and password are required',
-      });
-      return;
-    }
+if (!loginDetails.username || !loginDetails.password) {
+  this.messageService.add({
+    severity: 'error',
+    summary: 'Error',
+    detail: 'Username and password are required',
+  });
+  return;
+}
 
-    try {
-      const data = await this.authenticationService
-        .userLogin(loginDetails)
-        .toPromise();
+try {
+  const data = await this.authenticationService
+    .userLogin(loginDetails)
+    .toPromise();
 
-      if (!data) {
-        return;
-      }
+  if (!data) {
+    return;
+  }
 
-      this.loadInitParam(data);
-      this.metadataService.fetchMetaData(true);
+  this.loadInitParam(data);
+  this.metadataService.fetchMetaData(true);
 
-    } catch (error) {
-      this.authenticationService.logout();
-    }
+} catch (error) {
+  this.authenticationService.logout();
+}
   }
 
   loadInitParam(data: any) {
@@ -76,41 +75,42 @@ export class AppHrComponent {
     sessionStorage.setItem('userid', data.id);
     const token = this.extractToken(data.accessToken);
 
-    if (!token) {
-      throw new Error('Unable to extract access token from login response');
-    }
+if (!token) {
+  throw new Error('Unable to extract access token from login response');
+}
 
-    sessionStorage.setItem('Token', token);
-    sessionStorage.setItem('token', token);
-    localStorage.setItem('Token', token);
-    localStorage.setItem('token', token);
-    localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
-    sessionStorage.setItem('userRegData', JSON.stringify(data));
+sessionStorage.setItem('Token', token);
+sessionStorage.setItem('token', token);
+localStorage.setItem('Token', token);
+localStorage.setItem('token', token);
+localStorage.setItem('Token2', token);
+sessionStorage.setItem('accessToken', data.accessToken);
+localStorage.setItem('accessToken2', data.accessToken);
+sessionStorage.setItem('userRegData', JSON.stringify(data));
   }
 
   private extractToken(accessToken: unknown): string {
     const rawToken = String(accessToken || '').trim();
 
-    if (!rawToken) {
-      return '';
-    }
+if (!rawToken) {
+  return '';
+}
 
-    const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
-    if (cookieMatch?.[1]) {
-      return cookieMatch[1].trim();
-    }
+const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
+if (cookieMatch?.[1]) {
+  return cookieMatch[1].trim();
+}
 
-    const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
-    if (bearerMatch?.[1]) {
-      return bearerMatch[1].trim();
-    }
+const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+if (bearerMatch?.[1]) {
+  return bearerMatch[1].trim();
+}
 
-    return rawToken;
+return rawToken;
   }
 
   toggleSidebar() {
     this.sidebarHidden = !this.sidebarHidden; // Toggle sidebar visibility
   }
 }
+

@@ -228,8 +228,11 @@ export interface CooperativeMembershipActionResult {
     | 'PENDING_MANAGER_APPROVAL'
     | 'INVITE_REQUIRED'
     | 'ON_HOLD'
-    | 'REJECTED';
+    | 'REJECTED'
+    | 'ALREADY_MEMBER'
+    | 'APPROVED'
+    | 'ERROR';
   message: string;
-  eligibility: CooperativeMembershipEligibility;
+  eligibility?: CooperativeMembershipEligibility;
   member?: CooperativeMember;
 }

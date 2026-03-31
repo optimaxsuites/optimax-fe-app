@@ -1,7 +1,6 @@
 <div class="main-dashboard-wrapper">
   <div class="dashboard-switcher" style="margin-bottom: 1rem;">
     <label for="dashboardSelect" style="margin-right: 0.5rem;">Switch admin dashboards:</label>
-    <!-- Use $any() to bypass type checking -->
     <select id="dashboardSelect" [value]="selectedDashboard" 
             (change)="onDashboardChange($any($event.target).value)">
       <option value="advance">Advance Loans.</option>
