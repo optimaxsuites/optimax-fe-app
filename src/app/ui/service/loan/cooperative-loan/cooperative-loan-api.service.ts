@@ -1,9 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpHeaders } from '@angular/common/http';
-import { getTokenFromStorage } from './token-util';
 import { Observable, throwError } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { catchError, map } from 'rxjs/operators';
 
 // Minimal type stubs for API compatibility
 export type CooperativeLoanApiMemberRef = any;
@@ -15,11 +13,21 @@ export type CooperativeLoanApiMemberPayload = any;
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeLoanApiService {
-  private baseUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeLoans';
+  private readonly loansBaseUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeLoans';
+  private readonly membersBaseUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeMembers';
+  private readonly groupsBaseUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/cooperativeGroups';
 
   constructor(private http: HttpClient) {}
 
-  // Helper method for debugging
+  private getAuthHeaders(): HttpHeaders {
+    const token = sessionStorage.getItem('token') || sessionStorage.getItem('Token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'X-Tenant-ID': 'optimax',
+      'Content-Type': 'application/json'
+    });
+  }
+
   private logRequest(method: string, url: string): void {
     console.log(`[CooperativeLoanApi] ${method} ${url}`);
   }
@@ -32,81 +40,119 @@ export class CooperativeLoanApiService {
     return throwError(() => error);
   }
 
+  // ==================== MEMBER ENDPOINTS ====================
   getAllMembers(): Observable<CooperativeLoanApiMemberRef[]> {
-    this.logRequest('GET', `${this.baseUrl}/members`);
-    const token = getTokenFromStorage();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.get<CooperativeLoanApiMemberRef[]>(`${this.baseUrl}/members`, headers ? { headers } : {}).pipe(
+    const url = `${this.membersBaseUrl}?page=1&size=100`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<any>(url, { headers }).pipe(
+      map((response) => {
+        if (response && response.content && Array.isArray(response.content)) {
+          console.log(`[CooperativeLoanApi] Members received: ${response.content.length} of ${response.totalElements}`);
+          return response.content;
+        }
+        if (Array.isArray(response)) {
+          console.log(`[CooperativeLoanApi] Members received: ${response.length}`);
+          return response;
+        }
+        return [];
+      }),
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getAllMembers'))
     );
   }
 
   createMember(payload: CooperativeLoanApiMemberPayload): Observable<CooperativeLoanApiMemberRef> {
-    this.logRequest('POST', `${this.baseUrl}/members`);
-    const token = getTokenFromStorage();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.post<CooperativeLoanApiMemberRef>(`${this.baseUrl}/members`, payload, headers ? { headers } : {}).pipe(
+    const url = `${this.membersBaseUrl}`;
+    this.logRequest('POST', url);
+    const headers = this.getAuthHeaders();
+    return this.http.post<CooperativeLoanApiMemberRef>(url, payload, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'createMember'))
     );
   }
 
   updateMember(id: number, payload: CooperativeLoanApiMemberPayload): Observable<CooperativeLoanApiMemberRef> {
-    this.logRequest('PUT', `${this.baseUrl}/members/${id}`);
-    const token = getTokenFromStorage();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.put<CooperativeLoanApiMemberRef>(`${this.baseUrl}/members/${id}`, payload, headers ? { headers } : {}).pipe(
+    const url = `${this.membersBaseUrl}/${id}`;
+    this.logRequest('PUT', url);
+    const headers = this.getAuthHeaders();
+    return this.http.put<CooperativeLoanApiMemberRef>(url, payload, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'updateMember'))
     );
   }
 
   getMemberById(id: number): Observable<CooperativeLoanApiMemberRef> {
-    this.logRequest('GET', `${this.baseUrl}/members/${id}`);
-    const token = getTokenFromStorage();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    return this.http.get<CooperativeLoanApiMemberRef>(`${this.baseUrl}/members/${id}`, headers ? { headers } : {}).pipe(
+    const url = `${this.membersBaseUrl}/${id}`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<CooperativeLoanApiMemberRef>(url, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getMemberById'))
     );
   }
 
+  // ==================== LOAN ENDPOINTS ====================
   getAllLoans(): Observable<CooperativeLoanApiResponse[]> {
-    this.logRequest('GET', this.baseUrl);
-    return this.http.get<CooperativeLoanApiResponse[]>(`${this.baseUrl}`).pipe(
+    const url = `${this.loansBaseUrl}?page=1&size=100`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<any>(url, { headers }).pipe(
+      map((response) => {
+        if (response && response.content && Array.isArray(response.content)) {
+          return response.content;
+        }
+        if (Array.isArray(response)) {
+          return response;
+        }
+        return [];
+      }),
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getAllLoans'))
     );
   }
 
   createLoan(payload: CooperativeLoanApiCreatePayload): Observable<CooperativeLoanApiResponse> {
-    this.logRequest('POST', this.baseUrl);
-    return this.http.post<CooperativeLoanApiResponse>(`${this.baseUrl}`, payload).pipe(
+    const url = `${this.loansBaseUrl}`;
+    this.logRequest('POST', url);
+    const headers = this.getAuthHeaders();
+    return this.http.post<CooperativeLoanApiResponse>(url, payload, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'createLoan'))
     );
   }
 
   updateLoan(id: number, payload: CooperativeLoanApiUpdatePayload): Observable<CooperativeLoanApiResponse> {
-    this.logRequest('PUT', `${this.baseUrl}/${id}`);
-    return this.http.put<CooperativeLoanApiResponse>(`${this.baseUrl}/${id}`, payload).pipe(
+    const url = `${this.loansBaseUrl}/${id}`;
+    this.logRequest('PUT', url);
+    const headers = this.getAuthHeaders();
+    return this.http.put<CooperativeLoanApiResponse>(url, payload, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'updateLoan'))
     );
   }
 
   getLoanById(id: number): Observable<CooperativeLoanApiResponse> {
-    this.logRequest('GET', `${this.baseUrl}/${id}`);
-    return this.http.get<CooperativeLoanApiResponse>(`${this.baseUrl}/${id}`).pipe(
+    const url = `${this.loansBaseUrl}/${id}`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<CooperativeLoanApiResponse>(url, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getLoanById'))
     );
   }
 
-  // Group methods - CORRECT ENDPOINTS (without /members prefix)
+  // ==================== GROUP ENDPOINTS ====================
   getAllCooperativeGroups(): Observable<CooperativeGroupApiResponse[]> {
-    this.logRequest('GET', `${this.baseUrl}/groups`);
-    return this.http.get<CooperativeGroupApiResponse[]>(`${this.baseUrl}/groups`).pipe(
+    const url = `${this.groupsBaseUrl}`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<CooperativeGroupApiResponse[]>(url, { headers }).pipe(
+      map((groups) => {
+        console.log(`[CooperativeLoanApi] Groups received: ${groups?.length || 0}`);
+        return groups;
+      }),
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getAllCooperativeGroups'))
     );
   }
 
   getCooperativeGroupById(id: number): Observable<CooperativeGroupApiResponse> {
-    this.logRequest('GET', `${this.baseUrl}/groups/${id}`);
-    return this.http.get<CooperativeGroupApiResponse>(`${this.baseUrl}/groups/${id}`).pipe(
+    const url = `${this.groupsBaseUrl}/${id}`;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    return this.http.get<CooperativeGroupApiResponse>(url, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'getCooperativeGroupById'))
     );
   }

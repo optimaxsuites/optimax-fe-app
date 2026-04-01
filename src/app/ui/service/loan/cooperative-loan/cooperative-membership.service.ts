@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { EmployeeService } from '../../../service/employee.service';
 import {
   CooperativeNotification,
   CooperativeEmployeeProfile,
@@ -9,6 +10,8 @@ import {
   CooperativeMembershipTierPolicy,
   CooperativeStaffRank
 } from './cooperative.types';
+import { firstValueFrom } from 'rxjs';
+import { CooperativeLoanApiService } from './cooperative-loan-api.service'; // Import your actual API service
 
 export interface PendingMembershipApplication {
   id: number;
@@ -34,6 +37,35 @@ export interface CooperativeMembershipContext {
   providedIn: 'root'
 })
 export class CooperativeMembershipService {
+  constructor(
+    private employeeService: EmployeeService,
+    private apiService: CooperativeLoanApiService // Inject the actual API service
+  ) {}
+
+  private async getEmployeeIdFromUserId(userId: number): Promise<number> {
+    try {
+      const employee = await firstValueFrom(this.employeeService.getEmployeeByUserId(userId));
+      if (!employee || !employee.id) {
+        console.error(`Employee not found for user ID ${userId}`);
+        throw new Error(`Employee not found for user ID ${userId}`);
+      }
+      return employee.id;
+    } catch (error) {
+      console.error(`Failed to find employee for user ID ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  private async getFullMemberDetails(memberId: number): Promise<any> {
+    try {
+      const member = await firstValueFrom(this.apiService.getMemberById(memberId));
+      return member;
+    } catch (error) {
+      console.error('Error fetching full member details:', error);
+      throw error;
+    }
+  }
+
   checkMembershipEligibility(employee: CooperativeEmployeeProfile): CooperativeMembershipEligibility {
     const policy = this.getTierPolicy(employee.rank);
     // Only block contract/intern or those with active disciplinary issues
@@ -69,27 +101,26 @@ export class CooperativeMembershipService {
         message: 'Membership is blocked due to active disciplinary issues.'
       };
     }
-    // Allow all other employees to apply, but require admin approval
+    // Allow all other employees to apply, and auto-approve membership
     return {
       canApply: true,
       canBeInvited: false,
       requiresInvite: false,
-      requiresManagerApproval: true,
-      autoApprove: false,
+      requiresManagerApproval: false,
+      autoApprove: true,
       isOnHold: false,
       isBlocked: false,
       rank: employee.rank,
       tenureMonths: 0,
       probationCompleted: true,
       policy,
-      message: 'All employees are eligible to apply for cooperative membership. Admin approval is required.'
+      message: 'All employees are eligible to apply for cooperative membership. Membership will be activated instantly.'
     };
   }
 
   async applyForMembership(
     context: CooperativeMembershipContext,
-    application: CooperativeMembershipApplication,
-    apiService: any // CooperativeLoanApiService
+    application: CooperativeMembershipApplication
   ): Promise<CooperativeMembershipActionResult> {
     const eligibility = this.checkMembershipEligibility(application.employee);
 
@@ -133,90 +164,78 @@ export class CooperativeMembershipService {
       };
     }
 
-    if (eligibility.autoApprove) {
-      // Directly create member in backend
+    // Always auto-approve: Directly create member in backend
+    try {
+      // Get the correct employee ID dynamically
+      const employeeId = await this.getEmployeeIdFromUserId(application.employee.employeeId);
+      
+      // Create member using the API service (returns Observable)
+      const createdMember = await firstValueFrom(this.apiService.createMember({
+        employeeId: employeeId,
+        fullName: application.employee.fullName,
+        email: application.employee.email,
+        phone: application.employee.phone || '',
+        shareCapital: eligibility.policy.minShares,
+        address: application.employee.department || '',
+        status: 'ACTIVE'
+      }));
+      
+      // Fetch full member details
+      let fullMember: any;
       try {
-        const createdMember = await apiService.createMember({
-          employeeId: application.employee.employeeId,
-          fullName: application.employee.fullName,
-          email: application.employee.email,
-          phone: application.employee.phone,
-          shareCapital: eligibility.policy.minShares,
-          address: application.employee.department,
-          status: 'ACTIVE'
-        }).toPromise();
-        
-        // Add to local context
-        const newMember: CooperativeMember = {
+        fullMember = await this.getFullMemberDetails(createdMember.id);
+      } catch (error) {
+        console.warn('Could not fetch full member details, using partial data:', error);
+        // Fallback to using the created member data and application data
+        fullMember = {
           id: createdMember.id,
-          employeeId: application.employee.employeeId,
-          memberId: createdMember.id,
+          employeeId: createdMember.employeeId,
+          status: createdMember.status,
           fullName: application.employee.fullName,
           email: application.employee.email,
           phone: application.employee.phone || '',
-          joinDate: new Date().toISOString(),
-          status: 'ACTIVE',
           shareCapital: eligibility.policy.minShares,
-          address: application.employee.department,
+          address: application.employee.department || '',
+          joinDate: new Date().toISOString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        context.members.push(newMember);
-        context.saveToStorage();
-        
-        return {
-          success: true,
-          status: 'AUTO_APPROVED',
-          message: 'Membership approved automatically based on rank policy.',
-          eligibility,
-          member: newMember
-        };
-      } catch (error) {
-        console.error('Error creating member:', error);
-        return {
-          success: false,
-          status: 'REJECTED',
-          message: 'Failed to create member. Please try again.',
-          eligibility
-        };
       }
+      
+      // Add to local context
+      const newMember: CooperativeMember = {
+        id: fullMember.id,
+        employeeId: application.employee.employeeId,
+        memberId: fullMember.id,
+        fullName: fullMember.fullName || application.employee.fullName,
+        email: fullMember.email || application.employee.email,
+        phone: fullMember.phone || application.employee.phone || '',
+        joinDate: fullMember.joinDate || new Date().toISOString(),
+        status: (fullMember.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
+        shareCapital: fullMember.shareCapital || eligibility.policy.minShares,
+        address: fullMember.address || application.employee.department || '',
+        createdAt: fullMember.createdAt || new Date().toISOString(),
+        updatedAt: fullMember.updatedAt || new Date().toISOString()
+      };
+      context.members.push(newMember);
+      context.saveToStorage();
+      
+      return {
+        success: true,
+        status: 'AUTO_APPROVED',
+        message: 'Membership activated instantly.',
+        eligibility,
+        member: newMember
+      };
+    } catch (error) {
+      console.error('Error creating member:', error);
+      return {
+        success: false,
+        status: 'REJECTED',
+        message: 'Failed to create member. Please try again.',
+        eligibility
+      };
     }
-
-    // Create pending application
-    const newApplication: PendingMembershipApplication = {
-      id: Date.now(),
-      employeeId: application.employee.employeeId,
-      fullName: application.employee.fullName,
-      requestedTier: eligibility.policy.tier,
-      source: application.source,
-      requestDate: new Date().toISOString(),
-      status: 'PENDING_MANAGER_APPROVAL'
-    };
-    
-    context.pendingMembershipApplications.push(newApplication);
-    context.saveToStorage();
-
-    // Create notification for admin
-    const adminNotification: CooperativeNotification = {
-      id: Date.now(),
-      type: 'LOAN_STATUS_UPDATE',
-      recipient: 'ADMIN',
-      title: 'New Membership Application',
-      message: `${application.employee.fullName} (ID: ${application.employee.employeeId}) has applied for cooperative membership and is pending approval.`,
-      loanId: 0,
-      memberId: application.employee.employeeId,
-      createdAt: new Date().toISOString(),
-      read: false
-    };
-    context.notifications.push(adminNotification);
-    context.saveToStorage();
-
-    return {
-      success: true,
-      status: 'PENDING_MANAGER_APPROVAL',
-      message: 'Membership application submitted and pending admin approval.',
-      eligibility
-    };
   }
 
   inviteEmployee(
@@ -300,8 +319,7 @@ export class CooperativeMembershipService {
 
   async approvePendingMembershipApplication(
     context: CooperativeMembershipContext, 
-    applicationId: number, 
-    apiService: any,
+    applicationId: number,
     note?: string
   ): Promise<CooperativeMembershipActionResult> {
     const application = context.pendingMembershipApplications.find(
@@ -317,26 +335,42 @@ export class CooperativeMembershipService {
       };
     }
 
-    // Get employee details from the application
-    const employee = {
-      employeeId: application.employeeId,
-      fullName: application.fullName,
-      email: '',
-      phone: '',
-      department: ''
-    };
-
     try {
-      // Create member in backend
-      const createdMember = await apiService.createMember({
-        employeeId: application.employeeId,
+      // Get the correct employee ID dynamically
+      const employeeId = await this.getEmployeeIdFromUserId(application.employeeId);
+      
+      // Create member using the API service (returns Observable)
+      const createdMember = await firstValueFrom(this.apiService.createMember({
+        employeeId: employeeId,
         fullName: application.fullName,
-        email: employee.email,
-        phone: employee.phone,
+        email: '',
+        phone: '',
         shareCapital: 25000,
-        address: employee.department,
+        address: '',
         status: 'ACTIVE'
-      }).toPromise();
+      }));
+
+      // Fetch full member details
+      let fullMember: any;
+      try {
+        fullMember = await this.getFullMemberDetails(createdMember.id);
+      } catch (error) {
+        console.warn('Could not fetch full member details, using partial data:', error);
+        // Fallback to using the created member data
+        fullMember = {
+          id: createdMember.id,
+          employeeId: createdMember.employeeId,
+          status: createdMember.status,
+          fullName: application.fullName,
+          email: '',
+          phone: '',
+          shareCapital: 25000,
+          address: '',
+          joinDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
 
       // Remove from pending applications
       const index = context.pendingMembershipApplications.findIndex(app => app.id === applicationId);
@@ -346,18 +380,18 @@ export class CooperativeMembershipService {
 
       // Add to members list
       const newMember: CooperativeMember = {
-        id: createdMember.id,
+        id: fullMember.id,
         employeeId: application.employeeId,
-        memberId: createdMember.id,
-        fullName: application.fullName,
-        email: employee.email,
-        phone: employee.phone || '',
-        joinDate: new Date().toISOString(),
-        status: 'ACTIVE',
-        shareCapital: 25000,
-        address: employee.department,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        memberId: fullMember.id,
+        fullName: fullMember.fullName || application.fullName,
+        email: fullMember.email || '',
+        phone: fullMember.phone || '',
+        joinDate: fullMember.joinDate || new Date().toISOString(),
+        status: (fullMember.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
+        shareCapital: fullMember.shareCapital || 25000,
+        address: fullMember.address || '',
+        createdAt: fullMember.createdAt || new Date().toISOString(),
+        updatedAt: fullMember.updatedAt || new Date().toISOString()
       };
       context.members.push(newMember);
 
@@ -397,8 +431,7 @@ export class CooperativeMembershipService {
 
   async rejectPendingMembershipApplication(
     context: CooperativeMembershipContext, 
-    applicationId: number, 
-    apiService: any,
+    applicationId: number,
     reason?: string
   ): Promise<CooperativeMembershipActionResult> {
     const application = context.pendingMembershipApplications.find(
@@ -563,7 +596,7 @@ export class CooperativeMembershipService {
       joinDate: new Date().toISOString(),
       status: 'ACTIVE',
       shareCapital: minShares,
-      address: employee.department,
+      address: employee.department || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

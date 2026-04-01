@@ -7,44 +7,56 @@
 // Membership confirmation modal styles
 // ==========================================
 .membership-confirm-modal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px 24px 24px;
-  text-align: center;
-  h2 {
-    color: #2EB270;
-    margin: 16px 0 8px 0;
-    font-size: 1.5rem;
-    font-weight: 800;
-  }
-  p {
-    color: #2E6276;
-    font-size: 1.08rem;
-    margin-bottom: 24px;
-  }
-  .icon-success {
-    font-size: 3.2rem;
-    color: #2EB270;
-    margin-bottom: 8px;
-  }
-  .btn-primary {
-    min-width: 120px;
-    padding: 12px 0;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
-    color: #fff;
-    border: none;
-    box-shadow: 0 2px 8px rgba(46, 178, 112, 0.10);
-    cursor: pointer;
-    transition: background 0.2s, box-shadow 0.2s;
-    &:hover, &:focus {
-      background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
-      box-shadow: 0 4px 16px rgba(46, 178, 112, 0.16);
+    &.professional {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 rgba(46,178,112,0.10), 0 2px 8px 0 rgba(46,98,118,0.08);
+      padding: 40px 32px 32px 32px;
+      min-width: 320px;
+      max-width: 400px;
+      margin: 0 auto;
+      .icon-success.professional {
+        margin-bottom: 18px;
+        svg {
+          display: block;
+          margin: 0 auto;
+        }
+      }
+      h2 {
+        color: #1a3d2b;
+        margin: 18px 0 10px 0;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+      .success-message {
+        color: #2E6276;
+        font-size: 1.08rem;
+        margin-bottom: 28px;
+        line-height: 1.5;
+      }
+      .btn-primary {
+        min-width: 140px;
+        padding: 13px 0;
+        font-size: 1.13rem;
+        font-weight: 700;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 2px 8px 0 rgba(46,178,112,0.08);
+        transition: background 0.2s, box-shadow 0.2s;
+        &:hover, &:focus {
+          background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
+          box-shadow: 0 4px 16px 0 rgba(46,178,112,0.13);
+        }
+      }
     }
+
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    80% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
   }
 }
 

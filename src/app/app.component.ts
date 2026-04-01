@@ -24,11 +24,12 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.userLoginAction();
+    this.exposeGlobalHelpers();  // Added by Eseto expose helper functions for console testing
 
-// if (this.authenticationService.isAuthenticated()) {
-//   this.metadataService.fetchMetaData(true);
-//   return;
-// }
+  // if (this.authenticationService.isAuthenticated()) {
+  //   this.metadataService.fetchMetaData(true);
+  //   return;
+  // }
   }
 
   async userLoginAction(): Promise<void> {
@@ -70,7 +71,7 @@ try {
   loadInitParam(data: any) {
     sessionStorage.setItem('role', data.roles);
     sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', data.fullname);
+    sessionStorage.setItem('fullname', data.fullname || data.fullName || data.name || data.username);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
     const token = this.extractToken(data.accessToken);
@@ -112,5 +113,94 @@ return rawToken;
   toggleSidebar() {
     this.sidebarHidden = !this.sidebarHidden; // Toggle sidebar visibility
   }
-}
 
+  // ========== Added by Ese for testing cooperative features - Console only ==========
+
+  /**
+   * Switch to admin account
+   */
+  async switchToAdmin(): Promise<void> {
+    console.log('Switching to admin account...');
+    const loginDetails = {
+      username: 'damilola',
+      password: 'Damilolar@123',
+      project: 'ERP',
+      apiKey: environment.apiKey,
+    };
+
+    try {
+      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      if (data) {
+        this.loadInitParam(data);
+        this.metadataService.fetchMetaData(true);
+        window.location.reload();
+      } else {
+        console.error('Failed to switch to admin: No data returned');
+      }
+    } catch (error) {
+      console.error('Failed to switch to admin:', error);
+    }
+  }
+
+  /**
+   * Switch to regular user account
+   */
+  async switchToUser(): Promise<void> {
+    console.log('Switching to user account...');
+    const loginDetails = {
+      username: 'developer',
+      password: '123456',
+      project: 'ERP',
+      apiKey: environment.apiKey,
+    };
+
+    try {
+      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      if (data) {
+        this.loadInitParam(data);
+        this.metadataService.fetchMetaData(true);
+        window.location.reload();
+      } else {
+        console.error('Failed to switch to user: No data returned');
+      }
+    } catch (error) {
+      console.error('Failed to switch to user:', error);
+    }
+  }
+
+  /**
+   * Log out and clear all session data
+   */
+  logout(): void {
+    console.log('Logging out...');
+    sessionStorage.clear();
+    localStorage.clear();
+    window.location.href = '/';
+  }
+
+  /**
+   * Get current user information from session
+   */
+  getCurrentUserInfo(): { username: string | null; role: string | null; userId: string | null; isAdmin: boolean } {
+    const username = sessionStorage.getItem('username');
+    const role = sessionStorage.getItem('role');
+    const userId = sessionStorage.getItem('userid');
+    return {
+      username,
+      role,
+      userId,
+      isAdmin: role === 'ROLE_ADMIN'
+    };
+  }
+
+  /**
+   * Expose helper functions to browser console for easy switching
+   */
+  private exposeGlobalHelpers(): void {
+    (window as any).switchToAdmin = () => this.switchToAdmin();
+    (window as any).switchToUser = () => this.switchToUser();
+    (window as any).logout = () => this.logout();
+    (window as any).getCurrentUser = () => this.getCurrentUserInfo();
+    console.log('Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()');
+  }
+}

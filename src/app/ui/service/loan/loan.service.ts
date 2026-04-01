@@ -53,11 +53,11 @@ export class LoanService {
     }).pipe(
       map(response => this.safeParseResponse(response)),
       switchMap(data => {
-        // When requesting a specific page, the API returns an array directly
+        // API returns array directly when page parameter is present
         if (Array.isArray(data)) {
           console.log(`Page ${page}: ${data.length} loans`);
           
-          // If we got a full page (10 items), there might be more pages
+          // If we got a full page (10 items), fetch next page
           if (data.length === 10) {
             return fetchPage(page + 1).pipe(
               map(nextPageLoans => [...data, ...nextPageLoans])
@@ -71,10 +71,10 @@ export class LoanService {
     );
   };
   
-  // Start at page 1, not 0
+  // Start at page 1 (API uses 1-based pagination for this endpoint)
   return fetchPage(1).pipe(
     tap(loans => {
-      console.log(` Total loans loaded: ${loans.length}`);
+      console.log(`Total loans loaded: ${loans.length}`);
     }),
     catchError((error) => {
       console.error('Failed to load loans from API:', error.status);
