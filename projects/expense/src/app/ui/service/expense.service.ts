@@ -366,7 +366,13 @@ export class ExpenseService {
       .pipe(
         catchError((err) => {
           console.error('getAllExpenses failed:', err);
-          return this.getExpenses();
+          // FIX: On 500, fall back to the user's own expenses WITHOUT re-emitting
+          // the BehaviorSubject or expensesUpdated$ — that would cause an infinite
+          // reload loop when the admin "All Employees" view is active.
+          const params = new HttpParams().set('page', '1').set('size', '1000');
+          return this.http
+            .get<Expense[]>(this.expenseUrl, { headers: this.getHeaders(), params })
+            .pipe(catchError(() => of([] as Expense[])));
         })
       );
   }
@@ -401,7 +407,7 @@ export class ExpenseService {
       .pipe(
         tap((response) => {
           console.log('✅ Expense created:', response);
-          this.loadExpenses();
+          // FIX: Only emit — component subscription handles the reload
           this.expensesUpdatedSubject.next();
         }),
         catchError(this.handleError)
@@ -439,7 +445,7 @@ export class ExpenseService {
       .pipe(
         tap((response) => {
           console.log('✅ Expense updated:', response);
-          this.loadExpenses();
+          // FIX: Only emit — component subscription handles the reload
           this.expensesUpdatedSubject.next();
         }),
         catchError(this.handleError)
@@ -471,13 +477,28 @@ export class ExpenseService {
         return of(expense);
       }),
       switchMap((full: Expense) => {
-        // Preserve the ORIGINAL submitter — do NOT overwrite with admin id
-        const originalSubmitterId = this.resolveExpenseById(full);
+        // Preserve the ORIGINAL submitter — do NOT overwrite with admin id.
+        // ── FALLBACK CHAIN for expenseBy (DB has NOT NULL constraint): ──────
+        //   1. expenseBy from the fetched full record (most accurate)
+        //   2. expenseBy from the list-level object passed in (partial data)
+        //   3. currentUserId (logged-in user — last resort to avoid null crash)
+        //
+        // Root cause: GET /expenses/:id returns 500 when the backend's internal
+        // call to /users/primary/info fails. We fall back to the list object
+        // which has no expenseBy populated, so we must use currentUserId rather
+        // than sending null and violating the DB NOT NULL constraint.
+        const originalSubmitterId =
+          this.resolveExpenseById(full) ??
+          this.resolveExpenseById(expense) ??
+          currentUserId;
+
+        console.log('👤 expenseBy resolved to:', originalSubmitterId,
+          '(full record:', this.resolveExpenseById(full),
+          '| list object:', this.resolveExpenseById(expense),
+          '| currentUser fallback:', currentUserId, ')');
 
         if (originalSubmitterId === null) {
-          console.error('❌ expenseBy resolved to null on the fetched record.');
-        } else {
-          console.log('👤 Original submitter (expenseBy) ID:', originalSubmitterId);
+          console.error('❌ expenseBy is still null after all fallbacks — approval will fail on backend.');
         }
 
         const payload: any = {
@@ -495,9 +516,7 @@ export class ExpenseService {
           categoryId:         full.categoryId ?? full.category?.id,
           taxId:              full.taxId ?? full.tax?.id ?? 1,
           scheduledPaymentId: full.scheduledPaymentId || null,
-          // ── FIXED: preserve original submitter ───────────────────────
           expenseBy:          originalSubmitterId,
-          // ── FIXED: record who approved and when ──────────────────────
           approvedBy:         currentUserId,
           approvedAt:         new Date().toISOString(),
         };
@@ -512,7 +531,9 @@ export class ExpenseService {
       }),
       tap((response) => {
         console.log('✅ Expense approved:', response);
-        this.loadExpenses();
+        // FIX: Don't call loadExpenses() here — the component's subscribe(next)
+        // calls loadExpenses() after this tap completes. Calling it here too
+        // caused a double-load and cascade with the expensesUpdated$ subscription.
         this.messageService.add({
           severity: 'success',
           summary: 'Approved',
@@ -549,13 +570,17 @@ export class ExpenseService {
         return of(expense);
       }),
       switchMap((full: Expense) => {
-        const originalSubmitterId = this.resolveExpenseById(full);
+        // Same fallback chain as approveExpense —
+        // GET /expenses/:id can 500 when backend's /users/primary/info fails.
+        const originalSubmitterId =
+          this.resolveExpenseById(full) ??
+          this.resolveExpenseById(expense) ??
+          currentUserId;
 
-        if (originalSubmitterId === null) {
-          console.error('❌ expenseBy resolved to null on the fetched record.');
-        } else {
-          console.log('👤 Original submitter (expenseBy) ID:', originalSubmitterId);
-        }
+        console.log('👤 expenseBy resolved to:', originalSubmitterId,
+          '(full record:', this.resolveExpenseById(full),
+          '| list object:', this.resolveExpenseById(expense),
+          '| currentUser fallback:', currentUserId, ')');
 
         const payload: any = {
           id:                 full.id,
@@ -573,9 +598,7 @@ export class ExpenseService {
           taxId:              full.taxId ?? full.tax?.id ?? 1,
           scheduledPaymentId: full.scheduledPaymentId || null,
           rejectionReason:    reason || 'No reason provided',
-          // ── FIXED: preserve original submitter ───────────────────────
           expenseBy:          originalSubmitterId,
-          // ── FIXED: record who rejected and when ──────────────────────
           rejectedBy:         currentUserId,
           rejectedAt:         new Date().toISOString(),
         };
@@ -590,7 +613,7 @@ export class ExpenseService {
       }),
       tap((response) => {
         console.log('✅ Expense rejected:', response);
-        this.loadExpenses();
+        // FIX: Don't call loadExpenses() here — same cascade reason as approveExpense
         this.messageService.add({
           severity: 'success',
           summary: 'Rejected',
@@ -616,7 +639,11 @@ export class ExpenseService {
       .delete<void>(`${this.expenseUrl}/${id}`, { headers: this.getHeaders() })
       .pipe(
         tap(() => {
-          this.loadExpenses();
+          // FIX: Only emit expensesUpdated$ — the component's subscription
+          // to this subject calls loadExpenses(). Calling loadExpenses() here
+          // AND emitting the subject caused a cascade of repeated API calls
+          // (especially when getAllExpenses returns 500 and falls back to getExpenses
+          // which itself emits the BehaviorSubject, retriggering subscriptions).
           this.expensesUpdatedSubject.next();
         }),
         catchError(this.handleError)

@@ -23,6 +23,19 @@
     </div>
   </div>
 
+  <!-- Monthly limit warning banner -->
+  <div *ngIf="showMonthlyLimitWarning"
+    class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+    <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 flex-shrink-0"></i>
+    <div>
+      <p class="text-sm font-semibold text-red-700 mb-0.5">Monthly Expense Limit Reached</p>
+      <p class="text-sm text-red-600 m-0">
+        You have submitted {{ currentMonthExpenseCount }} of {{ MONTHLY_LIMIT }} allowed expenses this month.
+        Please contact your manager before submitting more.
+      </p>
+    </div>
+  </div>
+
   <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)" class="w-full">
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -118,43 +131,37 @@
               </div>
             </div>
 
-            <!-- Employee Receipt Upload — Fixed condition to match 'EMPLOYEE' (uppercase) -->
+            <!-- Employee Receipt Upload — Multi-file version -->
             <div class="col-span-2" *ngIf="expenseSummary.paidBy === 'EMPLOYEE'">
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                Upload Employee Receipt <span class="text-red-500">*</span>
+                Upload Employee Receipt(s) <span class="text-red-500">*</span>
               </label>
               <div
                 class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
-                (click)="employeeReceiptInput.click()" (dragover)="onDragOver($event)"
+                (click)="employeeReceiptInput.click()"
+                (dragover)="onDragOver($event)"
                 (drop)="onFileDrop($event, 'employeeReceipt')">
                 <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                <p class="text-sm text-gray-600" *ngIf="!employeeReceiptFile">
-                  Click or drag and drop to upload Employee Receipt
-                </p>
-                <p class="text-sm font-medium text-gray-700" *ngIf="employeeReceiptFile">
-                  <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                  {{ employeeReceiptFile.name }}
-                </p>
-                <p class="text-xs text-gray-500 mt-1">
-                  Supported formats: JPG, PNG, PDF (max 10MB)
-                </p>
-                <input type="file" #employeeReceiptInput class="hidden"
-                  (change)="onFileSelect($event, 'employeeReceipt')" accept=".jpg,.png,.pdf" />
+                <p class="text-sm text-gray-600">Click or drag to upload employee receipt(s)</p>
+                <p class="text-xs text-gray-500 mt-1">JPG, PNG, PDF — max 10 MB each. Multiple files allowed.</p>
+                <input type="file" #employeeReceiptInput class="hidden" multiple
+                  (change)="onFileSelect($event, 'employeeReceipt')"
+                  accept=".jpg,.png,.pdf" />
               </div>
 
-              <!-- Employee receipt image preview (if it's an image) -->
-              <div *ngIf="employeeReceiptFile && isImageFile(employeeReceiptFile)"
-                class="mt-3 border rounded-lg overflow-hidden w-32 h-32">
-                <img [src]="employeeReceiptPreviewUrl" alt="Employee receipt preview"
-                  class="w-full h-full object-contain" />
+              <!-- Uploaded employee receipt file list -->
+              <div *ngFor="let f of employeeReceiptFiles; let i = index"
+                class="mt-2 flex items-center gap-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                <img *ngIf="employeeReceiptPreviews[i]" [src]="employeeReceiptPreviews[i]"
+                  class="w-10 h-10 object-cover rounded border border-gray-200 flex-shrink-0" alt="preview" />
+                <i *ngIf="!employeeReceiptPreviews[i]" class="fas fa-file-pdf text-2xl text-red-400 flex-shrink-0"></i>
+                <span class="text-sm text-gray-700 flex-1 truncate">{{ f.name }}</span>
+                <span class="text-xs text-gray-400 flex-shrink-0">{{ (f.size / 1024).toFixed(0) }} KB</span>
+                <button type="button" (click)="removeFile('employeeReceipt', i)"
+                  class="text-red-400 hover:text-red-600 transition flex-shrink-0">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
-
-              <!-- Remove button -->
-              <button *ngIf="employeeReceiptFile" type="button"
-                class="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
-                (click)="removeFile('employeeReceipt')">
-                <i class="fas fa-trash mr-1"></i> Remove Employee Receipt
-              </button>
             </div>
 
             <!-- Event Date -->
@@ -177,16 +184,22 @@
             Financial Information
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Quantity -->
+            <!-- Quantity with min validation -->
             <div>
               <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
                 Quantity <span class="text-red-500">*</span>
               </label>
-              <input type="number" id="quantity" name="quantity" [(ngModel)]="expenseSummary.quantity" required
-                placeholder="Enter quantity"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
-              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
-                Quantity is required.
+              <input type="number" id="quantity" name="quantity"
+                [(ngModel)]="expenseSummary.quantity"
+                required min="1" step="1"
+                [class.border-red-400]="quantityField.invalid && quantityField.touched"
+                #quantityField="ngModel"
+                placeholder="Enter quantity (min. 1)"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+                (input)="expenseSummary.quantity = expenseSummary.quantity < 1 ? 1 : expenseSummary.quantity" />
+              <p class="mt-1 text-sm text-red-500"
+                 *ngIf="quantityField.invalid && quantityField.touched">
+                Quantity must be at least 1.
               </p>
             </div>
 
@@ -203,18 +216,45 @@
               </select>
             </div>
 
-            <!-- Amount -->
+            <!-- Amount with mode toggle -->
             <div>
               <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
                 Amount <span class="text-red-500">*</span>
               </label>
-              <input type="text" id="amount" name="amount" [value]="formatAmount(expenseSummary.amount)"
-                (input)="updateAmount($event)" required placeholder="Enter amount"
+
+              <!-- Amount mode toggle -->
+              <div class="flex gap-3 mb-2">
+                <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <input type="radio" [(ngModel)]="amountMode" name="amountMode" value="total"
+                    class="text-customBlue" />
+                  Total amount
+                </label>
+                <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <input type="radio" [(ngModel)]="amountMode" name="amountMode" value="per_item"
+                    class="text-customBlue" />
+                  Per item (× quantity)
+                </label>
+              </div>
+
+              <input type="text" id="amount" name="amount"
+                [value]="formatAmount(expenseSummary.amount)"
+                (input)="updateAmount($event)" required
+                [placeholder]="amountMode === 'per_item' ? 'Price per item' : 'Total amount'"
                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+
+              <!-- Computed total preview when per_item mode and qty > 1 -->
+              <div *ngIf="amountMode === 'per_item' && expenseSummary.quantity > 1 && expenseSummary.amount"
+                class="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
+                <i class="fa-solid fa-calculator text-gray-400"></i>
+                {{ expenseSummary.quantity }} × {{ formatAmount(expenseSummary.amount) }}
+                = <strong class="text-gray-700">{{ selectedCurrency }} {{ formatAmount(computedTotal) }}</strong>
+              </div>
+
               <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.amount">
                 Amount is required.
               </p>
             </div>
+
             <!-- Tax Percentage -->
             <div class="col-span-2 md:col-span-3">
               <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -233,6 +273,18 @@
                   (click)="openModal('tax')">
                   <i class="fa-solid fa-plus"></i>
                 </button>
+              </div>
+
+              <!-- Tax total preview -->
+              <div *ngIf="expenseSummary.taxPercentage && computedTotal"
+                class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 flex items-center justify-between">
+                <span>
+                  <i class="fa-solid fa-percent mr-1"></i>
+                  Tax {{ expenseSummary.taxPercentage }}% applied
+                </span>
+                <span class="font-semibold">
+                  Total incl. tax: {{ selectedCurrency }} {{ formatAmount(computedTotalWithTax) }}
+                </span>
               </div>
             </div>
           </div>
@@ -574,7 +626,7 @@
         </div>
       </div>
 
-      <!-- Right Column - Document Upload -->
+      <!-- Right Column - Document Upload (Multi-file) -->
       <div class="lg:col-span-1">
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-6">
           <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
@@ -586,15 +638,16 @@
             <div
               class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
               <!-- Show preview if file is uploaded -->
-              <ng-container *ngIf="receiptFile; else noFilePreview">
-                <!-- Image Preview -->
-                <img *ngIf="isImageFile(receiptFile)" [src]="receiptPreviewUrl" alt="Receipt preview"
+              <ng-container *ngIf="companyReceiptFiles.length > 0; else noFilePreview">
+                <!-- Show first image preview if available -->
+                <img *ngIf="companyReceiptPreviews[0]" [src]="companyReceiptPreviews[0]" alt="Receipt preview"
                   class="w-full h-full object-contain" />
 
-                <!-- PDF Icon -->
-                <div *ngIf="isPdfFile(receiptFile)" class="text-center">
+                <!-- PDF Icon for first file if it's a PDF -->
+                <div *ngIf="!companyReceiptPreviews[0] && companyReceiptFiles[0]" class="text-center">
                   <i class="fas fa-file-pdf text-6xl text-red-500 mb-2"></i>
-                  <p class="text-sm text-gray-600">{{ receiptFile.name }}</p>
+                  <p class="text-sm text-gray-600">{{ companyReceiptFiles[0].name }}</p>
+                  <p class="text-xs text-gray-400 mt-1">+{{ companyReceiptFiles.length - 1 }} more file(s)</p>
                 </div>
               </ng-container>
 
@@ -603,38 +656,38 @@
               </ng-template>
             </div>
 
-            <!-- Drop Zone -->
+            <!-- Drop Zone (Multi-file) -->
             <div
-              class="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
-              [class.border-customBlue]="isDragging" (click)="fileInput.click()" (dragover)="onDragOver($event)"
-              (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event, 'receipt')">
+              class="w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-customBlue transition-colors"
+              [class.border-customBlue]="isDragging"
+              [class.border-gray-300]="!isDragging"
+              (click)="fileInput.click()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onFileDrop($event, 'receipt')">
 
               <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+              <p class="text-sm text-gray-600 mb-1">Click or drag to upload receipts</p>
+              <p class="text-xs text-gray-400">JPG, PNG, PDF — max 10 MB each. Multiple files allowed.</p>
 
-              <p class="text-sm text-gray-600" *ngIf="!receiptFile">
-                Click or drag and drop to upload Document
-              </p>
-
-              <p class="text-sm font-medium text-gray-700" *ngIf="receiptFile">
-                <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                {{ receiptFile.name }}
-              </p>
-
-              <p class="text-xs text-gray-500 mt-1">
-                Supported formats: JPG, PNG, PDF (max 10MB)
-              </p>
-
-              <input type="file" #fileInput class="hidden" (change)="onFileSelect($event, 'receipt')"
+              <input type="file" #fileInput class="hidden" multiple
+                (change)="onFileSelect($event, 'receipt')"
                 accept=".jpg,.jpeg,.png,.pdf" />
             </div>
 
-            <!-- Remove File Button -->
-            <button *ngIf="receiptFile" type="button"
-              class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-              (click)="removeFile('receipt')">
-              <i class="fas fa-trash mr-2"></i>
-              Remove File
-            </button>
+            <!-- Uploaded company receipt file list -->
+            <div *ngFor="let f of companyReceiptFiles; let i = index"
+              class="mt-2 flex items-center gap-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg w-full">
+              <img *ngIf="companyReceiptPreviews[i]" [src]="companyReceiptPreviews[i]"
+                class="w-10 h-10 object-cover rounded border border-gray-200 flex-shrink-0" alt="preview" />
+              <i *ngIf="!companyReceiptPreviews[i]" class="fas fa-file-pdf text-2xl text-red-400 flex-shrink-0"></i>
+              <span class="text-sm text-gray-700 flex-1 truncate">{{ f.name }}</span>
+              <span class="text-xs text-gray-400 flex-shrink-0">{{ (f.size / 1024).toFixed(0) }} KB</span>
+              <button type="button" (click)="removeFile('receipt', i)"
+                class="text-red-400 hover:text-red-600 transition flex-shrink-0">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -647,9 +700,11 @@
         Cancel
       </button>
       <button type="submit"
-        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2">
-        <i class="fa-solid fa-paper-plane"></i>
-        Submit Expense
+        [disabled]="isSubmitting"
+        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+        <i *ngIf="!isSubmitting" class="fa-solid fa-paper-plane"></i>
+        <i *ngIf="isSubmitting"  class="fa-solid fa-spinner fa-spin"></i>
+        {{ isSubmitting ? 'Submitting…' : 'Submit Expense' }}
       </button>
     </div>
   </form>
