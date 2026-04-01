@@ -139,17 +139,57 @@ overtimeOverrides: Record<number, number> = {
   9: 3
 };
 
-  payrollColumns: TableColumn[] = [
-    { header: 'Employee', sortable: true, className: 'table-item', formatter: (row: { employee: { firstName: string; lastName: string } }) =>
-    `${row.employee.firstName ?? ''} ${row.employee.lastName ?? ''}`.trim()},
-    { header: 'Level', field: 'employee.level.name', sortable: true, className: 'table-item' },
-    { header: 'Department', field: 'employee.department.name', sortable: true, className: 'table-item' },
-    { header: 'Days worked', field: 'daysWorked',  className: 'table-item' },
-    { header: 'Base Pay', field: 'basePay',  className: 'table-item' },
-    { header: 'Gross Pay', field: 'grossPay', className: 'table-item' },
-    { header: 'Total Deductions', field: 'totalDeductions', className: 'table-item' },
-    { header: 'Net Payable', field: 'netPayable', className: 'table-item' },
-  
+ payrollColumns: TableColumn[] = [
+  {
+    header: 'Employee',
+    sortable: true,
+    className: 'table-item',
+    formatter: (row) =>
+      `${row.employee.firstName ?? ''} ${row.employee.lastName ?? ''}`.trim()
+  },
+  {
+    header: 'Level',
+    field: 'employee.level.name',
+    sortable: true,
+    className: 'table-item'
+  },
+  {
+    header: 'Department',
+    field: 'employee.department.name',
+    sortable: true,
+    className: 'table-item'
+  },
+  {
+    header: 'Days worked',
+    field: 'daysWorked',
+    className: 'table-item'
+  },
+
+  // 💰 MONEY FIELDS
+  {
+    header: 'Base Pay',
+    field: 'basePay',
+    className: 'table-item',
+    formatter: (row) => this.formatCurrency(row.basePay)
+  },
+  {
+    header: 'Gross Pay',
+    field: 'grossPay',
+    className: 'table-item',
+    formatter: (row) => this.formatCurrency(row.grossPay)
+  },
+  {
+    header: 'Total Deductions',
+    field: 'totalDeductions',
+    className: 'table-item',
+    formatter: (row) => this.formatCurrency(row.totalDeductions)
+  },
+  {
+    header: 'Net Payable',
+    field: 'netPayable',
+    className: 'table-item',
+    formatter: (row) => this.formatCurrency(row.netPayable)
+  }
 ];
 
 
@@ -172,7 +212,7 @@ months:any[] = [];
 years: any[] = [];
 filteredEmployeePayroll: any[] = []
 currentPayroll: any[] = []
-payrollSumary = {}
+payrollSumary: any = {}
 employees: any = []
 filteredEmployees: any[] = [];
 employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
@@ -219,6 +259,17 @@ ngOnInit(){
   this.generatePayrolls()    
 }
 
+formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '₦0.00';
+
+  const formatted = new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 2
+  }).format(Math.abs(value));
+
+  return value < 0 ? `- ${formatted}` : formatted;
+}
 
 generatePayrolls(){
 
@@ -500,10 +551,10 @@ generatePayrolls(){
 
     return 0;
   }
-  formatCurrency(value: number): string {
-    const normalized = Number.isFinite(value) ? value : 0;
-    return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }
+  // formatCurrency(value: number): string {
+  //   const normalized = Number.isFinite(value) ? value : 0;
+  //   return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // }
 
   private resolvePayType(employee: any): PayType {
     if (employee.payType) return employee.payType as PayType;
@@ -860,68 +911,59 @@ generatePayrolls(){
         }
     }
 
-  calculatePayrollSummary() {
-    const payrollSummary = {
-      totalSalary: 0,
-      totalBonuses: 0,
-      totalDeductions: 0,
-      totalOvertimePay: 0,
-      totalAttendanceDeductions: 0,
-      totalAllowances: {
-        housingAllowance: 0,
-        transportationAllowance: 0,
-        mealAllowance: 0,
-        healthAllowance: 0,
-        carAllowance: 0,
-        securityAllowance: 0,
-        travelAllowance: 0
-      } as Allowances,
-      totalNetPayable: 0,
-      totalTax: 0, 
-      totalInsurance: 0,
-      totalPension: 0,
-      totalGross: 0
-    };
-  
-
-    this.currentPayroll.forEach(emp => {
-      payrollSummary.totalSalary += emp.basePay ?? 0;
-      payrollSummary.totalOvertimePay += emp.overtimePay ?? 0;
-      payrollSummary.totalAttendanceDeductions += emp.attendancePenalty ?? 0;
-
-      (emp?.bonuses || []).forEach((bonus: { amount: number; }) => {
-        payrollSummary.totalBonuses += bonus.amount;
-      });
-  
-
-      (emp?.deductions || []).forEach((deduction: { amount: number; reason: string }) => {
-        payrollSummary.totalDeductions += deduction.amount;
-
-        if (deduction.reason.toLocaleLowerCase().includes("tax")) {
-            payrollSummary.totalTax += deduction.amount || 0;
-          }
-    
-          if (deduction.reason.toLocaleLowerCase().includes("insurance") ) {
-            payrollSummary.totalInsurance += deduction.amount || 0;
-          }
-
-          if (deduction.reason.toLocaleLowerCase().includes("pension") ) {
-            payrollSummary.totalPension += deduction.amount || 0;
-          }
-      });
-  
-
-      const allowances = emp?.allowances || {};
-      for (let key in allowances) {
-        payrollSummary.totalAllowances[key as keyof Allowances] += allowances[key as keyof Allowances] || 0;
-      }
-  
-      payrollSummary.totalNetPayable += emp?.netPayable;
-      payrollSummary.totalGross += emp?.grossPay ?? 0;
-    });
-  
-    return payrollSummary;
+ calculatePayrollSummary() {
+  const summary = {
+    totalSalary: 0,
+    totalBonuses: 0,
+    totalDeductions: 0,
+    totalOvertimePay: 0,
+    totalAllowances: 0,
+    totalNetPayable: 0,
+    totalTax: 0,
+    totalInsurance: 0,
+    totalPension: 0,
+    totalGross: 0
   }
+
+  this.filteredEmployeePayroll.forEach(emp => {
+    // Base
+    summary.totalSalary += emp.basePay ?? 0;
+    summary.totalOvertimePay += emp.overtimePay ?? 0;
+    summary.totalGross += emp.grossPay ?? 0;
+    summary.totalNetPayable += emp.netPayable ?? 0;
+
+    // Bonuses
+    (emp.bonuses || []).forEach((bonus: any) => {
+      summary.totalBonuses += bonus.amount ?? 0;
+    });
+
+    // Allowances (now single object)
+    summary.totalAllowances += emp.allowances?.amount ?? 0;
+
+    // Deductions (now object, not array)
+    const deductions = emp.deductions;
+
+    if (deductions) {
+      summary.totalDeductions += emp.totalDeductions ?? 0;
+
+      // Direct fields
+      summary.totalTax += deductions.tax ?? 0;
+      summary.totalPension += deductions.pension ?? 0;
+      summary.totalInsurance += deductions.healthInsurance ?? 0;
+
+      // Optional: dynamic breakdown from details[]
+      (deductions.details || []).forEach((d: any) => {
+        const name = (d.name || '').toLowerCase();
+
+        if (name.includes('tax')) summary.totalTax += 0; // already counted
+        if (name.includes('pension')) summary.totalPension += 0;
+        if (name.includes('insurance')) summary.totalInsurance += 0;
+      });
+    }
+  });
+
+  return summary;
+}
   
   
 toTitleCaseWithSpace(key: any): string {
