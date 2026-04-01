@@ -1,0 +1,78 @@
+
+<div>
+    <div class="">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <app-button text="Delete"  class="btn-delete" ></app-button>
+        </ng-template>
+  
+        <ng-template pTemplate="right">
+          <app-button text="Add New" (btnClick)="createCategory()" class="btn-navigate" ></app-button>
+        </ng-template>
+      </p-toolbar>
+      <p-table 
+        [value]="rfqCategoryData"
+        [paginator]="true" 
+        [(selection)]="selectedItems" 
+        dataKey="id"
+        responsiveLayout="stack" 
+        [breakpoint]="'960px'"
+        styleClass="p-datatable-striped"
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+        [rows]="15" >
+          <ng-template pTemplate="header" class="header" let-columns>
+            <tr>
+              <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+              <th class="table-item">Id</th>
+              <th class="table-item">Name</th>
+              <th class="table-item">Code</th>
+              <th class="table-item">Description</th>
+              <th class="table-item">Action</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item let-i="rowIndex" let-columns="columns">
+              <tr>
+                <td>
+                  <p-tableCheckbox [value]="item" class="custom-checkbox"/>
+                </td>
+                <td class="table-item"><span class="p-column-title">Quotation No</span>{{ item.id}}</td>
+                <td class="table-item"><span class="p-column-title">Project Title</span>{{ item.name }}</td>
+                <td class="table-item"><span class="p-column-title">Date</span>{{ item.code }}</td>
+                <td class="table-item"><span class="p-column-title">Due Date</span>{{ item.des }}</td>
+                <td class="actions table-item">
+                  <span class="p-column-title">Action</span>
+                  <i (click)="viewItem(item)" class="pi pi-eye table-item" ></i>
+                  <i (click)="editRfq(item.id)" class="pi pi-pen-to-square table-item" ></i>
+                  <i (click)="deleteItem(item.id)" class="pi pi-times-circle table-item" ></i>
+                </td>
+              </tr>                            
+          </ng-template>
+      </p-table>
+  </div>
+</div>
+  
+  
+<app-modal *ngIf="addCategory" (close)="addCategory = false" header="Create Category">
+  <div class="">
+    <div class="d-flex gap-4">
+      <div class="input-container-50">
+          <label for="email">Name <span style="color: red;">*</span></label>
+          <input type="email" id="email" name="email" [(ngModel)]="rfqCategoryInfo.name" class="editInput">
+      </div>
+      <div class="input-container-50" >
+          <label for="phone-number">Code <span style="color: red;">*</span></label>
+          <input type="tel" id="phone-number" name="phone-number" [(ngModel)]="rfqCategoryInfo.code" placeholder="" class="editInput" >
+      </div>
+    </div>
+
+    <div class="input-container-100 my-2">
+        <label for="des">Description <span style="color: red;">*</span></label>
+        <textarea type="text" id="des" name="des" [(ngModel)]="rfqCategoryInfo.des" class="editInput" style="min-height: 150px;"></textarea>
+    </div>
+
+    <div class="form-actions mt-4">
+      <!-- <button type="submit" >Save</button> -->
+      <app-button text="Save"></app-button>
+    </div>
+  </div>
+</app-modal>

@@ -1,0 +1,445 @@
+<div
+  class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
+>
+  <div class="relative w-full max-w-4xl">
+    <!-- Modal Content -->
+    <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+      <!-- Modal Header -->
+      <div
+        class="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center sticky top-0 z-10"
+      >
+        <h2 class="text-2xl font-bold">Create New Room</h2>
+        <button
+          (click)="closeRoomModal()"
+          class="text-white hover:text-gray-200 focus:outline-none transition-colors"
+        >
+          <i class="pi pi-times text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="p-6 bg-gray-50">
+        <form [formGroup]="roomForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column -->
+            <div class="space-y-6">
+              <!-- Room Number -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Room Number*</label
+                >
+                <input
+                  type="number"
+                  formControlName="roomNumber"
+                  class="form-input"
+                  placeholder="Enter room number"
+                />
+                <div
+                  *ngIf="
+                    roomForm.get('roomNumber')?.invalid &&
+                    roomForm.get('roomNumber')?.touched
+                  "
+                  class="form-error"
+                >
+                  Room number must be between 100-9999
+                </div>
+              </div>
+
+              <!-- Room Type -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Room Type*</label
+                >
+                <div class="flex gap-2">
+                  <select formControlName="roomType" class="form-input flex-1">
+                    <option value="" disabled>Select room type</option>
+
+                    <option
+                      *ngFor="let type of roomTypes$ | async"
+                      [value]="type.id"
+                    >
+                      {{ type.name }}
+                      <span *ngIf="type?.description">
+                        - {{ type.description }}</span
+                      >
+                    </option>
+
+                    <option *ngIf="roomTypeLoading" value="" disabled>
+                      Loading room types...
+                    </option>
+                    <option
+                      *ngIf="roomTypes.length === 0 && !roomTypeLoading"
+                      value=""
+                      disabled
+                    >
+                      No room types available
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    (click)="openRoomTypeModal()"
+                    class="btn-primary whitespace-nowrap"
+                  >
+                    <i class="pi pi-plus mr-1"></i> New Type
+                  </button>
+                </div>
+                <div
+                  *ngIf="
+                    roomForm.get('roomType')?.invalid &&
+                    roomForm.get('roomType')?.touched
+                  "
+                  class="form-error"
+                >
+                  Room type is required
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Status*</label
+                >
+                <select formControlName="roomStatus" class="form-input">
+                  <option *ngFor="let status of roomStatuses" [value]="status">
+                    {{ status.replace("_", " ") | titlecase }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Floor -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Floor*</label
+                >
+                <input
+                  type="number"
+                  formControlName="floor"
+                  class="form-input"
+                  placeholder="Enter floor number"
+                />
+                <div
+                  *ngIf="
+                    roomForm.get('floor')?.invalid &&
+                    roomForm.get('floor')?.touched
+                  "
+                  class="form-error"
+                >
+                  Floor must be between 1-99
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+              <!-- Rate -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Nightly Rate*</label
+                >
+                <div class="relative">
+                  <input
+                    type="number"
+                    formControlName="rate"
+                    class="form-input pl-7"
+                    placeholder="NGN Enter nightly rate"
+                    step="0.01"
+                  />
+                </div>
+                <div
+                  *ngIf="
+                    roomForm.get('rate')?.invalid &&
+                    roomForm.get('rate')?.touched
+                  "
+                  class="form-error"
+                >
+                  Rate must be at least 1000
+                </div>
+              </div>
+
+              <!-- Beds -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Number of Beds*</label
+                >
+                <input
+                  type="number"
+                  formControlName="beds"
+                  class="form-input"
+                  placeholder="Enter number of beds"
+                />
+                <div
+                  *ngIf="
+                    roomForm.get('beds')?.invalid &&
+                    roomForm.get('beds')?.touched
+                  "
+                  class="form-error"
+                >
+                  Must be between 1-10 beds
+                </div>
+              </div>
+
+              <!-- Max Occupancy -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Max Occupancy*</label
+                >
+                <input
+                  type="number"
+                  formControlName="maxOccupancy"
+                  class="form-input"
+                  placeholder="Enter max occupancy"
+                />
+                <div
+                  *ngIf="
+                    roomForm.get('maxOccupancy')?.invalid &&
+                    roomForm.get('maxOccupancy')?.touched
+                  "
+                  class="form-error"
+                >
+                  Must be between 1-10 guests
+                </div>
+              </div>
+
+              <!-- Accessibility -->
+              <div class="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="accessible"
+                  formControlName="accessible"
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label
+                  for="accessible"
+                  class="text-sm font-medium text-gray-700"
+                  >Wheelchair Accessible</label
+                >
+              </div>
+
+              <!-- Smoking -->
+              <div class="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="smoking"
+                  formControlName="isSmokingAllowed"
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label for="smoking" class="text-sm font-medium text-gray-700"
+                  >Smoking Allowed</label
+                >
+              </div>
+            </div>
+
+            <!-- Full Width Fields -->
+            <div class="md:col-span-2 space-y-6">
+              <!-- Description -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Description</label
+                >
+                <textarea
+                  formControlName="description"
+                  rows="3"
+                  class="form-input"
+                  placeholder="Enter room description"
+                ></textarea>
+              </div>
+
+              <!-- Amenities -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Amenities</label
+                >
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    [(ngModel)]="newAmenity"
+                    (keyup.enter)="addAmenity()"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="form-input flex-1"
+                    placeholder="Type an amenity and press Enter"
+                  />
+                  <button
+                    type="button"
+                    (click)="addAmenity()"
+                    class="btn-primary"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                <!-- Selected Amenities -->
+                <div class="flex flex-wrap gap-2 mt-2">
+                  <span
+                    *ngFor="let amenity of selectedAmenities; let i = index"
+                    class="amenity-tag"
+                  >
+                    {{ amenity }}
+                    <button
+                      type="button"
+                      (click)="removeAmenity(i)"
+                      class="amenity-remove"
+                    >
+                      <i class="pi pi-times text-xs"></i>
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Image Upload -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700"
+                  >Room Images</label
+                >
+                <p-fileUpload
+                  name="images"
+                  url="/api/upload"
+                  (onUpload)="onFileUpload($event)"
+                  multiple
+                  accept="image/*"
+                  maxFileSize="1000000"
+                  chooseLabel="Browse"
+                >
+                  <ng-template pTemplate="content">
+                    <small class="text-gray-500"
+                      >Max file size: 1MB. Supported formats: JPEG, PNG</small
+                    >
+                  </ng-template>
+                </p-fileUpload>
+
+                <!-- Image Previews -->
+                <div
+                  class="flex flex-wrap gap-2 mt-2"
+                  *ngIf="previewImages.length > 0"
+                >
+                  <div
+                    *ngFor="let image of previewImages; let i = index"
+                    class="relative"
+                  >
+                    <img
+                      [src]="image"
+                      class="h-20 w-20 object-cover rounded border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      (click)="removeImage(i)"
+                      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center hover:bg-red-600"
+                    >
+                      <i class="pi pi-times text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex justify-end gap-4 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              (click)="closeRoomModal()"
+              class="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="roomForm.invalid || loading"
+            >
+              <span *ngIf="!loading">Create Room</span>
+              <span *ngIf="loading" class="flex items-center">
+                <i class="pi pi-spinner pi-spin mr-2"></i> Creating...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Room Type Creation Modal -->
+<div
+  *ngIf="showRoomTypeModal"
+  class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
+>
+  <div class="relative w-full max-w-md">
+    <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+      <!-- Modal Header -->
+      <div
+        class="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center"
+      >
+        <h2 class="text-xl font-bold">Create New Room Type</h2>
+        <button
+          (click)="closeRoomTypeModal()"
+          class="text-white hover:text-gray-200 focus:outline-none"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="p-6 bg-gray-50">
+        <form
+          [formGroup]="roomTypeForm"
+          (ngSubmit)="onCreateRoomType()"
+          class="space-y-4"
+        >
+          <!-- Name -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Name*</label>
+            <input
+              type="text"
+              formControlName="name"
+              class="form-input"
+              placeholder="Enter room type name"
+            />
+            <div
+              *ngIf="
+                roomTypeForm.get('name')?.invalid &&
+                roomTypeForm.get('name')?.touched
+              "
+              class="form-error"
+            >
+              Name is required (max 50 characters)
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700"
+              >Description</label
+            >
+            <textarea
+              formControlName="description"
+              rows="3"
+              class="form-input"
+              placeholder="Enter description"
+            ></textarea>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex justify-end gap-4 pt-4">
+            <button
+              type="button"
+              (click)="closeRoomTypeModal()"
+              class="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="roomTypeForm.invalid || creatingRoomType"
+            >
+              <span *ngIf="!creatingRoomType">Create</span>
+              <span *ngIf="creatingRoomType" class="flex items-center">
+                <i class="pi pi-spinner pi-spin mr-2"></i> Creating...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

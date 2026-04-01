@@ -1,0 +1,196 @@
+    .transaction-card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      border: none;
+      background: #ffffff;
+    }
+
+    .transaction-card .p-card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1.2rem;
+      padding: 1.5rem;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .custom-table {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .custom-table .p-datatable-thead>tr>th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .custom-table .p-datatable-tbody>tr>td {
+      padding: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .custom-table .p-datatable-tbody>tr:hover {
+      background: #f8fafc;
+      transition: background-color 0.2s ease;
+    }
+
+    .amount {
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .amount.spent {
+      font-size: 1.3rem;
+    }
+
+    .amount.received {
+      font-size: 1.3rem;
+    }
+
+    .empty-received {
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .assigned-tag {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .review-btn {
+      border-radius: 6px;
+      border: 1px dashed #1d4ed8;
+      background-color: #1d4ed8;
+      color: white;
+      padding: .6rem .6rem;
+      margin: 1rem 0rem;
+    }
+
+    .review-btn .p-button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    /* Modal Styles */
+    .review-modal .p-dialog-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .modal-content {
+      padding: 1rem 0;
+    }
+
+    .review-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .review-item:last-child {
+      border-bottom: none;
+    }
+
+    .review-item label {
+      font-weight: 600;
+      color: #374151;
+      min-width: 120px;
+    }
+
+    .review-item span {
+      flex: 1;
+      text-align: right;
+    }
+
+    .review-actions {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 2px solid #f1f5f9;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .review-actions .p-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .px-10 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .custom-table .p-datatable-thead>tr>th,
+      .custom-table .p-datatable-tbody>tr>td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .review-modal .p-dialog {
+        width: 95vw !important;
+        margin: 1rem;
+      }
+
+      .review-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .review-item span {
+        text-align: left;
+      }
+    }
+
+    /* Pagination and dropdown styling */
+.custom-table .p-paginator {
+  padding: 1rem;
+  justify-content: center;
+  background-color: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+}
+
+.custom-table .p-dropdown,
+.custom-table .p-paginator .p-paginator-pages .p-paginator-page,
+.custom-table .p-paginator .p-paginator-current {
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  font-size: 0.9rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.custom-table .p-dropdown:hover,
+.custom-table .p-paginator .p-paginator-page:hover {
+  background-color: #e0e7ff;
+  cursor: pointer;
+}
+
+.custom-table .p-paginator .p-paginator-page.p-highlight {
+  background-color: #1d4ed8;
+  color: white;
+  font-weight: bold;
+}
+
+
+.review-btn:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
+  transition: all 0.2s ease-in-out;
+}

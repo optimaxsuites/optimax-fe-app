@@ -1,0 +1,473 @@
+<!-- Toast -->
+<div *ngIf="showToast"
+    class="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium"
+    [ngClass]="toastType === 'success' ? 'bg-customGreen' : 'bg-red-500'">
+    <i [class]="toastType === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'" class="text-lg"></i>
+    <span>{{ toastMessage }}</span>
+</div>
+
+<div class="p-6 max-w-6xl mx-auto">
+
+    <!-- Back -->
+    <button (click)="goBack()"
+        class="flex items-center gap-2 text-sm text-gray-400 hover:text-customBlue transition-colors mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Back to Bookings
+    </button>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center py-20">
+        <i class="fa-solid fa-spinner fa-spin text-3xl text-customBlue"></i>
+    </div>
+
+    <ng-container *ngIf="!loading && booking">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <h1 class="text-2xl font-bold text-gray-800">Booking #{{ booking.id }}</h1>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold"
+                        [ngClass]="getStatusColor(booking.status)">
+                        {{ booking.status | titlecase }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-400">
+                    {{ booking.checkinDate || '---' }} → {{ booking.checkoutDate || '---' }} · {{ getNights() }} night{{
+                    getNights() !== 1
+                    ? 's' : '' }} ·
+                    {{ booking.adults }} adult{{ booking.adults !== 1 ? 's' : '' }}
+                    <span *ngIf="booking.children">, {{ booking.children }} child{{ (booking.children | number) !== '1'
+                        ? 'ren' : ''
+                        }}</span>
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3 shrink-0 self-end">
+                <button (click)="navigateToRoomFirst()"
+                    class="px-5 py-2.5 bg-customBlue text-white rounded-lg text-sm font-semibold hover:bg-customBlueHover transition-all flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-calendar-plus"></i> New Booking
+                </button>
+                <button *ngIf="booking.status === 'CONFIRMED' || booking.status === 'PENDING'"
+                    (click)="updateStatus('CHECKED_IN')" [disabled]="submittingStatus"
+                    class="px-5 py-2.5 bg-customGreen text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket"></i> Check-In
+                </button>
+                <button *ngIf="booking.status === 'CHECKED_IN'" (click)="updateStatus('CHECKED_OUT')"
+                    [disabled]="submittingStatus"
+                    class="px-5 py-2.5 bg-gray-700 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-right-from-bracket"></i> Check-Out
+                </button>
+                <button *ngIf="booking.status === 'CONFIRMED' || booking.status === 'PENDING'"
+                    (click)="showCancelModal = true"
+                    class="px-5 py-2.5 bg-white border border-red-400 text-red-500 rounded-lg text-sm font-semibold hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-ban"></i> Cancel
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-5">
+
+            <!-- Left column -->
+            <div class="col-span-2 space-y-5">
+
+                <!-- Guest Panel -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                        <i class="fa-solid fa-user text-gray-400 mr-1.5"></i>Guest
+                    </h3>
+                    <div *ngIf="guest" class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-customBlue text-white flex items-center justify-center text-lg font-bold shrink-0">
+                            {{ (guest.firstName || '?').charAt(0) }}{{ (guest.lastName || '?').charAt(0) }}
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-base font-semibold text-gray-800">
+                                {{ guest.title || '' }} {{ guest.firstName || 'Unknown' }} {{ guest.lastName || 'Guest'
+                                }}
+                            </p>
+                            <div class="flex items-center gap-5 mt-1 text-sm text-gray-500">
+                                <span><i class="fa-solid fa-envelope text-gray-400 mr-1.5"></i>{{ guest.email || 'No
+                                    email' }}</span>
+                                <span><i class="fa-solid fa-phone text-gray-400 mr-1.5"></i>{{ guest.phone || 'No phone'
+                                    }}</span>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-1">
+                                <i class="fa-solid fa-id-card mr-1.5 text-gray-400"></i>
+                                <span class="font-mono">{{ guest.idNumber || 'No ID' }}</span> · {{ guest.country ||
+                                'N/A' }}
+                            </p>
+                        </div>
+                        <a *ngIf="guest.id" [routerLink]="['/hospitality', 'guests', uuid, guest.id]"
+                            class="text-customBlue text-sm hover:underline font-medium ml-auto">
+                            View Profile
+                        </a>
+                    </div>
+                    <!-- Display raw guest ID if object not loaded -->
+                    <div *ngIf="!guest && booking.guest" class="p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 italic">
+                            Customer: Loading data for Guest #{{ getRoomId(booking.guest) }}...
+                        </p>
+                    </div>
+                    <div *ngIf="!guest && !booking.guest" class="text-sm text-gray-400">No guest assigned to this
+                        booking.</div>
+                </div>
+
+                <!-- Rooms Panel -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                        <i class="fa-solid fa-door-open text-gray-400 mr-1.5"></i>Room(s) Booked
+                    </h3>
+                    <div class="space-y-3">
+                        <div *ngFor="let room of rooms"
+                            class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-customBlue/5 rounded-xl flex items-center justify-center">
+                                    <i class="fa-solid fa-door-open text-customBlue text-base"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">Room {{ room.roomNumber || '#' + room.id
+                                        }}</p>
+                                    <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider">
+                                        {{ getRoomTypeName(room.roomType) }} · floor {{ room.floor }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-gray-900">₦{{ room.rate | number }}/night</p>
+                                <p class="text-[10px] font-bold text-customGreen uppercase">Available</p>
+                            </div>
+                        </div>
+
+                        <!-- Fallback if full room objects haven't matched yet -->
+                        <div *ngIf="rooms.length === 0 && booking.rooms && booking.rooms.length">
+                            <div *ngFor="let r of booking.rooms"
+                                class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
+                                <div
+                                    class="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300">
+                                    <i class="fa-solid fa-door-open text-base"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-400 italic">Loading Room #{{ getRoomId(r)
+                                        }}...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="booking.specialRequests" class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Special Requests</p>
+                        <p class="text-sm text-gray-600 italic">{{ booking.specialRequests }}</p>
+                    </div>
+                </div>
+
+                <!-- Additional Services Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-bell-concierge text-customBlue"></i> Additional Services
+                        </h3>
+                        <span class="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                            {{ appliedServices.length }} Applied
+                        </span>
+                    </div>
+
+                    <!-- Available Services Grid -->
+                    <div class="mb-8">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Available Services</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div *ngFor="let svc of availableServices" 
+                                 class="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all group flex items-center justify-between cursor-pointer"
+                                 (click)="addService(svc)">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-50 text-customBlue rounded-lg flex items-center justify-center group-hover:bg-customBlue group-hover:text-white transition-colors">
+                                        <i class="fa-solid" [ngClass]="getServiceIcon(svc.name)"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-800">{{ svc.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ svc.price | currency:'UGX ':'symbol':'1.0-0' }}/{{ svc.measurements }}</p>
+                                    </div>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center group-hover:bg-customGreen group-hover:text-white transition-all">
+                                    <i class="fa-solid fa-plus text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applied Services List -->
+                    <div *ngIf="appliedServices.length > 0">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Applied to this Booking</p>
+                        <div class="space-y-3">
+                            <div *ngFor="let charge of appliedServices" 
+                                 class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-gray-400">
+                                        <i class="fa-solid" [ngClass]="getServiceIcon(charge.description)"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-800">{{ charge.description }}</p>
+                                        <p class="text-xs text-gray-500">Room {{ getRoomNumber(charge.room) }} · {{ charge.amount | currency:'UGX ':'symbol':'1.0-0' }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <button *ngIf="!isServicePaid(charge)" 
+                                            (click)="payService(charge)"
+                                            class="px-4 py-1.5 bg-customGreen text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all flex items-center gap-2">
+                                        <i class="fa-solid fa-wallet"></i> Pay Now
+                                    </button>
+                                    <span *ngIf="isServicePaid(charge)" 
+                                          class="px-3 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded-lg uppercase">
+                                        <i class="fa-solid fa-check mr-1.5"></i> Paid
+                                    </span>
+                                    <button (click)="removeService(charge)" class="text-gray-400 hover:text-red-500 p-2 transition-colors">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="appliedServices.length === 0" class="py-10 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        <i class="fa-solid fa-concierge-bell text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500">No additional services have been added to this booking yet.</p>
+                        <p class="text-xs text-gray-400 mt-1">Select from the available services above to bill the guest.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right column — Financials -->
+            <div class="space-y-5">
+
+                <!-- Totals -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                        <i class="fa-solid fa-receipt text-gray-400 mr-1.5"></i>Charges Breakdown
+                    </h3>
+                    <div class="space-y-2.5">
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span class="font-medium text-gray-400">Accommodation</span>
+                            <span class="font-semibold">₦{{ booking.subTotal | number }}</span>
+                        </div>
+                        <div *ngIf="booking.taxes && booking.taxes > 0"
+                            class="flex justify-between text-sm text-gray-600">
+                            <span class="font-medium text-gray-400">Taxes</span>
+                            <span class="font-semibold">₦{{ booking.taxes | number }}</span>
+                        </div>
+                        <div
+                            class="border-t border-gray-100 pt-3 flex justify-between text-lg font-black text-gray-900">
+                            <span>Grand Total</span>
+                            <span>₦{{ booking.total | number }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payments - Enhanced with method badges -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                            <i class="fa-solid fa-money-bill-wave text-gray-400 mr-1.5"></i>Payments
+                        </h3>
+                        <div class="px-3 py-1 bg-blue-50 text-customBlue text-[10px] font-bold rounded-lg border border-blue-100">
+                            {{ payments.length }} PAYMENTS
+                        </div>
+                    </div>
+                    <div *ngIf="payments.length > 0" class="space-y-2.5 mb-3">
+                        <div *ngFor="let p of payments"
+                            class="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                                    [ngClass]="getMethodStyle(p.method)">
+                                    {{ p.method }}
+                                </span>
+                                <span *ngIf="p.reference" class="text-[11px] text-gray-400 font-mono">{{ p.reference
+                                    }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-semibold text-gray-800">₦{{ p.amountPaid | number }}</span>
+                                <span class="block text-[10px] px-1.5 py-0.5 rounded-full ml-auto w-fit"
+                                    [ngClass]="getPaymentStatusColor(p.status)">{{ p.status }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="payments.length === 0" class="text-sm text-gray-400 text-center py-2">No payments
+                        recorded yet.</div>
+                    <div class="border-t border-gray-100 pt-3 mt-3 space-y-1.5">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Total Paid</span>
+                            <span class="font-semibold text-customGreen">₦{{ totalPaid | number }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Balance Due</span>
+                            <span class="font-bold" [ngClass]="balanceDue > 0 ? 'text-red-500' : 'text-gray-500'">
+                                ₦{{ balanceDue | number }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </ng-container>
+</div>
+
+<!-- ═══ POS-Style Add Payment Modal ═══ -->
+<div *ngIf="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="showPaymentModal = false"></div>
+
+    <div
+        class="relative bg-white rounded-[2.5rem] shadow-2xl overflow-hidden max-w-lg w-full border border-gray-100 flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100 shrink-0">
+            <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Payment Details</h3>
+            <p class="text-xs font-bold text-gray-400 mt-1">Booking #{{ booking?.id }}</p>
+        </div>
+
+        <!-- Body -->
+        <div class="p-8 space-y-6 overflow-y-auto">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-5 rounded-3xl border border-gray-100">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Due</p>
+                    <p class="text-2xl font-black text-gray-900">₦{{ balanceDue | number }}</p>
+                </div>
+                <div [ngClass]="remainingBalance === 0 ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-500'"
+                    class="p-5 rounded-3xl border transition-colors">
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Remaining</p>
+                    <p class="text-2xl font-black">₦{{ remainingBalance | number }}</p>
+                </div>
+            </div>
+
+            <!-- Payment Entry Section -->
+            <div class="space-y-4">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Select
+                    Method</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <button *ngFor="let m of paymentMethods" type="button" (click)="selectMethod(m.key)"
+                        class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all group"
+                        [ngClass]="selectedMethod === m.key ? m.color + ' shadow-inner ring-1 ring-offset-1' : 'border-gray-50 text-gray-400 hover:border-gray-200'">
+                        <i [class]="m.icon" class="text-lg group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-black uppercase">{{ m.label }}</span>
+                    </button>
+                </div>
+
+                <div class="flex gap-3 mt-4">
+                    <form [formGroup]="paymentForm" class="flex-1 flex gap-3 items-end">
+                        <div class="relative flex-1">
+                            <span
+                                class="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-gray-300">₦</span>
+                            <input formControlName="amount" type="number" placeholder="0.00"
+                                class="h-14 pl-10 w-full rounded-2xl bg-gray-50 border-none font-black text-2xl text-gray-900 focus:bg-white focus:ring-4 focus:ring-customBlue/10 transition-all outline-none" />
+                        </div>
+                        <button type="button" (click)="addToBatch()" [disabled]="paymentForm.get('amount')?.value <= 0"
+                            class="h-14 w-14 rounded-2xl bg-gray-900 text-white flex items-center justify-center hover:bg-black transition-colors disabled:opacity-30">
+                            <i class="fa-solid fa-plus text-xl"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Batch List -->
+            <div class="space-y-2">
+                <label *ngIf="batchPayments.length > 0"
+                    class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Payments Added</label>
+                <div class="max-h-48 overflow-y-auto pr-1 space-y-2">
+                    <div *ngFor="let p of batchPayments; let i = index"
+                        class="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-2">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">
+                                <i [class]="paymentMethods[0].icon" *ngIf="p.method === 'CASH'"></i>
+                                <i [class]="paymentMethods[1].icon" *ngIf="p.method === 'CARD'"></i>
+                                <i [class]="paymentMethods[2].icon" *ngIf="p.method === 'TRANSFER'"></i>
+                                <i [class]="paymentMethods[3].icon" *ngIf="p.method === 'POS'"></i>
+                                <i [class]="paymentMethods[4].icon" *ngIf="p.method === 'ONLINE'"></i>
+                            </div>
+                            <div>
+                                <p class="font-black text-gray-900">₦{{ p.amount | number }}</p>
+                                <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider">{{ p.method }}
+                                </p>
+                            </div>
+                        </div>
+                        <button (click)="removeFromBatch(i)"
+                            class="w-10 h-10 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div *ngIf="batchPayments.length === 0"
+                        class="py-8 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+                        <i class="fa-solid fa-receipt text-gray-200 text-3xl mb-2"></i>
+                        <p class="text-xs font-bold text-gray-300 uppercase tracking-widest">No payments queued</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Due -->
+            <div *ngIf="changeAmount > 0"
+                class="bg-emerald-50 border border-emerald-100 p-5 rounded-3xl flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">Change Due</p>
+                    <p class="text-2xl font-black text-emerald-700">₦{{ changeAmount | number }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                    <i class="fa-solid fa-coins text-xl"></i>
+                </div>
+            </div>
+
+            <!-- Optional Fields Row -->
+            <div class="grid grid-cols-2 gap-4">
+                <form [formGroup]="paymentForm" class="col-span-2 grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label
+                            class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Reference</label>
+                        <input formControlName="reference" type="text" placeholder="Optional ref"
+                            class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-customBlue/20 outline-none" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Notes</label>
+                        <input formControlName="notes" type="text" placeholder="Optional notes"
+                            class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-customBlue/20 outline-none" />
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-8 bg-gray-50/50 border-t border-gray-100 shrink-0 flex items-center justify-between gap-4">
+            <button (click)="showPaymentModal = false"
+                class="px-8 py-4 rounded-2xl text-sm font-bold text-gray-400 hover:bg-gray-100 transition-colors">
+                Cancel
+            </button>
+            <button (click)="submitBatchPayments()"
+                [disabled]="submittingPayment || (batchPayments.length === 0 && paymentForm.get('amount')?.value <= 0)"
+                class="flex-1 max-w-[240px] h-14 rounded-2xl bg-customBlue hover:bg-customBlueHover text-white font-black text-lg shadow-xl shadow-customBlue/20 transition-all transform active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                <i *ngIf="submittingPayment" class="fa-solid fa-spinner fa-spin"></i>
+                <span *ngIf="!submittingPayment">Complete Payment</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Cancel Booking Modal -->
+<div *ngIf="showCancelModal" class="fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40" (click)="showCancelModal = false"></div>
+    <div class="relative bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+        <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-ban text-red-500 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Cancel Booking?</h3>
+        <p class="text-sm text-gray-500 mb-6">This will cancel booking #{{ booking?.id }}. This action cannot be easily
+            undone.</p>
+        <div class="flex justify-center gap-3">
+            <button (click)="showCancelModal = false"
+                class="px-5 py-2.5 rounded-lg text-sm text-gray-600 border border-gray-300 hover:bg-gray-50">Keep
+                it</button>
+            <button (click)="updateStatus('CANCELLED')" [disabled]="submittingStatus"
+                class="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors">
+                Cancel Booking
+            </button>
+        </div>
+    </div>
+</div>

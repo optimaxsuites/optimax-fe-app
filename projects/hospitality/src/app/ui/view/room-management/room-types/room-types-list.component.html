@@ -1,0 +1,124 @@
+<!-- Toast Notification -->
+<div *ngIf="showToast"
+    class="fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300"
+    [ngClass]="toastType === 'success' ? 'bg-customGreen' : 'bg-red-500'">
+    <i [class]="toastType === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'" class="text-lg"></i>
+    <span>{{ toastMessage }}</span>
+</div>
+
+<div class="p-6 mx-auto">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fa-solid fa-tags text-customBlue mr-2"></i>Room Types
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Define and manage the different categories of rooms available.</p>
+        </div>
+        <button (click)="openCreateDrawer()"
+            class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <i class="fa-solid fa-plus"></i> Add Room Type
+        </button>
+    </div>
+
+    <!-- Table Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-customGreen text-white border-b border-customGreen">
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Description</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    <tr *ngFor="let type of roomTypes" class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-bold text-gray-800">{{ type.name }}</span>
+                            <span class="ml-2 bg-blue-50 text-customBlue text-[10px] px-2 py-0.5 rounded font-bold uppercase">#{{ type.id }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm text-gray-500 line-clamp-1 max-w-md">{{ type.description }}</p>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                          <div class="flex justify-end gap-2">
+                            <button (click)="openEditDrawer(type)" class="text-customBlue hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button (click)="confirmDelete(type)" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== DRAWER ===== -->
+<div *ngIf="showDrawer" class="fixed inset-0 z-50 flex">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="closeDrawer()"></div>
+    <div class="ml-auto relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-3">
+                <i class="fa-solid fa-tags text-customBlue"></i>
+                {{ isEditing ? 'Edit Room Type' : 'New Room Type' }}
+            </h2>
+            <button (click)="closeDrawer()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form [formGroup]="form" class="space-y-6">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Type Name *</label>
+                    <input formControlName="name" type="text" placeholder="e.g., Deluxe Suite" 
+                        class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
+                    <span *ngIf="form.get('name')?.touched && form.get('name')?.invalid" class="text-xs text-red-500">Required</span>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Description *</label>
+                    <textarea formControlName="description" rows="5" placeholder="Describe the features and amenities of this room type..." 
+                        class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all resize-none"></textarea>
+                    <span *ngIf="form.get('description')?.touched && form.get('description')?.invalid" class="text-xs text-red-500">Required (min 5 chars)</span>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-5 border-t border-gray-100 flex items-center justify-end gap-4 bg-gray-50/50">
+            <button (click)="closeDrawer()" 
+                class="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                Cancel
+            </button>
+            <button (click)="saveRoomType()" [disabled]="form.invalid"
+                class="bg-customBlue hover:bg-customBlueHover disabled:opacity-50 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i>
+                {{ isEditing ? 'Update Type' : 'Save Type' }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="showDeleteModal = false"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Room Type?</h3>
+        <p class="text-sm text-gray-500 leading-relaxed mb-6">Are you sure you want to delete <strong>{{ selectedRoomType?.name }}</strong>? This will affect all rooms assigned to this type.</p>
+        <div class="flex gap-3">
+            <button (click)="showDeleteModal = false" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+            <button (click)="deleteRoomType()" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">Delete</button>
+        </div>
+    </div>
+</div>

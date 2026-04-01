@@ -1,0 +1,27 @@
+
+
+:host {
+  font-family: 'Inter', sans-serif;
+}
+
+.apexcharts-tooltip {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: 'Inter', sans-serif;
+}
+th {
+  @apply bg-transparent
+}
+
+:host nav[aria-label="Tabs"] button {
+  color: #1f2937; /* Tailwind text-gray-800 */
+}
+
+:host table thead th {
+  color: #1f2937 !important;
+}
+
+:host .bg-white table thead th {
+  color: #1f2937 !important;
+}
