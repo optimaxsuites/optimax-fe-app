@@ -61,7 +61,6 @@ const routes: Routes = [
   imports: [
     CommonModule, 
     RouterModule.forChild(routes),
-    // BookingsShellComponent // Standalone component used in routes
   ],
   exports: [RouterModule],
 })
