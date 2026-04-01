@@ -791,35 +791,54 @@ generatePayrolls(){
     }
 
   generateCSV() {
-    if (this.selectedEmployees.length > 0) {
-      const csvData = this.convertToCSV(this.selectedEmployees);
-      const label = this.selectedEmployees.length === 1
-        ? `${this.selectedEmployees[0]?.name}`
-        : 'selected employees';
-      this.downloadCSV(csvData, `${label} for ${this.selectedMonth + this.selectedYear}_payroll.csv`);
-    } else {
-      const csvData = this.convertToCSV(this.currentPayroll);
-      this.downloadCSV(csvData, `payroll for ${this.selectedMonth + this.selectedYear}.csv`);
-    }
-  }
+  const source = this.filteredEmployeePayroll.length > 0
+    ? this.filteredEmployeePayroll
+    : this.currentPayroll;
+
+  const csvData = this.convertToCSV(source);
+
+  const label = source.length === 1
+    ? `${source[0]?.employee?.firstName ?? ''}_${source[0]?.employee?.lastName ?? ''}`.trim()
+    : 'employees';
+
+  this.downloadCSV(
+    csvData,
+    `${label}_${this.selectedMonth}_${this.selectedYear}_payroll.csv`
+  );
+}
 
   convertToCSV(data: any[]) {
-    const headers = ['Employee ID', 'Name', 'Pay type', 'Account Number', 'Bank Name', 'Attendance Deduction', 'Overtime', 'Net Pay'];
-    const rows = data.map(employee => [
-      employee.id,
-      employee.name,
-      employee.type,
-      employee.accountNumber,
-      employee.bank,
-      employee.attendancePenalty || 0,
-      employee.overtimePay || 0,
-      employee.netPayable
+  const headers = [
+    'Employee ID',
+    'Employee Name',
+    'Account Number',
+    'Bank Name',
+    'Days Worked',
+    'Base Pay',
+    'Overtime Pay',
+    'Gross Pay',
+    'Total Deductions',
+    'Net Payable'
+  ];
+
+  const safe = (val: any) => `"${val}"`;
+  const rows = data.map(emp => [
+      emp.id,
+      safe(`${emp.employee?.firstName ?? ''} ${emp.employee?.lastName ?? ''}`.trim()),
+      emp.employee?.accountNumber ?? '',
+      emp.employee?.bankName ?? '',
+      emp.daysWorked ?? 0,
+      safe(this.formatCurrency(emp.basePay)),
+      safe(this.formatCurrency(emp.overtimePay)),
+      safe(this.formatCurrency(emp.grossPay)),
+      safe(this.formatCurrency(emp.totalDeductions)),
+      safe(this.formatCurrency(emp.netPayable))
     ]);
-    
-    // Combine headers and rows
-    const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n');
-    return csvContent;
-  }
+
+  return [headers, ...rows]
+    .map(row => row.join(','))
+    .join('\n');
+}
 
   downloadCSV(csvContent: string, filename: string) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
