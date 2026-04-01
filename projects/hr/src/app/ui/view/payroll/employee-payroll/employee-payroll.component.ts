@@ -840,22 +840,17 @@ generatePayrolls(){
     .join('\n');
 }
 
-  downloadCSV(csvContent: string, filename: string) {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-  
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    
+  downloadCSV(csv: string, filename: string) {
+  const BOM = '\uFEFF'; // forces Excel to read as UTF-8
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
 
-    document.body.appendChild(link);
-    link.click();
-    
-  
-    document.body.removeChild(link);
-  }
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
   viewEmployeePaySLip(employee: any, op?: any){
     op?.hide?.()
