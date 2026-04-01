@@ -63,12 +63,83 @@ export class AuthenticationService {
   }
 
 
+  private validateAndFormatSignupData(userData: any): any {
+    const formattedPhone = userData.phonenumber ? userData.phonenumber.replace(/\D/g, '').substring(0, 15) : '';
+    const username = userData.username.substring(0, 20);
+    const clientType = 'Group';
+    const currentDate = new Date().toISOString();
+
+    const apiKey = environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071';
+    const project = environment.project || 'ERP';
+
+    let domain = 'optimax';
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      domain = hostname.split('.')[0];
+    }
+
+    return {
+      username: username,
+      email: userData.email,
+      role: ['ROLE_USER'],
+      password: userData.password,
+      project: project,
+      apiKey: apiKey,
+      createdDate: currentDate,
+      lastLoginDate: currentDate,
+      createdBy: 'system',
+      upi: {
+        fullname: (userData.fullname || '').substring(0, 100),
+        email: userData.email,
+        phoneNumber: formattedPhone,
+        username: username,
+        city: '',
+        state: '',
+        country: '',
+        profileImage: '',
+        address: '',
+        domain: domain,
+        clientType: clientType,
+        companyName: '',
+        industry: '',
+        bio: '',
+        postalCode: '',
+        currency: 'NGN',
+        language: 'en',
+        timeZone: 'Africa/Lagos',
+      },
+    };
+  }
+
   userLogin(data: any): Observable<any> {
+    const loginPayload = {
+      username: data.username,
+      password: data.password,
+      project: environment.project || 'ERP',
+      apiKey: environment.apiKey || 'ApiKey b784e00442334be0497f434d2a4cbefd'
+    };
+
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", loginPayload)
         .pipe(
           tap((response: any) => {
-            if (response.ecode) {
+            console.log('Login response:', response);
+            
+            if (response.accessToken) {
+              let token = response.accessToken;
+              if (token.includes('=')) {
+                const start = token.indexOf('=') + 1;
+                const end = token.indexOf(';', start);
+                token = end > -1 ? token.substring(start, end) : token.substring(start);
+              }
+              token = token.trim();
+
+              localStorage.setItem('auth_token', token);
+              localStorage.setItem('token', token);
+              sessionStorage.setItem('Token', token);
+            }
+
+            if (response.ecode && response.ecode !== 'null') {
               localStorage.setItem('tenantId', response.ecode);
             }
           }),
@@ -92,8 +163,6 @@ export class AuthenticationService {
   }
 
   getRegDataByUsername(username: string): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/us/ur/findByUsernameOrEmail?username="+"---"+JSON.stringify(username)))
-
     return this.http
         .get<any>(
             this.getBaseApiUrl() +
@@ -103,12 +172,12 @@ export class AuthenticationService {
         .pipe(catchError(this.handleError));
   }
 
-  
   userRegistration(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+    const validatedPayload = this.validateAndFormatSignupData(data);
+    console.log('Sending signup payload:', validatedPayload);
 
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", data)
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", validatedPayload)
       .pipe(catchError(this.handleError));
   }
 

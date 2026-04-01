@@ -23,11 +23,27 @@ export class EBookingCheckoutComponent implements OnInit {
   checkoutDate = '';
   adults = 1;
   children = 0;
+  
+  // Guest fields
+  title = 'Mr';
   firstName = '';
   lastName = '';
   email = '';
   phone = '';
+  gender = 'Male';
+  country = 'Nigeria';
+  idNumber = '';
   specialRequests = '';
+
+  // Options
+  titles: string[] = [];
+  genders: string[] = [];
+  countries: string[] = [];
+
+  // Toast
+  showToast = false;
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
 
   // Services
   additionalServices: any[] = [];
@@ -45,6 +61,11 @@ export class EBookingCheckoutComponent implements OnInit {
   ngOnInit(): void {
     const roomId = this.route.snapshot.paramMap.get('id');
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
+
+    // Populate options
+    this.titles = this.hotelService.getTitles();
+    this.genders = this.hotelService.getGenders();
+    this.countries = this.hotelService.getCountries();
 
     // Read selected service IDs passed as query param
     const servicesParam = this.route.snapshot.queryParamMap.get('services');
@@ -147,24 +168,24 @@ export class EBookingCheckoutComponent implements OnInit {
   confirmBooking(): void {
     if (!this.room || this.isSubmitting) return;
 
-    // Simple validation
+    // Enhanced validation
     if (!this.firstName || !this.lastName || !this.email || !this.phone) {
-      alert('Please fill in all required guest information fields.');
+      this.showToastMessage('Please fill in all required guest information fields.', 'error');
       return;
     }
 
     this.isSubmitting = true;
 
-    // 1. Create/Identify Guest
+    // 1. Create/Identify Guest - Using all admin fields
     const guestData: any = {
-      title: 'Mr/Ms', // Default or could be added to form
+      title: this.title,
       firstName: this.firstName,
       lastName: this.lastName,
       email: this.email,
       phone: this.phone,
-      country: 'Nigeria', // Default
-      idNumber: 'N/A',
-      gender: 'PREFER_NOT_TO_SAY'
+      country: this.country,
+      idNumber: this.idNumber || 'N/A',
+      gender: this.gender
     };
 
     console.log('DEBUG: E-Booking — Creating guest:', guestData);
@@ -172,6 +193,7 @@ export class EBookingCheckoutComponent implements OnInit {
     this.hotelService.createGuest(guestData).subscribe({
       next: (createdGuest) => {
         console.log('DEBUG: E-Booking — Guest created:', createdGuest);
+        const guestId = this.hotelService.getId(createdGuest);
         
         // 2. Create Booking
         const bookingData: any = {
@@ -182,8 +204,8 @@ export class EBookingCheckoutComponent implements OnInit {
           specialRequests: this.specialRequests,
           subTotal: this.roomTotal,
           total: this.grandTotal,
-          status: 'PENDING',
-          guest: createdGuest.id,
+          status: 'CONFIRMED',
+          guest: Number(guestId),
           rooms: [this.room.id]
         };
 
@@ -195,20 +217,28 @@ export class EBookingCheckoutComponent implements OnInit {
             this.confirmedBooking = res;
             this.showSuccessModal = true;
             this.isSubmitting = false;
+            this.showToastMessage('Booking created successfully!', 'success');
           },
           error: (err) => {
             console.error('DEBUG: E-Booking — Booking failed:', err);
-            alert('Failed to create reservation. Please try again or contact support.');
+            this.showToastMessage('Failed to create reservation. Please try again.', 'error');
             this.isSubmitting = false;
           }
         });
       },
       error: (err) => {
         console.error('DEBUG: E-Booking — Guest creation failed:', err);
-        alert('Failed to register guest details. Please check your information.');
+        this.showToastMessage('Failed to register guest details. Please check your info.', 'error');
         this.isSubmitting = false;
       }
     });
+  }
+
+  showToastMessage(message: string, type: 'success' | 'error'): void {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToast = true;
+    setTimeout(() => this.showToast = false, 4000);
   }
 
   finishBooking(): void {

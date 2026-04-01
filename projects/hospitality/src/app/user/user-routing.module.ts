@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { HotelCheckoutComponent } from '../ui/view/hotel-checkout/hotel-checkout.component';
 import { RoomServiceComponent } from '../ui/view/room-service/room-service.component';
@@ -15,6 +16,9 @@ import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.com
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 import { RoomDetailsComponent } from '../ui/bookings/room-details/room-details.component';
 import { EBookingCheckoutComponent } from '../ui/bookings/e-booking-checkout/e-booking-checkout.component';
+import { EBookingLoginComponent } from '../ui/bookings/auth/login/login.component';
+import { EBookingRegisterComponent } from '../ui/bookings/auth/register/register.component';
+
 
 import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
 import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
@@ -39,6 +43,9 @@ const routes: Routes = [
       { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
       { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
       { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
+      { path: 'e-bookings/auth/login/:uuid', component: EBookingLoginComponent },
+      { path: 'e-bookings/auth/register/:uuid', component: EBookingRegisterComponent },
+    
 
   { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
   { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
@@ -47,7 +54,11 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [
+    CommonModule, 
+    RouterModule.forChild(routes),
+    BookingsShellComponent // Standalone component used in routes
+  ],
   exports: [RouterModule],
 })
 export class UserRoutingModule {}
