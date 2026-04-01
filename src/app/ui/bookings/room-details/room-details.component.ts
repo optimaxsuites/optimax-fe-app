@@ -137,12 +137,22 @@ export class RoomDetailsComponent implements OnInit {
 
   proceedToCheckout(mode: 'signin' | 'signup' | 'guest'): void {
     this.showAuthModal = false;
-    const serviceIds = Array.from(this.selectedServices).join(',');
-    const extras = serviceIds ? { services: serviceIds } : {};
-    this.router.navigate(
-      ['user/hospitality/e-bookings/checkout', this.room.id, this.uuid],
-      { queryParams: extras }
-    );
+
+    if (mode === 'guest') {
+      if (!this.room) return;
+      const serviceIds = Array.from(this.selectedServices).join(',');
+      const extras = serviceIds ? { queryParams: { services: serviceIds } } : {};
+      this.router.navigate(['e-bookings/checkout', this.room.id, this.uuid], extras);
+    } else {
+      const authPath = mode === 'signin' ? 'login' : 'register';
+      const serviceIds = Array.from(this.selectedServices).join(',');
+      const checkoutUrl = this.room ? `/e-bookings/checkout/${this.room.id}/${this.uuid}` : `/e-bookings/home/${this.uuid}`;
+      const returnUrl = (this.room && serviceIds) ? `${checkoutUrl}?services=${serviceIds}` : checkoutUrl;
+
+      this.router.navigate(['e-bookings/auth', authPath, this.uuid], {
+        queryParams: { returnUrl: returnUrl }
+      });
+    }
   }
 
   toggleService(serviceId: number): void {
@@ -178,7 +188,7 @@ export class RoomDetailsComponent implements OnInit {
 
   bookNow(): void {
     // Navigate to the booking form
-    this.router.navigate(['user/hospitality/e-bookings/booking-form', this.room.id, this.uuid]);
+    this.router.navigate(['e-bookings/booking-form', this.room.id, this.uuid]);
   }
 
   goBack(): void {

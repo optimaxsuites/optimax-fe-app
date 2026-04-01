@@ -574,7 +574,6 @@ export class BookingDetailComponent implements OnInit {
     if (!status) return 'bg-gray-300 text-white';
     const map: Record<string, string> = {
       CONFIRMED: 'bg-customBlue text-white',
-      PENDING: 'bg-amber-400 text-white',
       CANCELLED: 'bg-red-500 text-white',
       CHECKED_IN: 'bg-customGreen text-white',
       CHECKED_OUT: 'bg-gray-500 text-white',
@@ -584,13 +583,10 @@ export class BookingDetailComponent implements OnInit {
   }
 
   getPaymentStatusColor(status: string): string {
-    const map: Record<string, string> = {
-      COMPLETED: 'bg-emerald-100 text-emerald-700',
-      PENDING: 'bg-amber-100 text-amber-700',
-      FAILED: 'bg-red-100 text-red-700',
-      REFUNDED: 'bg-gray-100 text-gray-600',
-    };
-    return map[status] || 'bg-gray-100 text-gray-600';
+    if (status === 'COMPLETED') return 'bg-emerald-100 text-emerald-600';
+    if (status === 'FAILED') return 'bg-red-100 text-red-600';
+    if (status === 'REFUNDED') return 'bg-gray-100 text-gray-600';
+    return 'bg-gray-100 text-gray-600';
   }
 
   getNights(): number {

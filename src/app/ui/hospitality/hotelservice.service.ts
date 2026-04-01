@@ -127,7 +127,6 @@ export type RoomStatus =
 
 export type BookingStatus =
   | 'CONFIRMED'
-  | 'PENDING'
   | 'CANCELLED'
   | 'CHECKED_IN'
   | 'CHECKED_OUT'
@@ -1018,14 +1017,11 @@ export class HotelserviceService {
   getNoShowBookings(): Observable<Booking[]> {
     return this.getBookingsByStatus('NO_SHOW');
   }
-  getPendingBookings(): Observable<Booking[]> {
-    return this.getBookingsByStatus('PENDING');
+  getConfirmedBookings(): Observable<Booking[]> {
+    return this.getBookingsByStatus('CONFIRMED');
   }
   getCancelledBookings(): Observable<Booking[]> {
     return this.getBookingsByStatus('CANCELLED');
-  }
-  getConfirmedBookings(): Observable<Booking[]> {
-    return this.getBookingsByStatus('CONFIRMED');
   }
 
   deleteBooking(id: number): Observable<void> {
@@ -1273,7 +1269,6 @@ export class HotelserviceService {
   getBookingStatuses(): BookingStatus[] {
     return [
       'CONFIRMED',
-      'PENDING',
       'CANCELLED',
       'CHECKED_IN',
       'CHECKED_OUT',

@@ -50,7 +50,7 @@ export class BookingsListComponent implements OnInit {
   showToast = false;
 
   statuses: BookingStatus[] = [
-    'CONFIRMED', 'PENDING', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT', 'NO_SHOW',
+    'CONFIRMED', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT', 'NO_SHOW',
   ];
 
   uuid = '';
@@ -208,7 +208,6 @@ export class BookingsListComponent implements OnInit {
     const s = status.toUpperCase();
     if (s === 'CONFIRMED' || s === 'PAID' || s === 'CHECKED_OUT') return 'bg-emerald-100 text-emerald-600';
     if (s === 'CHECKED_IN' || s === 'IN_PROGRESS') return 'bg-blue-100 text-blue-600';
-    if (s === 'PENDING') return 'bg-amber-100 text-amber-600';
     if (s === 'CANCELLED' || s === 'OVERDUE') return 'bg-rose-100 text-rose-600';
     return 'bg-gray-100 text-gray-600';
   }
@@ -217,7 +216,6 @@ export class BookingsListComponent implements OnInit {
     const s = status.toUpperCase();
     if (s === 'CONFIRMED' || s === 'PAID' || s === 'CHECKED_OUT') return 'bg-emerald-100 text-emerald-600';
     if (s === 'CHECKED_IN') return 'bg-blue-100 text-blue-600';
-    if (s === 'PENDING') return 'bg-amber-100 text-amber-600';
     if (s === 'CANCELLED') return 'bg-rose-100 text-rose-600';
     return 'bg-gray-100 text-gray-600';
   }
@@ -226,7 +224,6 @@ export class BookingsListComponent implements OnInit {
   get totalCount(): number { return this.bookings.length; }
   get confirmedCount(): number { return this.bookings.filter(b => b.status === 'CONFIRMED').length; }
   get checkedInCount(): number { return this.bookings.filter(b => b.status === 'CHECKED_IN').length; }
-  get pendingCount(): number { return this.bookings.filter(b => b.status === 'PENDING').length; }
 
   viewBooking(booking: Booking): void {
     this.router.navigate(['/hospitality/bookings', booking.id, this.uuid]);
