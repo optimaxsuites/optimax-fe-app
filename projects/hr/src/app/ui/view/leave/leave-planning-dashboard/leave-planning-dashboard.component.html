@@ -21,8 +21,8 @@
             [items]="departments"
             [(ngModel)]="selectedDepartment"
             (ngModelChange)="applyFilters()"
+            placeholder="All Departments"
             [clearable]="true"
-            [placeholder]="'All Departments'"
           >
           </ng-select>
         </div>
@@ -53,7 +53,7 @@
           </ng-select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
             Month
           </label>
           <p-calendar
@@ -62,8 +62,7 @@
             view="month"
             dateFormat="MM yy"
             [showIcon]="true"
-            placeholder="All Months"
-            class="w-full border-1 p-3 border-gray-300 rounded-md"
+            class="w-full"
           >
           </p-calendar>
         </div>
@@ -72,6 +71,31 @@
 
     <div class="card">
       <div class="flex w-full py-4 items-center justify-between gap-4 px-3">
+        <div class="flex gap-4 items-center w-1/2 table-item">
+          <div class="w-full">
+            <ng-select
+              [items]="leaveTypes"
+              bindLabel="position"
+              [multiple]="true"
+              placeholder="Filter by leave type"
+              [(ngModel)]="selectedLeaveTypeFilter"
+              (ngModelChange)="filterByLeaveType()"
+            >
+            </ng-select>
+          </div>
+
+          <div class="w-full">
+            <ng-select
+              [items]="statuses"
+              bindLabel="position"
+              [multiple]="true"
+              placeholder="Filter by status"
+              [(ngModel)]="selectedStatusFilter"
+              (ngModelChange)="filterByStatus()"
+            >
+            </ng-select>
+          </div>
+        </div>
         <div class="w-[70%] table-item">
           <input
             type="text"
@@ -83,21 +107,7 @@
         </div>
       </div>
 
-      <div
-        *ngIf="isLoading"
-        class="bg-white rounded-lg border border-gray-200 p-20 text-center"
-      >
-        <div class="flex flex-col items-center gap-4">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-b-2 border-customBlue"
-          ></div>
-          <p class="text-gray-600 font-medium">Loading leave plans...</p>
-        </div>
-      </div>
-
-      <!-- Actual table -->
       <app-table
-        *ngIf="!isLoading"
         [columns]="tableColumns"
         [rows]="displayedConflicts"
         [actions]="tableActions"
@@ -108,7 +118,8 @@
           'No leave plans found. Plans will appear here when employees create them.'
         "
         (actionClick)="onActionClick($event)"
-      ></app-table>
+      >
+      </app-table>
     </div>
   </div>
 </div>
@@ -347,7 +358,6 @@
   </div>
 
   <!-- Footer -->
-  <!-- Footer -->
   <div
     style="
       border-top: 1px solid #f3f4f6;
@@ -357,10 +367,8 @@
       gap: 8px;
     "
   >
-    <!-- Reject button -->
     <button
       (click)="rejectPlan()"
-      [disabled]="isRejecting || isApproving"
       style="
         font-size: 13px;
         font-weight: 400;
@@ -370,47 +378,12 @@
         border-radius: 7px;
         padding: 8px 22px;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        opacity: 1;
-        transition: opacity 0.2s;
       "
-      [style.opacity]="isApproving ? '0.5' : '1'"
-      [style.cursor]="isRejecting || isApproving ? 'not-allowed' : 'pointer'"
     >
-      <svg
-        *ngIf="isRejecting"
-        style="
-          width: 13px;
-          height: 13px;
-          animation: spin 1s linear infinite;
-          flex-shrink: 0;
-        "
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="#991b1b"
-          stroke-width="4"
-        ></circle>
-        <path
-          fill="#991b1b"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        ></path>
-      </svg>
-      {{ isRejecting ? "Rejecting..." : "Reject" }}
+      Reject
     </button>
-
-    <!-- Approve button -->
     <button
       (click)="approvePlan()"
-      [disabled]="isApproving || isRejecting"
       style="
         font-size: 13px;
         font-weight: 400;
@@ -420,40 +393,9 @@
         border-radius: 7px;
         padding: 8px 22px;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: opacity 0.2s;
       "
-      [style.opacity]="isRejecting ? '0.5' : '1'"
-      [style.cursor]="isApproving || isRejecting ? 'not-allowed' : 'pointer'"
     >
-      <svg
-        *ngIf="isApproving"
-        style="
-          width: 13px;
-          height: 13px;
-          animation: spin 1s linear infinite;
-          flex-shrink: 0;
-        "
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="#166534"
-          stroke-width="4"
-        ></circle>
-        <path
-          fill="#166534"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        ></path>
-      </svg>
-      {{ isApproving ? "Approving..." : "Approve" }}
+      Approve
     </button>
   </div>
 </app-modal>

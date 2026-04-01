@@ -36,14 +36,10 @@ interface ConflictData {
   providers: [MessageService],
 })
 export class LeavePlanningDashboardComponent implements OnInit {
-// loading states
-isApproving = false;
-isRejecting = false;
-
   // Filters
-  selectedDepartment: string|null = null;
-  selectedLeaveType: string|null = null;
-  selectedStatus: string|null = null;
+  selectedDepartment: string = '';
+  selectedLeaveType: string = '';
+  selectedStatus: string = '';
   selectedMonth: Date | null = null;
 
   // Filter options
@@ -499,8 +495,6 @@ isRejecting = false;
     this.selectedPlan = null;
     this.selectedEmployee = null;
     this.adminComment = '';
-    this.isApproving = false;
-  this.isRejecting = false;
   }
 
   // ==================== APPROVE PLAN ====================
@@ -516,7 +510,7 @@ isRejecting = false;
       });
       return;
     }
-this.isApproving = true;
+
     const employeeName = this.selectedEmployee
       ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}`
       : this.selectedPlan.createdBy?.fullname || 'Unknown';
@@ -541,7 +535,6 @@ this.isApproving = true;
 
     this.apiService.updateLeavePlanRecord(this.selectedPlan.id, payload).subscribe({
       next: () => {
-        this.isApproving = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Plan Approved',
@@ -554,7 +547,6 @@ this.isApproving = true;
         this.loadData();
       },
       error: (err) => {
-        this.isApproving = false;
         console.error('❌ Failed to approve plan:', err);
         this.messageService.add({
           severity: 'error',
@@ -579,7 +571,7 @@ this.isApproving = true;
       });
       return;
     }
-this.isRejecting = true; 
+
     const employeeName = this.selectedEmployee
       ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}`
       : this.selectedPlan.createdBy?.fullname || 'Unknown';
@@ -606,7 +598,6 @@ this.isRejecting = true;
 
     this.apiService.updateLeavePlanRecord(this.selectedPlan.id, payload).subscribe({
       next: () => {
-        this.isRejecting = false; 
         this.messageService.add({
           severity: 'warn',
           summary: 'Plan Rejected',
@@ -619,7 +610,6 @@ this.isRejecting = true;
         this.loadData();
       },
       error: (err) => {
-        this.isRejecting = false; 
         console.error('❌ Failed to reject plan:', err);
         this.messageService.add({
           severity: 'error',

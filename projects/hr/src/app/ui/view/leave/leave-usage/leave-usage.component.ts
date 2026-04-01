@@ -10,10 +10,7 @@ import { LeaveApiService } from '../../../service/leave-api.service';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { MessageService } from 'primeng/api';
-import {
-  TableAction,
-  TableColumn,
-} from '../../../shared-component/view/table/table.component';
+import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -24,9 +21,6 @@ import { catchError } from 'rxjs/operators';
   providers: [MessageService],
 })
 export class LeaveUsageComponent implements OnInit {
-  isSubmitting = false;
-  selectedStartDate: string = '';
-  selectedEndDate: string = '';
   // Current employee data
   currentEmployee: any = null;
   currentEmployeeId: number | null = null;
@@ -45,7 +39,7 @@ export class LeaveUsageComponent implements OnInit {
   searchTerm: string = '';
   selectedLeaveType: string[] = [];
   selectedStatus: string[] = [];
-
+  
   // Display data
   myRequests: any = [];
   filteredRequests: any = [];
@@ -64,50 +58,23 @@ export class LeaveUsageComponent implements OnInit {
 
   // Table config
   requestColumns: TableColumn[] = [
-    {
-      header: 'Applied On',
-      field: 'appliedOn',
-      sortable: true,
-      className: 'table-item',
-    },
-    {
-      header: 'Period',
-      field: 'period',
-      sortable: true,
-      className: 'table-item',
-    },
-    {
-      header: 'Leave Type',
-      field: 'leaveTypeName',
-      sortable: true,
-      className: 'table-item',
-    },
-    {
-      header: 'Days',
-      field: 'totalDays',
-      sortable: true,
-      className: 'table-item',
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      sortable: true,
-      className: 'table-item',
-    },
+    { header: 'Applied On', field: 'appliedOn', sortable: true, className: 'table-item' },
+    { header: 'Period', field: 'period', sortable: true, className: 'table-item' },
+    { header: 'Leave Type', field: 'leaveTypeName', sortable: true, className: 'table-item' },
+    { header: 'Days', field: 'totalDays', sortable: true, className: 'table-item' },
+    { header: 'Status', field: 'status', sortable: true, className: 'table-item' }
   ];
-
+  
   requestActions: TableAction[] = [
-    {
-      id: 'view',
-      label: 'View',
+    { id: 'view', label: 'View', 
       // icon: 'pi pi-eye'
-    },
-    {
-      id: 'delete',
-      label: 'Cancel',
+     },
+    { 
+      id: 'delete', 
+      label: 'Cancel', 
       // icon: 'pi pi-trash',
-      visible: (row) => row.status === 'PENDING',
-    },
+      visible: (row) => row.status === 'PENDING'
+    }
   ];
 
   // Planned leaves - allowed date ranges
@@ -120,18 +87,13 @@ export class LeaveUsageComponent implements OnInit {
     initialView: 'dayGridMonth',
     plugins: [dayGridPlugin, interactionPlugin],
     events: this.calendarEvents,
-    selectable: true,
-    select: this.handleCalendarSelect.bind(this),
     dayCellClassNames: this.getDayCellClass.bind(this),
     dayCellDidMount: this.styleDayCell.bind(this),
-    validRange: {
-      start: new Date().toISOString().split('T')[0],
-    },
   };
 
   constructor(
     private messageService: MessageService,
-    private apiService: LeaveApiService,
+    private apiService: LeaveApiService
   ) {}
 
   ngOnInit() {
@@ -159,7 +121,7 @@ export class LeaveUsageComponent implements OnInit {
         console.log('✅ Current employee loaded:', {
           employeeId: this.currentEmployeeId,
           userId: this.currentUserId,
-          name: `${employee.firstName} ${employee.lastName}`,
+          name: `${employee.firstName} ${employee.lastName}`
         });
 
         this.loadAllData();
@@ -167,7 +129,7 @@ export class LeaveUsageComponent implements OnInit {
       error: (err) => {
         console.error('❌ Failed to load current employee:', err);
         this.isLoadingStats = false;
-      },
+      }
     });
   }
 
@@ -178,23 +140,15 @@ export class LeaveUsageComponent implements OnInit {
     this.isLoadingRequests = true;
 
     forkJoin({
-      balances: this.apiService
-        .getLeaveBalances()
-        .pipe(catchError(() => of([]))),
-      leaveTypes: this.apiService
-        .getLeaveTypes()
-        .pipe(catchError(() => of([]))),
-      leavePlans: this.apiService
-        .getLeavePlanRecords(1, 1000)
-        .pipe(catchError(() => of([]))),
-      leaveRequests: this.apiService
-        .getLeaveRequestRecords(1, 1000)
-        .pipe(catchError(() => of([]))),
+      balances: this.apiService.getLeaveBalances().pipe(catchError(() => of([]))),
+      leaveTypes: this.apiService.getLeaveTypes().pipe(catchError(() => of([]))),
+      leavePlans: this.apiService.getLeavePlanRecords(1, 1000).pipe(catchError(() => of([]))),
+      leaveRequests: this.apiService.getLeaveRequestRecords(1, 1000).pipe(catchError(() => of([])))
     }).subscribe({
       next: (data) => {
         // Filter balances for current employee
         this.leaveBalances = (data.balances || []).filter(
-          (balance: any) => balance.employee === this.currentEmployeeId,
+          (balance: any) => balance.employee === this.currentEmployeeId
         );
 
         this.leaveTypes = data.leaveTypes || [];
@@ -203,8 +157,7 @@ export class LeaveUsageComponent implements OnInit {
         this.leavePlans = (data.leavePlans || []).filter((plan: any) => {
           const planUserId = plan.createdBy?.userId;
           const isMyPlan = planUserId === this.currentUserId;
-          const isValidStatus =
-            plan.status === 'PENDING' || plan.status === 'APPROVED';
+          const isValidStatus = plan.status === 'PENDING' || plan.status === 'APPROVED';
           return isMyPlan && isValidStatus;
         });
 
@@ -214,12 +167,10 @@ export class LeaveUsageComponent implements OnInit {
         this.calculateAllowedDateRanges();
 
         // Filter leave requests for current user
-        this.leaveRequests = (data.leaveRequests || []).filter(
-          (request: any) => {
-            const requestUserId = request.createdBy?.userId;
-            return requestUserId === this.currentUserId;
-          },
-        );
+        this.leaveRequests = (data.leaveRequests || []).filter((request: any) => {
+          const requestUserId = request.createdBy?.userId;
+          return requestUserId === this.currentUserId;
+        });
 
         console.log('📝 User Leave Requests:', this.leaveRequests);
         console.log('✅ Allowed Date Ranges:', this.allowedDateRanges);
@@ -234,7 +185,7 @@ export class LeaveUsageComponent implements OnInit {
         console.error('❌ Failed to load data:', err);
         this.isLoadingStats = false;
         this.isLoadingRequests = false;
-      },
+      }
     });
   }
 
@@ -263,14 +214,14 @@ export class LeaveUsageComponent implements OnInit {
   // ==================== BUILD DISPLAY DATA ====================
 
   buildDisplayData() {
-    this.filteredRequests = this.leaveRequests.map((request) => ({
+    this.filteredRequests = this.leaveRequests.map(request => ({
       id: request.id,
       appliedOn: this.formatDateTime(request.createdAt),
       period: `${this.extractDate(request.startDate)} to ${this.extractDate(request.endDate)}`,
       leaveTypeName: request.leaveType?.name || 'Unknown',
       totalDays: request.totalDays,
       status: request.status,
-      _rawRequest: request,
+      _rawRequest: request
     }));
 
     this.myRequests = [...this.filteredRequests];
@@ -311,24 +262,17 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   getLeaveTypeCards() {
-    if (
-      !this.leaveBalances ||
-      !this.leaveTypes ||
-      this.leaveBalances.length === 0
-    ) {
+    if (!this.leaveBalances || !this.leaveTypes || this.leaveBalances.length === 0) {
       return [];
     }
 
-    return this.leaveBalances.map((balance) => {
-      const leaveType = this.leaveTypes.find(
-        (lt) => lt.id === balance.leaveTypeId,
-      );
-
+    return this.leaveBalances.map(balance => {
+      const leaveType = this.leaveTypes.find(lt => lt.id === balance.leaveTypeId);
+      
       const totalAllocated = (balance.balance || 0) + (balance.usedDays || 0);
       const remaining = balance.balance || 0;
       const used = balance.usedDays || 0;
-      const usedPercentage =
-        totalAllocated > 0 ? (used / totalAllocated) * 100 : 0;
+      const usedPercentage = totalAllocated > 0 ? (used / totalAllocated) * 100 : 0;
 
       return {
         typeName: leaveType?.name || 'Unknown',
@@ -336,7 +280,7 @@ export class LeaveUsageComponent implements OnInit {
         daysUsed: used,
         remainingDays: remaining,
         usedPercentage: usedPercentage,
-        isActive: true,
+        isActive: true
       };
     });
   }
@@ -378,14 +322,13 @@ export class LeaveUsageComponent implements OnInit {
       if (!this.isDateAllowed(dateStr)) {
         console.warn(' Invalid date selection:', {
           selectedRange: `${this.fromDate} to ${this.toDate}`,
-          invalidDate: dateStr,
+          invalidDate: dateStr
         });
 
         this.messageService.add({
           severity: 'error',
           summary: 'Invalid Date Range',
-          detail:
-            'Selected dates must fall completely within your approved planned leave periods',
+          detail: 'Selected dates must fall completely within your approved planned leave periods',
           key: 'tl',
           life: 5000,
         });
@@ -504,7 +447,7 @@ export class LeaveUsageComponent implements OnInit {
     if (!this.validateDateRange()) {
       return;
     }
-    this.isSubmitting = true;
+
     const from = new Date(this.fromDate);
     const to = new Date(this.toDate);
     const timeDiff = to.getTime() - from.getTime();
@@ -514,17 +457,16 @@ export class LeaveUsageComponent implements OnInit {
       createdBy: this.currentUserId,
       leaveTypeId: this.selectedLeaveTypeObj.id,
       startDate: this.fromDate + 'T12:00:00',
-      endDate: this.toDate + 'T12:00:00',
+endDate: this.toDate + 'T12:00:00',
       totalDays: dayDiff,
       leaveReason: this.comment || '',
-      attachment: '',
+      attachment: ''
     };
 
     console.log('📤 Submitting Leave Request:', payload);
 
     this.apiService.createLeaveRequestRecord(payload).subscribe({
       next: (created) => {
-        this.isSubmitting = false;
         console.log('✅ Leave request created:', created);
         this.messageService.add({
           severity: 'success',
@@ -538,7 +480,6 @@ export class LeaveUsageComponent implements OnInit {
         this.loadAllData();
       },
       error: (err) => {
-        this.isSubmitting = false;
         console.error(' Failed to create leave request:', err);
         this.messageService.add({
           severity: 'error',
@@ -546,12 +487,11 @@ export class LeaveUsageComponent implements OnInit {
           detail: 'Failed to submit leave request',
           key: 'tl',
         });
-      },
+      }
     });
   }
 
   resetForm() {
-    this.isSubmitting = false;
     this.comment = '';
     this.fromDate = '';
     this.toDate = '';
@@ -576,6 +516,8 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   cancelRequest(row: any) {
+    
+
     const request = row._rawRequest;
 
     this.apiService.deleteLeaveRequestRecord(request.id).subscribe({
@@ -596,7 +538,7 @@ export class LeaveUsageComponent implements OnInit {
           detail: 'Failed to cancel leave request',
           key: 'tl',
         });
-      },
+      }
     });
   }
 
@@ -604,17 +546,14 @@ export class LeaveUsageComponent implements OnInit {
 
   applyFilters() {
     this.myRequests = this.filteredRequests.filter((req: any) => {
-      const matchesSearch =
-        req.appliedOn.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        req.period.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearch = req.appliedOn.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                           req.period.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const matchesLeaveType =
-        this.selectedLeaveType.length === 0 ||
-        this.selectedLeaveType.includes(req.leaveTypeName);
+      const matchesLeaveType = this.selectedLeaveType.length === 0 ||
+                               this.selectedLeaveType.includes(req.leaveTypeName);
 
-      const matchesStatus =
-        this.selectedStatus.length === 0 ||
-        this.selectedStatus.includes(req.status);
+      const matchesStatus = this.selectedStatus.length === 0 ||
+                           this.selectedStatus.includes(req.status);
 
       return matchesSearch && matchesLeaveType && matchesStatus;
     });
@@ -664,15 +603,15 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   addOneDay(date: string): string {
-    if (!date) return '';
+  if (!date) return '';
 
-    const [year, month, day] = date.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
+  const [year, month, day] = date.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
 
-    d.setDate(d.getDate() + 1);
+  d.setDate(d.getDate() + 1);
 
-    return this.formatDateLocal(d);
-  }
+  return this.formatDateLocal(d); 
+}
 
   // ==================== HELPERS ====================
 
@@ -683,7 +622,7 @@ export class LeaveUsageComponent implements OnInit {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
+      minute: '2-digit'
     });
   }
 
@@ -692,7 +631,7 @@ export class LeaveUsageComponent implements OnInit {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
+      day: 'numeric'
     });
   }
 
@@ -712,33 +651,5 @@ export class LeaveUsageComponent implements OnInit {
     if (this.toDate && this.fromDate > this.toDate) {
       this.toDate = '';
     }
-  }
-
-  handleCalendarSelect(selectInfo: any) {
-    if (!this.hasPlannedLeaves) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Plan Leave First',
-        detail: 'You must have an approved leave plan before requesting leave.',
-        key: 'tl',
-        life: 5000,
-      });
-      return;
-    }
-
-    // endStr is exclusive in FullCalendar, subtract one day
-    const end = new Date(selectInfo.endStr);
-    end.setDate(end.getDate() - 1);
-
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const toLocalDate = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-    this.fromDate = selectInfo.startStr;
-    this.selectedStartDate = selectInfo.startStr;
-    this.selectedEndDate = toLocalDate(end);
-    this.toDate = toLocalDate(end);
-
-    this.openApplyLeave = true;
   }
 }
