@@ -36,7 +36,10 @@ const routes: Routes = [
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
-
+    {
+      path: "",
+      component: BookingsShellComponent,
+      children: [
       { path: 'e-bookings/home/:uuid', component: HomeComponent },
       { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
       { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },
@@ -45,7 +48,9 @@ const routes: Routes = [
       { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
       { path: 'e-bookings/auth/login/:uuid', component: EBookingLoginComponent },
       { path: 'e-bookings/auth/register/:uuid', component: EBookingRegisterComponent },
-    
+      { path: "**", redirectTo: "e-bookings/home/ab6b140b-fcd9-4944-8963-908a05c7363c", pathMatch: "full" },
+      ]
+    },
 
   { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
   { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
@@ -57,7 +62,7 @@ const routes: Routes = [
   imports: [
     CommonModule, 
     RouterModule.forChild(routes),
-    BookingsShellComponent // Standalone component used in routes
+    // BookingsShellComponent // Standalone component used in routes
   ],
   exports: [RouterModule],
 })

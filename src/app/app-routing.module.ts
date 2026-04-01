@@ -114,7 +114,8 @@ const routes: Routes = [
       {
         path: 'hospitality',
         loadChildren: () => import('../../projects/hospitality/src/app/user/user.module').then(m => m.UserModule),
-        canActivate: [UuidGuard]
+        // canActivate: [UuidGuard],
+        canActivateChild: [ChildUuidGuard],
 
       },
     ],
