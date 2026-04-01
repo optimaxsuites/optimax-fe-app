@@ -61,7 +61,7 @@ export class PayrollService {
   }
 
   // --- Employee Payroll ---
-  getEmployeePayrolls(page = 1, size = 10): Observable<any> {
+  getEmployeePayrolls(page = 1, size = 200): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/employeePayrolls`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
@@ -124,7 +124,7 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
-  getPayrollGenerationResponses(page = 1, size = 10): Observable<any> {
+  getPayrollGenerationResponses(page = 1, size = 200): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/hr/payrollGenerationResponses`, { params: { page, size } })
       .pipe(catchError(this.handleError));
   }
