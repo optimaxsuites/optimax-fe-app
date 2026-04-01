@@ -36,10 +36,14 @@ interface ConflictData {
   providers: [MessageService],
 })
 export class LeavePlanningDashboardComponent implements OnInit {
+// loading states
+isApproving = false;
+isRejecting = false;
+
   // Filters
-  selectedDepartment: string = '';
-  selectedLeaveType: string = '';
-  selectedStatus: string = '';
+  selectedDepartment: string|null = null;
+  selectedLeaveType: string|null = null;
+  selectedStatus: string|null = null;
   selectedMonth: Date | null = null;
 
   // Filter options
@@ -495,6 +499,8 @@ export class LeavePlanningDashboardComponent implements OnInit {
     this.selectedPlan = null;
     this.selectedEmployee = null;
     this.adminComment = '';
+    this.isApproving = false;
+  this.isRejecting = false;
   }
 
   // ==================== APPROVE PLAN ====================
@@ -510,7 +516,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
       });
       return;
     }
-
+this.isApproving = true;
     const employeeName = this.selectedEmployee
       ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}`
       : this.selectedPlan.createdBy?.fullname || 'Unknown';
@@ -535,6 +541,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
 
     this.apiService.updateLeavePlanRecord(this.selectedPlan.id, payload).subscribe({
       next: () => {
+        this.isApproving = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Plan Approved',
@@ -547,6 +554,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
         this.loadData();
       },
       error: (err) => {
+        this.isApproving = false;
         console.error('❌ Failed to approve plan:', err);
         this.messageService.add({
           severity: 'error',
@@ -571,7 +579,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
       });
       return;
     }
-
+this.isRejecting = true; 
     const employeeName = this.selectedEmployee
       ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}`
       : this.selectedPlan.createdBy?.fullname || 'Unknown';
@@ -598,6 +606,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
 
     this.apiService.updateLeavePlanRecord(this.selectedPlan.id, payload).subscribe({
       next: () => {
+        this.isRejecting = false; 
         this.messageService.add({
           severity: 'warn',
           summary: 'Plan Rejected',
@@ -610,6 +619,7 @@ export class LeavePlanningDashboardComponent implements OnInit {
         this.loadData();
       },
       error: (err) => {
+        this.isRejecting = false; 
         console.error('❌ Failed to reject plan:', err);
         this.messageService.add({
           severity: 'error',

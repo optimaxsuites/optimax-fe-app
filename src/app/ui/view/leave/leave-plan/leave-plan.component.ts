@@ -14,6 +14,9 @@ import { catchError } from 'rxjs/operators';
   providers: [MessageService],
 })
 export class LeavePlanComponent implements OnInit {
+  // submitting loader
+  isSubmitting = false;
+
   // Current user data
   currentEmployee: any = null;
   currentEmployeeId: number | null = null;
@@ -201,8 +204,6 @@ export class LeavePlanComponent implements OnInit {
         .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
-
-
         // Filter plan records for current user only (by userId)
         const allRecords = data.planRecords || [];
         const myRecords = allRecords.filter(
@@ -294,7 +295,7 @@ export class LeavePlanComponent implements OnInit {
     }
 
     const start = new Date(this.selectedStartDate + 'T12:00:00');
-const end = new Date(this.selectedEndDate + 'T12:00:00');
+    const end = new Date(this.selectedEndDate + 'T12:00:00');
 
     const diff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
     this.workingDays = diff + 1;
@@ -365,7 +366,7 @@ const end = new Date(this.selectedEndDate + 'T12:00:00');
       });
       return;
     }
-
+    this.isSubmitting = true;
     const toSafeISO = (date: string) =>
       new Date(date + 'T12:00:00').toISOString();
 
@@ -384,9 +385,9 @@ const end = new Date(this.selectedEndDate + 'T12:00:00');
       decisionOn: null,
     };
 
-
     this.apiService.createLeavePlanRecord(payload).subscribe({
       next: (created) => {
+        this.isSubmitting = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Leave Planned',
@@ -398,6 +399,7 @@ const end = new Date(this.selectedEndDate + 'T12:00:00');
         this.loadAllData();
       },
       error: (err) => {
+        this.isSubmitting = false;
         console.error(' Failed to create leave plan:', err);
         this.messageService.add({
           severity: 'error',
@@ -506,7 +508,6 @@ const end = new Date(this.selectedEndDate + 'T12:00:00');
       return;
     }
 
-
     this.apiService.deleteLeavePlanRecord(plan.id).subscribe({
       next: () => {
         this.messageService.add({
@@ -532,6 +533,7 @@ const end = new Date(this.selectedEndDate + 'T12:00:00');
   // ==================== MODAL CONTROL ====================
 
   closePlanModal() {
+    this.isSubmitting = false;
     this.showPlanModal = false;
     this.selectedStartDate = '';
     this.selectedEndDate = '';
