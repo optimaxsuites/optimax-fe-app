@@ -39,7 +39,7 @@ const routes: Routes = [
       { path: 'guests/:uuid/:id',  component: GuestProfileComponent },
       { path: 'guests/:uuid',      component: GuestsListComponent },
 
-      // Bookings
+      // Bookings 
       // { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
       // { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
       // { path: 'bookings/:id/:uuid',         component: BookingDetailComponent },

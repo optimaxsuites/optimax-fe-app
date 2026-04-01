@@ -48,7 +48,6 @@ const routes: Routes = [
       { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
       { path: 'e-bookings/auth/login/:uuid', component: EBookingLoginComponent },
       { path: 'e-bookings/auth/register/:uuid', component: EBookingRegisterComponent },
-      { path: "**", redirectTo: "e-bookings/home/ab6b140b-fcd9-4944-8963-908a05c7363c", pathMatch: "full" },
       ]
     },
 
