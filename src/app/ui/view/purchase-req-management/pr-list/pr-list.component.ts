@@ -13,10 +13,11 @@ import { Router } from '@angular/router';
 })
 export class PrListComponent implements OnInit {
   private readonly STORAGE_KEY = 'erp.purchaseRequisitions';
+  private readonly QUOTE_KEY = 'vendorQuotes';
   private escalationInterval: any;
 
   @Input() mode: 'procurement' | 'vendor' = 'procurement';
-  @Input() vendorId: string = ''; //remove id 
+  @Input() vendorId: string = ''; 
 
   purchaseReqList: any[] = [];
   selectedPurchaseReqList: any[] = [];
@@ -33,11 +34,78 @@ export class PrListComponent implements OnInit {
   displayPrView = false;
   selectedPr!: PurchaseRequisitionLS;
 
-  departments = [
-    { id: 'd1', name: 'Operations' },
-    { id: 'd2', name: 'Finance' },
-    { id: 'd3', name: 'IT' },
-  ];
+departments = [
+  {
+    id: 'd1',
+    name: 'Administration & Office Services',
+    categories: [
+      'Office Supplies',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd2',
+    name: 'Information Technology',
+    categories: [
+      'IT Equipment & Hardware',
+      'Software & Licensing',
+      'Telecommunications',
+    ],
+  },
+  {
+    id: 'd3',
+    name: 'Finance & Professional Services',
+    categories: [
+      'Consulting Services',
+      'Training & Capacity Building',
+    ],
+  },
+  {
+    id: 'd4',
+    name: 'Engineering & Construction',
+    categories: [
+      'Construction & Civil Works',
+      'Electrical & Engineering Services',
+    ],
+  },
+  {
+    id: 'd5',
+    name: 'Facilities & Operations',
+    categories: [
+      'Facility Management',
+      'Security Services',
+    ],
+  },
+  {
+    id: 'd6',
+    name: 'Supply Chain & Logistics',
+    categories: [
+      'Logistics & Transportation',
+    ],
+  },
+  {
+    id: 'd7',
+    name: 'Healthcare & Medical',
+    categories: [
+      'Medical Supplies',
+    ],
+  },
+  {
+    id: 'd8',
+    name: 'Marketing & Communications',
+    categories: [
+      'Marketing & Advertising',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd9',
+    name: 'Hospitality & Events',
+    categories: [
+      'Catering Services',
+    ],
+  },
+];
 
   columns = [
     { header: 'Title', field: 'title', sortable: true },
@@ -91,6 +159,7 @@ export class PrListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    console.log('vid', this.vendorId)
     this.loadPurchaseReqs();
 
     // Only procurement needs this workflow check
@@ -118,6 +187,16 @@ export class PrListComponent implements OnInit {
       'create',
       pr.id,
     ]);
+  }
+
+    hasVendorAlreadyQuoted(prId: number | string): boolean {
+    const quotes = JSON.parse(localStorage.getItem(this.QUOTE_KEY) || '[]');
+
+    return quotes.some(
+      (quote: any) =>
+        String(quote.prId) === String(prId) &&
+        Number(quote.vendorId) === Number(this.vendorId)
+    );
   }
 
   get isVendorMode(): boolean {
@@ -272,21 +351,155 @@ export class PrListComponent implements OnInit {
     });
   }
 
-  loadPurchaseReqs(): void {
-    const list = this.store.getAll();
+  // loadPurchaseReqs(): void {
+  //   const list = this.store.getAll();
 
-    this.purchaseReqList = list.map((pr) => ({
+  //   this.purchaseReqList = list.map((pr) => ({
+  //     ...pr,
+  //     department: this.getDepartmentName(pr.department),
+  //   }));
+  // }
+
+  private getCurrentVendor(): any | null {
+  const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+
+  return (
+    vendors.find(
+      (vendor: any) => String(vendor.id) === String(this.vendorId)
+    ) || null
+  );
+}
+
+private getDepartmentById(departmentId: any): any | null {
+  return this.departments.find((d) => d.id === departmentId) || null;
+}
+
+private getVendorCategoryNames(vendor: any): string[] {
+  const categories = vendor?.category || vendor?.categories || [];
+
+  return categories
+    .map((cat: any) => String(cat?.name || '').trim().toLowerCase())
+    .filter((name: string) => !!name);
+}
+
+private isPrRelatedToVendor(pr: any, vendor: any): boolean {
+  const department = this.getDepartmentById(pr.department);
+
+  if (!department) {
+    return false;
+  }
+
+  const vendorCategoryNames = this.getVendorCategoryNames(vendor);
+
+  if (!vendorCategoryNames.length) {
+    return false;
+  }
+
+  const allowedCategories = (department.categories || []).map((category: string) =>
+    category.trim().toLowerCase()
+  );
+
+  return vendorCategoryNames.some((vendorCategory: string) =>
+    allowedCategories.includes(vendorCategory)
+  );
+}
+
+//   loadPurchaseReqs(): void {
+//   const list = this.store.getAll();
+
+//   if (this.isVendorMode) {
+//     const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+
+//     const currentVendor = vendors.find(
+//       (vendor: any) => String(vendor.id) === String(this.vendorId)
+//     );
+
+//     if (!currentVendor) {
+//       this.purchaseReqList = [];
+//       this.messageService.add({
+//         severity: 'warn',
+//         summary: 'Vendor Not Found',
+//         detail: 'Vendor record could not be found.',
+//         life: 3000,
+//       });
+//       return;
+//     }
+
+//     if (currentVendor.status !== 'Approved') {
+//       this.purchaseReqList = [];
+//       this.messageService.add({
+//         severity: 'warn',
+//         summary: 'Access Restricted',
+//         detail: 'Only approved vendors can view purchase requisitions.',
+//         life: 3000,
+//       });
+//       return;
+//     }
+//   }
+
+//   this.purchaseReqList = list.map((pr) => ({
+//     ...pr,
+//     department: this.getDepartmentName(pr.department),
+//     hasCreatedQuote: this.isVendorMode
+//       ? this.hasVendorAlreadyQuoted(pr.id)
+//       : false,
+//   }));
+// }
+
+loadPurchaseReqs(): void {
+  const list = this.store.getAll();
+
+  if (this.isVendorMode) {
+    const currentVendor = this.getCurrentVendor();
+
+    if (!currentVendor) {
+      this.purchaseReqList = [];
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Vendor Not Found',
+        detail: 'Vendor record could not be found.',
+        life: 3000,
+      });
+      return;
+    }
+
+    if (currentVendor.status !== 'Approved') {
+      this.purchaseReqList = [];
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Access Restricted',
+        detail: 'Only approved vendors can view purchase requisitions.',
+        life: 3000,
+      });
+      return;
+    }
+
+    const filteredList = list.filter((pr: any) =>
+      this.isPrRelatedToVendor(pr, currentVendor)
+    );
+
+    this.purchaseReqList = filteredList.map((pr: any) => ({
       ...pr,
       department: this.getDepartmentName(pr.department),
+      hasCreatedQuote: this.hasVendorAlreadyQuoted(pr.id),
     }));
+
+    return;
   }
+
+  this.purchaseReqList = list.map((pr: any) => ({
+    ...pr,
+    department: this.getDepartmentName(pr.department),
+    hasCreatedQuote: false,
+  }));
+}
 
   onPrSaved(_: any): void {
     this.loadPurchaseReqs();
     this.close();
   }
 
-  private getDepartmentName(departmentId: string): string {
+  getDepartmentName(departmentId: any): any {
     const dep = this.departments.find((d) => d.id === departmentId);
     return dep ? dep.name : departmentId || '';
   }

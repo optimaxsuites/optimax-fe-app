@@ -526,9 +526,58 @@ export class PrCreateComponent implements OnInit, OnChanges {
   status: PRStatus = 'Draft';
 
   departments = [
-    { id: 'd1', name: 'Operations' },
-    { id: 'd2', name: 'Finance' },
-    { id: 'd3', name: 'IT' },
+    {
+      id: 'd1',
+      name: 'Administration & Office Services',
+      categories: ['Office Supplies', 'Printing & Branding'],
+    },
+    {
+      id: 'd2',
+      name: 'Information Technology',
+      categories: [
+        'IT Equipment & Hardware',
+        'Software & Licensing',
+        'Telecommunications',
+      ],
+    },
+    {
+      id: 'd3',
+      name: 'Finance & Professional Services',
+      categories: ['Consulting Services', 'Training & Capacity Building'],
+    },
+    {
+      id: 'd4',
+      name: 'Engineering & Construction',
+      categories: [
+        'Construction & Civil Works',
+        'Electrical & Engineering Services',
+      ],
+    },
+    {
+      id: 'd5',
+      name: 'Facilities & Operations',
+      categories: ['Facility Management', 'Security Services'],
+    },
+    {
+      id: 'd6',
+      name: 'Supply Chain & Logistics',
+      categories: ['Logistics & Transportation'],
+    },
+    {
+      id: 'd7',
+      name: 'Healthcare & Medical',
+      categories: ['Medical Supplies'],
+    },
+    {
+      id: 'd8',
+      name: 'Marketing & Communications',
+      categories: ['Marketing & Advertising', 'Printing & Branding'],
+    },
+    {
+      id: 'd9',
+      name: 'Hospitality & Events',
+      categories: ['Catering Services'],
+    },
   ];
 
   costCenters = [
@@ -554,8 +603,8 @@ export class PrCreateComponent implements OnInit, OnChanges {
       justification: ['', [Validators.required, Validators.maxLength(2000)]],
       items: this.fb.array([this.createItem()]),
       currency: ['NGN', Validators.required],
-// budgetCodeId: ['', Validators.required],
-// budgetCapAmount: [0, Validators.required],
+      // budgetCodeId: ['', Validators.required],
+      // budgetCapAmount: [0, Validators.required],
     });
   }
 
@@ -706,19 +755,19 @@ export class PrCreateComponent implements OnInit, OnChanges {
         //   // ],
         // };
         return {
-  ...pr,
-  title: formData.title,
-  department: formData.departmentId,
-  costCenterId: formData.costCenterId,
-  requiredByDate: formData.requiredByDate,
-  justification: formData.justification,
-  items: formData.items,
-  currency: formData.currency,
-  budgetCodeId: formData.budgetCodeId,
-  budgetCapAmount: formData.budgetCapAmount,
-  updatedAt: new Date().toISOString(),
-  status: 'UnderReview'
-};
+          ...pr,
+          title: formData.title,
+          department: formData.departmentId,
+          costCenterId: formData.costCenterId,
+          requiredByDate: formData.requiredByDate,
+          justification: formData.justification,
+          items: formData.items,
+          currency: formData.currency,
+          budgetCodeId: formData.budgetCodeId,
+          budgetCapAmount: formData.budgetCapAmount,
+          updatedAt: new Date().toISOString(),
+          status: 'UnderReview',
+        };
       });
 
       localStorage.setItem(
@@ -770,21 +819,21 @@ export class PrCreateComponent implements OnInit, OnChanges {
     // };
 
     const pr: PurchaseRequisitionLS = {
-  id: Date.now() + Math.floor(Math.random() * 1000),
-  prmNo,
-  title: formData.title,
-  department: formData.departmentId,
-  costCenterId: formData.costCenterId,
-  budgetCodeId: formData.budgetCodeId,
-  requiredByDate: formData.requiredByDate,
-  justification: formData.justification,
-  comment: '',
-  currency: formData.currency,
-  budgetCapAmount: formData.budgetCapAmount ?? 0,
-  status: 'Submitted',
-  createdAt: new Date().toISOString(),
-  items: formData.items,
-};
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      prmNo,
+      title: formData.title,
+      department: formData.departmentId,
+      costCenterId: formData.costCenterId,
+      budgetCodeId: formData.budgetCodeId,
+      requiredByDate: formData.requiredByDate,
+      justification: formData.justification,
+      comment: '',
+      currency: formData.currency,
+      budgetCapAmount: formData.budgetCapAmount ?? 0,
+      status: 'Submitted',
+      createdAt: new Date().toISOString(),
+      items: formData.items,
+    };
 
     this.store.add(pr);
     this.workflow.submitForApproval(pr.id, requesterUserId);
@@ -826,19 +875,19 @@ export class PrCreateComponent implements OnInit, OnChanges {
         // };
 
         return {
-  ...pr,
-  title: formData.title || pr.title || '(Draft)',
-  department: formData.departmentId,
-  costCenterId: formData.costCenterId,
-  budgetCodeId: formData.budgetCodeId,
-  requiredByDate: formData.requiredByDate,
-  justification: formData.justification,
-  currency: formData.currency,
-  budgetCapAmount: formData.budgetCapAmount ?? pr.budgetCapAmount ?? 0,
-  status: 'Draft',
-  items: formData.items,
-  updatedAt: new Date().toISOString(),
-};
+          ...pr,
+          title: formData.title || pr.title || '(Draft)',
+          department: formData.departmentId,
+          costCenterId: formData.costCenterId,
+          budgetCodeId: formData.budgetCodeId,
+          requiredByDate: formData.requiredByDate,
+          justification: formData.justification,
+          currency: formData.currency,
+          budgetCapAmount: formData.budgetCapAmount ?? pr.budgetCapAmount ?? 0,
+          status: 'Draft',
+          items: formData.items,
+          updatedAt: new Date().toISOString(),
+        };
       });
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -873,21 +922,21 @@ export class PrCreateComponent implements OnInit, OnChanges {
     // };
 
     const prPayload: PurchaseRequisitionLS = {
-  id: Date.now() + Math.floor(Math.random() * 1000),
-  prmNo: `PR-${Date.now()}`,
-  title: formData.title || '(Draft)',
-  department: formData.departmentId,
-  costCenterId: formData.costCenterId,
-  budgetCodeId: formData.budgetCodeId,
-  requiredByDate: formData.requiredByDate,
-  justification: formData.justification,
-  comment: '',
-  currency: formData.currency,
-  budgetCapAmount: formData.budgetCapAmount ?? 0,
-  status: 'Draft',
-  createdAt: new Date().toISOString(),
-  items: formData.items,
-};
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      prmNo: `PR-${Date.now()}`,
+      title: formData.title || '(Draft)',
+      department: formData.departmentId,
+      costCenterId: formData.costCenterId,
+      budgetCodeId: formData.budgetCodeId,
+      requiredByDate: formData.requiredByDate,
+      justification: formData.justification,
+      comment: '',
+      currency: formData.currency,
+      budgetCapAmount: formData.budgetCapAmount ?? 0,
+      status: 'Draft',
+      createdAt: new Date().toISOString(),
+      items: formData.items,
+    };
 
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     existing.push(prPayload);

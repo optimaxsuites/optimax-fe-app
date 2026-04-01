@@ -15,14 +15,87 @@ export class PrApprovalInboxComponent implements OnInit, OnDestroy {
   pendingList: any[] = [];
   selectedPendingList: any[] = [];
   showRejectModal = false;
+  displayPrView = false;
   rejectReason = '';
   activePr: PurchaseRequisitionLS | null = null;
+
+  departments = [
+  {
+    id: 'd1',
+    name: 'Administration & Office Services',
+    categories: [
+      'Office Supplies',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd2',
+    name: 'Information Technology',
+    categories: [
+      'IT Equipment & Hardware',
+      'Software & Licensing',
+      'Telecommunications',
+    ],
+  },
+  {
+    id: 'd3',
+    name: 'Finance & Professional Services',
+    categories: [
+      'Consulting Services',
+      'Training & Capacity Building',
+    ],
+  },
+  {
+    id: 'd4',
+    name: 'Engineering & Construction',
+    categories: [
+      'Construction & Civil Works',
+      'Electrical & Engineering Services',
+    ],
+  },
+  {
+    id: 'd5',
+    name: 'Facilities & Operations',
+    categories: [
+      'Facility Management',
+      'Security Services',
+    ],
+  },
+  {
+    id: 'd6',
+    name: 'Supply Chain & Logistics',
+    categories: [
+      'Logistics & Transportation',
+    ],
+  },
+  {
+    id: 'd7',
+    name: 'Healthcare & Medical',
+    categories: [
+      'Medical Supplies',
+    ],
+  },
+  {
+    id: 'd8',
+    name: 'Marketing & Communications',
+    categories: [
+      'Marketing & Advertising',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd9',
+    name: 'Hospitality & Events',
+    categories: [
+      'Catering Services',
+    ],
+  },
+];
 
   columns = [
     { header: 'Title', field: 'title', sortable: true },
     { header: 'PRM No', field: 'prmNo', sortable: true },
     { header: 'Department', field: 'department', sortable: true },
-    { header: 'Budget Cap Amount', field: 'budgetCapAmount', sortable: true },
     {
       header: 'Required By',
       field: 'requiredByDate',
@@ -34,10 +107,10 @@ export class PrApprovalInboxComponent implements OnInit, OnDestroy {
           day: 'numeric',
         }),
     },
-    {
-      header: 'Current Step',
-      formatter: (row: PurchaseRequisitionLS) => this.currentStepInfo(row),
-    },
+    // {
+    //   header: 'Current Step',
+    //   formatter: (row: PurchaseRequisitionLS) => this.currentStepInfo(row),
+    // },
     {
       header: 'Status',
       field: 'status',
@@ -76,36 +149,83 @@ export class PrApprovalInboxComponent implements OnInit, OnDestroy {
     if (this.intervalId) clearInterval(this.intervalId);
   }
 
-  openItem($event: any) {
-    throw new Error('Method not implemented.');
+  formatDate(value: string): string {
+  if (!value) return '---';
+  return new Date(value).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+  getDepartmentName(departmentId: string): string {
+    const dep = this.departments.find((d) => d.id === departmentId);
+    return dep ? dep.name : departmentId || '';
   }
-  onAction($event: { actionId: string; row: PurchaseRequisitionLS }) {
-    const pr = $event.row;
 
-    switch ($event.actionId) {
-      case 'view':
-        this.viewDetails(pr);
-        break;
+getTotalBudgetCap(items: any[] = []): number {
+  return items.reduce((sum, item) => sum + Number(item?.budgetCap || 0), 0);
+}
 
-      case 'approve':
-        this.approve(pr);
-        break;
+  viewPr(row: PurchaseRequisitionLS): void {
+  this.activePr = {
+    ...row,
+    items: [...(row.items || [])],
+  };
+  this.displayPrView = true;
+}
 
-      case 'reject':
-        this.openReject(pr);
-        break;
+closePrView(): void {
+  this.displayPrView = false;
+}
 
-      default:
-        console.warn('Unknown action:', $event.actionId, pr);
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Action',
-          detail: 'Unknown action selected.',
-          life: 2500,
-        });
-        break;
-    }
+
+onAction(event: { actionId: string; row: PurchaseRequisitionLS }): void {
+  const { actionId, row } = event;
+
+  if (actionId === 'view') {
+    this.viewPr(row);
+    return;
   }
+
+  if (actionId === 'approve') {
+    this.approve(row);
+    return;
+  }
+
+  if (actionId === 'reject') {
+    this.openReject(row);
+    return;
+  }
+}
+
+  // onAction($event: { actionId: string; row: PurchaseRequisitionLS }) {
+  //   const pr = $event.row;
+
+  //   switch ($event.actionId) {
+  //     case 'view':
+  //       this.viewDetails(pr);
+  //       break;
+
+  //     case 'approve':
+  //       this.approve(pr);
+  //       break;
+
+  //     case 'reject':
+  //       this.openReject(pr);
+  //       break;
+
+  //     default:
+  //       console.warn('Unknown action:', $event.actionId, pr);
+  //       this.messageService.add({
+  //         severity: 'warn',
+  //         summary: 'Action',
+  //         detail: 'Unknown action selected.',
+  //         life: 2500,
+  //       });
+  //       break;
+  //   }
+  // }
 
   refresh(): void {
     this.pendingList = this.workflow.getPendingForApprover(this.currentUserId);

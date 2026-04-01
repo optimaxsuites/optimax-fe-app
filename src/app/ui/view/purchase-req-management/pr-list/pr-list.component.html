@@ -295,6 +295,13 @@
 <p-confirmDialog *ngIf="isProcurementMode"></p-confirmDialog>
 <p-toast></p-toast>
 
+<div
+  *ngIf="isVendorMode && !purchaseReqList.length"
+  class="border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800"
+>
+  Only approved vendors can access available purchase requisitions.
+</div>
+
 <div *ngIf="purchaseReqTable">
   <div class="card p-3">
     <p-toolbar styleClass="bg-white mb-4 gap-2" *ngIf="isProcurementMode">
@@ -589,8 +596,9 @@
           *ngIf="isVendorMode"
           pButton
           type="button"
-          label="Create Quote"
+          label="{{ hasVendorAlreadyQuoted(selectedPr.id) ? 'Quote Already Created' : 'Create Quote' }}"
           (click)="createQuoteFromPr(selectedPr)"
+          [disabled]="hasVendorAlreadyQuoted(selectedPr.id)"
           class="!rounded-xl !border-[#2E6276] !bg-[#2E6276] !px-4 !py-2 !text-white hover:!bg-[#245060] hover:!border-[#245060]"
         ></button>
       </div>

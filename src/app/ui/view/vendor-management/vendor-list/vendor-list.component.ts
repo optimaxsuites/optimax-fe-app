@@ -124,7 +124,6 @@ export class VendorListComponent implements OnInit {
   }
 
   openItem($event: any) {
-    throw new Error('Method not implemented.');
   }
   onAction($event: { actionId: string; row: VendorDto }) {
     const vendor = $event.row;

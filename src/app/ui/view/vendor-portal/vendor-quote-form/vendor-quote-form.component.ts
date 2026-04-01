@@ -14,7 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class VendorQuoteFormComponent implements OnInit {
     private readonly PR_KEY = 'erp.purchaseRequisitions';
   private readonly QUOTE_KEY = 'vendorQuotes';
-  vendorUuid = '';
+  vendorId = 0;
   prId = '';
   quote!: VendorQuoteLS;
 
@@ -58,10 +58,10 @@ export class VendorQuoteFormComponent implements OnInit {
 
 
 ngOnInit(): void {
-  this.vendorUuid = this.route.snapshot.paramMap.get('vId') || '';
+  this.vendorId = Number(this.route.snapshot.paramMap.get('vId') || 0);
   this.prId = String(this.route.snapshot.paramMap.get('prId'));
 
-  console.log('vendorUuid:', this.vendorUuid);
+  console.log('vendorUuid:', this.vendorId);
   console.log('prId:', this.prId);
 
   const prs: PurchaseRequisitionLS[] = JSON.parse(
@@ -75,7 +75,7 @@ ngOnInit(): void {
   console.log('matched PR:', pr);
 
   if (!pr) {
-    this.router.navigate(['/vendor-portal/pr-list', this.vendorUuid]);
+    this.router.navigate(['/vendor-portal/pr-list', this.vendorId]);
     return;
   }
 
@@ -85,8 +85,8 @@ ngOnInit(): void {
 
   const existingDraft = quotes.find(
     (q: VendorQuoteLS) =>
-      String(q.prId) === this.prId &&
-      q.vendorUuid === this.vendorUuid &&
+      Number(q.prId) === Number(this.prId) &&
+      Number(q.vendorId) === Number(this.vendorId) &&
       q.status === QuoteStatus.Draft
   );
 
@@ -96,7 +96,7 @@ ngOnInit(): void {
       items: [...(existingDraft.items || [])],
     };
   } else {
-    this.quote = this.buildQuoteFromPr(pr, this.vendorUuid);
+    this.quote = this.buildQuoteFromPr(pr, this.vendorId);
   }
 
   console.log('quote loaded:', this.quote);
@@ -104,14 +104,14 @@ ngOnInit(): void {
 
   buildQuoteFromPr(
     pr: PurchaseRequisitionLS,
-    vendorUuid: string,
+    vendorId: number,
   ): VendorQuoteLS {
     return {
       id: Date.now() + Math.floor(Math.random() * 1000),
 
       prId: pr.id,
       prmNo: pr.prmNo,
-      vendorUuid,
+      vendorId,
 
       title: pr.title,
       department: pr.department,
@@ -177,7 +177,7 @@ ngOnInit(): void {
 
     this.upsertQuote(this.quote);
 
-    this.router.navigate(['/vendor-portal/pr-list', this.vendorUuid]);
+    this.router.navigate(['/vendor-portal/pr-list', this.vendorId]);
   }
 
   submitQuote(): void {
@@ -211,7 +211,7 @@ ngOnInit(): void {
   }
 
   goBack(): void {
-    this.router.navigate(['/vendor-portal/pr-list', this.vendorUuid]);
+    this.router.navigate(['/vendor-portal/pr-list', this.vendorId]);
   }
 
   formatDate(value?: string): string {
