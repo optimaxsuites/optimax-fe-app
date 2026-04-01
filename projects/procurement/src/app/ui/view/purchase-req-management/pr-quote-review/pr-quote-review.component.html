@@ -1,5 +1,5 @@
 <!-- <p-confirmDialog></p-confirmDialog> -->
-<p-confirmDialog class="table-item" header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-confirmDialog class="table-item"  icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 
 <p-toast class="table-item"></p-toast>
 
@@ -114,7 +114,7 @@
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <p class="text-sm text-slate-500">Vendor</p>
         <h3 class="mt-2 text-lg font-semibold text-slate-800">
-          {{ selectedQuote.vendorUuid }}
+          {{ getVendorName(selectedQuote.vendorId) || '---' }}
         </h3>
       </div>
 
@@ -135,7 +135,7 @@
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <p class="text-sm text-slate-500">Submitted At</p>
         <h3 class="mt-2 text-base font-semibold text-slate-800">
-          {{ selectedQuote.submittedAt || 'N/A' }}
+          {{ formatDate(selectedQuote.submittedAt)|| 'N/A' }}
         </h3>
       </div>
 

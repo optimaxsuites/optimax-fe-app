@@ -165,7 +165,7 @@ export interface QuotationDTO {
   // RELATIONSHIPS
   prId: number;
   prmNo: string;
-  vendorUuid: string;
+  vendorId: number;
 
   // BASIC INFO (copied from PR)
   title: string;

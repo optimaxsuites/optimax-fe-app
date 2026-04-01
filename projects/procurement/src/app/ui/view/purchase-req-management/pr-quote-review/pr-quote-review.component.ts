@@ -14,17 +14,84 @@ import { ConfirmationService, MessageService } from 'primeng/api';
   selector: 'app-pr-quote-review',
   templateUrl: './pr-quote-review.component.html',
   styleUrl: './pr-quote-review.component.scss',
-   providers: [MessageService, ConfirmationService]
+  providers: [MessageService, ConfirmationService],
 })
 export class PrQuoteReviewComponent implements OnInit {
   readonly PR_KEY = 'erp.purchaseRequisitions';
   readonly QUOTE_KEY = 'vendorQuotes';
 
+  private departments = [
+  {
+    id: 'd1',
+    name: 'Administration & Office Services',
+    categories: ['Office Supplies', 'Printing & Branding'],
+  },
+  {
+    id: 'd2',
+    name: 'Information Technology',
+    categories: [
+      'IT Equipment & Hardware',
+      'Software & Licensing',
+      'Telecommunications',
+    ],
+  },
+  {
+    id: 'd3',
+    name: 'Finance & Professional Services',
+    categories: ['Consulting Services', 'Training & Capacity Building'],
+  },
+  {
+    id: 'd4',
+    name: 'Engineering & Construction',
+    categories: [
+      'Construction & Civil Works',
+      'Electrical & Engineering Services',
+    ],
+  },
+  {
+    id: 'd5',
+    name: 'Facilities & Operations',
+    categories: ['Facility Management', 'Security Services'],
+  },
+  {
+    id: 'd6',
+    name: 'Supply Chain & Logistics',
+    categories: ['Logistics & Transportation'],
+  },
+  {
+    id: 'd7',
+    name: 'Healthcare & Medical',
+    categories: ['Medical Supplies'],
+  },
+  {
+    id: 'd8',
+    name: 'Marketing & Communications',
+    categories: ['Marketing & Advertising', 'Printing & Branding'],
+  },
+  {
+    id: 'd9',
+    name: 'Hospitality & Events',
+    categories: ['Catering Services'],
+  },
+];
+
   columns = [
     { field: 'prmNo', header: 'PR No' },
     { field: 'title', header: 'Title' },
     { field: 'department', header: 'Department' },
-    { field: 'requiredByDate', header: 'Required By' },
+    {
+      header: 'Required By',
+      field: 'requiredByDate',
+      sortable: true,
+      formatter: (row: VendorQuoteLS) =>
+        row.requiredByDate
+          ? new Date(row.requiredByDate).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : '__',
+    },
     { field: 'quoteCount', header: 'Quotes Received' },
     { field: 'lowestQuote', header: 'Lowest Quote' },
     { field: 'highestQuote', header: 'Highest Quote' },
@@ -43,8 +110,25 @@ export class PrQuoteReviewComponent implements OnInit {
   actions = [{ id: 'view', label: 'View Quotes', icon: 'pi pi-eye' }];
 
   quoteColumns = [
-    { field: 'vendorUuid', header: 'Vendor' },
-    { field: 'submittedAt', header: 'Submitted At' },
+    {
+      field: 'vendorName',
+      header: 'Vendor Name',
+      sortable: true,
+      formatter: (row: any) => this.getVendorName(row.vendorId),
+    },
+    {
+      field: 'submittedAt',
+      header: 'Submitted At',
+      sortable: true,
+      formatter: (row: any) =>
+        row.requiredByDate
+          ? new Date(row.requiredByDate).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : '__',
+    },
     { field: 'computedTotal', header: 'Quote Total' },
     { field: 'deliveryTimeline', header: 'Delivery Timeline' },
     {
@@ -84,12 +168,30 @@ export class PrQuoteReviewComponent implements OnInit {
   };
 
   constructor(
-  private messageService: MessageService,
-  private confirmationService: ConfirmationService
-) {}
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService,
+  ) {}
 
   ngOnInit(): void {
     this.loadPrQuoteReviewList();
+  }
+
+  formatDate(value?: string): string {
+    if (!value) return '---';
+
+    return new Date(value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  getVendorName(vendorId: number | string): string {
+    const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+
+    const vendor = vendors.find((v: any) => String(v.id) === String(vendorId));
+
+    return vendor?.companyProfile?.legalName || '---';
   }
 
   statusBadgeClass(status?: string): string {
@@ -125,6 +227,18 @@ export class PrQuoteReviewComponent implements OnInit {
         return 'bg-slate-100 text-slate-600';
     }
   }
+
+  private getDepartmentName(departmentId: string): string {
+  const department = this.getDepartmentById(departmentId);
+  return department ? department.name : String(departmentId || '');
+}
+private getDepartmentById(departmentId: string): any | null {
+  return (
+    this.departments.find(
+      (d) => String(d.id).trim() === String(departmentId).trim()
+    ) || null
+  );
+}
 
   onAction(event: {
     actionId: string;
@@ -184,7 +298,7 @@ export class PrQuoteReviewComponent implements OnInit {
           prId: pr.id,
           prmNo: pr.prmNo,
           title: pr.title,
-          department: pr.department,
+          department: this.getDepartmentName(pr.department),
           requiredByDate: pr.requiredByDate,
           quoteCount: prQuotes.length,
           lowestQuote: totals.length ? Math.min(...totals) : 0,
@@ -301,143 +415,143 @@ export class PrQuoteReviewComponent implements OnInit {
   // }
 
   confirmApproveQuote(selectedQuote: VendorQuoteLS): void {
-  if (!this.canApprove(selectedQuote)) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Action Not Allowed',
-      detail: `Only submitted or under-review quotes can be approved.`,
-    });
-    return;
-  }
-
-  this.confirmationService.confirm({
-    header: 'Approve Quote',
-    message: `Are you sure you want to approve this quote for PR ${selectedQuote.prmNo}? Other submitted quotes for this PR will be rejected automatically.`,
-    icon: 'pi pi-check-circle',
-    acceptLabel: 'Approve',
-    rejectLabel: 'Cancel',
-    acceptButtonStyleClass: 'p-button-success',
-    accept: () => {
-      this.approveQuote(selectedQuote);
-
+    if (!this.canApprove(selectedQuote)) {
       this.messageService.add({
-        severity: 'success',
-        summary: 'Quote Approved',
-        detail: `The quote for PR ${selectedQuote.prmNo} was approved successfully.`,
+        severity: 'warn',
+        summary: 'Action Not Allowed',
+        detail: `Only submitted or under-review quotes can be approved.`,
       });
-    },
-  });
-}
-
-approveQuote(selectedQuote: VendorQuoteLS): void {
-  const allQuotes = this.getAllQuotes();
-  const now = new Date().toISOString();
-
-  const updatedQuotes = allQuotes.map((quote) => {
-    if (quote.prId !== selectedQuote.prId) return quote;
-
-    if (quote.id === selectedQuote.id) {
-      return {
-        ...quote,
-        status: QuoteStatus.Approved,
-        approvedAt: now,
-        approvedBy: 'Procurement',
-        updatedAt: now,
-      };
+      return;
     }
 
-    if (
-      quote.status === QuoteStatus.Submitted ||
-      quote.status === QuoteStatus.UnderReview
-    ) {
+    this.confirmationService.confirm({
+      header: 'Approve Quote',
+      message: `Are you sure you want to approve this quote for PR ${selectedQuote.prmNo}? Other submitted quotes for this PR will be rejected automatically.`,
+      icon: 'pi pi-check-circle',
+      acceptLabel: 'Approve',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-success',
+      accept: () => {
+        this.approveQuote(selectedQuote);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Quote Approved',
+          detail: `The quote for PR ${selectedQuote.prmNo} was approved successfully.`,
+        });
+      },
+    });
+  }
+
+  approveQuote(selectedQuote: VendorQuoteLS): void {
+    const allQuotes = this.getAllQuotes();
+    const now = new Date().toISOString();
+
+    const updatedQuotes = allQuotes.map((quote) => {
+      if (quote.prId !== selectedQuote.prId) return quote;
+
+      if (quote.id === selectedQuote.id) {
+        return {
+          ...quote,
+          status: QuoteStatus.Approved,
+          approvedAt: now,
+          approvedBy: 'Procurement',
+          updatedAt: now,
+        };
+      }
+
+      if (
+        quote.status === QuoteStatus.Submitted ||
+        quote.status === QuoteStatus.UnderReview
+      ) {
+        return {
+          ...quote,
+          status: QuoteStatus.Rejected,
+          rejectedAt: now,
+          rejectionReason: 'Another vendor quote was selected for this PR.',
+          updatedAt: now,
+        };
+      }
+
+      return quote;
+    });
+
+    localStorage.setItem(this.QUOTE_KEY, JSON.stringify(updatedQuotes));
+    this.updatePrWithWinningQuote(selectedQuote);
+    this.refreshSelectedPrQuotes(selectedQuote.prId);
+    this.loadPrQuoteReviewList();
+
+    if (this.selectedQuote?.id === selectedQuote.id) {
+      this.selectedQuote =
+        this.selectedPrQuotes.find((q) => q.id === selectedQuote.id) || null;
+    }
+  }
+
+  confirmRejectQuote(quoteToReject: VendorQuoteLS): void {
+    if (!this.canReject(quoteToReject)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Action Not Allowed',
+        detail: `Only submitted or under-review quotes can be rejected.`,
+      });
+      return;
+    }
+
+    this.confirmationService.confirm({
+      header: 'Reject Quote',
+      message: `Are you sure you want to reject this quote for PR ${quoteToReject.prmNo}?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Reject',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        const rejectionReason = prompt('Enter rejection reason')?.trim();
+
+        if (!rejectionReason) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Rejection Cancelled',
+            detail: 'A rejection reason is required.',
+          });
+          return;
+        }
+
+        this.rejectQuote(quoteToReject, rejectionReason);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Quote Rejected',
+          detail: `The quote for PR ${quoteToReject.prmNo} was rejected successfully.`,
+        });
+      },
+    });
+  }
+
+  rejectQuote(quoteToReject: VendorQuoteLS, rejectionReason: string): void {
+    const allQuotes = this.getAllQuotes();
+    const now = new Date().toISOString();
+
+    const updatedQuotes = allQuotes.map((quote) => {
+      if (quote.id !== quoteToReject.id) return quote;
+
       return {
         ...quote,
         status: QuoteStatus.Rejected,
         rejectedAt: now,
-        rejectionReason: 'Another vendor quote was selected for this PR.',
+        rejectionReason,
         updatedAt: now,
       };
-    }
-
-    return quote;
-  });
-
-  localStorage.setItem(this.QUOTE_KEY, JSON.stringify(updatedQuotes));
-  this.updatePrWithWinningQuote(selectedQuote);
-  this.refreshSelectedPrQuotes(selectedQuote.prId);
-  this.loadPrQuoteReviewList();
-
-  if (this.selectedQuote?.id === selectedQuote.id) {
-    this.selectedQuote =
-      this.selectedPrQuotes.find((q) => q.id === selectedQuote.id) || null;
-  }
-}
-
-confirmRejectQuote(quoteToReject: VendorQuoteLS): void {
-  if (!this.canReject(quoteToReject)) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Action Not Allowed',
-      detail: `Only submitted or under-review quotes can be rejected.`,
     });
-    return;
+
+    localStorage.setItem(this.QUOTE_KEY, JSON.stringify(updatedQuotes));
+    this.refreshSelectedPrQuotes(quoteToReject.prId);
+    this.loadPrQuoteReviewList();
+
+    if (this.selectedQuote?.id === quoteToReject.id) {
+      this.selectedQuote =
+        this.selectedPrQuotes.find((q) => q.id === quoteToReject.id) || null;
+    }
   }
-
-  this.confirmationService.confirm({
-    header: 'Reject Quote',
-    message: `Are you sure you want to reject this quote for PR ${quoteToReject.prmNo}?`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Reject',
-    rejectLabel: 'Cancel',
-    acceptButtonStyleClass: 'p-button-danger',
-    accept: () => {
-      const rejectionReason = prompt('Enter rejection reason')?.trim();
-
-      if (!rejectionReason) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Rejection Cancelled',
-          detail: 'A rejection reason is required.',
-        });
-        return;
-      }
-
-      this.rejectQuote(quoteToReject, rejectionReason);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Quote Rejected',
-        detail: `The quote for PR ${quoteToReject.prmNo} was rejected successfully.`,
-      });
-    },
-  });
-}
-
-rejectQuote(quoteToReject: VendorQuoteLS, rejectionReason: string): void {
-  const allQuotes = this.getAllQuotes();
-  const now = new Date().toISOString();
-
-  const updatedQuotes = allQuotes.map((quote) => {
-    if (quote.id !== quoteToReject.id) return quote;
-
-    return {
-      ...quote,
-      status: QuoteStatus.Rejected,
-      rejectedAt: now,
-      rejectionReason,
-      updatedAt: now,
-    };
-  });
-
-  localStorage.setItem(this.QUOTE_KEY, JSON.stringify(updatedQuotes));
-  this.refreshSelectedPrQuotes(quoteToReject.prId);
-  this.loadPrQuoteReviewList();
-
-  if (this.selectedQuote?.id === quoteToReject.id) {
-    this.selectedQuote =
-      this.selectedPrQuotes.find((q) => q.id === quoteToReject.id) || null;
-  }
-}
 
   markUnderReview(quote: VendorQuoteLS): void {
     const allQuotes = this.getAllQuotes();
@@ -490,7 +604,7 @@ rejectQuote(quoteToReject: VendorQuoteLS, rejectionReason: string): void {
         ...pr,
         status: 'Converted' as PRStatus,
         selectedQuoteId: selectedQuote.id,
-        selectedVendorUuid: selectedQuote.vendorUuid,
+        selectedVendorUuid: selectedQuote.vendorId,
         quoteDecisionAt: now,
       };
     });

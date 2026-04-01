@@ -68,6 +68,8 @@ export class VendorQuoteListComponent {
     },
   ];
 
+  vendorId: any;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -75,19 +77,248 @@ export class VendorQuoteListComponent {
   ) {}
 
   ngOnInit(): void {
+    this.setRandomVendorId();
     this.vendorUuid = this.route.snapshot.paramMap.get('uuid') || '';
     this.loadQuotes();
+    
   }
 
-  loadQuotes(): void {
-    const allQuotes: VendorQuoteLS[] = JSON.parse(
-      localStorage.getItem(this.QUOTE_KEY) || '[]'
+  // loadQuotes(): void {
+  //   const allQuotes: VendorQuoteLS[] = JSON.parse(
+  //     localStorage.getItem(this.QUOTE_KEY) || '[]'
+  //   );
+
+  // this.quoteList = allQuotes.sort(
+  //   (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  // );
+  // }
+
+
+
+ setRandomVendorId(): void {
+  const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+
+  if (!Array.isArray(vendors) || !vendors.length) {
+    console.warn('No vendors found in localStorage');
+    this.vendorId = '';
+    return;
+  }
+
+  const approvedVendors = vendors.filter(
+    (vendor: any) => vendor?.status === 'Approved'
+  );
+
+  if (!approvedVendors.length) {
+    console.warn('No approved vendors found in localStorage');
+    this.vendorId = '';
+    return;
+  }
+
+  const randomIndex = Math.floor(Math.random() * approvedVendors.length);
+  const randomVendor = approvedVendors[randomIndex];
+
+  this.vendorId = String(randomVendor.id);
+  console.log(this.vendorId);
+}
+
+private departments = [
+  {
+    id: 'd1',
+    name: 'Administration & Office Services',
+    categories: ['Office Supplies', 'Printing & Branding'],
+  },
+  {
+    id: 'd2',
+    name: 'Information Technology',
+    categories: [
+      'IT Equipment & Hardware',
+      'Software & Licensing',
+      'Telecommunications',
+    ],
+  },
+  {
+    id: 'd3',
+    name: 'Finance & Professional Services',
+    categories: ['Consulting Services', 'Training & Capacity Building'],
+  },
+  {
+    id: 'd4',
+    name: 'Engineering & Construction',
+    categories: [
+      'Construction & Civil Works',
+      'Electrical & Engineering Services',
+    ],
+  },
+  {
+    id: 'd5',
+    name: 'Facilities & Operations',
+    categories: ['Facility Management', 'Security Services'],
+  },
+  {
+    id: 'd6',
+    name: 'Supply Chain & Logistics',
+    categories: ['Logistics & Transportation'],
+  },
+  {
+    id: 'd7',
+    name: 'Healthcare & Medical',
+    categories: ['Medical Supplies'],
+  },
+  {
+    id: 'd8',
+    name: 'Marketing & Communications',
+    categories: ['Marketing & Advertising', 'Printing & Branding'],
+  },
+  {
+    id: 'd9',
+    name: 'Hospitality & Events',
+    categories: ['Catering Services'],
+  },
+];
+
+private getCurrentVendor(): any | null {
+  const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+
+  return (
+    vendors.find(
+      (vendor: any) => String(vendor.id) === String(this.vendorId)
+    ) || null
+  );
+}
+
+private getDepartmentById(departmentId: string): any | null {
+  return (
+    this.departments.find(
+      (d) => String(d.id).trim() === String(departmentId).trim()
+    ) || null
+  );
+}
+
+private getDepartmentName(departmentId: string): string {
+  const department = this.getDepartmentById(departmentId);
+  return department ? department.name : String(departmentId || '');
+}
+
+private getVendorCategoryNames(vendor: any): string[] {
+  const categories = vendor?.category || vendor?.categories || [];
+
+  return categories
+    .map((cat: any) => String(cat?.name || '').trim().toLowerCase())
+    .filter((name: string) => !!name);
+}
+
+private isPrRelatedToVendor(pr: any, vendor: any): boolean {
+  const department = this.getDepartmentById(pr.department);
+
+  if (!department) {
+    return false;
+  }
+
+  const vendorCategoryNames = this.getVendorCategoryNames(vendor);
+
+  if (!vendorCategoryNames.length) {
+    return false;
+  }
+
+  const allowedCategories = (department.categories || []).map(
+    (category: string) => category.trim().toLowerCase()
+  );
+
+  return vendorCategoryNames.some((vendorCategory: string) =>
+    allowedCategories.includes(vendorCategory)
+  );
+}
+
+loadQuotes(): void {
+  const allQuotes: VendorQuoteLS[] = JSON.parse(
+    localStorage.getItem(this.QUOTE_KEY) || '[]'
+  );
+
+  const allPrs = JSON.parse(
+    localStorage.getItem('erp.purchaseRequisitions') || '[]'
+  );
+
+  const currentVendor = this.getCurrentVendor();
+
+  if (!currentVendor) {
+    this.quoteList = [];
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Vendor Not Found',
+      detail: 'Vendor record could not be found.',
+      life: 3000,
+    });
+    return;
+  }
+
+  if (currentVendor.status !== 'Approved') {
+    this.quoteList = [];
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Access Restricted',
+      detail: 'Only approved vendors can view quotes.',
+      life: 3000,
+    });
+    return;
+  }
+
+  const relatedQuotes = allQuotes.filter((quote: VendorQuoteLS) => {
+    if (String(quote.vendorId) !== String(this.vendorId)) {
+      return false;
+    }
+
+    const relatedPr = allPrs.find(
+      (pr: any) => String(pr.id) === String(quote.prId)
     );
 
-  this.quoteList = allQuotes.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  }
+    if (!relatedPr) {
+      return false;
+    }
+
+    return this.isPrRelatedToVendor(relatedPr, currentVendor);
+  });
+
+  this.quoteList = relatedQuotes
+    .map((quote: VendorQuoteLS) => {
+      const relatedPr = allPrs.find(
+        (pr: any) => String(pr.id) === String(quote.prId)
+      );
+
+      return {
+        ...quote,
+        department: relatedPr
+          ? this.getDepartmentName(relatedPr.department)
+          : '---',
+        prmNo: relatedPr?.prmNo || '---',
+        prTitle: relatedPr?.title || '---',
+      };
+    })
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   openQuote(row: VendorQuoteLS): void {
     this.selectedQuote = { ...row };

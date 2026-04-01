@@ -6,7 +6,78 @@ import { PurchaseRequisitionLS, PRApproval, PRApprovalStep } from '../domain/pro
   providedIn: 'root'
 })
 export class PrApprovalWorkflowService {
-
+departments = [
+  {
+    id: 'd1',
+    name: 'Administration & Office Services',
+    categories: [
+      'Office Supplies',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd2',
+    name: 'Information Technology',
+    categories: [
+      'IT Equipment & Hardware',
+      'Software & Licensing',
+      'Telecommunications',
+    ],
+  },
+  {
+    id: 'd3',
+    name: 'Finance & Professional Services',
+    categories: [
+      'Consulting Services',
+      'Training & Capacity Building',
+    ],
+  },
+  {
+    id: 'd4',
+    name: 'Engineering & Construction',
+    categories: [
+      'Construction & Civil Works',
+      'Electrical & Engineering Services',
+    ],
+  },
+  {
+    id: 'd5',
+    name: 'Facilities & Operations',
+    categories: [
+      'Facility Management',
+      'Security Services',
+    ],
+  },
+  {
+    id: 'd6',
+    name: 'Supply Chain & Logistics',
+    categories: [
+      'Logistics & Transportation',
+    ],
+  },
+  {
+    id: 'd7',
+    name: 'Healthcare & Medical',
+    categories: [
+      'Medical Supplies',
+    ],
+  },
+  {
+    id: 'd8',
+    name: 'Marketing & Communications',
+    categories: [
+      'Marketing & Advertising',
+      'Printing & Branding',
+    ],
+  },
+  {
+    id: 'd9',
+    name: 'Hospitality & Events',
+    categories: [
+      'Catering Services',
+    ],
+  },
+];
   constructor(
     private store: PrStorageService
   ) { }
@@ -78,22 +149,51 @@ export class PrApprovalWorkflowService {
     this.store.update(pr);
   }
 
-  getPendingForApprover(userId: string) {
+//   getPendingForApprover(userId: string) {
+//   const prs = this.store.getAll();
+
+//   return prs.filter(pr => {
+//     if (pr.status !== 'UnderReview') return false;
+
+//     const approval = pr.approval;
+//     if (!approval) return false;
+
+//     const currentStep = approval.steps.find(s => s.level === approval.currentLevel);
+//     if (!currentStep) return false;
+
+//     return currentStep.status === 'Pending' && currentStep.approverUserId === userId;
+//   });
+// }
+
+getPendingForApprover(userId: string) {
   const prs = this.store.getAll();
 
-  return prs.filter(pr => {
-    if (pr.status !== 'UnderReview') return false;
+  return prs
+    .filter((pr) => {
+      if (pr.status !== 'UnderReview') return false;
 
-    const approval = pr.approval;
-    if (!approval) return false;
+      const approval = pr.approval;
+      if (!approval) return false;
 
-    const currentStep = approval.steps.find(s => s.level === approval.currentLevel);
-    if (!currentStep) return false;
+      const currentStep = approval.steps.find(
+        (s) => s.level === approval.currentLevel
+      );
+      if (!currentStep) return false;
 
-    return currentStep.status === 'Pending' && currentStep.approverUserId === userId;
-  });
+      return (
+        currentStep.status === 'Pending' &&
+        currentStep.approverUserId === userId
+      );
+    })
+    .map((pr) => ({
+      ...pr,
+      department: this.getDepartmentName(pr.department),
+    }));
 }
-
+  getDepartmentName(departmentId: any): any {
+    const dep = this.departments.find((d) => d.id === departmentId);
+    return dep ? dep.name : departmentId || '';
+  }
 
   reject(prId: number, approverUserId: string, reason: string): void {
     const pr = this.store.getById(prId);
