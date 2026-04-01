@@ -44,7 +44,7 @@
   <!-- SUMMARY CARDS — clickable, filter the table by status -->
   <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
 
-    <!-- Total — clicking clears the status filter (shows all) -->
+    <!-- Total -->
     <div (click)="filterByStatus('ALL')"
       class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
       [ngClass]="isActiveStatusFilter('ALL')
@@ -222,19 +222,20 @@
             <p-tableCheckbox [value]="expense"></p-tableCheckbox>
           </td>
 
-          <td class="py-4 px-4 text-gray-700 text-sm whitespace-nowrap">
+          <td class="py-4 px-4 text-gray-600 text-sm whitespace-nowrap">
             {{ formatEventDate(expense.eventDate) | date:'dd MMM yyyy' }}
           </td>
 
-          <td class="py-4 px-4 font-semibold text-gray-900 max-w-[180px]">
+          <!-- FIX (Bug #14): Removed font-semibold from body cells -->
+          <td class="py-4 px-4 text-gray-800 max-w-[180px]">
             <span class="block truncate" [title]="expense.name">{{ expense.name }}</span>
           </td>
 
           <td class="py-4 px-4">
-            <span class="text-sm text-gray-700">{{ expense.expenseBy?.fullname || '—' }}</span>
+            <span class="text-sm text-gray-600">{{ expense.expenseBy?.fullname || '—' }}</span>
           </td>
 
-          <td class="py-4 px-4 text-sm text-gray-700">{{ expense.merchant?.name || '—' }}</td>
+          <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
 
           <td class="py-4 px-4">
             <span class="inline-block py-1 px-3 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700">
@@ -242,35 +243,45 @@
             </span>
           </td>
 
-          <td class="py-4 px-4 font-semibold text-gray-900 text-right text-sm whitespace-nowrap">
+          <!-- FIX (Bug #14): Removed font-semibold from amount cell -->
+          <td class="py-4 px-4 text-gray-800 text-right text-sm whitespace-nowrap">
             {{ calculateDisplayAmount(expense) | currency:'NGN':'symbol':'1.2-2' }}
           </td>
 
+          <!-- FIX (Bug #13): Status badge bumped from text-xs to text-sm -->
           <td class="py-4 px-4">
-            <span class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-semibold border"
+            <span class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-sm font-medium border"
                   [ngClass]="{
                     'bg-green-50 text-green-700 border-green-200': expense.status === 'APPROVED',
                     'bg-amber-50 text-amber-700 border-amber-200': expense.status === 'PENDING',
-                    'bg-red-50 text-red-700 border-red-200': expense.status === 'REJECTED'
+                    'bg-red-50 text-red-700 border-red-200':       expense.status === 'REJECTED'
                   }">
               <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     [ngClass]="{
                       'bg-green-600': expense.status === 'APPROVED',
                       'bg-amber-500': expense.status === 'PENDING',
-                      'bg-red-600': expense.status === 'REJECTED'
+                      'bg-red-600':   expense.status === 'REJECTED'
                     }"></span>
               {{ expense.status | titlecase }}
             </span>
           </td>
 
+          <!-- ─── ACTION BUTTONS ──────────────────────────────────────────────
+               FIX (Bug #1): Buttons now check approvingIds / rejectingIds /
+               deletingIds sets and show a spinner while the request is in-flight.
+               The [disabled] binding prevents double-clicks.
+          ─────────────────────────────────────────────────────────────────── -->
           <td class="py-4 px-4">
             <div class="flex items-center justify-center gap-1">
+
+              <!-- View -->
               <button pTooltip="View Details" tooltipPosition="top"
                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                 (click)="viewExpenseApproval(expense)">
                 <i class="pi pi-eye text-gray-500 text-sm"></i>
               </button>
 
+              <!-- Edit (only while pending) -->
               <button *ngIf="canApproveOrReject(expense)"
                 pTooltip="Edit Expense" tooltipPosition="top"
                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
@@ -278,31 +289,48 @@
                 <i class="pi pi-pencil text-gray-500 text-sm"></i>
               </button>
 
+              <!-- Lock icon when approved / rejected -->
               <span *ngIf="isLocked(expense)"
                 pTooltip="Locked — already {{ expense.status | titlecase }}" tooltipPosition="top"
                 class="w-8 h-8 flex items-center justify-center cursor-default">
                 <i class="pi pi-lock text-gray-400 text-sm"></i>
               </span>
 
+              <!-- Approve -->
               <button *ngIf="canApproveOrReject(expense)"
-                pTooltip="Approve" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200"
+                pTooltip="{{ approvingIds.has(expense.id) ? 'Approving…' : 'Approve' }}" tooltipPosition="top"
+                [disabled]="approvingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="approve(expense)">
-                <i class="pi pi-check text-green-600 text-sm"></i>
+                <i class="text-sm"
+                   [ngClass]="approvingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-green-400'
+                     : 'pi pi-check text-green-600'"></i>
               </button>
 
+              <!-- Reject -->
               <button *ngIf="canApproveOrReject(expense)"
-                pTooltip="Reject" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
+                pTooltip="{{ rejectingIds.has(expense.id) ? 'Rejecting…' : 'Reject' }}" tooltipPosition="top"
+                [disabled]="rejectingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="openRejectionDialog(expense)">
-                <i class="pi pi-times text-red-500 text-sm"></i>
+                <i class="text-sm"
+                   [ngClass]="rejectingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-red-300'
+                     : 'pi pi-times text-red-500'"></i>
               </button>
 
-              <button pTooltip="Delete" tooltipPosition="top"
-                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
+              <!-- Delete -->
+              <button pTooltip="{{ deletingIds.has(expense.id) ? 'Deleting…' : 'Delete' }}" tooltipPosition="top"
+                [disabled]="deletingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 (click)="confirmDelete(expense)">
-                <i class="pi pi-trash text-red-400 text-sm"></i>
+                <i class="text-sm"
+                   [ngClass]="deletingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-red-300'
+                     : 'pi pi-trash text-red-400'"></i>
               </button>
+
             </div>
           </td>
 
@@ -434,17 +462,17 @@
            [ngClass]="{
              'bg-green-50 border-green-200': selectedExpense?.status === 'APPROVED',
              'bg-amber-50 border-amber-200': selectedExpense?.status === 'PENDING',
-             'bg-red-50 border-red-200': selectedExpense?.status === 'REJECTED'
+             'bg-red-50 border-red-200':     selectedExpense?.status === 'REJECTED'
            }">
         <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
              [ngClass]="{
                'bg-green-100 text-green-600': selectedExpense?.status === 'APPROVED',
                'bg-amber-100 text-amber-600': selectedExpense?.status === 'PENDING',
-               'bg-red-100 text-red-600': selectedExpense?.status === 'REJECTED'
+               'bg-red-100   text-red-600':   selectedExpense?.status === 'REJECTED'
              }">
           <i class="pi text-xl" [ngClass]="{
             'pi-check-circle': selectedExpense?.status === 'APPROVED',
-            'pi-clock': selectedExpense?.status === 'PENDING',
+            'pi-clock':        selectedExpense?.status === 'PENDING',
             'pi-times-circle': selectedExpense?.status === 'REJECTED'
           }"></i>
         </div>
@@ -517,25 +545,53 @@
           </div>
         </div>
 
+        <!-- ─────────────────────────────────────────────────────────────────
+             FIX (Bug #7): Financials block
+             WHAT WAS WRONG:
+               The "Total" row repeated the raw stored amount (pre-tax). The tax
+               row said "Included" but never showed a monetary value.
+             WHAT CHANGED:
+               - Subtotal row shows the pre-tax base amount.
+               - Tax row shows the rate badge AND the monetary delta
+                 (+X,XXX NGN) computed by calculateTaxAmount().
+               - Total row uses calculateTotalWithTax() which is
+                 base + (base × rate / 100). No values are hardcoded.
+        ───────────────────────────────────────────────────────────────────── -->
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Financials</label>
           <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+
+            <!-- Subtotal (pre-tax base) -->
             <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
               <span>Subtotal</span>
               <span class="font-medium">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
             </div>
+
+            <!-- Tax row — shows rate badge AND the actual monetary amount -->
             <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
-              <span>Tax
-                <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax)" class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs ml-2">
-                  {{ getTaxRateDisplayValue(selectedExpense?.tax) }}%
+              <span class="flex items-center gap-1.5">
+                Tax
+                <span *ngIf="getTaxForExpense(selectedExpense)"
+                      class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs">
+                  {{ getTaxForExpense(selectedExpense)!.rate }}%
                 </span>
               </span>
-              <span class="font-medium text-sm">{{ getTaxRateDisplayValue(selectedExpense?.tax) ? 'Included' : 'None' }}</span>
+              <span class="font-medium text-sm">
+                <ng-container *ngIf="getTaxForExpense(selectedExpense); else noTaxRow">
+                  + {{ formatAmount(calculateTaxAmount(selectedExpense)) }} NGN
+                </ng-container>
+                <ng-template #noTaxRow>None</ng-template>
+              </span>
             </div>
+
+            <!-- Tax-inclusive total — this was the bug -->
             <div class="flex justify-between items-center pt-3 mt-1 border-t-2 border-gray-300">
               <span class="font-semibold text-gray-900">Total</span>
-              <span class="text-xl font-bold text-teal-800">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
+              <span class="text-xl font-bold text-teal-800">
+                {{ formatAmount(calculateTotalWithTax(selectedExpense)) }} NGN
+              </span>
             </div>
+
           </div>
         </div>
 
@@ -712,6 +768,7 @@
   </ng-template>
 </p-dialog>
 
+<!-- REJECTION DIALOG -->
 <p-dialog header="Reject Expense" [(visible)]="showRejectionDialog" [modal]="true" [style]="{ width: '420px' }" (onHide)="cancelRejection()">
   <div class="p-4">
     <p class="text-sm text-gray-500 mb-3">Provide a reason (optional). It will be recorded and emailed to the submitter.</p>
@@ -760,6 +817,6 @@
 </div>
 
 <style>
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn  { from { opacity: 0; }              to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>

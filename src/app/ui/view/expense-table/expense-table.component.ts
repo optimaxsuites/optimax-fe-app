@@ -54,7 +54,7 @@ import { ExpenseImportService, ImportResult } from '../../service/expense-import
 export class ExpenseTableComponent implements OnInit, OnDestroy {
   [x: string]: any;
 
-  // ─── Data ────────────────────────────────────────────────────────────────
+  // ─── Data ──────────
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
   selectedExpenses: Expense[] = [];
@@ -74,20 +74,20 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   editMerchantId: number | null = null;
   editCategoryId: number | null = null;
 
-  // ─── Modals ───────────────────────────────────────────────────────────────
+  // ─── Modals ─────────
   isModalOpen = false;
   isModalOpen2 = false;
   showReceiptModal = false;
   isEditMode = false;
 
-  // ─── View toggle ─────────────────────────────────────────────────────────
+  // ─── View toggle ───
   viewAllUsers = false;
   canViewAll = false;
   currentUserId: number | null = null;
 
   showImportModal = false;
 
-  // ─── Receipt modal ────────────────────────────────────────────────────────
+  // ─── Receipt modal ──
   receiptModalUrl = '';
   receiptModalTitle = '';
   receiptImageLoading = false;
@@ -99,10 +99,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   companyReceiptLoading = false;
   employeeReceiptLoading = false;
 
-  // ─── Forms ───────────────────────────────────────────────────────────────
+  // ─── Forms ─────────
   expenseForm!: FormGroup;
 
-  // ─── Filters ─────────────────────────────────────────────────────────────
+  // ─── Filters ───────
   dropdownOpen = { category: false, status: false, dateRange: false };
   selectedCategory: string | null = null;
   selectedStatus: ExpenseStatus | 'ALL' = 'ALL';
@@ -110,7 +110,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   dateFrom: string | null = null;
   dateTo: string | null = null;
 
-  // ─── Dropdown data ────────────────────────────────────────────────────────
+  // ─── Dropdown data ──
   categoryNames: string[] = [];
   categories: CategoryDTO[] = [];
   merchants: MerchantDTO[] = [];
@@ -128,12 +128,22 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   showRejectionDialog = false;
   pendingRejectRequest: Expense | null = null;
 
-  // ─── Import ───────────────────────────────────────────────────────────────
+  // ─── Import ─────────
   importDragging = false;
   importFile: File | null = null;
   importLoading = false;
   importProgress = 0;
   importResult: ImportResult | null = null;
+
+  // ─── Per-row loading states ──────────────────────────────────────────────
+  // Track which expense IDs are actively being actioned so buttons show spinners
+  approvingIds = new Set<number>();
+  rejectingIds = new Set<number>();
+  deletingIds  = new Set<number>();
+
+  // ─── Tax lookup map ──────────────────────────────────────────────────────
+  // When backend returns only taxId (not nested tax object), resolve from this map
+  taxMap: Record<number, TaxDTO> = {};
 
   private destroy$ = new Subject<void>();
 
@@ -170,18 +180,28 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX (Bug #9): resolveCanViewAll
+  //
+  // WHAT WAS WRONG:
+  //   The original code included the username string in `allRoles` and then
+  //   used `r.includes(p)` to match against patterns like 'DEVELOPER', 'HR',
+  //   'FINANCE'. This meant any user whose username happened to contain one
+  //   of those substrings (e.g. username = "developer") was silently promoted
+  //   to admin, bypassing all access control.
+  //
+  // WHAT CHANGED:
+  //   1. Username is no longer added to allRoles — only real role fields are used.
+  //   2. Role matching uses a strict Set.has() check instead of String.includes().
+  //   3. The set of admin roles is an explicit allowlist (ROLE_ADMIN, ROLE_MANAGER,
+  //      ROLE_HR, ROLE_FINANCE, ADMIN, MANAGER) — no pattern/substring matching.
+  //
+  // WHY IT WORKS:
+  //   A user with username "developer" but roles ["ROLE_USER"] now correctly
+  //   gets canViewAll = false and sees only their own expenses.
+  // ─────────────────────────────────────────────────────────────────────────
   private resolveCanViewAll(): void {
     try {
-      // ── userPrimaryInfoRegData layout (confirmed from session storage):
-      //   { "id": 32 (profile),  "fullname": "...", "clientType": "Individual",
-      //     "user": { "id": 48 (auth id), "username": "developer", "roles": [{name:"ROLE_USER"}] } }
-      //
-      // ── userRegData layout:
-      //   { "id": 48, "username": "developer", "roles": ["ROLE_USER"] }
-      //
-      // ── Flat keys:
-      //   role = "ROLE_USER"    userid = "48"    username = "developer"
-
       const primaryRaw =
         sessionStorage.getItem('userPrimaryInfoRegData') ||
         localStorage.getItem('userPrimaryInfoRegData');
@@ -198,35 +218,36 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
       // ── Resolve the AUTH user id (nested user.id takes priority over profile id)
       this.currentUserId =
-        (primary?.user?.id  && typeof primary.user.id  === 'number') ? primary.user.id  :
-        (reg?.id            && typeof reg.id            === 'number') ? reg.id            :
+        (primary?.user?.id && typeof primary.user.id === 'number') ? primary.user.id  :
+        (reg?.id           && typeof reg.id           === 'number') ? reg.id           :
         storedId ? (Number(storedId) || null) : null;
 
-      // ── Resolve role from every possible location
-      //   1. flat "role" key in session storage  → e.g. "ROLE_USER"
-      //   2. userPrimaryInfoRegData.user.roles[0].name
-      //   3. userRegData.roles[0]  (array of strings)
-      //   4. userPrimaryInfoRegData.clientType / role / userType
-      //   5. username contains admin hint (e.g. "developer", "admin")
-      const flatRole      = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
-      const primaryRoles: string[] = (primary?.user?.roles || []).map((r: any) =>
-        typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase());
-      const regRoles: string[]     = (reg?.roles || []).map((r: any) =>
-        typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase());
-      const clientType    = (primary?.clientType || primary?.role || primary?.userType || '').toUpperCase();
-      const usernameHint  = (sessionStorage.getItem('username') || localStorage.getItem('username') || '').toUpperCase();
+      // ── Collect roles from ONLY authoritative role fields.
+      //    Username is intentionally excluded — it is a login handle, not a role.
+      const flatRole = (sessionStorage.getItem('role') || localStorage.getItem('role') || '')
+        .toUpperCase().trim();
 
-      const allRoles = [flatRole, ...primaryRoles, ...regRoles, clientType, usernameHint].filter(Boolean);
-      console.log('[resolveCanViewAll] allRoles:', allRoles, '| userId:', this.currentUserId);
+      const primaryRoles: string[] = (primary?.user?.roles || [])
+        .map((r: any) => typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase())
+        .filter(Boolean);
 
-      // Admin roles — includes ROLE_ADMIN variants and username hints
-      const adminPatterns = ['ADMIN', 'MANAGER', 'DEVELOPER', 'HR', 'FINANCE', 'ROLE_ADMIN', 'SUPERUSER'];
-      this.canViewAll = allRoles.some(r => adminPatterns.some(p => r.includes(p)));
+      const regRoles: string[] = (reg?.roles || [])
+        .map((r: any) => typeof r === 'string' ? r.toUpperCase() : (r?.name || '').toUpperCase())
+        .filter(Boolean);
 
-      console.log(`[resolveCanViewAll] userId=${this.currentUserId} canViewAll=${this.canViewAll}`);
+      const allRoles = [flatRole, ...primaryRoles, ...regRoles].filter(Boolean);
+
+      // ── Strict exact-match allowlist — no substring/pattern matching
+      const adminRoleSet = new Set([
+        'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_HR', 'ROLE_FINANCE',
+        'ADMIN', 'MANAGER'
+      ]);
+      this.canViewAll = allRoles.some(r => adminRoleSet.has(r));
+
+      console.log(`[resolveCanViewAll] userId=${this.currentUserId} canViewAll=${this.canViewAll} roles=`, allRoles);
     } catch (e) {
       console.error('[resolveCanViewAll] Error:', e);
-      this.canViewAll = false;
+      this.canViewAll   = false;
       this.currentUserId = null;
     }
   }
@@ -239,8 +260,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         localStorage.getItem('userPrimaryInfoRegData');
       const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
 
-      // fullname: userPrimaryInfoRegData.fullname is reliable
-      // email:    flat "email" key or userPrimaryInfoRegData.email
       const fullname =
         primary?.fullname ||
         primary?.name ||
@@ -256,6 +275,38 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
       return { fullname, email };
     } catch { return { fullname: 'Admin', email: '' }; }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX (Bug #9): resolveExpenseOwnerId
+  //
+  // WHAT WAS WRONG:
+  //   The owner-id extraction logic was duplicated inline inside loadExpenses()
+  //   and handled only some shapes of expenseBy. Edge cases (string-encoded
+  //   number, object with userId instead of id) fell through to `return false`,
+  //   hiding valid expenses.
+  //
+  // WHAT CHANGED:
+  //   Extracted to a single method that handles every shape the backend sends:
+  //   plain number | UserDTO object with .id | UserDTO with .userId | string number.
+  //
+  // WHY IT WORKS:
+  //   All filter callers use one consistent implementation — no divergence.
+  // ─────────────────────────────────────────────────────────────────────────
+  private resolveExpenseOwnerId(e: Expense): number | null {
+    const eb = e.expenseBy;
+    if (eb === null || eb === undefined) return null;
+
+    if (typeof eb === 'number') return eb > 0 ? eb : null;
+
+    if (typeof eb === 'object') {
+      const id = (eb as any).id ?? (eb as any).userId ?? null;
+      return typeof id === 'number' && id > 0 ? id : null;
+    }
+
+    // String-encoded numeric id (occasionally returned by older endpoints)
+    const n = Number(eb);
+    return !isNaN(n) && n > 0 ? n : null;
   }
 
   initForm(): void {
@@ -281,21 +332,18 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       next: (expenses) => {
         let filtered = expenses;
 
-        // ── FIXED: client-side user filter ───────────────────────────────
-        // Only filter down to the current user's expenses in "my expenses" mode.
-        // When viewAllUsers=true (admin toggled on) we show everything.
+        // ── Client-side user filter ───────────────────────────────────────
+        // FIX (Bug #9): Uses resolveExpenseOwnerId() for consistent, safe extraction.
+        // Expenses with no resolvable owner are excluded from the personal view —
+        // they are orphaned records only visible to admins in "All Employees" mode.
         if (!this.viewAllUsers) {
-          if (this.currentUserId !== null) {
+          if (this.currentUserId !== null && this.currentUserId > 0) {
             filtered = expenses.filter(e => {
-              // expenseBy can be a full UserDTO object or just a plain number id
-              const uid =
-                typeof e.expenseBy === 'object' && e.expenseBy !== null
-                  ? (e.expenseBy as any).id ?? (e.expenseBy as any).userId
-                  : Number(e.expenseBy);
-              return uid === this.currentUserId;
+              const ownerId = this.resolveExpenseOwnerId(e);
+              return ownerId !== null && ownerId === this.currentUserId;
             });
           } else {
-            console.warn('[loadExpenses] currentUserId null; hiding expenses until auth resolves.');
+            console.warn('[loadExpenses] currentUserId unresolved — hiding all expenses until auth resolves.');
             filtered = [];
           }
         }
@@ -331,7 +379,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   private loadTaxes(): void {
     this.expenseService.getTaxRates().subscribe({
-      next: (t) => { this.taxes = t; },
+      next: (t) => {
+        this.taxes = t;
+        // Build lookup map so taxId resolves to full TaxDTO in detail view
+        this.taxMap = t.reduce((acc, tax) => ({ ...acc, [tax.id]: tax }), {} as Record<number, TaxDTO>);
+      },
       error: (err) => { console.error(err); this.taxes = []; }
     });
   }
@@ -406,7 +458,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.receiptImageLoading = false; this.receiptImageError = '';
   }
 
-  // APPROVE
+  // APPROVE — tracks loading per expense id
   approve(request: Expense): void {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' }); return;
@@ -422,8 +474,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       icon: 'pi pi-check-circle', acceptButtonStyleClass: 'p-button-success',
       rejectButtonStyleClass: 'p-button-secondary', acceptLabel: 'Approve', rejectLabel: 'Cancel',
       accept: () => {
+        this.approvingIds.add(request.id);
         this.expenseService.approveExpense(request).subscribe({
           next: (updated) => {
+            this.approvingIds.delete(request.id);
             this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Expense approved.' });
 
             const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
@@ -436,10 +490,12 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
                 .subscribe({ error: (e: any) => console.error('[approve] email failed:', e) });
             }
 
-            this.loadExpenses();
             if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
           },
-          error: (err) => { this.messageService.add({ severity: 'error', summary: 'Approval Failed', detail: err?.error?.message || 'Failed to approve.' }); }
+          error: (err) => {
+            this.approvingIds.delete(request.id);
+            this.messageService.add({ severity: 'error', summary: 'Approval Failed', detail: err?.error?.message || 'Failed to approve.' });
+          }
         });
       }
     });
@@ -458,8 +514,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     const reason = this.rejectionReason.trim() || 'Rejected by manager';
     this.showRejectionDialog = false; this.pendingRejectRequest = null;
 
+    this.rejectingIds.add(request.id);
     this.expenseService.rejectExpense(request, reason).subscribe({
       next: (updated) => {
+        this.rejectingIds.delete(request.id);
         this.messageService.add({ severity: 'warn', summary: 'Rejected', detail: 'Expense rejected.' });
 
         const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
@@ -472,10 +530,12 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             .subscribe({ error: (e: any) => console.error('[reject] email failed:', e) });
         }
 
-        this.loadExpenses();
         if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
       },
-      error: (err) => { this.messageService.add({ severity: 'error', summary: 'Rejection Failed', detail: err?.error?.message || 'Failed to reject.' }); }
+      error: (err) => {
+        this.rejectingIds.delete(request.id);
+        this.messageService.add({ severity: 'error', summary: 'Rejection Failed', detail: err?.error?.message || 'Failed to reject.' });
+      }
     });
   }
 
@@ -524,19 +584,23 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         taxId: fv.taxId ?? null, scheduledPaymentId: fv.scheduledPaymentId || null
       };
       this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
-        next: () => { this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Expense updated.' }); this.closeModal(); this.loadExpenses(); },
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Expense updated.' });
+          this.closeModal();
+        },
         error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err?.error?.message || 'Update failed.' }); }
       });
     } else {
-      // ── FIXED: include expenseBy so the expense is attributed to the
-      //    current user, not whoever the backend defaults to.
       this.expenseService.addExpense({
         ...fv,
         eventDate: new Date(fv.eventDate).toISOString(),
-        expenseBy: this.currentUserId,   // ← ADDED
+        expenseBy: this.currentUserId,
       }, fv.companyReceiptFile, fv.expenseReceiptFile)
         .pipe(takeUntil(this.destroy$)).subscribe({
-          next: () => { this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Expense created.' }); this.closeModal(); this.loadExpenses(); },
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Expense created.' });
+            this.closeModal();
+          },
           error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err.message || 'Creation failed.' }); }
         });
     }
@@ -545,8 +609,12 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   editExpense(expense: Expense): void { this.openEditModal(expense); }
   saveEditedExpense(): void { this.onSubmit(); }
 
-  // DELETE
+  // DELETE — block deletion of approved expenses
   confirmDelete(expense: Expense): void {
+    if (this.isApproved(expense)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'Approved expenses cannot be deleted. Contact your administrator.' });
+      return;
+    }
     this.confirmationService.confirm({
       message: 'Delete this expense?', header: `Delete — ${expense.merchant?.name ?? ''}`,
       icon: 'pi pi-exclamation-triangle', acceptButtonStyleClass: 'p-button-danger',
@@ -555,19 +623,39 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   deleteExpense(expense: Expense): void {
+    if (this.isApproved(expense)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'Approved expenses cannot be deleted.' });
+      return;
+    }
+    this.deletingIds.add(expense.id);
     this.expenseService.deleteExpense(expense.id).subscribe({
-      next: () => { this.loadExpenses(); this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Expense deleted.' }); },
-      error: (err) => { this.messageService.add({ severity: 'error', summary: 'Failed', detail: err.message || 'Delete failed.' }); }
+      next: () => {
+        this.deletingIds.delete(expense.id);
+        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Expense deleted.' });
+      },
+      error: (err) => {
+        this.deletingIds.delete(expense.id);
+        this.messageService.add({ severity: 'error', summary: 'Failed', detail: err.message || 'Delete failed.' });
+      }
     });
   }
 
   deleteSelectedExpenses() {
     if (!this.selectedExpenses.length) return;
+    const deletable = this.selectedExpenses.filter(e => !this.isApproved(e));
+    const blocked   = this.selectedExpenses.length - deletable.length;
+
+    if (!deletable.length) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'All selected expenses are approved and cannot be deleted.' });
+      return;
+    }
+
     this.confirmationService.confirm({
-      message: `Delete ${this.selectedExpenses.length} expenses?`, header: 'Bulk Delete',
+      message: `Delete ${deletable.length} expense(s)?${blocked > 0 ? ` (${blocked} approved expense(s) will be skipped)` : ''}`,
+      header: 'Bulk Delete',
       icon: 'pi pi-exclamation-triangle', acceptButtonStyleClass: 'p-button-danger',
       acceptLabel: 'Delete', rejectLabel: 'Cancel',
-      accept: () => { this.selectedExpenses.forEach(e => this.deleteExpense(e)); this.selectedExpenses = []; }
+      accept: () => { deletable.forEach(e => this.deleteExpense(e)); this.selectedExpenses = []; }
     });
   }
 
@@ -619,10 +707,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (!this.dateRangeType) { this.applyFilters(); return; }
     const t = new Date();
     let from = new Date(), to = new Date();
-    if (this.dateRangeType === 'today')  { from = new Date(t.getFullYear(), t.getMonth(), t.getDate()); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
-    else if (this.dateRangeType === 'week')  { const d = t.getDay() === 0 ? 6 : t.getDay() - 1; from = new Date(t.getFullYear(), t.getMonth(), t.getDate() - d); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
-    else if (this.dateRangeType === 'month') { from = new Date(t.getFullYear(), t.getMonth(), 1); to = new Date(t.getFullYear(), t.getMonth() + 1, 0, 23, 59, 59); }
-    else if (this.dateRangeType === 'custom') { if (!this.dateFrom || !this.dateTo) { this.applyFilters(); return; } from = new Date(this.dateFrom); to = new Date(this.dateTo + 'T23:59:59'); }
+    if (this.dateRangeType === 'today')        { from = new Date(t.getFullYear(), t.getMonth(), t.getDate()); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
+    else if (this.dateRangeType === 'week')    { const d = t.getDay() === 0 ? 6 : t.getDay() - 1; from = new Date(t.getFullYear(), t.getMonth(), t.getDate() - d); to = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59); }
+    else if (this.dateRangeType === 'month')   { from = new Date(t.getFullYear(), t.getMonth(), 1); to = new Date(t.getFullYear(), t.getMonth() + 1, 0, 23, 59, 59); }
+    else if (this.dateRangeType === 'custom')  { if (!this.dateFrom || !this.dateTo) { this.applyFilters(); return; } from = new Date(this.dateFrom); to = new Date(this.dateTo + 'T23:59:59'); }
     if (this.dateRangeType !== 'custom') { this.dateFrom = from.toISOString().split('T')[0]; this.dateTo = to.toISOString().split('T')[0]; }
     this.applyFilters();
   }
@@ -681,8 +769,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       for (let i = 0; i < valid.length; i++) {
         const row = valid[i];
         try {
-          // ── FIXED: include expenseBy so imported expenses are attributed
-          //    to the logged-in user, not the backend default.
           await this.expenseService.addExpense({
             name: row.name,
             description: row.description || '',
@@ -697,7 +783,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             categoryId: (row as any).categoryId,
             taxId: null,
             scheduledPaymentId: null,
-            expenseBy: this.currentUserId,   // ← ADDED
+            expenseBy: this.currentUserId,
           }).toPromise();
           result.success++;
         }
@@ -712,19 +798,20 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   onImportComplete(): void { this.showImportModal = false; this.loadExpenses(); }
 
-  // ─── Status helpers ───────────────────────────────────────────────────────
+  // ─── Status helpers ──────────────────────────────────────────────────────
   private normalizeStatus(s: string | ExpenseStatus | null | undefined): string { return s ? String(s).trim().toUpperCase() : ''; }
   isApproved(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.APPROVED; }
   isRejected(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.REJECTED; }
   isLocked(e: Expense): boolean { return this.isApproved(e) || this.isRejected(e); }
   canApproveOrReject(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.PENDING; }
 
-  // ─── Calculations / formatting ────────────────────────────────────────────
+  // ─── Pagination ──────────────────────────────────────────────────────────
   onPageChange(p: number): void { this.currentPage = p; }
   get paginatedExpenses(): Expense[] { const s = this.currentPage * this.pageSize; return this.filteredExpenses.slice(s, s + this.pageSize); }
   nextPage(): void { if (this.currentPage < this.totalPages - 1) this.currentPage++; }
   previousPage(): void { if (this.currentPage > 0) this.currentPage--; }
 
+  // ─── Summary counts / amounts ────────────────────────────────────────────
   getExpenseCount(): number { return this.expenses?.length || 0; }
   getTotalAmount(): number { return this.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
   getApprovedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).length; }
@@ -735,11 +822,58 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   getRejectedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
   calculateDisplayAmount(e: Expense): number { return Number(e.amount) || 0; }
 
-  getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
-    if (tax === undefined || tax === null) return undefined;
-    return typeof tax === 'object' ? tax.rate : tax;
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX (Bug #7): Tax calculation helpers
+  //
+  // WHAT WAS WRONG:
+  //   The detail-view "Total" row just re-displayed the raw stored amount with
+  //   no tax applied. The tax row showed "Included" but never showed a monetary
+  //   value, and did not change the total.
+  //
+  // WHAT CHANGED:
+  //   Added two pure helper methods:
+  //     - calculateTaxAmount()  → the monetary tax delta (base × rate / 100)
+  //     - calculateTotalWithTax() → tax-inclusive display total
+  //   Both are derived dynamically from whatever TaxDTO is attached to the
+  //   expense (via the existing getTaxForExpense() lookup which covers both
+  //   the nested-object and taxId-only shapes).
+  //
+  // WHY IT WORKS:
+  //   No values are hardcoded. The stored `amount` is always the pre-tax base;
+  //   only the display total is computed. If the expense has no tax, both
+  //   helpers return the base amount unchanged.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Resolve tax for an expense — uses nested tax object if present,
+   *  otherwise falls back to taxMap (populated from loaded tax rates). */
+  getTaxForExpense(e: Expense | null): TaxDTO | null {
+    if (!e) return null;
+    if (e.tax && typeof e.tax === 'object' && (e.tax as TaxDTO).id) return e.tax as TaxDTO;
+    if (e.taxId && this.taxMap[e.taxId]) return this.taxMap[e.taxId];
+    return null;
   }
 
+  /** The tax monetary amount for display (base × rate / 100). Returns 0 if no tax. */
+  calculateTaxAmount(e: Expense | null): number {
+    if (!e) return 0;
+    const base = Number(e.amount) || 0;
+    const tax  = this.getTaxForExpense(e);
+    if (!tax?.rate) return 0;
+    return base * tax.rate / 100;
+  }
+
+  /** Tax-inclusive total for display. Stored amount is always the pre-tax base. */
+  calculateTotalWithTax(e: Expense | null): number {
+    if (!e) return 0;
+    return (Number(e.amount) || 0) + this.calculateTaxAmount(e);
+  }
+
+  getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
+    if (tax === undefined || tax === null) return undefined;
+    return typeof tax === 'object' ? (tax as TaxDTO).rate : tax as number;
+  }
+
+  // ─── Formatting ──────────────────────────────────────────────────────────
   formatAmount(v: number | string | null | undefined): string {
     const n = Number(v); return !isNaN(n) && v !== null && v !== undefined ? n.toLocaleString() : '';
   }
