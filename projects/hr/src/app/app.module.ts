@@ -336,8 +336,8 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     CooperativeMembershipApplicationsComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
