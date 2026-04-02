@@ -22,13 +22,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
-/** Role used to look up approvers via the backend API */
-const APPROVER_ROLE = 'MANAGER';
 
-/**
- * Fallback approver emails — used only while backend endpoint is pending.
- * @todo Remove once GET /users/by-role is available.
- */
 const FALLBACK_APPROVER_EMAILS: { fullname: string; email: string }[] = [
   { fullname: 'Admin',   email: 'a.olayemi@yahoo.com' },
   { fullname: 'Finance', email: 'damilola@centrifugegroup.com' },
@@ -53,30 +47,25 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   // ─── Form state ───────────────────────────────────────────────────────────
   expenseSummary: any = { amount: null, quantity: 1, paidBy: 'COMPANY' };
-  isDragging = false;
+  isDragging  = false;
   currentStage = 'to-submit';
   productData: any = {};
   signatureUrl: string | null = null;
 
-  // ─── FIX 1: Loading / submitting state ───────────────────────────────────
-  isSubmitting = false;
+  isSubmitting  = false;
   isSendingEmail = false;
 
-  // ─── FIX 3: Amount display mode ──────────────────────────────────────────
   // 'per_item' means user enters price per item; total = quantity × amount
-  // 'total' means user enters the full total directly
+  // 'total'    means user enters the full total directly
   amountMode: 'per_item' | 'total' = 'total';
 
-  // ─── FIX 8: Multiple document attachments ────────────────────────────────
-  // Company receipt (required) — supports multiple files
-  companyReceiptFiles: File[] = [];
+  // ─── Multi-file attachments ───────────────────────────────────────────────
+  companyReceiptFiles: File[]  = [];
   companyReceiptPreviews: string[] = [];
-
-  // Employee receipt (required when paidBy=EMPLOYEE) — supports multiple files
   employeeReceiptFiles: File[] = [];
   employeeReceiptPreviews: string[] = [];
 
-  // Legacy single-file properties kept for backward compatibility
+  // Legacy single-file getters kept for backward compatibility
   get receiptFile(): File | null { return this.companyReceiptFiles[0] ?? null; }
   get employeeReceiptFile(): File | null { return this.employeeReceiptFiles[0] ?? null; }
 
@@ -88,21 +77,21 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   selectedCurrency = 'NGN';
   availableCurrencies = ['USD', 'EUR', 'GBP', 'NGN'];
 
-  // ─── FIX 15: Monthly batching ─────────────────────────────────────────────
+  // ─── Monthly batch check ──────────────────────────────────────────────────
   currentMonthExpenseCount = 0;
-  showMonthlyLimitWarning = false;
-  readonly MONTHLY_LIMIT = MONTHLY_EXPENSE_LIMIT;
+  showMonthlyLimitWarning  = false;
+  readonly MONTHLY_LIMIT   = MONTHLY_EXPENSE_LIMIT;
 
   // ─── Modals ───────────────────────────────────────────────────────────────
-  showCategoryModal = false;
-  showMerchantModal = false;
-  showTaxModal = false;
-  showAdvancedPayment = false;
-  showBillSplit = false;
+  showCategoryModal    = false;
+  showMerchantModal    = false;
+  showTaxModal         = false;
+  showAdvancedPayment  = false;
+  showBillSplit        = false;
 
   newCategoryData = { name: '', description: '' };
   newMerchantData = { name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' };
-  newTaxData = { name: '', rate: 0, description: '' };
+  newTaxData      = { name: '', rate: 0, description: '' };
 
   // ─── Advanced payment / bill split ────────────────────────────────────────
   advancedPaymentData?: RecurringPayment;
@@ -140,7 +129,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         this.expenseService.getExpenseById(expenseId).subscribe((expense) => {
           if (expense) {
             this.expenseSummary = { ...expense };
-            this.signatureUrl = expense.signature || null;
+            this.signatureUrl   = expense.signature || null;
           }
         });
       }
@@ -151,7 +140,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.revokeAllPreviews();
   }
 
-  // ─── FIX 5: Resolve current user (nested user.id) ────────────────────────
+  // ─── Resolve current user ─────────────────────────────────────────────────
   private resolveCurrentUser(): { id: number | null; fullname: string; email: string } {
     try {
       const primaryRaw =
@@ -182,38 +171,51 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         primary?.email ||
         sessionStorage.getItem('email') || localStorage.getItem('email') || '';
 
-      console.log('[ExpenseForm] resolveCurrentUser → id:', id, 'name:', fullname);
+      console.log('[ExpenseForm] resolveCurrentUser → id:', id, '| name:', fullname);
       return { id, fullname, email };
     } catch {
       return { id: null, fullname: 'Unknown User', email: '' };
     }
   }
 
-  // ─── FIX 14: Fetch approvers from API with fallback ───────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX: fetchApprovers
+  //
+  // WHAT WAS WRONG:
+  //   The method made a live HTTP call to
+  //   GET /x/api/v2/us/ur/users/by-role?role=MANAGER which returns 404
+  //   because the endpoint has not been implemented on the backend yet.
+  //   This caused a red network error in the console on every expense
+  //   submission and confused developers into thinking the submission failed.
+  //
+  // WHAT CHANGED:
+  //   The live API call is removed. The method now returns the fallback list
+  //   directly as an Observable, so the rest of the notification pipeline
+  //   works identically without the failed network request.
+  //
+  // HOW TO RE-ENABLE THE API CALL:
+  //   When the backend endpoint is ready, replace the method body with:
+  //
+  //   private fetchApprovers(): Observable<{ fullname: string; email: string }[]> {
+  //     const token    = sessionStorage.getItem('Token') || ...;
+  //     const tenantId = sessionStorage.getItem('tenantId') || 'mod';
+  //     const headers  = new HttpHeaders({ 'X-Tenant-ID': tenantId })
+  //                        .set('Authorization', `Bearer ${token}`);
+  //     return this.http
+  //       .get<any[]>(`https://be.optimaxsuites.com/x/api/v2/us/ur/users/by-role?role=MANAGER`, { headers })
+  //       .pipe(
+  //         map(users => users.filter(u => u.email).map(u => ({
+  //           fullname: u.fullname || u.username || 'Approver',
+  //           email:    u.email || '',
+  //         }))),
+  //         catchError(() => of(FALLBACK_APPROVER_EMAILS))
+  //       );
+  //   }
+  // ─────────────────────────────────────────────────────────────────────────
   private fetchApprovers(): Observable<{ fullname: string; email: string }[]> {
-    const authToken =
-      sessionStorage.getItem('Token') || localStorage.getItem('token') ||
-      sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-    const tenantId = sessionStorage.getItem('tenantId') || localStorage.getItem('tenantId') || 'mod';
-
-    let headers = new HttpHeaders({ 'X-Tenant-ID': tenantId });
-    if (authToken) headers = headers.set('Authorization', `Bearer ${authToken}`);
-
-    // @todo swap URL once backend confirms endpoint
-    const approverUrl = `https://be.optimaxsuites.com/x/api/v2/us/ur/users/by-role?role=${APPROVER_ROLE}`;
-
-    return this.http.get<any[]>(approverUrl, { headers }).pipe(
-      map((users: any[]) =>
-        users.filter(u => u.email).map(u => ({
-          fullname: u.fullname || u.name || u.username || 'Approver',
-          email:    u.email || u.emailAddress || '',
-        }))
-      ),
-      catchError((err) => {
-        console.warn('[ExpenseForm] fetchApprovers API failed — using fallback:', err);
-        return of(FALLBACK_APPROVER_EMAILS);
-      })
-    );
+    // Skip API call — endpoint is not yet available on the backend (returns 404).
+    // Return fallback list directly so no failed network request appears in console.
+    return of(FALLBACK_APPROVER_EMAILS);
   }
 
   private notifyAdmins(
@@ -229,19 +231,21 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
           console.warn('[ExpenseForm] No approvers found — notification skipped.');
           return;
         }
+
         approvers.forEach(approver => {
           if (!approver.email || approver.email.toLowerCase() === submitterEmail.toLowerCase()) return;
-          this.emailService.sendExpenseSubmissionAlert(submitterName, approver.email, expenseName, amount, currency)
-            .pipe(catchError(err => { console.error(`[notifyAdmins] ❌ ${approver.email}:`, err); return of(null); }))
-            .subscribe(() => console.log(`[notifyAdmins] ✉️  ${approver.email}`));
+          this.emailService
+            .sendExpenseSubmissionAlert(submitterName, approver.email, expenseName, amount, currency)
+            .pipe(catchError(err => { console.error(`[notifyAdmins] email failed for ${approver.email}:`, err); return of(null); }))
+            .subscribe(() => console.log(`[notifyAdmins] sent to ${approver.email}`));
         });
 
-        // Confirmation copy to submitter
+        // Confirmation copy to the submitter
         if (submitterEmail) {
           this.emailService.sendNotificationEmail({
-            name: submitterName,
+            name:          submitterName,
             receiverEmail: submitterEmail,
-            subject: '📋 Expense Submitted — Awaiting Approval',
+            subject:       '📋 Expense Submitted — Awaiting Approval',
             body: `<p>Hi ${submitterName},</p>
                    <p>Your expense <strong>${expenseName}</strong> of
                    <strong>${currency} ${amount.toLocaleString()}</strong>
@@ -249,14 +253,14 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
                    <p>You will be notified once reviewed.</p>
                    <br/><p style="color:#666;">Optimax Finance Team</p>`
           }).pipe(catchError(err => { console.error('[notifyAdmins] submitter copy failed:', err); return of(null); }))
-            .subscribe(() => console.log(`[notifyAdmins] ✉️  submitter copy: ${submitterEmail}`));
+            .subscribe();
         }
       },
       error: (err) => console.error('[notifyAdmins] fetchApprovers error:', err)
     });
   }
 
-  // ─── FIX 15: Monthly batching check ──────────────────────────────────────
+  // ─── Monthly batch check ──────────────────────────────────────────────────
   private checkMonthlyLimit(): void {
     const currentUser = this.resolveCurrentUser();
     if (!currentUser.id) return;
@@ -265,13 +269,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       next: (expenses) => {
         const now = new Date();
         const thisMonth = expenses.filter(e => {
-          // Match current user
           const uid = typeof e.expenseBy === 'object' && e.expenseBy !== null
             ? (e.expenseBy as any).id ?? (e.expenseBy as any).userId
             : Number(e.expenseBy);
           if (uid !== currentUser.id) return false;
 
-          // Match current month/year
           const d = Array.isArray(e.eventDate)
             ? new Date((e.eventDate as any)[0], (e.eventDate as any)[1] - 1)
             : new Date(e.eventDate as string);
@@ -279,7 +281,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         });
 
         this.currentMonthExpenseCount = thisMonth.length;
-        this.showMonthlyLimitWarning = thisMonth.length >= MONTHLY_EXPENSE_LIMIT;
+        this.showMonthlyLimitWarning  = thisMonth.length >= MONTHLY_EXPENSE_LIMIT;
 
         if (this.showMonthlyLimitWarning) {
           this.messageService.add({
@@ -290,11 +292,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
           });
         }
       },
-      error: () => {} // non-critical, silently ignore
+      error: () => {} // non-critical — silently ignore
     });
   }
 
-  // ─── FIX 3: Computed total amount ────────────────────────────────────────
+  // ─── Computed totals ──────────────────────────────────────────────────────
   get computedTotal(): number {
     const amount = Number(this.expenseSummary.amount) || 0;
     const qty    = Number(this.expenseSummary.quantity) || 1;
@@ -318,17 +320,12 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       form.control.markAllAsTouched();
       this.messageService.add({ severity: 'error', summary: 'Form Invalid', detail: 'Please fill in all required fields.' }); return;
     }
-
-    // ─── FIX 2: Quantity validation ───────────────────────────────────────
     if (!this.expenseSummary.quantity || Number(this.expenseSummary.quantity) < 1) {
       this.messageService.add({ severity: 'error', summary: 'Invalid Quantity', detail: 'Quantity must be at least 1.' }); return;
     }
-
-    // ─── FIX 3: Amount validation ──────────────────────────────────────────
     if (!this.expenseSummary.amount || Number(this.expenseSummary.amount) <= 0) {
       this.messageService.add({ severity: 'error', summary: 'Invalid Amount', detail: 'Amount must be greater than 0.' }); return;
     }
-
     if (this.companyReceiptFiles.length === 0) {
       this.messageService.add({ severity: 'error', summary: 'Missing Receipt', detail: 'Please upload at least one receipt file.' }); return;
     }
@@ -349,10 +346,14 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
     const currentUser = this.resolveCurrentUser();
     if (!currentUser.id) {
-      this.messageService.add({ severity: 'warn', summary: 'Session Warning', detail: 'Your session may have expired. Please refresh and try again.' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Session Warning',
+        detail: 'Your session may have expired. The expense will be submitted but may not be attributed to your account. Consider logging out and back in.',
+        life: 8000
+      });
     }
 
-    // ─── FIX 3: Use computed total as the amount sent to backend ──────────
     const finalAmount = this.computedTotal;
 
     const employeeData: any = {
@@ -377,25 +378,29 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     if (this.advancedPaymentData) employeeData.recurringPayment = this.advancedPaymentData;
     if (this.billSplitData)       employeeData.billSplit         = this.convertBillSplitToDTO(this.billSplitData);
 
-    // ─── FIX 1: Set loading state ─────────────────────────────────────────
     this.isSubmitting = true;
 
-    // ─── FIX 8: Pass first file — backend currently supports single file.
-    //    When backend supports multiple, loop and call addExpense per file
-    //    or update buildFormData to append multiple files.
     this.expenseService.addExpense(
       employeeData,
-      this.companyReceiptFiles[0] || undefined,
+      this.companyReceiptFiles[0]  || undefined,
       this.employeeReceiptFiles[0] || undefined
     ).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.messageService.add({
-          severity: 'success', summary: 'Expense Submitted',
+          severity: 'success',
+          summary: 'Expense Submitted',
           detail: 'Your expense has been submitted and is pending review.'
         });
 
-        this.notifyAdmins(currentUser.fullname, employeeData.name, finalAmount, this.selectedCurrency, currentUser.email);
+        // Fire-and-forget — do not block the success flow on email failures
+        this.notifyAdmins(
+          currentUser.fullname,
+          employeeData.name,
+          finalAmount,
+          this.selectedCurrency,
+          currentUser.email
+        );
 
         this.resetForm();
         form.resetForm();
@@ -406,39 +411,40 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         this.router.navigate(['/admin/expenses']);
       },
       error: (error: any) => {
-        // ─── FIX 1: Clear loading state on error ─────────────────────────
         this.isSubmitting = false;
+        console.error('[ExpenseForm] submitExpense failed:', error);
         this.messageService.add({
-          severity: 'error', summary: 'Submission Failed',
+          severity: 'error',
+          summary: 'Submission Failed',
           detail: error.error?.message || error.message || 'An error occurred. Please try again.'
         });
       }
     });
   }
 
-  // Data loaders
+  // ─── Data loaders ─────────────────────────────────────────────────────────
   private loadCategories(): void {
     this.expenseService.getCategories().subscribe({
       next: (c) => { this.categories = c; this.categoryNames = c.map(x => x.name); },
-      error: (err) => { console.error(err); this.categories = []; this.categoryNames = []; }
+      error: (err) => { console.error('[ExpenseForm] loadCategories failed:', err); this.categories = []; this.categoryNames = []; }
     });
   }
 
   private loadMerchants(): void {
     this.expenseService.getMerchants().subscribe({
       next: (m) => { this.merchants = m; },
-      error: (err) => { console.error(err); this.merchants = []; }
+      error: (err) => { console.error('[ExpenseForm] loadMerchants failed:', err); this.merchants = []; }
     });
   }
 
   private loadTaxRates(): void {
     this.expenseService.getTaxRates().subscribe({
       next: (t) => { this.taxRates = t; },
-      error: (err) => { console.error(err); this.taxRates = []; }
+      error: (err) => { console.error('[ExpenseForm] loadTaxRates failed:', err); this.taxRates = []; }
     });
   }
 
-  // ─── FIX 8: Multi-file handling ───────────────────────────────────────────
+  // ─── Multi-file handling ──────────────────────────────────────────────────
   onDragOver(e: DragEvent)  { e.preventDefault(); e.stopPropagation(); this.isDragging = true; }
   onDragLeave(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragging = false; }
 
@@ -452,7 +458,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     const input = e.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     files.forEach(f => this.assignFile(f, type));
-    input.value = ''; // reset so same file can be re-added if needed
+    input.value = '';
   }
 
   assignFile(file: File, type: string): void {
@@ -465,12 +471,10 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
     if (type === 'receipt') {
       this.companyReceiptFiles.push(file);
-      if (this.isImageFile(file)) this.companyReceiptPreviews.push(URL.createObjectURL(file));
-      else this.companyReceiptPreviews.push('');
+      this.companyReceiptPreviews.push(this.isImageFile(file) ? URL.createObjectURL(file) : '');
     } else if (type === 'employeeReceipt') {
       this.employeeReceiptFiles.push(file);
-      if (this.isImageFile(file)) this.employeeReceiptPreviews.push(URL.createObjectURL(file));
-      else this.employeeReceiptPreviews.push('');
+      this.employeeReceiptPreviews.push(this.isImageFile(file) ? URL.createObjectURL(file) : '');
     }
   }
 
@@ -497,11 +501,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.employeeReceiptPreviews = [];
   }
 
-  // ─── Legacy single-file helpers (kept for template backward compat) ───────
-  private revokeReceiptPreview(): void {}
-  private revokeEmployeeReceiptPreview(): void {}
-
-  // Category / Merchant / Tax modals
+  // ─── Category / Merchant / Tax modals ────────────────────────────────────
   openModal(type: 'category' | 'merchant' | 'tax') {
     if (type === 'category') this.showCategoryModal = true;
     else if (type === 'merchant') this.showMerchantModal = true;
@@ -521,8 +521,12 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Duplicate', detail: 'Category already exists.' }); return;
     }
     this.expenseService.addCategory({ id: 0, name, description: this.newCategoryData.description?.trim() || '' }).subscribe({
-      next: (s) => { this.categories = [...this.categories, s]; this.expenseSummary.category = s.name;
-        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` }); this.closeModal('category'); },
+      next: (s) => {
+        this.categories = [...this.categories, s];
+        this.expenseSummary.category = s.name;
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` });
+        this.closeModal('category');
+      },
       error: () => this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save category.' })
     });
   }
@@ -538,8 +542,12 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     const name = this.newMerchantData.name?.trim();
     if (!name) { this.messageService.add({ severity: 'error', summary: 'Required', detail: 'Merchant name is required.' }); return; }
     this.expenseService.addMerchant({ id: 0, ...this.newMerchantData, name } as any).subscribe({
-      next: (s) => { this.merchants = [...this.merchants, s]; this.expenseSummary.merchant = s.name;
-        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` }); this.closeModal('merchant'); },
+      next: (s) => {
+        this.merchants = [...this.merchants, s];
+        this.expenseSummary.merchant = s.name;
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` });
+        this.closeModal('merchant');
+      },
       error: () => this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save merchant.' })
     });
   }
@@ -553,19 +561,25 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Duplicate', detail: 'Tax rate already exists.' }); return;
     }
     this.expenseService.addTaxRate({ id: 0, name, rate: this.newTaxData.rate, description: this.newTaxData.description?.trim() }).subscribe({
-      next: (s) => { this.taxRates = [...this.taxRates, s]; this.expenseSummary.taxPercentage = s.rate;
-        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` }); this.closeModal('tax'); },
+      next: (s) => {
+        this.taxRates = [...this.taxRates, s];
+        this.expenseSummary.taxPercentage = s.rate;
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: `"${name}" created.` });
+        this.closeModal('tax');
+      },
       error: () => this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save tax rate.' })
     });
   }
 
-  // Advanced payment / bill split
-  onAdvancedPaymentSave(p: RecurringPayment) { this.advancedPaymentData = p; this.showAdvancedPayment = false; }
-  onAdvancedPaymentCancel() { this.showAdvancedPayment = false; }
+  // ─── Advanced payment ─────────────────────────────────────────────────────
+  onAdvancedPaymentSave(p: RecurringPayment)  { this.advancedPaymentData = p; this.showAdvancedPayment = false; }
+  onAdvancedPaymentCancel()                    { this.showAdvancedPayment = false; }
 
+  // ─── Bill split ───────────────────────────────────────────────────────────
   openBillSplit() {
     this.billSplitData = { enabled: true, method: 'equal', participants: [], totalAmount: this.computedTotal };
-    this.generateParticipants(); this.showBillSplit = true;
+    this.generateParticipants();
+    this.showBillSplit = true;
   }
 
   generateParticipants() {
@@ -595,7 +609,8 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       const s = this.billSplitData.participants.reduce((a, p) => a + (p.shareAmount || 0), 0);
       if (s !== total) { this.splitError = `Amounts must add up to ${total}.`; return; }
     }
-    this.billSplitData.totalAmount = total; this.showBillSplit = false;
+    this.billSplitData.totalAmount = total;
+    this.showBillSplit = false;
   }
 
   removeBillSplit() { this.billSplitData = undefined; this.showBillSplit = false; }
@@ -603,24 +618,26 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   private convertBillSplitToDTO(b: BillSplit | undefined): any {
     if (!b) return undefined;
     return {
-      splitMethod: b.method.toUpperCase(), numberOfPeople: b.participants.length,
-      totalAmount: b.totalAmount || 0,
-      shares: b.participants.map(p => ({ personName: p.name || 'Unknown', shareAmount: p.shareAmount || 0 }))
+      splitMethod:    b.method.toUpperCase(),
+      numberOfPeople: b.participants.length,
+      totalAmount:    b.totalAmount || 0,
+      shares:         b.participants.map(p => ({ personName: p.name || 'Unknown', shareAmount: p.shareAmount || 0 }))
     };
   }
 
-  // Misc helpers
+  // ─── Misc helpers ─────────────────────────────────────────────────────────
   applyFilters(): void {}
-  cancelExpenses() { this.router.navigate(['/admin/expenses']); }
-  goBack()         { this.router.navigate(['/admin/expenses']); }
+  cancelExpenses()  { this.router.navigate(['/admin/expenses']); }
+  goBack()          { this.router.navigate(['/admin/expenses']); }
   generateId(): string { return Math.random().toString(36).substr(2, 9); }
 
   resetForm(): void {
     this.expenseSummary = { name: '', description: '', amount: null, merchant: '', category: null, quantity: 1, taxPercentage: null, eventDate: '', paidBy: 'COMPANY' };
-    this.companyReceiptFiles = []; this.employeeReceiptFiles = [];
+    this.companyReceiptFiles  = [];
+    this.employeeReceiptFiles = [];
     this.revokeAllPreviews();
     this.signatureUrl = null;
-    this.amountMode = 'total';
+    this.amountMode   = 'total';
   }
 
   formatAmount(value: number | string | null): string {
@@ -633,11 +650,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.expenseSummary.amount = !isNaN(n) ? n : null;
   }
 
-  // ─── FIX 7: Tax reflected in total ───────────────────────────────────────
   calculateTotalAmount(): number { return this.computedTotalWithTax; }
 
   saveExpenseToLocalStorage(expense: any): void {
     const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    expenses.push(expense); localStorage.setItem('expenses', JSON.stringify(expenses));
+    expenses.push(expense);
+    localStorage.setItem('expenses', JSON.stringify(expenses));
   }
 }

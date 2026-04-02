@@ -4,8 +4,6 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { v4 as uuidV4 } from "uuid";
-
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -65,7 +63,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   // Pagination
   currentPage = 0;
-  pageSize = 10;
+  pageSize = 50;
   totalElements = 0;
   totalPages = 0;
 
@@ -83,7 +81,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   isEditMode = false;
 
   // ─── View toggle ───
-  viewAllUsers = false;
+  // viewAllUsers = false; // Removed - now always shows all expenses
   canViewAll = false;
   currentUserId: number | null = null;
 
@@ -137,14 +135,12 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   importProgress = 0;
   importResult: ImportResult | null = null;
 
-  // ─── Per-row loading states ──────────────────────────────────────────────
-  // Track which expense IDs are actively being actioned so buttons show spinners
+  // ─── Per-row loading states 
   approvingIds = new Set<number>();
   rejectingIds = new Set<number>();
   deletingIds  = new Set<number>();
 
-  // ─── Tax lookup map ──────────────────────────────────────────────────────
-  // When backend returns only taxId (not nested tax object), resolve from this map
+  // ─── Tax lookup map ────────
   taxMap: Record<number, TaxDTO> = {};
 
   private destroy$ = new Subject<void>();
@@ -164,14 +160,23 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.initForm();
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.resolveCanViewAll();
+    await this.expenseService.waitForToken();
+    this.resolveCanViewAll();
+
     this.loadExpenses();
     this.loadCategories();
     this.loadMerchants();
     this.loadTaxes();
-    this.searchTermSubject.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => this.applyFilters());
-    this.expenseService.expensesUpdated$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadExpenses());
+
+    this.searchTermSubject
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilters());
+
+    this.expenseService.expensesUpdated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadExpenses());
   }
 
   ngOnDestroy(): void {
@@ -182,26 +187,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX (Bug #9): resolveCanViewAll
-  //
-  // WHAT WAS WRONG:
-  //   The original code included the username string in `allRoles` and then
-  //   used `r.includes(p)` to match against patterns like 'DEVELOPER', 'HR',
-  //   'FINANCE'. This meant any user whose username happened to contain one
-  //   of those substrings (e.g. username = "developer") was silently promoted
-  //   to admin, bypassing all access control.
-  //
-  // WHAT CHANGED:
-  //   1. Username is no longer added to allRoles — only real role fields are used.
-  //   2. Role matching uses a strict Set.has() check instead of String.includes().
-  //   3. The set of admin roles is an explicit allowlist (ROLE_ADMIN, ROLE_MANAGER,
-  //      ROLE_HR, ROLE_FINANCE, ADMIN, MANAGER) — no pattern/substring matching.
-  //
-  // WHY IT WORKS:
-  //   A user with username "developer" but roles ["ROLE_USER"] now correctly
-  //   gets canViewAll = false and sees only their own expenses.
-  // ─────────────────────────────────────────────────────────────────────────
   private resolveCanViewAll(): void {
     try {
       const primaryRaw =
@@ -218,14 +203,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         sessionStorage.getItem('userid') ||
         localStorage.getItem('userid');
 
-      // ── Resolve the AUTH user id (nested user.id takes priority over profile id)
       this.currentUserId =
         (primary?.user?.id && typeof primary.user.id === 'number') ? primary.user.id  :
         (reg?.id           && typeof reg.id           === 'number') ? reg.id           :
         storedId ? (Number(storedId) || null) : null;
 
-      // ── Collect roles from ONLY authoritative role fields.
-      //    Username is intentionally excluded — it is a login handle, not a role.
       const flatRole = (sessionStorage.getItem('role') || localStorage.getItem('role') || '')
         .toUpperCase().trim();
 
@@ -239,7 +221,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
       const allRoles = [flatRole, ...primaryRoles, ...regRoles].filter(Boolean);
 
-      // ── Strict exact-match allowlist — no substring/pattern matching
       const adminRoleSet = new Set([
         'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_HR', 'ROLE_FINANCE',
         'ADMIN', 'MANAGER'
@@ -254,7 +235,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Returns { fullname, email } of the logged-in user (the admin taking action). */
   private resolveCurrentUserDetails(): { fullname: string; email: string } {
     try {
       const primaryRaw =
@@ -279,36 +259,27 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     } catch { return { fullname: 'Admin', email: '' }; }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX (Bug #9): resolveExpenseOwnerId
-  //
-  // WHAT WAS WRONG:
-  //   The owner-id extraction logic was duplicated inline inside loadExpenses()
-  //   and handled only some shapes of expenseBy. Edge cases (string-encoded
-  //   number, object with userId instead of id) fell through to `return false`,
-  //   hiding valid expenses.
-  //
-  // WHAT CHANGED:
-  //   Extracted to a single method that handles every shape the backend sends:
-  //   plain number | UserDTO object with .id | UserDTO with .userId | string number.
-  //
-  // WHY IT WORKS:
-  //   All filter callers use one consistent implementation — no divergence.
-  // ─────────────────────────────────────────────────────────────────────────
   private resolveExpenseOwnerId(e: Expense): number | null {
     const eb = e.expenseBy;
     if (eb === null || eb === undefined) return null;
 
     if (typeof eb === 'number') return eb > 0 ? eb : null;
 
-    if (typeof eb === 'object') {
-      const id = (eb as any).id ?? (eb as any).userId ?? null;
-      return typeof id === 'number' && id > 0 ? id : null;
+    if (typeof eb === 'string') {
+      const n = Number(eb);
+      return !isNaN(n) && n > 0 ? n : null;
     }
 
-    // String-encoded numeric id (occasionally returned by older endpoints)
-    const n = Number(eb);
-    return !isNaN(n) && n > 0 ? n : null;
+    if (typeof eb === 'object') {
+      const candidate =
+        (eb as any).userId   ??
+        (eb as any).id       ??
+        (eb as any).user?.id ??
+        null;
+      return typeof candidate === 'number' && candidate > 0 ? candidate : null;
+    }
+
+    return null;
   }
 
   initForm(): void {
@@ -326,31 +297,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   loadExpenses(): void {
     this.isLoading = true;
 
-    const source$ = this.viewAllUsers
-      ? this.expenseService.getAllExpenses()
-      : this.expenseService.getExpenses();
+    const source$ = this.expenseService.getAllExpenses();
 
     source$.pipe(takeUntil(this.destroy$)).subscribe({
       next: (expenses) => {
-        let filtered = expenses;
-
-        // ── Client-side user filter ───────────────────────────────────────
-        // FIX (Bug #9): Uses resolveExpenseOwnerId() for consistent, safe extraction.
-        // Expenses with no resolvable owner are excluded from the personal view —
-        // they are orphaned records only visible to admins in "All Employees" mode.
-        if (!this.viewAllUsers) {
-          if (this.currentUserId !== null && this.currentUserId > 0) {
-            filtered = expenses.filter(e => {
-              const ownerId = this.resolveExpenseOwnerId(e);
-              return ownerId !== null && ownerId === this.currentUserId;
-            });
-          } else {
-            console.warn('[loadExpenses] currentUserId unresolved — hiding all expenses until auth resolves.');
-            filtered = [];
-          }
-        }
-
-        this.expenses = filtered.sort((a, b) => b.id - a.id);
+        this.expenses = expenses.sort((a, b) => b.id - a.id);
         this.totalElements = this.expenses.length;
         this.totalPages = Math.ceil(this.expenses.length / this.pageSize);
         this.applyFilters();
@@ -383,14 +334,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.expenseService.getTaxRates().subscribe({
       next: (t) => {
         this.taxes = t;
-        // Build lookup map so taxId resolves to full TaxDTO in detail view
         this.taxMap = t.reduce((acc, tax) => ({ ...acc, [tax.id]: tax }), {} as Record<number, TaxDTO>);
       },
       error: (err) => { console.error(err); this.taxes = []; }
     });
   }
 
-  toggleViewAll(): void { this.viewAllUsers = !this.viewAllUsers; this.loadExpenses(); }
+
 
   filterByStatus(status: ExpenseStatus | 'ALL'): void {
     this.selectedStatus = status;
@@ -400,7 +350,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   isActiveStatusFilter(status: ExpenseStatus | 'ALL'): boolean { return this.selectedStatus === status; }
 
-  // VIEW DETAIL — fetch full record so approvedBy / approvedAt / rejectedBy populate
   viewExpenseApproval(expense: Expense): void {
     this.companyReceiptUrl = null; this.employeeReceiptUrl = null;
     this.companyReceiptLoading = false; this.employeeReceiptLoading = false;
@@ -430,15 +379,33 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (expense.companyReceipt?.url) {
       this.companyReceiptLoading = true;
       this.http.get(this.convertToWebUrl(expense.companyReceipt.url), { responseType: 'blob' }).subscribe({
-        next: (b) => { if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl); this.companyReceiptUrl = URL.createObjectURL(b); this.companyReceiptLoading = false; this.cdr.detectChanges(); },
-        error: (err) => { console.error(err); this.companyReceiptLoading = false; this.cdr.detectChanges(); }
+        next: (b) => {
+          if (this.companyReceiptUrl) URL.revokeObjectURL(this.companyReceiptUrl);
+          this.companyReceiptUrl = URL.createObjectURL(b);
+          this.companyReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('[_loadReceiptThumbnails] company receipt failed:', err);
+          this.companyReceiptLoading = false;
+          this.cdr.detectChanges();
+        }
       });
     }
     if (expense.expenseReceipt?.url) {
       this.employeeReceiptLoading = true;
       this.http.get(this.convertToWebUrl(expense.expenseReceipt.url), { responseType: 'blob' }).subscribe({
-        next: (b) => { if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl); this.employeeReceiptUrl = URL.createObjectURL(b); this.employeeReceiptLoading = false; this.cdr.detectChanges(); },
-        error: (err) => { console.error(err); this.employeeReceiptLoading = false; this.cdr.detectChanges(); }
+        next: (b) => {
+          if (this.employeeReceiptUrl) URL.revokeObjectURL(this.employeeReceiptUrl);
+          this.employeeReceiptUrl = URL.createObjectURL(b);
+          this.employeeReceiptLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('[_loadReceiptThumbnails] employee receipt failed:', err);
+          this.employeeReceiptLoading = false;
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -448,13 +415,21 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.receiptModalTitle = title; this.receiptModalUrl = '';
     this.receiptImageLoading = true; this.receiptImageError = ''; this.showReceiptModal = true;
     this.http.get(apiUrl, { responseType: 'blob' }).subscribe({
-      next: (b) => { if (this.receiptBlobUrl) URL.revokeObjectURL(this.receiptBlobUrl); this.receiptBlobUrl = URL.createObjectURL(b); this.receiptImageUrl = this.sanitizer.bypassSecurityTrustUrl(this.receiptBlobUrl); this.receiptModalUrl = this.receiptBlobUrl; this.receiptImageLoading = false; this.cdr.detectChanges(); },
-      error: (err) => { console.error(err); this.receiptImageLoading = false; this.receiptImageError = 'Could not load receipt. Use "Open in New Tab".'; this.cdr.detectChanges(); }
+      next: (b) => {
+        if (this.receiptBlobUrl) URL.revokeObjectURL(this.receiptBlobUrl);
+        this.receiptBlobUrl = URL.createObjectURL(b);
+        this.receiptImageUrl = this.sanitizer.bypassSecurityTrustUrl(this.receiptBlobUrl);
+        this.receiptModalUrl = this.receiptBlobUrl;
+        this.receiptImageLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.receiptImageLoading = false;
+        this.receiptImageError = 'Could not load receipt. Use "Open in New Tab".';
+        this.cdr.detectChanges();
+      }
     });
-  }
-
-  navigateToAnalytics(): void {
-    this.router.navigate([`/admin/expenses/analytics/` + uuidV4()]);
   }
 
   closeReceiptModal(): void {
@@ -464,7 +439,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.receiptImageLoading = false; this.receiptImageError = '';
   }
 
-  // APPROVE — tracks loading per expense id
   approve(request: Expense): void {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' }); return;
@@ -486,6 +460,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             this.approvingIds.delete(request.id);
             this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Expense approved.' });
 
+            // Update the expense in-place in the array
+            const index = this.expenses.findIndex(e => e.id === request.id);
+            if (index !== -1) {
+              this.expenses[index] = { ...this.expenses[index], ...updated, status: ExpenseStatus.APPROVED };
+              this.applyFilters();
+            }
+
             const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
             const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
             const admin = this.resolveCurrentUserDetails();
@@ -495,8 +476,23 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
               this.emailService.sendExpenseApprovedNotification(submitterName, submitterEmail, label, admin.fullname)
                 .subscribe({ error: (e: any) => console.error('[approve] email failed:', e) });
             }
+            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
+              // Preserve any existing blob URLs while we reload
+              const prevCompanyUrl  = this.companyReceiptUrl;
+              const prevEmployeeUrl = this.employeeReceiptUrl;
 
-            if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
+              this.selectedExpense = { ...updated };
+
+              // Re-load receipt thumbnails from the updated expense
+              // The service now returns the re-fetched version with receipt URLs intact
+              if (updated.companyReceipt?.url || updated.expenseReceipt?.url) {
+                // Revoke old blob URLs before reloading
+                if (prevCompanyUrl)  { URL.revokeObjectURL(prevCompanyUrl);  this.companyReceiptUrl  = null; }
+                if (prevEmployeeUrl) { URL.revokeObjectURL(prevEmployeeUrl); this.employeeReceiptUrl = null; }
+                this._loadReceiptThumbnails(updated);
+              }
+              this.cdr.detectChanges();
+            }
           },
           error: (err) => {
             this.approvingIds.delete(request.id);
@@ -526,6 +522,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         this.rejectingIds.delete(request.id);
         this.messageService.add({ severity: 'warn', summary: 'Rejected', detail: 'Expense rejected.' });
 
+        // Update the expense in-place in the array
+        const index = this.expenses.findIndex(e => e.id === request.id);
+        if (index !== -1) {
+          this.expenses[index] = { ...this.expenses[index], ...updated, status: ExpenseStatus.REJECTED, rejectionReason: reason };
+          this.applyFilters();
+        }
+
         const submitterEmail = (request as any).expenseBy?.email || (updated as any).expenseBy?.email || '';
         const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
         const admin = this.resolveCurrentUserDetails();
@@ -536,7 +539,20 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             .subscribe({ error: (e: any) => console.error('[reject] email failed:', e) });
         }
 
-        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) this.selectedExpense = updated;
+        // FIX (Bug #2): Same receipt-reload fix as in approve()
+        if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
+          const prevCompanyUrl  = this.companyReceiptUrl;
+          const prevEmployeeUrl = this.employeeReceiptUrl;
+
+          this.selectedExpense = { ...updated };
+
+          if (updated.companyReceipt?.url || updated.expenseReceipt?.url) {
+            if (prevCompanyUrl)  { URL.revokeObjectURL(prevCompanyUrl);  this.companyReceiptUrl  = null; }
+            if (prevEmployeeUrl) { URL.revokeObjectURL(prevEmployeeUrl); this.employeeReceiptUrl = null; }
+            this._loadReceiptThumbnails(updated);
+          }
+          this.cdr.detectChanges();
+        }
       },
       error: (err) => {
         this.rejectingIds.delete(request.id);
@@ -615,7 +631,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   editExpense(expense: Expense): void { this.openEditModal(expense); }
   saveEditedExpense(): void { this.onSubmit(); }
 
-  // DELETE — block deletion of approved expenses
   confirmDelete(expense: Expense): void {
     if (this.isApproved(expense)) {
       this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'Approved expenses cannot be deleted. Contact your administrator.' });
@@ -637,6 +652,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     this.expenseService.deleteExpense(expense.id).subscribe({
       next: () => {
         this.deletingIds.delete(expense.id);
+        // Remove from local array immediately so table updates without full reload
+        this.expenses = this.expenses.filter(e => e.id !== expense.id);
+        this.applyFilters();
         this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Expense deleted.' });
       },
       error: (err) => {
@@ -665,7 +683,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  // BULK ACTIONS
   bulkApprove(): void {
     if (!this.selectedExpenses.length) { this.messageService.add({ severity: 'warn', summary: 'None Selected', detail: 'Select at least one expense.' }); return; }
     this.confirmationService.confirm({
@@ -776,19 +793,14 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         const row = valid[i];
         try {
           await this.expenseService.addExpense({
-            name: row.name,
-            description: row.description || '',
+            name: row.name, description: row.description || '',
             eventDate: new Date(row.eventDate).toISOString(),
-            quantity: 1,
-            currency: row.currency,
-            amount: row.amount,
-            status: 'PENDING',
-            paidBy: row.paidBy,
+            quantity: 1, currency: row.currency, amount: row.amount,
+            status: 'PENDING', paidBy: row.paidBy,
             receiptReference: row.receiptReference,
             merchantId: (row as any).merchantId,
             categoryId: (row as any).categoryId,
-            taxId: null,
-            scheduledPaymentId: null,
+            taxId: null, scheduledPaymentId: null,
             expenseBy: this.currentUserId,
           }).toPromise();
           result.success++;
@@ -797,89 +809,99 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         this.importProgress = 60 + Math.round(((i + 1) / valid.length) * 35);
       }
       this.importProgress = 100; this.importResult = result; this.importLoading = false;
-      if (result.success > 0) { this.loadExpenses(); this.messageService.add({ severity: result.errors > 0 ? 'warn' : 'success', summary: 'Import Complete', detail: `${result.success} imported${result.errors > 0 ? `, ${result.errors} failed` : ''}.` }); }
-      else { this.messageService.add({ severity: 'error', summary: 'Import Failed', detail: 'No expenses imported.' }); }
-    } catch (e: any) { this.importLoading = false; this.importProgress = 0; this.messageService.add({ severity: 'error', summary: 'Parse Error', detail: e.message || 'Could not read file.' }); }
+      if (result.success > 0) {
+        this.loadExpenses();
+        this.messageService.add({ severity: result.errors > 0 ? 'warn' : 'success', summary: 'Import Complete', detail: `${result.success} imported${result.errors > 0 ? `, ${result.errors} failed` : ''}.` });
+      } else {
+        this.messageService.add({ severity: 'error', summary: 'Import Failed', detail: 'No expenses imported.' });
+      }
+    } catch (e: any) {
+      this.importLoading = false; this.importProgress = 0;
+      this.messageService.add({ severity: 'error', summary: 'Parse Error', detail: e.message || 'Could not read file.' });
+    }
   }
 
   onImportComplete(): void { this.showImportModal = false; this.loadExpenses(); }
 
-  // ─── Status helpers ──────────────────────────────────────────────────────
+  // ─── Status helpers ────────
   private normalizeStatus(s: string | ExpenseStatus | null | undefined): string { return s ? String(s).trim().toUpperCase() : ''; }
   isApproved(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.APPROVED; }
   isRejected(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.REJECTED; }
   isLocked(e: Expense): boolean { return this.isApproved(e) || this.isRejected(e); }
   canApproveOrReject(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.PENDING; }
 
-  // ─── Pagination ──────────────────────────────────────────────────────────
+  // ─── Pagination ────────────
   onPageChange(p: number): void { this.currentPage = p; }
   get paginatedExpenses(): Expense[] { const s = this.currentPage * this.pageSize; return this.filteredExpenses.slice(s, s + this.pageSize); }
   nextPage(): void { if (this.currentPage < this.totalPages - 1) this.currentPage++; }
   previousPage(): void { if (this.currentPage > 0) this.currentPage--; }
 
   // ─── Summary counts / amounts ────────────────────────────────────────────
+  // FIX (Bug #3): Summary card totals now include tax so they match the detail view.
   getExpenseCount(): number { return this.expenses?.length || 0; }
-  getTotalAmount(): number { return this.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
-  getApprovedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).length; }
-  getApprovedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
-  getPendingCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).length; }
-  getPendingAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
-  getRejectedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).length; }
-  getRejectedAmount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).reduce((s, e) => s + (Number(e.amount) || 0), 0); }
-  calculateDisplayAmount(e: Expense): number { return Number(e.amount) || 0; }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX (Bug #7): Tax calculation helpers
-  //
-  // WHAT WAS WRONG:
-  //   The detail-view "Total" row just re-displayed the raw stored amount with
-  //   no tax applied. The tax row showed "Included" but never showed a monetary
-  //   value, and did not change the total.
-  //
-  // WHAT CHANGED:
-  //   Added two pure helper methods:
-  //     - calculateTaxAmount()  → the monetary tax delta (base × rate / 100)
-  //     - calculateTotalWithTax() → tax-inclusive display total
-  //   Both are derived dynamically from whatever TaxDTO is attached to the
-  //   expense (via the existing getTaxForExpense() lookup which covers both
-  //   the nested-object and taxId-only shapes).
-  //
-  // WHY IT WORKS:
-  //   No values are hardcoded. The stored `amount` is always the pre-tax base;
-  //   only the display total is computed. If the expense has no tax, both
-  //   helpers return the base amount unchanged.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Resolve tax for an expense — uses nested tax object if present,
-   *  otherwise falls back to taxMap (populated from loaded tax rates). */
+  /**
+   * FIX (Bug #3): getTaxForExpense resolves the TaxDTO for an expense.
+   * The backend returns tax.rate as a string (e.g. "7.50") so we coerce it to number.
+   */
   getTaxForExpense(e: Expense | null): TaxDTO | null {
     if (!e) return null;
-    if (e.tax && typeof e.tax === 'object' && (e.tax as TaxDTO).id) return e.tax as TaxDTO;
+    if (e.tax && typeof e.tax === 'object' && (e.tax as TaxDTO).id) {
+      // Coerce rate to number — backend returns it as a string like "7.50"
+      const tax = e.tax as TaxDTO;
+      return { ...tax, rate: Number(tax.rate) || 0 };
+    }
     if (e.taxId && this.taxMap[e.taxId]) return this.taxMap[e.taxId];
     return null;
   }
 
-  /** The tax monetary amount for display (base × rate / 100). Returns 0 if no tax. */
+  /** The tax monetary amount (base × rate / 100). Returns 0 if no tax. */
   calculateTaxAmount(e: Expense | null): number {
     if (!e) return 0;
     const base = Number(e.amount) || 0;
     const tax  = this.getTaxForExpense(e);
     if (!tax?.rate) return 0;
-    return base * tax.rate / 100;
+    return base * Number(tax.rate) / 100;
   }
 
-  /** Tax-inclusive total for display. Stored amount is always the pre-tax base. */
+  /** Tax-inclusive total. Stored amount is the pre-tax base. */
   calculateTotalWithTax(e: Expense | null): number {
     if (!e) return 0;
     return (Number(e.amount) || 0) + this.calculateTaxAmount(e);
   }
 
-  getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
-    if (tax === undefined || tax === null) return undefined;
-    return typeof tax === 'object' ? (tax as TaxDTO).rate : tax as number;
+  calculateDisplayAmount(e: Expense): number {
+    return this.calculateTotalWithTax(e);
   }
 
-  // ─── Formatting ──────────────────────────────────────────────────────────
+  getTotalAmount(): number {
+    return this.expenses.reduce((s, e) => s + this.calculateTotalWithTax(e), 0);
+  }
+
+  getApprovedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED).length; }
+  getApprovedAmount(): number {
+    return this.expenses.filter(e => e.status === ExpenseStatus.APPROVED)
+      .reduce((s, e) => s + this.calculateTotalWithTax(e), 0);
+  }
+
+  getPendingCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.PENDING).length; }
+  getPendingAmount(): number {
+    return this.expenses.filter(e => e.status === ExpenseStatus.PENDING)
+      .reduce((s, e) => s + this.calculateTotalWithTax(e), 0);
+  }
+
+  getRejectedCount(): number { return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED).length; }
+  getRejectedAmount(): number {
+    return this.expenses.filter(e => e.status === ExpenseStatus.REJECTED)
+      .reduce((s, e) => s + this.calculateTotalWithTax(e), 0);
+  }
+
+  getTaxRateDisplayValue(tax: TaxDTO | number | undefined): number | undefined {
+    if (tax === undefined || tax === null) return undefined;
+    return typeof tax === 'object' ? Number((tax as TaxDTO).rate) || 0 : tax as number;
+  }
+
+  // ─── Formatting ────────────
   formatAmount(v: number | string | null | undefined): string {
     const n = Number(v); return !isNaN(n) && v !== null && v !== undefined ? n.toLocaleString() : '';
   }
@@ -930,6 +952,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   getStatusBadgeClass(s: ExpenseStatus): string { return { [ExpenseStatus.PENDING]: 'badge-warning', [ExpenseStatus.APPROVED]: 'badge-success', [ExpenseStatus.REJECTED]: 'badge-danger' }[s] || 'badge-secondary'; }
   generateRandomColor(): string { return ['#ADD8E6', '#90EE90', '#FFFFE0', '#F08080', '#FFB6C1'][Math.floor(Math.random() * 5)]; }
+  navigateToAnalytics(): void { this.router.navigate(['/admin/expenses/analytics/all']); }
   navigateToForm(): void { this.router.navigate(['/admin/expenses/expensesForm']); }
   navigateToexpense(): void { this.router.navigate(['/admin/expenses/expense-summary']); }
   openCreateModal(): void { this.isEditMode = false; this.expenseForm.reset({ currency: Currency.NGN, paidBy: PaidBy.COMPANY, quantity: 1, taxId: null }); this.isModalOpen = true; }

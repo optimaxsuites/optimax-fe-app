@@ -17,19 +17,6 @@
         Add Expense
       </button>
 
-      <!-- My Expenses / All Employees toggle — only shown to users with canViewAll (admins/managers) -->
-      <button *ngIf="canViewAll"
-        (click)="toggleViewAll()"
-        class="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg transition"
-        [class.bg-teal-50]="viewAllUsers"
-        [class.border-teal-400]="viewAllUsers"
-        [class.text-teal-700]="viewAllUsers"
-        [class.border-gray-300]="!viewAllUsers"
-        [class.text-gray-600]="!viewAllUsers">
-        <i class="pi" [class.pi-users]="!viewAllUsers" [class.pi-user]="viewAllUsers"></i>
-        {{ viewAllUsers ? 'My Expenses' : 'All Employees' }}
-      </button>
-
       <button (click)="openImportModal()"
         class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
         <i class="pi pi-upload"></i> Import
@@ -232,7 +219,7 @@
           </td>
 
           <td class="py-4 px-4">
-            <span class="text-sm text-gray-600">{{ expense.expenseBy?.fullname || '—' }}</span>
+            <span class="text-sm text-gray-600">{{ expense.expenseBy?.fullname || 'System' }}</span>
           </td>
 
           <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
