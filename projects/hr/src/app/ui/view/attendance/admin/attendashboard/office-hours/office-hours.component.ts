@@ -96,7 +96,9 @@ export class OfficeHoursComponent implements OnInit{
       openingTime: [hours.openingTime],
       closingTime: [hours.closingTime],
       absentTime: [hours.absentTime],
-      latenessGracePeriod: [hours.latenessGracePeriod]
+      latenessGracePeriod: [hours.latenessGracePeriod],
+      lat: [this.companyLatitude],
+      lng: [this.companyLongitude]
     },
     {validators: officeHoursValidator});
   }
@@ -156,6 +158,11 @@ if(this.pickerMap) {
     const pos = this.marker.getLatLng();
     this.pickedLat = pos.lat;
     this.pickedLng = pos.lng;
+
+    this.form.patchValue({
+    lat: pos.lat,
+    lng: pos.lng
+  });
   });
 
   //to force map to render inside modal
@@ -184,7 +191,89 @@ if(this.pickerMap) {
   this.pickedLng = lng;
 }*/
 
+updateMapFromInputs() {
+  const lat = this.form.get('lat')?.value;
+  const lng = this.form.get('lng')?.value;
+
+  console.log('LatLng:', lat, lng);
+  console.log('Map:', this.pickerMap);
+  console.log('Marker:', this.marker);
+
+  if (!this.pickerMap || !this.marker) {
+    console.warn('Map not ready yet');
+    return;
+  }
+
+  if (lat == null || lng == null) return;
+
+  //basic validation
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    alert('Invalid coordinates');
+    return;
+  }
+
+  this.pickedLat = lat;
+  this.pickedLng = lng;
+
+  this.marker.setLatLng([lat, lng]);
+  this.pickerMap.setView([lat, lng], 15);
+}
+/*updateMapFromInputs() {
+  if (
+    this.pickedLat == null ||
+    this.pickedLng == null ||
+    isNaN(this.pickedLat) ||
+    isNaN(this.pickedLng)
+  ) return;
+
+  const latLng: [number, number] = [this.pickedLat, this.pickedLng];
+
+  this.pickerMap.setView(latLng, 15);
+  this.marker.setLatLng(latLng);
+}*/
+
+useCurrentLocation() {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition((position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    // update form
+    this.form.patchValue({
+      lat: lat,
+      lng: lng
+    });
+
+    // update map
+    this.marker.setLatLng([lat, lng]);
+    this.pickerMap.setView([lat, lng], 15);
+
+    this.pickedLat = lat;
+    this.pickedLng = lng;
+  });
+}
+/*useCurrentLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    this.pickedLat = pos.coords.latitude;
+    this.pickedLng = pos.coords.longitude;
+    this.updateMapFromInputs();
+  });
+}*/
+
 savePickedLocation() {
+  const lat = this.form.get('lat')?.value;
+  const lng = this.form.get('lng')?.value;
+
+  if (lat == null || lng == null) return;
+
+  this.companyLatitude = lat;
+  this.companyLongitude = lng;
+
+  this.closeLocationPicker();
+}
+
+/*savePickedLocation() {
   if (this.pickedLat == null || this.pickedLng == null) {
     return; // prevent saving invalid location
   }
@@ -193,7 +282,7 @@ savePickedLocation() {
   this.companyLongitude = this.pickedLng;
 
   this.closeLocationPicker();
-}
+}*/
 
 closeLocationPicker() {
   this.locationPickerOpen = false;

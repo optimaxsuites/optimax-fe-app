@@ -67,7 +67,7 @@
     <span class="value">{{ companyLatitude }}, {{ companyLongitude }}</span>
   </div>
 </div>
-
+<div><p class="hint">Default office hours: 09:00 AM – 05:00 PM</p></div>
 
   <!-- EDIT FORM -->
   <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="save()" class="hours-form">
@@ -117,10 +117,10 @@
 <div class="import-backdrop" *ngIf="locationPickerOpen" (click)="closeLocationPicker()"></div>
 
 <!-- Modal -->
-<div class="import-modal-card" *ngIf="locationPickerOpen">
+<div class="import-modal-card" *ngIf="locationPickerOpen" [formGroup]="form">
   <div class="head-modal">
     <h3>Select Company Location</h3>
-    <button (click)="closeLocationPicker()">×</button>
+    <button class="close-btn" (click)="closeLocationPicker()">×</button>
   </div>
 
   <!-- Search -->
@@ -131,12 +131,36 @@
     (keyup.enter)="searchLocation()"
   />-->
 
-  <div id="company-map" class="leaflet-map"></div>
+  <div class="latlng-row">
+  <input
+    type="number"
+    step="any"
+    placeholder="Latitude"
+    formControlName="lat" />
 
-  <button class="primary" (click)="savePickedLocation()">
-    Save Location
+  <input
+    type="number"
+    step="any"
+    placeholder="Longitude"
+    formControlName="lng" />
+
+  <button
+    type="button"
+    class="go-btn"
+    (click)="updateMapFromInputs()">
+    Go to Location
   </button>
 </div>
 
-  <p class="hint">Default office hours: 09:00 AM – 05:00 PM</p>
+  <div id="company-map" class="leaflet-map"></div>
+
+  <div class="map-actions">
+    <button type="button" class="secondary-btn" (click)="useCurrentLocation()">
+      Use My Location
+    </button>
+
+    <button type="button" class="primary-btn" (click)="savePickedLocation()">
+      Save Location
+    </button>
+  </div>
 </div>

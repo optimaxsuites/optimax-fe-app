@@ -51,7 +51,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
 import { AttendanceComponent } from './ui/view/attendance/attendance.component';
@@ -200,7 +200,6 @@ import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shi
 import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
-import { MenuModule } from 'primeng/menu';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 
 @NgModule({
@@ -337,8 +336,8 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     CooperativeMembershipApplicationsComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
@@ -391,7 +390,6 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     FullCalendarModule,
     LargeSideModalComponent,
     FooterComponent,
-    MenuModule,
   ],
   providers: [
     {
@@ -412,7 +410,6 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
-    DatePipe
   ],
   bootstrap: [AppHrComponent],
 })
