@@ -1,0 +1,204 @@
+<div class="employee-loan-details" *ngIf="loan">
+  <div class="summary-card">
+    <div class="summary-copy">
+      <span class="eyebrow">Employee Loan Details</span>
+      <div class="modal-header">
+        <div>
+          <h2><i class="fas fa-file-lines"></i> Loan Application Details</h2>
+          <p class="subtitle">A simple summary of your request, review state, and repayment details.</p>
+        </div>
+        <div class="header-actions">
+          <span class="status-pill" [ngClass]="getStatusClass(displayedStatus)">{{ displayedStatus }}</span>
+          <button class="close-btn" type="button" (click)="requestClose()" aria-label="Close loan details">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-meta">
+        <span><i class="fas fa-hashtag"></i>{{ loan.loanCode }}</span>
+        <span><i class="fas fa-layer-group"></i>{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</span>
+      </div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="summary-stat">
+        <span>Requested</span>
+        <strong>{{ formatCurrency(loan.amount) }}</strong>
+      </div>
+      <div class="summary-stat">
+        <span>Monthly</span>
+        <strong>{{ formatCurrency(loan.repaymentAmount) }}</strong>
+      </div>
+      <div class="summary-stat">
+        <span>Outstanding</span>
+        <strong>{{ formatCurrency(loan.currentBalance) }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <span class="eyebrow">Application Snapshot</span>
+      <h3>What Matters Right Now</h3>
+    </div>
+  </div>
+
+  <div class="details-grid">
+    <div class="detail-group">
+      <div class="group-head">
+        <span class="group-icon"><i class="fas fa-file-signature"></i></span>
+        <div>
+          <span class="group-label">Application</span>
+          <h4>Identity and Submission</h4>
+        </div>
+      </div>
+      <div class="detail-list">
+        <div class="detail-row">
+          <span class="row-label">Loan ID</span>
+          <span class="row-value mono">{{ loan.loanCode }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Applied On</span>
+          <span class="row-value">{{ formatDate(getAppliedDate()) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Approved On</span>
+          <span class="row-value">{{ formatDate(getApprovedDate()) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Disbursed On</span>
+          <span class="row-value">{{ formatDate(getDisbursedDate()) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Last Status Update</span>
+          <span class="row-value">{{ formatDate(getLatestStatusDate()) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-group">
+      <div class="group-head">
+        <span class="group-icon finance"><i class="fas fa-wallet"></i></span>
+        <div>
+          <span class="group-label">Financials</span>
+          <h4>Amounts and Repayment</h4>
+        </div>
+      </div>
+      <div class="detail-list">
+        <div class="detail-row">
+          <span class="row-label">Requested Amount</span>
+          <span class="row-value money">{{ formatCurrency(loan.amount) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Monthly Repayment</span>
+          <span class="row-value money">{{ formatCurrency(loan.repaymentAmount) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Repayment Period</span>
+          <span class="row-value">{{ loan.repaymentTime }} months</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Outstanding Balance</span>
+          <span class="row-value money warning">{{ formatCurrency(loan.currentBalance) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Total Paid</span>
+          <span class="row-value money">{{ formatCurrency(loan.totalPaid) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-group">
+      <div class="group-head">
+        <span class="group-icon review"><i class="fas fa-clipboard-check"></i></span>
+        <div>
+          <span class="group-label">Review</span>
+          <h4>Decision Details</h4>
+        </div>
+      </div>
+      <div class="detail-list">
+        <div class="detail-row status-row">
+          <span class="row-label">Current Status</span>
+          <span class="status-pill inline-pill" [ngClass]="getStatusClass(displayedStatus)">{{ displayedStatus }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Interest Rate</span>
+          <span class="row-value strong">{{ getDisplayedInterestRate() }}%</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Total Repayable</span>
+          <span class="row-value strong money">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Payment Mode</span>
+          <span class="row-value">{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-group full narrative-group purpose-group">
+      <div class="group-head">
+        <span class="group-icon purpose"><i class="fas fa-bullseye"></i></span>
+        <div>
+          <span class="group-label">Purpose</span>
+          <h4>Why You Requested This Loan</h4>
+        </div>
+      </div>
+      <p class="group-copy">{{ formatPurposeDisplay(loan.purpose) }}</p>
+    </div>
+
+    <div class="detail-group full timeline-group">
+      <div class="group-head">
+        <span class="group-icon timeline"><i class="fas fa-route"></i></span>
+        <div>
+          <span class="group-label">Timeline</span>
+          <h4>Status Progression</h4>
+        </div>
+      </div>
+
+      <div class="timeline-list" *ngIf="statusTimeline.length; else noTimeline">
+        <div class="timeline-item" *ngFor="let item of statusTimeline">
+          <div class="timeline-marker" [ngClass]="getStatusClass(item.status)"></div>
+          <div class="timeline-content">
+            <div class="timeline-topline">
+              <div class="timeline-status-group">
+                <span class="status-pill inline-pill" [ngClass]="getStatusClass(item.status)">{{ item.status }}</span>
+                <span class="current-indicator" *ngIf="isCurrentTimelineStatus(item.status)">Current</span>
+              </div>
+              <span class="timeline-date">{{ formatDate(item.changedAt) }}</span>
+            </div>
+            <p class="timeline-note">{{ item.notes || 'Status updated.' }}</p>
+            <span class="timeline-actor">{{ item.changedBy || 'Unknown User' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noTimeline>
+        <p class="group-copy">No status milestones are available yet.</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="admin-feedback">
+    <div class="group-head">
+      <span class="group-icon comment"><i class="fas fa-message"></i></span>
+      <div>
+        <span class="group-label">Admin Note</span>
+        <h4>Latest Review Comment</h4>
+      </div>
+    </div>
+
+    <ng-container *ngIf="getAdminFeedback() as feedback; else noComment">
+      <p class="comment">{{ feedback.notes }}</p>
+      <div class="meta">
+        <span><i class="fas fa-user-shield"></i>{{ feedback.changedBy || 'Unknown User' }}</span>
+        <span><i class="fas fa-clock"></i>{{ formatDate(feedback.changedAt) }}</span>
+      </div>
+    </ng-container>
+
+    <ng-template #noComment>
+      <p class="empty">No admin comment has been added yet.</p>
+    </ng-template>
+  </div>
+</div>

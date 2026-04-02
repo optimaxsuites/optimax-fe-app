@@ -1,0 +1,24 @@
+.nothing{
+    text-align: center;
+    // display: flex;
+    // justify-content: center;
+    // align-items: center;
+    padding: 1.5rem;
+
+  }
+
+  .list-card-container{
+    padding: 0rem 1rem 1rem 1rem;
+  }
+
+  .list-card-wrapper{
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .btn-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 2rem;
+}

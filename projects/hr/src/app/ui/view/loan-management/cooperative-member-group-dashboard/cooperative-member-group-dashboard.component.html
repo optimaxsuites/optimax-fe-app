@@ -1,0 +1,289 @@
+<div class="group-dashboard-container">
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading group dashboard...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="dashboard-content">
+
+    <div class="dashboard-header" *ngIf="group as currentGroup">
+      <div>
+        <button type="button" class="back-link" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i>
+          Back to Membership Dashboard
+        </button>
+        <h1>{{ currentGroup.name }}</h1>
+        <p class="group-copy">{{ currentGroup.description }}</p>
+      </div>
+
+      <div class="header-meta">
+        <div class="welcome-block" *ngIf="currentMember as member">
+          <div class="welcome-title">Welcome {{ member.fullName }}</div>
+          <div class="welcome-ids">
+            Employee Id: {{ member.employeeId || '—' }} |
+            Member Id: {{ member.memberId || '—' }}
+          </div>
+        </div>
+        <button
+          *ngIf="canPostContribution"
+          type="button"
+          class="contribution-button"
+          (click)="openContributionModal()">
+          <i class="fas fa-plus-circle"></i>
+          Post Contribution
+        </button>
+        <div class="member-chip" *ngIf="currentMember as member">
+          <span class="avatar">{{ getInitials(member.fullName) }}</span>
+          <div>
+            <strong>{{ member.fullName }}</strong>
+            <span>{{ member.memberId }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="action-message" [ngClass]="actionMessageTone" *ngIf="actionMessage">{{ actionMessage }}</p>
+
+    <div class="member-spotlight" *ngIf="currentMembership && currentMember">
+      <div>
+        <span class="eyebrow">My Position in This Group</span>
+        <h2>{{ currentMember.fullName }}</h2>
+        <p>Track your contribution level and borrowing headroom inside this group.</p>
+      </div>
+      <div class="spotlight-stats">
+        <div>
+          <span>Monthly Contribution</span>
+          <strong>{{ formatCurrency(currentMembership.monthlyContributionAmount) }}</strong>
+        </div>
+        <div>
+          <span>Total Contribution</span>
+          <strong>{{ formatCurrency(currentMembership.totalContribution) }}</strong>
+        </div>
+        <div>
+          <span>Joined</span>
+          <strong>{{ (currentMembership.joinedAt || currentMembership.requestedAt) | date:'mediumDate' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Total Members</span>
+        <strong class="stat-value">{{ totalMembers }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Monthly Contribution Pool</span>
+        <strong class="stat-value">{{ formatCurrency(monthlyContributionPool) }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Contributions</span>
+        <strong class="stat-value">{{ formatCurrency(totalContributionPool) }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Active Borrowers</span>
+        <strong class="stat-value">{{ activeBorrowersCount }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Completed Borrowers</span>
+        <strong class="stat-value">{{ completedBorrowersCount }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Average Repayment Progress</span>
+        <strong class="stat-value">{{ averageRepaymentProgress }}%</strong>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card span-2">
+        <div class="card-header">
+          <h2>Repayment Board</h2>
+          <span class="meta-chip" *ngIf="overdueBorrowersCount > 0">{{ overdueBorrowersCount }} overdue</span>
+        </div>
+
+        <div class="borrower-board" *ngIf="borrowerRows.length > 0; else noBorrowers">
+          <div class="borrower-row" *ngFor="let borrower of borrowerRows">
+            <div class="borrower-head">
+              <div>
+                <strong>{{ borrower.memberName }}</strong>
+                <span>{{ borrower.loanId }}</span>
+              </div>
+              <span class="status-badge" [ngClass]="getRepaymentStatusClass(borrower.repaymentStatus)">{{ borrower.repaymentStatus }}</span>
+            </div>
+
+            <div class="progress-line">
+              <div class="progress-fill" [style.width.%]="borrower.progressPercent"></div>
+            </div>
+
+            <div class="borrower-metrics">
+              <span>{{ borrower.progressPercent }}% repaid</span>
+              <span *ngIf="canViewBorrowerAmounts(borrower)">Paid {{ formatCurrency(borrower.totalPaid) }}</span>
+              <span *ngIf="canViewBorrowerAmounts(borrower)">Outstanding {{ formatCurrency(borrower.outstanding) }}</span>
+              <span *ngIf="!canViewBorrowerAmounts(borrower)">Amounts hidden for member privacy</span>
+              <span *ngIf="borrower.nextDueDate">Next due {{ borrower.nextDueDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noBorrowers>
+          <div class="empty-state">
+            <p>No borrowing activity in this group yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>Monthly Contribution History</h2>
+        </div>
+
+        <div class="contribution-history" *ngIf="contributionHistory.length > 0; else noContributionHistory">
+          <div class="history-bar-row" *ngFor="let point of contributionHistory">
+            <div class="history-labels">
+              <strong>{{ point.monthLabel }}</strong>
+              <span>{{ point.activeContributorCount }} contributors</span>
+            </div>
+            <div class="history-bar-track">
+              <div class="history-bar-fill" [style.width.%]="highestContributionMonth > 0 ? (point.totalContribution / highestContributionMonth) * 100 : 0"></div>
+            </div>
+            <div class="history-amount">{{ formatCurrency(point.totalContribution) }}</div>
+          </div>
+        </div>
+
+        <ng-template #noContributionHistory>
+          <div class="empty-state">
+            <p>No contribution history available yet.</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Group Activity</h2>
+        </div>
+
+        <div class="activity-feed" *ngIf="activityFeed.length > 0; else noActivityFeed">
+          <div class="activity-item" *ngFor="let item of activityFeed">
+            <div class="activity-icon">
+              <i [class]="getActivityIconClass(item.type)"></i>
+            </div>
+            <div class="activity-body">
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.description }}</p>
+              <span>{{ item.occurredAt | date:'medium' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noActivityFeed>
+          <div class="empty-state">
+            <p>No recent group activity yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>Contribution Roster</h2>
+        </div>
+
+        <app-table
+          [columns]="contributionColumns"
+          [rows]="contributionRows"
+          [striped]="true"
+          [compact]="true"
+          [emptyMessage]="'No active contributors in this group yet.'">
+        </app-table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Joiners</h2>
+        </div>
+
+        <app-table
+          [columns]="recentJoinerColumns"
+          [rows]="recentJoiners"
+          [striped]="true"
+          [compact]="true"
+          [emptyMessage]="'No recent joiners yet.'">
+        </app-table>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card span-2">
+        <div class="card-header">
+          <h2>Completed Borrowers</h2>
+        </div>
+
+        <div class="tag-list" *ngIf="completedBorrowerNames.length > 0; else noCompletedBorrowers">
+          <span class="member-tag" *ngFor="let name of completedBorrowerNames">{{ name }}</span>
+        </div>
+
+        <ng-template #noCompletedBorrowers>
+          <div class="empty-state">
+            <p>No one has completed repayment in this group yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="isContributionModalOpen">
+    <div class="contribution-modal" role="dialog" aria-modal="true" aria-labelledby="contribution-modal-title">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">Member Contribution</span>
+          <h2 id="contribution-modal-title">Post Monthly Contribution</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeContributionModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <p class="modal-copy" *ngIf="currentMembership">
+        Your standard monthly amount is {{ formatCurrency(currentMembership.monthlyContributionAmount) }}.
+      </p>
+
+      <label class="field-group">
+        <span>Contribution Month</span>
+        <input
+          type="month"
+          [(ngModel)]="contributionForm.contributionMonth"
+          name="contributionMonth"
+          [max]="getDefaultContributionMonth()">
+      </label>
+
+      <label class="field-group">
+        <span>Amount</span>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="contributionForm.amount"
+          name="contributionAmount"
+          placeholder="0.00">
+      </label>
+
+      <p class="modal-error" *ngIf="hasExistingContributionForSelectedMonth && !contributionError">
+        A contribution for this month already exists.
+      </p>
+      <p class="modal-error" *ngIf="contributionError">{{ contributionError }}</p>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button" (click)="closeContributionModal()">Cancel</button>
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="isSubmittingContribution || hasExistingContributionForSelectedMonth"
+          (click)="submitContribution()">
+          {{ isSubmittingContribution ? 'Posting...' : 'Post Contribution' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

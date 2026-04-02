@@ -1,0 +1,151 @@
+<div class="p-6 max-w-4xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">{{ isEditing ? 'Edit Module' : 'Create New Module' }}</h2>
+
+  <form [formGroup]="moduleForm" (ngSubmit)="submit()" class="space-y-6">
+
+    <!-- MODULE DETAILS -->
+    <div class="p-4 bg-white rounded-lg shadow space-y-4">
+      <div>
+        <label class="block font-medium">Module Name</label>
+        <input formControlName="name" class="w-full p-2 border rounded" />
+      </div>
+
+      <div>
+        <label class="block font-medium">Description</label>
+        <textarea formControlName="description" class="w-full p-2 border rounded"></textarea>
+      </div>
+
+      <div>
+        <label class="block font-medium">Status</label>
+        <select formControlName="status" class="w-full p-2 border rounded">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </div>
+    </div>
+
+
+    <!-- PLANS -->
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-semibold">Subscription Plans</h3>
+        <button type="button" class="px-4 py-2 bg-customBlue text-white rounded" (click)="addPlan()">
+          + Add Plan
+        </button>
+      </div>
+
+      <div formArrayName="subscriptionPlans" class="space-y-6">
+        <div *ngFor="let plan of plans.controls; let i = index" [formGroupName]="i"
+             class="p-4 bg-white shadow rounded-lg">
+
+          <div class="flex justify-between">
+            <h4 class="font-bold text-lg">Plan {{ i + 1 }}</h4>
+            <button type="button" class="text-red-500" (click)="removePlan(i)">Remove</button>
+          </div>
+
+          <!-- PLAN FIELDS -->
+          <div class="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <label class="block font-medium">Name</label>
+              <input formControlName="name" class="w-full border p-2 rounded" />
+            </div>
+
+            <!-- <div>
+              <label class="block font-medium">Price</label>
+              <input type="number" formControlName="price" class="w-full border p-2 rounded" />
+            </div>
+
+            <div>
+              <label class="block font-medium">Duration (days)</label>
+              <input type="number" formControlName="duration" class="w-full border p-2 rounded" />
+            </div> -->
+
+            <div>
+              <label class="block font-medium">Monthly Price</label>
+              <input type="number" formControlName="monthlyPrice" class="w-full border p-2 rounded" />
+            </div>
+
+            <div>
+              <label class="block font-medium">Yearly Price</label>
+              <input type="number" formControlName="yearlyPrice" class="w-full border p-2 rounded" />
+            </div>
+
+            <div>
+              <label class="block font-medium">Is Active?</label>
+              <input type="checkbox" formControlName="isActive" class="p-2" />
+            </div>
+
+            <div class="col-span-2">
+              <label class="block font-medium">Description</label>
+              <textarea formControlName="description" class="w-full border p-2 rounded"></textarea>
+            </div>
+          </div>
+
+
+          <!-- FEATURES -->
+          <div class="mt-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-medium">Features</h4>
+              <button type="button" class="text-customBlue" (click)="addFeature(i)">+ Add Feature</button>
+            </div>
+
+            <div formArrayName="features" class="mt-2 space-y-2">
+              <div *ngFor="let f of features(i).controls; let j = index" class="flex items-center gap-2">
+                <input [formControlName]="j" class="w-full border p-2 rounded" placeholder="Enter a feature" />
+                <button type="button" class="text-red-500" (click)="removeFeature(i, j)">✕</button>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- LIMITS -->
+          <div formGroupName="limits" class="mt-6 p-4 border rounded bg-gray-50">
+            <h4 class="font-medium mb-2">Plan Limits</h4>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block">Users</label>
+                <input type="number" formControlName="users" class="w-full p-2 border rounded" />
+              </div>
+
+              <div>
+                <label class="block">Roles</label>
+                <input type="number" formControlName="roles" class="w-full p-2 border rounded" />
+              </div>
+
+              <div>
+                <label class="block">Branches</label>
+                <input type="number" formControlName="branches" class="w-full p-2 border rounded" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 mt-4 gap-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" formControlName="ecommerce" /> Ecommerce
+              </label>
+
+              <label class="flex items-center gap-2">
+                <input type="checkbox" formControlName="customizedEcommerce" /> Customized Ecommerce
+              </label>
+
+              <label class="flex items-center gap-2">
+                <input type="checkbox" formControlName="loyaltyProgram" /> Loyalty Program
+              </label>
+
+              <label class="flex items-center gap-2">
+                <input type="checkbox" formControlName="report" /> Reporting
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SUBMIT BUTTON -->
+    <button type="submit" class="w-full py-3 text-white bg-customBlue rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"  [disabled]="loading || moduleForm.invalid">
+        {{ loading ? isEditing ? 'Updating...' : 'Creating...' : isEditing ? 'Update Module' : 'Create Module' }}
+    </button>
+  </form>
+</div>

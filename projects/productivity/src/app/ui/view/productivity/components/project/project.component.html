@@ -1,0 +1,124 @@
+<div class="bg-white">
+
+<div class="container">
+  <app-back-button (click)="goBack()"></app-back-button>
+</div>
+
+<div class="project-container">
+  <form [formGroup]="form" (ngSubmit)="saveProject()" class="project-form">
+    <div class="form-section">
+      <div class="form-field">
+        <label for="name">Project Name <span>*</span></label>
+        <input id="name" type="text" formControlName="name" placeholder="Enter project name" />
+        <p class="error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+          Project name is required.
+        </p>
+      </div>
+
+      <div class="form-field">
+        <label for="description">Description <span>*</span></label>
+        <textarea id="description" formControlName="description" placeholder="Enter project description" rows="4"></textarea>
+        <p class="error" *ngIf="form.get('description')?.invalid && form.get('description')?.touched">
+          Description is required.
+        </p>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="startDate">Start Date <span>*</span></label>
+          <input id="startDate" type="date" formControlName="startDate" />
+          <p class="error" *ngIf="form.get('startDate')?.invalid && form.get('startDate')?.touched">
+            Start date is required.
+          </p>
+        </div>
+
+        <div class="form-field">
+          <label for="endDate">End Date <span>*</span></label>
+          <input id="endDate" type="date" formControlName="endDate" />
+          <p class="error" *ngIf="form.get('endDate')?.invalid && form.get('endDate')?.touched">
+            End date is required.
+          </p>
+        </div>
+      </div>
+
+      <p class="error" *ngIf="dateError">{{ dateError }}</p>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="category">Category <span>*</span></label>
+          <select id="category" formControlName="category">
+            <option value="">Select Category</option>
+            <option value="development">Development</option>
+            <option value="design">Design</option>
+            <option value="marketing">Marketing</option>
+          </select>
+          <p class="error" *ngIf="form.get('category')?.invalid && form.get('category')?.touched">
+            Category is required.
+          </p>
+        </div>
+
+        <div class="form-field">
+          <label for="priority">Priority <span>*</span></label>
+          <select id="priority" formControlName="priority">
+            <option value="">Select Priority</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+          <p class="error" *ngIf="form.get('priority')?.invalid && form.get('priority')?.touched">
+            Priority is required.
+          </p>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="budget">Budget <span>*</span></label>
+        <input id="budget" type="number" formControlName="budget" placeholder="Enter budget amount" />
+        <p class="error" *ngIf="form.get('budget')?.invalid && form.get('budget')?.touched">
+          Budget is required and must be greater than 0.
+        </p>
+      </div>
+
+      <div class="form-field">
+        <label for="template">Project Template <span>*</span></label>
+        <select id="template" formControlName="template">
+          <option value="">Select Template</option>
+          <option value="SCRUM">Scrum Project</option>
+          <option value="KANBAN">Kanban Project</option>
+          <option value="WATERFALL">Waterfall Project</option>
+          <option value="SIMPLE">Simple Task List</option>
+          <option value="CUSTOM">Custom Template</option>
+        </select>
+        <p class="error" *ngIf="form.get('template')?.invalid && form.get('template')?.touched">
+          Template selection is required.
+        </p>
+      </div>
+
+      <div class="form-field">
+        <label for="assignee">Assignee <span>*</span></label>
+        <input id="assignee" type="text" formControlName="assignee" placeholder="Enter assignee name" />
+        <p class="error" *ngIf="form.get('assignee')?.invalid && form.get('assignee')?.touched">
+          Assignee is required.
+        </p>
+      </div>
+
+      <div class="form-field">
+        <label for="project-image">Project Image <span>*</span> </label>
+        <input id="project-image" type="file" (change)="onFileChange($event)" />
+        <p class="error" *ngIf="form.get('projectImage')?.invalid && form.get('projectImage')?.touched">
+          Project image is required.
+        </p>
+
+        <div *ngIf="imageUrl">
+          <img [src]="imageUrl" alt="Project Preview" width="100" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="submit-button">Save</button>
+    </div>
+  </form>
+</div>
+</div>
+

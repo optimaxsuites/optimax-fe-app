@@ -1,0 +1,118 @@
+<!-- <button (click)="goBack()">back</button> -->
+
+<div class="">
+  <app-back-button (close)="goBack()" ></app-back-button>
+  <div class="contain">
+    <div class="modal-wrapper p-4" #contentToPrint>
+      <div class="header-section">
+        <section class="title-section">
+          <p class="form-title">{{isEdit ? 'Edit Request for Quotation' : 'New Request for Quotation'}}</p>
+        </section>
+      </div>
+  
+      <div class="info-section">
+        <section class="first-info-section">
+          <div class="first-container">
+            <div class="input-container-100">
+              <label for="qNo">RFQ No</label>
+              <input type="text" name="any" id="qNo" [(ngModel)]="rfqData.rfqNo" class="editInput" />
+            </div>
+            <div class="d-flex gap-4 my-4">
+              <div class="input-container-50">
+                <label for="qDate">Date</label>
+                <input type="datetime-local" name="any" id="qDate" [(ngModel)]="rfqData.date" class="editInput" />
+              </div>
+              <div class="input-container-50">
+                <label for="qDueDate">Due Date</label>
+                <input type="datetime-local" name="any" id="qDueDate" [(ngModel)]="rfqData.dueDate" class="editInput" />
+              </div>
+            </div>
+            <div class="input-container-100">
+              <label for="projectTitle">Project Title</label>
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.projectTitle" class="editInput" />
+            </div>
+            <div class="input-container-100 my-4">
+              <label for="category">Category</label>
+              <ng-select 
+                    bindLabel="name"
+                    bindValue="id"
+                    placeholder="Select Category">
+                    </ng-select>
+            </div>
+            <div class="input-container-100">
+              <label for="projectTitle">Prepared By</label>
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+            </div>
+          </div>
+        </section>
+
+        <hr>
+
+      </div>
+  
+      <div class="">
+        <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <div class="brd-gry">
+          <p-table 
+          [value]="items"
+          [paginator]="true" 
+          dataKey="id"
+          responsiveLayout="stack" 
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+          [rows]="5"
+          >
+            <ng-template pTemplate="header" let-columns>
+              <tr>
+                <th class="table-item">Item</th>
+                <th class="table-item">Part No</th>
+                <th class="table-item">Unit</th>
+                <th class="table-item">Budject</th>
+                <th class="table-item">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item >
+                <tr>
+                  <td class="table-item"><span class="p-column-title">Item</span>{{ item.name}}</td>
+                  <td class="table-item"><span class="p-column-title">Tax Rate</span>{{ item.taxRate }}</td>
+                  <td class="table-item"><span class="p-column-title">Quantity</span>{{item.qty}}</td>
+                  <td class="table-item"><span class="p-column-title">Rate</span>{{ item.rate }}</td>
+                  <td class="table-item"><span class="p-column-title">Amount</span>{{ item.amount }}</td>
+                  <td class="table-item"><span class="p-column-title">Tax</span> {{ item.tax }}</td>
+                  <td class="table-item"><span class="p-column-title">Total</span> {{ item.total }}</td>
+                  <td class="actions table-item">
+                    <span class="p-column-title">Action</span>
+                    <i class="pi pi-pen-to-square table-item" ></i>
+                    <i class="pi pi-trash table-item" ></i>
+                  </td>
+                </tr>                            
+            </ng-template>
+        </p-table>
+        </div>
+      </div>
+      <div class="btn-wrapper">
+        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="submitForm()" class="btn-save"></app-button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<app-side-modal *ngIf="openAddItem" (close)="openAddItem = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add New Item</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddItem = false">Cancel</button>
+    </div>
+  </div>
+  <app-add-rfq-item></app-add-rfq-item>
+</app-side-modal>

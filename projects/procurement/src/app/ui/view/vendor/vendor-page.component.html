@@ -1,0 +1,74 @@
+<!-- <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> -->
+
+<div class="card">
+  <div class="">
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <div>
+          <div class="text-xl font-bold text-slate-900">Vendors Management</div>
+          <div class="text-sm text-slate-500">
+            Manage supplier master data, compliance, and approvals.
+          </div>
+        </div>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="p-4 mb-4">
+      <div class="flex justify-end">
+        <div class="w-1/6">
+          <select
+            [(ngModel)]="selectedTab"
+            (change)="onTabChange($event)"
+            class="w-full border p-2"
+          >
+            <option *ngFor="let tab of tabOptions" [value]="tab.value">
+              {{ tab.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- <p-tabView>
+      <p-tabPanel header="Vendor List" *ngIf="selectedTab === 'Vendor List'">
+        <app-vendor-list></app-vendor-list>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Pending Approval"
+        *ngIf="selectedTab === 'Pending Approval'"
+      >
+        <app-vendor-approval></app-vendor-approval>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Approved Vendor"
+        *ngIf="selectedTab === 'Approved Vendor'"
+      >
+        <app-approved-vendor></app-approved-vendor>
+      </p-tabPanel>
+      <p-tabPanel
+        header="Rejected Vendor"
+        *ngIf="selectedTab === 'Rejected Vendor'"
+      >
+        <app-rejected-vendor></app-rejected-vendor>
+      </p-tabPanel>
+    </p-tabView> -->
+
+    <div class="px-4">
+      <div *ngIf="selectedTab === 'Vendor List'">
+        <app-vendor-list></app-vendor-list>
+      </div>
+
+      <div *ngIf="selectedTab === 'Pending Approval'">
+        <app-vendor-approval></app-vendor-approval>
+      </div>
+
+      <div *ngIf="selectedTab === 'Approved Vendor'">
+        <app-approved-vendor></app-approved-vendor>
+      </div>
+
+      <div *ngIf="selectedTab === 'Rejected Vendor'">
+        <app-rejected-vendor></app-rejected-vendor>
+      </div>
+    </div>
+  </div>
+</div>
