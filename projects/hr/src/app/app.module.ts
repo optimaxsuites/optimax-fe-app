@@ -201,7 +201,7 @@ import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shi
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
-
+import { MenuModule } from 'primeng/menu';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -390,6 +390,7 @@ import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-manag
     FullCalendarModule,
     LargeSideModalComponent,
     FooterComponent,
+    MenuModule
   ],
   providers: [
     {
