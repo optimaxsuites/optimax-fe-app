@@ -175,7 +175,7 @@ import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/c
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
-import { QueryComponent } from './ui/view/query/query.component';
+// import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
@@ -202,6 +202,9 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 import { MenuModule } from 'primeng/menu';
+import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
+import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
+import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -318,7 +321,6 @@ import { MenuModule } from 'primeng/menu';
     MainDashboardComponent,
     EmployeeLoanDetailsModalComponent,
     SortableTableDirective,
-    QueryComponent,
     LeaveTimelineComponent,
     JoinCooperativeGroupComponent,
     MonthlyattendancelistComponent,
@@ -334,6 +336,9 @@ import { MenuModule } from 'primeng/menu';
     ShiftAssignmentComponent,
     ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
+    AdHocComponent,
+    QueryComponent,
+    PayrolExtrasComponent
   ],
   imports: [
     // BrowserModule,

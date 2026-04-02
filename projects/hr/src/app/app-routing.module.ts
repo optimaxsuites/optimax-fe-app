@@ -30,7 +30,7 @@ import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooper
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
-import { QueryComponent } from './ui/view/query/query.component';
+// import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
@@ -40,6 +40,7 @@ import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooper
 import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 
 const routes: Routes = [
   {
@@ -98,11 +99,11 @@ const routes: Routes = [
     component: EmployeeProfileDashboardComponent,
   },
 
-  {
-    path: '',
-    redirectTo: 'loan/uu',
-    pathMatch: 'full',
-  },
+  // {
+  //   path: '',
+  //   redirectTo: 'loan/uu',
+  //   pathMatch: 'full',
+  // },
   // {
   //   // path: 'loan/:uuid',
   //   path: 'loan-dashboard',
@@ -170,10 +171,7 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
   },
-  {
-    path: 'query/:uuid',
-    component: QueryComponent,
-  },
+
   // {
 //   path: 'loan-management.loan-details/:loanId',
 //   component: LoanDetailsComponent
@@ -324,6 +322,10 @@ const routes: Routes = [
   {
     path: 'payroll/:uuid',
     component: EmployeePayrollComponent,
+  },
+   {
+    path: 'payroll-operations/:uuid',
+    component: PayrolExtrasComponent,
   },
   {
     path: 'admin/employee-payslip/:uuid',
