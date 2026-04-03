@@ -159,7 +159,7 @@ export interface QuotationDTO {
 
 
 
-  export interface VendorQuoteLS {
+export interface VendorQuoteLS {
   id: number;
 
   // RELATIONSHIPS

@@ -1,8 +1,8 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from '../../../assets/env';
 import { catchError, Observable, throwError } from 'rxjs';
 import { VendorDto } from '../domain/vendor.dto';
+import { environment } from '../sharedComponent/environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -12,35 +12,24 @@ export class MailerServiceService {
 
   constructor(private http: HttpClient) {}
 
-  sendVendorLoginEmail(vendor: VendorDto, password: string): Observable<any> {
-    const payload = {
-      name: vendor.companyProfile.legalName,
-      recieverEmail: vendor.companyProfile.companyEmail,
-      subject: 'Welcome',
-      body: `Hello ${vendor.companyProfile.legalName},
-
-        Your vendor account has been created successfully.
-
-        Login credentials:
-        Email: ${vendor.companyProfile.companyEmail}
-        Password: ${password}
-
-        Please login to the vendor portal and complete your registration.
-
-        Regards,
-        Procurement Team`,
-    };
-
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'x-api-key': environment.optimaxApiKey,
-    });
-
-    return this.http.post(this.mailEndpoint, payload, { headers }).pipe(
-      catchError((error) => {
-        console.error('Email failed', error);
-        return throwError(() => error);
-      }),
-    );
+  sendMail(body: {
+    name: string;
+    recieverEmail: string;
+    subject: string;
+    body: string;
+  }): Observable<any> {
+    return this.http
+      .post<any>(this.mailEndpoint, body, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          'x-api-key': environment.optimaxApiKey,
+        }),
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Email failed', error);
+          return throwError(() => error);
+        }),
+      );
   }
 }
