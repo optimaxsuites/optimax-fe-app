@@ -1,9 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { LeaveApiService } from '../../../service/leave-api.service';
-import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import {
+  TableAction,
+  TableColumn,
+} from '../../../shared-component/view/table/table.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 
 @Component({
   selector: 'app-leave-request',
@@ -42,11 +46,36 @@ export class LeaveRequestComponent implements OnInit {
 
   // Table config
   leaveRequestColumns: TableColumn[] = [
-    { header: 'Employee', field: 'employeeName', sortable: true, className: 'table-item' },
-    { header: 'Period', field: 'period', sortable: true, className: 'table-item' },
-    { header: 'Leave Type', field: 'leaveTypeName', sortable: true, className: 'table-item' },
-    { header: 'Days', field: 'totalDays', sortable: true, className: 'table-item' },
-    { header: 'Status', field: 'status', sortable: true, className: 'table-item' },
+    {
+      header: 'Employee',
+      field: 'employeeName',
+      sortable: true,
+      className: 'table-item',
+    },
+    {
+      header: 'Period',
+      field: 'period',
+      sortable: true,
+      className: 'table-item',
+    },
+    {
+      header: 'Leave Type',
+      field: 'leaveTypeName',
+      sortable: true,
+      className: 'table-item',
+    },
+    {
+      header: 'Days',
+      field: 'totalDays',
+      sortable: true,
+      className: 'table-item',
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      sortable: true,
+      className: 'table-item',
+    },
   ];
 
   leaveRequestActions: TableAction[] = [
@@ -56,12 +85,13 @@ export class LeaveRequestComponent implements OnInit {
       label: 'Approve/Reject',
       icon: 'pi pi-ellipsis-v',
       visible: (row) => row.status === 'PENDING',
-    }
+    },
   ];
 
   constructor(
     private messageService: MessageService,
     private apiService: LeaveApiService,
+    private mailNotificationService: MailNotificationService,
   ) {}
 
   ngOnInit() {
@@ -81,7 +111,7 @@ export class LeaveRequestComponent implements OnInit {
       },
       error: (err) => {
         console.error('❌ Failed to load current admin user:', err);
-      }
+      },
     });
   }
 
@@ -93,9 +123,15 @@ export class LeaveRequestComponent implements OnInit {
 
     forkJoin({
       employees: this.apiService.getEmployees().pipe(catchError(() => of([]))),
-      leaveRequests: this.apiService.getLeaveRequestRecords(1, 1000).pipe(catchError(() => of([]))),
-      leaveBalances: this.apiService.getLeaveBalances().pipe(catchError(() => of([]))),
-      leaveTypes: this.apiService.getLeaveTypes().pipe(catchError(() => of([])))
+      leaveRequests: this.apiService
+        .getLeaveRequestRecords(1, 1000)
+        .pipe(catchError(() => of([]))),
+      leaveBalances: this.apiService
+        .getLeaveBalances()
+        .pipe(catchError(() => of([]))),
+      leaveTypes: this.apiService
+        .getLeaveTypes()
+        .pipe(catchError(() => of([]))),
     }).subscribe({
       next: (data) => {
         this.allEmployees = data.employees || [];
@@ -108,11 +144,11 @@ export class LeaveRequestComponent implements OnInit {
         console.log('💰 Leave Balances:', this.leaveBalances.length);
 
         // Link each request to its employee
-        this.allLeaveRequests = this.allLeaveRequests.map(request => {
+        this.allLeaveRequests = this.allLeaveRequests.map((request) => {
           const employee = this.findEmployeeForRequest(request);
           return {
             ...request,
-            _linkedEmployee: employee
+            _linkedEmployee: employee,
           };
         });
 
@@ -126,22 +162,24 @@ export class LeaveRequestComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to load leave requests',
-          key: 'tl'
+          key: 'tl',
         });
-      }
+      },
     });
   }
 
   findEmployeeForRequest(request: any): any | null {
     const requestUserId = request.createdBy?.userId || request.createdBy?.id;
 
-    const employee = this.allEmployees.find(emp => {
+    const employee = this.allEmployees.find((emp) => {
       const empUserId = emp.user?.userId || emp.user?.id;
       return empUserId === requestUserId;
     });
 
     if (!employee) {
-      console.warn(`⚠️ Request #${request.id} has no matching employee (userId: ${requestUserId})`);
+      console.warn(
+        `⚠️ Request #${request.id} has no matching employee (userId: ${requestUserId})`,
+      );
     }
 
     return employee || null;
@@ -150,7 +188,7 @@ export class LeaveRequestComponent implements OnInit {
   // ==================== BUILD DISPLAY DATA ====================
 
   buildDisplayData() {
-    this.filteredRequests = this.allLeaveRequests.map(request => {
+    this.filteredRequests = this.allLeaveRequests.map((request) => {
       const employeeName = request._linkedEmployee
         ? `${request._linkedEmployee.firstName} ${request._linkedEmployee.lastName}`
         : request.createdBy?.fullname || 'Unknown';
@@ -162,7 +200,7 @@ export class LeaveRequestComponent implements OnInit {
         leaveTypeName: request.leaveType?.name || 'Unknown',
         totalDays: request.totalDays,
         status: request.status,
-        _rawRequest: request
+        _rawRequest: request,
       };
     });
 
@@ -179,19 +217,26 @@ export class LeaveRequestComponent implements OnInit {
 
   applyFilters() {
     this.displayedRequests = this.filteredRequests.filter((req) => {
-      const matchesSearch = req.employeeName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                           req.period.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearch =
+        req.employeeName
+          .toLowerCase()
+          .includes(this.searchTerm.toLowerCase()) ||
+        req.period.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const matchesLeaveType = this.selectedLeaveType.length === 0 ||
-                               this.selectedLeaveType.includes(req.leaveTypeName);
+      const matchesLeaveType =
+        this.selectedLeaveType.length === 0 ||
+        this.selectedLeaveType.includes(req.leaveTypeName);
 
-      const matchesStatus = this.selectedStatus.length === 0 ||
-                           this.selectedStatus.includes(req.status);
+      const matchesStatus =
+        this.selectedStatus.length === 0 ||
+        this.selectedStatus.includes(req.status);
 
       return matchesSearch && matchesLeaveType && matchesStatus;
     });
 
-    console.log(`🔍 Filtered: ${this.displayedRequests.length} of ${this.filteredRequests.length} requests`);
+    console.log(
+      `🔍 Filtered: ${this.displayedRequests.length} of ${this.filteredRequests.length} requests`,
+    );
   }
 
   filterCandidates() {
@@ -224,7 +269,7 @@ export class LeaveRequestComponent implements OnInit {
 
   openActionModal(row: any) {
     const request = row._rawRequest;
-    
+
     console.log('👆 Selected Request:', request);
 
     this.selectedRequest = request;
@@ -255,7 +300,7 @@ export class LeaveRequestComponent implements OnInit {
         severity: 'error',
         summary: 'Error',
         detail: 'Cannot approve leave request',
-        key: 'tl'
+        key: 'tl',
       });
       return;
     }
@@ -266,15 +311,18 @@ export class LeaveRequestComponent implements OnInit {
 
     console.log('🔍 Checking balance for approval:', {
       requestId: request.id,
-      employee: this.selectedEmployee ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}` : 'Unknown',
+      employee: this.selectedEmployee
+        ? `${this.selectedEmployee.firstName} ${this.selectedEmployee.lastName}`
+        : 'Unknown',
       leaveType: request.leaveType?.name,
-      requestedDays: requestedDays
+      requestedDays: requestedDays,
     });
 
     // Find employee's balance for this leave type
-    const employeeBalance = this.leaveBalances.find(balance =>
-      balance.employee === this.selectedEmployee?.id &&
-      balance.leaveTypeId === leaveTypeId
+    const employeeBalance = this.leaveBalances.find(
+      (balance) =>
+        balance.employee === this.selectedEmployee?.id &&
+        balance.leaveTypeId === leaveTypeId,
     );
 
     if (!employeeBalance) {
@@ -284,7 +332,7 @@ export class LeaveRequestComponent implements OnInit {
         summary: 'Balance Error',
         detail: 'No leave balance found for this employee and leave type',
         key: 'tl',
-        life: 5000
+        life: 5000,
       });
       return;
     }
@@ -293,7 +341,7 @@ export class LeaveRequestComponent implements OnInit {
       leaveType: request.leaveType?.name,
       available: employeeBalance.balance,
       used: employeeBalance.usedDays,
-      requested: requestedDays
+      requested: requestedDays,
     });
 
     // CRITICAL VALIDATION: Check if employee has enough balance
@@ -301,7 +349,7 @@ export class LeaveRequestComponent implements OnInit {
       console.warn('⚠️ Insufficient balance for leave request:', {
         available: employeeBalance.balance,
         requested: requestedDays,
-        shortfall: requestedDays - employeeBalance.balance
+        shortfall: requestedDays - employeeBalance.balance,
       });
 
       this.messageService.add({
@@ -309,7 +357,7 @@ export class LeaveRequestComponent implements OnInit {
         summary: 'Insufficient Balance',
         detail: `Employee has only ${employeeBalance.balance} days remaining for ${request.leaveType?.name}. Cannot approve ${requestedDays} days.`,
         key: 'tl',
-        life: 6000
+        life: 6000,
       });
       return;
     }
@@ -328,7 +376,7 @@ export class LeaveRequestComponent implements OnInit {
       attachment: request.attachment,
       adminComment: this.adminComment.trim() || '',
       decisionBy: this.currentAdminUserId,
-      decisionOn: new Date().toISOString()
+      decisionOn: new Date().toISOString(),
     };
 
     console.log('📤 Approving request:', payload);
@@ -339,39 +387,97 @@ export class LeaveRequestComponent implements OnInit {
         const updatedBalance = {
           ...employeeBalance,
           balance: employeeBalance.balance - requestedDays,
-          usedDays: employeeBalance.usedDays + requestedDays
+          usedDays: employeeBalance.usedDays + requestedDays,
         };
 
         console.log('💰 Updating balance:', {
-          old: { balance: employeeBalance.balance, used: employeeBalance.usedDays },
-          new: { balance: updatedBalance.balance, used: updatedBalance.usedDays }
+          old: {
+            balance: employeeBalance.balance,
+            used: employeeBalance.usedDays,
+          },
+          new: {
+            balance: updatedBalance.balance,
+            used: updatedBalance.usedDays,
+          },
         });
 
-        this.apiService.updateLeaveBalance(employeeBalance.id, updatedBalance).subscribe({
-          next: () => {
-            console.log('✅ Leave request approved and balance updated');
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Request Approved',
-              detail: `Leave request approved. Balance updated: ${updatedBalance.balance} days remaining.`,
-              key: 'tl',
-              life: 4000
-            });
-            this.closeActionModal();
-            this.loadData();
-          },
-          error: (err) => {
-            console.error('❌ Failed to update balance:', err);
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Partial Success',
-              detail: 'Request approved but balance update failed',
-              key: 'tl'
-            });
-            this.closeActionModal();
-            this.loadData();
-          }
-        });
+        this.apiService
+          .updateLeaveBalance(employeeBalance.id, updatedBalance)
+          .subscribe({
+            next: () => {
+              console.log('✅ Leave request approved and balance updated');
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Request Approved',
+                detail: `Leave request approved. Balance updated: ${updatedBalance.balance} days remaining.`,
+                key: 'tl',
+                life: 4000,
+              });
+              this.closeActionModal();
+              this.loadData();
+              const mailEmployeeId = payload.createdBy;
+              const mailEmployee = this.allEmployees.find(
+                (emp) =>
+                  emp.user?.userId === mailEmployeeId ||
+                  emp.id === mailEmployeeId,
+              );
+              const mailBody = {
+                name:
+                  `${mailEmployee?.firstName} ${mailEmployee?.lastName}` ||
+                  'there',
+                recieverEmail: mailEmployee?.email,
+                subject: `Leave Request Approved`,
+                body: `
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+
+    <p>Dear ${mailEmployee.firstName || 'User'},</p>
+
+    <p>
+      Your leave request has been <strong style="color:green;">APPROVED</strong>.
+      See details below:
+    </p>
+
+    <ul>
+      <li><strong>Leave Type:</strong> ${payload.leaveTypeId}</li>
+      <li><strong>Start Date:</strong> ${payload.startDate}</li>
+      <li><strong>End Date:</strong> ${payload.endDate}</li>
+      <li><strong>Total Days:</strong> ${payload.totalDays}</li>
+      <li><strong>Status:</strong> <span style="color:green;">APPROVED</span></li>
+    </ul>
+
+    <p>We wish you a pleasant time off.</p>
+
+    <br/>
+
+    <p>Regards,<br/>
+    <strong>Management</strong></p>
+
+    <hr style="border:none; border-top:1px solid #eee; margin:20px 0;" />
+
+    <p style="font-size:12px; color:#777;">
+      This is an automated message. Please do not reply.
+    </p>
+
+  </div>
+  `,
+              };
+              this.mailNotificationService.sendMail(mailBody).subscribe({
+                next: (res) => console.log('📧 Mail sent:', res),
+                error: (err) => console.error('❌ Mail failed:', err),
+              });
+            },
+            error: (err) => {
+              console.error('❌ Failed to update balance:', err);
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Partial Success',
+                detail: 'Request approved but balance update failed',
+                key: 'tl',
+              });
+              this.closeActionModal();
+              this.loadData();
+            },
+          });
       },
       error: (err) => {
         console.error('❌ Failed to approve request:', err);
@@ -379,9 +485,9 @@ export class LeaveRequestComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to approve leave request',
-          key: 'tl'
+          key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -394,7 +500,7 @@ export class LeaveRequestComponent implements OnInit {
         severity: 'error',
         summary: 'Error',
         detail: 'Cannot reject leave request',
-        key: 'tl'
+        key: 'tl',
       });
       return;
     }
@@ -415,7 +521,7 @@ export class LeaveRequestComponent implements OnInit {
       attachment: request.attachment,
       adminComment: reason,
       decisionBy: this.currentAdminUserId,
-      decisionOn: new Date().toISOString()
+      decisionOn: new Date().toISOString(),
     };
 
     console.log('📤 Rejecting request:', payload);
@@ -428,10 +534,60 @@ export class LeaveRequestComponent implements OnInit {
           summary: 'Request Rejected',
           detail: 'Leave request has been rejected',
           key: 'tl',
-          life: 3000
+          life: 3000,
         });
         this.closeActionModal();
         this.loadData();
+        const mailEmployeeId = payload.createdBy;
+        const mailEmployee = this.allEmployees.find(
+          (emp) =>
+            emp.user?.userId === mailEmployeeId || emp.id === mailEmployeeId,
+        );
+        const mailBody = {
+          name: `${mailEmployee.firstName} ${mailEmployee.lastName}` || 'there',
+          recieverEmail: mailEmployee.email,
+          subject: `Leave Request Rejected`,
+          body: `
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+
+    <p>Dear ${mailEmployee.firstName || 'User'},</p>
+
+    <p>
+      We regret to inform you that your leave request has been 
+      <strong style="color:red;">REJECTED</strong>.
+    </p>
+
+    <ul>
+      <li><strong>Leave Type:</strong> ${payload.leaveTypeId}</li>
+      <li><strong>Start Date:</strong> ${payload.startDate}</li>
+      <li><strong>End Date:</strong> ${payload.endDate}</li>
+      <li><strong>Total Days:</strong> ${payload.totalDays}</li>
+      <li><strong>Status:</strong> <span style="color:red;">REJECTED</span></li>
+      <li><strong>Admin Comment:</strong> ${payload.adminComment || 'N/A'}</li>
+    </ul>
+
+    <p>
+      For further clarification, please contact your manager or HR.
+    </p>
+
+    <br/>
+
+    <p>Regards,<br/>
+    <strong>Management</strong></p>
+
+    <hr style="border:none; border-top:1px solid #eee; margin:20px 0;" />
+
+    <p style="font-size:12px; color:#777;">
+      This is an automated message. Please do not reply.
+    </p>
+
+  </div>
+  `,
+        };
+        this.mailNotificationService.sendMail(mailBody).subscribe({
+          next: (res) => console.log('📧 Mail sent:', res),
+          error: (err) => console.error('❌ Mail failed:', err),
+        });
       },
       error: (err) => {
         console.error('❌ Failed to reject request:', err);
@@ -439,9 +595,9 @@ export class LeaveRequestComponent implements OnInit {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to reject leave request',
-          key: 'tl'
+          key: 'tl',
         });
-      }
+      },
     });
   }
 
@@ -452,7 +608,7 @@ export class LeaveRequestComponent implements OnInit {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -463,11 +619,11 @@ export class LeaveRequestComponent implements OnInit {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
   getStatusCount(status: string): number {
-    return this.filteredRequests.filter(req => req.status === status).length;
+    return this.filteredRequests.filter((req) => req.status === status).length;
   }
 }

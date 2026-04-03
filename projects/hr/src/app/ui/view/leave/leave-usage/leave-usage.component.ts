@@ -16,6 +16,7 @@ import {
 } from '../../../shared-component/view/table/table.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 
 @Component({
   selector: 'app-leave-usage',
@@ -132,6 +133,7 @@ export class LeaveUsageComponent implements OnInit {
   constructor(
     private messageService: MessageService,
     private apiService: LeaveApiService,
+    private mailNotificationService: MailNotificationService,
   ) {}
 
   ngOnInit() {
@@ -147,7 +149,7 @@ export class LeaveUsageComponent implements OnInit {
     this.apiService.getCurrentEmployee().subscribe({
       next: (employee) => {
         if (!employee) {
-          console.warn('⚠️ No employee loaded');
+          console.warn(' No employee loaded');
           this.isLoadingStats = false;
           return;
         }
@@ -536,6 +538,52 @@ export class LeaveUsageComponent implements OnInit {
         this.resetForm();
         this.openApplyLeave = false;
         this.loadAllData();
+        const mailBody = {
+          name:
+            `${this.currentEmployee.firstName} ${this.currentEmployee.lastName}` ||
+            'there',
+          recieverEmail: this.currentEmployee.email,
+          subject: `New Leave Request Submitted`,
+          body: `
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+
+    <p>Dear ${this.currentEmployee.firstName || 'User'},</p>
+
+    <p>
+      A new leave request has been successfully submitted. Below are the details:
+    </p>
+
+    <ul>
+      <li><strong>Leave Type:</strong> ${payload.leaveTypeId}</li>
+      <li><strong>Start Date:</strong> ${payload.startDate}</li>
+      <li><strong>End Date:</strong> ${payload.endDate}</li>
+      <li><strong>Total Days:</strong> ${payload.totalDays}</li>
+      <li><strong>Reason:</strong> ${payload.leaveReason || 'N/A'}</li>
+      <li><strong>Status:</strong> <span style="color:#f0ad4e;">PENDING</span></li>
+    </ul>
+
+    <p>
+      Your request is currently under review. You will be notified once a decision is made.
+    </p>
+
+    <br/>
+
+    <p>Regards,<br/>
+    <strong>Management </strong></p>
+
+    <hr style="border:none; border-top:1px solid #eee; margin:20px 0;" />
+
+    <p style="font-size:12px; color:#777;">
+      This is an automated message. Please do not reply.
+    </p>
+
+  </div>
+  `,
+        };
+        this.mailNotificationService.sendMail(mailBody).subscribe({
+          next: (res) => console.log('📧 Mail sent:', res),
+          error: (err) => console.error('❌ Mail failed:', err),
+        });
       },
       error: (err) => {
         this.isSubmitting = false;
