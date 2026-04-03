@@ -49,18 +49,22 @@ resetFilter() {
   this.filteredShifts = this.shifts;
 }
 
+deleteShift(id: string) {
+  this.shiftserviceService.deleteShift(id); // method already exists in service
+}
+
   calculateSummary() {
     this.morningCount = this.shifts.filter(s =>
-      s.name.toLowerCase().includes('morning')
-    ).length;
+      s.type === 'morning')
+    .length;
 
     this.eveningCount = this.shifts.filter(s =>
-      s.name.toLowerCase().includes('evening')
-    ).length;
+      s.type === 'evening')
+    .length;
 
     this.nightCount = this.shifts.filter(s =>
-      s.name.toLowerCase().includes('night')
-    ).length;
+      s.type === 'night')
+    .length;
   }
 
   /*createShift() {

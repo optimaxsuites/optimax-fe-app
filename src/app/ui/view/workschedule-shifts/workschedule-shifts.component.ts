@@ -10,12 +10,13 @@ import { ShiftCalendarComponent } from './shift-calendar/shift-calendar.componen
 })
 export class WorkscheduleShiftsComponent {
    tabsConfig: TabConfig[] = [
+      { name: 'Shift Calendar',
+        component: ShiftCalendarComponent
+      },
       { name: 'Shift List', 
         component: ShiftListComponent
-       },
-       { name: 'Shift Calendar',
-        component: ShiftCalendarComponent
        }
+       
       
       // { name: 'Time Sheet', component: TimeSheetComponent }
     ];

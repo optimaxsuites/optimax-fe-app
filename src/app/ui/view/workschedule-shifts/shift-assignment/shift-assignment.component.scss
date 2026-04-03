@@ -32,11 +32,25 @@
 
 .modal-card {
   background: #fff;
-  padding: 20px;
+  padding: 0;
+  width: 420px;
   border-radius: 8px;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow-y: visible;
+  overflow: visible !important;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding-right: 20px;
 }
 
 .close-btn {
@@ -102,6 +116,7 @@ h3 {
 .form-group {
   display: flex;
   flex-direction: column;
+  margin-bottom: 16px;
 
   label {
     font-size: 13px;
@@ -128,16 +143,21 @@ h3 {
 }
 
 .assign-btn {
-  background: #3da86a;
+  background: #2a7a74;
   color: white;
   border: none;
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
-}
 
-.assign-btn:hover {
-  background: #2f8c56;
+   &:hover {
+    background: #256d67;
+  }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+  }
 }
 
 .conflict {
@@ -193,4 +213,61 @@ h3 {
 .shift-time {
   font-size: 13px;
   color: #666;
+}
+
+.employee-dropdown {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.dropdown-display {
+  padding: 10px 12px;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #2a7a74;
+  }
+}
+
+.dropdown-display::after {
+  content: "▾";
+  float: right;
+  font-size: 12px;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+   background: red;
+
+ // background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  max-height: 160px;
+  overflow-y: auto;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  z-index: 10000;
+}
+
+.employee-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f9fafb;
+  }
 }
