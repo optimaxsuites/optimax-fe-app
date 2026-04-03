@@ -28,41 +28,14 @@ export enum QuotationStage {
 
 
 
-export type PRStatus =
-  | 'Draft'
-  | 'Submitted'
-  | 'UnderReview'
-  | 'Approved'
-  | 'Rejected'
-  | 'Cancelled'
-  | 'Converted';
-
-export type ApprovalStepStatus = 'NotStarted' | 'Pending' | 'Approved' | 'Rejected';
 
 
-export interface PRApprovalStep {
-  level: number;
-  role: string;           // DepartmentHead | Finance | Procurement
-  approverUserId: string; // who must act
-  status: ApprovalStepStatus;
-  actedAt: string | null;
-  comment: string | null;
-}
 
-export interface PREscalationRule {
-  enabled: boolean;
-  dueHours: number;
-  escalateToUserId: string;
-  lastEscalatedAt: string | null;
-}
 
-export interface PRApproval {
-  currentLevel: number;
-  finalLevel: number;
-  state: 'Pending' | 'Approved' | 'Rejected';
-  steps: PRApprovalStep[];
-  escalation: PREscalationRule;
-}
+
+
+
+
 
 // export interface PurchaseRequisitionLS {
 //   id: number;
@@ -97,6 +70,39 @@ export interface PRApproval {
 //   approval?: PRApproval;     // added on submit
 //   // auditTrail: PRAuditItem[]; // always exists
 // }
+export type PRStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'UnderReview'
+  | 'Approved'
+  | 'Rejected'
+  | 'Cancelled'
+  | 'Converted';
+
+  export type ApprovalStepStatus = 'NotStarted' | 'Pending' | 'Approved' | 'Rejected';
+
+export interface PREscalationRule {
+  enabled: boolean;
+  dueHours: number;
+  escalateToUserId: string;
+  lastEscalatedAt: string | null;
+}
+export interface PRApprovalStep {
+  level: number;
+  role: string;           // DepartmentHead | Finance | Procurement
+  approverUserId: string; // who must act
+  status: ApprovalStepStatus;
+  actedAt: string | null;
+  comment: string | null;
+}
+
+export interface PRApproval {
+  currentLevel: number;
+  finalLevel: number;
+  state: 'Pending' | 'Approved' | 'Rejected';
+  steps: PRApprovalStep[];
+  escalation: PREscalationRule;
+}
 
 export interface PurchaseRequisitionLS {
   id: number;
