@@ -1,0 +1,167 @@
+<div class="flex gap-4 items-center mb-6">
+
+<i class="pi pi-cog text-4xl text-customBlue"></i>
+
+<div>
+
+<p class="text-customBlue/60">User and Roles Management</p>
+
+<p class="text-customBlue font-semibold text-[17px]">Approval Workflow Settings</p>
+
+</div>
+
+</div>
+
+
+
+<hr class="mb-4"/>
+
+<mat-accordion [formGroup]="approvalForm" >
+  @for(module of modules; track module.title) {
+    <mat-expansion-panel #panel class="mb-3 border border-gray-100 !shadow-sm overflow-hidden">
+      <mat-expansion-panel-header class="">
+        <mat-panel-title class="capitalize font-bold text-customBlue flex items-center gap-2">
+          <!-- <i class="pi pi-folder-open opacity-40"></i> -->
+          {{ module.title }}
+        </mat-panel-title>
+        <mat-panel-description class="text-sm text-gray-400">
+          {{ module.appRegister.length }} Submodules
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="flex flex-col gap-4 py-4 px-2 bg-slate-50/50">
+        @for(app of module.appRegister; track app.id) {
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm" 
+               [formGroupName]="'submodules'">
+            
+            <div [formGroupName]="module.title + '_' + app.appName" class="p-5">
+              
+              <div class="flex justify-between items-center border-b border-gray-50 mb-5">
+                <div class="flex items-center gap-3">
+                  <!-- <div class="w-2 h-8 bg-customBlue rounded-full"></div> -->
+                  <h4 class="text-lg font-bold text-slate-800">{{ app.appName }}</h4>
+                </div>
+                
+                <label class="relative inline-flex items-center cursor-pointer group">
+                  <span class="mr-3 text-sm font-medium text-gray-400 group-hover:text-customBlue transition-colors">
+                    {{ approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value ? 'Active' : 'Disabled' }}
+                  </span>
+                  <input type="checkbox" formControlName="isEnabled" class="sr-only peer">
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3.5px] after:left-[5rem] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-4 after:transition-all peer-checked:bg-customBlue"></div>
+                </label>
+              </div>
+
+              @if(approvalForm.get('submodules.' + module.title + '_' + app.appName + '.isEnabled')?.value) {
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-top-2">
+                  
+                  <div class="lg:col-span-5">
+                    <div class="flex items-center justify-between mb-3">
+                      <p class="text-sm font-bold text-gray-500 uppercase tracking-widest">Assigned Approvers</p>
+                      <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">
+                        {{ getApprovers(module.title, app.appName).length }} Total
+                      </span>
+                    </div>
+
+                    <div formArrayName="approvers" class="space-y-3">
+                      @for(ctrl of getApprovers(module.title, app.appName).controls; track ctrl; let i = $index) {
+                        <div class="group flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-transparent hover:border-customBlue/30 hover:bg-white transition-all">
+                           <span class="w-6 h-6 flex items-center justify-center bg-white border rounded-full text-[10px] font-bold text-gray-400">
+                             {{ i + 1 }}
+                           </span>
+                           
+                           <select [formControlName]="i" class="flex-grow bg-transparent text-sm font-medium focus:outline-none cursor-pointer">
+                                <optgroup label="Roles (Recommended)">
+                                    @for(role of roles; track role.id) {
+                                      <option [value]="role.id">👥 {{ role.name }}</option>
+                                    }
+                                </optgroup>
+                                <optgroup label="Individual Users">
+                                    @for(user of users; track user.id) {
+                                      <option [value]="user.id">👤 {{ user.username }} </option>
+                                    }
+                                </optgroup>
+                            </select>
+                            
+                            <button (click)="removeApprover(module.title, app.appName, i)" 
+                                    class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 transition-all">
+                              <i class="pi pi-trash text-sm"></i>
+                            </button>
+                        </div>
+                      }
+                      
+                      <button (click)="addApprover(module.title, app.appName)" 
+                              class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-customBlue/40 hover:text-customBlue transition-all text-sm font-medium">
+                        <i class="pi pi-plus-circle mr-2"></i> Add Approver
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="lg:col-span-7 border-l border-gray-100 pl-0 lg:pl-8">
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Logic Strategy</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="strategy-card">
+                          <input type="radio" value="ANY" formControlName="strategy" class="hidden peer">
+                          <div class="peer-checked:border-customBlue peer-checked:bg-customBlue/5 peer-checked:ring-1 peer-checked:ring-customBlue border-2 border-gray-100 p-3 rounded-xl cursor-pointer transition-all">
+                            <p class="text-sm font-bold block">Any One</p>
+                            <span class="text-[10px] text-gray-400">First response wins</span>
+                          </div>
+                        </label>
+
+                        <label class="strategy-card">
+                          <input type="radio" value="ALL" formControlName="strategy" class="hidden peer">
+                          <div class="peer-checked:border-customBlue peer-checked:bg-customBlue/5 peer-checked:ring-1 peer-checked:ring-customBlue border-2 border-gray-100 p-3 rounded-xl cursor-pointer transition-all">
+                            <p class="text-sm font-bold block">Consensus</p>
+                            <span class="text-[10px] text-gray-400">100% agreement</span>
+                          </div>
+                        </label>
+
+                        <label class="strategy-card">
+                          <input type="radio" value="QUORUM" formControlName="strategy" class="hidden peer">
+                          <div class="peer-checked:border-customBlue peer-checked:bg-customBlue/5 peer-checked:ring-1 peer-checked:ring-customBlue border-2 border-gray-100 p-3 rounded-xl cursor-pointer transition-all">
+                            <p class="text-sm font-bold block">Quorum</p>
+                            <span class="text-[10px] text-gray-400">Partial majority</span>
+                          </div>
+                        </label>
+
+                        <label class="strategy-card">
+                          <input type="radio" value="SEQUENTIAL" formControlName="strategy" class="hidden peer">
+                          <div class="peer-checked:border-customBlue peer-checked:bg-customBlue/5 peer-checked:ring-1 peer-checked:ring-customBlue border-2 border-gray-100 p-3 rounded-xl cursor-pointer transition-all">
+                            <p class="text-sm font-bold block">Step-by-Step</p>
+                            <span class="text-[10px] text-gray-400">Follows list order</span>
+                          </div>
+                        </label>
+                    </div>
+
+                    <div class="mt-4">
+                      @if(approvalForm.get('submodules.' + module.title + '_' + app.appName + '.strategy')?.value === 'QUORUM') {
+                          <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+                            <div>
+                              <p class="text-sm font-bold text-blue-900">Minimum Quorum</p>
+                              <p class="text-sm text-blue-700/70">Number of required sign-offs</p>
+                            </div>
+                            <input type="number" formControlName="quorumCount" 
+                                   class="w-16 p-2 bg-white border border-blue-200 rounded-lg text-center font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                          </div>
+                      }
+
+                      @if(approvalForm.get('submodules.' + module.title + '_' + app.appName + '.strategy')?.value === 'SEQUENTIAL') {
+                          <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
+                            <i class="pi pi-sort-alt text-amber-600 mt-1"></i>
+                            <div>
+                                <p class="text-sm font-bold text-amber-900">Strict Sequence Enabled</p>
+                                <p class="text-sm text-amber-700/70">The system will notify users one by one in the order defined on the left.</p>
+                            </div>
+                          </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+  }
+</mat-accordion>

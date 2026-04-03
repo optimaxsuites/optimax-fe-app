@@ -97,6 +97,7 @@ import { GeneralComponent } from './ui/view/hr/payroll/general/general.component
 import { TaxationComponent } from './ui/view/hr/payroll/taxation/taxation.component';
 import { BankTellerMappingComponent } from './ui/view/hr/payroll/bank-teller-mapping/bank-teller-mapping.component';
 import { DropdownModule } from 'primeng/dropdown';
+import { ApprovalComponent } from './ui/view/user-setting/approval/approval.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -139,7 +140,8 @@ import { DropdownModule } from 'primeng/dropdown';
     PayrollComponent,
     GeneralComponent,
     TaxationComponent,
-    BankTellerMappingComponent
+    BankTellerMappingComponent,
+    ApprovalComponent
   ],
   imports: [
     // BrowserModule,

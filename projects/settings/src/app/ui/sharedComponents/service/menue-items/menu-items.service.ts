@@ -154,7 +154,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Accounting',
-      code: 'Accounting',
+      code: 'optimaXAccounting',
       icon: 'fas fa-calculator',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The Accounting module of OptimaXSuites provides tools for managing financial transactions, ledgers, reconciliations, and generating financial reports.',

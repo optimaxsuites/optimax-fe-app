@@ -128,12 +128,17 @@ export class RolesNpermissionComponent {
     
   }
 
-  initializePermissions() {
-    this.modules.forEach((module: { title: string; appRegister: any[] }) => {
-      this.newRole.permissions[module.title] = {};
-  
+initializePermissions() {
+  if (!this.modules) return;
+
+  this.modules.forEach((module: { title: any; appRegister: any[]; }) => {
+    const mTitle = module.title; // No trim, or trim consistently
+    this.newRole.permissions[mTitle] = {};
+
+    if (module.appRegister) {
       module.appRegister.forEach((app) => {
-        this.newRole.permissions[module.title][app.appName] = {
+        const aName = app.appName;
+        this.newRole.permissions[mTitle][aName] = {
           canView: false,
           canEdit: false,
           canDelete: false,
@@ -141,10 +146,9 @@ export class RolesNpermissionComponent {
           superuser: false
         };
       });
-    });
-
-    console.log(this.newRole)
-  }
+    }
+  });
+}
 
   toogleForm() {
     this.showAddForm =!this.showAddForm

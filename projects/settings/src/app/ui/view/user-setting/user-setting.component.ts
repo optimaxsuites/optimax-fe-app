@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { UsersComponent } from './users/users.component';
 import { RolesNpermissionComponent } from './roles-npermission/roles-npermission.component';
+import { ApprovalComponent } from './approval/approval.component';
 
 @Component({
   selector: 'app-user-setting',
@@ -57,6 +58,12 @@ export class UserSettingComponent {
         icon: 'pi pi-receipt',
         component: RolesNpermissionComponent,
       },
+      {
+        name: "Approval Workflows",
+        subSetting: [],
+        icon: 'pi pi-cog',
+        component: ApprovalComponent,
+      }
     
       
     ];
