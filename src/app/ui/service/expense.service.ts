@@ -130,6 +130,8 @@ export interface Expense {
   employeeReceiptFile?: File | null;
   companyReceipt?: ExpenseMedia;
   expenseReceipt?: ExpenseMedia;
+  companyReceipts?: ExpenseMedia[];
+  expenseReceipts?: ExpenseMedia[];
   expenseBy?: UserDTO | any;
   approvedBy?: UserDTO | any;
   approvedAt?: string;
@@ -200,7 +202,7 @@ export class ExpenseService {
     });
   }
 
-  // ─── Auth helpers ─────────────────────────────────────────────────────────
+  // ─── Auth helpers ────
 
   private getAuthToken(): string {
     return (
@@ -248,7 +250,7 @@ export class ExpenseService {
     return headers;
   }
 
-  // ─── Error handling ───────────────────────────────────────────────────────
+  // ─── Error handling ──
 
   private handleError(error: any): Observable<never> {
     console.error('[ExpenseService] API Error | status:', error.status, '| url:', error.url);
@@ -316,7 +318,7 @@ export class ExpenseService {
     return formData;
   }
 
-  // ─── Data loading ──────────────────────────────────────────────────────────
+  // ─── Data loading ─────
 
   getExpenses(): Observable<Expense[]> {
     const params = new HttpParams().set('page', '1').set('size', '1000');
@@ -446,7 +448,7 @@ export class ExpenseService {
       );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ────────────────────
   // FIX (Bug #5 + Bug #2): approveExpense
   //
   // WHAT WAS WRONG:
@@ -469,7 +471,7 @@ export class ExpenseService {
   //     payload so the backend preserves them.
   //   - Approval metadata (approvedBy, approvedAt) is included.
   //   - Added console logging to clearly track what is being sent.
-  // ─────────────────────────────────────────────────────────────────────────
+ 
   approveExpense(expense: Expense): Observable<Expense> {
     const currentUserId = this.resolveCurrentUserId();
     console.log('[ExpenseService] approveExpense id:', expense.id, '| admin (approvedBy):', currentUserId);
@@ -489,17 +491,15 @@ export class ExpenseService {
           console.warn('[ExpenseService] expenseBy is null — approval will proceed without submitter id.');
         }
 
-        // FIX: Build a complete payload with the correct ID and APPROVED status.
-        // Include all required fields so the backend updates rather than creates.
         const payload: any = {
-          id:                 full.id,       // CRITICAL: must match existing record
+          id:                 full.id,
           name:               full.name,
           description:        full.description,
           eventDate:          this.normaliseEventDate(full.eventDate),
           quantity:           full.quantity,
           currency:           full.currency,
           amount:             full.amount,
-          status:             ExpenseStatus.APPROVED,  // FIX Bug #5: explicit APPROVED
+          status:             ExpenseStatus.APPROVED,
           paidBy:             full.paidBy,
           receiptReference:   full.receiptReference || '',
           merchantId:         full.merchantId ?? full.merchant?.id,
@@ -509,28 +509,28 @@ export class ExpenseService {
           expenseBy:          originalSubmitterId,
           approvedBy:         currentUserId,
           approvedAt:         new Date().toISOString(),
+          companyReceipt:    full.companyReceipt ?? full.companyReceipts?.[0] ?? null,
+          expenseReceipt:    full.expenseReceipt ?? full.expenseReceipts?.[0] ?? null,
+          companyReceipts:   full.companyReceipts ?? (full.companyReceipt ? [full.companyReceipt] : []),
+          expenseReceipts:   full.expenseReceipts ?? (full.expenseReceipt ? [full.expenseReceipt] : []),
         };
-
-        console.log('[ExpenseService] Approval payload (status should be APPROVED):', JSON.stringify(payload, null, 2));
 
         return this.http.post<Expense>(
           this.expenseUrl,
           this.buildFormData(payload),
           { headers: this.getMultipartHeaders() }
         ).pipe(
-          // FIX Bug #2: After approval, re-fetch the expense by ID to get the
-          // server's authoritative version including preserved receipt URLs.
-          // This ensures receipt data is not lost after approval.
           switchMap((approvedExpense: Expense) => {
             return this.getExpenseById(approvedExpense.id || full.id).pipe(
               catchError(() => {
-                // If re-fetch fails, merge receipt data manually from the original
                 const merged: Expense = {
                   ...full,
                   ...approvedExpense,
                   status: ExpenseStatus.APPROVED,
                   companyReceipt: approvedExpense.companyReceipt ?? full.companyReceipt,
                   expenseReceipt: approvedExpense.expenseReceipt ?? full.expenseReceipt,
+                  companyReceipts: approvedExpense.companyReceipts ?? full.companyReceipts ?? (approvedExpense.companyReceipt ? [approvedExpense.companyReceipt] : full.companyReceipt ? [full.companyReceipt] : []),
+                  expenseReceipts: approvedExpense.expenseReceipts ?? full.expenseReceipts ?? (approvedExpense.expenseReceipt ? [approvedExpense.expenseReceipt] : full.expenseReceipt ? [full.expenseReceipt] : []),
                 };
                 return of(merged);
               })
@@ -540,11 +540,14 @@ export class ExpenseService {
       }),
       tap((response) => {
         console.log('[ExpenseService] Expense approved (final):', response);
+        console.log('[ExpenseService] Receipt fields after approval:', {
+          companyReceipt: response.companyReceipt,
+          expenseReceipt: response.expenseReceipt,
+          companyReceipts: response.companyReceipts,
+          expenseReceipts: response.expenseReceipts,
+        });
 
-        // FIX Bug #1 + #4: Update the BehaviorSubject in-place so the expense
-        // is NOT removed from the list on the next getExpenses() call.
-        // This prevents disappearance on refresh by keeping the local cache
-        // consistent with what the server has.
+
         const current = this.expensesSubject.getValue();
         const idx = current.findIndex(e => e.id === response.id);
         if (idx !== -1) {
@@ -568,13 +571,6 @@ export class ExpenseService {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX (Bug #2 mirror for rejection): rejectExpense
-  //
-  // Same receipt-preservation fix as approveExpense. After rejection,
-  // re-fetch the expense to get the server's authoritative version so
-  // receipt URLs are preserved and visible in the detail view.
-  // ─────────────────────────────────────────────────────────────────────────
   rejectExpense(expense: Expense, reason?: string): Observable<Expense> {
     const currentUserId = this.resolveCurrentUserId();
     console.log('[ExpenseService] rejectExpense id:', expense.id, '| admin (rejectedBy):', currentUserId);
@@ -609,6 +605,10 @@ export class ExpenseService {
           expenseBy:          originalSubmitterId,
           rejectedBy:         currentUserId,
           rejectedAt:         new Date().toISOString(),
+          companyReceipt:    full.companyReceipt ?? full.companyReceipts?.[0] ?? null,
+          expenseReceipt:    full.expenseReceipt ?? full.expenseReceipts?.[0] ?? null,
+          companyReceipts:   full.companyReceipts ?? (full.companyReceipt ? [full.companyReceipt] : []),
+          expenseReceipts:   full.expenseReceipts ?? (full.expenseReceipt ? [full.expenseReceipt] : []),
         };
 
         console.log('[ExpenseService] Rejection payload:', JSON.stringify(payload, null, 2));
@@ -629,6 +629,8 @@ export class ExpenseService {
                   rejectionReason: reason || 'No reason provided',
                   companyReceipt: rejectedExpense.companyReceipt ?? full.companyReceipt,
                   expenseReceipt: rejectedExpense.expenseReceipt ?? full.expenseReceipt,
+                  companyReceipts: rejectedExpense.companyReceipts ?? full.companyReceipts ?? (rejectedExpense.companyReceipt ? [rejectedExpense.companyReceipt] : full.companyReceipt ? [full.companyReceipt] : []),
+                  expenseReceipts: rejectedExpense.expenseReceipts ?? full.expenseReceipts ?? (rejectedExpense.expenseReceipt ? [rejectedExpense.expenseReceipt] : full.expenseReceipt ? [full.expenseReceipt] : []),
                 };
                 return of(merged);
               })
@@ -677,7 +679,7 @@ export class ExpenseService {
       );
   }
 
-  // ─── Receipt helpers ──────────────────────────────────────────────────────
+  // ─── Receipt helpers 
 
   getCompanyReceipt(expenseId: string): Observable<Blob> {
     return this.http
@@ -713,7 +715,7 @@ export class ExpenseService {
       .pipe(catchError(this.handleError));
   }
 
-  // ─── Lookups ──────────────────────────────────────────────────────────────
+  // ─── Lookups ─────────
 
   getCategories(): Observable<CategoryDTO[]> {
     return this.http
