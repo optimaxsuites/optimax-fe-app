@@ -66,6 +66,7 @@ import { RoomTypesListComponent } from './ui/view/room-management/room-types/roo
 import { RoomsListComponent } from './ui/view/room-management/rooms/rooms-list.component';
 import { ServiceChargesListComponent } from './ui/view/room-management/service-charges/service-charges-list.component';
 import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
+import { ServiceCheckoutComponent } from './ui/view/room-management/service-checkout/service-checkout.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -108,6 +109,7 @@ import { ServicesListComponent } from './ui/view/room-management/services/servic
     BookingRoomFirstComponent,
     PaymentsListComponent,
     HousekeepingComponent,
+    ServiceCheckoutComponent,
   ],
   imports: [
     BrowserAnimationsModule,

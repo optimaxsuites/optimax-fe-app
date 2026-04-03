@@ -23,6 +23,20 @@ interface ServiceItem {
 @Component({
   selector: 'app-booking-room-first',
   templateUrl: './booking-room-first.component.html',
+  styles: [`
+    :host ::ng-deep .p-calendar { width: 100%; display: flex; }
+    :host ::ng-deep .p-inputtext { 
+        flex: 1;
+        width: 100%; 
+    }
+    :host ::ng-deep .p-datepicker { 
+        font-family: inherit; 
+        border-radius: 1rem !important; 
+        border: 1px solid #e5e7eb !important; 
+        padding: 1rem !important;
+    }
+    :host ::ng-deep .p-calendar .p-button-icon { font-size: 0.75rem; }
+  `],
 })
 export class BookingRoomFirstComponent implements OnInit {
   step = 1; // 1=Rooms, 2=Guest, 3=Dates & Details, 4=Services & Pay
@@ -68,11 +82,11 @@ export class BookingRoomFirstComponent implements OnInit {
   showToast = false;
 
   readonly statusConfig: Record<RoomStatus, { label: string; badge: string; ring: string; tile: string; selectable: boolean }> = {
-    AVAILABLE:         { label: 'Available',    badge: 'bg-emerald-500 text-white',    ring: 'ring-emerald-400', tile: 'border-emerald-200 bg-emerald-50/60',   selectable: true  },
-    OCCUPIED:          { label: 'Occupied',     badge: 'bg-red-500 text-white',        ring: 'ring-red-400',     tile: 'border-red-100 bg-red-50/40',           selectable: false },
-    BOOKED:            { label: 'Booked',       badge: 'bg-amber-400 text-white',      ring: 'ring-amber-400',   tile: 'border-amber-100 bg-amber-50/40',       selectable: false },
-    UNDER_MAINTENANCE: { label: 'Maintenance',  badge: 'bg-orange-500 text-white',     ring: 'ring-orange-400',  tile: 'border-orange-100 bg-orange-50/40',     selectable: false },
-    CLEANING:          { label: 'Cleaning',     badge: 'bg-sky-500 text-white',        ring: 'ring-sky-400',     tile: 'border-sky-100 bg-sky-50/40',           selectable: false },
+    AVAILABLE:         { label: 'Available',    badge: 'bg-emerald-500 text-white',    ring: '', tile: 'border-emerald-100 bg-white',        selectable: true  },
+    OCCUPIED:          { label: 'Occupied',     badge: 'bg-red-500 text-white',        ring: '', tile: 'border-red-100 bg-gray-50',          selectable: false },
+    BOOKED:            { label: 'Booked',       badge: 'bg-amber-400 text-white',      ring: '', tile: 'border-amber-100 bg-gray-50',        selectable: false },
+    UNDER_MAINTENANCE: { label: 'Maintenance',  badge: 'bg-orange-500 text-white',     ring: '', tile: 'border-orange-100 bg-gray-50',       selectable: false },
+    CLEANING:          { label: 'Cleaning',     badge: 'bg-sky-500 text-white',        ring: '', tile: 'border-sky-100 bg-gray-50',          selectable: false },
   };
 
   constructor(
@@ -104,14 +118,20 @@ export class BookingRoomFirstComponent implements OnInit {
       idNumber: ['', Validators.required],
     });
 
-    const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    // Default dates as Date objects for p-calendar
+    const today = new Date();
+    const tomorrow = new Date(Date.now() + 86400000);
     this.datesForm = this.fb.group({
       checkinDate: [today, Validators.required],
       checkoutDate: [tomorrow, Validators.required],
       adults: [1, [Validators.required, Validators.min(1)]],
       children: [0, [Validators.required, Validators.min(0)]],
       specialRequests: [''],
+    });
+
+    // Subscribe to date changes for automatic room reloading
+    this.datesForm.valueChanges.subscribe(() => {
+      this.onDatesChange();
     });
 
     this.paymentForm = this.fb.group({
@@ -122,23 +142,53 @@ export class BookingRoomFirstComponent implements OnInit {
     });
   }
 
+  onDatesChange(): void {
+    const { checkinDate, checkoutDate } = this.datesForm.value;
+    if (checkinDate && checkoutDate) {
+      // If we are in step 1, clear selection as availability changed
+      if (this.step === 1) {
+        this.selectedRooms = []; 
+      }
+      this.loadRooms();
+      
+      // Auto-update deposit amount in Step 3 if it hasn't been manually adjusted much?
+      // For now, always update it to match the new total if we are in Step 3
+      if (this.step === 3 && this.batchPayments.length === 0) {
+        this.paymentForm.patchValue({ depositAmount: this.grandTotal });
+      }
+    }
+  }
+
   loadRooms(): void {
     this.loading = true;
-    console.log('DEBUG: BookingRoomFirst — calling getRooms()...');
-    this.hotelService.getRooms().subscribe({
+    let { checkinDate, checkoutDate } = this.datesForm.value;
+    
+    // Ensure we have strings for the API
+    const start = typeof checkinDate === 'string' ? checkinDate : this.hotelService.formatDate(checkinDate);
+    const end = typeof checkoutDate === 'string' ? checkoutDate : this.hotelService.formatDate(checkoutDate);
+
+    console.log(`DEBUG: BookingRoomFirst — fetching available rooms for ${start} to ${end}`);
+    
+    this.hotelService.getRoomsAvailable(start, end).subscribe({
       next: (rooms) => {
-        console.log('DEBUG: BookingRoomFirst — received rooms:', rooms?.length, rooms);
-        // Revert to ONLY showing available rooms as requested
-        this.allRooms = (rooms || []).filter(r => r.roomStatus === 'AVAILABLE')
-          .sort((a, b) => a.roomNumber - b.roomNumber);
+        console.log('DEBUG: BookingRoomFirst — received available rooms:', rooms?.length);
+        this.allRooms = (rooms || []).sort((a, b) => a.roomNumber - b.roomNumber);
         this.applyRoomFilter();
-        console.log('DEBUG: BookingRoomFirst — filteredRooms:', this.filteredRooms.length);
         this.loading = false;
       },
       error: (err) => {
-        console.error('DEBUG: BookingRoomFirst — ERROR loading rooms:', err);
-        this.showToastMessage('Failed to load rooms. Please refresh.', 'error');
-        this.loading = false;
+        console.error('DEBUG: BookingRoomFirst — ERROR loading available rooms:', err);
+        this.hotelService.getRooms().subscribe({
+          next: (all) => {
+            this.allRooms = (all || []).sort((a, b) => a.roomNumber - b.roomNumber);
+            this.applyRoomFilter();
+            this.loading = false;
+          },
+          error: () => {
+            this.showToastMessage('Failed to load rooms. Please refresh.', 'error');
+            this.loading = false;
+          }
+        });
       },
     });
   }
@@ -225,7 +275,9 @@ export class BookingRoomFirstComponent implements OnInit {
   // Totals
   get nights(): number {
     const { checkinDate, checkoutDate } = this.datesForm.value;
-    return this.hotelService.calculateNights(checkinDate, checkoutDate) || 0;
+    const start = typeof checkinDate === 'string' ? checkinDate : this.hotelService.formatDate(checkinDate);
+    const end = typeof checkoutDate === 'string' ? checkoutDate : this.hotelService.formatDate(checkoutDate);
+    return this.hotelService.calculateNights(start, end) || 0;
   }
   get roomSubtotal(): number { return this.selectedRooms.reduce((s, r) => s + r.rate * (this.nights || 1), 0); }
   get grandTotal(): number { return this.roomSubtotal; }
@@ -255,11 +307,13 @@ export class BookingRoomFirstComponent implements OnInit {
     }
     this.submitting = true;
     const { checkinDate, checkoutDate, adults, children, specialRequests } = this.datesForm.value;
+    const start = typeof checkinDate === 'string' ? checkinDate : this.hotelService.formatDate(checkinDate);
+    const end = typeof checkoutDate === 'string' ? checkoutDate : this.hotelService.formatDate(checkoutDate);
     const deposit = this.totalBatchAmount;
 
     const booking: Booking = {
-      checkinDate,
-      checkoutDate,
+      checkinDate: start,
+      checkoutDate: end,
       adults: Number(adults) || 1,
       children: Number(children) || 0,
       specialRequests: specialRequests || '',

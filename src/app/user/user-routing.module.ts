@@ -25,6 +25,7 @@ import { BookingCreateComponent } from '../ui/view/room-management/booking-creat
 import { BookingDetailComponent } from '../ui/view/room-management/booking-detail/booking-detail.component';
 import { BookingRoomFirstComponent } from '../ui/view/room-management/booking-room-first/booking-room-first.component';
 import { BookingsListComponent } from '../ui/view/room-management/bookings/bookings-list.component';
+import { ServiceCheckoutComponent } from '../ui/view/room-management/service-checkout/service-checkout.component';
 
 const routes: Routes = [
   {
@@ -52,10 +53,11 @@ const routes: Routes = [
 
   },
 
-  { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
-  { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
-  { path: 'bookings/:id/:uuid',         component: BookingDetailComponent },
-  { path: 'bookings/:uuid',             component: BookingsListComponent },
+  { path: 'bookings/create/:uuid',       component: BookingCreateComponent },
+  { path: 'bookings/room-select/:uuid',  component: BookingRoomFirstComponent },
+  { path: 'bookings/sell-service/:uuid', component: ServiceCheckoutComponent },
+  { path: 'bookings/:id/:uuid',          component: BookingDetailComponent },
+  { path: 'bookings/:uuid',              component: BookingsListComponent },
 ];
 
 @NgModule({

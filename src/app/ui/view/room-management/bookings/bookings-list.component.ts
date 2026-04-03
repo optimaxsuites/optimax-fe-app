@@ -226,7 +226,7 @@ export class BookingsListComponent implements OnInit {
   get checkedInCount(): number { return this.bookings.filter(b => b.status === 'CHECKED_IN').length; }
 
   viewBooking(booking: Booking): void {
-    this.router.navigate(['/hospitality/bookings', booking.id, this.uuid]);
+    this.router.navigate(['user/hospitality/bookings', booking.id, this.uuid]);
   }
 
   openEditDrawer(booking: Booking): void {
@@ -332,7 +332,11 @@ export class BookingsListComponent implements OnInit {
   }
 
   navigateToRoomFirst(): void {
-    this.router.navigate(['/user/hospitality', 'bookings', 'room-select', this.uuid]);
+    this.router.navigate(['user/hospitality/bookings/room-select', this.uuid]);
+  }
+
+  navigateToSellService(): void {
+    this.router.navigate(['user/hospitality/bookings/sell-service', this.uuid]);
   }
 
   getStats() {

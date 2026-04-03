@@ -16,10 +16,16 @@
             <p class="text-sm text-gray-500 mt-1">Monitor and manage all guest reservations and check-in statuses.</p>
         </div>
         <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+            <button (click)="navigateToSellService()"
+                class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-cart-plus"></i> Sell Service
+            </button>
             <button (click)="navigateToRoomFirst()"
                 class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                 <i class="fa-solid fa-plus"></i> Sell Room
             </button>
+        </div>
             <div class="flex bg-gray-100 p-1 rounded-lg">
                 <button (click)="viewMode = 'table'" 
                     class="px-4 py-1.5 rounded-md text-sm font-bold transition-all"

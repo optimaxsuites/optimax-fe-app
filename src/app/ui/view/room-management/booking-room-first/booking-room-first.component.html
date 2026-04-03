@@ -14,9 +14,8 @@
             <i class="fa-solid fa-arrow-left text-lg"></i>
         </button>
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Quick Book — Room View</h1>
-            <p class="text-base text-gray-400 mt-0.5">See every room at a glance, pick one, then add the guest details.
-            </p>
+            <h1 class="text-2xl font-black text-gray-800 tracking-tight">Quick Book</h1>
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mt-0.5">Room Selection & Guest Info</p>
         </div>
     </div>
 
@@ -28,17 +27,17 @@
             {n:3, label:'Confirm & Pay'}
         ]; let last = last">
             <div class="flex items-center gap-2">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold transition-all"
-                    [ngClass]="step > s.n ? 'bg-emerald-500 text-white' : step === s.n ? 'bg-customBlue text-white ring-4 ring-customBlue/20' : 'bg-gray-200 text-gray-500'">
-                    <i *ngIf="step > s.n" class="fa-solid fa-check text-sm"></i>
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-all"
+                    [ngClass]="step > s.n ? 'bg-emerald-500 text-white' : step === s.n ? 'bg-customBlue text-white' : 'bg-gray-100 text-gray-400'">
+                    <i *ngIf="step > s.n" class="fa-solid fa-check text-[10px]"></i>
                     <span *ngIf="step <= s.n">{{ s.n }}</span>
                 </div>
-                <span class="text-base font-medium hidden sm:inline"
+                <span class="text-xs font-black uppercase tracking-widest hidden sm:inline"
                     [ngClass]="step === s.n ? 'text-customBlue' : step > s.n ? 'text-emerald-500' : 'text-gray-400'">
                     {{ s.label }}
                 </span>
             </div>
-            <div *ngIf="!last" class="flex-1 h-0.5 mx-3" [ngClass]="step > s.n ? 'bg-emerald-400' : 'bg-gray-200'">
+            <div *ngIf="!last" class="flex-1 h-[1px] mx-4" [ngClass]="step > s.n ? 'bg-emerald-200' : 'bg-gray-100'">
             </div>
         </ng-container>
     </div>
@@ -47,45 +46,96 @@
     <div *ngIf="step === 1">
 
         <!-- Legend + counts -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 overflow-hidden relative">
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-5 overflow-hidden relative">
             <div class="absolute top-0 left-0 w-1 h-full bg-customBlue"></div>
             <div class="flex flex-wrap items-center gap-8">
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Available Rooms</p>
                 <div class="flex items-center gap-3">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span>
-                    <span class="text-sm font-black text-gray-700">Available <strong class="ml-1 text-emerald-600">({{ availableCount }})</strong></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-[10px] font-black text-gray-700 uppercase tracking-widest">Available <strong class="ml-1 text-emerald-600">({{ availableCount }})</strong></span>
                 </div>
                 <!-- Selection counter -->
-                <div class="ml-auto flex items-center gap-2 bg-customBlue/5 px-4 py-2 rounded-xl border border-customBlue/10">
-                    <i class="fa-solid fa-circle-check text-customBlue animate-pulse"></i>
-                    <span class="text-sm font-black text-customBlue uppercase tracking-widest">{{ selectedRooms.length }} selected</span>
+                <div class="ml-auto flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                    <i class="fa-solid fa-circle-check text-customBlue"></i>
+                    <span class="text-[10px] font-black text-customBlue uppercase tracking-widest">{{ selectedRooms.length }} selected</span>
                 </div>
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap items-center gap-6">
-            <div class="flex items-center gap-3">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Floor</label>
-                <select [(ngModel)]="filterFloor" (change)="applyRoomFilter()"
-                    class="border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-black focus:border-customBlue outline-none bg-gray-50/50">
-                    <option value="">All</option>
-                    <option *ngFor="let f of uniqueFloors" [value]="f">{{ f }}</option>
-                </select>
-            </div>
-            <div class="flex items-center gap-3">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</label>
-                <select [(ngModel)]="filterRoomType" (change)="applyRoomFilter()"
-                    class="border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-black focus:border-customBlue outline-none bg-gray-50/50">
-                    <option value="">All Types</option>
-                    <option *ngFor="let rt of roomTypes" [value]="rt.id">{{ rt.name }}</option>
-                </select>
+        <!-- Filters & Stay Duration -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end" [formGroup]="datesForm">
+                <div class="space-y-1.5">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Check-In</label>
+                    <div class="relative group">
+                        <i class="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-customBlue transition-colors z-20 pointer-events-none"></i>
+                        <p-calendar formControlName="checkinDate" dateFormat="yy-mm-dd"
+                            styleClass="w-full"
+                            inputStyleClass="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl pl-11 pr-4 py-2.5 text-sm font-black focus:border-customBlue outline-none transition-all">
+                        </p-calendar>
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Check-Out</label>
+                    <div class="relative group">
+                        <i class="fa-solid fa-calendar-check absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-customBlue transition-colors z-20 pointer-events-none"></i>
+                        <p-calendar formControlName="checkoutDate" dateFormat="yy-mm-dd"
+                            styleClass="w-full"
+                            inputStyleClass="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl pl-11 pr-4 py-2.5 text-sm font-black focus:border-customBlue outline-none transition-all">
+                        </p-calendar>
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Guests (Adults/Kids)</label>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input formControlName="adults" type="number" min="1"
+                                class="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl pl-10 pr-3 py-2.5 text-sm font-black focus:border-customBlue outline-none transition-all" />
+                        </div>
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-child absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input formControlName="children" type="number" min="0"
+                                class="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl pl-10 pr-3 py-2.5 text-sm font-black focus:border-customBlue outline-none transition-all" />
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 ml-auto lg:ml-0">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Type</label>
+                        <select [(ngModel)]="filterRoomType" (change)="applyRoomFilter()" [ngModelOptions]="{standalone: true}"
+                            class="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm font-black focus:border-customBlue outline-none bg-gray-50/50">
+                            <option value="">All Types</option>
+                            <option *ngFor="let rt of roomTypes" [value]="rt.id">{{ rt.name }}</option>
+                        </select>
+                    </div>
+                    <div class="">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Floor</label>
+                        <select [(ngModel)]="filterFloor" (change)="applyRoomFilter()" [ngModelOptions]="{standalone: true}"
+                            class="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm font-black focus:border-customBlue outline-none bg-gray-50/50">
+                            <option value="">All</option>
+                            <option *ngFor="let f of uniqueFloors" [value]="f">{{ f }}</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             
-            <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest ml-auto">
-                <i class="fa-solid fa-circle-info mr-1 text-customBlue/30"></i>
-                Select rooms to proceed with booking
-            </p>
+            <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nights:</span>
+                        <span class="text-sm font-black text-customBlue bg-blue-50 px-3 py-1 rounded-lg">{{ nights }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avg. Price:</span>
+                        <span class="text-sm font-black text-gray-700">₦{{ (grandTotal / (nights || 1)) | number }}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                    <i class="fa-solid fa-circle-info mr-1 text-customBlue/30"></i>
+                    Select rooms and dates to proceed
+                </p>
+            </div>
         </div>
 
         <!-- Loading -->
@@ -94,93 +144,62 @@
         </div>
 
         <!-- Room Grid -->
-        <div *ngIf="!loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
-            <div *ngFor="let room of filteredRooms" (click)="toggleRoom(room)"
-                [title]="cfg(room.roomStatus).selectable ? 'Click to select' : cfg(room.roomStatus).label + ' — cannot book'"
-                class="relative rounded-3xl border-2 overflow-hidden transition-all duration-300" 
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
+            <div *ngFor="let room of filteredRooms" 
+                (click)="toggleRoom(room)"
                 [ngClass]="[
+                    'relative overflow-hidden transition-all duration-200 border rounded-xl',
                     cfg(room.roomStatus).tile,
-                    cfg(room.roomStatus).selectable ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'cursor-not-allowed opacity-60 grayscale-[0.3]',
-                    isSelected(room) ? 'ring-4 ' + cfg(room.roomStatus).ring + ' scale-[1.02] shadow-xl border-white' : ''
+                    cfg(room.roomStatus).selectable ? 'cursor-pointer hover:border-customBlue' : 'cursor-not-allowed opacity-40',
+                    isSelected(room) ? 'border-customBlue bg-customBlue/5' : ''
                 ]">
                 
-                <!-- Room Badge/Indicator -->
-                <div class="absolute top-3 left-3 z-10">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase shadow-sm border border-white/20"
-                        [ngClass]="cfg(room.roomStatus).badge">
-                        {{ cfg(room.roomStatus).label }}
-                    </span>
-                </div>
-
                 <!-- Selected tick -->
                 <div *ngIf="isSelected(room)"
-                    class="absolute top-3 right-3 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center z-20 shadow-lg border-2 border-white animate-in zoom-in-50 duration-300">
-                    <i class="fa-solid fa-check text-white text-[10px]"></i>
+                    class="absolute top-2 right-2 w-5 h-5 bg-customBlue rounded-full flex items-center justify-center z-20 border border-white">
+                    <i class="fa-solid fa-check text-white text-[8px]"></i>
                 </div>
-
-                <!-- Icons & ID -->
-                <div class="relative h-28 flex flex-col items-center justify-center p-4">
-                    <i class="fa-solid fa-bed text-5xl mb-2 transition-transform group-hover:scale-110" [ngClass]="{
-                        'text-emerald-500/30': room.roomStatus === 'AVAILABLE',
-                        'text-rose-500/30': room.roomStatus === 'OCCUPIED',
-                        'text-amber-500/30': room.roomStatus === 'BOOKED',
-                        'text-sky-500/30': room.roomStatus === 'CLEANING',
-                        'text-orange-500/30': room.roomStatus === 'UNDER_MAINTENANCE'
-                    }"></i>
-                    <p class="text-2xl font-black text-gray-800 tracking-tighter">#{{ room.roomNumber }}</p>
-                </div>
-
-                <!-- Info footer -->
-                <div class="p-4 pt-0 text-center">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest truncate mb-2">
-                        {{ getRoomTypeName(room.roomType) }}
-                    </p>
-                    <div class="flex items-center justify-center gap-3 text-gray-500 mb-3">
-                        <span class="flex items-center gap-1 text-[10px] font-black">
-                            <i class="fa-solid fa-bed opacity-30"></i> {{ room.beds }}
-                        </span>
-                        <span class="flex items-center gap-1 text-[10px] font-black">
-                            <i class="fa-solid fa-users opacity-30"></i> {{ room.maxOccupancy }}
-                        </span>
+                
+                <div class="p-4 text-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{{ getRoomTypeName(room.roomType) }}</p>
+                    <p class="text-xl font-black text-gray-800">#{{ room.roomNumber }}</p>
+                    <div class="flex items-center justify-center gap-2 mt-2 text-[10px] font-black text-gray-500 uppercase">
+                        <i class="fa-solid fa-users opacity-30"></i> {{ room.maxOccupancy }}
                     </div>
-                    <p class="text-sm font-black text-gray-800 bg-white/50 py-1.5 px-3 rounded-2xl inline-block border border-gray-100 shadow-sm">
-                        ₦{{ room.rate | number }}
-                    </p>
                 </div>
             </div>
+        </div>
 
-            <!-- Empty -->
-            <div *ngIf="filteredRooms.length === 0" class="col-span-full text-center py-24 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
-                    <i class="fa-solid fa-door-closed text-2xl text-gray-300"></i>
-                </div>
-                <h3 class="text-lg font-black text-gray-800 mb-1 uppercase tracking-tight">No Rooms Found</h3>
-                <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Adjust your filters to see more results</p>
+        <!-- Empty -->
+        <div *ngIf="filteredRooms.length === 0" class="col-span-full text-center py-24 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                <i class="fa-solid fa-door-closed text-2xl text-gray-300"></i>
             </div>
+            <h3 class="text-lg font-black text-gray-800 mb-1 uppercase tracking-tight">No Rooms Found</h3>
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Adjust your filters to see more results</p>
         </div>
 
         <!-- Selection summary bar at bottom -->
         <div *ngIf="selectedRooms.length > 0"
-            class="sticky bottom-4 bg-customBlue text-white rounded-xl shadow-xl px-6 py-4 flex items-center justify-between">
+            class="sticky bottom-4 bg-customBlue text-white rounded-xl px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3 flex-wrap">
                 <i class="fa-solid fa-circle-check text-xl"></i>
                 <div>
-                    <p class="font-semibold text-base">{{ selectedRooms.length }} room{{ selectedRooms.length !== 1 ? 's'
-                        : '' }} selected</p>
-                    <p class="text-base text-blue-200">
+                    <p class="font-black text-sm uppercase tracking-widest">{{ selectedRooms.length }} selected</p>
+                    <p class="text-xs text-blue-200 uppercase tracking-wider">
                         {{ getSelectedRoomNumbers() }}
                     </p>
                 </div>
             </div>
             <button (click)="goToStep(2)"
-                class="bg-white text-customBlue font-semibold text-base px-6 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2">
-                Next: Select Guest <i class="fa-solid fa-arrow-right"></i>
+                class="bg-white text-customBlue font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2">
+                Next <i class="fa-solid fa-arrow-right"></i>
             </button>
         </div>
     </div>
 
-    <div *ngIf="step === 2" class="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-4">
+    <div *ngIf="step === 2" class="w-full">
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
             <div class="flex items-center justify-between mb-5">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-800 mb-1"><i
@@ -223,7 +242,7 @@
 
             <div class="border-t border-gray-100 pt-4">
                 <button (click)="showNewGuestForm = !showNewGuestForm"
-                    class="text-customBlue text-base font-medium hover:underline">
+                    class="text-customBlue text-[10px] font-black uppercase tracking-widest hover:underline">
                     <i class="fa-solid fa-plus mr-1.5"></i>{{ showNewGuestForm ? 'Cancel' : 'Create New Guest' }}
                 </button>
                 <div *ngIf="showNewGuestForm" class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -254,7 +273,7 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:ring-2 focus:ring-customBlue outline-none font-mono" />
                         </div>
                         <button (click)="createAndSelectGuest()" [disabled]="guestForm.invalid"
-                            class="mt-3 px-5 py-2 bg-customBlue text-white rounded-lg text-base font-medium hover:bg-customBlueHover disabled:opacity-50 transition-colors">
+                            class="mt-3 px-5 py-2.5 bg-customBlue text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-customBlueHover disabled:opacity-50 transition-colors">
                             <i class="fa-solid fa-plus mr-1.5"></i> Create & Select
                         </button>
                     </form>
@@ -274,12 +293,12 @@
 
         <div class="flex justify-between">
             <button (click)="goToStep(1)"
-                class="px-6 py-2.5 text-gray-600 border border-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 flex items-center gap-2">
-                <i class="fa-solid fa-arrow-left"></i> Back
+                class="px-6 py-3 text-gray-500 border border-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left text-[8px]"></i> Back
             </button>
             <button (click)="goToStep(3)" [disabled]="!selectedGuest && !isGuestSkipped"
-                class="px-6 py-2.5 bg-customBlue text-white rounded-lg text-base font-medium hover:bg-customBlueHover disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
-                Continue <i class="fa-solid fa-arrow-right"></i>
+                class="px-6 py-3 bg-customBlue text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-customBlueHover disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
+                Continue <i class="fa-solid fa-arrow-right text-[8px]"></i>
             </button>
         </div>
     </div>
@@ -293,24 +312,41 @@
 
 
                 <!-- Summary -->
-                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4"><i
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><i
                             class="fa-solid fa-file-invoice mr-2 text-customBlue"></i>Booking Summary</h2>
-                    <div class="space-y-2 text-base mb-4">
+                    <div class="space-y-3 text-base mb-4" [formGroup]="datesForm">
                         <div class="flex justify-between text-gray-600 pb-2 border-b border-gray-50">
                             <span>Guest</span>
                             <span class="font-medium text-gray-800">
                                 {{ selectedGuest ? (selectedGuest.title + ' ' + selectedGuest.firstName + ' ' + selectedGuest.lastName) : 'Walk-in Guest (Pending Info)' }}
                             </span>
                         </div>
-                        <div class="flex justify-between text-gray-600">
-                            <span>Check-In</span><span class="font-medium">{{ datesForm.value.checkinDate }}</span>
+                        <div class="grid grid-cols-2 gap-4 py-3 border-b border-gray-50">
+                            <div class="space-y-1 group">
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Check-In</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] z-10 pointer-events-none"></i>
+                                    <p-calendar formControlName="checkinDate" dateFormat="yy-mm-dd"
+                                        styleClass="w-full"
+                                        inputStyleClass="w-full h-9 border border-gray-200 rounded-lg pl-8 pr-2 text-xs font-bold focus:border-customBlue outline-none bg-gray-50/30">
+                                    </p-calendar>
+                                </div>
+                            </div>
+                            <div class="space-y-1 group">
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Check-Out</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] z-10 pointer-events-none"></i>
+                                    <p-calendar formControlName="checkoutDate" dateFormat="yy-mm-dd"
+                                        styleClass="w-full"
+                                        inputStyleClass="w-full h-9 border border-gray-200 rounded-lg pl-8 pr-2 text-xs font-bold focus:border-customBlue outline-none bg-gray-50/30">
+                                    </p-calendar>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex justify-between text-gray-600">
-                            <span>Check-Out</span><span class="font-medium">{{ datesForm.value.checkoutDate }}</span>
-                        </div>
-                        <div class="flex justify-between text-gray-600">
-                            <span>Nights</span><span class="font-medium">{{ nights }}</span>
+                        <div class="flex justify-between text-gray-600 pt-1">
+                            <span class="text-xs font-medium uppercase tracking-wider text-gray-400">Selected Stay</span>
+                            <span class="font-black text-gray-800">{{ nights }} nights</span>
                         </div>
                         <div *ngFor="let r of selectedRooms" class="flex justify-between text-gray-600">
                             <span>Room #{{ r.roomNumber }}</span>
@@ -318,19 +354,18 @@
                                     }}</strong></span>
                         </div>
                     </div>
-                    <div
-                        class="flex justify-between items-center font-bold text-gray-900 text-base border-t border-gray-200 pt-3">
-                        <span>Grand Total</span>
-                        <span class="text-customBlue text-xl">₦{{ grandTotal | number }}</span>
+                    <div class="flex justify-between items-center font-black text-gray-900 border-t border-gray-100 pt-4 mt-2">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</span>
+                        <span class="text-2xl text-customBlue tracking-tighter">₦{{ grandTotal | number }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Payment -->
             <div class="col-span-2">
-                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 sticky top-4">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4"><i
-                            class="fa-solid fa-credit-card mr-2 text-customBlue"></i>Payment</h2>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 sticky top-4">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"><i
+                            class="fa-solid fa-credit-card mr-2 text-customBlue"></i>Payment Details</h2>
                     <form [formGroup]="paymentForm" class="space-y-4">
                         <div>
                             <label
@@ -338,10 +373,10 @@
                                 Method</label>
                             <div class="grid grid-cols-3 gap-2">
                                 <button *ngFor="let m of paymentMethods" type="button" (click)="selectMethod(m.key)"
-                                    class="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border-2 transition-all"
-                                    [ngClass]="paymentForm.get('paymentMethod')?.value === m.key ? m.color + ' ring-2 ring-offset-1' : 'border-gray-100 text-gray-400 hover:border-gray-200'">
+                                    class="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border transition-all"
+                                    [ngClass]="paymentForm.get('paymentMethod')?.value === m.key ? m.color + ' border-current' : 'border-gray-100 text-gray-400 hover:border-gray-200'">
                                     <i [class]="m.icon" class="text-lg"></i>
-                                    <span class="text-xs font-black uppercase">{{ m.label }}</span>
+                                    <span class="text-[8px] font-black uppercase">{{ m.label }}</span>
                                 </button>
                             </div>
                         </div>
@@ -361,8 +396,8 @@
 
                         <button type="button" (click)="addToBatch()"
                             [disabled]="paymentForm.get('depositAmount')?.value <= 0"
-                            class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-base font-black tracking-widest transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-plus text-sm"></i> ADD TO LIST
+                            class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> ADD TO LIST
                         </button>
 
                         <!-- Batch List -->
@@ -418,10 +453,10 @@
                     </form>
 
                     <button (click)="submitBooking()" [disabled]="submitting || batchPayments.length === 0"
-                        class="mt-6 w-full py-3 bg-emerald-500 text-white rounded-xl text-base font-semibold hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
+                        class="mt-6 w-full py-3.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
                         <i *ngIf="!submitting" class="fa-solid fa-calendar-plus"></i>
                         <i *ngIf="submitting" class="fa-solid fa-spinner fa-spin"></i>
-                        {{ submitting ? 'Creating...' : 'Confirm Booking' }}
+                        {{ submitting ? 'Processing...' : 'Confirm Booking' }}
                     </button>
                     <p *ngIf="batchPayments.length === 0" class="mt-2 text-base text-red-400 text-center font-medium">
                         <i class="fa-solid fa-circle-exclamation mr-1"></i>
@@ -429,8 +464,8 @@
                     </p>
 
                     <button (click)="goToStep(2)"
-                        class="mt-3 w-full py-2.5 text-gray-500 text-base font-medium border border-gray-300 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-arrow-left text-sm"></i> Back
+                        class="mt-3 w-full py-3 text-gray-400 text-[10px] font-black uppercase tracking-widest border border-gray-100 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
                 </div>
             </div>
