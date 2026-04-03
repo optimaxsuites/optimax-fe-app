@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from './environments/environment';
 
@@ -31,12 +31,13 @@ export class EmailService {
       'x-api-key': environment.apiKey
     });
 
-    // Map to the backend's expected field name (`recieverEmail` — sic, backend typo kept intentionally)
+    // Map to the backend's expected field name
+    // (`recieverEmail` — sic, backend typo kept intentionally)
     const backendPayload = {
-      name: payload.name,
+      name:          payload.name,
       recieverEmail: payload.receiverEmail,
-      subject: payload.subject,
-      body: payload.body
+      subject:       payload.subject,
+      body:          payload.body
     };
 
     return this.http
@@ -50,7 +51,7 @@ export class EmailService {
       );
   }
 
-   sendWelcomeEmail(name: string, email: string, customBody?: string): Observable<EmailResponse> {
+  sendWelcomeEmail(name: string, email: string, customBody?: string): Observable<EmailResponse> {
     return this.sendNotificationEmail({
       name,
       receiverEmail: email,
@@ -64,107 +65,139 @@ export class EmailService {
 
   sendExpenseSubmissionAlert(
     submitterName: string,
-    adminEmail: string,
-    expenseName: string,
-    amount: number,
-    currency: string = 'NGN'
+    adminEmail:    string,
+    expenseName:   string,
+    amount:        number,
+    currency:      string = 'NGN'
   ): Observable<EmailResponse> {
     return this.sendNotificationEmail({
-      name: 'Admin',
+      name:          'Admin',
       receiverEmail: adminEmail,
-      subject: '🧾 New Expense Submitted — Pending Your Review',
+      subject:       '🧾 New Expense Submitted — Pending Your Review',
       body: `
-        <p>Hello,</p>
-        <p>A new expense has been submitted and is awaiting your approval.</p>
-        <table style="border-collapse:collapse;width:100%;max-width:480px;">
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f5f5f5;">Submitted By</td>
-              <td style="padding:6px 12px;">${submitterName}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f5f5f5;">Expense Name</td>
-              <td style="padding:6px 12px;">${expenseName}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f5f5f5;">Amount</td>
-              <td style="padding:6px 12px;">${currency} ${amount.toLocaleString()}</td></tr>
+        <p style="margin:0 0 12px 0;">Hello,</p>
+        <p style="margin:0 0 16px 0;">
+          A new expense has been submitted and is awaiting your approval.
+        </p>
+        <table style="border-collapse:collapse;width:100%;max-width:480px;margin-bottom:16px;">
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;">Submitted By</td>
+            <td style="padding:8px 14px;border:1px solid #e2e8f0;">${submitterName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;">Expense Name</td>
+            <td style="padding:8px 14px;border:1px solid #e2e8f0;">${expenseName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;">Amount</td>
+            <td style="padding:8px 14px;border:1px solid #e2e8f0;">${currency} ${amount.toLocaleString()}</td>
+          </tr>
         </table>
-        <br/>
-        <p>Please log in to the ERP portal to review and action this expense.</p>
-        <br/><p style="color:#666;">Optimax ERP System</p>`
+        <p style="margin:0 0 12px 0;">
+          Please log in to the Optimax ERP portal to review and action this expense.
+        </p>
+        <p style="margin:0;color:#64748b;font-size:13px;">Optimax ERP System</p>
+      `
     });
   }
 
-  // ─── Step 3a: Admin APPROVED → notify original submitter ────────────────────
-  /**
-   * Called after an admin approves an expense.
-   * Sends a confirmation email to the user who originally submitted it.
-   *
-   * @param submitterName   Full name of the original submitter
-   * @param submitterEmail  Email of the original submitter
-   * @param expenseDetails  Human-readable description (name + amount + currency)
-   * @param approvedByName  Name of the admin who approved
-   */
   sendExpenseApprovedNotification(
-    submitterName: string,
+    submitterName:  string,
     submitterEmail: string,
     expenseDetails: string,
     approvedByName: string
   ): Observable<EmailResponse> {
     return this.sendNotificationEmail({
-      name: submitterName,
+      name:          submitterName,
       receiverEmail: submitterEmail,
-      subject: '✅ Your Expense Has Been Approved',
+      subject:       '✅ Your Expense Has Been Approved',
       body: `
-        <p>Dear ${submitterName},</p>
-        <p>Great news! Your expense has been <strong style="color:#16a34a;">approved</strong>.</p>
-        <table style="border-collapse:collapse;width:100%;max-width:480px;">
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f0fdf4;">Expense</td>
-              <td style="padding:6px 12px;">${expenseDetails}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f0fdf4;">Approved By</td>
-              <td style="padding:6px 12px;">${approvedByName}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#f0fdf4;">Date</td>
-              <td style="padding:6px 12px;">${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td></tr>
+        <p style="margin:0 0 12px 0;">Dear ${submitterName},</p>
+        <p style="margin:0 0 16px 0;">
+          Great news! Your expense has been
+          <strong style="color:#16a34a;">approved</strong>.
+        </p>
+        <table style="border-collapse:collapse;width:100%;max-width:480px;margin-bottom:16px;">
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;">Expense</td>
+            <td style="padding:8px 14px;border:1px solid #bbf7d0;">${expenseDetails}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;">Approved By</td>
+            <td style="padding:8px 14px;border:1px solid #bbf7d0;">${approvedByName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;">Date</td>
+            <td style="padding:8px 14px;border:1px solid #bbf7d0;">
+              ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </td>
+          </tr>
         </table>
-        <br/><p>The expense will be processed in the next payment cycle.</p>
-        <br/><p style="color:#666;">Best regards,<br/>Optimax Finance Team</p>`
+        <p style="margin:0 0 12px 0;">
+          The expense will be processed in the next payment cycle.
+        </p>
+        <p style="margin:0;color:#64748b;font-size:13px;">
+          Best regards,<br/>Optimax Finance Team
+        </p>
+      `
     });
   }
 
-
   sendExpenseRejectedNotification(
-    submitterName: string,
+    submitterName:  string,
     submitterEmail: string,
     expenseDetails: string,
     rejectedByName: string,
-    reason?: string
+    reason?:        string
   ): Observable<EmailResponse> {
     return this.sendNotificationEmail({
-      name: submitterName,
+      name:          submitterName,
       receiverEmail: submitterEmail,
-      subject: '❌ Your Expense Has Been Rejected',
+      subject:       '❌ Your Expense Has Been Rejected',
       body: `
-        <p>Dear ${submitterName},</p>
-        <p>Unfortunately, your expense has been <strong style="color:#dc2626;">rejected</strong>.</p>
-        <table style="border-collapse:collapse;width:100%;max-width:480px;">
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#fef2f2;">Expense</td>
-              <td style="padding:6px 12px;">${expenseDetails}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#fef2f2;">Rejected By</td>
-              <td style="padding:6px 12px;">${rejectedByName}</td></tr>
-          <tr><td style="padding:6px 12px;font-weight:bold;background:#fef2f2;">Date</td>
-              <td style="padding:6px 12px;">${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td></tr>
-          ${reason
-            ? `<tr><td style="padding:6px 12px;font-weight:bold;background:#fef2f2;">Reason</td>
-                   <td style="padding:6px 12px;">${reason}</td></tr>`
-            : ''}
+        <p style="margin:0 0 12px 0;">Dear ${submitterName},</p>
+        <p style="margin:0 0 16px 0;">
+          Unfortunately, your expense has been
+          <strong style="color:#dc2626;">rejected</strong>.
+        </p>
+        <table style="border-collapse:collapse;width:100%;max-width:480px;margin-bottom:16px;">
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#fef2f2;border:1px solid #fecaca;">Expense</td>
+            <td style="padding:8px 14px;border:1px solid #fecaca;">${expenseDetails}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#fef2f2;border:1px solid #fecaca;">Rejected By</td>
+            <td style="padding:8px 14px;border:1px solid #fecaca;">${rejectedByName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#fef2f2;border:1px solid #fecaca;">Date</td>
+            <td style="padding:8px 14px;border:1px solid #fecaca;">
+              ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </td>
+          </tr>
+          ${reason ? `
+          <tr>
+            <td style="padding:8px 14px;font-weight:600;background:#fef2f2;border:1px solid #fecaca;">Reason</td>
+            <td style="padding:8px 14px;border:1px solid #fecaca;">${reason}</td>
+          </tr>` : ''}
         </table>
-        <br/><p>Please review the reason above and resubmit if applicable, or contact your manager for clarification.</p>
-        <br/><p style="color:#666;">Best regards,<br/>Optimax Finance Team</p>`
+        <p style="margin:0 0 12px 0;">
+          Please review the reason above and resubmit if applicable,
+          or contact your manager for clarification.
+        </p>
+        <p style="margin:0;color:#64748b;font-size:13px;">
+          Best regards,<br/>Optimax Finance Team
+        </p>
+      `
     });
   }
 
-
   sendExpenseNotification(
-    name: string,
-    email: string,
+    name:           string,
+    email:          string,
     expenseDetails: string,
-    status: 'APPROVED' | 'REJECTED',
-    reason?: string
+    status:         'APPROVED' | 'REJECTED',
+    reason?:        string
   ): Observable<EmailResponse> {
     if (status === 'APPROVED') {
       return this.sendExpenseApprovedNotification(name, email, expenseDetails, 'Admin');
