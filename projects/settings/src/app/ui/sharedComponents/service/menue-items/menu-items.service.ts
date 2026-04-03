@@ -136,7 +136,7 @@ export class MenuItemsService {
         // },
          {
           label: 'Vendor PR List',
-          code: 'Vendor_PR',
+          code: 'Vendor_PROL',
           route: this.navigationLink.getLink('VPLLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
@@ -144,7 +144,7 @@ export class MenuItemsService {
         },
          {
           label: 'Vendor Quote List',
-          code: 'Vendor_QL',
+          code: 'Vendor_QUOL',
           route: this.navigationLink.getLink('VQLLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
