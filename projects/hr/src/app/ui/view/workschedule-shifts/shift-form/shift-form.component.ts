@@ -29,11 +29,12 @@ export class ShiftFormComponent implements OnInit {
 
     this.shiftForm = this.fb.group({
       name: ['', Validators.required],
+      type: ['morning', Validators.required],
       department: [''],
       startTime: ['', Validators.required],
       endTime: ['', Validators.required],
       breakTime: [0],
-      description: [''],
+      description: ['', Validators.required],
       color: ['#3da86a']
     });
 

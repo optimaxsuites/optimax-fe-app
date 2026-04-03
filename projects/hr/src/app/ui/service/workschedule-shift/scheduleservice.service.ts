@@ -12,7 +12,50 @@ export class ScheduleserviceService {
   private schedulesSubject = new BehaviorSubject<ScheduleDTO[]>([]);
   schedules$ = this.schedulesSubject.asObservable();
 
-  constructor(private shiftserviceService: ShiftserviceService) { }
+  constructor(private shiftserviceService: ShiftserviceService) { 
+    const mockSchedules: ScheduleDTO[] = [
+    {
+      id: 'sch-1',
+      employeeId: 'emp-1',
+      shiftId: 'shift-1',
+      date: '2026-04-03',
+      project: 'CivicLens Dashboard'
+    },
+    {
+      id: 'sch-2',
+      employeeId: 'emp-2',
+      shiftId: 'shift-1',
+      date: '2026-04-03',
+      project: 'CivicLens Dashboard'
+    },
+    {
+      id: 'sch-3',
+      employeeId: 'emp-3',
+      shiftId: 'shift-2',
+      date: '2026-04-03',
+      project: 'ERP Revamp'
+    },
+
+    // extra days (for pagination testing)
+    {
+      id: 'sch-4',
+      employeeId: 'emp-1',
+      shiftId: 'shift-2',
+      date: '2026-04-04',
+      project: 'ERP Revamp'
+    },
+    {
+      id: 'sch-5',
+      employeeId: 'emp-2',
+      shiftId: 'shift-3',
+      date: '2026-04-05',
+      project: 'Mobile App'
+    }
+  ];
+
+  this.schedulesSubject.next(mockSchedules);
+    
+  }
 
   /* GET ALL SCHEDULES */
   getSchedules(): Observable<ScheduleDTO[]> {

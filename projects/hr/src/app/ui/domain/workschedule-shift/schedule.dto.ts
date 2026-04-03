@@ -4,4 +4,7 @@ export interface ScheduleDTO {
   shiftId: string;
   date: string; // ISO date format
   status?: 'scheduled' | 'completed' | 'cancelled';
+  project?: string;
+  location?: string;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'custom';
 }
