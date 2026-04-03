@@ -1,0 +1,24 @@
+/* optimax-ai.component.scss
+   Keyframes only — all layout is Tailwind.
+   Add to index.html:
+   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+*/
+
+@keyframes oai-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+
+@keyframes oai-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-5px); }
+}
+
+@keyframes oai-glow-ring {
+  0%, 100% { box-shadow: 0 2px 16px rgba(46, 98, 118, 0.10); }
+  50%       { box-shadow: 0 2px 28px rgba(46, 98, 118, 0.22); }
+}
+
+.oai-pulse { animation: oai-pulse 2s ease-in-out infinite; }
+.oai-dot   { animation: oai-bounce 1.3s ease-in-out infinite; }
+.oai-glow  { animation: oai-glow-ring 3s ease-in-out infinite; }
