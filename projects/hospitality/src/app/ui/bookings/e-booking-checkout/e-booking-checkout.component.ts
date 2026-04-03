@@ -244,7 +244,7 @@ export class EBookingCheckoutComponent implements OnInit {
   finishBooking(): void {
     this.showSuccessModal = false;
     // Navigate home using the restored flat absolute path
-    this.router.navigate(['e-bookings/home', this.uuid]);
+    this.router.navigate(['/user/hospitality/e-bookings/home', this.uuid]);
   }
 
   goBack(): void {
