@@ -103,37 +103,37 @@ export class MenuItemsService {
           description: 'Manage vendor profiles, contracts, and supplier relationships.'
         },
         {
-          label: 'Vendor',
+          label: 'Vendor Dashboard',
           code: 'PR_VENDOR',
           route: this.navigationLink.getLink('vendorLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'View vendor details and manage vendor relationships.'
         },
-        {
-          label: 'RFQs',
-          code: 'PR_RFQ',
-          route: this.navigationLink.getLink('rfqLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
-          description: 'Manage RFQs and vendor responses.'
-        },
-        {
-          label: 'Quotations',
-          code: 'PR_QUOTE',
-          route: this.navigationLink.getLink('quotationLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage vendor quotations.'
-        },
-        {
-          label: 'LPO',
-          code: 'PR_LPO',
-          route: this.navigationLink.getLink('lpoLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage LPOs.'
-        },
+        // {
+        //   label: 'RFQs',
+        //   code: 'PR_RFQ',
+        //   route: this.navigationLink.getLink('rfqLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'fas fa-file-alt',
+        //   description: 'Manage RFQs and vendor responses.'
+        // },
+        // {
+        //   label: 'Quotations',
+        //   code: 'PR_QUOTE',
+        //   route: this.navigationLink.getLink('quotationLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'pi pi-file',
+        //   description: 'View and manage vendor quotations.'
+        // },
+        // {
+        //   label: 'LPO',
+        //   code: 'PR_LPO',
+        //   route: this.navigationLink.getLink('lpoLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'pi pi-file',
+        //   description: 'View and manage LPOs.'
+        // },
          {
           label: 'Vendor PR List',
           code: 'Vendor_PR',
