@@ -4,6 +4,16 @@ import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
 type ApprovalStrategy = 'ANY' | 'ALL' | 'QUORUM' | 'SEQUENTIAL';
+interface StageForm {
+  name: string;
+  orderIndex: number;
+  minApprovals: number;
+  rejectionPolicy: string,
+  approvalType: 'ANY' | 'ALL' | 'QUORUM';
+  isOptional: boolean
+  allowSelfApproval: boolean;
+  assignment: any[]; // AssignmentDTO[] 
+}
 
 @Component({
   selector: 'app-approval',
@@ -11,6 +21,7 @@ type ApprovalStrategy = 'ANY' | 'ALL' | 'QUORUM' | 'SEQUENTIAL';
   styleUrl: './approval.component.scss'
 })
 export class ApprovalComponent implements OnInit {
+
   // This main form will hold all submodules as dynamic groups
   approvalForm: FormGroup;
   modules: any[] = [];
@@ -51,23 +62,23 @@ export class ApprovalComponent implements OnInit {
      })
   }
 
-  buildApprovalForm() {
-    const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
+  // buildApprovalForm() {
+  //   const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
 
-    this.modules.forEach(module => {
-      module.appRegister.forEach((app: any) => {
-        // Create a unique key for each submodule (e.g., 'Inventory_Items')
-        const controlName = `${module.title}_${app.appName}`;
+  //   this.modules.forEach(module => {
+  //     module.appRegister.forEach((app: any) => {
+  //       // Create a unique key for each submodule (e.g., 'Inventory_Items')
+  //       const controlName = `${module.title}_${app.appName}`;
         
-        submodulesGroup.addControl(controlName, this.fb.group({
-          isEnabled: [false],
-          strategy: ['ANY' as ApprovalStrategy, Validators.required], 
-          quorumCount: [1, [Validators.min(1)]], // Only used if strategy is QUORUM
-          approvers: this.fb.array([]) 
-        }));
-      });
-    });
-  }
+  //       submodulesGroup.addControl(controlName, this.fb.group({
+  //         isEnabled: [false],
+  //         strategy: ['ANY' as ApprovalStrategy, Validators.required], 
+  //         quorumCount: [1, [Validators.min(1)]], // Only used if strategy is QUORUM
+  //         approvers: this.fb.array([]) 
+  //       }));
+  //     });
+  //   });
+  // }
 
   // Helper to get the FormArray for approvers
   getApprovers(moduleTitle: string, appName: string): FormArray {
@@ -82,6 +93,83 @@ export class ApprovalComponent implements OnInit {
   removeApprover(moduleTitle: string, appName: string, index: number) {
     this.getApprovers(moduleTitle, appName).removeAt(index);
   }
+
+buildApprovalForm() {
+  const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
+
+  this.modules.forEach(module => {
+    module.appRegister.forEach((app: any) => {
+      const controlName = `${module.title}_${app.appName}`;
+      
+      // Structure based on ApprovalDTO 
+      submodulesGroup.addControl(controlName, this.fb.group({
+        isEnabled: [false], // UI-only toggle
+        isActive: [true],   // Backend boolean 
+        submoduleId: [app.id], // Submodule Id 
+        version: [1],       // Versioning 
+        stages: this.fb.array([]) // StageDTO[] [cite: 37, 39]
+      }));
+    });
+  });
+  
+  // Trigger change detection once the form is built
+  this.cdr.detectChanges();
+}
+
+// Helper to get Stages FormArray
+getStages(moduleTitle: string, appName: string): FormArray {
+  const controlName = `${moduleTitle}_${appName}`;
+  return this.approvalForm.get(`submodules.${controlName}.stages`) as FormArray;
+}
+
+addStage(moduleTitle: string, appName: string) {
+  const stages = this.getStages(moduleTitle, appName);
+  stages.push(this.fb.group({
+    name: [`Stage ${stages.length + 1}`, Validators.required], // 
+    orderIndex: [stages.length + 1], // 
+    approvalType: ['ANY', Validators.required], // 
+    rejectionPolicy: ['STOP', Validators.required],
+    isOptional: [false],
+    minApprovals: [1, [Validators.min(1)]], // 
+    allowSelfApproval: [false], // 
+    assignment: this.fb.array([]) // AssignmentDTO[] 
+  }));
+}
+
+getAssignments(moduleTitle: string, appName: string, stageIndex: number): FormArray {
+  return this.getStages(moduleTitle, appName).at(stageIndex).get('assignment') as FormArray;
+}
+
+addAssignment(moduleTitle: string, appName: string, stageIndex: number) {
+  const assignments = this.getAssignments(moduleTitle, appName, stageIndex);
+  
+  const assignmentGroup = this.fb.group({
+    userId: [null],
+    roleId: [null],
+    position: [assignments.length + 1] // Matches AssignmentDTO 'position'
+  });
+
+  // Watchers to ensure "OR" logic
+  const userCtrl = assignmentGroup.get('userId');
+  const roleCtrl = assignmentGroup.get('roleId');
+
+  userCtrl?.valueChanges.subscribe(val => {
+    if (val) roleCtrl?.setValue(null, { emitEvent: false });
+  });
+
+  roleCtrl?.valueChanges.subscribe(val => {
+    if (val) userCtrl?.setValue(null, { emitEvent: false });
+  });
+
+  assignments.push(assignmentGroup);
+}
+removeStage(moduleTitle: string, appName: string, stageIndex: number) {
+  this.getStages(moduleTitle, appName).removeAt(stageIndex);
+}
+
+removeAssignment(moduleTitle: string, appName: string, stageIndex: number, assignIndex: number) {
+  this.getAssignments(moduleTitle, appName, stageIndex).removeAt(assignIndex);
+}
 
   saveSettings(moduleTitle: string, appName: string) {
     const controlName = `${moduleTitle}_${appName}`;
