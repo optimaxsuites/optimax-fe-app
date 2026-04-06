@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, throwError, of } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
+import { ReceiptCacheService, ReceiptFileMetadata } from './receipt-cache.service';
 
 
 export enum ExpenseStatus {
@@ -176,7 +177,8 @@ export class ExpenseService {
 
   constructor(
     private http: HttpClient,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private receiptCache: ReceiptCacheService
   ) {}
 
 
@@ -401,11 +403,71 @@ export class ExpenseService {
   addExpense(expense: any, companyReceipt?: File, employeeReceipt?: File): Observable<Expense> {
     console.log('[ExpenseService] Creating expense:', JSON.stringify(expense, null, 2));
     const formData = this.buildFormData(expense, companyReceipt, employeeReceipt);
+    
     return this.http
       .post<Expense>(this.expenseUrl, formData, { headers: this.getMultipartHeaders() })
       .pipe(
         tap((response) => {
           console.log('[ExpenseService] Expense created:', response);
+
+
+          console.log('[ExpenseService] API response receipt fields:', {
+            companyReceipt:  response.companyReceipt,
+            expenseReceipt:  response.expenseReceipt,
+            companyReceipts: response.companyReceipts,
+            expenseReceipts: response.expenseReceipts,
+          });
+
+          const companyReceiptMetadata: ReceiptFileMetadata[] = [];
+          const employeeReceiptMetadata: ReceiptFileMetadata[] = [];
+
+          // ── Company receipt ───────────────────────────────────────────────────
+          // Try single receipt first, then array form
+          const companyReceipt = response.companyReceipt
+            ?? response.companyReceipts?.[0];
+
+          if (companyReceipt?.mediaNo) {
+            console.log('[ExpenseService] ✅ Real company receipt mediaNo from API:', companyReceipt.mediaNo);
+            companyReceiptMetadata.push({
+              fileName:   companyReceipt.name || 'receipt',
+              mediaNo:    companyReceipt.mediaNo,   // ← backend-issued ID, NOT a local name
+              size:       0,
+              type:       'image/*',
+              uploadedAt: Date.now(),
+            });
+          } else {
+            console.warn(
+              '[ExpenseService] ⚠️  Backend did not return companyReceipt.mediaNo in the create response.' +
+              ' Receipt will not be cached and may not display after approval.' +
+              ' Check if your backend returns the full receipt object in the POST /expenses response.'
+            );
+          }
+
+          // ── Employee receipt ──────────────────────────────────────────────────
+          const employeeReceipt = response.expenseReceipt
+            ?? response.expenseReceipts?.[0];
+
+          if (employeeReceipt?.mediaNo) {
+            console.log('[ExpenseService] ✅ Real employee receipt mediaNo from API:', employeeReceipt.mediaNo);
+            employeeReceiptMetadata.push({
+              fileName:   employeeReceipt.name || 'receipt',
+              mediaNo:    employeeReceipt.mediaNo,
+              size:       0,
+              type:       'image/*',
+              uploadedAt: Date.now(),
+            });
+          }
+
+          // Only call setReceiptInfo if we have at least one real mediaNo
+          if (response.id && (companyReceiptMetadata.length > 0 || employeeReceiptMetadata.length > 0)) {
+            this.receiptCache.setReceiptInfo(response.id, companyReceiptMetadata, employeeReceiptMetadata);
+          } else if (response.id) {
+            console.warn(
+              `[ExpenseService] ⚠️  No valid receipt metadata received from backend for expense ${response.id}.` +
+              ' Cache will not be populated. Receipts may not persist across approval.'
+            );
+          }
+
           const current = this.expensesSubject.getValue();
           this.expensesSubject.next([response, ...current]);
           this.expensesUpdatedSubject.next();
@@ -448,34 +510,11 @@ export class ExpenseService {
       );
   }
 
-  // ────────────────────
-  // FIX (Bug #5 + Bug #2): approveExpense
-  //
-  // WHAT WAS WRONG:
-  //   1. The payload was being passed to buildFormData() which creates a POST
-  //      to the create endpoint. This means the backend was creating a NEW
-  //      expense record instead of updating the existing one, explaining why
-  //      "approved" expenses disappeared (they were new records with a new ID).
-  //
-  //   2. The status was being set to ExpenseStatus.APPROVED in the payload,
-  //      but because the endpoint being called is the CREATE endpoint (POST /expenses),
-  //      the backend may have stored it as PENDING (default) or created a duplicate.
-  //
-  //   3. Receipt fields (companyReceipt, expenseReceipt) were NOT preserved
-  //      in the payload sent to the backend, causing them to be null after approval.
-  //
-  // WHAT CHANGED:
-  //   - Added explicit `id` field to the payload so the backend treats it as an update.
-  //   - Status is explicitly forced to ExpenseStatus.APPROVED.
-  //   - companyReceipt and expenseReceipt media objects are passed through in the
-  //     payload so the backend preserves them.
-  //   - Approval metadata (approvedBy, approvedAt) is included.
-  //   - Added console logging to clearly track what is being sent.
- 
+  
   approveExpense(expense: Expense): Observable<Expense> {
     const currentUserId = this.resolveCurrentUserId();
     console.log('[ExpenseService] approveExpense id:', expense.id, '| admin (approvedBy):', currentUserId);
-
+  
     return this.getExpenseById(expense.id).pipe(
       catchError(() => {
         console.warn('[ExpenseService] getExpenseById failed in approve — using list-level object');
@@ -486,11 +525,7 @@ export class ExpenseService {
           this.resolveExpenseById(full) ??
           this.resolveExpenseById(expense) ??
           currentUserId;
-
-        if (originalSubmitterId === null) {
-          console.warn('[ExpenseService] expenseBy is null — approval will proceed without submitter id.');
-        }
-
+  
         const payload: any = {
           id:                 full.id,
           name:               full.name,
@@ -499,7 +534,7 @@ export class ExpenseService {
           quantity:           full.quantity,
           currency:           full.currency,
           amount:             full.amount,
-          status:             ExpenseStatus.APPROVED,
+          status:             ExpenseStatus.APPROVED,  // ← Must be APPROVED
           paidBy:             full.paidBy,
           receiptReference:   full.receiptReference || '',
           merchantId:         full.merchantId ?? full.merchant?.id,
@@ -509,30 +544,32 @@ export class ExpenseService {
           expenseBy:          originalSubmitterId,
           approvedBy:         currentUserId,
           approvedAt:         new Date().toISOString(),
-          companyReceipt:    full.companyReceipt ?? full.companyReceipts?.[0] ?? null,
-          expenseReceipt:    full.expenseReceipt ?? full.expenseReceipts?.[0] ?? null,
-          companyReceipts:   full.companyReceipts ?? (full.companyReceipt ? [full.companyReceipt] : []),
-          expenseReceipts:   full.expenseReceipts ?? (full.expenseReceipt ? [full.expenseReceipt] : []),
+          // DON'T include receipts in the approval POST payload
+          // The backend will preserve them automatically
         };
-
+  
+        console.log('[ExpenseService] Approval payload:', JSON.stringify(payload, null, 2));
+  
         return this.http.post<Expense>(
           this.expenseUrl,
           this.buildFormData(payload),
           { headers: this.getMultipartHeaders() }
         ).pipe(
           switchMap((approvedExpense: Expense) => {
+            // ✨ FIX: The approval POST response SHOULD include receipt data
+            console.log('[ExpenseService] Approval POST response receipts:', {
+              companyReceipt: approvedExpense.companyReceipt,
+              expenseReceipt: approvedExpense.expenseReceipt,
+              companyReceipts: approvedExpense.companyReceipts,
+              expenseReceipts: approvedExpense.expenseReceipts,
+            });
+  
+            // Re-fetch to get the confirmed approval status
             return this.getExpenseById(approvedExpense.id || full.id).pipe(
               catchError(() => {
-                const merged: Expense = {
-                  ...full,
-                  ...approvedExpense,
-                  status: ExpenseStatus.APPROVED,
-                  companyReceipt: approvedExpense.companyReceipt ?? full.companyReceipt,
-                  expenseReceipt: approvedExpense.expenseReceipt ?? full.expenseReceipt,
-                  companyReceipts: approvedExpense.companyReceipts ?? full.companyReceipts ?? (approvedExpense.companyReceipt ? [approvedExpense.companyReceipt] : full.companyReceipt ? [full.companyReceipt] : []),
-                  expenseReceipts: approvedExpense.expenseReceipts ?? full.expenseReceipts ?? (approvedExpense.expenseReceipt ? [approvedExpense.expenseReceipt] : full.expenseReceipt ? [full.expenseReceipt] : []),
-                };
-                return of(merged);
+                // If fetch fails, use the POST response which already has receipts
+                console.warn('[ExpenseService] Re-fetch failed, using POST response');
+                return of(approvedExpense);
               })
             );
           })
@@ -546,8 +583,36 @@ export class ExpenseService {
           companyReceipts: response.companyReceipts,
           expenseReceipts: response.expenseReceipts,
         });
-
-
+  
+        // ✨ FIX: If receipts are missing from API response, check cache
+        if (!response.companyReceipt && !response.companyReceipts) {
+          const cached = this.receiptCache.getReceiptInfo(response.id);
+          if (cached?.companyReceipts?.length) {
+            console.log('[ExpenseService] Using cached company receipts (API returned none)');
+            response.companyReceipts = cached.companyReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            response.companyReceipt = response.companyReceipts[0];
+          }
+        }
+  
+        if (!response.expenseReceipt && !response.expenseReceipts) {
+          const cached = this.receiptCache.getReceiptInfo(response.id);
+          if (cached?.employeeReceipts?.length) {
+            console.log('[ExpenseService] Using cached employee receipts (API returned none)');
+            response.expenseReceipts = cached.employeeReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            response.expenseReceipt = response.expenseReceipts[0];
+          }
+        }
+  
         const current = this.expensesSubject.getValue();
         const idx = current.findIndex(e => e.id === response.id);
         if (idx !== -1) {
@@ -555,7 +620,7 @@ export class ExpenseService {
           updated[idx] = response;
           this.expensesSubject.next(updated);
         }
-
+  
         this.expensesUpdatedSubject.next();
         this.messageService.add({ severity: 'success', summary: 'Approved', detail: 'Expense approved successfully!' });
       }),
@@ -574,7 +639,7 @@ export class ExpenseService {
   rejectExpense(expense: Expense, reason?: string): Observable<Expense> {
     const currentUserId = this.resolveCurrentUserId();
     console.log('[ExpenseService] rejectExpense id:', expense.id, '| admin (rejectedBy):', currentUserId);
-
+  
     return this.getExpenseById(expense.id).pipe(
       catchError(() => {
         console.warn('[ExpenseService] getExpenseById failed in reject — using list-level object');
@@ -585,7 +650,7 @@ export class ExpenseService {
           this.resolveExpenseById(full) ??
           this.resolveExpenseById(expense) ??
           currentUserId;
-
+  
         const payload: any = {
           id:                 full.id,
           name:               full.name,
@@ -594,7 +659,7 @@ export class ExpenseService {
           quantity:           full.quantity,
           currency:           full.currency,
           amount:             full.amount,
-          status:             ExpenseStatus.REJECTED,
+          status:             ExpenseStatus.REJECTED,  // ← Must be REJECTED
           paidBy:             full.paidBy,
           receiptReference:   full.receiptReference || '',
           merchantId:         full.merchantId ?? full.merchant?.id,
@@ -605,34 +670,29 @@ export class ExpenseService {
           expenseBy:          originalSubmitterId,
           rejectedBy:         currentUserId,
           rejectedAt:         new Date().toISOString(),
-          companyReceipt:    full.companyReceipt ?? full.companyReceipts?.[0] ?? null,
-          expenseReceipt:    full.expenseReceipt ?? full.expenseReceipts?.[0] ?? null,
-          companyReceipts:   full.companyReceipts ?? (full.companyReceipt ? [full.companyReceipt] : []),
-          expenseReceipts:   full.expenseReceipts ?? (full.expenseReceipt ? [full.expenseReceipt] : []),
+          // DON'T include receipts in the rejection POST payload
+          // The backend will preserve them automatically
         };
-
+  
         console.log('[ExpenseService] Rejection payload:', JSON.stringify(payload, null, 2));
-
+  
         return this.http.post<Expense>(
           this.expenseUrl,
           this.buildFormData(payload),
           { headers: this.getMultipartHeaders() }
         ).pipe(
-          // FIX: Re-fetch after rejection to preserve receipt URLs
           switchMap((rejectedExpense: Expense) => {
+            // ✨ FIX: The rejection POST response SHOULD include receipt data
+            console.log('[ExpenseService] Rejection POST response receipts:', {
+              companyReceipt: rejectedExpense.companyReceipt,
+              expenseReceipt: rejectedExpense.expenseReceipt,
+            });
+  
+            // Re-fetch to get the confirmed rejection status
             return this.getExpenseById(rejectedExpense.id || full.id).pipe(
               catchError(() => {
-                const merged: Expense = {
-                  ...full,
-                  ...rejectedExpense,
-                  status: ExpenseStatus.REJECTED,
-                  rejectionReason: reason || 'No reason provided',
-                  companyReceipt: rejectedExpense.companyReceipt ?? full.companyReceipt,
-                  expenseReceipt: rejectedExpense.expenseReceipt ?? full.expenseReceipt,
-                  companyReceipts: rejectedExpense.companyReceipts ?? full.companyReceipts ?? (rejectedExpense.companyReceipt ? [rejectedExpense.companyReceipt] : full.companyReceipt ? [full.companyReceipt] : []),
-                  expenseReceipts: rejectedExpense.expenseReceipts ?? full.expenseReceipts ?? (rejectedExpense.expenseReceipt ? [rejectedExpense.expenseReceipt] : full.expenseReceipt ? [full.expenseReceipt] : []),
-                };
-                return of(merged);
+                console.warn('[ExpenseService] Re-fetch failed, using POST response');
+                return of(rejectedExpense);
               })
             );
           })
@@ -640,8 +700,40 @@ export class ExpenseService {
       }),
       tap((response) => {
         console.log('[ExpenseService] Expense rejected (final):', response);
-
-        // Update BehaviorSubject in-place
+        console.log('[ExpenseService] Receipt fields after rejection:', {
+          companyReceipt: response.companyReceipt,
+          expenseReceipt: response.expenseReceipt,
+        });
+  
+        // ✨ FIX: If receipts are missing from API response, check cache
+        if (!response.companyReceipt && !response.companyReceipts) {
+          const cached = this.receiptCache.getReceiptInfo(response.id);
+          if (cached?.companyReceipts?.length) {
+            console.log('[ExpenseService] Using cached company receipts (API returned none)');
+            response.companyReceipts = cached.companyReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            response.companyReceipt = response.companyReceipts[0];
+          }
+        }
+  
+        if (!response.expenseReceipt && !response.expenseReceipts) {
+          const cached = this.receiptCache.getReceiptInfo(response.id);
+          if (cached?.employeeReceipts?.length) {
+            console.log('[ExpenseService] Using cached employee receipts (API returned none)');
+            response.expenseReceipts = cached.employeeReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            response.expenseReceipt = response.expenseReceipts[0];
+          }
+        }
+  
         const current = this.expensesSubject.getValue();
         const idx = current.findIndex(e => e.id === response.id);
         if (idx !== -1) {
@@ -649,7 +741,7 @@ export class ExpenseService {
           updated[idx] = response;
           this.expensesSubject.next(updated);
         }
-
+  
         this.expensesUpdatedSubject.next();
         this.messageService.add({ severity: 'success', summary: 'Rejected', detail: 'Expense rejected successfully!' });
       }),

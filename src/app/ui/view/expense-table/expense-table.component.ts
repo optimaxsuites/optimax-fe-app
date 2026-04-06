@@ -30,9 +30,11 @@ import {
   MerchantDTO,
   CategoryDTO,
   TaxDTO,
+  UserDTO,
   PaidBy,
   Currency
 } from '../../service/expense.service';
+import { ReceiptCacheService } from '../../service/receipt-cache.service';
 
 import { EmailService } from '../../sharedComponent/service/email.service';
 import { SideModalComponent } from '../../sharedComponent/view/side-modal/side-modal.component';
@@ -62,11 +64,14 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   selectedExpense:  Expense | null = null;
   isLoading = true;
 
-  // Pagination — pageSize=10 is the default; p-table handles pages internally
-  currentPage    = 0;
-  pageSize       = 10;
-  totalElements  = 0;
-  totalPages     = 0;
+  // All expenses from API (unfiltered by ownership) — used for "All Employees" view
+  private allExpensesFromApi: Expense[] = [];
+
+  // Pagination
+  currentPage   = 0;
+  pageSize      = 10;
+  totalElements = 0;
+  totalPages    = 0;
 
   // Search
   searchTerm = '';
@@ -82,8 +87,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   isEditMode       = false;
 
   // ─── Auth / role state ────────────────────────────────────────────────────
-  canViewAll     = false;
+  canViewAll    = false;
   currentUserId: number | null = null;
+
+
+  viewAllUsers = false;
 
   showImportModal = false;
 
@@ -97,29 +105,34 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   companyReceiptUrls:  string[] = [];
   employeeReceiptUrls: string[] = [];
+  companyReceiptIndex   = 0;
+  employeeReceiptIndex  = 0;
   companyReceiptLoading  = false;
   employeeReceiptLoading = false;
 
   // Single-URL aliases kept for template backward-compat
-  get companyReceiptUrl():  string | null { return this.companyReceiptUrls[0]  ?? null; }
-  get employeeReceiptUrl(): string | null { return this.employeeReceiptUrls[0] ?? null; }
+  get companyReceiptUrl():  string | null { return this.companyReceiptUrls[this.companyReceiptIndex]  ?? null; }
+  get employeeReceiptUrl(): string | null { return this.employeeReceiptUrls[this.employeeReceiptIndex] ?? null; }
 
   // ─── Forms ────────────────────────────────────────────────────────────────
   expenseForm!: FormGroup;
 
   // ─── Filters ──────────────────────────────────────────────────────────────
   dropdownOpen   = { category: false, status: false, dateRange: false };
-  selectedCategory: string | null           = null;
-  selectedStatus:   ExpenseStatus | 'ALL'   = 'ALL';
-  dateRangeType:    string | null           = null;
-  dateFrom:         string | null           = null;
-  dateTo:           string | null           = null;
+  selectedCategory: string | null          = null;
+  selectedStatus:   ExpenseStatus | 'ALL'  = 'ALL';
+  dateRangeType:    string | null          = null;
+  dateFrom:         string | null          = null;
+  dateTo:           string | null          = null;
 
   // ─── Lookup data ──────────────────────────────────────────────────────────
   categoryNames: string[]      = [];
   categories:    CategoryDTO[] = [];
   merchants:     MerchantDTO[] = [];
   taxes:         TaxDTO[]      = [];
+
+  // ─── User cache ────────────────────────────────────────────────────────────
+  private userCache: Map<number, UserDTO> = new Map();
 
   ExpenseStatus = ExpenseStatus;
   PaidBy        = PaidBy;
@@ -153,6 +166,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   constructor(
     private router:              Router,
     private expenseService:      ExpenseService,
+    private receiptCache:        ReceiptCacheService,
     private confirmationService: ConfirmationService,
     private messageService:      MessageService,
     private cdr:                 ChangeDetectorRef,
@@ -194,8 +208,29 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   private _revokeAllReceiptUrls(): void {
     [...this.companyReceiptUrls, ...this.employeeReceiptUrls]
       .filter(Boolean).forEach(u => URL.revokeObjectURL(u));
-    this.companyReceiptUrls  = [];
-    this.employeeReceiptUrls = [];
+    this.companyReceiptUrls   = [];
+    this.employeeReceiptUrls  = [];
+    this.companyReceiptIndex  = 0;
+    this.employeeReceiptIndex = 0;
+  }
+
+  // ─── Receipt navigation ────────────────────────────────────────────────────
+  nextCompanyReceipt():  void { if (this.companyReceiptIndex  < this.companyReceiptUrls.length  - 1) this.companyReceiptIndex++; }
+  prevCompanyReceipt():  void { if (this.companyReceiptIndex  > 0) this.companyReceiptIndex--; }
+  nextEmployeeReceipt(): void { if (this.employeeReceiptIndex < this.employeeReceiptUrls.length - 1) this.employeeReceiptIndex++; }
+  prevEmployeeReceipt(): void { if (this.employeeReceiptIndex > 0) this.employeeReceiptIndex--; }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // toggleViewAll
+  //
+  // Flips between "My Expenses" and "All Employees" views.
+  // When switching to "All Employees", loads the global endpoint and shows everything.
+  // When switching to "My Expenses", loads scoped endpoint and filters system entries.
+  // This is now available to everyone (no role gating in the toggle behavior).
+  // ─────────────────────────────────────────────────────────────────────────
+  toggleViewAll(): void {
+    this.viewAllUsers = !this.viewAllUsers;
+    this.loadExpenses();
   }
 
   // ─── Role resolution ──────────────────────────────────────────────────────
@@ -233,7 +268,6 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         .filter(Boolean);
 
       const allRoles = [flatRole, ...primaryRoles, ...regRoles].filter(Boolean);
-
       const adminRoleSet = new Set([
         'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_HR', 'ROLE_FINANCE', 'ADMIN', 'MANAGER'
       ]);
@@ -263,11 +297,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // isSystemEntry
-  //
-  // Returns true when an expense has NO human submitter — i.e. expenseBy is
-  // null, undefined, 0, or an empty object. These are admin/system-created
-  // records and should only be visible to admins (canViewAll = true).
+  // isSystemEntry — true when expenseBy is null/empty (system-created entries)
   // ─────────────────────────────────────────────────────────────────────────
   private isSystemEntry(e: Expense): boolean {
     const eb = e.expenseBy;
@@ -283,75 +313,162 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // loadExpenses  ← THE KEY FIX
+  // getExpenseCreatorName — resolves creator's name from expense object
   //
-  // WHAT WAS WRONG IN ALL PREVIOUS VERSIONS:
-  //   Every previous attempt tried to client-side filter by matching
-  //   currentUserId against expenseBy.id or expenseBy.userId.
-  //   This always broke because:
-  //
-  //     a) The backend UserDTO has TWO id fields (id = profile PK,
-  //        userId = auth PK). The logged-in user's currentUserId comes
-  //        from the auth token and matches 'userid' in sessionStorage,
-  //        which maps to expenseBy.userId — BUT some expenses are tagged
-  //        with only expenseBy.id (the profile PK), and these differ.
-  //
-  //     b) When a new expense is created, the backend returns it with
-  //        the expenseBy populated using whichever id it stored. If that
-  //        id doesn't match currentUserId exactly, the expense gets
-  //        excluded from the filtered list, making it look "missing".
-  //
-  // THE CORRECT APPROACH:
-  //   The /expenses endpoint already scopes results by the authenticated
-  //   user's tenant and identity via the Bearer token + X-Tenant-ID header.
-  //   So for a REGULAR USER, every expense the API returns IS their expense
-  //   — the backend already did the filtering. We only need to:
-  //
-  //     1. Show everything the API returned (regular user)
-  //     2. Exclude system entries (expenseBy = null) from regular users
-  //        so they don't see admin-created entries mixed in
-  //
-  //   For ADMINS (canViewAll = true): show everything without any filter.
-  //
-  // WHY THIS IS SAFE:
-  //   The API endpoint requires a valid Bearer token and X-Tenant-ID.
-  //   Without those, it returns 401. So the API already enforces ownership.
-  //   Our client-side filter's only job is to hide system-created entries
-  //   from regular users.
+  // The backend is inconsistent: some expenses have expenseBy populated with
+  // full user objects, others have expenseBy: null. For null cases, we show
+  // "System" since these are likely imported or system-generated expenses.
   // ─────────────────────────────────────────────────────────────────────────
+  getExpenseCreatorName(expense: Expense): string {
+    // If expenseBy is null, this is likely a system-generated or imported expense
+    if (expense.expenseBy === null) {
+      console.log(`[getExpenseCreatorName] expense.id=${expense.id} has null expenseBy - showing as System`);
+      return 'System';
+    }
+
+    // Check if expenseBy is a full UserDTO object
+    if (expense.expenseBy && typeof expense.expenseBy === 'object') {
+      const eb = expense.expenseBy as any;
+      
+      if (typeof eb.fullname === 'string' && eb.fullname.trim()) {
+        return eb.fullname;
+      }
+      if (typeof eb.name === 'string' && eb.name.trim()) {
+        return eb.name;
+      }
+      if (typeof eb.username === 'string' && eb.username.trim()) {
+        return eb.username;
+      }
+    }
+
+    // Fallback: expenseBy still a number (shouldn't happen after enrichment, but just in case)
+    if (typeof expense.expenseBy === 'number' && expense.expenseBy > 0) {
+      return `User #${expense.expenseBy}`;
+    }
+
+    // Check alternative fields for creator info (though from logs, these are undefined)
+    const alternatives = ['createdBy', 'submittedBy', 'creator', 'author'];
+    for (const field of alternatives) {
+      const value = (expense as any)[field];
+      if (value) {
+        if (typeof value === 'string' && value.trim()) {
+          return value;
+        }
+        if (typeof value === 'object') {
+          const name = value.fullname || value.name || value.username;
+          if (typeof name === 'string' && name.trim()) return name;
+        }
+      }
+    }
+
+    // Ultimate fallback
+    return 'Unknown';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // enrichExpensesWithUserData — Convert numeric user IDs to placeholder UserDTOs
+  //
+  // If expenseBy is just a number (user ID), this creates a user placeholder
+  // object so the template can display something meaningful instead of just "Unknown".
+  // ─────────────────────────────────────────────────────────────────────────
+  private enrichExpensesWithUserData(expenses: Expense[]): void {
+    const needsEnrichment = expenses.filter(e => {
+      if (!e.expenseBy) return false;
+      if (typeof e.expenseBy === 'number') return true;
+      if (typeof e.expenseBy === 'string') {
+        const num = Number(e.expenseBy);
+        return !isNaN(num) && num > 0;
+      }
+      return false;
+    });
+
+    if (!needsEnrichment.length) {
+      return;
+    }
+
+    // Collect unique user IDs and create placeholders
+    const processedIds = new Set<number>();
+    needsEnrichment.forEach(e => {
+      const userId = typeof e.expenseBy === 'number' ? e.expenseBy : Number(e.expenseBy as string);
+      if (!isNaN(userId) && userId > 0 && !processedIds.has(userId)) {
+        processedIds.add(userId);
+        
+        // Create a placeholder UserDTO for this ID if not cached
+        if (!this.userCache.has(userId)) {
+          const placeholder: UserDTO = {
+            id: userId,
+            userId: userId,
+            fullname: `User #${userId}`,
+            username: `user_${userId}`,
+            email: '',
+            phoneNumber: '',
+            clientType: '',
+            gender: '',
+            accountId: '',
+            address: '',
+            city: '',
+            state: '',
+            country: ''
+          };
+          this.userCache.set(userId, placeholder);
+        }
+      }
+    });
+
+    // Apply cached placeholders to all expenses
+    expenses.forEach(e => {
+      if (typeof e.expenseBy === 'number' && this.userCache.has(e.expenseBy)) {
+        e.expenseBy = this.userCache.get(e.expenseBy);
+      } else if (typeof e.expenseBy === 'string') {
+        const userId = Number(e.expenseBy);
+        if (!isNaN(userId) && this.userCache.has(userId)) {
+          e.expenseBy = this.userCache.get(userId) || e.expenseBy;
+        }
+      }
+    });
+  }
+  private _applyOwnershipFilter(expenses: Expense[]): void {
+    let filtered: Expense[];
+
+    if (this.viewAllUsers) {
+      // All users mode: show everything from the requested endpoint
+      filtered = expenses;
+      console.log('[_applyOwnershipFilter] All Employees mode → showing all', filtered.length);
+    } else {
+      // My Expenses — strip system entries only; keep everything else
+      filtered = expenses.filter(e => !this.isSystemEntry(e));
+      console.log('[_applyOwnershipFilter] My Expenses mode → showing', filtered.length,
+        '(excluded', expenses.length - filtered.length, 'system entries)');
+    }
+
+    // FIX: Enrich expenses with full user data if expenseBy is just an ID
+    this.enrichExpensesWithUserData(filtered);
+
+    this.expenses      = filtered.sort((a, b) => b.id - a.id);
+    this.totalElements = this.expenses.length;
+    this.totalPages    = Math.ceil(this.expenses.length / this.pageSize);
+    this.applyFilters();
+    this.cdr.detectChanges();
+  }
+
   loadExpenses(): void {
     this.isLoading = true;
 
-    this.expenseService.getExpenses()
+    const expenseLoader = this.viewAllUsers
+      ? this.expenseService.getAllExpenses()
+      : this.expenseService.getExpenses();
+
+    expenseLoader
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (expenses) => {
-          console.log('[loadExpenses] API returned', expenses.length, 'expenses | canViewAll:', this.canViewAll);
+          console.log('[loadExpenses] API returned', expenses.length,
+            '| viewAllUsers:', this.viewAllUsers, '| canViewAll:', this.canViewAll);
 
-          let filtered: Expense[];
+          // Cache the raw API result so toggleViewAll() can switch without re-fetching
+          this.allExpensesFromApi = expenses;
 
-          if (this.canViewAll) {
-            // ── ADMIN/MANAGER: show ALL expenses the API returned
-            filtered = expenses;
-            console.log('[loadExpenses] Admin mode → showing all', filtered.length);
-          } else {
-            // ── REGULAR USER: show everything the API returned EXCEPT
-            //    system entries (expenseBy = null). The API already scoped
-            //    results to this user — no further id-matching needed.
-            filtered = expenses.filter(e => !this.isSystemEntry(e));
-            console.log('[loadExpenses] User mode → showing', filtered.length,
-              '(excluded', expenses.length - filtered.length, 'system entries)');
-          }
-
-          // Sort newest first — preserve existing sort behaviour
-          this.expenses      = filtered.sort((a, b) => b.id - a.id);
-          this.totalElements = this.expenses.length;
-          this.totalPages    = Math.ceil(this.expenses.length / this.pageSize);
-
-          // applyFilters runs AFTER ownership filter so p-table paginator
-          // operates on the already-filtered set — pagination is unaffected
-          this.applyFilters();
-
+          this._applyOwnershipFilter(expenses);
           this.isLoading = false;
           this.cdr.detectChanges();
         },
@@ -395,6 +512,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   isActiveStatusFilter(status: ExpenseStatus | 'ALL'): boolean { return this.selectedStatus === status; }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // viewExpenseApproval
+  //
+  // FIX: Properly handles receipt URLs from API response and cache.
+  // Converts relative paths to absolute URLs for both single receipts
+  // and receipt arrays.
+  // ─────────────────────────────────────────────────────────────────────────
   viewExpenseApproval(expense: Expense): void {
     this._revokeAllReceiptUrls();
     this.companyReceiptLoading  = false;
@@ -406,12 +530,87 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       next: (full: Expense) => {
         full.merchant = full.merchant ?? ({ id: 0, name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' } as MerchantDTO);
         full.category = full.category ?? ({ id: 0, name: '' } as CategoryDTO);
+        
+        // ✨ FIX: Convert API receipts with relative paths to absolute URLs
+        if (full.companyReceipt?.url && !full.companyReceipt.url.startsWith('http')) {
+          console.log('[viewExpenseApproval] Converting company receipt URL:', full.companyReceipt.url);
+          full.companyReceipt.url = this.buildReceiptUrl(full.companyReceipt);
+        }
+        if (full.companyReceipts?.length) {
+          full.companyReceipts = full.companyReceipts.map(r => ({
+            ...r,
+            url: r.url.startsWith('http') ? r.url : this.buildReceiptUrl(r)
+          }));
+        }
+
+        if (full.expenseReceipt?.url && !full.expenseReceipt.url.startsWith('http')) {
+          console.log('[viewExpenseApproval] Converting employee receipt URL:', full.expenseReceipt.url);
+          full.expenseReceipt.url = this.buildReceiptUrl(full.expenseReceipt);
+        }
+        if (full.expenseReceipts?.length) {
+          full.expenseReceipts = full.expenseReceipts.map(r => ({
+            ...r,
+            url: r.url.startsWith('http') ? r.url : this.buildReceiptUrl(r)
+          }));
+        }
+
+        // Fallback to cache if no receipts from API
+        if (!full.companyReceipt && !full.companyReceipts?.length) {
+          const cached = this.receiptCache.getReceiptInfo(full.id);
+          if (cached?.companyReceipts?.length) {
+            console.log('[viewExpenseApproval] Using cached company receipts');
+            full.companyReceipts = cached.companyReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            full.companyReceipt = full.companyReceipts[0];
+          }
+        }
+
+        if (!full.expenseReceipt && !full.expenseReceipts?.length) {
+          const cached = this.receiptCache.getReceiptInfo(full.id);
+          if (cached?.employeeReceipts?.length) {
+            console.log('[viewExpenseApproval] Using cached employee receipts');
+            full.expenseReceipts = cached.employeeReceipts.map((meta) => ({
+              id: 0,
+              name: meta.fileName,
+              url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+              mediaNo: meta.mediaNo
+            }));
+            full.expenseReceipt = full.expenseReceipts[0];
+          }
+        }
+        
         this.selectedExpense = full;
         this.cdr.detectChanges();
         this._loadReceiptThumbnails(full);
       },
       error: (err) => {
         console.warn('[viewExpenseApproval] Detail fetch failed, using list data:', err);
+        
+        // ✨ FIX: Also check cache when fetch fails
+        const cachedReceipts = this.receiptCache.getReceiptInfo(expense.id);
+        if (cachedReceipts?.companyReceipts?.length) {
+          expense.companyReceipts = cachedReceipts.companyReceipts.map((meta) => ({
+            id: 0,
+            name: meta.fileName,
+            url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+            mediaNo: meta.mediaNo
+          }));
+          if (!expense.companyReceipt) expense.companyReceipt = expense.companyReceipts[0];
+        }
+        if (cachedReceipts?.employeeReceipts?.length) {
+          expense.expenseReceipts = cachedReceipts.employeeReceipts.map((meta) => ({
+            id: 0,
+            name: meta.fileName,
+            url: `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${meta.mediaNo}`,
+            mediaNo: meta.mediaNo
+          }));
+          if (!expense.expenseReceipt) expense.expenseReceipt = expense.expenseReceipts[0];
+        }
+        
         if (this.selectedExpense) {
           this.selectedExpense.merchant = this.selectedExpense.merchant ?? ({ id: 0, name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' } as MerchantDTO);
           this.selectedExpense.category = this.selectedExpense.category ?? ({ id: 0, name: '' } as CategoryDTO);
@@ -421,98 +620,88 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ✨ Helper method to convert relative receipt paths to absolute URLs
+  private buildReceiptUrl(receipt: ExpenseMedia): string {
+    if (!receipt.url) return '';
+    
+    // Already an absolute URL
+    if (receipt.url.startsWith('http')) {
+      return receipt.url;
+    }
+    
+    // Backend returns paths like: /opt/optimax/media/profile/images/d723DV3W5QL
+    // Convert to: https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/d723DV3W5QL
+    const filename = receipt.url.split('/').pop();
+    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${filename}`;
+  }
+
+  // ✨ Build receipt URL from mediaNo
+  private buildReceiptUrlFromMediaNo(mediaNo: string): string {
+    return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${mediaNo}`;
+  }
+
   private _getCompanyReceipts(expense: Expense): ExpenseMedia[] {
-    if (expense.companyReceipts && expense.companyReceipts.length > 0) return expense.companyReceipts;
+    if ((expense as any).companyReceipts?.length) return (expense as any).companyReceipts;
     if (expense.companyReceipt) return [expense.companyReceipt];
     return [];
   }
 
   private _getEmployeeReceipts(expense: Expense): ExpenseMedia[] {
-    if (expense.expenseReceipts && expense.expenseReceipts.length > 0) return expense.expenseReceipts;
+    if ((expense as any).expenseReceipts?.length) return (expense as any).expenseReceipts;
     if (expense.expenseReceipt) return [expense.expenseReceipt];
     return [];
   }
 
   private _loadReceiptThumbnails(expense: Expense, preserveExisting = false): void {
-    const oldCompanyUrls = preserveExisting ? [...this.companyReceiptUrls] : [];
+    const oldCompanyUrls  = preserveExisting ? [...this.companyReceiptUrls]  : [];
     const oldEmployeeUrls = preserveExisting ? [...this.employeeReceiptUrls] : [];
 
-    if (!preserveExisting) {
-      this._revokeAllReceiptUrls();
-    }
+    if (!preserveExisting) this._revokeAllReceiptUrls();
 
-    const companyMedia = this._getCompanyReceipts(expense);
-    const employeeMedia = this._getEmployeeReceipts(expense);
+    const loadList = (media: ExpenseMedia[], type: 'company' | 'employee') => {
+      const urls  = media.map(m => m.url ? this.convertToWebUrl(m.url) : '');
+      const out:  string[] = [];
+      let done = 0;
 
-    const loadMediaList = (media: ExpenseMedia[], type: 'company' | 'employee') => {
-      const list = media.map((m) => (m.url ? this.convertToWebUrl(m.url) : '')); // ignore invalid URL
-      const outUrls: string[] = [];
-      let completed = 0;
-
-      if (list.length === 0) {
-        if (type === 'company') {
-          this.companyReceiptUrls = preserveExisting ? oldCompanyUrls : [];
-          this.companyReceiptLoading = false;
-        } else {
-          this.employeeReceiptUrls = preserveExisting ? oldEmployeeUrls : [];
-          this.employeeReceiptLoading = false;
-        }
+      if (!urls.length) {
+        if (type === 'company')  { this.companyReceiptUrls  = preserveExisting ? oldCompanyUrls  : []; this.companyReceiptLoading  = false; }
+        else                     { this.employeeReceiptUrls = preserveExisting ? oldEmployeeUrls : []; this.employeeReceiptLoading = false; }
+        this.cdr.detectChanges();
         return;
       }
 
       if (type === 'company') this.companyReceiptLoading = true;
-      else this.employeeReceiptLoading = true;
+      else                    this.employeeReceiptLoading = true;
 
-      list.forEach((url, idx) => {
-        if (!url) {
-          completed += 1;
-          if (completed === list.length) {
-            if (type === 'company') {
-              this.companyReceiptUrls = outUrls.length ? outUrls : (preserveExisting ? oldCompanyUrls : []);
-              this.companyReceiptLoading = false;
-            } else {
-              this.employeeReceiptUrls = outUrls.length ? outUrls : (preserveExisting ? oldEmployeeUrls : []);
-              this.employeeReceiptLoading = false;
-            }
-            this.cdr.detectChanges();
-          }
-          return;
-        }
+      urls.forEach((url, idx) => {
+        if (!url) { done++; finalize(); return; }
 
         this.http.get(url, { responseType: 'blob' }).subscribe({
-          next: (b) => {
-            outUrls[idx] = URL.createObjectURL(b);
-            completed += 1;
-            if (completed === list.length) {
-              if (type === 'company') {
-                this.companyReceiptUrls = outUrls;
-                this.companyReceiptLoading = false;
-              } else {
-                this.employeeReceiptUrls = outUrls;
-                this.employeeReceiptLoading = false;
-              }
-              this.cdr.detectChanges();
-            }
-          },
-          error: () => {
-            completed += 1;
-            if (completed === list.length) {
-              if (type === 'company') {
-                this.companyReceiptUrls = outUrls.length ? outUrls : (preserveExisting ? oldCompanyUrls : []);
-                this.companyReceiptLoading = false;
-              } else {
-                this.employeeReceiptUrls = outUrls.length ? outUrls : (preserveExisting ? oldEmployeeUrls : []);
-                this.employeeReceiptLoading = false;
-              }
-              this.cdr.detectChanges();
-            }
-          }
+          next: (b) => { out[idx] = URL.createObjectURL(b); done++; finalize(); },
+          error: ()  => { done++; finalize(); }
         });
       });
+
+      const finalize = () => {
+        if (done < urls.length) return;
+        const final = out.filter(Boolean);
+        if (type === 'company')  {
+          if (preserveExisting && !final.length) this.companyReceiptUrls = oldCompanyUrls;
+          else { oldCompanyUrls.forEach(u => URL.revokeObjectURL(u)); this.companyReceiptUrls = final; }
+          this.companyReceiptIndex  = 0;
+          this.companyReceiptLoading  = false;
+        } else {
+          if (preserveExisting && !final.length) this.employeeReceiptUrls = oldEmployeeUrls;
+          else { oldEmployeeUrls.forEach(u => URL.revokeObjectURL(u)); this.employeeReceiptUrls = final; }
+          this.employeeReceiptIndex  = 0;
+          this.employeeReceiptLoading = false;
+        }
+        this.cdr.detectChanges();
+      };
     };
 
-    loadMediaList(companyMedia, 'company');
-    loadMediaList(employeeMedia, 'employee');
+    loadList(this._getCompanyReceipts(expense),  'company');
+    loadList(this._getEmployeeReceipts(expense), 'employee');
   }
 
   openReceiptModal(apiUrl: string, title: string): void {
@@ -570,28 +759,20 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
             const submitterEmail = (request as any).expenseBy?.email   || (updated as any).expenseBy?.email   || '';
             const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
-            const admin  = this.resolveCurrentUserDetails();
-            const label  = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
+            const admin = this.resolveCurrentUserDetails();
+            const label = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
             if (submitterEmail) {
               this.emailService.sendExpenseApprovedNotification(submitterName, submitterEmail, label, admin.fullname)
                 .subscribe({ error: (e: any) => console.error('[approve] email failed:', e) });
             }
 
             if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-              console.log('[approve] request/updated receipts:', {
-                requestCompanyReceipt: request.companyReceipt,
-                requestCompanyReceipts: request.companyReceipts,
-                updatedCompanyReceipt: updated.companyReceipt,
-                updatedCompanyReceipts: updated.companyReceipts,
-                selectedCompanyReceipt: this.selectedExpense.companyReceipt,
-                selectedCompanyReceipts: this.selectedExpense.companyReceipts,
-              });
-
-              const merged = { ...updated,
-                companyReceipt: updated.companyReceipt ?? this.selectedExpense.companyReceipt,
-                expenseReceipt: updated.expenseReceipt ?? this.selectedExpense.expenseReceipt,
-                companyReceipts: updated.companyReceipts ?? this.selectedExpense.companyReceipts,
-                expenseReceipts: updated.expenseReceipts ?? this.selectedExpense.expenseReceipts,
+              const merged: Expense = {
+                ...updated,
+                companyReceipt:  updated.companyReceipt  ?? this.selectedExpense!.companyReceipt,
+                expenseReceipt:  updated.expenseReceipt  ?? this.selectedExpense!.expenseReceipt,
+                ...(((updated as any).companyReceipts  ?? (this.selectedExpense as any)?.companyReceipts)  ? { companyReceipts:  (updated as any).companyReceipts  ?? (this.selectedExpense as any).companyReceipts  } : {}),
+                ...(((updated as any).expenseReceipts  ?? (this.selectedExpense as any)?.expenseReceipts)  ? { expenseReceipts:  (updated as any).expenseReceipts  ?? (this.selectedExpense as any).expenseReceipts  } : {}),
               };
               this.selectedExpense = merged;
               this._loadReceiptThumbnails(merged, true);
@@ -630,28 +811,20 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
         const submitterEmail = (request as any).expenseBy?.email   || (updated as any).expenseBy?.email   || '';
         const submitterName  = (request as any).expenseBy?.fullname || (updated as any).expenseBy?.fullname || 'Team Member';
-        const admin  = this.resolveCurrentUserDetails();
-        const label  = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
+        const admin = this.resolveCurrentUserDetails();
+        const label = `${request.name} — ${this.formatAmount(request.amount)} ${request.currency ?? 'NGN'}`;
         if (submitterEmail) {
           this.emailService.sendExpenseRejectedNotification(submitterName, submitterEmail, label, admin.fullname, reason)
             .subscribe({ error: (e: any) => console.error('[reject] email failed:', e) });
         }
 
         if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-          console.log('[reject] request/updated receipts:', {
-            requestCompanyReceipt: request.companyReceipt,
-            requestCompanyReceipts: request.companyReceipts,
-            updatedCompanyReceipt: updated.companyReceipt,
-            updatedCompanyReceipts: updated.companyReceipts,
-            selectedCompanyReceipt: this.selectedExpense.companyReceipt,
-            selectedCompanyReceipts: this.selectedExpense.companyReceipts,
-          });
-
-          const merged = { ...updated,
-            companyReceipt: updated.companyReceipt ?? this.selectedExpense.companyReceipt,
-            expenseReceipt: updated.expenseReceipt ?? this.selectedExpense.expenseReceipt,
-            companyReceipts: updated.companyReceipts ?? this.selectedExpense.companyReceipts,
-            expenseReceipts: updated.expenseReceipts ?? this.selectedExpense.expenseReceipts,
+          const merged: Expense = {
+            ...updated,
+            companyReceipt: updated.companyReceipt ?? this.selectedExpense!.companyReceipt,
+            expenseReceipt: updated.expenseReceipt ?? this.selectedExpense!.expenseReceipt,
+            ...(((updated as any).companyReceipts ?? (this.selectedExpense as any)?.companyReceipts) ? { companyReceipts: (updated as any).companyReceipts ?? (this.selectedExpense as any).companyReceipts } : {}),
+            ...(((updated as any).expenseReceipts ?? (this.selectedExpense as any)?.expenseReceipts) ? { expenseReceipts: (updated as any).expenseReceipts ?? (this.selectedExpense as any).expenseReceipts } : {}),
           };
           this.selectedExpense = merged;
           this._loadReceiptThumbnails(merged, true);
@@ -745,6 +918,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       next: () => {
         this.deletingIds.delete(expense.id);
         this.expenses = this.expenses.filter(e => e.id !== expense.id);
+        this.allExpensesFromApi = this.allExpensesFromApi.filter(e => e.id !== expense.id);
         this.applyFilters();
         this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Expense deleted.' });
       },
@@ -912,13 +1086,13 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   isLocked(e: Expense): boolean           { return this.isApproved(e) || this.isRejected(e); }
   canApproveOrReject(e: Expense): boolean { return this.normalizeStatus(e?.status) === ExpenseStatus.PENDING; }
 
-  // ─── Pagination (unchanged) ───────────────────────────────────────────────
+  // ─── Pagination ───────────────────────────────────────────────────────────
   onPageChange(p: number): void { this.currentPage = p; }
   get paginatedExpenses(): Expense[] { const s = this.currentPage * this.pageSize; return this.filteredExpenses.slice(s, s + this.pageSize); }
   nextPage(): void     { if (this.currentPage < this.totalPages - 1) this.currentPage++; }
   previousPage(): void { if (this.currentPage > 0) this.currentPage--; }
 
-  // ─── Summary (tax-inclusive) ──────────────────────────────────────────────
+  // ─── Summary ──────────────────────────────────────────────────────────────
   getExpenseCount(): number { return this.expenses?.length || 0; }
 
   getTaxForExpense(e: Expense | null): TaxDTO | null {
