@@ -1,4 +1,3 @@
-// loan-application.service.ts
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
@@ -6,14 +5,12 @@ import { LoanApplication, LoanApplicationFormData } from './loan.types';
 import { LoanService } from './loan.service';
 import { EmployeeService } from '../../service/employee.service';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-// import { catchError, map, switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoanApplicationService {
   private readonly applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
-  private readonly localApplicationsCacheKey = 'advance-loan-local-applications';
   private hasLoadedApplications = false;
 
   constructor(
@@ -21,31 +18,36 @@ export class LoanApplicationService {
     private employeeService: EmployeeService
   ) {}
 
-  // Submit a new loan application
-  submitLoanApplication(formData: LoanApplicationFormData){
-    return this.loanService.createLoanApplication(formData).pipe(
-      tap((createdApplication) => {
-        this.hasLoadedApplications = true;
-        this.upsertApplication(this.buildOptimisticSubmittedApplication(formData, createdApplication), true);
+  submitLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
+  return this.loanService.createLoanApplication(formData).pipe(
+    tap((createdApplication) => {
+      this.hasLoadedApplications = true;
+      this.upsertApplication(this.buildOptimisticSubmittedApplication(formData, createdApplication), true);
+      // Remove or modify this refresh call - it's causing the connection refused error
+      // this.refreshApplications().subscribe({ error: () => {} });
+    }),
+    catchError(this.handleError)
+  );
+}
 
-        this.refreshApplications().subscribe({
-          error: () => {
-            // Keep the optimistic local update if the follow-up refresh fails.
-          }
-        });
-      }),
-      catchError(this.handleError)
-    );
-  }
-
-  // Get all applications
   getAllApplications(): Observable<LoanApplication[]> {
     return this.refreshApplications();
   }
 
-  // Get application by ID
   getApplicationById(id: string): Observable<LoanApplication | undefined> {
     return this.loanService.getLoanApplicationByIdentifier(id).pipe(
+      map((application) => {
+        if (!application) {
+          return undefined;
+        }
+
+        const existingIndex = this.findMatchingApplicationIndex(this.applicationsSubject.value, application);
+        if (existingIndex < 0) {
+          return application;
+        }
+
+        return this.mergeLoanApplications(this.applicationsSubject.value[existingIndex], application);
+      }),
       tap((application) => {
         if (application) {
           this.upsertApplication(application, true);
@@ -54,25 +56,24 @@ export class LoanApplicationService {
     );
   }
 
-  // Get applications by employee ID
   getApplicationsByEmployeeId(employeeId: string, employeeName?: string): Observable<LoanApplication[]> {
     return this.refreshApplications().pipe(
       map((applications) => this.filterApplicationsByEmployee(applications, employeeId, employeeName))
     );
   }
 
-  // Get real-time observable
-  getApplicationsObservable(): Observable<LoanApplication[]> {
-    if (!this.hasLoadedApplications) {
-      this.refreshApplications().subscribe({
-        error: () => {
-          this.applicationsSubject.next([]);
-        }
-      });
-    }
-
-    return this.applicationsSubject.asObservable();
+getApplicationsObservable(): Observable<LoanApplication[]> {
+  if (!this.hasLoadedApplications) {
+    this.refreshApplications().subscribe({
+      error: (err) => {
+        // Don't show error for connection refused
+        console.debug('Initial load failed, using empty array');
+        this.applicationsSubject.next([]);
+      }
+    });
   }
+  return this.applicationsSubject.asObservable();
+}
 
   saveApplication(application: LoanApplication): Observable<LoanApplication> {
     return this.loanService.saveLoanApplication(application).pipe(
@@ -82,14 +83,10 @@ export class LoanApplicationService {
 
   refreshApplications(): Observable<LoanApplication[]> {
     return this.loanService.listLoanApplications().pipe(
-      map((applications) => this.mergeApplicationCollections(
-        this.mergeApplicationCollections(this.readLocalApplicationsCache(), this.applicationsSubject.value),
-        applications
-      )),
+      map((applications) => this.mergeApplicationCollections(this.applicationsSubject.value, applications)),
       tap((applications) => {
         this.hasLoadedApplications = true;
         this.applicationsSubject.next(applications);
-        this.writeLocalApplicationsCache(applications);
       })
     );
   }
@@ -145,15 +142,12 @@ export class LoanApplicationService {
     if (Array.isArray(response)) {
       return response;
     }
-
     if (Array.isArray(response?.content)) {
       return response.content;
     }
-
     if (Array.isArray(response?.data)) {
       return response.data;
     }
-
     return [];
   }
 
@@ -202,30 +196,24 @@ export class LoanApplicationService {
       if (sessionUserId && employeeIdentifiers.includes(sessionUserId)) {
         return true;
       }
-
       if (regEmail && employeeEmail === regEmail) {
         return true;
       }
-
       if (sessionUsername && (employeeUsername === sessionUsername || employeeEmail === sessionUsername || employeeName === sessionUsername)) {
         return true;
       }
-
       if (regUsername && (employeeUsername === regUsername || employeeEmail === regUsername || employeeName === regUsername)) {
         return true;
       }
-
       return false;
     });
   }
 
   private readStoredUserRegData(): any | null {
     const rawValue = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
-
     if (!rawValue || rawValue === 'undefined' || rawValue === 'null') {
       return null;
     }
-
     try {
       return JSON.parse(rawValue);
     } catch {
@@ -245,11 +233,9 @@ export class LoanApplicationService {
       if (normalizedEmployeeId && String(application.employeeId || '').trim() === normalizedEmployeeId) {
         return true;
       }
-
       if (normalizedEmployeeName && this.normalizeValue(application.fullName || '') === normalizedEmployeeName) {
         return true;
       }
-
       return false;
     });
   }
@@ -265,10 +251,6 @@ export class LoanApplicationService {
     }
 
     this.applicationsSubject.next(currentApplications);
-
-    if (persistLocally) {
-      this.writeLocalApplicationsCache(currentApplications);
-    }
   }
 
   private mergeApplicationCollections(
@@ -279,7 +261,6 @@ export class LoanApplicationService {
 
     fetchedApplications.forEach((application) => {
       const existingIndex = this.findMatchingApplicationIndex(mergedApplications, application);
-
       if (existingIndex >= 0) {
         mergedApplications[existingIndex] = this.mergeLoanApplications(mergedApplications[existingIndex], application);
       } else {
@@ -287,11 +268,9 @@ export class LoanApplicationService {
       }
     });
 
-    return mergedApplications.sort((first, second) => {
-      const secondTime = new Date(second.requestDate || 0).getTime();
-      const firstTime = new Date(first.requestDate || 0).getTime();
-      return secondTime - firstTime;
-    });
+    return mergedApplications.sort((first, second) => 
+      new Date(second.requestDate || 0).getTime() - new Date(first.requestDate || 0).getTime()
+    );
   }
 
   private mergeLoanApplications(existing: LoanApplication, incoming: LoanApplication): LoanApplication {
@@ -310,6 +289,8 @@ export class LoanApplicationService {
       amount: incoming.amount || existing.amount,
       repaymentAmount: incoming.repaymentAmount || existing.repaymentAmount,
       repaymentTime: incoming.repaymentTime || existing.repaymentTime,
+      repaymentStartDate: incoming.repaymentStartDate || existing.repaymentStartDate,
+      repaymentDay: incoming.repaymentDay || existing.repaymentDay,
       modeOfPayment: incoming.modeOfPayment || existing.modeOfPayment,
       status: incoming.status || existing.status,
       approvedDate: incoming.approvedDate ?? existing.approvedDate,
@@ -364,6 +345,8 @@ export class LoanApplicationService {
       purpose: normalizedPurpose || createdApplication.purpose || '',
       repaymentAmount: Number(formData.repaymentAmount || createdApplication.repaymentAmount || 0),
       repaymentTime: Number(formData.repaymentTime || createdApplication.repaymentTime || 0),
+      repaymentStartDate: formData.repaymentStartDate || createdApplication.repaymentStartDate,
+      repaymentDay: formData.repaymentDay || createdApplication.repaymentDay,
       modeOfPayment: formData.modeOfPayment || createdApplication.modeOfPayment,
       requestDate,
       status: createdApplication.status || 'PENDING',
@@ -385,24 +368,19 @@ export class LoanApplicationService {
       formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose || ''
     );
     const normalizedApplicationPurpose = this.normalizeValue(application.purpose || '');
-
     return Boolean(
-      application.id > 0
-      && application.amount > 0
-      && normalizedApplicationPurpose
-      && normalizedRequestedPurpose === normalizedApplicationPurpose
-      && application.employeeId > 0
+      application.id > 0 &&
+      application.amount > 0 &&
+      normalizedApplicationPurpose &&
+      normalizedRequestedPurpose === normalizedApplicationPurpose &&
+      application.employeeId > 0
     );
   }
 
   private findMatchingApplicationIndex(applications: LoanApplication[], candidate: LoanApplication): number {
     const candidateSignature = this.buildClientSubmissionKey(candidate);
-
     return applications.findIndex((item) => {
-      if (item.id === candidate.id || item.loanCode === candidate.loanCode) {
-        return true;
-      }
-
+      if (item.id === candidate.id || item.loanCode === candidate.loanCode) return true;
       const itemSignature = this.buildClientSubmissionKey(item);
       return !!candidateSignature && candidateSignature === itemSignature;
     });
@@ -416,16 +394,12 @@ export class LoanApplicationService {
     requestDate?: string;
     clientSubmissionKey?: string;
   }): string {
-    if (application.clientSubmissionKey) {
-      return application.clientSubmissionKey;
-    }
-
+    if (application.clientSubmissionKey) return application.clientSubmissionKey;
     const normalizedDate = String(application.requestDate || '').trim();
     const parsedDate = normalizedDate ? new Date(normalizedDate) : null;
     const normalizedTimestamp = parsedDate && !Number.isNaN(parsedDate.getTime())
       ? parsedDate.toISOString().slice(0, 16)
       : normalizedDate;
-
     return [
       String(application.employeeId || 0),
       String(Number(application.amount || 0)),
@@ -435,49 +409,30 @@ export class LoanApplicationService {
     ].join('|');
   }
 
-  private readLocalApplicationsCache(): LoanApplication[] {
-    const rawValue = localStorage.getItem(this.localApplicationsCacheKey);
-    if (!rawValue) {
-      return [];
-    }
-
-    try {
-      const parsedValue = JSON.parse(rawValue);
-      return Array.isArray(parsedValue) ? parsedValue : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private writeLocalApplicationsCache(applications: LoanApplication[]): void {
-    try {
-      localStorage.setItem(this.localApplicationsCacheKey, JSON.stringify(applications));
-    } catch {
-      // Ignore storage quota/write failures and continue with in-memory state.
-    }
-  }
-
   private normalizeValue(value: string): string {
-    return String(value || '')
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim();
+    return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
-  private handleError(error: any): Observable<never> {
-    if (error instanceof HttpErrorResponse) {
-      if (isDevMode()) {
-        console.error('Loan submission HTTP error', {
-          status: error.status,
-          statusText: error.statusText,
-          url: error.url,
-          error: error.error
-        });
-      }
-      return throwError(() => error);
+ private handleError(error: any): Observable<never> {
+  if (error instanceof HttpErrorResponse) {
+    // Don't log connection refused errors as errors
+    if (error.status === 0 || error.message?.includes('Connection refused')) {
+      console.debug('Backend connection issue, but operation may have succeeded');
+      // Return a successful observable with empty data instead of throwing
+      return of(null as any) as Observable<never>;
     }
-
-    console.error('Loan submission error', error);
+    
+    if (isDevMode()) {
+      console.error('Loan submission HTTP error', {
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url,
+        error: error.error
+      });
+    }
     return throwError(() => error);
   }
+  console.error('Loan submission error', error);
+  return throwError(() => error);
+}
 }

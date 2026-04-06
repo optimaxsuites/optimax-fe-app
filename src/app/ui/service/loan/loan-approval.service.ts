@@ -2,19 +2,23 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
-import { LoanApplication, RepaymentScheduleItem, StatusChange } from './loan.types';
+import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
-import { persistLoanInterestRate, persistLoanStatusActorName, persistLoanStatusNote } from './loan-display.util';
+import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
+import { normalizeLoanRepaymentStartDate, persistLoanInterestRate, persistLoanStatusActorName, persistLoanStatusNote } from './loan-display.util';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoanApprovalService {
-  constructor(private loanApplicationService: LoanApplicationService) {}
+  constructor(
+    private loanApplicationService: LoanApplicationService,
+    private interestAgreementService: AdvanceInterestAgreementService
+  ) {}
 
   updateApplicationStatus(
     loanId: string | number,
-    statusOrUpdate: 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'PENDING' | StatusChange
+    statusOrUpdate: LoanStatus | StatusChange
   ): Observable<LoanApplication> {
     return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
@@ -22,7 +26,6 @@ export class LoanApprovalService {
           return throwError(() => new Error('Application not found'));
         }
 
-        const oldStatus = application.status;
         const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
         const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
         const actingUserId = this.getCurrentUserId();
@@ -30,17 +33,14 @@ export class LoanApprovalService {
           ? new Date().toISOString()
           : this.toLoanDateTime(statusOrUpdate.changedAt) || new Date().toISOString();
         const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
+        const repaymentStartDate = normalizeLoanRepaymentStartDate((statusOrUpdate as any).repaymentStartDate);
+        const repaymentDay = Number((statusOrUpdate as any).repaymentDay);
         
-        // Set interest rate if needed
         if (interestRate !== undefined && Number.isFinite(interestRate)) {
           application.interestRate = Number(interestRate.toFixed(2));
           persistLoanInterestRate(application, application.interestRate);
-        } else if (status === 'APPROVED' && !application.interestRate) {
-          application.interestRate = this.determineInterestRate(application);
-          persistLoanInterestRate(application, application.interestRate);
         }
-
-        // Update the application status
+        
         application.status = status;
         application.adminComment = notes || application.adminComment || '';
 
@@ -48,21 +48,36 @@ export class LoanApprovalService {
           persistLoanStatusNote(application, status, notes);
         }
 
-        // Update dates based on status
+        if (repaymentStartDate) {
+          application.repaymentStartDate = repaymentStartDate;
+        }
+        if (Number.isFinite(repaymentDay) && repaymentDay > 0) {
+          application.repaymentDay = repaymentDay;
+        }
+
         switch (status) {
+          case 'AWAITING_INTEREST_ACCEPTANCE':
+            break;
           case 'APPROVED':
             application.approvedDate = changedAt;
             application.approvedBy = actingUserId;
             persistLoanStatusActorName(application, 'APPROVED', actingUserId);
-            application.disbursedDate = undefined;
             this.recalculateApprovalTerms(application);
             break;
           case 'ACTIVE':
             application.disbursedDate = changedAt;
             application.disbursedBy = actingUserId;
             persistLoanStatusActorName(application, 'ACTIVE', actingUserId);
-            // Generate repayment schedule if needed
-            if (!application.repaymentSchedule?.length) {
+            if (!application.repaymentSchedule?.length && application.repaymentStartDate && application.repaymentDay) {
+              application.repaymentSchedule = this.generateRepaymentScheduleWithStartDate(
+                application.amount,
+                application.repaymentTime,
+                Number(application.interestRate || 0),
+                application.modeOfPayment,
+                new Date(application.repaymentStartDate),
+                application.repaymentDay
+              );
+            } else if (!application.repaymentSchedule?.length) {
               application.repaymentSchedule = this.generateRepaymentSchedule(
                 application.amount,
                 application.repaymentTime,
@@ -101,21 +116,15 @@ export class LoanApprovalService {
             application.rejectedBy = actingUserId;
             persistLoanStatusActorName(application, 'REJECTED', actingUserId);
             break;
+          case 'PENDING':
+            break;
         }
 
-        // Save the application (this will send statusHistory: [])
         return this.loanApplicationService.saveApplication(application).pipe(
-          // AFTER successful save, refresh the application to get the complete data with history
           switchMap((savedApp) => {
-            console.log('Status updated successfully, refreshing data...');
+            console.log('Status updated successfully to:', savedApp.status);
             return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
-              map((refreshedApp) => {
-                if (!refreshedApp) {
-                  return savedApp; // Fallback to saved app if refresh fails
-                }
-                console.log('Refreshed application with history:', refreshedApp.statusHistory);
-                return refreshedApp;
-              })
+              map((refreshedApp) => refreshedApp || savedApp)
             );
           })
         );
@@ -131,28 +140,31 @@ export class LoanApprovalService {
 
   private toLoanDateTime(value: string | undefined): string {
     const rawValue = String(value || '').trim();
-
-    if (!rawValue) {
-      return '';
-    }
-
-    return /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
-      ? `${rawValue}T00:00:00`
-      : rawValue;
+    if (!rawValue) return '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(rawValue) ? `${rawValue}T00:00:00` : rawValue;
   }
 
   private recalculateApprovalTerms(application: LoanApplication): void {
     const hasRecordedPayments = (application.paymentHistory || []).length > 0 || Number(application.totalPaid || 0) > 0;
-    if (hasRecordedPayments) {
-      return;
-    }
+    if (hasRecordedPayments) return;
 
-    application.repaymentSchedule = this.generateRepaymentSchedule(
-      application.amount,
-      application.repaymentTime,
-      Number(application.interestRate || 0),
-      application.modeOfPayment
-    );
+    const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(application.repaymentStartDate);
+
+    application.repaymentSchedule = normalizedRepaymentStartDate
+      ? this.generateRepaymentScheduleWithStartDate(
+          application.amount,
+          application.repaymentTime,
+          Number(application.interestRate || 0),
+          application.modeOfPayment,
+          new Date(normalizedRepaymentStartDate),
+          application.repaymentDay
+        )
+      : this.generateRepaymentSchedule(
+          application.amount,
+          application.repaymentTime,
+          Number(application.interestRate || 0),
+          application.modeOfPayment
+        );
 
     application.repaymentAmount = application.repaymentSchedule.length > 0
       ? application.repaymentSchedule[0].totalAmount
@@ -163,17 +175,30 @@ export class LoanApprovalService {
     application.outstandingPrincipal = Number(Math.max(application.amount - Number(application.totalPrincipalPaid || 0), 0).toFixed(2));
   }
 
-  approveLoan(loanId: string | number, notes?: string): Observable<LoanApplication> {
+  approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number): Observable<LoanApplication> {
+    console.log('Approving loan - setting status to AWAITING_INTEREST_ACCEPTANCE');
+    
     return this.updateApplicationStatus(loanId, {
-      status: 'APPROVED',
-      notes: notes || 'Loan approved',
-      changedAt: new Date().toISOString()
-    }).pipe(
-      switchMap((app) => {
-        // Force refresh of all applications so dashboard updates
-        return this.loanApplicationService.refreshApplications().pipe(
-          map(() => app)
-        );
+      status: 'AWAITING_INTEREST_ACCEPTANCE',
+      notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`,
+      changedAt: new Date().toISOString(),
+      interestRate: interestRate,
+      repaymentStartDate: repaymentStartDate,
+      repaymentDay: repaymentDay
+    } as any).pipe(
+      switchMap((loan) => {
+        if (loan && interestRate) {
+          return this.interestAgreementService.createAgreement({
+            loanId: loan.id,
+            employeeId: loan.employeeId,
+            proposedInterestRate: interestRate,
+            agreementMethod: 'DASHBOARD',
+            notes: notes
+          }).pipe(
+            map(() => loan)
+          );
+        }
+        return of(loan);
       })
     );
   }
@@ -186,6 +211,53 @@ export class LoanApprovalService {
     });
   }
 
+  acceptInterestRate(loanId: string | number, acceptedRate: number): Observable<LoanApplication> {
+    console.log('Employee accepting interest rate - setting status to APPROVED');
+    
+    return this.updateApplicationStatus(loanId, {
+      status: 'APPROVED',
+      notes: `Employee accepted interest rate of ${acceptedRate}%`,
+      changedAt: new Date().toISOString(),
+      interestRate: acceptedRate
+    } as any).pipe(
+      switchMap((loan) => {
+        return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
+          switchMap((agreement: any) => {
+            if (agreement && agreement.id) {
+              return this.interestAgreementService.acceptAgreement(agreement.id, acceptedRate).pipe(
+                map(() => loan)
+              );
+            }
+            return of(loan);
+          })
+        );
+      })
+    );
+  }
+
+  rejectInterestRate(loanId: string | number, reason: string): Observable<LoanApplication> {
+    console.log('Employee rejecting interest rate - setting status back to PENDING');
+    
+    return this.updateApplicationStatus(loanId, {
+      status: 'PENDING',
+      notes: `Employee rejected proposed interest rate. Reason: ${reason}`,
+      changedAt: new Date().toISOString()
+    }).pipe(
+      switchMap((loan) => {
+        return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
+          switchMap((agreement: any) => {
+            if (agreement && agreement.id) {
+              return this.interestAgreementService.declineAgreement(agreement.id, reason).pipe(
+                map(() => loan)
+              );
+            }
+            return of(loan);
+          })
+        );
+      })
+    );
+  }
+
   getPendingApplications(): Observable<LoanApplication[]> {
     return this.loanApplicationService.getAllApplications().pipe(
       switchMap((applications) => of(applications.filter((application) => application.status === 'PENDING')))
@@ -193,24 +265,11 @@ export class LoanApprovalService {
   }
 
   determineInterestRate(loan: Pick<LoanApplication, 'modeOfPayment' | 'repaymentTime'>): number {
-    if (loan.modeOfPayment === 'ONE_OFF') {
-      return 5;
-    }
-
+    if (loan.modeOfPayment === 'ONE_OFF') return 5;
     const tenureMonths = loan.repaymentTime || 0;
-
-    if (tenureMonths <= 3) {
-      return 4.5;
-    }
-
-    if (tenureMonths <= 6) {
-      return 6;
-    }
-
-    if (tenureMonths <= 12) {
-      return 8.5;
-    }
-
+    if (tenureMonths <= 3) return 4.5;
+    if (tenureMonths <= 6) return 6;
+    if (tenureMonths <= 12) return 8.5;
     return 10.5;
   }
 
@@ -223,7 +282,6 @@ export class LoanApprovalService {
     if (modeOfPayment === 'ONE_OFF') {
       const totalInterest = amount * (interestRate / 100);
       const totalRepayment = amount + totalInterest;
-
       return {
         repaymentAmount: Number(totalRepayment.toFixed(2)),
         totalRepayment: Number(totalRepayment.toFixed(2)),
@@ -232,18 +290,12 @@ export class LoanApprovalService {
     }
 
     if (!months || months <= 0) {
-      return {
-        repaymentAmount: 0,
-        totalRepayment: 0,
-        totalInterest: 0
-      };
+      return { repaymentAmount: 0, totalRepayment: 0, totalInterest: 0 };
     }
 
     const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
     const monthlyPayment = monthlyInterestRate > 0
-      ? amount *
-        (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
-        (Math.pow(1 + monthlyInterestRate, months) - 1)
+      ? amount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / (Math.pow(1 + monthlyInterestRate, months) - 1)
       : amount / months;
 
     const totalRepayment = monthlyPayment * months;
@@ -281,17 +333,13 @@ export class LoanApprovalService {
       }];
     }
 
-    if (!months || months <= 0) {
-      return [];
-    }
+    if (!months || months <= 0) return [];
 
     const schedule: RepaymentScheduleItem[] = [];
     const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
 
     const monthlyPayment = monthlyInterestRate > 0
-      ? amount *
-        (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
-        (Math.pow(1 + monthlyInterestRate, months) - 1)
+      ? amount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / (Math.pow(1 + monthlyInterestRate, months) - 1)
       : amount / months;
 
     let remainingBalance = amount;
@@ -307,6 +355,73 @@ export class LoanApprovalService {
 
       schedule.push({
         installmentNo: month,
+        dueDate: dueDate.toISOString().split('T')[0],
+        principalAmount: parseFloat(principal.toFixed(2)),
+        interestAmount: parseFloat(interest.toFixed(2)),
+        totalAmount: parseFloat(monthlyPayment.toFixed(2)),
+        paidAmount: 0,
+        remainingBalance: parseFloat(Math.max(remainingBalance, 0).toFixed(2)),
+        status: 'PENDING'
+      });
+    }
+
+    return schedule;
+  }
+
+  private generateRepaymentScheduleWithStartDate(
+    amount: number,
+    months: number,
+    interestRate: number,
+    modeOfPayment?: 'MONTHLY' | 'ONE_OFF',
+    startDate?: Date,
+    repaymentDay?: number
+  ): RepaymentScheduleItem[] {
+    if (modeOfPayment === 'ONE_OFF') {
+      const oneOffInterest = amount * (interestRate / 100);
+      const oneOffTotal = amount + oneOffInterest;
+      const oneOffDueDate = startDate ? new Date(startDate) : new Date();
+      const oneOffRepaymentDay = repaymentDay || oneOffDueDate.getDate();
+      const maxDay = new Date(oneOffDueDate.getFullYear(), oneOffDueDate.getMonth() + 1, 0).getDate();
+      oneOffDueDate.setDate(Math.min(oneOffRepaymentDay, maxDay));
+      
+      return [{
+        installmentNo: 1,
+        dueDate: oneOffDueDate.toISOString().split('T')[0],
+        principalAmount: parseFloat(amount.toFixed(2)),
+        interestAmount: parseFloat(oneOffInterest.toFixed(2)),
+        totalAmount: parseFloat(oneOffTotal.toFixed(2)),
+        paidAmount: 0,
+        remainingBalance: 0,
+        status: 'PENDING'
+      }];
+    }
+
+    if (!months || months <= 0) return [];
+
+    const schedule: RepaymentScheduleItem[] = [];
+    const monthlyInterestRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
+
+    const monthlyPayment = monthlyInterestRate > 0
+      ? amount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) / (Math.pow(1 + monthlyInterestRate, months) - 1)
+      : amount / months;
+
+    let remainingBalance = amount;
+    const baseDate = startDate ? new Date(startDate) : new Date();
+    const dayOfMonth = repaymentDay || 15;
+
+    for (let month = 0; month < months; month++) {
+      const interest = monthlyInterestRate > 0 ? remainingBalance * monthlyInterestRate : 0;
+      const principal = monthlyPayment - interest;
+      remainingBalance -= principal;
+
+      const dueDate = new Date(baseDate);
+      dueDate.setMonth(baseDate.getMonth() + month);
+      
+      const maxDay = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate();
+      dueDate.setDate(Math.min(dayOfMonth, maxDay));
+
+      schedule.push({
+        installmentNo: month + 1,
         dueDate: dueDate.toISOString().split('T')[0],
         principalAmount: parseFloat(principal.toFixed(2)),
         interestAmount: parseFloat(interest.toFixed(2)),

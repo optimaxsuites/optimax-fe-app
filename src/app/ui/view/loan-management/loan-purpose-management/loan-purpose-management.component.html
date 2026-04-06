@@ -1,0 +1,197 @@
+<div class="loan-purpose-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <div class="page-header">
+    <div class="header-left">
+      <app-back-button (click)="goBack()"></app-back-button>
+      <div class="header-title">
+        <h1><i class="fas fa-hand-holding-dollar"></i> Loan Purpose Management</h1>
+        <p>Create and manage loan categories available for employee applications</p>
+      </div>
+    </div>
+    <button class="btn-create" type="button" (click)="openCreateModal()">
+      <i class="fas fa-plus-circle"></i> New Purpose
+    </button>
+  </div>
+
+  <div class="search-section">
+    <div class="search-wrapper">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (ngModelChange)="applyFilter()"
+        placeholder="Search by name, code, or description...">
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-chip">
+      <i class="fas fa-layer-group"></i>
+      <span>Total Purposes:</span>
+      <strong>{{ totalPurposesCount }}</strong>
+    </div>
+    <div class="stat-chip">
+      <i class="fas fa-check-circle"></i>
+      <span>Active:</span>
+      <strong>{{ activePurposesCount }}</strong>
+    </div>
+    <div class="stat-chip">
+      <i class="fas fa-ban"></i>
+      <span>Inactive:</span>
+      <strong>{{ inactivePurposesCount }}</strong>
+    </div>
+  </div>
+
+  <div class="table-container" *ngIf="!isLoading">
+    <table class="purposes-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Min Amount</th>
+          <th>Max Amount</th>
+          <th>Default Interest</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let purpose of filteredPurposes">
+          <td class="code-cell">{{ purpose.code }}</td>
+          <td class="name-cell"><strong>{{ purpose.name }}</strong></td>
+          <td class="description-cell">{{ getDescriptionDisplay(purpose.description) }}</td>
+          <td class="amount-cell">{{ getAmountDisplay(purpose.minLoanAmount) }}</td>
+          <td class="amount-cell">{{ getAmountDisplay(purpose.maxLoanAmount) }}</td>
+          <td class="interest-cell">{{ getInterestRateDisplay(purpose.defaultInterestRate) }}</td>
+          <td class="status-cell">
+            <span class="status-badge" [class.active]="purpose.isActive" [class.inactive]="!purpose.isActive">
+              <i class="fas fa-circle"></i>
+              {{ purpose.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn-edit" type="button" (click)="openEditModal(purpose)" title="Edit Purpose">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-toggle" type="button" (click)="togglePurposeStatus(purpose)" [title]="purpose.isActive ? 'Deactivate' : 'Activate'">
+              <i class="fas" [class.fa-ban]="purpose.isActive" [class.fa-check-circle]="!purpose.isActive"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredPurposes.length === 0">
+          <td colspan="8" class="no-data">
+            <i class="fas fa-inbox"></i>
+            <p>No loan purposes found</p>
+            <button type="button" class="btn-create-small" (click)="openCreateModal()">Create your first purpose</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading purposes...</p>
+  </div>
+
+  <!-- Modal for Create/Edit -->
+  <div class="modal-overlay" *ngIf="showPurposeModal" (click)="closeModalIfOverlay($event)">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>
+          <i class="fas" [class.fa-edit]="isEditing" [class.fa-plus-circle]="!isEditing"></i>
+          {{ isEditing ? 'Edit' : 'Create New' }} Loan Purpose
+        </h2>
+        <button type="button" class="close-btn" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="purposeForm" (ngSubmit)="savePurpose()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Purpose Name <span class="required">*</span></label>
+            <input type="text" formControlName="name" placeholder="e.g., Medical Emergency, Home Renovation">
+            <div class="error-message" *ngIf="nameControl?.invalid && nameControl?.touched">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>Purpose name is required</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Purpose Code <span class="required">*</span></label>
+            <input type="text" formControlName="code" placeholder="e.g., MED-103, SAL-001" [readonly]="isEditing">
+            <div class="field-hint">
+              <i class="fas fa-info-circle"></i>
+              Uppercase letters, numbers, and dashes only. Cannot be changed after creation.
+            </div>
+            <div class="error-message" *ngIf="codeControl?.invalid && codeControl?.touched">
+              <i class="fas fa-exclamation-circle"></i>
+              <span *ngIf="codeControl?.errors?.['required']">Purpose code is required</span>
+              <span *ngIf="codeControl?.errors?.['pattern']">Use only uppercase letters (A-Z), numbers (0-9), and dashes (-)</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" rows="3" placeholder="Brief description of this loan purpose..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Minimum Loan Amount (₦) <span class="optional">(Optional)</span></label>
+              <input type="number" formControlName="minLoanAmount" placeholder="Not required">
+              <div class="field-hint">Leave empty if no minimum restriction</div>
+            </div>
+            <div class="form-group">
+              <label>Maximum Loan Amount (₦) <span class="optional">(Optional)</span></label>
+              <input type="number" formControlName="maxLoanAmount" placeholder="Not required">
+              <div class="field-hint">Leave empty if no maximum restriction</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Default Interest Rate (%) <span class="optional">(Optional)</span></label>
+            <input type="number" formControlName="defaultInterestRate" step="0.1" placeholder="Not required">
+            <div class="field-hint">Leave empty if interest is calculated separately</div>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" formControlName="requiresDocumentation" id="requiresDoc">
+            <label for="requiresDoc">Requires Documentation</label>
+          </div>
+
+          <div class="form-group" *ngIf="requiresDocumentationControl?.value">
+            <label>Required Documentation Types</label>
+            <div class="documentation-types">
+              <div *ngFor="let i of getDocIndices()" class="doc-type-row">
+                <input type="text" [formControl]="getDocControl(i)" placeholder="e.g., Medical Report, Invoice">
+                <button type="button" class="remove-doc" (click)="removeDocumentationType(i)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+              <button type="button" class="add-doc-btn" (click)="addDocumentationType()">
+                <i class="fas fa-plus"></i> Add Documentation Type
+              </button>
+            </div>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" formControlName="isActive" id="isActive">
+            <label for="isActive">Active (available for employees to select)</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" (click)="closeModal()">Cancel</button>
+          <button type="submit" class="save-btn" [disabled]="isLoading || purposeForm.invalid">
+            <i class="fas" [class.fa-save]="isEditing" [class.fa-plus]="!isEditing"></i>
+            {{ isLoading ? 'Saving...' : (isEditing ? 'Update Purpose' : 'Create Purpose') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

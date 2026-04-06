@@ -377,9 +377,17 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return this.cooperativeService.formatCurrency(amount);
   }
 
-  getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+ getStatusClass(status: string | undefined): string {
+  switch (status) {
+    case 'APPROVED': return 'status-approved';
+    case 'ACTIVE': return 'status-active';
+    case 'PENDING': return 'status-pending';
+    case 'REJECTED': return 'status-rejected';
+    case 'COMPLETED': return 'status-completed';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-pending'; // or 'status-warning'
+    default: return 'status-default';
   }
+}
 
   getGuarantorStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;

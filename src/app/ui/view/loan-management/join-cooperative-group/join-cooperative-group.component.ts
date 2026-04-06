@@ -12,6 +12,9 @@ export class JoinCooperativeGroupComponent {
   @Output() applyToGroup = new EventEmitter<string>();
   @Output() closeModal = new EventEmitter<void>();
 
+  loadingGroupId: string | null = null;
+  applicationSent: boolean = false;
+
   formatCurrency(amount: number | undefined): string {
     return Number(amount || 0).toLocaleString('en-NG', {
       style: 'currency',
@@ -26,7 +29,15 @@ export class JoinCooperativeGroupComponent {
   }
 
   onApply(groupId: string) {
+    if (this.loadingGroupId) return;
+    this.loadingGroupId = groupId;
     this.applyToGroup.emit(groupId);
+    this.applicationSent = true;
+    // Show loading for 1s, then close modal
+    setTimeout(() => {
+      this.loadingGroupId = null;
+      this.closeModal.emit();
+    }, 1000);
   }
 
   onClose() {

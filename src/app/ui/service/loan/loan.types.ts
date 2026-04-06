@@ -1,6 +1,5 @@
 // loan.types.ts
-export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
-
+export type LoanStatus = 'PENDING' | 'AWAITING_INTEREST_ACCEPTANCE' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED';
 export type LoanPaymentMode = 'MONTHLY' | 'ONE_OFF';
 
 export interface LoanAuditUser {
@@ -54,6 +53,8 @@ export interface LoanApplication {
   acknowledgment?: boolean;
   interestRate?: number;
   supportingDocuments?: LoanSupportingDocument[];
+  repaymentStartDate?: string;
+  repaymentDay?: number;
 }
 
 export interface LoanSupportingDocument {
@@ -110,11 +111,15 @@ export interface PaymentRecord {
   notes: string;
 }
 
+
 export interface LoanApplicationFormData {
   purpose: string;
+  purposeCode?: string;
   otherPurpose?: string;
   amount: number;
   repaymentTime: number;
+  repaymentStartDate: string;
+  repaymentDay?: number;
   repaymentAmount: number;
   modeOfPayment: LoanPaymentMode;
   acknowledgment: boolean;
@@ -123,4 +128,5 @@ export interface LoanApplicationFormData {
   employeeId: number;
   employeeName?: string;
   department?: string;
+  monthlySalary?: number;
 }

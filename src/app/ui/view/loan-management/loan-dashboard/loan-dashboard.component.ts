@@ -478,6 +478,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
 
+    openPurposeManagement(): void {
+      this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
+    }
+
   getStatusClass(status: string): string {
     switch(status) {
       case 'APPROVED': return 'status-approved';

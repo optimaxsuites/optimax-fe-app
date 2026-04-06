@@ -38,7 +38,20 @@ import { CooperativeRepaymentService } from './cooperative-repayment.service';
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
-  private saveToStorage(): void {}
+  private saveToStorage(): void {
+    const data = {
+      members: this.members,
+      loans: this.loans,
+      groups: this.groups,
+      groupMemberships: this.groupMemberships,
+      contributionEntries: this.contributionEntries,
+      groupInviteHistory: this.groupInviteHistory,
+      repayments: this.repayments,
+      notifications: this.notifications,
+      pendingMembershipApplications: this.pendingMembershipApplications
+    };
+    localStorage.setItem(this.storageKey, JSON.stringify(data));
+  }
   private groupMembershipChangedSubject = new Subject<void>();
 
   public getGroupMembershipChangedObservable(): Observable<void> {
@@ -68,6 +81,26 @@ export class CooperativeService {
   private repayments: CooperativeRepayment[] = [];
   private notifications: CooperativeNotification[] = [];
   private pendingMembershipApplications: PendingMembershipApplication[] = [];
+
+  constructor() {
+    const raw = localStorage.getItem(this.storageKey);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        this.members = data.members || [];
+        this.loans = data.loans || [];
+        this.groups = data.groups || [];
+        this.groupMemberships = data.groupMemberships || [];
+        this.contributionEntries = data.contributionEntries || [];
+        this.groupInviteHistory = data.groupInviteHistory || [];
+        this.repayments = data.repayments || [];
+        this.notifications = data.notifications || [];
+        this.pendingMembershipApplications = data.pendingMembershipApplications || [];
+      } catch (e) {
+        // Ignore parse errors, start fresh
+      }
+    }
+  }
 
   private membersSubject = new BehaviorSubject<CooperativeMember[]>([]);
   private loansSubject = new BehaviorSubject<CooperativeLoan[]>([]);

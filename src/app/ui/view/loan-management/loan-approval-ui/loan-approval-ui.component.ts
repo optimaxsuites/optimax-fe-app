@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Location, formatDate } from '@angular/common';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
 import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
@@ -36,15 +37,37 @@ export class LoanApprovalUiComponent implements OnInit {
   isLoading = true;
   messages: Message[] = [];
 
+  // Repayment day properties
+  selectedRepaymentDay: number = 15;  // Add this property
+  repaymentStartDate: string = '';
+  availableRepaymentDays: number[] = [];
+  repaymentDayWarning: string = '';
+
+  // Approval modal properties
+  showApprovalModal = false;
+  selectedLoanForApproval: LoanApplication | null = null;
+  proposedInterestRate: number = 0;
+  proposedRepaymentDay: number = 15;
+  approvalNotes: string = '';
+
   constructor(
     private location: Location,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
-    private loanApprovalService: LoanApprovalService
+    private loanApprovalService: LoanApprovalService,
+    private repaymentDayHelper: RepaymentDayHelperService
   ) {}
 
   ngOnInit() {
     this.loadApplications();
+    this.setDefaultRepaymentStartDate();
+  }
+
+  setDefaultRepaymentStartDate(): void {
+    const today = new Date();
+    today.setMonth(today.getMonth() + 1);
+    this.repaymentStartDate = today.toISOString().split('T')[0];
+    this.onRepaymentStartDateChange(this.repaymentStartDate);
   }
 
   formatCurrency(amount: number): string {
@@ -69,16 +92,6 @@ export class LoanApprovalUiComponent implements OnInit {
 
   openLoanDetails(loan: LoanApplication): void {
     this.viewLoanDetails(loan.id, uuidV4());
-  }
-
-  handleLoanAction(event: { actionId: string; row: LoanApplication }) {
-    if (event.actionId === 'view') {
-      this.viewLoanDetails(event.row.id, uuidV4());
-      return;
-    }
-    if (event.actionId === 'history') {
-      this.seeLoanHistory(event.row.employeeId);
-    }
   }
 
   loadApplications(): void {
@@ -144,22 +157,6 @@ export class LoanApprovalUiComponent implements OnInit {
 
   onSearch(event: any) {
     this.searchTerm = event.target.value;
-    this.applyFilters();
-  }
-
-  filterByDepartment(department: string) {
-    this.filters.department = department;
-    this.applyFilters();
-  }
-
-  filterByStatus(status: string) {
-    this.filters.status = status;
-    this.applyFilters();
-  }
-
-  filterByAmountRange(min: number, max: number) {
-    this.filters.minAmount = min;
-    this.filters.maxAmount = max;
     this.applyFilters();
   }
 
@@ -247,9 +244,11 @@ export class LoanApprovalUiComponent implements OnInit {
     this.applyFilters();
   }
 
-  getSortIndicator(field: string): string {
-    if (this.sortField !== field) return '';
-    return this.sortDirection === 'asc' ? ' ↑' : ' ↓';
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) {
+      return 'fa-sort';
+    }
+    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
   getStatusClass(status: string): string {
@@ -274,41 +273,82 @@ export class LoanApprovalUiComponent implements OnInit {
     };
   }
 
-  getSortIcon(field: string): string {
-    if (this.sortField !== field) {
-      return 'fa-sort';
+  // Open approval modal
+ openApprovalModal(loan: LoanApplication): void {
+  this.selectedLoanForApproval = loan;
+  this.proposedInterestRate = this.loanApprovalService.determineInterestRate(loan);
+  this.proposedRepaymentDay = loan.repaymentDay || 15;
+  this.approvalNotes = '';
+  
+  // Set default repayment start date (1 month from today)
+  const today = new Date();
+  today.setMonth(today.getMonth() + 1);
+  this.repaymentStartDate = today.toISOString().split('T')[0];
+  this.selectedRepaymentDay = this.proposedRepaymentDay;
+  
+  // Update available days based on the start date
+  this.onRepaymentStartDateChange(this.repaymentStartDate);
+  
+  this.showApprovalModal = true;
+}
+
+  // Submit approval
+submitApproval(): void {
+  if (!this.selectedLoanForApproval) return;
+  
+  // Make sure we're passing the repayment start date and day
+  const repaymentStartDate = this.repaymentStartDate;
+  const repaymentDay = this.proposedRepaymentDay;
+  
+  console.log('Submitting approval with:', {
+    loanId: this.selectedLoanForApproval.id,
+    interestRate: this.proposedInterestRate,
+    repaymentStartDate: repaymentStartDate,
+    repaymentDay: repaymentDay
+  });
+  
+  this.loanApprovalService.approveLoan(
+    this.selectedLoanForApproval.id,
+    this.approvalNotes,
+    this.proposedInterestRate,
+    repaymentStartDate,  // Pass the start date
+    repaymentDay         // Pass the day
+  ).subscribe({
+    next: () => {
+      this.messages = [{
+        severity: 'success',
+        summary: 'Loan Approved',
+        detail: `Loan approved with ${this.proposedInterestRate}% interest rate. Awaiting employee acceptance.`
+      }];
+      this.showApprovalModal = false;
+      this.loadApplications();
+    },
+    error: (error) => {
+      console.error('Error approving loan:', error);
+      this.messages = [{
+        severity: 'error',
+        summary: 'Approval Failed',
+        detail: 'Failed to approve loan.'
+      }];
     }
-    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+  });
+}
+
+
+  // Close approval modal
+  closeApprovalModal(): void {
+    this.showApprovalModal = false;
+    this.selectedLoanForApproval = null;
   }
 
-  approveLoan(applicationId: string | number): void {
-    this.loanApprovalService.approveLoan(applicationId).subscribe({
-      next: () => {
-        this.messages = [{
-          severity: 'success',
-          summary: 'Loan Approved',
-          detail: 'Loan approved successfully.'
-        }];
-        this.loadApplications();
-      },
-      error: (error) => {
-        console.error('Error approving loan:', error);
-        this.messages = [{
-          severity: 'error',
-          summary: 'Approval Failed',
-          detail: 'Failed to approve loan.'
-        }];
-      }
-    });
-  }
-
+  // Reject loan
   rejectLoan(applicationId: string | number, reason?: string): void {
     const rejectionReason = (reason || '').trim();
     if (!rejectionReason) {
       this.messages = [{
         severity: 'warn',
         summary: 'Reason Required',
-        detail: 'Please provide a rejection reason from the loan details screen.'
+        detail: 'Please provide a rejection reason.'
       }];
       return;
     }
@@ -345,24 +385,47 @@ export class LoanApprovalUiComponent implements OnInit {
     });
   }
 
-  getDocumentNames(loan: LoanApplication): string {
-    if (!loan.supportingDocuments || loan.supportingDocuments.length === 0) {
-      return '';
+  onRepaymentStartDateChange(dateStr: string): void {
+    if (!dateStr) {
+      this.availableRepaymentDays = [];
+      return;
     }
-
-    return loan.supportingDocuments.map((document) => document.name).join(', ');
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    this.availableRepaymentDays = this.repaymentDayHelper.getValidRepaymentDays(year, month);
+    const suggestedDay = this.repaymentDayHelper.suggestRepaymentDay(date);
+    if (!this.proposedRepaymentDay || !this.availableRepaymentDays.includes(this.proposedRepaymentDay)) {
+      this.proposedRepaymentDay = suggestedDay;
+      this.selectedRepaymentDay = suggestedDay;
+    }
   }
 
-  formatFileSize(sizeInBytes: number): string {
-    if (sizeInBytes < 1024) {
-      return `${sizeInBytes} B`;
+  getRepaymentDayWarning(): string {
+    if (!this.repaymentStartDate) return '';
+    const date = new Date(this.repaymentStartDate);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    if (!this.repaymentDayHelper.validateRepaymentDay(this.proposedRepaymentDay, year, month)) {
+      return `Selected day (${this.proposedRepaymentDay}) is not valid for ${date.toLocaleString('default', { month: 'long' })} ${year}. Maximum days: ${this.repaymentDayHelper.getMaxDaysInMonth(year, month)}`;
     }
+    return '';
+  }
 
-    if (sizeInBytes < 1024 * 1024) {
-      return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+  getDayOrdinal(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
+  }
 
-    return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+  getMinRepaymentDate(): string {
+    const today = new Date();
+    today.setMonth(today.getMonth() + 1);
+    return today.toISOString().split('T')[0];
   }
 
   goBack(): void {
@@ -370,7 +433,6 @@ export class LoanApprovalUiComponent implements OnInit {
       this.location.back();
       return;
     }
-
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
 }

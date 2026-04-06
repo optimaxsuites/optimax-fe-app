@@ -12,19 +12,20 @@
     @include loan-status-badge-variant(rgba(143, 133, 0, 0.14), #8f8500, rgba(143, 133, 0, 0.28), $include-border);
   }
 
+  &.status-awaiting_interest_acceptance {
+    @include loan-status-badge-variant(rgba(235, 155, 63, 0.14), #eb9b3f, rgba(235, 155, 63, 0.28), $include-border);
+  }
+
   &.status-approved {
     @include loan-status-badge-variant(rgba(79, 124, 255, 0.14), #4f7cff, rgba(79, 124, 255, 0.28), $include-border);
   }
+
 
   &.status-active {
     @include loan-status-badge-variant(rgba(56, 189, 248, 0.14), #38bdf8, rgba(56, 189, 248, 0.32), $include-border);
   }
 
   &.status-rejected {
-    @include loan-status-badge-variant(rgba(255, 42, 63, 0.12), #ff2a3f, rgba(255, 42, 63, 0.28), $include-border);
-  }
-
-  &.status-defaulted {
     @include loan-status-badge-variant(rgba(255, 42, 63, 0.12), #ff2a3f, rgba(255, 42, 63, 0.28), $include-border);
   }
 

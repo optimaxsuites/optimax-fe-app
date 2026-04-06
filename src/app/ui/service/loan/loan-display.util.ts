@@ -4,6 +4,7 @@ const loanActorCacheKey = 'advance-loan-actor-name-cache';
 const loanStatusActorCacheKey = 'advance-loan-status-actor-cache';
 const loanInterestRateCacheKey = 'advance-loan-interest-rate-cache';
 const loanStatusNoteCacheKey = 'advance-loan-status-note-cache';
+const loanRepaymentStartDateCacheKey = 'advance-loan-repayment-start-date-cache';
 
 export function formatLoanPurposeDisplay(purpose?: string | null): string {
   return toTitleCase((purpose || '').replace(/_/g, ' ')) || 'N/A';
@@ -18,6 +19,80 @@ export function formatLoanPaymentModeDisplay(mode?: string | null): string {
     default:
       return toTitleCase((mode || '').replace(/_/g, ' ')) || 'Not specified';
   }
+}
+
+export function normalizeLoanRepaymentStartDate(value?: unknown): string {
+  if (Array.isArray(value)) {
+    const [year, month, day] = value.map((part) => Number(part || 0));
+    if (
+      Number.isFinite(year) && year > 0 &&
+      Number.isFinite(month) && month >= 1 && month <= 12 &&
+      Number.isFinite(day) && day >= 1 && day <= 31
+    ) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    return '';
+  }
+
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    return '';
+  }
+
+  const accidentalPrefixedDayMatch = rawValue.match(/^(\d{1,2})(\d{4}-\d{2}-\d{2})$/);
+  if (accidentalPrefixedDayMatch) {
+    const prefixedDay = Number(accidentalPrefixedDayMatch[1]);
+    if (Number.isFinite(prefixedDay) && prefixedDay >= 1 && prefixedDay <= 31) {
+      return accidentalPrefixedDayMatch[2];
+    }
+  }
+
+  const monthMatch = rawValue.match(/^(\d{4})-(\d{2})$/);
+  if (monthMatch) {
+    return `${monthMatch[1]}-${monthMatch[2]}-01`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    return rawValue;
+  }
+
+  const parsedDate = new Date(rawValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function formatLoanRepaymentMonthYear(value?: string | null): string {
+  const normalizedDate = normalizeLoanRepaymentStartDate(value);
+  if (!normalizedDate) {
+    return 'N/A';
+  }
+
+  const [yearToken, monthToken] = normalizedDate.split('-');
+  const year = Number(yearToken);
+  const month = Number(monthToken);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return 'N/A';
+  }
+
+  return new Intl.DateTimeFormat('en-NG', {
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date(year, month - 1, 1));
+}
+
+export function formatLoanRepaymentDayDisplay(day?: number | null): string {
+  const normalizedDay = Number(day);
+  if (!Number.isFinite(normalizedDay) || normalizedDay < 1) {
+    return 'N/A';
+  }
+
+  return `${normalizedDay}${getOrdinalSuffix(normalizedDay)} of each month`;
 }
 
 export function formatLoanDepartmentDisplay(department?: unknown): string {
@@ -187,6 +262,39 @@ export function readPersistedLoanInterestRate(
   const loanCode = String(loan.loanCode || '').trim();
   const cachedValue = Number(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`]);
   return Number.isFinite(cachedValue) ? cachedValue : 0;
+}
+
+export function persistLoanRepaymentStartDate(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  repaymentStartDate: unknown
+): void {
+  const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(repaymentStartDate);
+  if (!normalizedRepaymentStartDate) {
+    return;
+  }
+
+  const cache = readLoanRepaymentStartDateCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = normalizedRepaymentStartDate;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = normalizedRepaymentStartDate;
+  }
+
+  writeLoanRepaymentStartDateCache(cache);
+}
+
+export function readPersistedLoanRepaymentStartDate(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): string {
+  const cache = readLoanRepaymentStartDateCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  return normalizeLoanRepaymentStartDate(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`] ?? '');
 }
 
 export function persistLoanStatusNote(
@@ -372,6 +480,23 @@ function toTitleCase(value: string): string {
     .join(' ');
 }
 
+function getOrdinalSuffix(day: number): string {
+  if (day > 3 && day < 21) {
+    return 'th';
+  }
+
+  switch (day % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
+}
+
 function extractExplicitActorName(actor: LoanAuditUser | number | string | undefined | null): string {
   if (!actor) {
     return '';
@@ -541,6 +666,26 @@ function writeLoanInterestRateCache(cache: Record<string, number>): void {
   const serializedCache = JSON.stringify(cache);
   localStorage.setItem(loanInterestRateCacheKey, serializedCache);
   sessionStorage.setItem(loanInterestRateCacheKey, serializedCache);
+}
+
+function readLoanRepaymentStartDateCache(): Record<string, string> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanRepaymentStartDateCacheKey) || sessionStorage.getItem(loanRepaymentStartDateCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanRepaymentStartDateCache(cache: Record<string, string>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanRepaymentStartDateCacheKey, serializedCache);
+  sessionStorage.setItem(loanRepaymentStartDateCacheKey, serializedCache);
 }
 
 function readLoanStatusNoteEntry(

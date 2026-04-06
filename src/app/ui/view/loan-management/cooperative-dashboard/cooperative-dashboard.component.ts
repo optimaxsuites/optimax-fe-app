@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { CooperativeGroupService, CooperativeGroupContext } from '../../../service/loan/cooperative-loan/cooperative-group.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import {
   CooperativeLoanGroup,
@@ -120,8 +121,23 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   private allMembers: CooperativeMember[] = [];
   private readonly subscriptions = new Subscription();
 
+  cooperativeGroupContext: CooperativeGroupContext = {
+    members: [],
+    groups: [],
+    groupMemberships: [],
+    contributionEntries: [],
+    saveToStorage: () => {
+      // Sync context changes back to CooperativeService arrays
+      this.cooperativeService['members'] = [...this.cooperativeGroupContext.members];
+      this.cooperativeService['groups'] = [...this.cooperativeGroupContext.groups];
+      this.cooperativeService['groupMemberships'] = [...this.cooperativeGroupContext.groupMemberships];
+      this.cooperativeService['contributionEntries'] = [...this.cooperativeGroupContext.contributionEntries];
+    }
+  };
+
   constructor(
     private cooperativeService: CooperativeService,
+    private cooperativeGroupService: CooperativeGroupService,
     private employeeService: EmployeeService,
     private backNavigationService: BackNavigationService,
     private router: Router,
@@ -440,13 +456,12 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   approveGroupJoinApplication(id: number, note = ''): void {
-    const membership = this.cooperativeService.approveGroupMembership(id, note);
+    const membership = this.cooperativeGroupService.approveGroupMembership(this.cooperativeGroupContext, id, note);
     if (!membership) {
       this.groupJoinActionMessage = 'Unable to approve the selected group join request.';
       return;
     }
-
-    const groupName = this.cooperativeService.getGroupById(membership.groupId)?.name || 'the selected group';
+    const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
     this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} has been approved to join ${groupName}.`;
     this.loadDashboard();
   }
@@ -457,14 +472,12 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       this.groupJoinActionMessage = 'A rejection reason is required.';
       return;
     }
-
-    const membership = this.cooperativeService.rejectGroupMembership(id, trimmedReason);
+    const membership = this.cooperativeGroupService.rejectGroupMembership(this.cooperativeGroupContext, id, trimmedReason);
     if (!membership) {
       this.groupJoinActionMessage = 'Unable to reject the selected group join request.';
       return;
     }
-
-    const groupName = this.cooperativeService.getGroupById(membership.groupId)?.name || 'the selected group';
+    const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
     this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} was not approved to join ${groupName}.`;
     this.loadDashboard();
   }
@@ -812,10 +825,16 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadRecentGroupJoinApplications(): void {
-    const memberMap = new Map(this.allMembers.map(member => [member.id, member]));
-    const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeService.getGroups().map((group: CooperativeLoanGroup) => [group.id, group]));
+    // Sync context with latest members/groups/memberships
+    this.cooperativeGroupContext.members = [...this.allMembers];
+    this.cooperativeGroupContext.groups = [...this.cooperativeService.getGroups()];
+    this.cooperativeGroupContext.groupMemberships = [...this.cooperativeService.getGroupMemberships()];
+    // If contributions are needed, sync here as well
 
-    this.recentGroupJoinApplications = this.cooperativeService.getGroupMemberships()
+    const memberMap = new Map(this.cooperativeGroupContext.members.map(member => [member.id, member]));
+    const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeGroupContext.groups.map((group: CooperativeLoanGroup) => [group.id, group]));
+
+    this.recentGroupJoinApplications = this.cooperativeGroupService.getGroupMemberships(this.cooperativeGroupContext)
       .map((membership: CooperativeGroupMembership) => {
         const member = memberMap.get(membership.memberId);
         const group = groupMap.get(membership.groupId);

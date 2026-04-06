@@ -1,4 +1,18 @@
 <div class="employee-loan-details" *ngIf="loan">
+  <!-- Interest Rate Acceptance Banner -->
+  <div class="interest-action-banner" *ngIf="displayedStatus === 'AWAITING_INTEREST_ACCEPTANCE'">
+    <div class="banner-content">
+      <i class="fas fa-percent"></i>
+      <div class="banner-text">
+        <h4>Interest Rate Proposal Ready</h4>
+        <p>Admin has proposed an interest rate of <strong>{{ getDisplayedInterestRate() }}%</strong> for your loan.</p>
+      </div>
+      <button class="btn-review-interest" (click)="openInterestAcceptanceModal()">
+        <i class="fas fa-check-circle"></i> Review & Accept/Reject
+      </button>
+    </div>
+  </div>
+
   <div class="summary-card">
     <div class="summary-copy">
       <span class="eyebrow">Employee Loan Details</span>
@@ -97,6 +111,14 @@
         <div class="detail-row">
           <span class="row-label">Repayment Period</span>
           <span class="row-value">{{ loan.repaymentTime }} months</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Repayment Start Date</span>
+          <span class="row-value">{{ (loan.repaymentStartDate | date:'mediumDate') || 'N/A' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Repayment Day</span>
+          <span class="row-value">{{ loan.repaymentDay ? loan.repaymentDay + getDayOrdinal(loan.repaymentDay) : 'N/A' }}</span>
         </div>
         <div class="detail-row">
           <span class="row-label">Outstanding Balance</span>
@@ -200,5 +222,79 @@
     <ng-template #noComment>
       <p class="empty">No admin comment has been added yet.</p>
     </ng-template>
+  </div>
+</div>
+
+<!-- Interest Acceptance Modal -->
+<div class="modal-overlay" *ngIf="showInterestModal" (click)="closeInterestModal()">
+  <div class="interest-modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-percent"></i> Review Interest Rate Proposal</h2>
+      <button class="close-btn" (click)="closeInterestModal()"><i class="fas fa-times"></i></button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="proposal-card">
+        <div class="proposed-rate">
+          <span class="rate-label">Proposed Interest Rate</span>
+          <span class="rate-value">{{ getDisplayedInterestRate() }}%</span>
+        </div>
+        
+        <div class="loan-summary">
+          <div class="summary-row">
+            <span>Loan Amount:</span>
+            <strong>{{ formatCurrency(loan?.amount) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Repayment Period:</span>
+            <strong>{{ loan?.repaymentTime }} months</strong>
+          </div>
+          <div class="summary-row">
+            <span>Repayment Mode:</span>
+            <strong>{{ loan?.modeOfPayment === 'MONTHLY' ? 'Monthly Installments' : 'One-off Payment' }}</strong>
+          </div>
+        </div>
+
+        <div class="repayment-breakdown">
+          <h4>Estimated Repayment Breakdown</h4>
+          <div class="breakdown-item" *ngIf="loan?.modeOfPayment === 'MONTHLY'">
+            <span>Estimated Monthly Repayment:</span>
+            <strong>{{ calculateMonthlyRepayment() | currency:'NGN':'symbol':'1.2-2' }}</strong>
+          </div>
+          <div class="breakdown-item">
+            <span>Total Interest Payable:</span>
+            <strong>{{ calculateTotalInterest() | currency:'NGN':'symbol':'1.2-2' }}</strong>
+          </div>
+          <div class="breakdown-item total">
+            <span>Total Repayable Amount:</span>
+            <strong>{{ calculateTotalRepayable() | currency:'NGN':'symbol':'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <i class="fas fa-info-circle"></i>
+          <p>By accepting this interest rate, you agree to the loan terms. The loan will become active upon disbursement approval.</p>
+        </div>
+
+        <div class="rejection-section" *ngIf="showRejectionReason">
+          <label>Reason for Rejection <span class="required">*</span></label>
+          <textarea 
+            [(ngModel)]="rejectionReason" 
+            rows="3" 
+            placeholder="Please explain why you are rejecting the proposed interest rate..."
+            class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeInterestModal()">Cancel</button>
+      <button class="reject-btn" (click)="rejectInterestRate()">
+        <i class="fas fa-ban"></i> Reject
+      </button>
+      <button class="accept-btn" (click)="acceptInterestRate()">
+        <i class="fas fa-check-circle"></i> Accept Interest Rate
+      </button>
+    </div>
   </div>
 </div>

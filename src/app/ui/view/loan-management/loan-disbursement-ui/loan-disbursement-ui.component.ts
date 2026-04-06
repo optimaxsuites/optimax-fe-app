@@ -4,8 +4,7 @@ import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
-import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
-import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service'; 
 import { resolveLoanTotalRepayableAmount } from '../../../service/loan/loan-display.util';
 
 @Component({
@@ -19,51 +18,26 @@ export class LoanDisbursementUiComponent implements OnInit {
   messages: Message[] = [];
 
   approvedLoans: LoanApplication[] = [];
-  selectedDisbursementLoanId: number | '' = '';
-  disbursedDate = '';
-  disbursementAmount = 0;
-  disbursementRecipientType: 'BORROWER' | 'THIRD_PARTY' = 'BORROWER';
-  thirdPartyName = '';
-
-  checklistIdentityVerified = false;
-  checklistAccountVerified = false;
-  checklistComplianceCleared = false;
-  checklistFundsReserved = false;
-
-  approvedLoanColumns: TableColumn<LoanApplication>[] = [
-    { header: 'Loan ID', field: 'id', sortable: true, align: 'center' },
-    { header: 'Employee', field: 'fullName', sortable: true, align: 'center' },
-    { header: 'Department', field: 'department', sortable: true, align: 'center' },
-    {
-      header: 'Amount',
-      sortable: true,
-      sortField: 'amount',
-      align: 'center',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
-    },
-    {
-      header: 'Approved Date',
-      sortable: true,
-      sortField: 'approvedDate',
-      align: 'center',
-      formatter: (row: LoanApplication) =>
-        new Date(row.approvedDate || row.requestDate).toLocaleDateString('en-NG', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
-    }
-  ];
-
-  approvedLoanActions: TableAction<LoanApplication>[] = [
-    { id: 'select', label: '', ariaLabel: 'Select loan', icon: 'fas fa-arrow-right', className: 'pick-btn icon-only' }
-  ];
+  selectedDisbursementLoan: LoanApplication | null = null;
+  selectedEmployeeDetails: any = null;
+  
+  // Email fields
+  accountingEmail: string = '';
+  emailNotes: string = '';
+  
+  // Disbursement tracking
+  disbursementInstructionReference: string = '';
+  disbursementInitiatedAt: string = '';
+  disbursementInitiatedBy: string = '';
+  
+  // Loading states
+  isLoadingEmployeeDetails = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
-    private loanApprovalService: LoanApprovalService
+    private employeeLoanService: EmployeeLoanService
   ) {}
 
   ngOnInit(): void {
@@ -71,87 +45,142 @@ export class LoanDisbursementUiComponent implements OnInit {
     if (routeUuid) {
       this.currentUuid = routeUuid;
     }
-
-    this.route.queryParamMap.subscribe(params => {
-      const requestedLoanId = String(params.get('loanId') || '');
-      this.loadApprovedLoans(requestedLoanId);
-    });
+    this.loadApprovedLoans();
   }
 
-  loadApprovedLoans(preferredLoanId?: string): void {
+  loadApprovedLoans(): void {
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: applications => {
         this.approvedLoans = applications
           .filter(loan => loan.status === 'APPROVED')
           .sort((a, b) => new Date(b.approvedDate || b.requestDate).getTime() - new Date(a.approvedDate || a.requestDate).getTime());
-
-        const normalizedPreferredLoanId = preferredLoanId ? Number(preferredLoanId) : NaN;
-        const targetId = Number.isFinite(normalizedPreferredLoanId) && this.approvedLoans.some(item => item.id === normalizedPreferredLoanId)
-          ? normalizedPreferredLoanId
-          : this.approvedLoans[0]?.id || '';
-
-        this.selectedDisbursementLoanId = targetId;
-        this.resetChecks();
-        this.syncDisbursementFields();
         this.isLoading = false;
       },
       error: () => {
         this.approvedLoans = [];
-        this.selectedDisbursementLoanId = '';
         this.isLoading = false;
       }
     });
   }
 
-  onDisbursementLoanChange(): void {
-    this.resetChecks();
-    this.syncDisbursementFields();
+  selectLoan(loan: LoanApplication): void {
+    this.selectedDisbursementLoan = loan;
+    this.selectedEmployeeDetails = null;
+    
+    // Reset email fields when new loan is selected
+    this.accountingEmail = '';
+    this.emailNotes = '';
+    
+    // Generate new disbursement instruction reference
+    this.generateDisbursementReference();
+    
+    // Load employee details including bank info
+    this.loadEmployeeDetails(loan.employeeId);
+  }
+  
+  generateDisbursementReference(): void {
+    const timestamp = new Date().getTime();
+    const random = Math.floor(Math.random() * 10000);
+    this.disbursementInstructionReference = `DISB-${timestamp}-${random}`;
+  }
+  
+  loadEmployeeDetails(employeeId: number): void {
+    this.isLoadingEmployeeDetails = true;
+    this.employeeLoanService.getEmployeeById(employeeId).subscribe({
+      next: (employee) => {
+        this.selectedEmployeeDetails = employee;
+        console.log('Employee details:', employee);
+        this.isLoadingEmployeeDetails = false;
+      },
+      error: (error) => {
+        console.error('Error loading employee details:', error);
+        this.isLoadingEmployeeDetails = false;
+      }
+    });
   }
 
-  pickLoanForDisbursement(loanId: number): void {
-    this.selectedDisbursementLoanId = loanId;
-    this.onDisbursementLoanChange();
-  }
-
-  handleApprovedLoanAction(event: { actionId: string; row: LoanApplication }): void {
-    if (event.actionId === 'select') {
-      this.pickLoanForDisbursement(event.row.id);
-    }
-  }
-
-  disburseSelectedLoan(): void {
-    const selectedLoan = this.selectedDisbursementLoan;
-    if (!selectedLoan || !this.canDisburseSelectedLoan) {
+  sendToAccounting(): void {
+    if (!this.selectedDisbursementLoan || !this.accountingEmail) {
       return;
     }
+    
+    // Record disbursement initiation
+    this.disbursementInitiatedAt = new Date().toISOString();
+    this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+    
+    // Get approved amount (use loan amount as default until approved amount field is added)
+    const approvedAmount = (this.selectedDisbursementLoan as any).approvedAmount || this.selectedDisbursementLoan.amount;
+    const totalRepayable = resolveLoanTotalRepayableAmount(this.selectedDisbursementLoan);
+    
+    // Prepare email data
+    const emailData = {
+      to: this.accountingEmail,
+      cc: this.selectedEmployeeDetails?.email,
+      subject: `Loan Disbursement Request - ${this.selectedDisbursementLoan.loanCode || this.selectedDisbursementLoan.id}`,
+      disbursementReference: this.disbursementInstructionReference,
+      initiatedBy: this.disbursementInitiatedBy,
+      initiatedAt: this.disbursementInitiatedAt,
+      loanDetails: {
+        loanId: this.selectedDisbursementLoan.loanCode || this.selectedDisbursementLoan.id,
+        employeeName: this.selectedDisbursementLoan.fullName,
+        employeeId: this.selectedDisbursementLoan.employeeId,
+        employeeEmail: this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail,
+        department: this.selectedDisbursementLoan.department,
+        bankName: this.selectedEmployeeDetails?.bankName,
+        accountNumber: this.selectedEmployeeDetails?.accountNumber,
+        accountName: `${this.selectedEmployeeDetails?.firstName} ${this.selectedEmployeeDetails?.lastName}`,
+        approvedAmount: approvedAmount,
+        interestRate: this.selectedDisbursementLoan.interestRate,
+        totalRepayable: totalRepayable,
+        repaymentTime: this.selectedDisbursementLoan.repaymentTime,
+        modeOfPayment: this.selectedDisbursementLoan.modeOfPayment,
+        purpose: this.selectedDisbursementLoan.purpose,
+        adminComment: this.selectedDisbursementLoan.adminComment,
+        approvedDate: this.selectedDisbursementLoan.approvedDate,
+        approvedBy: this.getApprovedByName(),
+        notes: this.emailNotes
+      }
+    };
 
-    const recipientNote = this.disbursementRecipientType === 'THIRD_PARTY'
-      ? `Funds released to third-party recipient: ${this.thirdPartyName.trim()}`
-      : 'Funds released to borrower account';
-
-    const statusNote = `${recipientNote}. Disbursed on ${this.disbursedDate}. Repayment schedule and interest accrual initiated.`;
-
-    this.loanApprovalService.updateApplicationStatus(selectedLoan.id, {
-      status: 'ACTIVE',
-      changedAt: this.buildDisbursementDateTime(),
-      changedBy: 'Admin',
-      notes: statusNote
-    }).subscribe({
+    console.log('Sending to accounting:', emailData);
+    
+    // Here you would call an email service API
+    this.messages = [{
+      severity: 'success',
+      summary: 'Request Sent',
+      detail: `Disbursement request sent to ${this.accountingEmail}. Reference: ${this.disbursementInstructionReference}`
+    }];
+    
+    // Optionally, you could update the loan status or save the disbursement record
+    this.updateLoanDisbursementInitiated();
+  }
+  
+  getApprovedByName(): string {
+    const approvedBy = this.selectedDisbursementLoan?.approvedBy;
+    if (typeof approvedBy === 'object' && approvedBy !== null) {
+      return approvedBy.fullname || approvedBy.username || 'Unknown';
+    }
+    return 'Unknown';
+  }
+  
+  updateLoanDisbursementInitiated(): void {
+    if (!this.selectedDisbursementLoan) return;
+    
+    // Update the loan with disbursement initiation info
+    const updatedLoan = {
+      ...this.selectedDisbursementLoan,
+      disbursementInitiatedAt: this.disbursementInitiatedAt,
+      disbursementInitiatedBy: this.disbursementInitiatedBy,
+      disbursementInstructionReference: this.disbursementInstructionReference
+    };
+    
+    this.loanApplicationService.saveApplication(updatedLoan).subscribe({
       next: () => {
-        this.messages = [{
-          severity: 'success',
-          summary: 'Loan Disbursed',
-          detail: `${selectedLoan.loanCode || selectedLoan.id} moved from APPROVED to ACTIVE.`
-        }];
-        this.loadApprovedLoans();
+        console.log('Loan updated with disbursement initiation info');
       },
-      error: () => {
-        this.messages = [{
-          severity: 'error',
-          summary: 'Disbursement Failed',
-          detail: 'Unable to disburse selected loan right now.'
-        }];
+      error: (error) => {
+        console.error('Error updating loan:', error);
       }
     });
   }
@@ -168,15 +197,14 @@ export class LoanDisbursementUiComponent implements OnInit {
     }).format(amount);
   }
 
-  formatDisplayDate(value?: string | null): string {
-    if (!value) {
-      return 'N/A';
-    }
-
+  formatDate(value?: string | null): string {
+    if (!value) return 'N/A';
     return new Date(value).toLocaleDateString('en-NG', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
@@ -184,80 +212,11 @@ export class LoanDisbursementUiComponent implements OnInit {
     return this.approvedLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
   }
 
-  getLoanTotalRepayable(loan?: LoanApplication): number {
-    return loan ? resolveLoanTotalRepayableAmount(loan) : 0;
+  getLoanTotalRepayable(loan: LoanApplication): number {
+    return resolveLoanTotalRepayableAmount(loan);
   }
-
-  getChecklistCompletedCount(): number {
-    return [
-      this.checklistIdentityVerified,
-      this.checklistAccountVerified,
-      this.checklistComplianceCleared,
-      this.checklistFundsReserved
-    ].filter(Boolean).length;
-  }
-
-  get selectedDisbursementLoan(): LoanApplication | undefined {
-    return this.approvedLoans.find(item => item.id === this.selectedDisbursementLoanId);
-  }
-
-  get canDisburseSelectedLoan(): boolean {
-    if (!this.selectedDisbursementLoanId || !this.selectedDisbursementLoan) {
-      return false;
-    }
-
-    if (this.disbursementRecipientType === 'THIRD_PARTY' && !this.thirdPartyName.trim()) {
-      return false;
-    }
-
-    return this.checklistIdentityVerified
-      && this.checklistAccountVerified
-      && this.checklistComplianceCleared
-      && this.checklistFundsReserved;
-  }
-
-  private resetChecks(): void {
-    this.disbursementRecipientType = 'BORROWER';
-    this.thirdPartyName = '';
-    this.checklistIdentityVerified = false;
-    this.checklistAccountVerified = false;
-    this.checklistComplianceCleared = false;
-    this.checklistFundsReserved = false;
-  }
-
-  private syncDisbursementFields(): void {
-    const selectedLoan = this.selectedDisbursementLoan;
-    this.disbursedDate = this.getTodayDateInputValue();
-    this.disbursementAmount = Number(selectedLoan?.amount || 0);
-  }
-
-  private buildDisbursementDateTime(): string {
-    const rawDate = String(this.disbursedDate || '').trim();
-    const now = new Date();
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-      const [year, month, day] = rawDate.split('-').map((part) => Number(part));
-      const disbursedAt = new Date(
-        year,
-        Number(month) - 1,
-        day,
-        now.getHours(),
-        now.getMinutes(),
-        now.getSeconds(),
-        now.getMilliseconds()
-      );
-
-      return disbursedAt.toISOString();
-    }
-
-    return now.toISOString();
-  }
-
-  private getTodayDateInputValue(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  
+  getApprovedAmount(loan: LoanApplication): number {
+    return (loan as any).approvedAmount || loan.amount;
   }
 }

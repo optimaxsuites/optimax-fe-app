@@ -85,7 +85,7 @@
   </app-modal>
 
   <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
-    <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()"></app-employee-loan-details-modal>
+    <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()" (refresh)="loadLoanData()"></app-employee-loan-details-modal>
   </app-side-modal>
 
   <div class="dashboard-content">
@@ -198,7 +198,11 @@
       </aside>
 
       <div class="workspace-main">
-        <div class="card loan-history-section" *ngIf="showHistory">
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
+          <mat-spinner diameter="48"></mat-spinner>
+        </div>
+        <div class="card loan-history-section" *ngIf="showHistory && !isLoading">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
             <span class="history-subtitle">Showing last 5 requests</span>
@@ -213,6 +217,7 @@
                   <th (click)="setHistorySort('purpose')" class="sortable purpose-col">Purpose <i class="fas" [ngClass]="getHistorySortIcon('purpose')"></i></th>
                   <th (click)="setHistorySort('amount')" class="sortable amount-col">Amount <i class="fas" [ngClass]="getHistorySortIcon('amount')"></i></th>
                   <th (click)="setHistorySort('interestRate')" class="sortable">Interest <i class="fas" [ngClass]="getHistorySortIcon('interestRate')"></i></th>
+                  <th>Repayment Date</th>
                   <th (click)="setHistorySort('totalRepayable')" class="sortable amount-col">Repayable Amount <i class="fas" [ngClass]="getHistorySortIcon('totalRepayable')"></i></th>
                   <th (click)="setHistorySort('status')" class="sortable">Status <i class="fas" [ngClass]="getHistorySortIcon('status')"></i></th>
                   <th class="actions-col">Actions</th>
@@ -225,6 +230,10 @@
                   <td class="loan-purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
                   <td class="loan-amount">{{ formatCurrency(loan.amount) }}</td>
                   <td>{{ loan.interestRate || 0 }}%</td>
+                  <td>
+                    <div>{{ formatRepaymentMonthYear(loan.repaymentStartDate) }}</div>
+                    <small>{{ formatRepaymentDay(loan.repaymentDay) }}</small>
+                  </td>
                   <td class="loan-amount">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
                   <td>
                     <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">

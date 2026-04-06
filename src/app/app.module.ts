@@ -201,6 +201,9 @@ import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shi
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
+import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
+import { EmployeeInterestAcceptanceComponent } from './ui/view/loan-management/employee-interest-acceptance/employee-interest-acceptance.component';
+
 import { MenuModule } from 'primeng/menu';
 import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
@@ -336,13 +339,15 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     ShiftAssignmentComponent,
     ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
+    LoanPurposeManagementComponent,
+    EmployeeInterestAcceptanceComponent,
     AdHocComponent,
     QueryComponent,
     PayrolExtrasComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
@@ -371,13 +376,10 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     EditorModule,
     MessagesModule,
     MessageModule,
-    RippleModule,
-    TableModule,
     MatExpansionModule,
     MatRadioModule,
     MatPaginatorModule,
     MatTableModule,
-    MatRadioModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
@@ -389,6 +391,7 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     MatButtonModule,
     MatDividerModule,
     MatMenuModule,
+    MatProgressSpinnerModule,
     PasswordModule,
     ButtonModule,
     NgSelectModule,

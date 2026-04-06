@@ -55,6 +55,15 @@
               <span class="amount">{{ formatCurrency(loan.repaymentAmount) }}</span>
             </div>
             <div class="info-item">
+              <label>Repayment Start Date:</label>
+              <span>{{ getDisplayedRepaymentStartDate(loan) }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label>Repayment Day:</label>
+              <span>{{ formatRepaymentDay(loan.repaymentDay) }}</span>
+            </div>
+            <div class="info-item">
               <label>Interest Rate:</label>
               <span>{{ loan.interestRate }}%</span>
             </div>
@@ -108,8 +117,12 @@
                 <span class="info-value">{{ loan.repaymentTime }} months</span>
               </div>
               <div class="info-row">
+                <span class="info-label">Repayment Start Date:</span>
+                <span class="info-value">{{ getDisplayedRepaymentStartDate(loan) }}</span>
+              </div>
+              <div class="info-row">
                 <span class="info-label">Payment Due:</span>
-                <span class="info-value">1st of each month</span>
+                <span class="info-value">{{ formatRepaymentDay(loan.repaymentDay) }}</span>
               </div>
             </div>
             
@@ -337,6 +350,35 @@
             </div>
           </div>
 
+          <div class="preview-row" *ngIf="selectedAction === 'APPROVED'">
+            <span>Employee Repayment Date:</span>
+            <strong>{{ getDisplayedRepaymentStartDate(loan) }}</strong>
+          </div>
+
+          <label for="repaymentDay" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+            Repayment Day Of Month
+            <span class="required">*</span>
+          </label>
+
+          <input
+            *ngIf="selectedAction === 'APPROVED'"
+            id="repaymentDay"
+            type="number"
+            min="1"
+            max="31"
+            [formControl]="repaymentDayControl"
+            [class.error]="repaymentDayControl.invalid && repaymentDayControl.touched"
+          >
+
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> The employee-set repayment date stays fixed. Admin can only set the day of repayment, for example 15 for the 15th of each month.
+          </div>
+
+          <div class="error-message" *ngIf="selectedAction === 'APPROVED' && repaymentDayControl.invalid && repaymentDayControl.touched">
+            <small *ngIf="repaymentDayControl.errors?.['required']">Repayment day is required</small>
+            <small *ngIf="repaymentDayControl.errors?.['min'] || repaymentDayControl.errors?.['max']">Repayment day must be between 1 and 31</small>
+          </div>
+
           <label for="comment" class="comment-label">
             {{ selectedAction === 'REJECTED' ? 'Reason for Rejection' : 'Additional Comments (Optional)' }}
             <span class="required" *ngIf="selectedAction === 'REJECTED'">*</span>
@@ -369,7 +411,7 @@
           class="submit-btn" 
           [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
           (click)="submitStatusChange()"
-          [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && interestRateControl.invalid)">
+          [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && (interestRateControl.invalid || repaymentDayControl.invalid))">
           <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
           {{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }}
         </button>

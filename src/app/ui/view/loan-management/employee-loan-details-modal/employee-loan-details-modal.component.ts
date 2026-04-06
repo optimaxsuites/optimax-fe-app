@@ -1,5 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { LoanApplication, StatusChange } from '../../../service/loan/loan.types';
+import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { AdvanceInterestAgreementService, AdvanceInterestAgreement } from '../../../service/loan/loan-interest-agreement.service';
 import {
   formatLoanPaymentModeDisplay,
   formatLoanPurposeDisplay,
@@ -14,28 +16,147 @@ import {
   templateUrl: './employee-loan-details-modal.component.html',
   styleUrls: ['./employee-loan-details-modal.component.scss']
 })
-export class EmployeeLoanDetailsModalComponent {
+export class EmployeeLoanDetailsModalComponent implements OnInit {
   @Input() loan: LoanApplication | null = null;
   @Output() close = new EventEmitter<void>();
+  @Output() refresh = new EventEmitter<void>();
+
+  showInterestModal = false;
+  showRejectionReason = false;
+  rejectionReason = '';
+  isLoading = false;
+  interestAgreement: AdvanceInterestAgreement | null = null;
+
+  constructor(
+    private loanApprovalService: LoanApprovalService,
+    private interestAgreementService: AdvanceInterestAgreementService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadInterestAgreement();
+  }
 
   get statusTimeline(): StatusChange[] {
     return this.loan ? this.buildStatusTimeline(this.loan) : [];
   }
 
   get displayedStatus(): LoanApplication['status'] {
-    return this.loan ? this.resolveDisplayedStatus(this.loan, this.statusTimeline) : 'PENDING';
-  }
+  return this.loan ? this.resolveDisplayedStatus(this.loan, this.statusTimeline) : 'PENDING';
+}
 
   isCurrentTimelineStatus(status: LoanApplication['status'] | undefined): boolean {
-    if (!this.loan || !status) {
-      return false;
-    }
-
+    if (!this.loan || !status) return false;
     return this.displayedStatus === status;
   }
 
   requestClose(): void {
     this.close.emit();
+  }
+
+  openInterestAcceptanceModal(): void {
+    this.loadInterestAgreement();
+    this.showInterestModal = true;
+    this.showRejectionReason = false;
+    this.rejectionReason = '';
+  }
+
+  closeInterestModal(): void {
+    this.showInterestModal = false;
+    this.showRejectionReason = false;
+    this.rejectionReason = '';
+  }
+
+  private loadInterestAgreement(): void {
+    if (this.loan?.id) {
+      this.interestAgreementService.getAgreementByLoanId(this.loan.id).subscribe({
+        next: (agreement) => {
+          this.interestAgreement = agreement;
+          console.log('Interest agreement status:', agreement?.status);
+        },
+        error: (error) => {
+          console.error('Error loading interest agreement:', error);
+        }
+      });
+    }
+  }
+
+  // When employee accepts
+acceptInterestRate(): void {
+  if (!this.loan) return;
+  
+  this.isLoading = true;
+  const acceptedRate = this.getDisplayedInterestRate();
+  
+  this.loanApprovalService.acceptInterestRate(this.loan.id, acceptedRate).subscribe({
+    next: () => {
+      this.isLoading = false;
+      this.closeInterestModal();
+      this.refresh.emit();
+      alert(`Interest rate of ${acceptedRate}% accepted successfully. Loan is now APPROVED.`);
+    },
+    error: (error) => {
+      this.isLoading = false;
+      console.error('Error accepting interest rate:', error);
+      alert('Failed to accept interest rate. Please try again.');
+    }
+  });
+}
+
+// When employee rejects
+rejectInterestRate(): void {
+  if (!this.loan) return;
+  
+  if (!this.showRejectionReason) {
+    this.showRejectionReason = true;
+    return;
+  }
+  
+  if (!this.rejectionReason.trim()) {
+    alert('Please provide a reason for rejecting the interest rate.');
+    return;
+  }
+  
+  this.isLoading = true;
+  
+  this.loanApprovalService.rejectInterestRate(this.loan.id, this.rejectionReason).subscribe({
+    next: () => {
+      this.isLoading = false;
+      this.closeInterestModal();
+      this.refresh.emit();
+      alert('Interest rate rejected. Loan returned to PENDING status for admin review.');
+    },
+    error: (error) => {
+      this.isLoading = false;
+      console.error('Error rejecting interest rate:', error);
+      alert('Failed to reject interest rate. Please try again.');
+    }
+  });
+}
+
+  calculateMonthlyRepayment(): number {
+    if (!this.loan) return 0;
+    const rate = this.getDisplayedInterestRate() / 100 / 12;
+    const amount = this.loan.amount;
+    const months = this.loan.repaymentTime;
+    
+    if (rate > 0 && months > 0) {
+      return amount * rate * Math.pow(1 + rate, months) / (Math.pow(1 + rate, months) - 1);
+    }
+    return amount / months;
+  }
+
+  calculateTotalInterest(): number {
+    if (!this.loan) return 0;
+    const totalRepayable = this.calculateTotalRepayable();
+    return totalRepayable - this.loan.amount;
+  }
+
+  calculateTotalRepayable(): number {
+    if (!this.loan) return 0;
+    if (this.loan.modeOfPayment === 'ONE_OFF') {
+      return this.loan.amount * (1 + this.getDisplayedInterestRate() / 100);
+    }
+    return this.calculateMonthlyRepayment() * this.loan.repaymentTime;
   }
 
   formatCurrency(amount: number | undefined): string {
@@ -55,103 +176,42 @@ export class EmployeeLoanDetailsModalComponent {
   }
 
   getAppliedDate(): string | null {
-    if (!this.loan) {
-      return null;
-    }
-
+    if (!this.loan) return null;
     const pendingEntry = this.getStatusHistoryByStatus('PENDING');
-    if (pendingEntry?.changedAt) {
-      return pendingEntry.changedAt;
-    }
-
-    return this.loan.requestDate || null;
+    return pendingEntry?.changedAt || this.loan.requestDate || null;
   }
 
   getApprovedDate(): string | null {
-    if (!this.loan) {
-      return null;
-    }
-
-    if (this.loan.approvedDate) {
-      return this.loan.approvedDate;
-    }
-
+    if (!this.loan) return null;
+    if (this.loan.approvedDate) return this.loan.approvedDate;
     const approvedHistory = this.getStatusHistoryByStatus('APPROVED');
-    if (approvedHistory?.changedAt) {
-      return approvedHistory.changedAt;
-    }
-
-    if (this.loan.status === 'ACTIVE' || this.loan.status === 'COMPLETED') {
-      return this.loan.disbursedDate || this.loan.completedDate || null;
-    }
-
-    if (this.loan.status === 'APPROVED') {
-      return this.getAdminFeedback()?.changedAt || this.getLatestStatusDate() || this.loan.requestDate;
-    }
-
+    if (approvedHistory?.changedAt) return approvedHistory.changedAt;
     return null;
   }
 
   getDisbursedDate(): string | null {
-    if (!this.loan) {
-      return null;
-    }
-
-    if (this.loan.disbursedDate) {
-      return this.loan.disbursedDate;
-    }
-
+    if (!this.loan) return null;
+    if (this.loan.disbursedDate) return this.loan.disbursedDate;
     const activeHistory = this.getStatusHistoryByStatus('ACTIVE');
-    if (activeHistory?.changedAt) {
-      return activeHistory.changedAt;
-    }
-
-    if (this.loan.status === 'ACTIVE' || this.loan.status === 'COMPLETED') {
-      return this.getLatestMeaningfulStatusDate('ACTIVE', 'APPROVED');
-    }
-
+    if (activeHistory?.changedAt) return activeHistory.changedAt;
     return null;
   }
 
   getLatestStatusDate(): string | null {
-    if (!this.statusTimeline.length) {
-      return null;
-    }
-
+    if (!this.statusTimeline.length) return null;
     const sorted = [...this.statusTimeline].sort(
       (left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime()
     );
     return sorted[0]?.changedAt ?? null;
   }
 
-  private getLatestMeaningfulStatusDate(...statuses: LoanApplication['status'][]): string | null {
-    const entries = this.statusTimeline
-      .filter((item) => statuses.includes(item.status))
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
-
-    return entries[0]?.changedAt ?? null;
-  }
-
   getAdminFeedback(): StatusChange | null {
-    const prioritizedReviewNotes = this.statusTimeline
-      .filter((item) => (item.status === 'APPROVED' || item.status === 'REJECTED') && this.isMeaningfulReviewNote(item))
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
-
-    if (prioritizedReviewNotes[0]) {
-      return prioritizedReviewNotes[0];
-    }
-
     const withNotes = this.statusTimeline
       .filter((item) => item.status !== 'PENDING' && !!item.notes?.trim())
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
 
-    if (withNotes[0]) {
-      return withNotes[0];
-    }
-
-    if (!this.loan?.adminComment?.trim()) {
-      return null;
-    }
+    if (withNotes[0]) return withNotes[0];
+    if (!this.loan?.adminComment?.trim()) return null;
 
     return {
       status: this.loan.status,
@@ -161,41 +221,19 @@ export class EmployeeLoanDetailsModalComponent {
     };
   }
 
-  private isMeaningfulReviewNote(item: StatusChange): boolean {
-    const normalizedNote = String(item.notes || '').trim().toLowerCase();
-    if (!normalizedNote) {
-      return false;
-    }
+ // The interest rate comes from the loan directly
+getDisplayedInterestRate(): number {
+  if (!this.loan) return 0;
+  return Number(this.loan.interestRate || 0);
+}
 
-    return normalizedNote !== 'loan approved' && normalizedNote !== 'loan rejected';
-  }
-
-  getDisplayedInterestRate(): number {
-    if (!this.loan) {
-      return 0;
-    }
-
-    if (this.displayedStatus !== 'APPROVED' && this.displayedStatus !== 'ACTIVE' && this.displayedStatus !== 'COMPLETED') {
-      return 0;
-    }
-
-    if (Number(this.loan.interestRate || 0) > 0) {
-      return Number(this.loan.interestRate || 0);
-    }
-
-    const approvedEntry = this.getStatusHistoryByStatus('APPROVED');
-    return Number(approvedEntry?.interestRate || 0);
-  }
 
   getTotalRepayableAmount(): number {
     return this.loan ? resolveLoanTotalRepayableAmount(this.loan) : 0;
   }
 
   formatDate(value: string | null | undefined): string {
-    if (!value) {
-      return 'N/A';
-    }
-
+    if (!value) return 'N/A';
     return new Date(value).toLocaleString('en-NG', {
       year: 'numeric',
       month: 'short',
@@ -207,18 +245,23 @@ export class EmployeeLoanDetailsModalComponent {
 
   getStatusClass(status: string | undefined): string {
     switch (status) {
-      case 'APPROVED':
-        return 'status-approved';
-      case 'ACTIVE':
-        return 'status-active';
-      case 'PENDING':
-        return 'status-pending';
-      case 'REJECTED':
-        return 'status-rejected';
-      case 'COMPLETED':
-        return 'status-completed';
-      default:
-        return 'status-default';
+      case 'APPROVED': return 'status-approved';
+      case 'ACTIVE': return 'status-active';
+      case 'PENDING': return 'status-pending';
+      case 'REJECTED': return 'status-rejected';
+      case 'COMPLETED': return 'status-completed';
+      case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-pending';
+      default: return 'status-default';
+    }
+  }
+
+  getDayOrdinal(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
     }
   }
 
@@ -239,22 +282,12 @@ export class EmployeeLoanDetailsModalComponent {
       });
     }
 
-    const shouldInferApproved = !approvedDate && (loan.status === 'ACTIVE' || loan.status === 'COMPLETED' || !!disbursedDate || !!completedDate);
-    if (shouldInferApproved) {
-      timeline.push({
-        status: 'APPROVED',
-        changedAt: disbursedDate || completedDate || requestDate || new Date().toISOString(),
-        changedBy: this.formatActor(loan.approvedBy || loan.disbursedBy),
-        notes: 'Loan approved'
-      });
-    }
-
     if (approvedDate) {
       timeline.push({
         status: 'APPROVED',
         changedAt: approvedDate,
         changedBy: this.formatActor(loan.approvedBy),
-        notes: loan.status === 'APPROVED' && loan.adminComment ? loan.adminComment : 'Loan approved'
+        notes: loan.adminComment || 'Loan approved'
       });
     }
 
@@ -263,7 +296,7 @@ export class EmployeeLoanDetailsModalComponent {
         status: 'REJECTED',
         changedAt: rejectedDate,
         changedBy: this.formatActor(loan.rejectedBy),
-        notes: loan.status === 'REJECTED' && loan.adminComment ? loan.adminComment : 'Loan rejected'
+        notes: loan.adminComment || 'Loan rejected'
       });
     }
 
@@ -285,115 +318,34 @@ export class EmployeeLoanDetailsModalComponent {
       });
     }
 
-    const dedupedTimeline = timeline
-      .filter((entry, index, entries) => {
-        const normalizedDate = this.normalizeDate(entry.changedAt);
-        if (!normalizedDate) {
-          return false;
-        }
-
-        return index === entries.findIndex((candidate) =>
-          candidate.status === entry.status && this.normalizeDate(candidate.changedAt) === normalizedDate
-        );
-      })
-      .sort((left, right) => {
-        const statusOrderDifference = this.getStatusProgressionOrder(left.status) - this.getStatusProgressionOrder(right.status);
-        if (statusOrderDifference !== 0) {
-          return statusOrderDifference;
-        }
-
-        return new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime();
-      });
-
-    const resolvedStatus = this.resolveDisplayedStatus(loan, dedupedTimeline);
-    const hasResolvedStatus = dedupedTimeline.some((entry) => entry.status === resolvedStatus);
-
-    if (!hasResolvedStatus) {
-      dedupedTimeline.push({
-        status: resolvedStatus,
-        changedAt: completedDate || disbursedDate || approvedDate || rejectedDate || requestDate || new Date().toISOString(),
-        changedBy: this.resolveCurrentStatusActor(loan, resolvedStatus),
-        notes: loan.adminComment || `Loan ${resolvedStatus.toLowerCase()}`
-      });
-    }
-
-    return dedupedTimeline;
-  }
-
-  private getStatusProgressionOrder(status: LoanApplication['status']): number {
-    switch (status) {
-      case 'PENDING':
-        return 1;
-      case 'APPROVED':
-        return 2;
-      case 'ACTIVE':
-        return 3;
-      case 'COMPLETED':
-        return 4;
-      case 'REJECTED':
-        return 5;
-      default:
-        return 99;
-    }
+    return timeline.sort((left, right) => 
+      new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime()
+    );
   }
 
   private resolveDisplayedStatus(loan: LoanApplication, timeline: StatusChange[] = []): LoanApplication['status'] {
     const explicitStatus = this.normalizeStatus(loan.status);
-    const latestTimelineStatus = timeline
-      .filter((item) => !!this.normalizeDate(item.changedAt))
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.status;
+    const latestTimelineStatus = timeline.length > 0 ? timeline[timeline.length - 1].status : null;
 
-    if (explicitStatus === 'COMPLETED') {
-      return 'COMPLETED';
-    }
-
-    if (explicitStatus === 'ACTIVE') {
-      return 'ACTIVE';
-    }
-
-    if (explicitStatus === 'REJECTED') {
-      return 'REJECTED';
-    }
-
-    if (explicitStatus === 'APPROVED') {
-      return 'APPROVED';
-    }
-
-    if (latestTimelineStatus && latestTimelineStatus !== 'PENDING') {
-      return latestTimelineStatus;
-    }
-
-    if (this.normalizeDate(loan.completedDate)) {
-      return 'COMPLETED';
-    }
-
-    if (this.normalizeDate(loan.disbursedDate)) {
-      return 'ACTIVE';
-    }
-
-    if (this.normalizeDate(loan.rejectedDate)) {
-      return 'REJECTED';
-    }
-
-    if (this.normalizeDate(loan.approvedDate)) {
-      return 'APPROVED';
-    }
-
+    if (explicitStatus === 'COMPLETED') return 'COMPLETED';
+    if (explicitStatus === 'ACTIVE') return 'ACTIVE';
+    if (explicitStatus === 'REJECTED') return 'REJECTED';
+    if (explicitStatus === 'APPROVED') return 'APPROVED';
+    if (latestTimelineStatus && latestTimelineStatus !== 'PENDING') return latestTimelineStatus;
+    if (this.normalizeDate(loan.completedDate)) return 'COMPLETED';
+    if (this.normalizeDate(loan.disbursedDate)) return 'ACTIVE';
+    if (this.normalizeDate(loan.rejectedDate)) return 'REJECTED';
+    if (this.normalizeDate(loan.approvedDate)) return 'APPROVED';
     return explicitStatus || latestTimelineStatus || 'PENDING';
   }
 
-  private resolveCurrentStatusActor(loan: LoanApplication, status: LoanApplication['status'] = this.displayedStatus): string {
-    switch (status) {
-      case 'APPROVED':
-        return this.formatActor(loan.approvedBy);
-      case 'REJECTED':
-        return this.formatActor(loan.rejectedBy);
-      case 'ACTIVE':
-        return this.formatActor(loan.disbursedBy);
-      case 'COMPLETED':
-        return resolveCompletedLoanActor(loan);
-      default:
-        return this.resolveEmployeeDisplayName(loan);
+  private resolveCurrentStatusActor(loan: LoanApplication): string {
+    switch (loan.status) {
+      case 'APPROVED': return this.formatActor(loan.approvedBy);
+      case 'REJECTED': return this.formatActor(loan.rejectedBy);
+      case 'ACTIVE': return this.formatActor(loan.disbursedBy);
+      case 'COMPLETED': return resolveCompletedLoanActor(loan);
+      default: return this.resolveEmployeeDisplayName(loan);
     }
   }
 
@@ -403,42 +355,26 @@ export class EmployeeLoanDetailsModalComponent {
 
   private normalizeDate(value: string | undefined): string {
     const rawValue = String(value || '').trim();
-    if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
-      return '';
-    }
-
+    if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') return '';
     const timestamp = new Date(rawValue).getTime();
     return Number.isFinite(timestamp) ? rawValue : '';
   }
 
   private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
     const normalizedStatus = String(status || '').trim().toUpperCase();
-
-    switch (normalizedStatus) {
-      case 'PENDING':
-      case 'APPROVED':
-      case 'REJECTED':
-      case 'ACTIVE':
-      case 'COMPLETED':
-        return normalizedStatus;
-      default:
-        return null;
-    }
+    const validStatuses: LoanApplication['status'][] = ['PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'COMPLETED'];
+    return validStatuses.includes(normalizedStatus as LoanApplication['status']) ? normalizedStatus as LoanApplication['status'] : null;
   }
 
-  private formatActor(actor: LoanApplication['approvedBy'] | LoanApplication['disbursedBy'] | LoanApplication['rejectedBy'] | string | undefined): string {
+  private formatActor(actor: any): string {
     return resolveLoanActorName(actor);
   }
 
   private getStatusHistoryByStatus(status: LoanApplication['status']): StatusChange | null {
-    if (!this.statusTimeline.length) {
-      return null;
-    }
-
+    if (!this.statusTimeline.length) return null;
     const entries = this.statusTimeline
       .filter((item) => item.status === status)
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
-
     return entries[0] ?? null;
   }
 }

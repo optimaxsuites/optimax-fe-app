@@ -1,5 +1,5 @@
 import { Injectable, isDevMode } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import {
@@ -18,7 +18,10 @@ import {
   StatusChange
 } from './loan.types';
 import {
+  normalizeLoanRepaymentStartDate,
+  persistLoanRepaymentStartDate,
   persistLoanStatusActorName,
+  readPersistedLoanRepaymentStartDate,
   readPersistedLoanInterestRate,
   readPersistedLoanStatusNote,
   readPersistedLoanStatusActorName,
@@ -27,6 +30,7 @@ import {
   resolveLoanEmployeeName,
   resolvePaymentActorName
 } from './loan-display.util';
+import { SUPPRESS_ERROR_TOAST } from '../../shared-component/service/error-message/error-toast.interceptor';
 
 @Injectable({
   providedIn: 'root'
@@ -34,57 +38,53 @@ import {
 export class LoanService {
 
   private readonly standardLoanUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/advanceLoans';
-  private readonly originalRequestDateCacheKey = 'advance-loan-original-request-dates';
-  private readonly loanMetadataCacheKey = 'advance-loan-submit-metadata';
+  private readonly repaymentStartDateSignatureCacheKey = 'advance-loan-repayment-start-date-signature-cache';
 
   constructor(private http: HttpClient) {}
 
- getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
-  const tenantId = 'optimax';
-  const token = sessionStorage.getItem('token');
-  
-  const fetchPage = (page: number): Observable<AdvanceLoan[]> => {
-    return this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'X-Tenant-ID': tenantId
-      },
-      responseType: 'json'
-    }).pipe(
-      map(response => this.safeParseResponse(response)),
-      switchMap(data => {
-        // API returns array directly when page parameter is present
-        if (Array.isArray(data)) {
-          console.log(`Page ${page}: ${data.length} loans`);
-          
-          // If we got a full page (10 items), fetch next page
-          if (data.length === 10) {
-            return fetchPage(page + 1).pipe(
-              map(nextPageLoans => [...data, ...nextPageLoans])
-            );
+  getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
+    const tenantId = 'optimax';
+    const token = sessionStorage.getItem('token');
+    
+    const fetchPage = (page: number): Observable<AdvanceLoan[]> => {
+      return this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'X-Tenant-ID': tenantId
+        },
+        context: new HttpContext().set(SUPPRESS_ERROR_TOAST, true),
+        responseType: 'json'
+      }).pipe(
+        map(response => this.safeParseResponse(response)),
+        switchMap(data => {
+          if (Array.isArray(data)) {
+            console.log(`Page ${page}: ${data.length} loans`);
+            if (data.length === 10) {
+              return fetchPage(page + 1).pipe(
+                map(nextPageLoans => [...data, ...nextPageLoans])
+              );
+            }
+            return of(data);
           }
-          // Last page (less than 10 items), return current page
-          return of(data);
-        }
+          return of([]);
+        })
+      );
+    };
+    
+    return fetchPage(1).pipe(
+      tap(loans => {
+        console.log(`Total loans loaded: ${loans.length}`);
+      }),
+      catchError((error) => {
+        console.error('Failed to load loans from API:', error.status);
         return of([]);
       })
     );
-  };
-  
-  // Start at page 1 (API uses 1-based pagination for this endpoint)
-  return fetchPage(1).pipe(
-    tap(loans => {
-      console.log(`Total loans loaded: ${loans.length}`);
-    }),
-    catchError((error) => {
-      console.error('Failed to load loans from API:', error.status);
-      return of([]);
-    })
-  );
-}
+  }
 
   getAdvanceLoanById(id: number): Observable<AdvanceLoan> {
     return this.http.get<AdvanceLoan>(`${this.standardLoanUrl}/${id}`, {
+      context: new HttpContext().set(SUPPRESS_ERROR_TOAST, true),
       responseType: 'json'
     }).pipe(
       map(response => this.safeParseResponse(response)),
@@ -93,35 +93,42 @@ export class LoanService {
   }
 
   createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
-    let requestBody = Array.isArray(payload) ? payload[0] : payload;
-    
-    const formattedPayload = {
-      employeeId: Number(requestBody.employeeId),
-      amount: Number(requestBody.amount),
-      purpose: String(requestBody.purpose || ''),
-      repaymentAmount: Number(requestBody.repaymentAmount),
-      repaymentTime: Number(requestBody.repaymentTime),
-      modeOfPayment: requestBody.modeOfPayment || 'MONTHLY',
-      requestDate: requestBody.requestDate || new Date().toISOString(),
-      status: 'PENDING'
-    };
-    
-    console.log('Sending payload:', formattedPayload);
-    
-    return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
-      headers: { 
-        'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
+  let requestBody = Array.isArray(payload) ? payload[0] : payload;
+  
+  const formattedPayload = {
+    employeeId: Number(requestBody.employeeId),
+    amount: Number(requestBody.amount),
+    purpose: String(requestBody.purpose || ''),
+    repaymentAmount: Number(requestBody.repaymentAmount),
+    repaymentTime: Number(requestBody.repaymentTime),
+    repaymentStartDate: this.toBackendDateTime(normalizeLoanRepaymentStartDate(requestBody.repaymentStartDate)),
+    modeOfPayment: requestBody.modeOfPayment || 'MONTHLY',
+    requestDate: requestBody.requestDate || new Date().toISOString(),
+    status: 'PENDING'
+  };
+  
+  console.log('Sending payload:', formattedPayload);
+  
+  return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
+    headers: { 
+      'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+      'Content-Type': 'application/json'
+    }
+  }).pipe(
+    map(response => this.safeParseResponse(response)),
+    tap((response: AdvanceLoan) => {
+      console.log('Loan created:', response.id, 'Status:', response.status);
+    }),
+    catchError((error) => {
+      // If it's a connection error but the POST actually succeeded, we might still get a response
+      if (error.status === 0 || error.message?.includes('Connection refused')) {
+        console.warn('Connection issue, but loan may have been created');
+        // Return a mock response if needed, or rethrow
       }
-    }).pipe(
-      map(response => this.safeParseResponse(response)),
-      tap((response: AdvanceLoan) => {
-        console.log('Loan created:', response.id, 'Status:', response.status);
-      }),
-      catchError(this.handleError)
-    );
-  }
-
+      return this.handleError(error);
+    })
+  );
+}
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
     const requestBody = Array.isArray(payload) ? payload[0] : payload;
     
@@ -172,6 +179,7 @@ export class LoanService {
       purpose: formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose,
       repaymentAmount: Number(formData.repaymentAmount),
       repaymentTime: Number(formData.repaymentTime),
+      repaymentStartDate: this.toBackendDateTime(normalizeLoanRepaymentStartDate(formData.repaymentStartDate)),
       modeOfPayment: formData.modeOfPayment,
       requestDate: formData.requestDate || new Date().toISOString(),
       status: 'PENDING'
@@ -183,6 +191,18 @@ export class LoanService {
       map((loan) => {
         const application = this.toLoanApplication(loan);
         const originalRequestDate = this.normalizeDateValue(loan.requestDate, formData.requestDate || new Date().toISOString());
+        persistLoanRepaymentStartDate({
+          id: Number(application.id || loan.id || 0),
+          loanCode: String(application.loanCode || loan.loanCode || loan.id || '')
+        }, formData.repaymentStartDate || application.repaymentStartDate);
+        this.persistRepaymentStartDateBySignature({
+          employeeId: Number(application.employeeId || formData.employeeId || 0),
+          amount: Number(application.amount || formData.amount || 0),
+          purpose: application.purpose || formData.purpose,
+          modeOfPayment: application.modeOfPayment || formData.modeOfPayment,
+          requestDate: originalRequestDate,
+          repaymentStartDate: formData.repaymentStartDate || application.repaymentStartDate
+        });
         return {
           ...application,
           requestDate: originalRequestDate,
@@ -221,25 +241,19 @@ export class LoanService {
     if (!response) {
       return response;
     }
-
     if (typeof response === 'object') {
       return response;
     }
-
     if (typeof response === 'string') {
       let cleanResponse = response.trim();
-      
       if (cleanResponse.charCodeAt(0) === 0xFEFF) {
         cleanResponse = cleanResponse.substring(1);
       }
-      
       try {
         const parsed = JSON.parse(cleanResponse);
-        
         if (parsed === null || parsed === undefined) {
           console.warn('Parsed response is null or undefined');
         }
-        
         return parsed;
       } catch (e) {
         const error = e as Error;
@@ -248,7 +262,6 @@ export class LoanService {
         throw new Error(`Invalid JSON response from server: ${error.message}`);
       }
     }
-
     return response;
   }
 
@@ -305,6 +318,36 @@ export class LoanService {
     const resolvedEmployeeId = Number(employee?.id || 0);
     const resolvedFullName = this.getEmployeeFullName(employee) || 'Employee';
     const resolvedDepartment = employee?.department?.name ?? '';
+    const persistedRepaymentStartDate = readPersistedLoanRepaymentStartDate({
+      id: Number(loan.id || 0),
+      loanCode: String(loan.loanCode || loan.id || '')
+    });
+    const signatureRepaymentStartDate = this.readRepaymentStartDateBySignature({
+      employeeId: resolvedEmployeeId,
+      amount: Number(loan.amount || 0),
+      purpose: loan.purpose || '',
+      modeOfPayment: this.fromBackendPaymentMode(loan.modeOfPayment),
+      requestDate
+    });
+    const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(
+      loan.repaymentStartDate || mappedRepaymentSchedule[0]?.dueDate || persistedRepaymentStartDate || signatureRepaymentStartDate
+    );
+    const resolvedRepaymentDay = Number(loan.repaymentDay);
+
+    if (normalizedRepaymentStartDate) {
+      persistLoanRepaymentStartDate({
+        id: Number(loan.id || 0),
+        loanCode: String(loan.loanCode || loan.id || '')
+      }, normalizedRepaymentStartDate);
+      this.persistRepaymentStartDateBySignature({
+        employeeId: resolvedEmployeeId,
+        amount: Number(loan.amount || 0),
+        purpose: loan.purpose || '',
+        modeOfPayment: this.fromBackendPaymentMode(loan.modeOfPayment),
+        requestDate,
+        repaymentStartDate: normalizedRepaymentStartDate
+      });
+    }
 
     return {
       id: Number(loan.id || 0),
@@ -327,6 +370,8 @@ export class LoanService {
       purpose: loan.purpose || '',
       repaymentTime: Number(loan.repaymentTime || repaymentSchedule.length || 0),
       repaymentAmount: Number(loan.repaymentAmount || repaymentSchedule[0]?.totalAmount || 0),
+      repaymentStartDate: normalizedRepaymentStartDate || undefined,
+      repaymentDay: Number.isFinite(resolvedRepaymentDay) && resolvedRepaymentDay > 0 ? resolvedRepaymentDay : undefined,
       acknowledgment: true,
       interestRate,
       currentBalance: resolvedCurrentBalance,
@@ -352,7 +397,6 @@ export class LoanService {
       if (status === 'PENDING' || status === 'COMPLETED') {
         return;
       }
-
       persistLoanStatusActorName(cacheableLoan, status, item.changedBy);
     });
 
@@ -370,12 +414,10 @@ export class LoanService {
     if (backendTotalPaid > 0) {
       return backendTotalPaid;
     }
-
     const historyTotalPaid = paymentHistory.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
     if (historyTotalPaid > 0) {
       return Number(historyTotalPaid.toFixed(2));
     }
-
     const schedulePaidTotal = repaymentSchedule.reduce((sum, item) => sum + Number(item.paidAmount || 0), 0);
     return Number(schedulePaidTotal.toFixed(2));
   }
@@ -390,25 +432,20 @@ export class LoanService {
     if (status === 'COMPLETED') {
       return 0;
     }
-
     if (backendCurrentBalance > 0) {
       return backendCurrentBalance;
     }
-
     const scheduledOutstanding = this.calculateScheduledOutstanding(repaymentSchedule, totalPaid);
     if (scheduledOutstanding > 0) {
       return scheduledOutstanding;
     }
-
     const backendOutstandingPrincipal = Number(loan.outstandingPrincipal || 0);
     if (backendOutstandingPrincipal > 0) {
       return backendOutstandingPrincipal;
     }
-
     if (status === 'ACTIVE' || status === 'APPROVED') {
       return Math.max(Number(loan.amount || 0) - totalPaid, 0);
     }
-
     return 0;
   }
 
@@ -422,22 +459,18 @@ export class LoanService {
     if (status === 'COMPLETED') {
       return 0;
     }
-
     if (backendOutstandingPrincipal > 0) {
       return backendOutstandingPrincipal;
     }
-
     const scheduledPrincipalOutstanding = repaymentSchedule.reduce((sum, item) => {
       return sum + Math.max(Number(item.principalAmount || 0) - Number(item.paidAmount || 0), 0);
     }, 0);
     if (scheduledPrincipalOutstanding > 0) {
       return Number(scheduledPrincipalOutstanding.toFixed(2));
     }
-
     if (status === 'ACTIVE' || status === 'APPROVED') {
       return Math.max(Number(loan.amount || 0) - totalPaid, 0);
     }
-
     return 0;
   }
 
@@ -446,7 +479,6 @@ export class LoanService {
     if (totalScheduledAmount <= 0) {
       return 0;
     }
-
     return Number(Math.max(totalScheduledAmount - totalPaid, 0).toFixed(2));
   }
 
@@ -503,18 +535,15 @@ export class LoanService {
 
   private buildStatusHistory(loan: AdvanceLoan, mappedHistory: StatusChange[]): StatusChange[] {
     const combinedHistory = [...mappedHistory];
-
     this.buildDerivedStatusHistory(loan).forEach((derivedEntry) => {
       const alreadyTracked = combinedHistory.some((existingEntry) =>
         existingEntry.status === derivedEntry.status &&
         this.normalizeDateValue(existingEntry.changedAt) === derivedEntry.changedAt
       );
-
       if (!alreadyTracked) {
         combinedHistory.push(derivedEntry);
       }
     });
-
     return combinedHistory
       .filter((entry) => !!this.normalizeDateValue(entry.changedAt))
       .sort((first, second) => new Date(first.changedAt).getTime() - new Date(second.changedAt).getTime());
@@ -598,6 +627,31 @@ export class LoanService {
 
   private toUpdatePayload(application: LoanApplication, sourceLoan: AdvanceLoan): any {
     const actingUserId = this.getCurrentUserId();
+    const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(
+      application.repaymentStartDate ||
+      sourceLoan.repaymentStartDate ||
+      application.repaymentSchedule?.[0]?.dueDate ||
+      sourceLoan.repaymentSchedule?.[0]?.dueDate ||
+      ''
+    );
+    const normalizedRepaymentDay = Number(application.repaymentDay || sourceLoan.repaymentDay || 0);
+
+    if (normalizedRepaymentStartDate) {
+      persistLoanRepaymentStartDate({
+        id: Number(sourceLoan.id || application.id || 0),
+        loanCode: String(sourceLoan.loanCode || application.loanCode || sourceLoan.id || '')
+      }, normalizedRepaymentStartDate);
+      this.persistRepaymentStartDateBySignature({
+        employeeId: Number(sourceLoan.employee?.id || application.employeeId || 0),
+        amount: Number(application.amount || sourceLoan.amount || 0),
+        purpose: application.purpose || sourceLoan.purpose || '',
+        modeOfPayment: application.modeOfPayment || this.fromBackendPaymentMode(sourceLoan.modeOfPayment),
+        requestDate: this.resolveOriginalRequestDate(application, sourceLoan),
+        repaymentStartDate: normalizedRepaymentStartDate
+      });
+    }
+
+    const statusBeforeOverride = this.resolveStatusBeforeOverride(application.status, sourceLoan.statusBeforeOverride, sourceLoan.status);
 
     return {
       id: Number(sourceLoan.id),
@@ -607,6 +661,8 @@ export class LoanService {
       purpose: application.purpose,
       repaymentAmount: application.repaymentAmount,
       repaymentTime: application.repaymentTime,
+      repaymentStartDate: this.toBackendDateTime(normalizedRepaymentStartDate),
+      repaymentDay: Number.isFinite(normalizedRepaymentDay) && normalizedRepaymentDay > 0 ? normalizedRepaymentDay : null,
       modeOfPayment: application.modeOfPayment,
       requestDate: this.toBackendDateTime(this.resolveOriginalRequestDate(application, sourceLoan)),
       approvedDate: this.toBackendDateTime(application.approvedDate || sourceLoan.approvedDate || ''),
@@ -639,7 +695,7 @@ export class LoanService {
       totalPrincipalPaid: Number(application.totalPrincipalPaid || sourceLoan.totalPrincipalPaid || 0),
       totalInterestPaid: Number(application.totalInterestPaid || sourceLoan.totalInterestPaid || 0),
       outstandingPrincipal: Number(application.outstandingPrincipal || sourceLoan.outstandingPrincipal || application.currentBalance || 0),
-      statusBeforeOverride: sourceLoan.statusBeforeOverride || application.status,
+      statusBeforeOverride: statusBeforeOverride,
       repaymentSchedule: (application.repaymentSchedule || []).map((item, index) => ({
         id: this.parseNumericId(item.id),
         installmentNo: item.installmentNo,
@@ -673,14 +729,11 @@ export class LoanService {
 
   private extractUserId(user: any): number {
     if (user === null || user === undefined) return 0;
-    
     if (typeof user === 'number' && !isNaN(user)) return user;
-    
     if (typeof user === 'string') {
       const parsed = parseInt(user, 10);
       return isNaN(parsed) ? 0 : parsed;
     }
-    
     if (typeof user === 'object') {
       const id = user.id ?? user.userId ?? user.ID ?? user.UserId;
       if (id !== undefined) {
@@ -688,7 +741,6 @@ export class LoanService {
         return isNaN(parsed) ? 0 : parsed;
       }
     }
-    
     return 0;
   }
 
@@ -788,18 +840,19 @@ export class LoanService {
     return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
   }
 
-  private toLoanStatus(status?: string): LoanApplication['status'] {
-    const normalizedStatus = String(status || '').toUpperCase();
-    switch (normalizedStatus) {
-      case 'APPROVED':
-      case 'REJECTED':
-      case 'ACTIVE':
-      case 'COMPLETED':
-        return normalizedStatus;
-      default:
-        return 'PENDING';
-    }
+private toLoanStatus(status?: string): LoanApplication['status'] {
+  const normalizedStatus = String(status || '').toUpperCase();
+  switch (normalizedStatus) {
+    case 'APPROVED':
+    case 'REJECTED':
+    case 'ACTIVE':
+    case 'COMPLETED':
+    case 'AWAITING_INTEREST_ACCEPTANCE':  
+      return normalizedStatus;
+    default:
+      return 'PENDING';
   }
+}
 
   private toRepaymentStatus(status?: string): RepaymentScheduleItem['status'] {
     const normalizedStatus = String(status || '').toUpperCase();
@@ -975,6 +1028,99 @@ export class LoanService {
     return /^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)
       ? `${normalizedValue}T00:00:00`
       : normalizedValue;
+  }
+
+  private resolveStatusBeforeOverride(
+    nextStatus: LoanApplication['status'],
+    currentStatusBeforeOverride: unknown,
+    currentStatus: unknown
+  ): LoanApplication['status'] | null {
+    const normalizedCurrentStatusBeforeOverride = this.toLoanStatus(String(currentStatusBeforeOverride || ''));
+    if (normalizedCurrentStatusBeforeOverride && normalizedCurrentStatusBeforeOverride !== nextStatus) {
+      return normalizedCurrentStatusBeforeOverride;
+    }
+
+    const normalizedCurrentStatus = this.toLoanStatus(String(currentStatus || ''));
+    if (normalizedCurrentStatus && normalizedCurrentStatus !== nextStatus) {
+      return normalizedCurrentStatus;
+    }
+
+    return null;
+  }
+
+  private persistRepaymentStartDateBySignature(entry: {
+    employeeId: number;
+    amount: number;
+    purpose: string;
+    modeOfPayment: string;
+    requestDate: string;
+    repaymentStartDate: unknown;
+  }): void {
+    const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(entry.repaymentStartDate);
+    const signature = this.buildRepaymentStartDateSignature(entry);
+    if (!signature || !normalizedRepaymentStartDate) {
+      return;
+    }
+
+    const cache = this.readRepaymentStartDateSignatureCache();
+    cache[signature] = normalizedRepaymentStartDate;
+    this.writeRepaymentStartDateSignatureCache(cache);
+  }
+
+  private readRepaymentStartDateBySignature(entry: {
+    employeeId: number;
+    amount: number;
+    purpose: string;
+    modeOfPayment: string;
+    requestDate: string;
+  }): string {
+    const signature = this.buildRepaymentStartDateSignature(entry);
+    if (!signature) {
+      return '';
+    }
+
+    const cache = this.readRepaymentStartDateSignatureCache();
+    return normalizeLoanRepaymentStartDate(cache[signature] || '');
+  }
+
+  private buildRepaymentStartDateSignature(entry: {
+    employeeId: number;
+    amount: number;
+    purpose: string;
+    modeOfPayment: string;
+    requestDate: string;
+  }): string {
+    const normalizedDate = this.normalizeDateValue(entry.requestDate);
+    const parsedDate = normalizedDate ? new Date(normalizedDate) : null;
+    const normalizedTimestamp = parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toISOString().slice(0, 16)
+      : String(entry.requestDate || '').trim();
+
+    return [
+      String(Number(entry.employeeId || 0)),
+      String(Number(entry.amount || 0)),
+      normalizedTimestamp
+    ].join('|');
+  }
+
+  private readRepaymentStartDateSignatureCache(): Record<string, string> {
+    const rawValue = String(localStorage.getItem(this.repaymentStartDateSignatureCacheKey) || sessionStorage.getItem(this.repaymentStartDateSignatureCacheKey) || '').trim();
+    if (!rawValue || rawValue === 'null' || rawValue === 'undefined') {
+      return {};
+    }
+
+    try {
+      const parsedValue = JSON.parse(rawValue);
+      return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, string> : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private writeRepaymentStartDateSignatureCache(cache: Record<string, string>): void {
+    const serializedCache = JSON.stringify(cache);
+    localStorage.setItem(this.repaymentStartDateSignatureCacheKey, serializedCache);
+    sessionStorage.setItem(this.repaymentStartDateSignatureCacheKey, serializedCache);
   }
 
   private handleError(error: any): Observable<never> {

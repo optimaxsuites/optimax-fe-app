@@ -1,4 +1,13 @@
 // Advance/Standard Loan DTOs
+// advance-loan.dto.ts
+
+export type AdvanceLoanStatus = 
+  | 'PENDING' 
+  | 'AWAITING_INTEREST_ACCEPTANCE' 
+  | 'APPROVED' 
+  | 'REJECTED' 
+  | 'ACTIVE' 
+  | 'COMPLETED';
 
 export interface AdvanceLoan {
   id: number;
@@ -6,8 +15,11 @@ export interface AdvanceLoan {
   employee: AdvanceLoanEmployee;
   amount: number;
   purpose: string;
+  purposeCode?: string;
   repaymentAmount: number;
   repaymentTime: number;
+  repaymentStartDate?: string;
+  repaymentDay?: number;
   modeOfPayment: string;
   requestDate: string;
   approvedDate: string;
@@ -17,7 +29,7 @@ export interface AdvanceLoan {
   completedDate: string;
   rejectedDate: string;
   rejectedBy: AdvanceLoanUser;
-  status: string;
+  status: AdvanceLoanStatus;
   adminComment: string;
   currentBalance: number;
   totalPaid: number;
@@ -25,9 +37,12 @@ export interface AdvanceLoan {
   totalInterestPaid: number;
   outstandingPrincipal: number;
   statusBeforeOverride: string;
+  monthlySalary?: number;
   repaymentSchedule: AdvanceLoanRepaymentSchedule[];
   paymentHistory: AdvanceLoanPaymentHistory[];
   statusHistory: AdvanceLoanStatusHistory[];
+  // Grace period requests associated with this loan
+  gracePeriodRequests?: AdvanceLoanGracePeriodRequest[];
 }
 
 export interface AdvanceLoanEmployee {
@@ -52,6 +67,7 @@ export interface AdvanceLoanEmployee {
   probationStartDate: string;
   probationEndDate: string;
   appraisalDueDate: string;
+  monthlySalary?: number;
   jobType: AdvanceLoanSubType;
   gender: AdvanceLoanSubType;
   relationship: AdvanceLoanSubType;
@@ -95,7 +111,7 @@ export interface AdvanceLoanUser {
 
 export interface AdvanceLoanRepaymentSchedule {
   id: number;
-  loan: AdvanceLoanScheduleLoan;
+  loan?: AdvanceLoanScheduleLoan;
   installmentNo: number;
   dueDate: string;
   principalAmount: number;
@@ -103,7 +119,12 @@ export interface AdvanceLoanRepaymentSchedule {
   totalAmount: number;
   paidAmount: number;
   remainingBalance: number;
-  status: string;
+  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'SKIPPED';
+  paymentMethod?: string;
+  receiptNumber?: string;
+  reminderSentAt?: string;
+  lateFeeAmount?: number;
+  creditReportedAt?: string;
 }
 
 export interface AdvanceLoanScheduleLoan {
@@ -114,6 +135,8 @@ export interface AdvanceLoanScheduleLoan {
   purpose: string;
   repaymentAmount: number;
   repaymentTime: number;
+  repaymentStartDate?: string;
+  repaymentDay?: number;
   modeOfPayment: string;
   requestDate: string;
   approvedDate: string;
@@ -123,7 +146,7 @@ export interface AdvanceLoanScheduleLoan {
   completedDate: string;
   rejectedDate: string;
   rejectedBy: number | AdvanceLoanUser;
-  status: string;
+  status: AdvanceLoanStatus;
   adminComment: string;
   currentBalance: number;
   totalPaid: number;
@@ -131,6 +154,7 @@ export interface AdvanceLoanScheduleLoan {
   totalInterestPaid: number;
   outstandingPrincipal: number;
   statusBeforeOverride: string;
+  monthlySalary?: number;
   repaymentSchedule: string[];
   paymentHistory: string[];
   statusHistory: AdvanceLoanScheduleStatusHistory[];
@@ -139,7 +163,7 @@ export interface AdvanceLoanScheduleLoan {
 export interface AdvanceLoanScheduleStatusHistory {
   id: number;
   loan: string;
-  status: string;
+  status: AdvanceLoanStatus;
   changedAt: string;
   changedBy: number | AdvanceLoanUser;
   notes: string;
@@ -147,6 +171,7 @@ export interface AdvanceLoanScheduleStatusHistory {
   overrideBy: number | AdvanceLoanUser;
   overrideReason: string;
   statusBeforeOverride: string;
+  interestRate?: number;
 }
 
 export interface AdvanceLoanPaymentHistory {
@@ -163,11 +188,14 @@ export interface AdvanceLoanPaymentHistory {
   installmentNo: number;
   notes: string;
   receiptNumber: string;
+  recordedBy?: number;
+  recordedAt?: string;
+  recordStatus?: 'PENDING' | 'COMPLETED' | 'FAILED';
 }
 
 export interface AdvanceLoanStatusHistory {
   id: number;
-  status: string;
+  status: AdvanceLoanStatus;
   changedAt: string;
   changedBy: AdvanceLoanUser;
   notes: string;
@@ -175,6 +203,7 @@ export interface AdvanceLoanStatusHistory {
   overrideBy: AdvanceLoanUser;
   overrideReason: string;
   statusBeforeOverride: string;
+  interestRate?: number;
 }
 
 export interface AdvanceLoanStats {
@@ -188,7 +217,7 @@ export interface AdvanceLoanStats {
   totalOverdueInstallments: number;
   totalCreditReported: number;
   totalOverride: number;
-  totalamount: number;
+  totalLoanAmount: number;
   totalOutstanding: number;
   totalPaid: number;
   avgInterestRate: number;
@@ -209,4 +238,67 @@ export interface UserDTO {
   city: string;
   state: string;
   country: string;
+}
+
+// New: Grace Period Request DTO
+export interface AdvanceLoanGracePeriodRequest {
+  id: number;
+  loanId: number;
+  employeeId: number;
+  installmentNumber: number;
+  paymentSubtype: 'PRINCIPAL_REPAYMENT' | 'INTEREST_ONLY' | 'LATE_FEE';
+  amountPaid: number;
+  remainingBalance: number;
+  requestedAt: string;
+  requestedDays: number;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+  reviewedAt?: string;
+  reviewedBy?: number | AdvanceLoanUser;
+  reviewNote?: string;
+  rejectionReason?: string;
+  approvedGraceDays?: number;
+  newDueDate?: string;
+  paymentCompletedAt?: string;
+}
+
+// New: Interest Agreement DTO
+export interface AdvanceLoanInterestAgreement {
+  id: number;
+  loanId: number;
+  employeeId: number;
+  proposedInterestRate: number;
+  agreedInterestRate: number;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  agreedAt?: string;
+  agreementMethod: 'EMAIL_LINK' | 'IN_PERSON' | 'DIGITAL_SIGNATURE' | 'ADMIN_OVERRIDE';
+  ipAddress?: string;
+  notes?: string;
+}
+
+// New: Loan Purpose DTO
+export interface AdvanceLoanPurpose {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  isActive: boolean;
+  maxLoanAmount: number;
+  minLoanAmount: number;
+  defaultInterestRate: number;
+  requiresDocumentation: boolean;
+  documentationTypes: string[];
+}
+
+// New: Disbursement Confirmation DTO
+export interface AdvanceLoanDisbursementConfirmation {
+  id: number;
+  loanId: number;
+  disbursedAmount: number;
+  disbursementConfirmedAt: string;
+  disbursementConfirmedBy: number;
+  disbursementInstructionReference: string;
+  disbursementReference: string;
+  paymentMethod: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION';
+  notes?: string;
 }
