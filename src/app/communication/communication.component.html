@@ -1,18 +1,23 @@
+<!-- ═══════════════════════════════════════════════════════════
+     COMMUNICATION SHELL  —  Tailwind CSS only
+     Layout: sidebar | main feed | thread sidebar (conditional)
+════════════════════════════════════════════════════════════ -->
 <div
-  class="comm-shell"
-  (click)="
-    showSearchResults && (showSearchResults = false);
-    showForwardDropdown && (showForwardDropdown = false)
-  "
+  class="flex h-[calc(100vh-57px)] overflow-hidden bg-gray-50 font-sans text-sm"
+  (click)="closeSearch()"
 >
-  <!-- ═══════════════════════════════════════
-       SIDEBAR
-  ═══════════════════════════════════════ -->
-  <aside class="comm-sidebar">
+  <!-- ══════════════════════════════════════
+       LEFT SIDEBAR
+  ══════════════════════════════════════ -->
+  <aside
+    class="flex flex-col w-56 min-w-[14rem] bg-white border-r border-gray-200 overflow-hidden flex-shrink-0"
+  >
     <!-- Workspace header -->
-    <div class="comm-sidebar-header">
-      <div class="comm-workspace-row">
-        <div class="comm-workspace-icon">
+    <div class="px-3.5 pt-3.5 pb-3 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center gap-2 mb-3">
+        <div
+          class="w-7 h-7 rounded-lg bg-[#2e6276] flex items-center justify-center flex-shrink-0"
+        >
           <svg
             width="13"
             height="13"
@@ -29,20 +34,27 @@
           </svg>
         </div>
         <div>
-          <p class="comm-workspace-name">OptimaX</p>
-          <div class="comm-workspace-status">
-            <span class="comm-dot-online"></span>
-            <span class="comm-workspace-label">Workspace</span>
+          <p class="text-xs font-bold text-gray-800 leading-none">OptimaX</p>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"
+            ></span>
+            <span class="text-[9px] text-gray-400 uppercase tracking-widest"
+              >Workspace</span
+            >
           </div>
         </div>
-        <button
-          (click)="openNewMessage()"
-          class="comm-icon-btn"
-          style="margin-left: auto"
+      </div>
+
+      <!-- Search -->
+      <div class="relative" (click)="$event.stopPropagation()">
+        <div
+          class="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg"
         >
           <svg
-            width="13"
-            height="13"
+            class="text-gray-400 flex-shrink-0"
+            width="11"
+            height="11"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -51,90 +63,93 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-        </button>
-      </div>
-
-      <!-- Search -->
-      <div class="comm-search-wrap" style="position: relative">
-        <svg
-          width="11"
-          height="11"
-          fill="none"
-          stroke="#a0b0bc"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearch()"
+            placeholder="Search…"
+            class="flex-1 bg-transparent border-0 outline-none text-[11px] text-gray-700 placeholder-gray-400 min-w-0"
           />
-        </svg>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchInput()"
-          (click)="$event.stopPropagation()"
-          placeholder="Search messages..."
-          class="comm-search-input"
-        />
+        </div>
 
-        <!-- Search results dropdown -->
+        <!-- Results dropdown -->
         <div
-          *ngIf="showSearchResults"
-          class="comm-search-results"
-          (click)="$event.stopPropagation()"
+          *ngIf="showSearch"
+          class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
         >
-          <div *ngIf="searchResults.length === 0" class="comm-search-empty">
+          <div
+            *ngIf="!searchResults.length"
+            class="px-3 py-3 text-xs text-gray-400"
+          >
             No results
           </div>
           <div
             *ngFor="let r of searchResults"
-            class="comm-search-result"
-            (click)="jumpToMessage(r)"
+            class="px-3 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50"
+            (click)="jumpTo(r)"
           >
-            <span class="comm-search-channel">#{{ r.channelName }}</span>
-            <span class="comm-search-author">{{ r.msg.shortName }}</span>
-            <p class="comm-search-text">
-              {{ r.msg.text | slice: 0 : 60
-              }}{{ r.msg.text.length > 60 ? "…" : "" }}
+            <p class="text-[10px] font-semibold text-[#2e6276] mb-0.5">
+              #{{ r.channelName }}
+            </p>
+            <p class="text-xs text-gray-600 truncate">
+              {{ r.msg.content | slice: 0 : 55
+              }}{{ r.msg.content.length > 55 ? "…" : "" }}
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Scrollable nav -->
-    <div class="comm-sidebar-nav">
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto py-2">
       <!-- Quick nav -->
-      <div class="comm-nav-section">
+      <div class="px-2 mb-1">
         <button
-          *ngFor="let item of quickNavItems"
-          (click)="selectQuickNav(item.key)"
-          class="comm-nav-item"
-          [class.comm-nav-item--active]="activeView === item.key"
+          (click)="setView('threads')"
+          class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs transition-colors"
+          [class.bg-blue-50]="activeView === 'threads'"
+          [class.text-[#2e6276]]="activeView === 'threads'"
+          [class.font-semibold]="activeView === 'threads'"
+          [class.text-gray-500]="activeView !== 'threads'"
         >
-          <span [innerHTML]="item.icon"></span>
-          <span>{{ item.label }}</span>
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            />
+          </svg>
+          Threads
         </button>
       </div>
 
-      <div class="comm-divider-line"></div>
+      <div class="h-px bg-gray-100 mx-2 my-2"></div>
 
       <!-- Channels -->
-      <div class="comm-nav-section">
-        <div class="comm-section-header">
-          <span class="comm-section-label">Channels</span>
+      <div class="px-2 mb-3">
+        <div class="flex items-center justify-between px-1 mb-1.5">
+          <span
+            class="text-[9px] font-bold text-gray-400 uppercase tracking-widest"
+            >Channels</span
+          >
+          <!-- FIX 1: was (click)="showAddChannel = !showAddChannel" — assignment in binding -->
           <button
-            (click)="showAddChannel = !showAddChannel"
-            class="comm-icon-btn-xs"
+            (click)="toggleAddChannel()"
+            class="w-4 h-4 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-[#2e6276] transition-colors"
           >
             <svg
-              width="10"
-              height="10"
+              width="9"
+              height="9"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -149,153 +164,56 @@
           </button>
         </div>
 
-        <div *ngIf="showAddChannel" class="comm-add-channel">
+        <!-- Add channel input -->
+        <div *ngIf="showAddChannel" class="flex gap-1.5 mb-2">
           <input
             type="text"
             [(ngModel)]="newChannelName"
             placeholder="channel-name"
             (keyup.enter)="addChannel()"
-            class="comm-add-channel-input"
+            class="flex-1 text-[11px] px-2 py-1 border border-gray-200 rounded-md outline-none bg-gray-50 min-w-0"
           />
-          <button (click)="addChannel()" class="comm-add-channel-btn">
+          <button
+            (click)="addChannel()"
+            class="px-2 py-1 bg-[#2e6276] text-white text-[10px] font-semibold rounded-md hover:bg-[#255264] transition-colors flex-shrink-0"
+          >
             Add
           </button>
         </div>
 
-        <div
+        <button
           *ngFor="let ch of channels"
-          class="comm-channel-item-wrap"
-          [class.comm-channel-item-wrap--active]="
+          (click)="selectChannel(ch.id)"
+          class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors relative"
+          [class.bg-blue-50]="
             activeChannelId === ch.id && activeView === 'channel'
           "
-        >
-          <button
-            (click)="selectChannel(ch.id)"
-            class="comm-nav-item comm-channel-item"
-            [class.comm-nav-item--active]="
-              activeChannelId === ch.id && activeView === 'channel'
-            "
-          >
-            <div
-              class="comm-active-bar"
-              *ngIf="activeChannelId === ch.id && activeView === 'channel'"
-            ></div>
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              style="opacity: 0.55; flex-shrink: 0"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-              />
-            </svg>
-            <span
-              class="comm-nav-label"
-              [class.comm-nav-label--unread]="ch.hasUnread"
-              >{{ ch.name }}</span
-            >
-            <span *ngIf="ch.hasUnread" class="comm-unread-dot"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="comm-divider-line"></div>
-
-      <!-- DMs -->
-      <div class="comm-nav-section">
-        <div class="comm-section-header">
-          <span class="comm-section-label">Direct Messages</span>
-          <button (click)="openNewMessage()" class="comm-icon-btn-xs">
-            <svg
-              width="10"
-              height="10"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <button
-          *ngFor="let dm of directMessages"
-          (click)="selectDM(dm.id)"
-          class="comm-nav-item comm-dm-item"
-          [class.comm-nav-item--active]="
-            activeDMId === dm.id && activeView === 'dm'
+          [class.text-[#2e6276]]="
+            activeChannelId === ch.id && activeView === 'channel'
+          "
+          [class.font-semibold]="
+            ch.hasUnread ||
+            (activeChannelId === ch.id && activeView === 'channel')
+          "
+          [class.text-gray-700]="
+            ch.hasUnread &&
+            !(activeChannelId === ch.id && activeView === 'channel')
+          "
+          [class.text-gray-500]="
+            !ch.hasUnread &&
+            !(activeChannelId === ch.id && activeView === 'channel')
           "
         >
-          <div
-            class="comm-active-bar"
-            *ngIf="activeDMId === dm.id && activeView === 'dm'"
-          ></div>
-          <div class="comm-avatar-wrap">
-            <div
-              class="comm-avatar comm-avatar--sm"
-              [style.background]="dm.avatarColor"
-            >
-              {{ dm.initials }}
-            </div>
-            <span
-              class="comm-presence"
-              [class.comm-presence--online]="dm.online"
-            ></span>
-          </div>
           <span
-            class="comm-nav-label"
-            [class.comm-nav-label--unread]="dm.hasUnread"
-            >{{ dm.shortName }}</span
-          >
-          <span *ngIf="dm.hasUnread" class="comm-unread-dot"></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- User bar -->
-    <div class="comm-user-bar">
-      <div class="comm-avatar-wrap">
-        <div
-          class="comm-avatar comm-avatar--sm"
-          [style.background]="currentUser.avatarColor"
-        >
-          {{ currentUser.initials }}
-        </div>
-        <span class="comm-presence comm-presence--online"></span>
-      </div>
-      <div class="comm-user-info">
-        <p class="comm-user-name">{{ currentUser.shortName }}</p>
-        <p class="comm-user-status">Active</p>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ═══════════════════════════════════════
-       MAIN AREA
-  ═══════════════════════════════════════ -->
-  <main class="comm-main">
-    <!-- ── CHANNEL / DM VIEW ── -->
-    <ng-container *ngIf="activeView === 'channel' || activeView === 'dm'">
-      <!-- Top bar -->
-      <div class="comm-topbar">
-        <div class="comm-topbar-left">
+            *ngIf="activeChannelId === ch.id && activeView === 'channel'"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#2e6276] rounded-r"
+          ></span>
           <svg
-            *ngIf="activeView === 'channel'"
-            width="13"
-            height="13"
+            class="flex-shrink-0 opacity-50"
+            width="10"
+            height="10"
             fill="none"
-            stroke="#2e6276"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path
@@ -305,46 +223,107 @@
               d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
             />
           </svg>
-          <div *ngIf="activeView === 'dm'" class="comm-avatar-wrap">
+          <span class="flex-1 truncate">{{ ch.name }}</span>
+          <span
+            *ngIf="ch.hasUnread"
+            class="w-1.5 h-1.5 rounded-full bg-[#2e6276] flex-shrink-0"
+          ></span>
+        </button>
+      </div>
+
+      <div class="h-px bg-gray-100 mx-2 mb-2"></div>
+
+      <!-- DMs -->
+      <div class="px-2">
+        <div class="px-1 mb-1.5">
+          <span
+            class="text-[9px] font-bold text-gray-400 uppercase tracking-widest"
+            >Direct Messages</span
+          >
+        </div>
+
+        <button
+          *ngFor="let dm of directMessages"
+          (click)="selectDm(dm.id)"
+          class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors relative"
+          [class.bg-blue-50]="activeDmId === dm.id && activeView === 'dm'"
+          [class.text-[#2e6276]]="activeDmId === dm.id && activeView === 'dm'"
+          [class.font-semibold]="
+            dm.hasUnread || (activeDmId === dm.id && activeView === 'dm')
+          "
+          [class.text-gray-700]="
+            dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')
+          "
+          [class.text-gray-500]="
+            !dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')
+          "
+        >
+          <span
+            *ngIf="activeDmId === dm.id && activeView === 'dm'"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#2e6276] rounded-r"
+          ></span>
+          <div class="relative flex-shrink-0">
             <div
-              class="comm-avatar comm-avatar--xs"
-              [style.background]="activeDM?.avatarColor"
+              class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
+              [style.background]="dm.avatarColor"
             >
-              {{ activeDM?.initials }}
+              {{ dm.initials }}
             </div>
+            <!-- FIX 2: was [class.bg-emerald-400]="dm.online" — dm here is the *ngFor variable,
+                 NOT activeDm, so ?. is not needed. dm is always defined inside *ngFor. -->
             <span
-              class="comm-presence"
-              [class.comm-presence--online]="activeDM?.online"
+              class="absolute -bottom-px -right-px w-2 h-2 rounded-full border border-white"
+              [class.bg-emerald-400]="dm.online"
+              [class.bg-gray-300]="!dm.online"
             ></span>
           </div>
-          <h2 class="comm-topbar-title">
-            {{
-              activeView === "channel"
-                ? activeChannel?.name
-                : activeDM?.shortName
-            }}
-          </h2>
-          <span class="comm-topbar-sep"></span>
-          <span class="comm-topbar-sub" *ngIf="activeView === 'channel'">{{
-            activeChannel?.description
-          }}</span>
+          <span class="flex-1 truncate">{{ dm.shortName }}</span>
           <span
-            class="comm-topbar-sub"
-            *ngIf="activeView === 'dm'"
-            [class.comm-topbar-sub--online]="activeDM?.online"
-          >
-            {{ activeDM?.online ? "Active now" : "Offline" }}
-          </span>
+            *ngIf="dm.hasUnread"
+            class="w-1.5 h-1.5 rounded-full bg-[#2e6276] flex-shrink-0"
+          ></span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- User bar -->
+    <div
+      class="border-t border-gray-200 px-3.5 py-2.5 flex items-center gap-2 flex-shrink-0"
+    >
+      <div class="relative flex-shrink-0">
+        <div
+          class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold bg-[#2e6276]"
+        >
+          {{ me.initials }}
         </div>
-        <div class="comm-topbar-actions">
-          <button
-            (click)="toggleRightPanel('members', 'Members')"
-            class="comm-topbar-btn"
-            [class.comm-topbar-btn--active]="
-              rightPanel && rightPanelType === 'members'
-            "
-          >
+        <span
+          class="absolute -bottom-px -right-px w-2 h-2 rounded-full border border-white bg-emerald-400"
+        ></span>
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold text-gray-800 leading-none truncate">
+          {{ me.shortName }}
+        </p>
+        <p class="text-[9px] text-emerald-500 font-medium mt-0.5">Active</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       MAIN AREA
+  ══════════════════════════════════════ -->
+  <main class="flex flex-1 overflow-hidden min-w-0">
+    <!-- ── CHANNEL / DM VIEW ─────────────── -->
+    <ng-container *ngIf="activeView === 'channel' || activeView === 'dm'">
+      <div class="flex flex-col flex-1 overflow-hidden min-w-0">
+        <!-- Top bar -->
+        <div
+          class="flex items-center justify-between px-5 h-12 bg-white border-b border-gray-200 flex-shrink-0"
+        >
+          <div class="flex items-center gap-2">
             <svg
+              *ngIf="activeView === 'channel'"
+              class="text-[#2e6276]"
               width="13"
               height="13"
               fill="none"
@@ -355,21 +334,60 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
               />
             </svg>
-            Members
-          </button>
-          <button
-            (click)="toggleRightPanel('pinned', 'Pinned')"
-            class="comm-topbar-btn"
-            [class.comm-topbar-btn--active]="
-              rightPanel && rightPanelType === 'pinned'
-            "
+
+            <!-- FIX 3: activeDm may be undefined — use *ngIf to guard, then access without ?. -->
+            <ng-container *ngIf="activeView === 'dm' && activeDm">
+              <div class="relative">
+                <div
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
+                  [style.background]="activeDm.avatarColor"
+                >
+                  {{ activeDm.initials }}
+                </div>
+                <span
+                  class="absolute -bottom-px -right-px w-2 h-2 rounded-full border border-white"
+                  [class.bg-emerald-400]="activeDm.online"
+                  [class.bg-gray-300]="!activeDm.online"
+                ></span>
+              </div>
+            </ng-container>
+
+            <h2 class="text-sm font-bold text-gray-900">
+              <ng-container *ngIf="activeView === 'channel'">{{
+                activeChannel?.name
+              }}</ng-container>
+              <ng-container *ngIf="activeView === 'dm'">{{
+                activeDm?.shortName
+              }}</ng-container>
+            </h2>
+            <span class="w-px h-3.5 bg-gray-200"></span>
+            <span
+              class="text-xs text-gray-400"
+              *ngIf="activeView === 'channel'"
+              >{{ activeChannel?.description }}</span
+            >
+            <!-- FIX 4: was [class.text-emerald-500]="activeDm?.online" — use isDmOnline() method -->
+            <span
+              class="text-xs"
+              *ngIf="activeView === 'dm'"
+              [class.text-emerald-500]="isDmOnline()"
+              [class.text-gray-400]="!isDmOnline()"
+              >{{ isDmOnline() ? "Active now" : "Offline" }}</span
+            >
+          </div>
+
+          <!-- Pinned pill -->
+          <div
+            *ngIf="pinnedMessages.length && activeView === 'channel'"
+            class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-full"
           >
             <svg
-              width="13"
-              height="13"
+              class="text-amber-500"
+              width="10"
+              height="10"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -381,560 +399,65 @@
                 d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
               />
             </svg>
-            Pinned
-          </button>
+            <span class="text-[10px] font-semibold text-amber-700"
+              >{{ pinnedMessages.length }} pinned</span
+            >
+          </div>
         </div>
-      </div>
 
-      <!-- Pinned banner -->
-      <div
-        *ngIf="pinnedMessages.length > 0 && activeView === 'channel'"
-        class="comm-pinned-banner"
-      >
-        <svg
-          width="11"
-          height="11"
-          fill="none"
-          stroke="#d97706"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-          />
-        </svg>
-        <span class="comm-pinned-text"
-          >{{ pinnedMessages.length }} pinned —
-          {{ pinnedMessages[0].text | slice: 0 : 50 }}…</span
-        >
-        <button
-          (click)="toggleRightPanel('pinned', 'Pinned')"
-          class="comm-pinned-view-btn"
-        >
-          View
-        </button>
-      </div>
-
-      <!-- Content row: messages + right panel -->
-      <div class="comm-content-row">
         <!-- Messages feed -->
-        <div class="comm-feed-col">
-          <div class="comm-messages" #messagesContainer>
-            <div class="comm-date-sep">
-              <div class="comm-date-line"></div>
-              <span class="comm-date-label">Today</span>
-              <div class="comm-date-line"></div>
-            </div>
-
-            <!-- Empty state -->
-            <div *ngIf="activeMessages.length === 0" class="comm-empty-state">
-              <div class="comm-empty-icon">
-                <svg
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.5"
-                    d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                  />
-                </svg>
-              </div>
-              <p class="comm-empty-title">
-                #{{ activeChannel?.name || activeDM?.shortName }}
-              </p>
-              <p class="comm-empty-sub">
-                {{
-                  activeChannel?.description || "Start of your conversation."
-                }}
-              </p>
-            </div>
-
-            <!-- ─────────────────────────────────────────
-                 MESSAGE GROUPS
-                 Each group = same sender, consecutive msgs.
-                 The thread indicator lives INSIDE the group
-                 div, after the per-message ngFor, and uses
-                 group.messages[group.messages.length - 1]
-                 (the lastMsg helper) so `msg` is never
-                 referenced outside its own *ngFor scope.
-            ───────────────────────────────────────── -->
-            <ng-container *ngFor="let group of groupedMessages">
-              <!-- System message -->
-              <div
-                *ngIf="group.messages[0].type === 'system'"
-                class="comm-system-msg"
-              >
-                <div class="comm-system-line"></div>
-                <span>{{ group.messages[0].text }}</span>
-                <div class="comm-system-line"></div>
-              </div>
-
-              <!-- Regular group -->
-              <div
-                *ngIf="group.messages[0].type !== 'system'"
-                class="comm-msg-group"
-              >
-                <div
-                  class="comm-avatar comm-avatar--md"
-                  [style.background]="group.avatarColor"
-                >
-                  {{ group.initials }}
-                </div>
-
-                <div class="comm-msg-group-body">
-                  <!-- Author + time row -->
-                  <div class="comm-msg-meta">
-                    <span class="comm-msg-author">{{ group.shortName }}</span>
-                    <span *ngIf="group.role" class="comm-msg-role">{{
-                      group.role
-                    }}</span>
-                    <span class="comm-msg-time">{{
-                      group.messages[0].time
-                    }}</span>
-                  </div>
-
-                  <!-- ── Per-message loop ── -->
-                  <ng-container
-                    *ngFor="let msg of group.messages; let isLast = last"
-                  >
-                    <!-- Forward indicator -->
-                    <div *ngIf="msg.forwarded" class="comm-forwarded-badge">
-                      <svg
-                        width="10"
-                        height="10"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                      Forwarded from {{ msg.forwardedFrom }}
-                    </div>
-
-                    <!-- Message wrap (hover target) -->
-                    <div
-                      class="comm-msg-wrap"
-                      [id]="'msg-' + msg.id"
-                      (mouseenter)="hoveredMsgId = msg.id"
-                      (mouseleave)="hoveredMsgId = null"
-                      [class.comm-msg-wrap--flash]="isFlashing(msg.id)"
-                    >
-                      <!-- Bubble -->
-                      <div
-                        class="comm-msg-bubble"
-                        [class.comm-msg-bubble--hovered]="
-                          msg.id === hoveredMsgId
-                        "
-                      >
-                        <p class="comm-msg-text">{{ msg.text }}</p>
-
-                        <!-- Attachment -->
-                        <div *ngIf="msg.attachment" class="comm-attachment">
-                          <div class="comm-attachment-icon">
-                            <svg
-                              width="12"
-                              height="12"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p class="comm-attachment-name">
-                              {{ msg.attachment.name }}
-                            </p>
-                            <p class="comm-attachment-size">
-                              {{ msg.attachment.size }}
-                            </p>
-                          </div>
-                          <svg
-                            width="11"
-                            height="11"
-                            fill="none"
-                            stroke="#a0b0bc"
-                            viewBox="0 0 24 24"
-                            style="margin-left: auto"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                            />
-                          </svg>
-                        </div>
-
-                        <!-- Reactions -->
-                        <div
-                          *ngIf="msg.reactions && msg.reactions.length > 0"
-                          class="comm-reactions"
-                        >
-                          <button
-                            *ngFor="let r of msg.reactions"
-                            (click)="toggleReaction(msg, r.emoji)"
-                            class="comm-reaction-btn"
-                            [class.comm-reaction-btn--active]="r.reacted"
-                            [title]="r.reactedBy.join(', ')"
-                          >
-                            {{ r.emoji }} <span>{{ r.count }}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <!-- Hover toolbar -->
-                      <div
-                        class="comm-msg-toolbar"
-                        [class.comm-msg-toolbar--visible]="
-                          msg.id === hoveredMsgId
-                        "
-                      >
-                        <button
-                          (click)="
-                            addQuickReaction(msg, '👍');
-                            $event.stopPropagation()
-                          "
-                          class="comm-toolbar-btn"
-                          title="👍"
-                        >
-                          👍
-                        </button>
-                        <button
-                          (click)="
-                            addQuickReaction(msg, '❤️');
-                            $event.stopPropagation()
-                          "
-                          class="comm-toolbar-btn"
-                          title="❤️"
-                        >
-                          ❤️
-                        </button>
-                        <div class="comm-toolbar-sep"></div>
-                        <button
-                          (click)="openThread(msg); $event.stopPropagation()"
-                          class="comm-toolbar-btn"
-                          title="Reply in thread"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          (click)="startForward(msg); $event.stopPropagation()"
-                          class="comm-toolbar-btn"
-                          title="Forward"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M13 7l5 5m0 0l-5 5m5-5H6"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          (click)="pinMessage(msg); $event.stopPropagation()"
-                          class="comm-toolbar-btn"
-                          [class.comm-toolbar-btn--active]="msg.pinned"
-                          title="Pin"
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-
-                      <!-- Forward dropdown — scoped inside msg wrap, no scope issue -->
-                      <div
-                        *ngIf="
-                          forwardingMsg?.id === msg.id && showForwardDropdown
-                        "
-                        class="comm-forward-dropdown"
-                        (click)="$event.stopPropagation()"
-                      >
-                        <p class="comm-forward-label">Forward to channel</p>
-                        <button
-                          *ngFor="let ch of allChannelsForForward"
-                          (click)="confirmForward(ch.id)"
-                          class="comm-forward-option"
-                        >
-                          #{{ ch.name }}
-                        </button>
-                        <button
-                          (click)="cancelForward()"
-                          class="comm-forward-cancel"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- ─────────────────────────────────────────────
-                         THREAD INDICATOR
-                         Placed INSIDE the *ngFor on group.messages
-                         so `msg` is still in scope. We use `isLast`
-                         to only show it after the final message in
-                         the group (where threads logically anchor),
-                         but it references msg.replies correctly
-                         since msg IS the loop variable here.
-                    ──────────────────────────────────────────── -->
-                    <div
-                      *ngIf="msg.replies && msg.replies.length > 0"
-                      class="comm-thread-indicator"
-                      (click)="openThread(msg)"
-                    >
-                      <div class="comm-thread-avatars">
-                        <div
-                          *ngFor="let p of getThreadParticipants(msg)"
-                          class="comm-thread-avatar"
-                          [style.background]="p.color"
-                        >
-                          {{ p.initials }}
-                        </div>
-                      </div>
-                      <span class="comm-thread-count">
-                        {{ msg.replies.length }}
-                        {{ msg.replies.length === 1 ? "reply" : "replies" }}
-                      </span>
-                      <span class="comm-thread-last">
-                        Last reply {{ getLastReplyTime(msg) }}
-                      </span>
-                    </div>
-                  </ng-container>
-                  <!-- ── End per-message loop ── -->
-                </div>
-              </div>
-            </ng-container>
-            <!-- End message groups -->
-
-            <!-- Typing indicator -->
-            <div *ngIf="typingUsers.length > 0" class="comm-typing">
-              <div class="comm-typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-              <span>
-                {{ typingUsers.join(", ") }}
-                {{ typingUsers.length === 1 ? "is" : "are" }} typing…
-              </span>
-            </div>
-          </div>
-
-          <!-- Composer -->
-          <div class="comm-composer-wrap">
-            <div class="comm-composer" [class.comm-composer--focused]="false">
-              <!-- Reply bar -->
-              <div *ngIf="replyingTo" class="comm-reply-bar">
-                <div class="comm-reply-accent"></div>
-                <span class="comm-reply-text">
-                  Replying to <strong>{{ replyingTo.shortName }}</strong
-                  >:
-                  {{ replyingTo.text | slice: 0 : 60 }}
-                </span>
-                <button (click)="replyingTo = null" class="comm-reply-close">
-                  <svg
-                    width="10"
-                    height="10"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <textarea
-                #composerArea
-                [(ngModel)]="newMessageText"
-                [placeholder]="
-                  'Message ' +
-                  (activeView === 'channel'
-                    ? '#' + (activeChannel?.name || '')
-                    : activeDM?.shortName || '')
-                "
-                (keydown)="onComposerKeydown($event, composerArea)"
-                (input)="onTyping(composerArea)"
-                rows="1"
-                class="comm-composer-input"
-              ></textarea>
-
-              <div class="comm-composer-toolbar">
-                <div class="comm-composer-tools">
-                  <button
-                    (click)="wrapSelection('**', '**')"
-                    class="comm-tool-btn"
-                    title="Bold"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"
-                      />
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    (click)="wrapSelection('_', '_')"
-                    class="comm-tool-btn"
-                    title="Italic"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <line
-                        x1="19"
-                        y1="4"
-                        x2="10"
-                        y2="4"
-                        stroke-linecap="round"
-                        stroke-width="2"
-                      />
-                      <line
-                        x1="14"
-                        y1="20"
-                        x2="5"
-                        y2="20"
-                        stroke-linecap="round"
-                        stroke-width="2"
-                      />
-                      <line
-                        x1="15"
-                        y1="4"
-                        x2="9"
-                        y2="20"
-                        stroke-linecap="round"
-                        stroke-width="2"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    (click)="wrapSelection('\`', '\`')"
-                    class="comm-tool-btn"
-                    title="Code"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M10 20l4-16M8 9l-3 3 3 3M16 9l3 3-3 3"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <div class="comm-composer-right">
-                  <span class="comm-composer-hint">Shift+Enter new line</span>
-                  <button
-                    (click)="sendMessage()"
-                    class="comm-send-btn"
-                    [class.comm-send-btn--active]="newMessageText.trim()"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right panel -->
         <div
-          class="comm-right-panel"
-          [class.comm-right-panel--open]="rightPanel"
+          #feedEl
+          class="flex-1 overflow-y-auto px-5 py-4 bg-white"
+          style="scrollbar-width: thin"
         >
-          <div *ngIf="rightPanel" class="comm-right-panel-inner">
-            <div class="comm-panel-header">
-              <h3 class="comm-panel-title">{{ rightPanelTitle }}</h3>
-              <button (click)="closeRightPanel()" class="comm-icon-btn-xs">
+          <!-- Date separator -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="flex-1 h-px bg-gray-100"></div>
+            <span
+              class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+              >Today</span
+            >
+            <div class="flex-1 h-px bg-gray-100"></div>
+          </div>
+
+          <!-- Empty state -->
+          <div
+            *ngIf="!rawMessages.length"
+            class="flex flex-col items-center justify-center py-16 text-center"
+          >
+            <div
+              class="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-300 mb-3"
+            >
+              <svg
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-600 mb-1">
+              #{{ activeChannel?.name || activeDm?.shortName }}
+            </p>
+            <p class="text-xs text-gray-400 max-w-xs leading-relaxed">
+              {{ activeChannel?.description || "Start of your conversation." }}
+            </p>
+          </div>
+
+          <!-- ── PINNED SECTION ── -->
+          <ng-container *ngIf="pinnedMessages.length">
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-2">
                 <svg
+                  class="text-amber-500"
                   width="11"
                   height="11"
                   fill="none"
@@ -944,218 +467,617 @@
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M6 18L18 6M6 6l12 12"
+                    stroke-width="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
                   />
                 </svg>
-              </button>
+                <span
+                  class="text-[10px] font-bold text-amber-600 uppercase tracking-wider"
+                  >Pinned</span
+                >
+                <div class="flex-1 h-px bg-amber-100"></div>
+              </div>
+
+              <ng-container
+                *ngFor="let msg of pinnedMessages; trackBy: trackById"
+              >
+                <div
+                  [id]="'msg-' + msg.id"
+                  class="flex gap-3 mb-2 p-3 rounded-xl border-l-4 border-amber-400 bg-amber-50 transition-all"
+                  [class.ring-2]="isFlashing(msg.id)"
+                >
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
+                    [style.background]="msg.avatarColor"
+                  >
+                    {{ msg.initials }}
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2 mb-1">
+                      <span class="text-xs font-bold text-gray-800">{{
+                        msg.author
+                      }}</span>
+                      <span
+                        *ngIf="msg.role"
+                        class="text-[9px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-100 px-1.5 py-0.5 rounded"
+                        >{{ msg.role }}</span
+                      >
+                      <span class="text-[10px] text-gray-400">{{
+                        msg.time
+                      }}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      {{ msg.content }}
+                    </p>
+
+                    <div
+                      *ngIf="msg.attachment"
+                      class="flex items-center gap-2.5 mt-2 p-2.5 bg-white border border-amber-200 rounded-lg w-fit"
+                    >
+                      <div
+                        class="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center"
+                      >
+                        <svg
+                          class="text-amber-600"
+                          width="12"
+                          height="12"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p
+                          class="text-xs font-semibold text-gray-700 leading-none"
+                        >
+                          {{ msg.attachment.name }}
+                        </p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">
+                          {{ msg.attachment.size }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 mt-2.5">
+                      <button
+                        (click)="openThread(msg, $event)"
+                        class="flex items-center gap-1.5 text-xs transition-colors"
+                        [class.text-[#2e6276]]="activeThreadId === msg.id"
+                        [class.font-semibold]="activeThreadId === msg.id"
+                        [class.text-gray-400]="activeThreadId !== msg.id"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                          />
+                        </svg>
+                        <span>{{
+                          msg.replies.length
+                            ? msg.replies.length +
+                              " " +
+                              (msg.replies.length === 1 ? "reply" : "replies")
+                            : "Reply"
+                        }}</span>
+                      </button>
+
+                      <button
+                        (click)="toggleLike(msg, $event)"
+                        class="flex items-center gap-1.5 text-xs transition-colors"
+                        [class.text-rose-500]="msg.liked"
+                        [class.font-semibold]="msg.liked"
+                        [class.text-gray-400]="!msg.liked"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          [attr.fill]="msg.liked ? 'currentColor' : 'none'"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                        <span>{{ msg.likeCount || "Like" }}</span>
+                      </button>
+
+                      <button
+                        (click)="togglePin(msg, $event)"
+                        class="flex items-center gap-1.5 text-xs text-amber-500 hover:text-amber-700 transition-colors font-semibold"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          />
+                        </svg>
+                        <span>Unpin</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <div class="flex items-center gap-3 mt-4 mb-4">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <span
+                  class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+                  >All messages</span
+                >
+                <div class="flex-1 h-px bg-gray-100"></div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- ── NORMAL MESSAGES ── -->
+          <ng-container
+            *ngFor="let msg of unpinnedMessages; trackBy: trackById"
+          >
+            <!-- System message -->
+            <div *ngIf="msg.isSystem" class="flex items-center gap-3 my-3">
+              <div class="flex-1 h-px bg-gray-100"></div>
+              <span class="text-[10px] text-gray-400 italic">{{
+                msg.content
+              }}</span>
+              <div class="flex-1 h-px bg-gray-100"></div>
             </div>
 
-            <!-- Thread panel -->
-            <ng-container *ngIf="rightPanelType === 'thread' && threadParent">
-              <div class="comm-thread-parent">
+            <!-- Regular message -->
+            <div
+              *ngIf="!msg.isSystem"
+              [id]="'msg-' + msg.id"
+              class="flex gap-3 mb-1 p-3 rounded-xl transition-all"
+              [class.bg-blue-50]="activeThreadId === msg.id"
+              [class.border-l-2]="activeThreadId === msg.id"
+              [class.border-[#2e6276]]="activeThreadId === msg.id"
+              [class.ring-2]="isFlashing(msg.id)"
+              [class.hover:bg-gray-50]="activeThreadId !== msg.id"
+            >
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
+                [style.background]="msg.avatarColor"
+              >
+                {{ msg.initials }}
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-baseline gap-2 mb-1">
+                  <span class="text-xs font-bold text-gray-800">{{
+                    msg.author
+                  }}</span>
+                  <span
+                    *ngIf="msg.role"
+                    class="text-[9px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-100 px-1.5 py-0.5 rounded"
+                    >{{ msg.role }}</span
+                  >
+                  <span class="text-[10px] text-gray-400">{{ msg.time }}</span>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed break-words">
+                  {{ msg.content }}
+                </p>
+
                 <div
-                  class="comm-avatar comm-avatar--xs"
-                  [style.background]="threadParent.avatarColor"
+                  *ngIf="msg.attachment"
+                  class="flex items-center gap-2.5 mt-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg w-fit"
                 >
-                  {{ threadParent.initials }}
-                </div>
-                <div class="comm-thread-parent-body">
-                  <div class="comm-msg-meta">
-                    <span class="comm-msg-author">{{
-                      threadParent.shortName
-                    }}</span>
-                    <span class="comm-msg-time">{{ threadParent.time }}</span>
-                  </div>
-                  <p class="comm-msg-text">{{ threadParent.text }}</p>
-                </div>
-              </div>
-              <div class="comm-panel-divider">
-                <div class="comm-date-line"></div>
-                <span class="comm-date-label">
-                  {{ threadReplies.length }}
-                  {{ threadReplies.length === 1 ? "reply" : "replies" }}
-                </span>
-                <div class="comm-date-line"></div>
-              </div>
-              <div class="comm-thread-replies">
-                <div *ngFor="let r of threadReplies" class="comm-thread-reply">
                   <div
-                    class="comm-avatar comm-avatar--xs"
-                    [style.background]="r.avatarColor"
+                    class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center"
                   >
-                    {{ r.initials }}
+                    <svg
+                      class="text-[#2e6276]"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
+                    </svg>
                   </div>
                   <div>
-                    <div class="comm-msg-meta">
-                      <span class="comm-msg-author">{{ r.shortName }}</span>
-                      <span class="comm-msg-time">{{ r.time }}</span>
-                    </div>
-                    <p class="comm-msg-text">{{ r.text }}</p>
+                    <p class="text-xs font-semibold text-gray-700 leading-none">
+                      {{ msg.attachment.name }}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">
+                      {{ msg.attachment.size }}
+                    </p>
                   </div>
                 </div>
-                <div
-                  *ngIf="threadReplies.length === 0"
-                  class="comm-panel-empty"
-                >
-                  No replies yet
+
+                <!-- Action row -->
+                <div class="flex items-center gap-4 mt-2.5">
+                  <button
+                    (click)="openThread(msg, $event)"
+                    class="flex items-center gap-1.5 text-xs transition-colors"
+                    [class.text-[#2e6276]]="activeThreadId === msg.id"
+                    [class.font-semibold]="activeThreadId === msg.id"
+                    [class.text-gray-400]="activeThreadId !== msg.id"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                      />
+                    </svg>
+                    <span>{{
+                      msg.replies.length
+                        ? msg.replies.length +
+                          " " +
+                          (msg.replies.length === 1 ? "reply" : "replies")
+                        : "Reply"
+                    }}</span>
+                  </button>
+
+                  <button
+                    (click)="toggleLike(msg, $event)"
+                    class="flex items-center gap-1.5 text-xs transition-colors"
+                    [class.text-rose-500]="msg.liked"
+                    [class.font-semibold]="msg.liked"
+                    [class.text-gray-400]="!msg.liked"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      [attr.fill]="msg.liked ? 'currentColor' : 'none'"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                    <span>{{ msg.likeCount ? msg.likeCount : "Like" }}</span>
+                  </button>
+
+                  <button
+                    (click)="togglePin(msg, $event)"
+                    class="flex items-center gap-1.5 text-xs transition-colors"
+                    [class.text-amber-500]="msg.pinned"
+                    [class.font-semibold]="msg.pinned"
+                    [class.text-gray-400]="!msg.pinned"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      [attr.fill]="msg.pinned ? 'currentColor' : 'none'"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                    <span>{{ msg.pinned ? "Pinned" : "Pin" }}</span>
+                  </button>
                 </div>
               </div>
-              <div class="comm-thread-composer">
-                <input
-                  type="text"
-                  [(ngModel)]="newThreadReply"
-                  placeholder="Reply in thread…"
-                  (keyup.enter)="submitThreadReply()"
-                  class="comm-thread-input"
+            </div>
+          </ng-container>
+        </div>
+        <!-- /feed -->
+
+        <!-- Composer -->
+        <!-- FIX 5: replace [placeholder] with optional chaining — use composerPlaceholder() method -->
+        <div class="px-4 pb-4 pt-2 flex-shrink-0 bg-white">
+          <div
+            class="flex items-end gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-white focus-within:border-[#2e6276]/40 transition-colors"
+          >
+            <textarea
+              #composerEl
+              [(ngModel)]="draft"
+              [placeholder]="composerPlaceholder()"
+              (keydown)="onComposerKey($event, composerEl)"
+              (input)="onComposerInput(composerEl)"
+              rows="1"
+              class="flex-1 resize-none bg-transparent border-0 outline-none text-sm text-gray-800 placeholder-gray-400 py-1 leading-relaxed min-h-[28px] max-h-40"
+            ></textarea>
+            <button
+              (click)="sendMessage()"
+              class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors mb-0.5"
+              [class.bg-[#2e6276]]="draft.trim()"
+              [class.text-white]="draft.trim()"
+              [class.bg-gray-100]="!draft.trim()"
+              [class.text-gray-300]="!draft.trim()"
+            >
+              <svg
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                 />
-                <button
-                  (click)="submitThreadReply()"
-                  class="comm-send-btn"
-                  [class.comm-send-btn--active]="newThreadReply.trim()"
-                >
-                  <svg
-                    width="10"
-                    height="10"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </ng-container>
+              </svg>
+            </button>
+          </div>
+          <p class="text-[10px] text-gray-400 mt-1.5 px-1">
+            Press
+            <kbd class="bg-gray-100 px-1 rounded text-[9px]">Enter</kbd> to send
+            ·
+            <kbd class="bg-gray-100 px-1 rounded text-[9px]">Shift+Enter</kbd>
+            for new line
+          </p>
+        </div>
+      </div>
+    </ng-container>
 
-            <!-- Members panel -->
-            <ng-container *ngIf="rightPanelType === 'members'">
-              <div class="comm-panel-body">
-                <p class="comm-section-label" style="margin-bottom: 8px">
-                  Online — {{ onlineMembers.length }}
-                </p>
-                <div *ngFor="let m of onlineMembers" class="comm-member-row">
-                  <div class="comm-avatar-wrap">
-                    <div
-                      class="comm-avatar comm-avatar--sm"
-                      [style.background]="m.avatarColor"
-                    >
-                      {{ m.initials }}
-                    </div>
-                    <span class="comm-presence comm-presence--online"></span>
-                  </div>
-                  <div>
-                    <p class="comm-member-name">{{ m.shortName }}</p>
-                    <p class="comm-member-role">{{ m.role }}</p>
-                  </div>
-                </div>
-                <p class="comm-section-label" style="margin: 16px 0 8px">
-                  Offline — {{ offlineMembers.length }}
-                </p>
+    <!-- ── THREADS VIEW ──────────────────── -->
+    <ng-container *ngIf="activeView === 'threads'">
+      <div class="flex flex-col flex-1 overflow-hidden min-w-0">
+        <div
+          class="flex items-center px-5 h-12 bg-white border-b border-gray-200 flex-shrink-0"
+        >
+          <h2 class="text-sm font-bold text-gray-900">Threads</h2>
+        </div>
+        <div
+          class="flex-1 overflow-y-auto px-5 py-4"
+          style="scrollbar-width: thin"
+        >
+          <div
+            *ngIf="!allThreaded.length"
+            class="flex flex-col items-center justify-center py-16 text-center text-gray-400"
+          >
+            <p class="text-sm font-medium mb-1">No threads yet</p>
+            <p class="text-xs">Click Reply on any message to start a thread.</p>
+          </div>
+          <div
+            *ngFor="let t of allThreaded"
+            class="p-4 bg-white border border-gray-100 rounded-xl mb-3 cursor-pointer hover:border-[#2e6276]/20 hover:shadow-sm transition-all"
+            (click)="openThreadFromList(t.msg, $event)"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <div
+                class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0"
+                [style.background]="t.msg.avatarColor"
+              >
+                {{ t.msg.initials }}
+              </div>
+              <span class="text-xs font-semibold text-gray-700">{{
+                t.msg.author
+              }}</span>
+              <span class="text-[10px] font-semibold text-[#2e6276]"
+                >#{{ t.channelName }}</span
+              >
+              <span class="text-[10px] text-gray-400 ml-auto">{{
+                t.msg.time
+              }}</span>
+            </div>
+            <p class="text-sm text-gray-600 leading-relaxed mb-2">
+              {{ t.msg.content }}
+            </p>
+            <div class="flex items-center gap-1.5">
+              <div class="flex -space-x-1">
+                <!-- FIX 6: getTopReplies() as a method call in *ngFor — already moved to TS -->
                 <div
-                  *ngFor="let m of offlineMembers"
-                  class="comm-member-row"
-                  style="opacity: 0.5"
+                  *ngFor="let r of getTopReplies(t.msg)"
+                  class="w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[7px] font-bold"
+                  [style.background]="r.avatarColor"
                 >
-                  <div class="comm-avatar-wrap">
-                    <div
-                      class="comm-avatar comm-avatar--sm"
-                      [style.background]="m.avatarColor"
-                    >
-                      {{ m.initials }}
-                    </div>
-                    <span class="comm-presence"></span>
-                  </div>
-                  <div>
-                    <p class="comm-member-name">{{ m.shortName }}</p>
-                    <p class="comm-member-role">{{ m.role }}</p>
-                  </div>
+                  {{ r.initials }}
                 </div>
               </div>
-            </ng-container>
-
-            <!-- Pinned panel -->
-            <ng-container *ngIf="rightPanelType === 'pinned'">
-              <div class="comm-panel-body">
-                <div
-                  *ngIf="pinnedMessages.length === 0"
-                  class="comm-panel-empty"
-                >
-                  No pinned messages
-                </div>
-                <div
-                  *ngFor="let pm of pinnedMessages"
-                  class="comm-pinned-item"
-                  (click)="scrollToPinned(pm)"
-                >
-                  <div class="comm-msg-meta">
-                    <span class="comm-msg-author">{{ pm.shortName }}</span>
-                    <span class="comm-msg-time">{{ pm.time }}</span>
-                  </div>
-                  <p class="comm-msg-text">{{ pm.text }}</p>
-                </div>
-              </div>
-            </ng-container>
+              <span class="text-xs font-semibold text-[#2e6276] ml-1">
+                {{ t.msg.replies.length }}
+                {{ t.msg.replies.length === 1 ? "reply" : "replies" }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </ng-container>
 
-    <!-- ── THREADS VIEW ── -->
-    <ng-container *ngIf="activeView === 'threads'">
-      <div class="comm-topbar">
-        <h2 class="comm-topbar-title">Threads</h2>
-      </div>
-      <div class="comm-threads-list">
-        <ng-container *ngFor="let ch of channels">
-          <ng-container *ngFor="let msg of channelMessages[ch.id]">
-            <div
-              *ngIf="msg.replies && msg.replies.length > 0"
-              class="comm-thread-card"
-              (click)="selectChannel(ch.id); openThread(msg)"
+    <!-- ══════════════════════════════════════
+         THREAD SIDEBAR (right panel)
+    ══════════════════════════════════════ -->
+    <div
+      class="flex flex-col border-l border-gray-200 bg-white flex-shrink-0 overflow-hidden transition-all duration-200"
+      [style.width]="activeThreadId ? '24rem' : '0'"
+    >
+      <ng-container *ngIf="activeThread">
+        <!-- Header -->
+        <div
+          class="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="text-[#2e6276]"
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div class="comm-thread-card-header">
-                <div
-                  class="comm-avatar comm-avatar--xs"
-                  [style.background]="msg.avatarColor"
-                >
-                  {{ msg.initials }}
-                </div>
-                <span class="comm-msg-author">{{ msg.shortName }}</span>
-                <span class="comm-thread-channel">#{{ ch.name }}</span>
-                <span class="comm-msg-time" style="margin-left: auto">{{
-                  msg.time
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
+            </svg>
+            <h3 class="text-xs font-bold text-gray-800">Thread</h3>
+          </div>
+          <button
+            (click)="closeThread()"
+            class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <svg
+              width="11"
+              height="11"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Scrollable content -->
+        <div
+          #threadEl
+          class="flex-1 overflow-y-auto px-4 py-3"
+          style="scrollbar-width: thin"
+        >
+          <!-- Parent message -->
+          <div class="flex gap-3 p-3 bg-gray-50 rounded-xl mb-4">
+            <div
+              class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
+              [style.background]="activeThread.avatarColor"
+            >
+              {{ activeThread.initials }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-xs font-bold text-gray-800">{{
+                  activeThread.author
+                }}</span>
+                <span class="text-[10px] text-gray-400">{{
+                  activeThread.time
                 }}</span>
               </div>
-              <p class="comm-msg-text" style="margin: 6px 0 0 0">
-                {{ msg.text }}
+              <p class="text-sm text-gray-700 leading-relaxed">
+                {{ activeThread.content }}
               </p>
-              <div
-                class="comm-thread-indicator"
-                style="margin-top: 8px; cursor: default"
-              >
-                <div class="comm-thread-avatars">
-                  <div
-                    *ngFor="let p of getThreadParticipants(msg)"
-                    class="comm-thread-avatar"
-                    [style.background]="p.color"
-                  >
-                    {{ p.initials }}
-                  </div>
-                </div>
-                <span class="comm-thread-count"
-                  >{{ msg.replies.length }}
-                  {{ msg.replies.length === 1 ? "reply" : "replies" }}</span
-                >
-              </div>
             </div>
-          </ng-container>
-        </ng-container>
-      </div>
-    </ng-container>
+          </div>
+
+          <!-- Reply count divider -->
+          <div class="flex items-center gap-3 mb-3">
+            <div class="flex-1 h-px bg-gray-100"></div>
+            <span
+              class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+            >
+              {{ activeThread.replies.length }}
+              {{ activeThread.replies.length === 1 ? "reply" : "replies" }}
+            </span>
+            <div class="flex-1 h-px bg-gray-100"></div>
+          </div>
+
+          <div *ngIf="!activeThread.replies.length" class="text-center py-6">
+            <p class="text-xs text-gray-400">No replies yet. Be the first!</p>
+          </div>
+
+          <div
+            *ngFor="let r of activeThread.replies; trackBy: trackById"
+            class="flex gap-2.5 mb-3"
+          >
+            <div
+              class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
+              [style.background]="r.avatarColor"
+            >
+              {{ r.initials }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2 mb-0.5">
+                <span class="text-xs font-bold text-gray-800">{{
+                  r.author
+                }}</span>
+                <span class="text-[10px] text-gray-400">{{ r.time }}</span>
+              </div>
+              <p class="text-sm text-gray-600 leading-relaxed">
+                {{ r.content }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reply composer -->
+        <div class="border-t border-gray-200 px-3 py-3 flex-shrink-0">
+          <div
+            class="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus-within:bg-white focus-within:border-[#2e6276]/40 transition-all"
+          >
+            <div
+              class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0 bg-[#2e6276]"
+            >
+              {{ me.initials }}
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="threadReplyDraft"
+              placeholder="Reply in thread…"
+              (keydown)="onThreadKey($event)"
+              class="flex-1 bg-transparent border-0 outline-none text-xs text-gray-800 placeholder-gray-400 min-w-0"
+            />
+            <button
+              (click)="sendReply()"
+              class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
+              [class.bg-[#2e6276]]="threadReplyDraft.trim()"
+              [class.text-white]="threadReplyDraft.trim()"
+              [class.bg-gray-200]="!threadReplyDraft.trim()"
+              [class.text-gray-400]="!threadReplyDraft.trim()"
+            >
+              <svg
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+    <!-- /thread sidebar -->
   </main>
 </div>
