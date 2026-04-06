@@ -1,4 +1,4 @@
-import { AttendanceTableRecord } from "../models/attendancetable.model";
+import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 
 export function exportCSV(data: AttendanceTableRecord[], columns: string[]) {
   const header = columns.join(',');

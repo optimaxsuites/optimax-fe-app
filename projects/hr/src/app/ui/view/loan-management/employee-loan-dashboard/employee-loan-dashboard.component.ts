@@ -9,7 +9,13 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 import { EmployeeService } from '../../../service/employee.service';
-import { compareLoanSortValues, formatLoanPurposeDisplay, resolveLoanTotalRepayableAmount } from '../../../service/loan/loan-display.util';
+import {
+  compareLoanSortValues,
+  formatLoanPurposeDisplay,
+  formatLoanRepaymentDayDisplay,
+  formatLoanRepaymentMonthYear,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -504,6 +510,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     return formatLoanPurposeDisplay(purpose);
   }
 
+  formatRepaymentMonthYear(value?: string | null): string {
+    return formatLoanRepaymentMonthYear(value);
+  }
+
+  formatRepaymentDay(day?: number | null): string {
+    return formatLoanRepaymentDayDisplay(day);
+  }
+
   getTotalRequests(): number {
     return this.allLoans.length;
   }
@@ -511,6 +525,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   getStatusDisplay(status: string): string {
     switch(status) {
       case 'PENDING': return 'Pending';
+      case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Acceptance';
       case 'APPROVED': return 'Approved';
       case 'ACTIVE': return 'Active';
       case 'REJECTED': return 'Rejected';
@@ -522,6 +537,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   getStatusClass(status: string): string {
     switch(status) {
       case 'PENDING': return 'pending';
+      case 'AWAITING_INTEREST_ACCEPTANCE': return 'pending';
       case 'APPROVED': return 'approved';
       case 'ACTIVE': return 'active';
       case 'REJECTED': return 'rejected';

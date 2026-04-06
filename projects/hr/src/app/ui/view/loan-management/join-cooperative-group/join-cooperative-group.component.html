@@ -53,9 +53,14 @@
         <button
           type="button"
           class="apply-btn"
-          [disabled]="!isEligible(group.id.toString())"
+          [disabled]="!isEligible(group.id.toString()) || loadingGroupId === group.id.toString()"
           (click)="onApply(group.id.toString())">
-          {{ isEligible(group.id.toString()) ? 'Apply to Join' : 'Unavailable' }}
+          <ng-container *ngIf="loadingGroupId === group.id.toString(); else applyText">
+            <i class="pi pi-spin pi-spinner"></i> Applying...
+          </ng-container>
+          <ng-template #applyText>
+            {{ isEligible(group.id.toString()) ? 'Apply to Join' : 'Unavailable' }}
+          </ng-template>
         </button>
       </div>
     </article>

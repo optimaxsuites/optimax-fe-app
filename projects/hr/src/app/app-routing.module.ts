@@ -35,11 +35,12 @@ import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
 import { CooperativeMemberGroupDashboardComponent } from './ui/view/loan-management/cooperative-member-group-dashboard/cooperative-member-group-dashboard.component';
-// import { CooperativeLoanProductsComponent } from './ui/view/loan-management/cooperative-loan-products/cooperative-loan-products.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+// import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
+import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 
 const routes: Routes = [
@@ -54,7 +55,8 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'leave/uu',
+    redirectTo: 'loan/uu',
+    // redirectTo: 'leave/uu',
     pathMatch: 'full',
   },
   // {
@@ -98,43 +100,6 @@ const routes: Routes = [
     path: 'me/:uuid',
     component: EmployeeProfileDashboardComponent,
   },
-
-  // {
-  //   path: '',
-  //   redirectTo: 'loan/uu',
-  //   pathMatch: 'full',
-  // },
-  // {
-  //   // path: 'loan/:uuid',
-  //   path: 'loan-dashboard',
-  //   redirectTo: 'loan/uu',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: 'loan-dashboard/:legacyId',
-  //   redirectTo: 'admin/hr/loan/uu',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: 'admin/hr/loan-dashboard',
-  //   redirectTo: 'admin/hr/loan/uu',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: 'admin/hr/loan-dashboard/:legacyId',
-  //   redirectTo: 'admin/hr/loan/uu',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: 'admin/hr/loan-management/loan-dashboard',
-  //   redirectTo: 'admin/hr/loan/uu',
-  //   pathMatch: 'full'
-  // },
-  // {
-  //   path: 'admin/hr/loan-management/loan-dashboard/:legacyId',
-  //   redirectTo: 'admin/hr/loan/uu',
-  //   pathMatch: 'full'
-  // },
   {
     path: 'loan/:uuid',
     component: LoanComponent,
@@ -166,6 +131,10 @@ const routes: Routes = [
   {
     path: 'loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
+  },
+    {
+    path: 'admin/hr/loan-management/loan-purposes/:uuid',
+    component: LoanPurposeManagementComponent,
   },
   {
     path: 'admin/hr/loan-management/loan-disbursement/:uuid',

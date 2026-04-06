@@ -39,6 +39,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       // If you have a dashboard tab or section, you can add navigation logic here
     }
   showMembershipConfirmationModal = false;
+  showJoinGroupConfirmationModal = false;
   currentUuid = uuidV4();
   currentMemberId: number = 1;
   
@@ -617,6 +618,11 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   openGroupDashboard(groupId: number): void {
+    console.log('[openGroupDashboard] Navigating to group dashboard:', {
+      groupId,
+      currentUuid: this.currentUuid,
+      memberId: this.member?.id || this.currentMemberId
+    });
     this.closeMyGroupsModal();
     this.router.navigate(['/member/cooperative/groups', groupId, this.currentUuid], {
       state: { memberId: this.member?.id || this.currentMemberId }
@@ -651,6 +657,12 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       ? `You have successfully joined ${groupName}.`
       : `Your application to join ${groupName} has been submitted for admin approval.`;
     this.actionMessageTone = 'success';
+    this.showJoinGroupModal = false;
+    this.showJoinGroupConfirmationModal = true;
+  }
+  closeJoinGroupConfirmationModal(): void {
+    this.showJoinGroupConfirmationModal = false;
+    this.joinGroupConfirmationMessage = '';
   }
 
   confirmJoinGroupAndRefresh(): void {

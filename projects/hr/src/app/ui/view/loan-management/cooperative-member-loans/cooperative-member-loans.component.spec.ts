@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RouterTestingModule } from '@angular/router/testing';
+import { of } from 'rxjs';
 
 import { CooperativeMemberLoansComponent } from './cooperative-member-loans.component';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -18,8 +19,8 @@ describe('CooperativeMemberLoansComponent', () => {
     ]);
 
     cooperativeServiceSpy.getMemberById.and.returnValue({
-      id: '1',
-      memberId: 'COP-001',
+      id: 1,
+      memberId: 1,
       fullName: 'Test User',
       email: 'test@example.com',
       phone: '08000000000',
@@ -30,7 +31,7 @@ describe('CooperativeMemberLoansComponent', () => {
       updatedAt: new Date().toISOString()
     });
 
-    cooperativeServiceSpy.getLoansByMember.and.returnValue([]);
+    cooperativeServiceSpy.getLoansByMember.and.returnValue(of([]));
     cooperativeServiceSpy.formatCurrency.and.callFake((amount: number) => `₦${amount}`);
 
     await TestBed.configureTestingModule({

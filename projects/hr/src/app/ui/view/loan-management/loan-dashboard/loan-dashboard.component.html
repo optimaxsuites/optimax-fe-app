@@ -321,12 +321,17 @@
                     <span class="loan-count">Showing {{ filteredLoans.length }} most recent of {{ totalFilteredLoans }} applications</span>
                 </div>
 
-                <div *ngIf="filteredLoans.length === 0" class="empty-state">
-                    <p>No loan applications found.</p>
-                    <button class="btn-primary" (click)="showAllLoans()">View All Loans</button>
-                </div>
+                                <!-- Loading Spinner -->
+                                <div class="loading-spinner" *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
+                                    <mat-spinner diameter="48"></mat-spinner>
+                                </div>
 
-                <div class="table-wrapper" *ngIf="filteredLoans.length > 0">
+                                <div *ngIf="filteredLoans.length === 0 && !isLoading" class="empty-state">
+                                        <p>No loan applications found.</p>
+                                        <button class="btn-primary" (click)="showAllLoans()">View All Loans</button>
+                                </div>
+
+                                <div class="table-wrapper" *ngIf="filteredLoans.length > 0 && !isLoading">
                     <table appSortableTable class="loan-table"> 
                         <thead>
                             <tr>
@@ -398,6 +403,19 @@
                             <small>Open employee advance loan records</small>
                         </span>
                     </div>
+
+                                        <div
+                                            class="command-pill"
+                                            role="button"
+                                            tabindex="0"
+                                            (click)="openPurposeManagement()"
+                                            (keydown.enter)="openPurposeManagement()">
+                                            <span class="command-icon"><i class="fas fa-tags"></i></span>
+                                            <span class="command-copy">
+                                                <strong>Manage Loan Purposes</strong>
+                                                <small>Create or manage loan purposes</small>
+                                            </span>
+                                        </div>
 
                     <div
                         class="command-pill"

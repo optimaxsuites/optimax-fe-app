@@ -914,6 +914,87 @@
     }
   }
 
+  // Redesigned Acknowledgements Section
+  .terms-container {
+    background: #f8fcfd;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #eef3f6;
+    
+    .term-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eef3f6;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .term-marker {
+        width: 8px;
+        height: 8px;
+        background: #2EB270;
+        border-radius: 50%;
+        margin-top: 6px;
+        flex-shrink: 0;
+      }
+      
+      .term-text {
+        color: #2E6276;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        flex: 1;
+      }
+    }
+  }
+
+  .agreement-checkbox {
+    .checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      
+      input {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        accent-color: #2EB270;
+        flex-shrink: 0;
+      }
+      
+      span {
+        color: #2E6276;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        
+        .required {
+          color: #dc3545;
+          margin-left: 4px;
+        }
+      }
+    }
+    
+    .error {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: #fff5f5;
+      border-radius: 8px;
+      color: #dc3545;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      
+      i {
+        font-size: 0.9rem;
+      }
+    }
+  }
+
   .acknowledgement-intro {
     margin: 0 0 10px;
     color: #495057;

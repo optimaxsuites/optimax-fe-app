@@ -1,3 +1,16 @@
+  <app-modal *ngIf="showJoinGroupConfirmationModal" (close)="closeJoinGroupConfirmationModal()">
+    <div class="membership-confirm-modal professional">
+      <div class="icon-success professional">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="24" fill="#eafaf2"/>
+          <path d="M16 25.5L21 30.5L32 19.5" stroke="#2EB270" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>Group Application Sent!</h2>
+      <p class="success-message">{{ joinGroupConfirmationMessage }}</p>
+      <button class="btn-primary" (click)="closeJoinGroupConfirmationModal()">Close</button>
+    </div>
+  </app-modal>
 <div class="member-dashboard-container">
 
   <app-modal *ngIf="showMembershipConfirmationModal" (close)="closeMembershipConfirmationModal()">

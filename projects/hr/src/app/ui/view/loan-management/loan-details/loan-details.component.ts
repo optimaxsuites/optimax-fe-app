@@ -1,3 +1,4 @@
+// loan-details.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,6 +13,7 @@ import {
   getLoanRepaymentStatusTitle,
   hasLoanBeenDisbursed,
   hasLoanRepaymentStarted,
+  normalizeLoanRepaymentStartDate,
   resolveCompletedLoanActor,
   resolveLoanActorName,
   resolveLoanEmployeeName,
@@ -65,7 +67,8 @@ export class LoanDetailsComponent implements OnInit {
   ) {
     this.commentForm = this.fb.group({
       comment: ['', Validators.required],
-      interestRate: [0, [Validators.min(0), Validators.max(100)]]
+      interestRate: [0, [Validators.min(0), Validators.max(100)]],
+      repaymentDay: [15, [Validators.required, Validators.min(1), Validators.max(31)]]
     });
   }
   
@@ -78,10 +81,21 @@ export class LoanDetailsComponent implements OnInit {
     });
   }
   
+  get commentControl(): FormControl {
+    return this.commentForm.get('comment') as FormControl;
+  }
+
+  get interestRateControl(): FormControl {
+    return this.commentForm.get('interestRate') as FormControl;
+  }
+
+  get repaymentDayControl(): FormControl {
+    return this.commentForm.get('repaymentDay') as FormControl;
+  }
+  
   loadLoanDetails(): void {
     this.isLoading = true;
 
-    // First try treating the route param as a loan/application ID.
     this.loanApplicationService.getApplicationById(this.employeeId).subscribe({
       next: (loan) => {
         if (loan) {
@@ -91,13 +105,11 @@ export class LoanDetailsComponent implements OnInit {
           return;
         }
 
-        // Fallback: treat the route param as an employee ID.
         this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
           next: (applications) => {
             const employeeLoans = applications.sort((a, b) =>
               new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
             );
-
             this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
             this.updateStatusTimeline();
             this.isLoading = false;
@@ -115,7 +127,6 @@ export class LoanDetailsComponent implements OnInit {
     });
   }
   
-  // Status tracking methods
   private updateStatusTimeline(): void {
     this.statusTimeline = this.loan ? this.buildStatusTimeline(this.loan) : [];
   }
@@ -137,22 +148,12 @@ export class LoanDetailsComponent implements OnInit {
       });
     }
 
-    const shouldInferApproved = !approvedDate && (loan.status === 'ACTIVE' || loan.status === 'COMPLETED' || !!disbursedDate || !!completedDate);
-    if (shouldInferApproved) {
-      timeline.push({
-        status: 'APPROVED',
-        changedAt: disbursedDate || completedDate || requestDate || new Date().toISOString(),
-        changedBy: this.formatHistoryActor(loan.approvedBy || loan.disbursedBy),
-        notes: 'Loan approved'
-      });
-    }
-
     if (approvedDate) {
       timeline.push({
         status: 'APPROVED',
         changedAt: approvedDate,
         changedBy: this.formatHistoryActor(loan.approvedBy),
-        notes: loan.status === 'APPROVED' && loan.adminComment ? loan.adminComment : 'Loan approved'
+        notes: loan.adminComment || 'Loan approved'
       });
     }
 
@@ -161,7 +162,7 @@ export class LoanDetailsComponent implements OnInit {
         status: 'REJECTED',
         changedAt: rejectedDate,
         changedBy: this.formatHistoryActor(loan.rejectedBy),
-        notes: loan.status === 'REJECTED' && loan.adminComment ? loan.adminComment : 'Loan rejected'
+        notes: loan.adminComment || 'Loan rejected'
       });
     }
 
@@ -183,67 +184,9 @@ export class LoanDetailsComponent implements OnInit {
       });
     }
 
-    const dedupedTimeline = timeline.filter((entry, index, entries) => {
-      const normalizedDate = this.normalizeDate(entry.changedAt);
-      if (!normalizedDate) {
-        return false;
-      }
-
-      return index === entries.findIndex((candidate) =>
-        candidate.status === entry.status && this.normalizeDate(candidate.changedAt) === normalizedDate
-      );
-    });
-
-    const hasCurrentStatus = dedupedTimeline.some((entry) => entry.status === loan.status);
-    if (!hasCurrentStatus) {
-      dedupedTimeline.push({
-        status: loan.status,
-        changedAt: completedDate || disbursedDate || approvedDate || rejectedDate || requestDate || new Date().toISOString(),
-        changedBy: this.resolveCurrentStatusActor(loan),
-        notes: loan.adminComment || `Loan ${this.getStatusLabel(loan.status).toLowerCase()}`
-      });
-    }
-
-    return dedupedTimeline.sort((left, right) => {
-      const statusOrderDifference = this.getStatusProgressionOrder(left.status) - this.getStatusProgressionOrder(right.status);
-      if (statusOrderDifference !== 0) {
-        return statusOrderDifference;
-      }
-
-      return new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime();
-    });
-  }
-
-  private getStatusProgressionOrder(status: LoanApplication['status']): number {
-    switch (status) {
-      case 'PENDING':
-        return 1;
-      case 'APPROVED':
-        return 2;
-      case 'ACTIVE':
-        return 3;
-      case 'COMPLETED':
-        return 4;
-      case 'REJECTED':
-        return 5;
-      default:
-        return 99;
-    }
-  }
-
-  private resolveCurrentStatusActor(loan: LoanApplication): string {
-    switch (loan.status) {
-      case 'APPROVED':
-        return this.formatHistoryActor(loan.approvedBy);
-      case 'REJECTED':
-        return this.formatHistoryActor(loan.rejectedBy);
-      case 'ACTIVE':
-        return this.formatHistoryActor(loan.disbursedBy);
-      case 'COMPLETED':
-        return resolveCompletedLoanActor(loan);
-      default:
-        return resolveLoanEmployeeName(loan);
-    }
+    return timeline.sort((left, right) => 
+      new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime()
+    );
   }
 
   private normalizeDate(value: string | undefined): string {
@@ -251,12 +194,11 @@ export class LoanDetailsComponent implements OnInit {
     if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
       return '';
     }
-
     const timestamp = new Date(rawValue).getTime();
     return Number.isFinite(timestamp) ? rawValue : '';
   }
 
-  private formatHistoryActor(actor: LoanApplication['approvedBy'] | LoanApplication['disbursedBy'] | LoanApplication['rejectedBy'] | string | undefined): string {
+  private formatHistoryActor(actor: any): string {
     return resolveLoanActorName(actor);
   }
 
@@ -281,13 +223,51 @@ export class LoanDetailsComponent implements OnInit {
     });
   }
 
-  // Open comment modal for approval/rejection
+  // Format repayment day with ordinal suffix (1st, 2nd, 3rd, etc.)
+  formatRepaymentDay(day: number | undefined): string {
+    if (!day) return 'N/A';
+    return `${day}${this.getDayOrdinal(day)}`;
+  }
+
+  // Get ordinal suffix for a number
+  getDayOrdinal(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  // Format repayment start date for display
+  formatRepaymentStartDate(value: unknown): string {
+    const normalizedDate = normalizeLoanRepaymentStartDate(value);
+    if (!normalizedDate) return 'N/A';
+    return new Date(normalizedDate).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  // Get displayed repayment start date from loan
+  getDisplayedRepaymentStartDate(loan: LoanApplication | null): string {
+    if (!loan) return 'N/A';
+    return this.formatRepaymentStartDate(
+      loan.repaymentStartDate ||
+      loan.repaymentSchedule?.[0]?.dueDate
+    );
+  }
+
   openCommentModal(action: LoanApplication['status']): void {
     this.selectedAction = action;
     this.commentForm.reset();
     this.suggestedInterestRate = this.loan ? this.loanApprovalService.determineInterestRate(this.loan) : 0;
+    
     this.commentForm.patchValue({
-      interestRate: action === 'APPROVED' ? this.suggestedInterestRate : this.loan?.interestRate ?? 0
+      interestRate: action === 'APPROVED' ? this.suggestedInterestRate : this.loan?.interestRate ?? 0,
+      repaymentDay: this.loan?.repaymentDay || 15
     });
 
     const interestRateControl = this.commentForm.get('interestRate');
@@ -302,7 +282,6 @@ export class LoanDetailsComponent implements OnInit {
     this.showCommentModal = true;
   }
 
-  // Close comment modal
   closeCommentModal(): void {
     this.showCommentModal = false;
     this.selectedAction = '';
@@ -319,24 +298,22 @@ export class LoanDetailsComponent implements OnInit {
     if (this.selectedAction !== 'APPROVED') {
       return;
     }
-
     const currentRate = Number(this.commentForm.value.interestRate ?? 0);
     this.updateApprovalPreview(currentRate);
   }
 
-  // Submit status change with comment
   submitStatusChange(): void {
     if (!this.loan) return;
     if (!this.selectedAction) return;
     
-    // For reject, comment is mandatory
     if (this.selectedAction === 'REJECTED' && this.commentForm.invalid) {
       this.commentForm.markAllAsTouched();
       return;
     }
 
-    if (this.selectedAction === 'APPROVED' && this.interestRateControl.invalid) {
+    if (this.selectedAction === 'APPROVED' && (this.interestRateControl.invalid || this.repaymentDayControl.invalid)) {
       this.interestRateControl.markAsTouched();
+      this.repaymentDayControl.markAsTouched();
       return;
     }
 
@@ -350,53 +327,57 @@ export class LoanDetailsComponent implements OnInit {
         : Number(this.commentForm.value.interestRate ?? 0)
     };
 
-    this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
-      next: () => {
-        const actionVerb = this.getActionVerb(this.selectedAction);
-        this.messages = [{
-          severity: 'success',
-          summary: 'Status Updated',
-          detail: `Loan ${actionVerb}d successfully.`
-        }];
-        this.closeCommentModal();
-        this.loadLoanDetails();
-      },
-      error: (error) => {
-        console.error('Error updating status:', error);
-        const actionVerb = this.getActionVerb(this.selectedAction);
-        this.messages = [{
-          severity: 'error',
-          summary: 'Update Failed',
-          detail: this.errorMessageService.getUserMessage(
-            error,
-            `Failed to ${actionVerb} loan.`
-          )
-        }];
-      }
-    });
-  }
-
-  private getActionVerb(action: LoanApplication['status'] | ''): string {
-    switch (action) {
-      case 'APPROVED':
-        return 'approve';
-      case 'REJECTED':
-        return 'reject';
-      case 'ACTIVE':
-        return 'disburse';
-      case 'COMPLETED':
-        return 'complete';
-      default:
-        return 'update';
+    if (this.selectedAction === 'APPROVED') {
+      const repaymentDay = this.commentForm.value.repaymentDay;
+      
+      this.loanApprovalService.approveLoan(
+        this.loan.id, 
+        statusUpdate.notes, 
+        statusUpdate.interestRate, 
+        undefined, 
+        repaymentDay
+      ).subscribe({
+        next: () => {
+          this.messages = [{
+            severity: 'success',
+            summary: 'Loan Approved',
+            detail: `Loan approved with ${statusUpdate.interestRate}% interest rate. Awaiting employee acceptance.`
+          }];
+          this.closeCommentModal();
+          this.loadLoanDetails();
+        },
+        error: (error) => {
+          console.error('Error approving loan:', error);
+          this.messages = [{
+            severity: 'error',
+            summary: 'Approval Failed',
+            detail: this.errorMessageService.getUserMessage(error, 'Failed to approve loan.')
+          }];
+        }
+      });
+    } else {
+      this.loanApprovalService.updateApplicationStatus(this.loan.id, statusUpdate).subscribe({
+        next: () => {
+          const actionVerb = this.selectedAction === 'REJECTED' ? 'rejected' : 'updated';
+          this.messages = [{
+            severity: 'success',
+            summary: 'Status Updated',
+            detail: `Loan ${actionVerb} successfully.`
+          }];
+          this.closeCommentModal();
+          this.loadLoanDetails();
+        },
+        error: (error) => {
+          console.error('Error updating status:', error);
+          const actionVerb = this.selectedAction === 'REJECTED' ? 'reject' : 'update';
+          this.messages = [{
+            severity: 'error',
+            summary: 'Update Failed',
+            detail: this.errorMessageService.getUserMessage(error, `Failed to ${actionVerb} loan.`)
+          }];
+        }
+      });
     }
-  }
-
-  get commentControl(): FormControl {
-    return this.commentForm.get('comment') as FormControl;
-  }
-
-  get interestRateControl(): FormControl {
-    return this.commentForm.get('interestRate') as FormControl;
   }
 
   approveLoan(): void {
@@ -463,7 +444,6 @@ export class LoanDetailsComponent implements OnInit {
     }).format(amount);
   }
 
-  // Get payment mode display text
   getPaymentModeDisplay(mode?: string): string {
     switch(mode) {
       case 'MONTHLY': return 'Monthly Installments';
@@ -486,9 +466,7 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   private updateApprovalPreview(interestRate: number): void {
-    if (!this.loan) {
-      return;
-    }
+    if (!this.loan) return;
 
     this.approvalPreview = this.loanApprovalService.calculateRepaymentBreakdown(
       this.loan.amount,

@@ -16,7 +16,7 @@ export class SearchbarComponent {
 
   constructor() {
     // Initialize Fuse with an empty list. This will be updated later.
-    this.fuse = new Fuse([], {
+    this.fuse = new Fuse<unknown>([], {
       keys: [   { name: 'sku', weight: 2 }, { name: 'name', weight: 1.5 }, 'description', 'category'],
       includeScore: true,
       threshold: 0.333, // Lower threshold for less fuzzy matching
