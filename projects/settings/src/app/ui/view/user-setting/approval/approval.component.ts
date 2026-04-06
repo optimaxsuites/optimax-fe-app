@@ -125,14 +125,14 @@ getStages(moduleTitle: string, appName: string): FormArray {
 addStage(moduleTitle: string, appName: string) {
   const stages = this.getStages(moduleTitle, appName);
   stages.push(this.fb.group({
-    name: [`Stage ${stages.length + 1}`, Validators.required], // 
-    orderIndex: [stages.length + 1], // 
-    approvalType: ['ANY', Validators.required], // 
+    name: [`Stage ${stages.length + 1}`, Validators.required],  
+    orderIndex: [stages.length + 1],  
+    approvalType: ['ANY', Validators.required],  
     rejectionPolicy: ['STOP', Validators.required],
     isOptional: [false],
-    minApprovals: [1, [Validators.min(1)]], // 
-    allowSelfApproval: [false], // 
-    assignment: this.fb.array([]) // AssignmentDTO[] 
+    minApprovals: [1, [Validators.min(1)]],  
+    allowSelfApproval: [false],  
+    assignment: this.fb.array([]) 
   }));
 }
 
@@ -146,10 +146,10 @@ addAssignment(moduleTitle: string, appName: string, stageIndex: number) {
   const assignmentGroup = this.fb.group({
     userId: [null],
     roleId: [null],
-    position: [assignments.length + 1] // Matches AssignmentDTO 'position'
+    position: [assignments.length + 1] 
   });
 
-  // Watchers to ensure "OR" logic
+
   const userCtrl = assignmentGroup.get('userId');
   const roleCtrl = assignmentGroup.get('roleId');
 
