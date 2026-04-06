@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExpenseService } from '../../service/expense.service';
@@ -22,13 +22,14 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
+import { ReceiptScannerService, ScannedReceiptData } from '../../service/receipt-scanner.service';
+
 
 const FALLBACK_APPROVER_EMAILS: { fullname: string; email: string }[] = [
   { fullname: 'Admin',   email: 'a.olayemi@yahoo.com' },
   { fullname: 'Finance', email: 'damilola@centrifugegroup.com' },
 ];
 
-/** Max expenses allowed per user per calendar month before a warning is shown */
 const MONTHLY_EXPENSE_LIMIT = 20;
 
 @Component({
@@ -52,21 +53,18 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   productData: any = {};
   signatureUrl: string | null = null;
 
-  isSubmitting  = false;
+  isSubmitting   = false;
   isSendingEmail = false;
 
-  // 'per_item' means user enters price per item; total = quantity × amount
-  // 'total'    means user enters the full total directly
   amountMode: 'per_item' | 'total' = 'total';
 
   // ─── Multi-file attachments ───────────────────────────────────────────────
-  companyReceiptFiles: File[]  = [];
+  companyReceiptFiles:    File[]   = [];
   companyReceiptPreviews: string[] = [];
-  employeeReceiptFiles: File[] = [];
+  employeeReceiptFiles:   File[]   = [];
   employeeReceiptPreviews: string[] = [];
 
-  // Legacy single-file getters kept for backward compatibility
-  get receiptFile(): File | null { return this.companyReceiptFiles[0] ?? null; }
+  get receiptFile(): File | null         { return this.companyReceiptFiles[0]  ?? null; }
   get employeeReceiptFile(): File | null { return this.employeeReceiptFiles[0] ?? null; }
 
   // ─── Dropdown data ────────────────────────────────────────────────────────
@@ -83,11 +81,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   readonly MONTHLY_LIMIT   = MONTHLY_EXPENSE_LIMIT;
 
   // ─── Modals ───────────────────────────────────────────────────────────────
-  showCategoryModal    = false;
-  showMerchantModal    = false;
-  showTaxModal         = false;
-  showAdvancedPayment  = false;
-  showBillSplit        = false;
+  showCategoryModal   = false;
+  showMerchantModal   = false;
+  showTaxModal        = false;
+  showAdvancedPayment = false;
+  showBillSplit       = false;
 
   newCategoryData = { name: '', description: '' };
   newMerchantData = { name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' };
@@ -105,15 +103,42 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   public signaturePadOptions: Object = { minWidth: 1, canvasWidth: 500, canvasHeight: 300 };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RECEIPT SCANNER STATE
+  //
+  // scanState drives the UI:
+  //   'idle'       → shows the "Scan / Upload Receipt" button
+  //   'scanning'   → shows the "Processing receipt…" spinner
+  //   'preview'    → shows the extracted data preview panel
+  //   'error'      → shows the error message with manual fallback
+  //
+  // scannedData holds the last successfully extracted receipt data.
+  // It is shown in the preview panel before the user confirms auto-fill.
+  //
+  // highlightedFields tracks which form fields were populated by the scanner
+  // so we can visually highlight them in the template (amber outline).
+  // ─────────────────────────────────────────────────────────────────────────
+  scanState: 'idle' | 'scanning' | 'preview' | 'error' = 'idle';
+  scannedData: ScannedReceiptData | null = null;
+  scanError = '';
+  barcodeMode: 'idle' | 'active' = 'idle';
+  barcodeScanValue = '';
+  highlightedFields: Set<string> = new Set();
+  scanProgress = 0;
+  private scanProgressInterval: any = null;
+
+  @ViewChild('barcodeScannerInput') barcodeScannerInput?: ElementRef<HTMLInputElement>;
+
   constructor(
-    private expenseService: ExpenseService,
-    private router: Router,
-    private route: ActivatedRoute,
-    private messageService: MessageService,
-    private location: Location,
-    private http: HttpClient,
-    private emailService: EmailService,
-    private authService: AuthenticationService
+    private expenseService:  ExpenseService,
+    private router:          Router,
+    private route:           ActivatedRoute,
+    private messageService:  MessageService,
+    private location:        Location,
+    private http:            HttpClient,
+    private emailService:    EmailService,
+    private authService:     AuthenticationService,
+    private receiptScanner:  ReceiptScannerService,
   ) {}
 
   ngOnInit(): void {
@@ -138,6 +163,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.revokeAllPreviews();
+    if (this.scanProgressInterval) clearInterval(this.scanProgressInterval);
   }
 
   // ─── Resolve current user ─────────────────────────────────────────────────
@@ -157,7 +183,6 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         sessionStorage.getItem('userid') ||
         localStorage.getItem('userid');
 
-      // Priority: nested user.id → userRegData.id → flat userid string
       const id: number | null =
         (primary?.user?.id && typeof primary.user.id === 'number') ? primary.user.id :
         (reg?.id           && typeof reg.id           === 'number') ? reg.id           :
@@ -171,7 +196,6 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         primary?.email ||
         sessionStorage.getItem('email') || localStorage.getItem('email') || '';
 
-      console.log('[ExpenseForm] resolveCurrentUser → id:', id, '| name:', fullname);
       return { id, fullname, email };
     } catch {
       return { id: null, fullname: 'Unknown User', email: '' };
@@ -179,68 +203,302 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FIX: fetchApprovers
-  //
-  // WHAT WAS WRONG:
-  //   The method made a live HTTP call to
-  //   GET /x/api/v2/us/ur/users/by-role?role=MANAGER which returns 404
-  //   because the endpoint has not been implemented on the backend yet.
-  //   This caused a red network error in the console on every expense
-  //   submission and confused developers into thinking the submission failed.
-  //
-  // WHAT CHANGED:
-  //   The live API call is removed. The method now returns the fallback list
-  //   directly as an Observable, so the rest of the notification pipeline
-  //   works identically without the failed network request.
-  //
-  // HOW TO RE-ENABLE THE API CALL:
-  //   When the backend endpoint is ready, replace the method body with:
-  //
-  //   private fetchApprovers(): Observable<{ fullname: string; email: string }[]> {
-  //     const token    = sessionStorage.getItem('Token') || ...;
-  //     const tenantId = sessionStorage.getItem('tenantId') || 'mod';
-  //     const headers  = new HttpHeaders({ 'X-Tenant-ID': tenantId })
-  //                        .set('Authorization', `Bearer ${token}`);
-  //     return this.http
-  //       .get<any[]>(`https://be.optimaxsuites.com/x/api/v2/us/ur/users/by-role?role=MANAGER`, { headers })
-  //       .pipe(
-  //         map(users => users.filter(u => u.email).map(u => ({
-  //           fullname: u.fullname || u.username || 'Approver',
-  //           email:    u.email || '',
-  //         }))),
-  //         catchError(() => of(FALLBACK_APPROVER_EMAILS))
-  //       );
-  //   }
+  // ── RECEIPT SCANNING ─────────────────────────────────────────────────────
   // ─────────────────────────────────────────────────────────────────────────
+
+  // triggerScanFileInput
+  // Opens a hidden <input type="file"> for the user to pick the receipt image.
+  // Accepts JPG, PNG, and PDF. Called when the "Scan / Upload Receipt" button
+  // is clicked.
+  triggerScanFileInput(): void {
+    const input = document.getElementById('receipt-scan-input') as HTMLInputElement;
+    if (input) input.click();
+  }
+
+  // onScanFileSelected
+  // Fires when the user picks a file via the hidden input.
+  // Validates the file type, then kicks off OCR processing.
+  async onScanFileSelected(event: Event): Promise<void> {
+    const input  = event.target as HTMLInputElement;
+    const file   = input.files?.[0];
+    if (!file) return;
+
+    // Reset the input so the same file can be re-selected if needed
+    input.value = '';
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Unsupported File',
+        detail: 'Please upload a JPG, PNG, WebP, or PDF image of your receipt.'
+      });
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'File Too Large',
+        detail: 'Receipt image must be under 15 MB.'
+      });
+      return;
+    }
+
+    await this._runOcr(file);
+  }
+
+  // triggerBarcodeScan
+  // When a barcode scanner is attached, this focuses a small hidden input
+  // so the scanner can paste the code directly and fill merchant/expense.
+  triggerBarcodeScan(): void {
+    this.barcodeMode = 'active';
+    this.barcodeScanValue = '';
+    setTimeout(() => this.barcodeScannerInput?.nativeElement.focus(), 100);
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleBarcodeKey(event: KeyboardEvent): void {
+    if (this.barcodeMode !== 'active') return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.completeBarcodeScan();
+      return;
+    }
+
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      this.barcodeScanValue += event.key;
+    }
+  }
+
+  completeBarcodeScan(): void {
+    const code = this.barcodeScanValue?.trim();
+    if (!code) return;
+
+    const matched = this._lookupMerchantFromBarcode(code);
+    this.expenseSummary.name = code;
+    this.expenseSummary.merchant = matched?.name || code;
+    this.highlightedFields.add('name');
+    this.highlightedFields.add('merchant');
+
+    this.barcodeMode = 'idle';
+    this.barcodeScanValue = '';
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Barcode Scanned',
+      detail: matched
+        ? `Matched merchant ${matched.name} from scanned barcode.`
+        : 'Merchant and expense name auto-filled from barcode.',
+      life: 4000,
+    });
+  }
+
+  cancelBarcodeScan(): void {
+    this.barcodeMode = 'idle';
+    this.barcodeScanValue = '';
+  }
+
+  private _lookupMerchantFromBarcode(code: string): { id: number; name: string } | null {
+    const normalized = code.toLowerCase();
+    const numeric = code.replace(/\D/g, '');
+
+    return this.merchants.find((m) => {
+      const name = (m.name || '').toLowerCase();
+      const phone = (m.phoneNumber || '').replace(/\D/g, '');
+      const address = (m.address || '').toLowerCase();
+      const email = (m.emailAddress || '').toLowerCase();
+      const contact = (m.contactPersonName || '').toLowerCase();
+
+      return (
+        (name && name.includes(normalized)) ||
+        (address && address.includes(normalized)) ||
+        (email && email.includes(normalized)) ||
+        (contact && contact.includes(normalized)) ||
+        (numeric && phone.includes(numeric))
+      );
+    }) ?? null;
+  }
+
+  // _runOcr
+  // Core OCR pipeline:
+  //   1. Sets scanState = 'scanning' (shows progress indicator)
+  //   2. Calls ReceiptScannerService.scanImage()
+  //   3. On success: sets scanState = 'preview' (shows extracted data panel)
+  //   4. On failure: sets scanState = 'error'
+  private async _runOcr(file: File): Promise<void> {
+    this.scanState    = 'scanning';
+    this.scanError    = '';
+    this.scannedData  = null;
+    this.scanProgress = 0;
+
+    // Animate the progress bar while Tesseract works (it doesn't emit granular events)
+    this.scanProgressInterval = setInterval(() => {
+      if (this.scanProgress < 85) this.scanProgress += Math.random() * 8;
+    }, 400);
+
+    try {
+      const data = await this.receiptScanner.scanImage(file);
+
+      clearInterval(this.scanProgressInterval);
+      this.scanProgress = 100;
+
+      if (!data.merchantName && data.amount === null && !data.date) {
+        // Essentially nothing was extracted — show error
+        this.scanState = 'error';
+        this.scanError = 'Couldn\'t read this receipt clearly. Please fill the form manually or try a clearer image.';
+        return;
+      }
+
+      this.scannedData  = data;
+      this.scanState    = 'preview';
+
+      // Show any partial-data warnings as toasts
+      data.warnings.forEach(w =>
+        this.messageService.add({ severity: 'warn', summary: 'Partial Read', detail: w, life: 6000 })
+      );
+
+    } catch (err: any) {
+      clearInterval(this.scanProgressInterval);
+      console.error('[ReceiptScan] OCR failed:', err);
+      this.scanState = 'error';
+      this.scanError = 'Receipt processing failed. Please try a different image or fill the form manually.';
+    }
+  }
+
+  // confirmScanFill
+  // Called when the user clicks "Use These Details" in the preview panel.
+  // Copies the extracted fields into expenseSummary, then resets scanner state.
+  confirmScanFill(): void {
+    if (!this.scannedData) return;
+
+    const d = this.scannedData;
+    this.highlightedFields.clear();
+
+    // ── Expense name ──────────────────────────────────────────────────────
+    if (d.merchantName) {
+      this.expenseSummary.name = d.merchantName;
+      this.highlightedFields.add('name');
+    }
+
+    // ── Description (formatted line items) ────────────────────────────────
+    if (d.description) {
+      this.expenseSummary.description = d.description;
+      this.highlightedFields.add('description');
+    }
+
+    // ── Amount ────────────────────────────────────────────────────────────
+    if (d.amount !== null) {
+      this.expenseSummary.amount = d.amount;
+      this.amountMode            = 'total';
+      this.highlightedFields.add('amount');
+    }
+
+    // ── Date ─────────────────────────────────────────────────────────────
+    if (d.date) {
+      this.expenseSummary.eventDate = d.date;
+      this.highlightedFields.add('eventDate');
+    }
+
+    // ── Merchant — try to match against existing merchant list ────────────
+    if (d.merchantName) {
+      const matched = this._matchMerchant(d.merchantName);
+      if (matched) {
+        this.expenseSummary.merchant = matched.name;
+        this.highlightedFields.add('merchant');
+      } else {
+        // Pre-fill the merchant name so the user can quickly add it
+        this.expenseSummary.merchant = d.merchantName;
+        this.highlightedFields.add('merchant');
+        this.newMerchantData = {
+          name: d.merchantName,
+          phoneNumber: d.merchantPhone || '',
+          address: d.merchantAddress || '',
+          emailAddress: d.merchantEmail || '',
+          contactPersonName: d.merchantContact || '',
+        };
+      }
+    }
+
+    this.scanState = 'idle';
+    this.scannedData = null;
+
+    this.messageService.add({
+      severity: 'success',
+      summary:  'Receipt Scanned',
+      detail:   'Form pre-filled from receipt. Please review before submitting.',
+      life:     5000,
+    });
+
+    // Clear the amber highlight after 8 seconds
+    setTimeout(() => this.highlightedFields.clear(), 8000);
+  }
+
+  // _matchMerchant
+  // Fuzzy-matches the scanned merchant name against the loaded merchants list.
+  // Returns the best match if the normalised name contains the scanned name
+  // or vice versa.
+  private _matchMerchant(name: string): { id: number; name: string } | null {
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = norm(name);
+    return this.merchants.find(m => {
+      const n = norm(m.name);
+      return n.includes(target) || target.includes(n);
+    }) ?? null;
+  }
+
+  // dismissScan
+  // User clicked "Cancel" in the preview panel — discard extracted data.
+  dismissScan(): void {
+    this.scanState   = 'idle';
+    this.scannedData = null;
+    this.scanError   = '';
+    this.scanProgress = 0;
+    if (this.scanProgressInterval) clearInterval(this.scanProgressInterval);
+  }
+
+  // retryScan
+  // After an error, re-opens the file picker so the user can try again.
+  retryScan(): void {
+    this.scanState = 'idle';
+    this.scanError = '';
+    this.scanProgress = 0;
+    setTimeout(() => this.triggerScanFileInput(), 100);
+  }
+
+  // isHighlighted
+  // Returns true when a given form field was populated by the scanner,
+  // so the template can apply the amber highlight border.
+  isHighlighted(field: string): boolean {
+    return this.highlightedFields.has(field);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ── END RECEIPT SCANNING ─────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+
   private fetchApprovers(): Observable<{ fullname: string; email: string }[]> {
-    // Skip API call — endpoint is not yet available on the backend (returns 404).
-    // Return fallback list directly so no failed network request appears in console.
     return of(FALLBACK_APPROVER_EMAILS);
   }
 
   private notifyAdmins(
     submitterName: string,
-    expenseName: string,
-    amount: number,
-    currency: string,
+    expenseName:   string,
+    amount:        number,
+    currency:      string,
     submitterEmail: string
   ): void {
     this.fetchApprovers().subscribe({
       next: (approvers) => {
-        if (!approvers.length) {
-          console.warn('[ExpenseForm] No approvers found — notification skipped.');
-          return;
-        }
-
+        if (!approvers.length) return;
         approvers.forEach(approver => {
           if (!approver.email || approver.email.toLowerCase() === submitterEmail.toLowerCase()) return;
           this.emailService
             .sendExpenseSubmissionAlert(submitterName, approver.email, expenseName, amount, currency)
             .pipe(catchError(err => { console.error(`[notifyAdmins] email failed for ${approver.email}:`, err); return of(null); }))
-            .subscribe(() => console.log(`[notifyAdmins] sent to ${approver.email}`));
+            .subscribe();
         });
 
-        // Confirmation copy to the submitter
         if (submitterEmail) {
           this.emailService.sendNotificationEmail({
             name:          submitterName,
@@ -256,7 +514,6 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
             .subscribe();
         }
       },
-      error: (err) => console.error('[notifyAdmins] fetchApprovers error:', err)
     });
   }
 
@@ -286,13 +543,13 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         if (this.showMonthlyLimitWarning) {
           this.messageService.add({
             severity: 'warn',
-            summary: 'Monthly Limit Reached',
-            detail: `You have submitted ${thisMonth.length} expenses this month (limit: ${MONTHLY_EXPENSE_LIMIT}). Please contact your manager.`,
-            life: 8000
+            summary:  'Monthly Limit Reached',
+            detail:   `You have submitted ${thisMonth.length} expenses this month (limit: ${MONTHLY_EXPENSE_LIMIT}). Please contact your manager.`,
+            life:     8000
           });
         }
       },
-      error: () => {} // non-critical — silently ignore
+      error: () => {}
     });
   }
 
@@ -341,19 +598,10 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` }); return;
     }
     if (!selectedMerchant) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found.` }); return;
+      this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found. Please add it first.` }); return;
     }
 
     const currentUser = this.resolveCurrentUser();
-    if (!currentUser.id) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Session Warning',
-        detail: 'Your session may have expired. The expense will be submitted but may not be attributed to your account. Consider logging out and back in.',
-        life: 8000
-      });
-    }
-
     const finalAmount = this.computedTotal;
 
     const employeeData: any = {
@@ -389,11 +637,10 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.messageService.add({
           severity: 'success',
-          summary: 'Expense Submitted',
-          detail: 'Your expense has been submitted and is pending review.'
+          summary:  'Expense Submitted',
+          detail:   'Your expense has been submitted and is pending review.'
         });
 
-        // Fire-and-forget — do not block the success flow on email failures
         this.notifyAdmins(
           currentUser.fullname,
           employeeData.name,
@@ -415,8 +662,8 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         console.error('[ExpenseForm] submitExpense failed:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Submission Failed',
-          detail: error.error?.message || error.message || 'An error occurred. Please try again.'
+          summary:  'Submission Failed',
+          detail:   error.error?.message || error.message || 'An error occurred. Please try again.'
         });
       }
     });
@@ -425,22 +672,22 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   // ─── Data loaders ─────────────────────────────────────────────────────────
   private loadCategories(): void {
     this.expenseService.getCategories().subscribe({
-      next: (c) => { this.categories = c; this.categoryNames = c.map(x => x.name); },
-      error: (err) => { console.error('[ExpenseForm] loadCategories failed:', err); this.categories = []; this.categoryNames = []; }
+      next:  (c) => { this.categories = c; this.categoryNames = c.map(x => x.name); },
+      error: (err) => { console.error(err); this.categories = []; this.categoryNames = []; }
     });
   }
 
   private loadMerchants(): void {
     this.expenseService.getMerchants().subscribe({
-      next: (m) => { this.merchants = m; },
-      error: (err) => { console.error('[ExpenseForm] loadMerchants failed:', err); this.merchants = []; }
+      next:  (m) => { this.merchants = m; },
+      error: (err) => { console.error(err); this.merchants = []; }
     });
   }
 
   private loadTaxRates(): void {
     this.expenseService.getTaxRates().subscribe({
-      next: (t) => { this.taxRates = t; },
-      error: (err) => { console.error('[ExpenseForm] loadTaxRates failed:', err); this.taxRates = []; }
+      next:  (t) => { this.taxRates = t; },
+      error: (err) => { console.error(err); this.taxRates = []; }
     });
   }
 
@@ -495,8 +742,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   private revokeAllPreviews(): void {
     [...this.companyReceiptPreviews, ...this.employeeReceiptPreviews]
-      .filter(Boolean)
-      .forEach(url => URL.revokeObjectURL(url));
+      .filter(Boolean).forEach(url => URL.revokeObjectURL(url));
     this.companyReceiptPreviews  = [];
     this.employeeReceiptPreviews = [];
   }
@@ -633,11 +879,16 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   resetForm(): void {
     this.expenseSummary = { name: '', description: '', amount: null, merchant: '', category: null, quantity: 1, taxPercentage: null, eventDate: '', paidBy: 'COMPANY' };
-    this.companyReceiptFiles  = [];
-    this.employeeReceiptFiles = [];
+    this.companyReceiptFiles   = [];
+    this.employeeReceiptFiles  = [];
     this.revokeAllPreviews();
-    this.signatureUrl = null;
-    this.amountMode   = 'total';
+    this.signatureUrl          = null;
+    this.amountMode            = 'total';
+    this.highlightedFields.clear();
+    this.scanState             = 'idle';
+    this.scannedData           = null;
+    this.scanError             = '';
+    this.scanProgress          = 0;
   }
 
   formatAmount(value: number | string | null): string {

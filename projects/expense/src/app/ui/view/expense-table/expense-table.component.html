@@ -6,27 +6,61 @@
 <div class="w-full max-w-full p-8 m-0">
 
   <!-- HEADER + ACTION BUTTONS -->
-  <div class="flex justify-between items-center mb-10 w-full max-md:flex-col max-md:items-start max-md:gap-4">
-    <div>
-      <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Expenses</h1>
-      <p class="text-lg text-gray-500 m-0">Manage and track your business expenses</p>
-    </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <button class="flex items-center gap-3 bg-teal-800 text-white text-lg font-medium py-3.5 px-8 border-0 rounded-xl cursor-pointer transition-all duration-200 hover:bg-teal-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg" (click)="navigateToForm()">
-        <i class="pi pi-plus text-lg"></i>
-        Add Expense
-      </button>
-
-      <button (click)="openImportModal()"
-        class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
-        <i class="pi pi-upload"></i> Import
-      </button>
-      <button (click)="navigateToAnalytics()"
-        class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
-        <i class="pi pi-chart-bar"></i> Analytics
-      </button>
-    </div>
+<div class="flex justify-between items-center mb-10 w-full max-md:flex-col max-md:items-start max-md:gap-4">
+  <div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Expenses</h1>
+    <p class="text-lg text-gray-500 m-0">Manage and track your business expenses</p>
   </div>
+  <div class="flex items-center gap-2 flex-wrap">
+
+    <!-- Add Expense -->
+    <button class="flex items-center gap-3 bg-teal-800 text-white text-lg font-medium py-3.5 px-8 border-0 rounded-xl cursor-pointer transition-all duration-200 hover:bg-teal-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+            (click)="navigateToForm()">
+      <i class="pi pi-plus text-lg"></i>
+      Add Expense
+    </button>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         My Expenses / All Employees toggle
+         
+         VISIBILITY:
+           - Shown to all users.
+           - Allows toggling between personal expenses and all employees' expenses.
+         
+         BEHAVIOUR:
+           - Default state (viewAllUsers = false): label shows "All Employees"
+             — clicking it switches to the admin "see everyone" view.
+           - Active state (viewAllUsers = true): label shows "My Expenses"
+             — clicking it switches back to the personal view.
+           - When active the button uses teal/primary colours so it's clear
+             which mode is currently selected.
+    ───────────────────────────────────────────────────────────────────── -->
+    <button (click)="toggleViewAll()"
+            pTooltip="{{ viewAllUsers ? 'Switch to My Expenses' : 'Switch to All Employees' }}"
+            tooltipPosition="bottom"
+            class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-all duration-200 font-medium"
+            [ngClass]="viewAllUsers
+              ? 'bg-teal-50 border-teal-500 text-teal-700 hover:bg-teal-100'
+              : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'">
+      <i class="pi text-sm"
+         [ngClass]="viewAllUsers ? 'pi-user' : 'pi-users'"></i>
+      {{ viewAllUsers ? 'My Expenses' : 'All Employees' }}
+    </button>
+
+    <!-- Import -->
+    <button (click)="openImportModal()"
+            class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+      <i class="pi pi-upload"></i> Import
+    </button>
+
+    <!-- Analytics -->
+    <button (click)="navigateToAnalytics()"
+            class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+      <i class="pi pi-chart-bar"></i> Analytics
+    </button>
+
+  </div>
+</div>
 
   <!-- SUMMARY CARDS — clickable, filter the table by status -->
   <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
@@ -218,8 +252,8 @@
             <span class="block truncate" [title]="expense.name">{{ expense.name }}</span>
           </td>
 
-          <td class="py-4 px-4">
-            <span class="text-sm text-gray-600">{{ expense.expenseBy?.fullname || 'System' }}</span>
+          <td class="py-4 px-4 text-sm text-gray-600">
+            {{ getExpenseCreatorName(expense) }}
           </td>
 
           <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
@@ -253,11 +287,6 @@
             </span>
           </td>
 
-          <!-- ─── ACTION BUTTONS ──────────────────────────────────────────────
-               FIX (Bug #1): Buttons now check approvingIds / rejectingIds /
-               deletingIds sets and show a spinner while the request is in-flight.
-               The [disabled] binding prevents double-clicks.
-          ─────────────────────────────────────────────────────────────────── -->
           <td class="py-4 px-4">
             <div class="flex items-center justify-center gap-1">
 
@@ -532,18 +561,7 @@
           </div>
         </div>
 
-        <!-- ─────────────────────────────────────────────────────────────────
-             FIX (Bug #7): Financials block
-             WHAT WAS WRONG:
-               The "Total" row repeated the raw stored amount (pre-tax). The tax
-               row said "Included" but never showed a monetary value.
-             WHAT CHANGED:
-               - Subtotal row shows the pre-tax base amount.
-               - Tax row shows the rate badge AND the monetary delta
-                 (+X,XXX NGN) computed by calculateTaxAmount().
-               - Total row uses calculateTotalWithTax() which is
-                 base + (base × rate / 100). No values are hardcoded.
-        ───────────────────────────────────────────────────────────────────── -->
+
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Financials</label>
           <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
