@@ -30,10 +30,10 @@
       </h2>
 
       <div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
-        <span><strong>Department:</strong> {{ selectedPr.department }}</span>
+        <span><strong>Department:</strong> {{ getDepartmentName(selectedPr.department) }}</span>
         <span><strong>Required By:</strong> {{ selectedPr.requiredByDate }}</span>
-        <span><strong>Currency:</strong> {{ selectedPr.currency }}</span>
-        <span><strong>Budget Cap:</strong> {{ formatCurrency(selectedPr.budgetCapAmount, selectedPr.currency) }}</span>
+        <!-- <span><strong>Currency:</strong> {{ selectedPr.currency }}</span> -->
+        <!-- <span><strong>Budget Cap:</strong> {{ formatCurrency(selectedPr.budgetCapAmount, selectedPr.currency) }}</span> -->
         <span><strong>Status:</strong> {{ selectedPr.status }}</span>
       </div>
     </div>

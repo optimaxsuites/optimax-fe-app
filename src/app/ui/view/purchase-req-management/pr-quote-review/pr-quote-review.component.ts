@@ -228,7 +228,7 @@ export class PrQuoteReviewComponent implements OnInit {
     }
   }
 
-  private getDepartmentName(departmentId: string): string {
+   getDepartmentName(departmentId: string): string {
   const department = this.getDepartmentById(departmentId);
   return department ? department.name : String(departmentId || '');
 }
