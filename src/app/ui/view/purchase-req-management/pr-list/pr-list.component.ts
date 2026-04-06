@@ -179,13 +179,12 @@ departments = [
   }
 
   createQuoteFromPr(pr: any) {
-    // console.log(pr)
-
     this.router.navigate([
-      '/vendor-portal/quote-form',
+      '/admin/procurement/vendor-portal/quote-form',
       this.vendorId,
       'create',
       pr.id,
+      ':uuid'
     ]);
   }
 

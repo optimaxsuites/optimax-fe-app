@@ -16,21 +16,12 @@ const routes: Routes = [
   { path: 'vendor-management/:uuid', component: VendorPageComponent },
 
   { path: 'vendor-portal/dashboard/:uuid', component: DashboardComponent },
-  { path: 'vendor-portal/rfqs/:uuid', component: RfqComponent },
   { path: 'vendor-portal/vendor-pr-list/:uuid', component: VendorPrListComponent },
   { path: 'vendor-portal/vendor-quote-list/:uuid', component: VendorQuoteListComponent },
-
-
-  {path: 'vendor-portal/quotations/:uuid', component: RfqComponent}, //change component
-  {path: 'vendor-portal/lpo/:uuid', component: RfqComponent}, //change component
-
   
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
-  {
-    path: 'vendor-management/:id/review',
-    component: VendorDetailsComponent
-  },
-  { path: 'vendor-portal/quote-form/:vId/create/:prId', component: VendorQuoteFormComponent },
+
+  { path: 'vendor-portal/quote-form/:vId/create/:prId/:uuid', component: VendorQuoteFormComponent },
 
   {
     path: 'vendor-profile-creation', component: VendorProfileFormComponent
