@@ -100,19 +100,16 @@ buildApprovalForm() {
   this.modules.forEach(module => {
     module.appRegister.forEach((app: any) => {
       const controlName = `${module.title}_${app.appName}`;
-      
-      // Structure based on ApprovalDTO 
       submodulesGroup.addControl(controlName, this.fb.group({
-        isEnabled: [false], // UI-only toggle
-        isActive: [true],   // Backend boolean 
-        submoduleId: [app.id], // Submodule Id 
-        version: [1],       // Versioning 
-        stages: this.fb.array([]) // StageDTO[] [cite: 37, 39]
+        isEnabled: [false], 
+        isActive: [true],   
+        submoduleId: [app.id], 
+        version: [1],      
+        stages: this.fb.array([]) 
       }));
     });
   });
   
-  // Trigger change detection once the form is built
   this.cdr.detectChanges();
 }
 
