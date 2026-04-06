@@ -62,25 +62,6 @@ export class ApprovalComponent implements OnInit {
      })
   }
 
-  // buildApprovalForm() {
-  //   const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
-
-  //   this.modules.forEach(module => {
-  //     module.appRegister.forEach((app: any) => {
-  //       // Create a unique key for each submodule (e.g., 'Inventory_Items')
-  //       const controlName = `${module.title}_${app.appName}`;
-        
-  //       submodulesGroup.addControl(controlName, this.fb.group({
-  //         isEnabled: [false],
-  //         strategy: ['ANY' as ApprovalStrategy, Validators.required], 
-  //         quorumCount: [1, [Validators.min(1)]], // Only used if strategy is QUORUM
-  //         approvers: this.fb.array([]) 
-  //       }));
-  //     });
-  //   });
-  // }
-
-  // Helper to get the FormArray for approvers
   getApprovers(moduleTitle: string, appName: string): FormArray {
     const controlName = `${moduleTitle}_${appName}`;
     return this.approvalForm.get(`submodules.${controlName}.approvers`) as FormArray;
