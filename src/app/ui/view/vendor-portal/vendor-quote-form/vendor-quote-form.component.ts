@@ -170,6 +170,7 @@ ngOnInit(): void {
   }
 
   saveDraft(): void {
+    const uuid = crypto.randomUUID(); 
     if (!this.quote) return;
 
     this.quote.status = QuoteStatus.Draft;
@@ -177,10 +178,12 @@ ngOnInit(): void {
 
     this.upsertQuote(this.quote);
 
-    this.router.navigate(['/vendor-portal/pr-list', this.vendorId]);
+    this.router.navigate(['/admin/procurement/vendor-portal/vendor-quote-list', uuid]);
   }
 
   submitQuote(): void {
+    const uuid = crypto.randomUUID(); 
+
     if (!this.quote || !this.canSubmitQuote()) return;
 
     this.quote.status = QuoteStatus.Submitted;
@@ -189,9 +192,8 @@ ngOnInit(): void {
 
     this.upsertQuote(this.quote);
 
-    const randomUuid = crypto.randomUUID();
+    this.router.navigate(['/admin/procurement/vendor-portal/vendor-quote-list', uuid]);
 
-    this.router.navigate(['/vendor-portal/vendor-quote-list', randomUuid]);
   }
 
   upsertQuote(quote: VendorQuoteLS): void {
