@@ -21,7 +21,7 @@ const routes: Routes = [
   
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
 
-  { path: 'vendor-portal/quote-form/:vId/create/:prId/:uuid', component: VendorQuoteFormComponent },
+  { path: 'admin/procurement/vendor-portal/quote-form/:vId/create/:prId/:uuid', component: VendorQuoteFormComponent },
 
   {
     path: 'vendor-profile-creation', component: VendorProfileFormComponent

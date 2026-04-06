@@ -179,12 +179,14 @@ departments = [
   }
 
   createQuoteFromPr(pr: any) {
+    const uuid = crypto.randomUUID(); 
+    
     this.router.navigate([
       '/admin/procurement/vendor-portal/quote-form',
       this.vendorId,
       'create',
       pr.id,
-      ':uuid'
+      uuid
     ]);
   }
 
