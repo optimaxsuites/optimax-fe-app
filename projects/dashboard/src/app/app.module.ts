@@ -6,9 +6,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CommonModule } from '@angular/common';
 
-
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-
 
 ////primeng
 import { ButtonModule } from 'primeng/button';
@@ -33,7 +31,6 @@ import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 import { NgApexchartsModule } from 'ng-apexcharts';
 
-
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PayslipViewComponent } from './ui/view/dashboard-page/payslip-view/payslip-view.component';
 import { EmployeePayslipsListComponent } from './ui/view/employee-payslips-list/employee-payslips-list.component';
@@ -47,14 +44,22 @@ import { DashboardsideModalComponent } from './shared/dashboardside-modal/dashbo
 import { GeneraldashboardComponent } from './generaldashboard/generaldashboard.component';
 import { DashboardDropdownComponent } from './shared/dashboard-dropdown/dashboard-dropdown.component';
 import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
-import { HTTP_INTERCEPTORS, HttpClient, HttpClientModule } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  HttpClient,
+  HttpClientModule,
+} from '@angular/common/http';
 // import { AuthInterceptor } from './ui/services/auth.interceptor.service';
-import { JWT_OPTIONS, JwtHelperService } from './ui/sharedComponent/service/auth-service/auth0-shim';
+import {
+  JWT_OPTIONS,
+  JwtHelperService,
+} from './ui/sharedComponent/service/auth-service/auth0-shim';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
 import { CommunicationComponent } from './communication/communication.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
-
+// import { MarkdownPipe } from './optimax-ai/optimax-ai.component';
+import { MarkdownModule } from 'ngx-markdown';
 
 @NgModule({
   declarations: [
@@ -64,16 +69,16 @@ import { AnalyticsComponent } from './analytics/analytics.component';
     DashboardPageComponent,
     DashboardOverviewComponent,
     DashboardsideModalComponent,
-  DashboardDropdownComponent,
+    DashboardDropdownComponent,
     GeneraldashboardComponent,
     HrDashboardComponent,
-     SideModalComponent,
-     OptimaxaiComponent,
-     CommunicationComponent,
-     AnalyticsComponent,
-    
+    SideModalComponent,
+    OptimaxaiComponent,
+    CommunicationComponent,
+    AnalyticsComponent,
   ],
   imports: [
+    MarkdownModule.forRoot(),
     // BrowserModule,
     CommonModule,
     AppRoutingModule,
@@ -106,18 +111,18 @@ import { AnalyticsComponent } from './analytics/analytics.component';
     // BrowserAnimationsModule
   ],
   providers: [
-     {
+    {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
       multi: true,
     },
     {
       provide: JWT_OPTIONS,
-      useValue: {}
+      useValue: {},
     },
     JwtHelperService,
-    DashboardOverviewComponent
+    DashboardOverviewComponent,
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppDashboardModule { }
+export class AppDashboardModule {}
