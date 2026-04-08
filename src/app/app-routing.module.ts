@@ -17,7 +17,7 @@ const routes: Routes = [
 
   { path: 'vendor-portal/dashboard/:uuid', component: DashboardComponent },
   { path: 'vendor-portal/vendor-pr-list/:uuid', component: VendorPrListComponent },
-  { path: 'vendor-portal/vendor-quote-list/:uuid', component: VendorQuoteListComponent },
+  { path: 'admin/procurement/vendor-portal/vendor-quote-list/:uuid', component: VendorQuoteListComponent },
   
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
 

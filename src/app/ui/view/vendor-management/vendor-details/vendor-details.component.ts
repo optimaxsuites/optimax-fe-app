@@ -35,15 +35,15 @@ export class VendorDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    // const id = this.route.snapshot.paramMap.get('id');
 
-    if (!id) {
-      console.error('Vendor ID not provided.');
-      return;
-    }
+    // if (!id) {
+    //   console.error('Vendor ID not provided.');
+    //   return;
+    // }
 
-    this.loadVendor(id);
-    this.loadDocs(id);
+    // this.loadVendor(id);
+    // this.loadDocs(id);
   }
 
   loadVendor(id: string) {
