@@ -67,8 +67,6 @@ import { QuotationComponent } from './ui/view/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './ui/view/proforma-invoice/proforma-invoice.component';
 import { InvoiceComponent } from './ui/view/invoice/invoice.component';
 import { DispatchNoteComponent } from './ui/view/dispatch-note/dispatch-note.component';
-import { IncomingComponent } from './ui/view/lpo/incoming/incoming.component';
-import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
 import { RfqFormComponent } from './ui/view/rfq-form/rfq-form.component';
 import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
 import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
@@ -118,8 +116,6 @@ import { PrQuoteReviewComponent } from './ui/view/purchase-req-management/pr-quo
     ProformaInvoiceComponent,
     InvoiceComponent,
     DispatchNoteComponent,
-    IncomingComponent,
-    OutgoingComponent,
     BackButtonComponent,
     ButtonComponent,
     SideModalComponent,
