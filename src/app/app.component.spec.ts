@@ -1,29 +1,35 @@
 import { TestBed } from '@angular/core/testing';
-import { RouterModule } from '@angular/router';
-import { AppHrComponent } from './app.component';
+import { RouterTestingModule } from '@angular/router/testing';
+import { AppComponent } from './app.component';
 
-describe('AppHrComponent', () => {
+describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        RouterModule.forRoot([])
+        RouterTestingModule
       ],
       declarations: [
-        AppHrComponent
+        AppComponent
       ],
     }).compileComponents();
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppHrComponent);
+    const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
-  it('should render without crashing', () => {
-    const fixture = TestBed.createComponent(AppHrComponent);
+  it(`should have as title 'ERP-FE'`, () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    expect(app.title).toEqual('ERP-FE');
+  });
+
+  it('should render title', () => {
+    const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled).toBeTruthy();
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, ERP-FE');
   });
 });

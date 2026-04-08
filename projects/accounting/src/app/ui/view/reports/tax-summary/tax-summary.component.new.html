@@ -1,0 +1,535 @@
+<div class="tax-summary-wrapper">
+  <div class="container-xl">
+
+    <!-- Loading State -->
+    <div *ngIf="!data" class="flex items-center justify-center p-20">
+      <div class="text-center">
+        <div class="spinner mx-auto mb-6"></div>
+        <h4 class="text-2xl font-bold text-neutral-700 mb-2">Loading Tax Data...</h4>
+        <p class="text-lg text-neutral-500">Please wait while we fetch your tax information.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <ng-container *ngIf="data">
+
+      <!-- Header -->
+      <div class="section-header mb-10">
+        <h1>Tax &amp; Compliance Management</h1>
+        <p>Manage VAT, WHT, CIT, and FIRS Compliance</p>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-group">
+
+          <!-- Period Selector -->
+          <div class="form-field">
+            <label for="period-select">Period</label>
+            <input
+              type="month"
+              id="period-select"
+              [value]="currentPeriod"
+              (change)="changePeriod($any($event.target).value)"
+              class=""
+            />
+            <span class="helper-text">{{ getPeriodDateRange(currentPeriod) }}</span>
+          </div>
+
+          <!-- Tax Type Selector -->
+          <div class="form-field">
+            <label for="tax-type-select">Tax Type</label>
+            <select
+              id="tax-type-select"
+              [(ngModel)]="selectedTaxType"
+              (change)="changeTaxType(selectedTaxType)"
+            >
+              <option *ngFor="let type of taxTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+          <button
+            (click)="validateTaxCalculations()"
+            class="btn-secondary sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Validate
+          </button>
+          <button
+            (click)="checkComplianceStatus()"
+            class="btn-secondary sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Compliance
+          </button>
+          <button
+            (click)="exportTaxReport()"
+            class="btn-primary sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button
+          (click)="selectedReportType = 'summary'"
+          [class.active]="selectedReportType === 'summary'"
+          class="tab-button"
+        >
+          <svg class="tab-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z"/>
+          </svg>
+          Overview
+        </button>
+
+        <button
+          (click)="selectedReportType = 'vat'"
+          [disabled]="!vatSummary"
+          [class.active]="selectedReportType === 'vat'"
+          class="tab-button"
+        >
+          <svg class="tab-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/>
+          </svg>
+          VAT Return
+        </button>
+
+        <button
+          (click)="selectedReportType = 'wht'"
+          [disabled]="!whtSummary"
+          [class.active]="selectedReportType === 'wht'"
+          class="tab-button"
+        >
+          <svg class="tab-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 00-.82-1.58l-8 1A1 1 0 003.04 6L3 6zm0 .5v2.07A2.5 2.5 0 005.5 9h5a2.5 2.5 0 002.5-2.5V6.5l-.005-.035A3 3 0 0010.697 3H6a3 3 0 00-3 3zM6 12a2 2 0 110-4 2 2 0 010 4z"/>
+          </svg>
+          WHT Report
+        </button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div *ngIf="selectedReportType === 'summary'">
+
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+
+          <!-- Compliance Card -->
+          <div class="kpi-card" *ngIf="data">
+            <div class="kpi-header">
+              <h3 class="kpi-title">Compliance</h3>
+              <svg class="kpi-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="kpi-rows">
+              <div class="kpi-row">
+                <span class="row-label">Score</span>
+                <span class="kpi-value" [ngClass]="{'text-success': complianceScore >= 70, 'text-warning': complianceScore < 70}">
+                  {{ complianceScore }}%
+                </span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Filing</span>
+                <span class="row-value" [ngClass]="{'text-success-700': complianceStatus.filed}">
+                  {{ complianceStatus.filed ? 'Filed' : 'Pending' }}
+                </span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Payment</span>
+                <span class="row-value" [ngClass]="{'text-success-700': complianceStatus.paid, 'text-danger-700': !complianceStatus.paid}">
+                  {{ complianceStatus.paid ? 'Paid' : 'Outstanding' }}
+                </span>
+              </div>
+              <div class="kpi-row separator">
+                <span class="row-label">Due</span>
+                <span class="row-value text-lg">{{ formatTaxAmount(complianceStatus.paymentDue || 0) }}</span>
+              </div>
+            </div>
+            <!-- Flagged Issues -->
+            <div class="kpi-issues" *ngIf="complianceStatus.flaggedIssues && complianceStatus.flaggedIssues.length > 0">
+              <div *ngFor="let issue of complianceStatus.flaggedIssues" [ngClass]="'severity-' + issue.severity" class="issue-item">
+                <svg class="issue-icon" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span>{{ issue.message }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- VAT Summary Card -->
+          <div class="kpi-card" *ngIf="vatSummary">
+            <div class="kpi-header">
+              <h3 class="kpi-title">VAT Summary</h3>
+              <svg class="kpi-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/>
+              </svg>
+            </div>
+            <div class="kpi-rows">
+              <div class="kpi-row">
+                <span class="row-label">Output VAT</span>
+                <span class="row-value">{{ formatCurrency(vatSummary.outputVAT) }}</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Input VAT</span>
+                <span class="row-value text-success-700">{{ formatCurrency(vatSummary.inputVAT) }}</span>
+              </div>
+              <div class="kpi-row separator">
+                <span class="row-label font-semibold">Net Payable</span>
+                <span class="kpi-value">{{ formatCurrency(vatSummary.netVATPayable) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- WHT Summary Card -->
+          <div class="kpi-card" *ngIf="whtSummary">
+            <div class="kpi-header">
+              <h3 class="kpi-title">WHT Summary</h3>
+              <svg class="kpi-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 00-.82-1.58l-8 1A1 1 0 003.04 6L3 6zm0 .5v2.07A2.5 2.5 0 005.5 9h5a2.5 2.5 0 002.5-2.5V6.5l-.005-.035A3 3 0 0010.697 3H6a3 3 0 00-3 3zM6 12a2 2 0 110-4 2 2 0 010 4z"/>
+              </svg>
+            </div>
+            <div class="kpi-rows">
+              <div class="kpi-row">
+                <span class="row-label">Total Withheld</span>
+                <span class="row-value">{{ formatCurrency(whtSummary.totalWithheld) }}</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Transactions</span>
+                <span class="row-value">{{ (whtSummary.at5pct > 0 ? 1 : 0) + (whtSummary.at10pct > 0 ? 1 : 0) }}</span>
+              </div>
+              <div class="kpi-row separator">
+                <span class="row-label">Status</span>
+                <span class="badge badge-info">To Be Filed</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CIT Estimate Card -->
+          <div class="kpi-card" *ngIf="citEstimate">
+            <div class="kpi-header">
+              <h3 class="kpi-title">CIT (Annual Est.)</h3>
+              <svg class="kpi-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+              </svg>
+            </div>
+            <div class="kpi-rows">
+              <div class="kpi-row">
+                <span class="row-label text-xs">Tier</span>
+                <span class="badge badge-info">{{ citEstimate.tier }}</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Estimated CIT</span>
+                <span class="row-value text-sm">{{ (citEstimate.citRate * 100).toFixed(0) }}%</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Amount</span>
+                <span class="row-value">{{ formatCurrency(citEstimate.citAmount) }}</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Education Tax</span>
+                <span class="row-value text-sm">{{ formatCurrency(citEstimate.educationTax) }}</span>
+              </div>
+              <div class="kpi-row separator">
+                <span class="row-label">Next Due</span>
+                <span class="row-value text-sm">{{ citEstimate.nextDueQuarter }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Tax Position Card -->
+          <div class="kpi-card" *ngIf="vatSummary && whtSummary">
+            <div class="kpi-header">
+              <h3 class="kpi-title">Total Tax Position</h3>
+              <svg class="kpi-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+              </svg>
+            </div>
+            <div class="kpi-rows">
+              <div class="kpi-row">
+                <span class="row-label">Tax Payable</span>
+                <span class="row-value text-danger-700">{{ formatCurrency(totalTaxPayable) }}</span>
+              </div>
+              <div class="kpi-row">
+                <span class="row-label">Tax Recoverable</span>
+                <span class="row-value text-success-700">{{ formatCurrency(totalTaxRecoverable) }}</span>
+              </div>
+              <div class="kpi-row separator">
+                <span class="row-label font-semibold">Net Position</span>
+                <span class="kpi-value" [ngClass]="{'text-danger-700': netTaxPosition < 0}">{{ formatAccounting(netTaxPosition) }}</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /KPI Grid -->
+
+        <!-- Recent Tax Entries Table -->
+        <div class="analytics-table" *ngIf="taxLines.length > 0">
+          <div class="table-header">
+            <h3>Recent Tax Entries</h3>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th class="text-right">Base Amount</th>
+                  <th class="text-right">Tax Amount</th>
+                  <th>GL Account</th>
+                  <th>Classification</th>
+                  <th class="w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let line of taxLines">
+                  <tr>
+                    <td class="font-mono">{{ line.timestamp | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="'badge-' + (line.type === 'VAT' ? 'success' : line.type === 'WHT' ? 'warning' : 'info')">
+                        {{ line.type }}
+                      </span>
+                    </td>
+                    <td>{{ line.description }}</td>
+                    <td class="text-right font-mono">{{ formatTaxAmount(line.baseAmount) }}</td>
+                    <td class="text-right font-mono">{{ formatTaxAmount(line.taxAmount) }}</td>
+                    <td class="text-sm">{{ getGLAccountLabel(line.glAccount) }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="'badge-' + (getTaxClassificationBadge(line).class === 'badge-warning' ? 'warning' : 'info')">
+                        {{ getTaxClassificationBadge(line).text }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <button (click)="expandTaxLine(line.id)" class="expand-button">
+                        <svg class="chevron" [class.open]="expandedTaxLines.has(line.id)" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="expandedTaxLines.has(line.id)" class="expand-row">
+                    <td colspan="8">
+                      <div class="details-grid">
+                        <div class="detail-item">
+                          <div class="detail-label">ID</div>
+                          <div class="detail-value">{{ line.id }}</div>
+                        </div>
+                        <div class="detail-item">
+                          <div class="detail-label">Source</div>
+                          <div class="detail-value text-blue-600 cursor-pointer">{{ line.source }}</div>
+                        </div>
+                        <div class="detail-item">
+                          <div class="detail-label">Rate</div>
+                          <div class="detail-value">{{ (line.rate * 100).toFixed(line.rate < 0.10 ? 1 : 0) }}%</div>
+                        </div>
+                        <div class="detail-item">
+                          <div class="detail-label">Period</div>
+                          <div class="detail-value">{{ line.period }}</div>
+                        </div>
+                        <div class="detail-item">
+                          <div class="detail-label">Direction</div>
+                          <div class="detail-value" [ngClass]="{'text-success-700': line.direction === 'input', 'text-warning-700': line.direction === 'output'}">
+                            {{ line.direction | titlecase }} ({{ line.direction === 'input' ? 'Recoverable' : 'Payable' }})
+                          </div>
+                        </div>
+                        <div class="detail-item" *ngIf="line.vendorName">
+                          <div class="detail-label">Vendor</div>
+                          <div class="detail-value">{{ line.vendorName }}</div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="taxLines.length === 0">
+          <div class="empty-icon">📭</div>
+          <h3>No Tax Data for {{ currentPeriod }}</h3>
+          <p>Start by adding your first tax entry.</p>
+        </div>
+
+      </div><!-- /Overview Tab -->
+
+      <!-- VAT Return Tab -->
+      <div *ngIf="selectedReportType === 'vat' && vatReturnData">
+        <div class="report-section">
+          <div class="section-header-bar">
+            <div>
+              <h2>VAT Return Statement</h2>
+              <p>Period: {{ getPeriodDisplay() }}</p>
+            </div>
+            <button (click)="exportVATReport()" class="btn-secondary sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download
+            </button>
+          </div>
+
+          <!-- Non-recoverable input VAT warning -->
+          <div class="section-body" *ngIf="hasNonRecoverableVAT && inputVATRecoverability">
+            <div class="p-6 bg-warning-50 border border-warning-200 rounded-lg flex items-start gap-4 mb-8">
+              <svg class="w-6 h-6 text-warning-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <strong class="text-warning-800">Non-Recoverable Input VAT Detected</strong>
+                <p class="text-sm text-warning-700 mt-2">
+                  {{ formatCurrency(inputVATRecoverability.nonRecoverableInputVAT) }} of input VAT ({{ (inputVATRecoverability.recoverabilityRate * 100).toFixed(1) }}% recoverability) relates to exempt supplies and cannot be claimed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Three-Column VAT Boxes -->
+          <div class="section-body">
+            <div class="vat-boxes">
+              <div class="vat-box">
+                <div class="box-header">
+                  <h4>Sales (Output VAT)</h4>
+                  <p>VAT Collected on Sales</p>
+                </div>
+                <div class="box-content">
+                  <div class="box-row">
+                    <span class="row-label">Total Sales Value</span>
+                    <span class="row-value">{{ vatReturnData.totalSales }}</span>
+                  </div>
+                  <div class="box-row highlight">
+                    <span class="row-label">VAT Collected (7.5%)</span>
+                    <span class="row-value">{{ vatReturnData.salesVAT }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="vat-box">
+                <div class="box-header">
+                  <h4>Purchases (Input VAT)</h4>
+                  <p>VAT Paid on Purchases</p>
+                </div>
+                <div class="box-content">
+                  <div class="box-row">
+                    <span class="row-label">Total Purchase Value</span>
+                    <span class="row-value">{{ vatReturnData.totalPurchases }}</span>
+                  </div>
+                  <div class="box-row highlight">
+                    <span class="row-label">VAT Paid (Recoverable)</span>
+                    <span class="row-value">{{ vatReturnData.purchasesVAT }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="vat-box">
+                <div class="box-header">
+                  <h4>Net VAT Position</h4>
+                  <p>Amount Due to FIRS</p>
+                </div>
+                <div class="box-content">
+                  <div class="box-row">
+                    <span class="row-label">VAT Payable (Output)</span>
+                    <span class="row-value">{{ vatReturnData.payable }}</span>
+                  </div>
+                  <div class="box-row">
+                    <span class="row-label">Less: VAT Recoverable</span>
+                    <span class="row-value text-success-700">-{{ vatReturnData.recoverable }}</span>
+                  </div>
+                  <div class="box-row total-row">
+                    <span class="row-label">Net VAT Payable</span>
+                    <span class="row-value">{{ vatReturnData.amountToFIRS }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Panel -->
+          <div class="info-panel">
+            <div class="panel-header">
+              <svg class="panel-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+              <h3 class="panel-title">Important Information</h3>
+            </div>
+            <div class="panel-content">
+              <div class="info-item"><strong>Filing Deadline:</strong> Monthly — 21st of following month</div>
+              <div class="info-item"><strong>Remittance:</strong> Federal Inland Revenue Service (FIRS)</div>
+              <div class="info-item"><strong>Currency:</strong> All amounts in NGN (₦)</div>
+              <div class="info-item"><strong>Input VAT Recovery:</strong> Business-related purchases only</div>
+              <div class="info-item"><strong>Late Filing Penalty:</strong> ₦5,000 first month + ₦25,000/month</div>
+              <div class="info-item"><strong>VAT Rate:</strong> 7.5% (Finance Act 2020)</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /VAT Return Tab -->
+
+      <!-- WHT Report Tab -->
+      <div *ngIf="selectedReportType === 'wht' && whtReportData">
+        <div class="report-section">
+          <div class="section-header-bar">
+            <div>
+              <h2>Withholding Tax Schedule</h2>
+              <p>Period: {{ getPeriodDisplay() }}</p>
+            </div>
+            <button (click)="exportWHTReport()" class="btn-secondary sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download
+            </button>
+          </div>
+
+          <div class="section-body">
+            <!-- Total WHT Hero Section -->
+            <div class="bg-neutral-50 border-b border-neutral-200 rounded-lg mb-10 p-12 text-center">
+              <p class="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4">Total Withholding Tax Withheld</p>
+              <p class="text-6xl font-bold text-neutral-900 font-mono tracking-tight">{{ whtReportData.totalWHTWithheld }}</p>
+              <p class="text-sm text-neutral-500 mt-4 max-w-2xl mx-auto">Amount withheld on behalf of vendors and contractors during the period.</p>
+            </div>
+
+            <!-- Breakdown by Rate -->
+            <div class="mb-10">
+              <h4 class="text-lg font-semibold text-neutral-700 mb-5">Breakdown by Rate</h4>
+              <div class="border border-neutral-200 rounded-lg overflow-hidden wht-breakdown">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>WHT Rate</th>
+                      <th>Description</th>
+                      <th class="text-center"># Transactions</th>
+                      <th class="text-right">Amount Withheld</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of whtReportData.breakdownByRate">
+                      <td><strong>{{ r.rate }}</strong></td>
+                      <td>{{ r.description }}</td>
+                      <td class="text-center">{{ r.count }}</td>
+                      <td class="text-right font-mono">{{ r.amount }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /WHT Report Tab -->
+
+    </ng-container>
+
+  </div>
+</div>

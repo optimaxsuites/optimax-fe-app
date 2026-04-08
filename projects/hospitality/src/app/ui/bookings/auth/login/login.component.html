@@ -1,0 +1,96 @@
+<div class="auth-wrapper">
+  <!-- Left Side: Form -->
+  <div class="auth-left">
+    <div class="auth-header">
+      <div class="logo-container" (click)="goBack()">
+        <img src="assets/logo.png" alt="Optimax Hospitality" class="logo-img" onerror="this.src='https://optimax.com/logo.png'">
+        <span class="logo-text">Optimax<span class="text-emerald-600">Hospitality</span></span>
+      </div>
+    </div>
+
+    <div class="auth-content-container">
+      <div class="auth-content">
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-subtitle">Please enter your credentials to access your bookings.</p>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+          <div class="field-container">
+            <label class="field-label">Username or Email Address</label>
+            <div class="input-wrapper" [class.error]="submitted && loginForm.get('username')?.errors">
+              <i class="fa-solid fa-user input-icon"></i>
+              <input type="text" formControlName="username" placeholder="e.g. amara_lux or amara@email.com" class="auth-input">
+              <i *ngIf="submitted && !loginForm.get('username')?.errors" class="fa-solid fa-circle-check Success-icon"></i>
+            </div>
+            <div *ngIf="submitted && loginForm.get('username')?.errors" class="error-msg">
+              <span *ngIf="loginForm.get('username')?.hasError('required')">Username or Email is required</span>
+              <span *ngIf="loginForm.get('username')?.hasError('minlength')">Min 3 characters</span>
+            </div>
+          </div>
+
+          <div class="field-container">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="field-label mb-0">Password</label>
+              <a href="javascript:void(0)" class="forgot-link">Forgot Password?</a>
+            </div>
+            <div class="input-wrapper" [class.error]="submitted && f['password'].errors">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" class="auth-input">
+              <button type="button" (click)="togglePassword()" class="password-toggle">
+                <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+              </button>
+            </div>
+            <div *ngIf="submitted && f['password'].errors" class="error-msg">
+              Password is required
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 mb-8">
+            <input type="checkbox" formControlName="rememberMe" id="remember" class="auth-checkbox">
+            <label for="remember" class="text-sm text-gray-500 cursor-pointer">Remember me for 30 days</label>
+          </div>
+
+          <button type="submit" class="auth-btn" [disabled]="loading">
+            <span *ngIf="!loading">Log In <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i></span>
+            <span *ngIf="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Signing in...</span>
+          </button>
+
+          <div *ngIf="error" class="error-alert mt-4">
+            <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ error }}
+          </div>
+        </form>
+
+        <p class="auth-footer-text">
+          Don't have an account? <a [routerLink]="['/e-bookings/auth/register', uuid]" class="signup-link">Sign up now</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      <div class="system-status">
+        <span class="status-dot"></span>
+        System Online • v4.2.0
+      </div>
+      <div class="help-text">Need help? <a href="#">Contact Support</a></div>
+    </div>
+  </div>
+
+  <!-- Right Side: Image/Branding -->
+  <div class="auth-right">
+    <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1200" alt="Hospitality Background" class="bg-img">
+    <div class="overlay"></div>
+    
+    <div class="quote-container">
+      <div class="quote-icon-box">
+        <i class="fa-solid fa-hotel quote-icon"></i>
+      </div>
+      <h2 class="quote-text">"Quality is not an act, it is a habit. Service is our signature."</h2>
+      <p class="quote-sub">Ready for a memorable stay?</p>
+      
+      <div class="pagination">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+  </div>
+</div>

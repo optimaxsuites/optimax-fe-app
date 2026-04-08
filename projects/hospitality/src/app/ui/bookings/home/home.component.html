@@ -1,0 +1,210 @@
+<div class="home-wrapper">
+
+  <div class="page-content">
+    <!-- Hero Card -->
+    <app-heropage></app-heropage>
+
+    <!-- Main Content: Sidebar + Room Grid -->
+    <div class="main-content">
+      <div class="layout-grid">
+
+        <!-- LEFT: Filter Sidebar -->
+        <aside class="sidebar">
+          <div class="filter-card">
+            <div class="section-label">Categories <br class="mobile-only"><span>Filter</span></div> 
+
+            <ul class="nav-list">
+              <li>
+                <button class="nav-btn" [class.active]="selectedCategory === 'All Rooms'" (click)="setCategory('All Rooms')">
+                  <i class="fa-solid fa-list"></i>
+                  <span>All Rooms</span>
+                </button>
+              </li>
+              <li *ngFor="let type of roomTypes">
+                <button class="nav-btn" [class.active]="selectedCategory === type.id" (click)="setCategory(type.id!)">
+                   <i class="fa-solid fa-hotel"></i>
+                  <span>{{ type.name }}</span>
+                </button>
+              </li>
+            </ul>
+
+            <div class="section-label">Max Price (₦{{ maxPrice | number }})</div>
+            <div class="price-slider">
+              <input type="range" min="20000" max="250000" step="5000" 
+                     [value]="maxPrice" (input)="updatePrice($event)" class="range-input">
+              <div class="labels">
+                <span>₦20,000</span>
+                <span>₦250,000+</span>
+              </div>
+            </div>
+
+            <div class="section-label">Amenities</div>
+            <div class="checkbox-list">
+              <label class="checkbox-item" (click)="toggleAmenity('Pool')">
+                <div class="box" [class.checked]="selectedAmenities.includes('Pool')">
+                  <i class="fa-solid fa-check" *ngIf="selectedAmenities.includes('Pool')"></i>
+                </div>
+                <span>Near Pool</span>
+              </label>
+              <label class="checkbox-item" (click)="toggleAmenity('WiFi')">
+                <div class="box" [class.checked]="selectedAmenities.includes('WiFi')">
+                  <i class="fa-solid fa-check" *ngIf="selectedAmenities.includes('WiFi')"></i>
+                </div>
+                <span>Free WiFi</span>
+              </label>
+              <label class="checkbox-item" (click)="toggleAmenity('Breakfast')">
+                <div class="box" [class.checked]="selectedAmenities.includes('Breakfast')">
+                  <i class="fa-solid fa-check" *ngIf="selectedAmenities.includes('Breakfast')"></i>
+                </div>
+                <span>Breakfast Included</span>
+              </label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- RIGHT: Room Listing Area -->
+        <div class="listing-area">
+          <div class="area-header">
+            <h2 class="results-title">Luxury Stays</h2>
+            <div class="sort-wrap">
+              <span class="sort-label">SORT BY:</span>
+              <select class="sort-select">
+                <option>Popularity</option>
+                <option>Price: Low to High</option>
+                <option>Price: High to Low</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Connection Error Message -->
+          <div *ngIf="rooms.length === 0" class="error-msg">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Check your internet connection, and try again</span>
+          </div>
+
+          <!-- Room Cards Grid -->
+          <div class="room-grid" *ngIf="filteredRooms.length > 0; else loading">
+            <article *ngFor="let room of filteredRooms" class="room-card">
+              <!-- Image Slider Wrap -->
+              <div class="card-img-wrap">
+                <div class="slider-container">
+                  <img *ngFor="let img of room.images; let i = index" 
+                       [src]="img" 
+                       [class.active]="i === room.activeImageIndex"
+                       class="slider-img">
+                </div>
+                
+                <!-- Pill Indicators -->
+                <div class="pill-indicators">
+                  <span *ngFor="let img of room.images; let i = index" 
+                        [class.active]="i === room.activeImageIndex"></span>
+                </div>
+
+                <span class="room-pill">{{ room.name }}</span>
+                <!-- <button class="btn-fav">
+                  <i class="fa-regular fa-heart"></i>
+                </button> -->
+              </div>
+
+              <!-- Card Body -->
+              <div class="card-body">
+                <div class="room-id-row">
+                  <h3>ROOM {{ room.roomNumber }}</h3>
+                </div>
+
+                <!-- Amenities Preview -->
+                <div class="amenities-preview">
+                  <div *ngFor="let amenity of room.amenities | slice:0:3" class="amenity-tag">
+                    <i [class]="amenity.icon"></i>
+                    <span>{{ amenity.name }}</span>
+                  </div>
+                </div>
+
+                <!-- Footer with Split Buttons -->
+                <div class="card-footer">
+                  <div class="price-wrap">
+                    <span class="label">PER NIGHT</span>
+                    <span class="amount">₦{{ room.price | number }}</span>
+                  </div>
+                  
+                  <div class="button-group">
+                    <button (click)="viewRoomDetails(room)" class="btn-action secondary">
+                      Details
+                    </button>
+                    <button (click)="openAuthModal(room)" class="btn-action primary">
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #loading>
+            <div class="loading-wrap">
+              <div class="spinner"></div>
+              <span>Searching for the best rooms...</span>
+            </div>
+          </ng-template>
+
+          <!-- Load More -->
+          <div class="load-more-wrap" *ngIf="filteredRooms.length > 0">
+            <button class="btn-load">LOAD MORE RESULTS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Auth Choice Modal -->
+  <div class="auth-modal-backdrop" *ngIf="showAuthModal" (click)="closeAuthModal()">
+    <div class="auth-modal" (click)="$event.stopPropagation()">
+      <button class="auth-close" (click)="closeAuthModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="auth-header">
+        <div class="auth-icon"><i class="fa-solid fa-door-open"></i></div>
+        <h3>Ready to Reserve?</h3>
+        <p>Sign in for a faster checkout, or continue as a guest.</p>
+      </div>
+
+      <div class="auth-options">
+        <button class="auth-btn signin" (click)="proceedToCheckout('signin')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Sign In</span>
+            <span class="sub">Access your bookings & preferences</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
+
+        <button class="auth-btn signup" (click)="proceedToCheckout('signup')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-user-plus"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Create Account</span>
+            <span class="sub">Get exclusive member deals</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <button class="auth-btn guest" (click)="proceedToCheckout('guest')">
+          <div class="auth-btn-icon"><i class="fa-solid fa-user-secret"></i></div>
+          <div class="auth-btn-text">
+            <span class="title">Continue as Guest</span>
+            <span class="sub">No account needed, quick & easy</span>
+          </div>
+          <i class="fa-solid fa-chevron-right auth-arrow"></i>
+        </button>
+      </div>
+
+      <p class="auth-note">
+        <i class="fa-solid fa-shield-halved"></i>
+        Your information is always secure with us
+      </p>
+    </div>
+  </div>
+</div>

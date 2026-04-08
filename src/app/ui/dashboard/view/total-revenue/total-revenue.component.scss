@@ -1,0 +1,50 @@
+.total-revenue{
+    width: 100%;
+    height: 285px;
+    padding: 1rem;
+    box-sizing: border-box;
+    border-radius: 10px;
+    // background-color: #2EB772;
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+}
+.total-revenue-img-container{
+    display: flex;
+    justify-content: center;
+}
+.total-revenue-img{
+    height: 70px;
+    height: 70px;
+}
+.total-revenue-text-container{
+    text-align: center;
+}
+.total-revenue-title{
+    font-size: 1.3em;
+    font-weight: 500;
+    color: #224957;
+}
+.total-revenue-amount{
+    color: black;
+    
+}
+.total-revenue-amount-amount{
+    font-size: 1.5em;
+    font-weight: 500;
+}
+.total-revenue-percent{
+    background-color: #224957;
+    color: #fff;
+    font-size: 0.7em;
+    padding: 0.0rem 0.5rem;
+    box-sizing: border-box;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+}
+
+
+
+

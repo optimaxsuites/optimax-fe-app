@@ -1,0 +1,16 @@
+// Customize the ng-select to match your design
+::ng-deep .ng-select {
+  .ng-select-container {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .ng-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .ng-dropdown-panel {
+    font-size: 1.1rem;
+  }
+}

@@ -1,0 +1,827 @@
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&display=swap" rel="stylesheet">
+
+<p-confirmDialog header="Confirm Action" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast position="top-right"></p-toast>
+
+<div class="w-full max-w-full p-8 m-0">
+
+  <!-- HEADER + ACTION BUTTONS -->
+<div class="flex justify-between items-center mb-10 w-full max-md:flex-col max-md:items-start max-md:gap-4">
+  <div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Expenses</h1>
+    <p class="text-lg text-gray-500 m-0">Manage and track your business expenses</p>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap">
+
+    <!-- Add Expense -->
+    <button class="flex items-center gap-3 bg-teal-800 text-white text-lg font-medium py-3.5 px-8 border-0 rounded-xl cursor-pointer transition-all duration-200 hover:bg-teal-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+            (click)="navigateToForm()">
+      <i class="pi pi-plus text-lg"></i>
+      Add Expense
+    </button>
+
+    <!-- ─────────────────────────────────────────────────────────────────
+         My Expenses / All Employees toggle
+         
+         VISIBILITY:
+           - Shown to all users.
+           - Allows toggling between personal expenses and all employees' expenses.
+         
+         BEHAVIOUR:
+           - Default state (viewAllUsers = false): label shows "All Employees"
+             — clicking it switches to the admin "see everyone" view.
+           - Active state (viewAllUsers = true): label shows "My Expenses"
+             — clicking it switches back to the personal view.
+           - When active the button uses teal/primary colours so it's clear
+             which mode is currently selected.
+    ───────────────────────────────────────────────────────────────────── -->
+    <button (click)="toggleViewAll()"
+            pTooltip="{{ viewAllUsers ? 'Switch to My Expenses' : 'Switch to All Employees' }}"
+            tooltipPosition="bottom"
+            class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-all duration-200 font-medium"
+            [ngClass]="viewAllUsers
+              ? 'bg-teal-50 border-teal-500 text-teal-700 hover:bg-teal-100'
+              : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'">
+      <i class="pi text-sm"
+         [ngClass]="viewAllUsers ? 'pi-user' : 'pi-users'"></i>
+      {{ viewAllUsers ? 'My Expenses' : 'All Employees' }}
+    </button>
+
+    <!-- Import -->
+    <button (click)="openImportModal()"
+            class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+      <i class="pi pi-upload"></i> Import
+    </button>
+
+    <!-- Analytics -->
+    <button (click)="navigateToAnalytics()"
+            class="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
+      <i class="pi pi-chart-bar"></i> Analytics
+    </button>
+
+  </div>
+</div>
+
+  <!-- SUMMARY CARDS — clickable, filter the table by status -->
+  <div class="grid grid-cols-4 gap-6 mb-10 w-full max-xl:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+
+    <!-- Total -->
+    <div (click)="filterByStatus('ALL')"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter('ALL')
+        ? 'bg-blue-100 border-blue-400 shadow-md ring-2 ring-blue-300'
+        : 'bg-blue-50 border-blue-200'">
+      <div>
+        <p class="text-base font-semibold mb-2 opacity-90 text-blue-800">Total Expenses</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</h3>
+        <p class="text-sm text-blue-600 m-0">{{ getExpenseCount() }} total records</p>
+      </div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter('ALL') ? 'bg-blue-200 text-blue-700' : 'bg-blue-100 text-blue-600'">
+        <i class="pi pi-chart-line text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Approved -->
+    <div (click)="filterByStatus(ExpenseStatus.APPROVED)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.APPROVED)
+        ? 'bg-green-100 border-green-400 shadow-md ring-2 ring-green-300'
+        : 'bg-green-50 border-green-200'">
+      <div>
+        <p class="text-base font-semibold mb-2 opacity-90 text-green-800">Approved</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-green-900">{{ getApprovedCount() }}</h3>
+        <p class="text-sm text-green-600 m-0">{{ getApprovedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+      </div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.APPROVED) ? 'bg-green-200 text-green-700' : 'bg-green-100 text-green-600'">
+        <i class="pi pi-check-circle text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Pending -->
+    <div (click)="filterByStatus(ExpenseStatus.PENDING)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.PENDING)
+        ? 'bg-amber-100 border-amber-400 shadow-md ring-2 ring-amber-300'
+        : 'bg-amber-50 border-amber-200'">
+      <div>
+        <p class="text-base font-semibold mb-2 opacity-90 text-amber-800">Pending</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-amber-900">{{ getPendingCount() }}</h3>
+        <p class="text-sm text-amber-600 m-0">{{ getPendingAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+      </div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.PENDING) ? 'bg-amber-200 text-amber-700' : 'bg-amber-100 text-amber-600'">
+        <i class="pi pi-clock text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Rejected -->
+    <div (click)="filterByStatus(ExpenseStatus.REJECTED)"
+      class="flex justify-between items-center p-7 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer select-none"
+      [ngClass]="isActiveStatusFilter(ExpenseStatus.REJECTED)
+        ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-300'
+        : 'bg-red-50 border-red-200'">
+      <div>
+        <p class="text-base font-semibold mb-2 opacity-90 text-red-800">Rejected</p>
+        <h3 class="text-3xl font-bold mb-1 leading-tight text-red-900">{{ getRejectedCount() }}</h3>
+        <p class="text-sm text-red-600 m-0">{{ getRejectedAmount() | currency:'NGN':'symbol':'1.2-2' }}</p>
+      </div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center" [ngClass]="isActiveStatusFilter(ExpenseStatus.REJECTED) ? 'bg-red-200 text-red-700' : 'bg-red-100 text-red-600'">
+        <i class="pi pi-times-circle text-2xl"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Active filter indicator -->
+  <div *ngIf="selectedStatus && selectedStatus !== 'ALL'" class="flex items-center gap-2 mb-4 text-sm text-gray-500">
+    <i class="pi pi-filter-fill text-teal-600"></i>
+    <span>Filtered by status: <strong class="text-gray-800">{{ selectedStatus | titlecase }}</strong></span>
+    <button (click)="filterByStatus('ALL')" class="ml-1 text-xs text-teal-600 hover:text-teal-800 underline font-medium">Clear filter</button>
+  </div>
+
+  <!-- FILTER BAR + BULK ACTIONS -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-8 w-full">
+    <div class="flex flex-wrap justify-between items-center gap-6 max-lg:flex-col max-lg:items-stretch">
+      <div class="flex flex-wrap gap-4 flex-1 max-lg:flex-col">
+        <!-- Search -->
+        <div class="relative min-w-[280px] max-lg:w-full">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 flex items-center">
+            <i class="pi pi-search"></i>
+          </span>
+          <input type="text" [(ngModel)]="searchTerm" (input)="onSearchInputChange()" placeholder="Search expenses..."
+            class="w-full py-3.5 pl-12 pr-4 border border-gray-300 rounded-xl text-base transition-all duration-200 focus:outline-none focus:border-teal-800 focus:ring-3 focus:ring-teal-800/10">
+        </div>
+
+        <select [(ngModel)]="selectedCategory" (change)="applyFilters()" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categoryNames" [value]="cat">{{ cat }}</option>
+        </select>
+
+        <select [(ngModel)]="selectedStatus" (change)="selectStatus(selectedStatus)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
+          <option value="ALL">All Status</option>
+          <option *ngFor="let status of statuses" [value]="status">{{ status | titlecase }}</option>
+        </select>
+
+        <select [(ngModel)]="dateRangeType" (ngModelChange)="selectDateRange($event)" class="py-3.5 pl-4 pr-8 border border-gray-300 rounded-xl text-base bg-white cursor-pointer min-w-[160px] focus:outline-none focus:border-teal-800">
+          <option value="">All Dates</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
+        </select>
+
+        <div *ngIf="dateRangeType === 'custom'" class="flex items-center gap-2">
+          <input type="date" [(ngModel)]="dateFrom" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800">
+          <span class="text-gray-500 text-xl">–</span>
+          <input type="date" [(ngModel)]="dateTo" (change)="applyCustomDateRange()" class="py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-teal-800">
+        </div>
+      </div>
+
+      <!-- Bulk actions -->
+      <div *ngIf="selectedExpenses.length > 0" class="flex items-center gap-3 p-2 bg-gray-50 rounded-xl flex-wrap">
+        <span class="py-2 px-4 bg-gray-200 rounded-lg text-sm font-medium text-gray-700">{{ selectedExpenses.length }} selected</span>
+        <button (click)="bulkApprove()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
+          <i class="pi pi-check"></i> Accept
+        </button>
+        <button (click)="bulkReject()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100">
+          <i class="pi pi-ban"></i> Reject
+        </button>
+        <button (click)="deleteSelectedExpenses()" class="flex items-center gap-2 py-3 px-5 border rounded-xl text-sm font-medium cursor-pointer transition-all bg-red-50 text-red-600 border-red-200 hover:bg-red-100">
+          <i class="pi pi-trash"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE TABLE -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden w-full">
+
+    <!-- Loading skeleton -->
+    <div *ngIf="isLoading" class="p-6">
+      <div *ngFor="let i of [1,2,3,4,5]" class="flex gap-4 mb-4">
+        <p-skeleton width="2rem" height="2rem" borderRadius="4px"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="10rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="8rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="7rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+        <p-skeleton width="6rem" height="1.5rem"></p-skeleton>
+      </div>
+    </div>
+
+    <p-table *ngIf="!isLoading"
+      [value]="filteredExpenses"
+      [(selection)]="selectedExpenses"
+      dataKey="id"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} expenses"
+      styleClass="w-full"
+    >
+      <ng-template pTemplate="header">
+        <tr class="bg-gray-50">
+          <th style="width:3.5rem" class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">
+            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+          </th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Date</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Expense Name</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Created By</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Merchant</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Category</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-right">Amount</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Status</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-center" style="min-width:160px">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-expense>
+        <tr class="transition-colors duration-200 hover:bg-gray-50 border-b border-gray-100">
+
+          <td class="py-4 px-4">
+            <p-tableCheckbox [value]="expense"></p-tableCheckbox>
+          </td>
+
+          <td class="py-4 px-4 text-gray-600 text-sm whitespace-nowrap">
+            {{ formatEventDate(expense.eventDate) | date:'dd MMM yyyy' }}
+          </td>
+
+          <!-- FIX (Bug #14): Removed font-semibold from body cells -->
+          <td class="py-4 px-4 text-gray-800 max-w-[180px]">
+            <span class="block truncate" [title]="expense.name">{{ expense.name }}</span>
+          </td>
+
+          <td class="py-4 px-4 text-sm text-gray-600">
+            {{ getExpenseCreatorName(expense) }}
+          </td>
+
+          <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
+
+          <td class="py-4 px-4">
+            <span class="inline-block py-1 px-3 bg-gray-100 border border-gray-200 rounded-full text-xs font-medium text-gray-700">
+              {{ expense.category?.name || '—' }}
+            </span>
+          </td>
+
+          <!-- FIX (Bug #14): Removed font-semibold from amount cell -->
+          <td class="py-4 px-4 text-gray-800 text-right text-sm whitespace-nowrap">
+            {{ calculateDisplayAmount(expense) | currency:'NGN':'symbol':'1.2-2' }}
+          </td>
+
+          <!-- FIX (Bug #13): Status badge bumped from text-xs to text-sm -->
+          <td class="py-4 px-4">
+            <span class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-sm font-medium border"
+                  [ngClass]="{
+                    'bg-green-50 text-green-700 border-green-200': expense.status === 'APPROVED',
+                    'bg-amber-50 text-amber-700 border-amber-200': expense.status === 'PENDING',
+                    'bg-red-50 text-red-700 border-red-200':       expense.status === 'REJECTED'
+                  }">
+              <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    [ngClass]="{
+                      'bg-green-600': expense.status === 'APPROVED',
+                      'bg-amber-500': expense.status === 'PENDING',
+                      'bg-red-600':   expense.status === 'REJECTED'
+                    }"></span>
+              {{ expense.status | titlecase }}
+            </span>
+          </td>
+
+          <td class="py-4 px-4">
+            <div class="flex items-center justify-center gap-1">
+
+              <!-- View -->
+              <button pTooltip="View Details" tooltipPosition="top"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="viewExpenseApproval(expense)">
+                <i class="pi pi-eye text-gray-500 text-sm"></i>
+              </button>
+
+              <!-- Edit (only while pending) -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="Edit Expense" tooltipPosition="top"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                (click)="openEditModal(expense)">
+                <i class="pi pi-pencil text-gray-500 text-sm"></i>
+              </button>
+
+              <!-- Lock icon when approved / rejected -->
+              <span *ngIf="isLocked(expense)"
+                pTooltip="Locked — already {{ expense.status | titlecase }}" tooltipPosition="top"
+                class="w-8 h-8 flex items-center justify-center cursor-default">
+                <i class="pi pi-lock text-gray-400 text-sm"></i>
+              </span>
+
+              <!-- Approve -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="{{ approvingIds.has(expense.id) ? 'Approving…' : 'Approve' }}" tooltipPosition="top"
+                [disabled]="approvingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                (click)="approve(expense)">
+                <i class="text-sm"
+                   [ngClass]="approvingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-green-400'
+                     : 'pi pi-check text-green-600'"></i>
+              </button>
+
+              <!-- Reject -->
+              <button *ngIf="canApproveOrReject(expense)"
+                pTooltip="{{ rejectingIds.has(expense.id) ? 'Rejecting…' : 'Reject' }}" tooltipPosition="top"
+                [disabled]="rejectingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                (click)="openRejectionDialog(expense)">
+                <i class="text-sm"
+                   [ngClass]="rejectingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-red-300'
+                     : 'pi pi-times text-red-500'"></i>
+              </button>
+
+              <!-- Delete -->
+              <button pTooltip="{{ deletingIds.has(expense.id) ? 'Deleting…' : 'Delete' }}" tooltipPosition="top"
+                [disabled]="deletingIds.has(expense.id)"
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                (click)="confirmDelete(expense)">
+                <i class="text-sm"
+                   [ngClass]="deletingIds.has(expense.id)
+                     ? 'pi pi-spin pi-spinner text-red-300'
+                     : 'pi pi-trash text-red-400'"></i>
+              </button>
+
+            </div>
+          </td>
+
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="py-20 text-center">
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                <i class="pi pi-inbox text-5xl text-gray-300"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-800">No expenses found</h3>
+              <p class="text-gray-500 m-0">
+                <ng-container *ngIf="selectedStatus !== 'ALL'">No <strong>{{ selectedStatus | titlecase }}</strong> expenses. </ng-container>
+                Adjust your filters or add a new expense.
+              </p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- ========== SIDE MODAL: EDIT ========== -->
+<app-side-modal *ngIf="isModalOpen" (close)="closeModal()">
+  <div class="h-full flex flex-col bg-white">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-start">
+      <h2 class="text-2xl font-bold text-gray-900">Edit Expense</h2>
+      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all">
+        <i class="pi pi-times text-xl"></i>
+      </button>
+    </div>
+
+    <form *ngIf="selectedExpense" #editForm="ngForm" class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Expense Name</label>
+        <input [(ngModel)]="selectedExpense.name" name="name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+          <input [value]="formatAmount(selectedExpense.amount)" (input)="updateEditAmount($event)" (keypress)="onlyNumbers($event)"
+            name="amount" type="text"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Tax (%)</label>
+          <input [value]="getTaxRateDisplayValue(selectedExpense.tax)" (input)="onTaxInputChange($event)"
+            name="taxPercentage" type="number" step="0.01"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+        <input [value]="formatEventDateForInput(selectedExpense?.eventDate)" (input)="onDateInputChange($event)"
+          name="eventDate" type="date"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Merchant
+          <span *ngIf="!editMerchantId" class="text-amber-600 text-xs ml-2">⚠ Not assigned</span>
+        </label>
+        <select [(ngModel)]="editMerchantId" name="merchantId"
+          class="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:border-teal-700 transition-all"
+          [ngClass]="{'border-amber-300 bg-amber-50': !editMerchantId, 'border-gray-300': editMerchantId}">
+          <option [ngValue]="null" disabled>— Select Merchant —</option>
+          <option *ngFor="let m of merchants" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Category
+          <span *ngIf="!editCategoryId" class="text-amber-600 text-xs ml-2">⚠ Not assigned</span>
+        </label>
+        <select [(ngModel)]="editCategoryId" name="categoryId"
+          class="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:border-teal-700 transition-all"
+          [ngClass]="{'border-amber-300 bg-amber-50': !editCategoryId, 'border-gray-300': editCategoryId}">
+          <option [ngValue]="null" disabled>— Select Category —</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+        <textarea [(ngModel)]="selectedExpense.description" name="description" rows="4"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-all resize-none"></textarea>
+      </div>
+    </form>
+
+    <div class="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+      <button type="button" (click)="closeModal()"
+        class="py-3 px-6 rounded-lg text-base font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all">Cancel</button>
+      <button type="button" (click)="saveEditedExpense()"
+        class="py-3 px-6 rounded-lg text-base font-medium bg-teal-800 text-white border-0 hover:bg-teal-700 transition-all">Save Changes</button>
+    </div>
+  </div>
+</app-side-modal>
+
+<!-- ========== SIDE MODAL: DETAIL VIEW ========== -->
+<app-side-modal *ngIf="isModalOpen2" (close)="closeModal()">
+  <div class="h-full flex flex-col bg-white">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-start">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-1">Expense Details</h2>
+        <p class="text-sm text-gray-500 m-0">ID: #{{ selectedExpense?.id || '---' }}</p>
+      </div>
+      <button (click)="closeModal()" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-100 transition-all">
+        <i class="pi pi-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6">
+
+      <div *ngIf="selectedExpense?.status === 'APPROVED'" class="flex items-center gap-2 p-3 mb-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+        <i class="pi pi-lock text-green-600 text-lg"></i>
+        <span>This expense has been approved and cannot be edited.</span>
+      </div>
+
+      <div class="flex items-center gap-4 p-5 rounded-xl border mb-6"
+           [ngClass]="{
+             'bg-green-50 border-green-200': selectedExpense?.status === 'APPROVED',
+             'bg-amber-50 border-amber-200': selectedExpense?.status === 'PENDING',
+             'bg-red-50 border-red-200':     selectedExpense?.status === 'REJECTED'
+           }">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+             [ngClass]="{
+               'bg-green-100 text-green-600': selectedExpense?.status === 'APPROVED',
+               'bg-amber-100 text-amber-600': selectedExpense?.status === 'PENDING',
+               'bg-red-100   text-red-600':   selectedExpense?.status === 'REJECTED'
+             }">
+          <i class="pi text-xl" [ngClass]="{
+            'pi-check-circle': selectedExpense?.status === 'APPROVED',
+            'pi-clock':        selectedExpense?.status === 'PENDING',
+            'pi-times-circle': selectedExpense?.status === 'REJECTED'
+          }"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1 opacity-70">Status</p>
+          <p class="text-xl font-bold m-0">{{ selectedExpense?.status | titlecase }}</p>
+        </div>
+        <div *ngIf="selectedExpense && canApproveOrReject(selectedExpense)" class="ml-auto flex gap-2">
+          <button (click)="approve(selectedExpense!); closeModal()"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors">
+            <i class="pi pi-check"></i> Approve
+          </button>
+          <button (click)="openRejectionDialog(selectedExpense!); closeModal()"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors">
+            <i class="pi pi-times"></i> Reject
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <div class="grid grid-cols-2 gap-5 max-md:grid-cols-1">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Expense Name</label>
+            <p class="text-base font-semibold text-gray-900 m-0">{{ selectedExpense?.name }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Date</label>
+            <p class="text-base font-semibold text-gray-900 m-0">{{ formatEventDate(selectedExpense?.eventDate) | date:'dd MMM yyyy' }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="selectedExpense?.expenseBy">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Created By</label>
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+            <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <i class="pi pi-user text-blue-500 text-lg"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-gray-900 m-0 truncate">{{ selectedExpense!.expenseBy!.fullname }}</p>
+              <p class="text-xs text-gray-500 m-0 truncate">{{ selectedExpense!.expenseBy!.email }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedExpense?.approvedBy && selectedExpense?.status === 'APPROVED'">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Approved By</label>
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+            <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <i class="pi pi-check-circle text-green-600 text-lg"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-gray-900 m-0 truncate">{{ selectedExpense!.approvedBy!.fullname }}</p>
+              <p class="text-xs text-gray-500 m-0 truncate">{{ selectedExpense!.approvedBy!.email }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedExpense?.rejectionReason && selectedExpense?.status === 'REJECTED'" class="p-4 rounded-lg bg-red-50 border border-red-200">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-red-500 mb-1.5">Rejection Reason</label>
+          <p class="text-sm text-red-800 m-0">{{ selectedExpense?.rejectionReason }}</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Merchant</label>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0">
+              <i class="pi pi-shop text-lg"></i>
+            </div>
+            <p class="text-base font-medium text-gray-900 m-0">{{ selectedExpense?.merchant?.name || '—' }}</p>
+          </div>
+        </div>
+
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Financials</label>
+          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+
+            <!-- Subtotal (pre-tax base) -->
+            <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
+              <span>Subtotal</span>
+              <span class="font-medium">{{ formatAmount(selectedExpense?.amount) }} NGN</span>
+            </div>
+
+            <!-- Tax row — shows rate badge AND the actual monetary amount -->
+            <div class="flex justify-between items-center py-2.5 text-sm text-gray-600 border-b border-gray-200">
+              <span class="flex items-center gap-1.5">
+                Tax
+                <span *ngIf="getTaxForExpense(selectedExpense)"
+                      class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs">
+                  {{ getTaxForExpense(selectedExpense)!.rate }}%
+                </span>
+              </span>
+              <span class="font-medium text-sm">
+                <ng-container *ngIf="getTaxForExpense(selectedExpense); else noTaxRow">
+                  + {{ formatAmount(calculateTaxAmount(selectedExpense)) }} NGN
+                </ng-container>
+                <ng-template #noTaxRow>None</ng-template>
+              </span>
+            </div>
+
+            <!-- Tax-inclusive total — this was the bug -->
+            <div class="flex justify-between items-center pt-3 mt-1 border-t-2 border-gray-300">
+              <span class="font-semibold text-gray-900">Total</span>
+              <span class="text-xl font-bold text-teal-800">
+                {{ formatAmount(calculateTotalWithTax(selectedExpense)) }} NGN
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Category</label>
+          <span class="inline-block py-1.5 px-5 bg-green-50 border border-green-200 rounded-full text-sm font-medium text-green-700">{{ selectedExpense?.category?.name || '—' }}</span>
+        </div>
+
+        <div *ngIf="selectedExpense?.description">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</label>
+          <p class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm leading-relaxed text-gray-700 m-0">{{ selectedExpense?.description }}</p>
+        </div>
+
+        <!-- Receipts -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Receipts</label>
+          <div class="grid grid-cols-2 gap-3 max-md:grid-cols-1">
+
+            <div class="flex flex-col gap-1.5">
+              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
+                <i class="pi pi-building text-sm"></i> Company Receipt
+              </p>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[110px] flex items-center justify-center bg-gray-50 relative">
+                <div *ngIf="companyReceiptLoading" class="flex items-center gap-2 text-gray-400 text-xs">
+                  <i class="pi pi-spin pi-spinner"></i> Loading…
+                </div>
+                <ng-container *ngIf="!companyReceiptLoading">
+                  <ng-container *ngIf="companyReceiptUrl; else noCompanyReceipt">
+                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(companyReceiptUrl!, 'Company Receipt')">
+                      <img [src]="companyReceiptUrl" alt="Company Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'company')" />
+                      <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                        <i class="pi pi-search-plus text-2xl"></i>
+                        <span>View full size</span>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <ng-template #noCompanyReceipt>
+                    <div class="flex flex-col items-center gap-1 text-gray-300 text-xs p-4 text-center">
+                      <i class="pi pi-receipt text-2xl text-gray-200"></i>
+                      <span>No company receipt</span>
+                    </div>
+                  </ng-template>
+                </ng-container>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <p class="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider m-0">
+                <i class="pi pi-user text-sm"></i> Employee Receipt
+              </p>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden min-h-[110px] flex items-center justify-center bg-gray-50 relative">
+                <div *ngIf="employeeReceiptLoading" class="flex items-center gap-2 text-gray-400 text-xs">
+                  <i class="pi pi-spin pi-spinner"></i> Loading…
+                </div>
+                <ng-container *ngIf="!employeeReceiptLoading">
+                  <ng-container *ngIf="employeeReceiptUrl; else noEmployeeReceipt">
+                    <div class="relative cursor-pointer overflow-hidden rounded-lg group w-full" (click)="openReceiptModal(employeeReceiptUrl!, 'Employee Receipt')">
+                      <img [src]="employeeReceiptUrl" alt="Employee Receipt" class="w-full h-32 object-cover block" (error)="onReceiptThumbnailError($event, 'employee')" />
+                      <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs gap-1">
+                        <i class="pi pi-search-plus text-2xl"></i>
+                        <span>View full size</span>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <ng-template #noEmployeeReceipt>
+                    <div class="flex flex-col items-center gap-1 text-gray-300 text-xs p-4 text-center">
+                      <i class="pi pi-receipt text-2xl text-gray-200"></i>
+                      <span>No employee receipt</span>
+                    </div>
+                  </ng-template>
+                </ng-container>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</app-side-modal>
+
+<!-- ========== IMPORT MODAL ========== -->
+<p-dialog
+  header="Import Expenses"
+  [(visible)]="showImportModal"
+  [modal]="true"
+  [style]="{ width: '600px' }"
+  [closable]="true"
+  (onHide)="onImportCancelled()">
+
+  <div class="p-4">
+    <div class="border-2 border-dashed rounded-xl p-8 text-center mb-6 transition-all"
+         [ngClass]="importDragging ? 'border-teal-500 bg-teal-50' : 'border-gray-300 bg-gray-50 hover:border-teal-400'"
+         (dragover)="onImportDragOver($event)"
+         (dragleave)="onImportDragLeave($event)"
+         (drop)="onImportDrop($event)">
+      <i class="pi pi-upload text-5xl text-gray-300 block mb-3"></i>
+      <p class="text-gray-600 font-medium mb-1">Drag & drop your file here</p>
+      <p class="text-sm text-gray-400 mb-4">Supports CSV (.csv) and Excel (.xlsx, .xls)</p>
+      <label class="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-800 text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-teal-700 transition-colors">
+        <i class="pi pi-folder-open"></i>
+        Browse File
+        <input type="file" accept=".csv,.xlsx,.xls" class="hidden" (change)="onImportFileSelect($event)" />
+      </label>
+    </div>
+
+    <div *ngIf="importFile" class="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl mb-4">
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100">
+        <i class="pi pi-table text-green-600"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-800 m-0 truncate">{{ importFile.name }}</p>
+        <p class="text-xs text-gray-500 m-0">{{ (importFile.size / 1024).toFixed(1) }} KB</p>
+      </div>
+      <button (click)="clearImportFile()" class="text-gray-400 hover:text-red-500 transition-colors">
+        <i class="pi pi-times text-sm"></i>
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+      <i class="pi pi-info-circle text-blue-500"></i>
+      <span>Need a template?</span>
+      <button (click)="downloadImportTemplate()" class="font-semibold underline hover:text-blue-900 ml-1">Download sample CSV</button>
+    </div>
+
+    <div *ngIf="importLoading" class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+      <div class="flex items-center gap-3 mb-2">
+        <i class="pi pi-spin pi-spinner text-teal-700"></i>
+        <span class="text-sm font-medium text-gray-700">Processing {{ importFile?.name }}…</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-1.5">
+        <div class="bg-teal-700 h-1.5 rounded-full transition-all duration-300" [style.width]="importProgress + '%'"></div>
+      </div>
+      <p class="text-xs text-gray-500 mt-1.5">{{ importProgress }}% complete</p>
+    </div>
+
+    <div *ngIf="importResult" class="mt-4 p-4 rounded-xl border"
+         [ngClass]="importResult.errors > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
+      <p class="font-semibold text-sm m-0 mb-2" [ngClass]="importResult.errors > 0 ? 'text-amber-800' : 'text-green-800'">
+        Import {{ importResult.errors > 0 ? 'completed with warnings' : 'successful!' }}
+      </p>
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-gray-900 text-lg m-0">{{ importResult.total }}</p>
+          <p class="text-gray-500 m-0">Total rows</p>
+        </div>
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-green-600 text-lg m-0">{{ importResult.success }}</p>
+          <p class="text-gray-500 m-0">Imported</p>
+        </div>
+        <div class="text-center p-2 bg-white rounded-lg border">
+          <p class="font-bold text-red-500 text-lg m-0">{{ importResult.errors }}</p>
+          <p class="text-gray-500 m-0">Errors</p>
+        </div>
+      </div>
+      <div *ngIf="importResult.errorMessages?.length" class="mt-3 max-h-24 overflow-y-auto">
+        <p class="text-xs text-amber-700 font-medium mb-1">Issues found:</p>
+        <ul class="text-xs text-amber-600 list-disc pl-4 space-y-0.5">
+          <li *ngFor="let msg of importResult.errorMessages">{{ msg }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button (click)="onImportCancelled()" class="px-5 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mr-2">Cancel</button>
+    <button (click)="processImport()" [disabled]="!importFile || importLoading"
+      class="px-5 py-2.5 text-sm font-medium rounded-lg transition-colors"
+      [ngClass]="!importFile || importLoading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-teal-800 text-white hover:bg-teal-700'">
+      <i class="pi pi-upload mr-1.5"></i>
+      {{ importLoading ? 'Importing…' : 'Import Expenses' }}
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- REJECTION DIALOG -->
+<p-dialog header="Reject Expense" [(visible)]="showRejectionDialog" [modal]="true" [style]="{ width: '420px' }" (onHide)="cancelRejection()">
+  <div class="p-4">
+    <p class="text-sm text-gray-500 mb-3">Provide a reason (optional). It will be recorded and emailed to the submitter.</p>
+    <textarea rows="4" [(ngModel)]="rejectionReason" placeholder="e.g. Missing receipt, incorrect amount…"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <button (click)="cancelRejection()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 mr-2">Cancel</button>
+    <button (click)="confirmRejection()" class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Confirm Rejection</button>
+  </ng-template>
+</p-dialog>
+
+<!-- RECEIPT IMAGE MODAL -->
+<div *ngIf="showReceiptModal"
+  class="fixed inset-0 bg-black/90 flex items-center justify-center z-[10000] p-8"
+  style="animation: fadeIn 0.2s ease"
+  (click)="closeReceiptModal()">
+  <div class="bg-white rounded-xl w-[90vw] max-w-5xl h-[85vh] flex flex-col shadow-2xl" style="animation: slideUp 0.3s ease" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center py-5 px-6 border-b border-gray-200 flex-shrink-0">
+      <h3 class="text-xl font-semibold text-gray-800 m-0">{{ receiptModalTitle }}</h3>
+      <button (click)="closeReceiptModal()" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+        <i class="pi pi-times text-2xl"></i>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto p-6 flex items-center justify-center bg-gray-50 min-h-0">
+      <div *ngIf="receiptImageLoading" class="flex flex-col items-center gap-3 text-gray-500">
+        <div class="w-10 h-10 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin"></div>
+        <p class="m-0 text-sm">Loading receipt…</p>
+      </div>
+      <div *ngIf="receiptImageError" class="flex flex-col items-center gap-3 p-8 text-center">
+        <i class="pi pi-exclamation-triangle text-5xl text-red-400"></i>
+        <p class="m-0 text-base font-medium text-gray-800">Failed to load receipt</p>
+        <p class="m-0 text-sm text-gray-400 max-w-sm">{{ receiptImageError }}</p>
+      </div>
+      <img *ngIf="!receiptImageLoading && !receiptImageError" [src]="receiptModalUrl" [alt]="receiptModalTitle"
+        class="max-w-full max-h-full object-contain rounded-lg shadow-md"
+        (load)="onReceiptImageLoad()" (error)="onReceiptImageError($event)" />
+    </div>
+    <div class="flex gap-3 justify-end py-5 px-6 border-t border-gray-200 flex-shrink-0">
+      <a [href]="receiptApiUrl" target="_blank" class="py-2.5 px-5 rounded-lg text-sm font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 flex items-center gap-2 transition-colors">
+        <i class="pi pi-external-link text-lg"></i> Open in New Tab
+      </a>
+      <button (click)="closeReceiptModal()" class="py-2.5 px-5 rounded-lg text-sm font-medium bg-teal-800 text-white hover:bg-teal-700 transition-colors">Close</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes fadeIn  { from { opacity: 0; }              to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>

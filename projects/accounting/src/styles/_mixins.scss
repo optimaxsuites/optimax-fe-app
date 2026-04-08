@@ -1,0 +1,271 @@
+@import 'variables';
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-start {
+  display: flex;
+  align-items: flex-start;
+}
+
+// Typography utilities
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin text-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Spacing utilities
+@mixin section-padding {
+  padding: $space-8;
+  @media (max-width: 768px) {
+    padding: $space-6;
+  }
+}
+
+@mixin card-padding {
+  padding: $space-6;
+  @media (max-width: 768px) {
+    padding: $space-4;
+  }
+}
+
+// Card and component base styles
+@mixin card-base {
+  background: white;
+  border: 1px solid $neutral-200;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-card;
+  transition: box-shadow $transition-base ease;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin card-interactive {
+  @include card-base;
+  cursor: pointer;
+
+  &:active {
+    box-shadow: $shadow-sm;
+  }
+}
+
+// Button base style
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-family-base;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: all $transition-base ease;
+  user-select: none;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: $primary-600;
+  color: white;
+  border-color: $primary-600;
+
+  &:hover:not(:disabled) {
+    background-color: $primary-700;
+    border-color: $primary-700;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $primary-800;
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background-color: white;
+  color: $neutral-700;
+  border-color: $neutral-300;
+
+  &:hover:not(:disabled) {
+    background-color: $neutral-50;
+    border-color: $neutral-400;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $neutral-100;
+  }
+}
+
+@mixin button-ghost {
+  @include button-base;
+  background-color: transparent;
+  color: $neutral-700;
+  border-color: transparent;
+
+  &:hover:not(:disabled) {
+    background-color: $neutral-100;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $neutral-200;
+  }
+}
+
+// Input base style
+@mixin input-base {
+  width: 100%;
+  padding: $space-3 $space-4;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  border: 1px solid $neutral-300;
+  border-radius: $radius-lg;
+  background-color: white;
+  transition: all $transition-base ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-500;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  &:disabled {
+    background-color: $neutral-100;
+    color: $neutral-500;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: $neutral-400;
+  }
+}
+
+// Modal overlay
+@mixin modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: $z-modal-backdrop;
+}
+
+// Badge styles
+@mixin badge-base {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-1 $space-3;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  border-radius: $radius-md;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@mixin badge-success {
+  @include badge-base;
+  background-color: $success-50;
+  color: $success-700;
+}
+
+@mixin badge-warning {
+  @include badge-base;
+  background-color: $warning-50;
+  color: $warning-700;
+}
+
+@mixin badge-danger {
+  @include badge-base;
+  background-color: $danger-50;
+  color: $danger-700;
+}
+
+// Responsive grid helpers
+@mixin responsive-grid($desktop-cols: 4, $tablet-cols: 2, $mobile-cols: 1) {
+  display: grid;
+  gap: $space-6;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat($tablet-cols, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat($mobile-cols, 1fr);
+  }
+
+  @media (min-width: 1025px) {
+    grid-template-columns: repeat($desktop-cols, 1fr);
+  }
+}
+
+// Scrollable container with fade effect
+@mixin scrollable-fade {
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $neutral-100;
+    border-radius: $radius-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $neutral-300;
+    border-radius: $radius-full;
+
+    &:hover {
+      background: $neutral-400;
+    }
+  }
+}
+
+// Accessibility
+@mixin sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Focus states for accessibility
+@mixin focus-outline {
+  outline: 2px solid $primary-500;
+  outline-offset: 2px;
+}
+
+@mixin focus-ring {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1), 0 0 0 5px $primary-500;
+}
