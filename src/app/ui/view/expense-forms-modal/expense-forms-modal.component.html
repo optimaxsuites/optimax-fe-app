@@ -193,6 +193,12 @@
           </p>
         </div>
 
+        <!-- Tax -->
+        <div *ngIf="scannedData.taxAmount !== null" class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tax Amount</p>
+          <p class="text-sm font-medium text-gray-800 m-0">₦{{ scannedData.taxAmount | number:'1.2-2' }}</p>
+        </div>
+
         <!-- Date -->
         <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Transaction Date</p>
@@ -270,9 +276,6 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       EXPENSE FORM
-  ════════════════════════════════════════════════════════════════════════ -->
 
   <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)" class="w-full">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
