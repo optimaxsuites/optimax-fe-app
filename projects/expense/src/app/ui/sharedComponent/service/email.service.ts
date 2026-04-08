@@ -70,6 +70,8 @@ export class EmailService {
     amount:        number,
     currency:      string = 'NGN'
   ): Observable<EmailResponse> {
+    const reviewUrl = 'https://be.optimaxsuites.com/admin/expenses';
+
     return this.sendNotificationEmail({
       name:          'Admin',
       receiverEmail: adminEmail,
@@ -93,6 +95,17 @@ export class EmailService {
             <td style="padding:8px 14px;border:1px solid #e2e8f0;">${currency} ${amount.toLocaleString()}</td>
           </tr>
         </table>
+        <div style="margin:18px 0 18px 0;">
+          <a href="${reviewUrl}"
+             style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700;">
+            Review Expense
+          </a>
+        </div>
+        <p style="margin:0 0 12px 0;font-size:13px;color:#334155;">
+          If the button doesn’t work, copy and paste this link into your browser:
+          <br />
+          <span style="word-break:break-all;color:#2563eb;">${reviewUrl}</span>
+        </p>
         <p style="margin:0 0 12px 0;">
           Please log in to the Optimax ERP portal to review and action this expense.
         </p>

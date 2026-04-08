@@ -46,7 +46,7 @@ const MONTHLY_EXPENSE_LIMIT = 20;
 })
 export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
-  // ─── Form state ───────────────────────────────────────────────────────────
+  // ─── Form state───────────────────
   expenseSummary: any = { amount: null, quantity: 1, paidBy: 'COMPANY' };
   isDragging  = false;
   currentStage = 'to-submit';
@@ -58,7 +58,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   amountMode: 'per_item' | 'total' = 'total';
 
-  // ─── Multi-file attachments ───────────────────────────────────────────────
+  // ─── Multi-file attachments───────
   companyReceiptFiles:    File[]   = [];
   companyReceiptPreviews: string[] = [];
   employeeReceiptFiles:   File[]   = [];
@@ -67,7 +67,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   get receiptFile(): File | null         { return this.companyReceiptFiles[0]  ?? null; }
   get employeeReceiptFile(): File | null { return this.employeeReceiptFiles[0] ?? null; }
 
-  // ─── Dropdown data ────────────────────────────────────────────────────────
+  // ─── Dropdown data────────────────
   categories: { id: number; name: string; description?: string }[] = [];
   categoryNames: string[] = [];
   merchants: { id: number; name: string; phoneNumber: string; address: string; emailAddress: string; contactPersonName: string }[] = [];
@@ -75,12 +75,12 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   selectedCurrency = 'NGN';
   availableCurrencies = ['USD', 'EUR', 'GBP', 'NGN'];
 
-  // ─── Monthly batch check ──────────────────────────────────────────────────
+  // ─── Monthly batch check──────────
   currentMonthExpenseCount = 0;
   showMonthlyLimitWarning  = false;
   readonly MONTHLY_LIMIT   = MONTHLY_EXPENSE_LIMIT;
 
-  // ─── Modals ───────────────────────────────────────────────────────────────
+  // ─── Modals───────────────────────
   showCategoryModal   = false;
   showMerchantModal   = false;
   showTaxModal        = false;
@@ -91,7 +91,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   newMerchantData = { name: '', phoneNumber: '', address: '', emailAddress: '', contactPersonName: '' };
   newTaxData      = { name: '', rate: 0, description: '' };
 
-  // ─── Advanced payment / bill split ────────────────────────────────────────
+  // ─── Advanced payment / bill split
   advancedPaymentData?: RecurringPayment;
   billSplitData?: BillSplit;
   numParticipants = 2;
@@ -103,21 +103,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   public signaturePadOptions: Object = { minWidth: 1, canvasWidth: 500, canvasHeight: 300 };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RECEIPT SCANNER STATE
-  //
-  // scanState drives the UI:
-  //   'idle'       → shows the "Scan / Upload Receipt" button
-  //   'scanning'   → shows the "Processing receipt…" spinner
-  //   'preview'    → shows the extracted data preview panel
-  //   'error'      → shows the error message with manual fallback
-  //
-  // scannedData holds the last successfully extracted receipt data.
-  // It is shown in the preview panel before the user confirms auto-fill.
-  //
-  // highlightedFields tracks which form fields were populated by the scanner
-  // so we can visually highlight them in the template (amber outline).
-  // ─────────────────────────────────────────────────────────────────────────
+
   scanState: 'idle' | 'scanning' | 'preview' | 'error' = 'idle';
   scannedData: ScannedReceiptData | null = null;
   scanError = '';
@@ -166,7 +152,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     if (this.scanProgressInterval) clearInterval(this.scanProgressInterval);
   }
 
-  // ─── Resolve current user ─────────────────────────────────────────────────
+  // ─── Resolve current user─────────
   private resolveCurrentUser(): { id: number | null; fullname: string; email: string } {
     try {
       const primaryRaw =
@@ -202,9 +188,9 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ── RECEIPT SCANNING ─────────────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────────────────
+  //─────────────────────────────────
+  // ── RECEIPT SCANNING─────────────
+  //─────────────────────────────────
 
   // triggerScanFileInput
   // Opens a hidden <input type="file"> for the user to pick the receipt image.
@@ -375,23 +361,81 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     const d = this.scannedData;
     this.highlightedFields.clear();
 
-    // ── Expense name ──────────────────────────────────────────────────────
+    // ── Expense name (= merchant name from receipt) ───────────────────────
     if (d.merchantName) {
       this.expenseSummary.name = d.merchantName;
       this.highlightedFields.add('name');
     }
 
-    // ── Description (formatted line items) ────────────────────────────────
+    // ── Description (all line items, one per line) ────────────────────────
     if (d.description) {
       this.expenseSummary.description = d.description;
       this.highlightedFields.add('description');
     }
 
-    // ── Amount ────────────────────────────────────────────────────────────
-    if (d.amount !== null) {
-      this.expenseSummary.amount = d.amount;
-      this.amountMode            = 'total';
+    // ── Amount — use tax-inclusive TOTAL as the primary amount ────────────
+    // If no total was found but subtotal was, use subtotal as fallback
+    const amountToFill = d.amount ?? d.subTotal;
+    if (amountToFill !== null) {
+      this.expenseSummary.amount = amountToFill;
+      this.amountMode = 'total';
       this.highlightedFields.add('amount');
+    }
+
+    // ── Quantity = number of distinct items on the receipt ────────────────
+    // Maps to the "Quantity" input on the form.
+    // If only 1 item (or no items detected), leave as the existing value.
+    if (d.quantity !== null && d.quantity > 1) {
+      this.expenseSummary.quantity = d.quantity;
+      this.highlightedFields.add('quantity');
+    }
+
+    // ── Tax ───────────────────────────────────────────────────────────────
+    // Strategy:
+    //   1. If a tax RATE (%) was detected (e.g. 7.5), try to match it against
+    //      the loaded taxRates list by rate value first, then by label.
+    //   2. If no rate but a monetary tax AMOUNT was found, calculate the
+    //      implied rate from (taxAmount / subTotal * 100) and try to match.
+    //   3. If a match is found, set expenseSummary.taxPercentage to that rate
+    //      so the ng-select dropdown auto-selects the right entry.
+    //   4. If no match in the list but a rate was found, still fill the field
+    //      so the user can see it and optionally add a new tax rate.
+
+    let resolvedTaxRate: number | null = null;
+
+    if (d.taxRate !== null) {
+      resolvedTaxRate = d.taxRate;
+    } else if (d.taxAmount !== null && d.subTotal !== null && d.subTotal > 0) {
+      // Derive implied rate from subtotal + taxAmount
+      resolvedTaxRate = Math.round((d.taxAmount / d.subTotal) * 100 * 100) / 100;
+      console.log('[confirmScanFill] Implied tax rate from amount:', resolvedTaxRate, '%');
+    }
+
+    if (resolvedTaxRate !== null) {
+      // Try to match an existing tax rate entry (within ±0.1% tolerance)
+      const matched = this.taxRates.find(t =>
+        Math.abs(Number(t.rate) - resolvedTaxRate!) < 0.1
+      );
+
+      if (matched) {
+        this.expenseSummary.taxPercentage = matched.rate;
+        console.log('[confirmScanFill] Matched tax rate:', matched.name, matched.rate);
+      } else {
+        // No match — fill with the detected rate anyway
+        this.expenseSummary.taxPercentage = resolvedTaxRate;
+        console.warn('[confirmScanFill] Tax rate', resolvedTaxRate,
+          '% not found in taxRates list. User may need to add it manually.');
+
+        // Show a toast nudging the user to add this tax rate
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Tax Rate Not Found',
+          detail: `Receipt shows ${d.taxLabel || 'tax'} at ${resolvedTaxRate}%. ` +
+                  `Add this rate in the Tax section if it does not already exist.`,
+          life: 7000,
+        });
+      }
+      this.highlightedFields.add('taxPercentage');
     }
 
     // ── Date ─────────────────────────────────────────────────────────────
@@ -400,37 +444,38 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.highlightedFields.add('eventDate');
     }
 
-    // ── Merchant — try to match against existing merchant list ────────────
+    // ── Merchant — fuzzy-match against loaded merchants list ──────────────
     if (d.merchantName) {
       const matched = this._matchMerchant(d.merchantName);
       if (matched) {
         this.expenseSummary.merchant = matched.name;
         this.highlightedFields.add('merchant');
       } else {
-        // Pre-fill the merchant name so the user can quickly add it
+        // Pre-populate new merchant modal fields so user can add it in one click
         this.expenseSummary.merchant = d.merchantName;
         this.highlightedFields.add('merchant');
         this.newMerchantData = {
-          name: d.merchantName,
-          phoneNumber: d.merchantPhone || '',
-          address: d.merchantAddress || '',
-          emailAddress: d.merchantEmail || '',
-          contactPersonName: d.merchantContact || '',
+          name:              d.merchantName,
+          phoneNumber:       d.merchantPhone    || '',
+          address:           d.merchantAddress  || '',
+          emailAddress:      d.merchantEmail    || '',
+          contactPersonName: d.merchantContact  || '',
         };
       }
     }
 
-    this.scanState = 'idle';
+    // ── Reset scanner state ─────────────────────────────────────────────────
+    this.scanState   = 'idle';
     this.scannedData = null;
 
     this.messageService.add({
       severity: 'success',
       summary:  'Receipt Scanned',
-      detail:   'Form pre-filled from receipt. Please review before submitting.',
+      detail:   'Form pre-filled from receipt. Please review highlighted fields before submitting.',
       life:     5000,
     });
 
-    // Clear the amber highlight after 8 seconds
+    // Clear amber highlights after 8 seconds
     setTimeout(() => this.highlightedFields.clear(), 8000);
   }
 
@@ -473,9 +518,9 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     return this.highlightedFields.has(field);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ── END RECEIPT SCANNING ─────────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────────────────
+  //─────────────────────────────────
+  // ── END RECEIPT SCANNING─────────
+  //─────────────────────────────────
 
   private fetchApprovers(): Observable<{ fullname: string; email: string }[]> {
     return of(FALLBACK_APPROVER_EMAILS);
@@ -517,7 +562,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Monthly batch check ──────────────────────────────────────────────────
+  // ─── Monthly batch check──────────
   private checkMonthlyLimit(): void {
     const currentUser = this.resolveCurrentUser();
     if (!currentUser.id) return;
@@ -553,7 +598,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Computed totals ──────────────────────────────────────────────────────
+  // ─── Computed totals──────────────
   get computedTotal(): number {
     const amount = Number(this.expenseSummary.amount) || 0;
     const qty    = Number(this.expenseSummary.quantity) || 1;
@@ -565,7 +610,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     return this.computedTotal + (this.computedTotal * tax / 100);
   }
 
-  // ─── SUBMIT ───────────────────────────────────────────────────────────────
+  // ─── SUBMIT───────────────────────
   submitExpense(form: NgForm): void {
     if (this.categories.length === 0) {
       this.messageService.add({ severity: 'error', summary: 'No Categories', detail: 'Please add at least one category.' }); return;
@@ -669,7 +714,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Data loaders ─────────────────────────────────────────────────────────
+  // ─── Data loaders─────────────────
   private loadCategories(): void {
     this.expenseService.getCategories().subscribe({
       next:  (c) => { this.categories = c; this.categoryNames = c.map(x => x.name); },
@@ -691,7 +736,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Multi-file handling ──────────────────────────────────────────────────
+  // ─── Multi-file handling──────────
   onDragOver(e: DragEvent)  { e.preventDefault(); e.stopPropagation(); this.isDragging = true; }
   onDragLeave(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragging = false; }
 
@@ -817,11 +862,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Advanced payment ─────────────────────────────────────────────────────
+  // ─── Advanced payment─────────────
   onAdvancedPaymentSave(p: RecurringPayment)  { this.advancedPaymentData = p; this.showAdvancedPayment = false; }
   onAdvancedPaymentCancel()                    { this.showAdvancedPayment = false; }
 
-  // ─── Bill split ───────────────────────────────────────────────────────────
+  // ─── Bill split───────────────────
   openBillSplit() {
     this.billSplitData = { enabled: true, method: 'equal', participants: [], totalAmount: this.computedTotal };
     this.generateParticipants();
@@ -871,7 +916,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     };
   }
 
-  // ─── Misc helpers ─────────────────────────────────────────────────────────
+  // ─── Misc helpers─────────────────
   applyFilters(): void {}
   cancelExpenses()  { this.router.navigate(['/admin/expenses']); }
   goBack()          { this.router.navigate(['/admin/expenses']); }
