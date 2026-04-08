@@ -32,6 +32,11 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   nextPaymentDate: string = '';
   nextPaymentAmount: number = 0;
   
+  // Modal visibility
+  showPaymentModal = false;
+  showGracePeriodModal = false;
+  selectedInstallment: RepaymentScheduleItem | null = null;
+  
   ngOnInit() {
     this.calculateStats();
   }
@@ -84,6 +89,67 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     }
   }
   
+  // Open payment modal for a specific installment
+  openPaymentModal(installment?: RepaymentScheduleItem): void {
+    if (!this.canTakeRepaymentActions()) {
+      return;
+    }
+
+    if (installment) {
+      this.selectedInstallment = installment;
+    } else {
+      // Find the next pending installment
+      this.selectedInstallment = this.loan?.repaymentSchedule
+        .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
+    }
+    this.showPaymentModal = true;
+  }
+  
+  // Close payment modal
+  closePaymentModal(): void {
+    this.showPaymentModal = false;
+    this.selectedInstallment = null;
+  }
+  
+  // Open grace period modal
+  openGracePeriodModal(installment?: RepaymentScheduleItem): void {
+    if (!this.canTakeRepaymentActions()) {
+      return;
+    }
+
+    if (installment) {
+      this.selectedInstallment = installment;
+    } else {
+      // Find the next pending installment
+      this.selectedInstallment = this.loan?.repaymentSchedule
+        .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
+    }
+    this.showGracePeriodModal = true;
+  }
+  
+  // Close grace period modal
+  closeGracePeriodModal(): void {
+    this.showGracePeriodModal = false;
+    this.selectedInstallment = null;
+  }
+  
+  // Handle successful payment
+  onPaymentSuccess(): void {
+    this.closePaymentModal();
+    // Refresh the loan data
+    this.calculateStats();
+    // Emit event to parent to refresh the loan
+    if (this.loan?.id) {
+      // You can add an @Output() refresh event here
+    }
+  }
+  
+  // Handle successful grace period request
+  onGracePeriodSubmitted(): void {
+    this.closeGracePeriodModal();
+    // Show success message
+  }
+  
   getStatusIcon(status: string): string {
     switch(status) {
       case 'PAID': return 'fas fa-check-circle';
@@ -105,10 +171,10 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   }
   
   getProgressColor(): string {
-    if (this.overdueCount > 0) return '#FF0000';
-    if (this.completionPercentage >= 100) return '#2EB270';
-    if (this.completionPercentage >= 50) return '#FFA500';
-    return '#2E6276';
+    if (this.overdueCount > 0) return '#ea580c';
+    if (this.completionPercentage >= 100) return '#059669';
+    if (this.completionPercentage >= 50) return '#f59e0b';
+    return '#3b82f6';
   }
   
   formatDate(date: string): string {
@@ -133,6 +199,38 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
 
   getRepaymentStatusTitle(): string {
     return getLoanRepaymentStatusTitle(this.loan);
+  }
+
+  getLoanStatusDisplay(): string {
+    return String(this.loan?.status || '').replace(/_/g, ' ');
+  }
+
+  canTakeRepaymentActions(): boolean {
+    return this.loan?.status === 'ACTIVE' || this.loan?.status === 'SKIPPED' || this.loan?.status === 'OVERDUE';
+  }
+
+  hasRepaymentScheduleAccess(): boolean {
+    return this.canTakeRepaymentActions()
+      || this.loan?.status === 'PAUSED'
+      || this.loan?.status === 'DEFAULTED'
+      || this.loan?.status === 'COMPLETED'
+      || this.hasBeenDisbursed();
+  }
+
+  isRepaymentLocked(): boolean {
+    return this.loan?.status === 'PAUSED' || this.loan?.status === 'DEFAULTED';
+  }
+
+  getRepaymentLockTitle(): string {
+    return this.loan?.status === 'DEFAULTED' ? 'Repayment Locked By Default' : 'Repayment Temporarily Paused';
+  }
+
+  getRepaymentLockMessage(): string {
+    if (this.loan?.status === 'DEFAULTED') {
+      return 'This loan has been marked as defaulted. You can still review the schedule, but payment and extension requests stay locked until admin intervenes.';
+    }
+
+    return 'This loan is currently paused by admin. You can review the repayment schedule, but payment and extension requests are temporarily unavailable.';
   }
   
   isOverdue(item: RepaymentScheduleItem): boolean {

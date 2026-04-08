@@ -6,19 +6,16 @@
 
   <div *ngIf="!isLoading" class="dashboard-content">
 
-    <div class="dashboard-header" *ngIf="group as currentGroup">
+    <div class="dashboard-header lm-header-card" *ngIf="group as currentGroup">
       <div>
-        <button type="button" class="back-link" (click)="goBack()">
-          <i class="fas fa-arrow-left"></i>
-          Back to Membership Dashboard
-        </button>
-        <h1>{{ currentGroup.name }}</h1>
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-hand-holding-dollar"></i> {{ currentGroup.name }}</h1>
         <p class="group-copy">{{ currentGroup.description }}</p>
       </div>
 
       <div class="header-meta">
         <div class="welcome-block" *ngIf="currentMember as member">
-          <div class="welcome-title">Welcome {{ member.fullName }}</div>
+          <div class="welcome-title">Welcome {{ currentMemberDisplayName }}</div>
           <div class="welcome-ids">
             Employee Id: {{ member.employeeId || '—' }} |
             Member Id: {{ member.memberId || '—' }}
@@ -33,9 +30,9 @@
           Post Contribution
         </button>
         <div class="member-chip" *ngIf="currentMember as member">
-          <span class="avatar">{{ getInitials(member.fullName) }}</span>
+          <span class="avatar">{{ getInitials(currentMemberDisplayName) }}</span>
           <div>
-            <strong>{{ member.fullName }}</strong>
+            <strong>{{ currentMemberDisplayName }}</strong>
             <span>{{ member.memberId }}</span>
           </div>
         </div>
@@ -47,7 +44,7 @@
     <div class="member-spotlight" *ngIf="currentMembership && currentMember">
       <div>
         <span class="eyebrow">My Position in This Group</span>
-        <h2>{{ currentMember.fullName }}</h2>
+        <h2>{{ currentMemberDisplayName }}</h2>
         <p>Track your contribution level and borrowing headroom inside this group.</p>
       </div>
       <div class="spotlight-stats">
@@ -64,6 +61,34 @@
           <strong>{{ (currentMembership.joinedAt || currentMembership.requestedAt) | date:'mediumDate' }}</strong>
         </div>
       </div>
+    </div>
+
+    <div class="contribution-confirmation-card" *ngIf="currentMembership && currentMember">
+      <div class="card-header">
+        <h2>Contribution Confirmation Queue</h2>
+        <span class="meta-chip" *ngIf="getPendingContributionRequestsForCurrentMember().length > 0">
+          {{ getPendingContributionRequestsForCurrentMember().length }} request(s)
+        </span>
+      </div>
+
+      <div class="confirmation-empty-state" *ngIf="getPendingContributionRequestsForCurrentMember().length === 0; else confirmationRequestsTable">
+        <p>No contribution confirmation requests yet. Submit one from the Post Contribution action above.</p>
+      </div>
+
+      <ng-template #confirmationRequestsTable>
+        <div class="confirmation-request-list">
+          <div class="confirmation-request-item" *ngFor="let request of getPendingContributionRequestsForCurrentMember()">
+            <div>
+              <strong>{{ getContributionMonthLabel(request.contributionMonth) }}</strong>
+              <span>{{ formatCurrency(request.amount) }} via {{ getContributionPaymentMethodLabel(request.paymentMethod) }}</span>
+            </div>
+            <div class="confirmation-request-meta">
+              <span>{{ request.requestedAt | date:'medium' }}</span>
+              <span class="snapshot-status" [ngClass]="getContributionRequestStatusClass(request.status)">{{ request.status.replace('_', ' ') }}</span>
+            </div>
+          </div>
+        </div>
+      </ng-template>
     </div>
 
     <div class="stats-grid">
@@ -159,6 +184,51 @@
       </div>
 
       <div class="card">
+        <div class="card-header contribution-snapshot-header">
+          <h2>Contribution History By Month</h2>
+          <label class="month-selector">
+            <span>Month</span>
+            <select [(ngModel)]="selectedContributionMonth">
+              <option *ngFor="let option of contributionMonthOptions" [ngValue]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="monthly-snapshot-table" *ngIf="monthlyContributionSnapshotRows.length > 0; else noMonthlySnapshot">
+          <table appSortableTable>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Member ID</th>
+                <th>Expected</th>
+                <th>Posted</th>
+                <th>Status</th>
+                <th>Posted On</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of monthlyContributionSnapshotRows">
+                <td>{{ row.memberName }}</td>
+                <td>{{ row.memberCode }}</td>
+                <td>{{ formatCurrency(row.expectedAmount) }}</td>
+                <td>{{ formatCurrency(row.postedAmount) }}</td>
+                <td>
+                  <span class="snapshot-status" [ngClass]="row.status.toLowerCase()">{{ row.status }}</span>
+                </td>
+                <td>{{ row.contributedAt ? (row.contributedAt | date:'mediumDate') : 'Not yet posted' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noMonthlySnapshot>
+          <div class="empty-state">
+            <p>No contribution entries available for {{ selectedContributionMonthLabel }}.</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="card">
         <div class="card-header">
           <h2>Group Activity</h2>
         </div>
@@ -185,7 +255,7 @@
     </div>
 
     <div class="dashboard-grid">
-      <div class="card">
+      <div class="card span-2">
         <div class="card-header">
           <h2>Contribution Roster</h2>
         </div>
@@ -199,7 +269,7 @@
         </app-table>
       </div>
 
-      <div class="card">
+      <div class="card span-2">
         <div class="card-header">
           <h2>Recent Joiners</h2>
         </div>
@@ -249,6 +319,21 @@
         Your standard monthly amount is {{ formatCurrency(currentMembership.monthlyContributionAmount) }}.
       </p>
 
+      <div class="payment-destination-card" *ngIf="group as currentGroup">
+        <div class="destination-row">
+          <span>Accounting Email</span>
+          <strong>{{ currentGroupAccountingEmail || 'Not configured' }}</strong>
+        </div>
+        <div class="destination-row">
+          <span>Contributions Bank</span>
+          <strong>{{ currentGroupContributionBankName || 'Not configured' }}</strong>
+        </div>
+        <div class="destination-row">
+          <span>Contributions Account</span>
+          <strong>{{ currentGroupContributionAccount || 'Not configured' }}</strong>
+        </div>
+      </div>
+
       <label class="field-group">
         <span>Contribution Month</span>
         <input
@@ -269,8 +354,20 @@
           placeholder="0.00">
       </label>
 
+      <label class="field-group">
+        <span>Payment Method</span>
+        <select
+          [(ngModel)]="contributionForm.paymentMethod"
+          name="contributionPaymentMethod">
+          <option *ngFor="let option of contributionPaymentMethodOptions" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+
       <p class="modal-error" *ngIf="hasExistingContributionForSelectedMonth && !contributionError">
         A contribution for this month already exists.
+      </p>
+      <p class="modal-error" *ngIf="hasExistingPendingContributionRequestForSelectedMonth && !contributionError">
+        Accounting confirmation is already pending for this month.
       </p>
       <p class="modal-error" *ngIf="contributionError">{{ contributionError }}</p>
 
@@ -279,7 +376,7 @@
         <button
           type="button"
           class="primary-button"
-          [disabled]="isSubmittingContribution || hasExistingContributionForSelectedMonth"
+          [disabled]="isSubmittingContribution || hasExistingContributionForSelectedMonth || hasExistingPendingContributionRequestForSelectedMonth"
           (click)="submitContribution()">
           {{ isSubmittingContribution ? 'Posting...' : 'Post Contribution' }}
         </button>

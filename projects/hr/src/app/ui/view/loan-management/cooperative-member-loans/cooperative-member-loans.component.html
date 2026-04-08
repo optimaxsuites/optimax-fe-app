@@ -9,8 +9,8 @@
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
         <div>
-          <h1><i class="fas fa-file-invoice-dollar"></i> My Loans</h1>
-          <p *ngIf="member">{{ member.fullName }} · {{ member.memberId }}</p>
+          <h1><i class="fas fa-hand-holding-dollar"></i> My Loans</h1>
+          <p *ngIf="member">{{ memberDisplayName }} · {{ member.memberId }}</p>
         </div>
       </div>
     </div>

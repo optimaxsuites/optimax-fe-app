@@ -1,10 +1,15 @@
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { EmployeeService } from '../../../service/employee.service';
+import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 // Add other needed types if used in this file
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import {
@@ -15,6 +20,7 @@ import {
   CooperativeMember
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { environment } from '../../../shared-component/environments/environment';
 
 interface GroupMetrics {
   memberCount: number;
@@ -43,6 +49,13 @@ interface GroupInviteEmployeeRow {
   rank: CooperativeEmployeeProfile['rank'];
   employmentStartDate: string;
   tenureMonths: number;
+  monthlySalary: number;
+}
+
+interface SalaryLookupResponse {
+  baseSalary?: number;
+  monthlySalary?: number;
+  salary?: number;
 }
 
 @Component({
@@ -52,9 +65,11 @@ interface GroupInviteEmployeeRow {
 })
 export class CooperativeLoanGroupsComponent implements OnInit {
   currentUuid = uuidV4();
+  private readonly bankAccountPattern = /^\d{10}$/;
   groups: CooperativeLoanGroup[] = [];
   members: CooperativeMember[] = [];
   employeeDirectory: GroupInviteEmployeeRow[] = [];
+  employeeSalaryById: Record<number, number> = {};
   groupMetricsById: Record<number, GroupMetrics> = {};
   groupSummaryRows: GroupTableRow[] = [];
   showGroupForm = false;
@@ -70,6 +85,9 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   inviteTenureFilter: InviteTenureFilter = 'ALL';
   selectedInviteEmployeeIds = new Set<number>();
   inviteMessage = '';
+  isSendingInviteEmails = false;
+  formMessage = '';
+  formMessageSeverity: 'success' | 'error' | 'info' | 'warn' = 'info';
 
   readonly inviteTenureOptions: Array<{ value: InviteTenureFilter; label: string }> = [
     { value: 'ALL', label: 'All tenures' },
@@ -124,6 +142,9 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   constructor(
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
+    private employeeLoanService: EmployeeLoanService,
+    private mailNotificationService: MailNotificationService,
+    private http: HttpClient,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
@@ -156,29 +177,91 @@ export class CooperativeLoanGroupsComponent implements OnInit {
           .map(employee => this.mapEmployeeToInviteRow(employee))
           .filter((employee): employee is GroupInviteEmployeeRow => !!employee)
           .sort((left, right) => left.fullName.localeCompare(right.fullName));
+
+        this.loadEmployeeSalaries();
       },
       error: () => {
         this.employeeDirectory = [];
+        this.employeeSalaryById = {};
       }
+    });
+  }
+
+  private loadEmployeeSalaries(): void {
+    if (this.employeeDirectory.length === 0) {
+      this.employeeSalaryById = {};
+      return;
+    }
+
+    forkJoin(
+      this.employeeDirectory.map((employee) => this.employeeLoanService.getSalaryByEmployeeId(employee.employeeId).pipe(
+        map((salaryData: SalaryLookupResponse) => ({
+          employeeId: employee.employeeId,
+          salary: Number(salaryData?.baseSalary || salaryData?.monthlySalary || salaryData?.salary || employee.monthlySalary || 0)
+        })),
+        catchError(() => of({ employeeId: employee.employeeId, salary: Number(employee.monthlySalary || 0) }))
+      ))
+    ).subscribe((salaryRows) => {
+      this.employeeSalaryById = salaryRows.reduce((acc, row) => {
+        acc[row.employeeId] = row.salary;
+        return acc;
+      }, {} as Record<number, number>);
+
+      this.employeeDirectory = this.employeeDirectory.map((employee) => ({
+        ...employee,
+        monthlySalary: this.employeeSalaryById[employee.employeeId] ?? employee.monthlySalary
+      }));
     });
   }
 
   initializeForm(): void {
     this.groupForm = this.fb.group({
+      code: ['', Validators.required],
       name: ['', Validators.required],
       description: ['', Validators.required],
       minEligibleSalary: [0, [Validators.required, Validators.min(0)]],
       monthlyContributionAmount: [1000, [Validators.required, Validators.min(1)]],
       maxBorrowingPercentage: [100, [Validators.required, Validators.min(1)]],
-      minAmount: [1000, [Validators.required, Validators.min(1)]],
-      maxAmount: [10000, [Validators.required, Validators.min(1)]],
       interestRate: [0, [Validators.required, Validators.min(0)]],
+      memberLimit: [null, Validators.min(1)],
+      contributionsBankName: ['', Validators.required],
+      contributionsAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      principalBankName: ['', Validators.required],
+      principalCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      interestBankName: ['', Validators.required],
+      interestCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      lateFeePercentage: [0, [Validators.required, Validators.min(0)]],
+      lateFeeBankName: ['', Validators.required],
+      lateFeeCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      lateFeeGraceDays: [0, [Validators.required, Validators.min(0)]],
+      accountingEmail: ['', [Validators.required, Validators.email]],
+      accountingWebhookUrl: [''],
       minDuration: [1, [Validators.required, Validators.min(1)]],
       maxDuration: [12, [Validators.required, Validators.min(1)]],
-      requiresShares: [false],
+      requiresGuarantors: [false],
+      minimumGuarantors: [0],
       patronageEligible: [true],
       patronageRate: [0, [Validators.required, Validators.min(0)]],
       status: ['ACTIVE', Validators.required]
+    });
+
+    this.groupForm.get('requiresGuarantors')?.valueChanges.subscribe((enabled) => {
+      const minimumGuarantorsControl = this.groupForm.get('minimumGuarantors');
+      if (!minimumGuarantorsControl) {
+        return;
+      }
+
+      if (enabled) {
+        minimumGuarantorsControl.setValidators([Validators.required, Validators.min(1)]);
+        if (Number(minimumGuarantorsControl.value || 0) < 1) {
+          minimumGuarantorsControl.setValue(1);
+        }
+      } else {
+        minimumGuarantorsControl.clearValidators();
+        minimumGuarantorsControl.setValue(0);
+      }
+
+      minimumGuarantorsControl.updateValueAndValidity({ emitEvent: false });
     });
 
     this.groupForm.get('patronageEligible')?.valueChanges.subscribe(enabled => {
@@ -275,18 +358,32 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   openAddForm(): void {
     this.editingGroupId = null;
     this.showGroupForm = true;
+    this.clearFormMessage();
     this.groupForm.reset({
+      code: '',
       name: '',
       description: '',
       minEligibleSalary: 0,
       monthlyContributionAmount: 1000,
       maxBorrowingPercentage: 100,
-      minAmount: 1000,
-      maxAmount: 10000,
       interestRate: 0,
+      memberLimit: null,
+      contributionsBankName: '',
+      contributionsAccount: '',
+      principalBankName: '',
+      principalCollectionAccount: '',
+      interestBankName: '',
+      interestCollectionAccount: '',
+      lateFeePercentage: 0,
+      lateFeeBankName: '',
+      lateFeeCollectionAccount: '',
+      lateFeeGraceDays: 0,
+      accountingEmail: '',
+      accountingWebhookUrl: '',
       minDuration: 1,
       maxDuration: 12,
-      requiresShares: false,
+      requiresGuarantors: false,
+      minimumGuarantors: 0,
       patronageEligible: true,
       patronageRate: 0,
       status: 'ACTIVE'
@@ -296,6 +393,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   openEditForm(group: CooperativeLoanGroup): void {
     this.editingGroupId = group.id;
     this.showGroupForm = true;
+    this.clearFormMessage();
     this.groupForm.patchValue(group);
   }
 
@@ -306,11 +404,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   const formValue = this.groupForm.value;
-  if (Number(formValue.minAmount) > Number(formValue.maxAmount)) {
-    this.groupForm.get('maxAmount')?.setErrors({ range: true });
-    return;
-  }
-
   if (Number(formValue.minDuration) > Number(formValue.maxDuration)) {
     this.groupForm.get('maxDuration')?.setErrors({ range: true });
     return;
@@ -318,14 +411,32 @@ export class CooperativeLoanGroupsComponent implements OnInit {
 
   const payload = {
     ...formValue,
+    code: String(formValue.code || '').trim(),
     minEligibleSalary: Number(formValue.minEligibleSalary),
     monthlyContributionAmount: Number(formValue.monthlyContributionAmount),
     maxBorrowingPercentage: Number(formValue.maxBorrowingPercentage),
-    minAmount: Number(formValue.minAmount),
-    maxAmount: Number(formValue.maxAmount),
+    minAmount: 0,
+    maxAmount: 0,
+    withdrawCap: 0,
     interestRate: Number(formValue.interestRate),
+    memberLimit: formValue.memberLimit ? Number(formValue.memberLimit) : undefined,
+    contributionsBankName: String(formValue.contributionsBankName || '').trim(),
+    contributionsAccount: String(formValue.contributionsAccount || '').trim(),
+    principalBankName: String(formValue.principalBankName || '').trim(),
+    principalCollectionAccount: String(formValue.principalCollectionAccount || '').trim(),
+    interestBankName: String(formValue.interestBankName || '').trim(),
+    interestCollectionAccount: String(formValue.interestCollectionAccount || '').trim(),
+    lateFeePercentage: Number(formValue.lateFeePercentage),
+    lateFeeBankName: String(formValue.lateFeeBankName || '').trim(),
+    lateFeeCollectionAccount: String(formValue.lateFeeCollectionAccount || '').trim(),
+    lateFeeGraceDays: Number(formValue.lateFeeGraceDays),
+    accountingEmail: String(formValue.accountingEmail || '').trim(),
+    accountingWebhookUrl: String(formValue.accountingWebhookUrl || '').trim() || undefined,
     minDuration: Number(formValue.minDuration),
     maxDuration: Number(formValue.maxDuration),
+    requiresShares: false,
+    requiresGuarantors: Boolean(formValue.requiresGuarantors),
+    minimumGuarantors: formValue.requiresGuarantors ? Number(formValue.minimumGuarantors || 0) : 0,
     patronageRate: Number(formValue.patronageRate)
   } as Omit<CooperativeLoanGroup, 'id'>;
 
@@ -335,25 +446,119 @@ export class CooperativeLoanGroupsComponent implements OnInit {
 
   request.subscribe({
     next: () => {
-      this.cancelForm();
       this.loadGroups(); // This will refresh groups from backend
-      this.showMessage('Group saved successfully!', 'success');
+      this.showMessage('Group saved successfully.', 'success');
+      this.cancelForm(1500);
     },
     error: (error) => {
       console.error('Error saving group:', error);
-      this.showMessage('Failed to save group. Check console for details.', 'error');
+      this.showMessage('Failed to save group. Review the fields and try again.', 'error');
     }
   });
 }
 
-// Add this helper method to show messages (if not already present)
 private showMessage(message: string, type: 'success' | 'error'): void {
-  // You can use a toast service or set a message variable
-  console.log(message);
-  // If you have a message variable in your component, set it here
-  // this.actionMessage = message;
-  // this.actionMessageTone = type;
+  this.formMessage = message;
+  this.formMessageSeverity = type;
 }
+
+  clearFormMessage(): void {
+    this.formMessage = '';
+  }
+
+  normalizeAccountField(controlName: string): void {
+    const control = this.groupForm.get(controlName);
+    if (!control) {
+      return;
+    }
+
+    const normalized = String(control.value || '')
+      .replace(/\D+/g, '')
+      .trim();
+    control.setValue(normalized, { emitEvent: false });
+    control.updateValueAndValidity({ emitEvent: false });
+}
+
+  hasControlError(controlName: string, errorName?: string): boolean {
+    const control = this.groupForm.get(controlName);
+    if (!control) {
+      return false;
+    }
+
+    const shouldShow = control.invalid && (control.touched || control.dirty);
+    if (!shouldShow) {
+      return false;
+    }
+
+    return errorName ? !!control.errors?.[errorName] : true;
+  }
+
+  getControlErrorMessage(controlName: string): string {
+    const control = this.groupForm.get(controlName);
+    if (!control?.errors) {
+      return '';
+    }
+
+    if (control.errors['required']) {
+      switch (controlName) {
+        case 'code':
+          return 'Group code is required.';
+        case 'name':
+          return 'Group name is required.';
+        case 'description':
+          return 'Description is required.';
+        case 'contributionsBankName':
+          return 'Contributions bank name is required.';
+        case 'contributionsAccount':
+          return 'Contributions account is required.';
+        case 'principalBankName':
+          return 'Principal bank name is required.';
+        case 'principalCollectionAccount':
+          return 'Principal account is required.';
+        case 'interestBankName':
+          return 'Interest bank name is required.';
+        case 'interestCollectionAccount':
+          return 'Interest account is required.';
+        case 'lateFeeBankName':
+          return 'Late fee bank name is required.';
+        case 'lateFeeCollectionAccount':
+          return 'Late fee account is required.';
+        case 'accountingEmail':
+          return 'Accounting email is required.';
+        default:
+          return 'This field is required.';
+      }
+    }
+
+    if (control.errors['email']) {
+      return 'Enter a valid email address.';
+    }
+
+    if (control.errors['pattern']) {
+      switch (controlName) {
+        case 'contributionsAccount':
+        case 'principalCollectionAccount':
+        case 'interestCollectionAccount':
+        case 'lateFeeCollectionAccount':
+          return 'Account number must be exactly 10 digits.';
+        default:
+          return 'Enter a valid value.';
+      }
+    }
+
+    if (control.errors['min']) {
+      if (controlName === 'memberLimit') {
+        return 'Member limit must be at least 1.';
+      }
+      return 'Value must be greater than or equal to 0.';
+    }
+
+    if (control.errors['range']) {
+      return 'Max duration must be greater than or equal to min duration.';
+    }
+
+    return 'Enter a valid value.';
+  }
 
   toggleGroupStatus(group: CooperativeLoanGroup): void {
     const nextStatus = group.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -449,7 +654,7 @@ private showMessage(message: string, type: 'success' | 'error'): void {
   }
 
   canInviteEmployee(employee: GroupInviteEmployeeRow): boolean {
-    return !this.isEmployeeAlreadyInSelectedGroup(employee);
+    return this.isEmployeeSalaryEligible(employee) && !this.isEmployeeAlreadyInSelectedGroup(employee);
   }
 
   isInviteSelected(employeeId: number): boolean {
@@ -474,7 +679,7 @@ private showMessage(message: string, type: 'success' | 'error'): void {
   }
 
   sendGroupInviteEmails(): void {
-    if (!this.selectedGroupForInvite) {
+    if (!this.selectedGroupForInvite || this.isSendingInviteEmails) {
       return;
     }
 
@@ -486,24 +691,101 @@ private showMessage(message: string, type: 'success' | 'error'): void {
 
     const emailSubject = this.inviteEmailSubject;
     const emailBody = this.inviteEmailBodyPreview;
-    this.cooperativeService.recordGroupInvites(
-      this.selectedGroupForInvite.id,
-      recipients.map(employee => ({
-        employeeId: employee.employeeId,
-        employeeName: employee.fullName,
-        employeeEmail: employee.email,
-        department: employee.department,
-        rank: employee.rank,
-        tenureMonths: employee.tenureMonths,
-        subject: emailSubject,
-        message: emailBody
-      }))
-    );
-    this.selectedGroupInviteHistory = this.cooperativeService.getGroupInviteHistory(this.selectedGroupForInvite.id);
+    this.isSendingInviteEmails = true;
+    this.inviteMessage = '';
 
-    const recipientEmails = recipients.map(employee => employee.email).join(', ');
-    this.inviteMessage = `Invitation email prepared for ${recipients.length} employee${recipients.length === 1 ? '' : 's'} for ${this.selectedGroupForInvite.name}. Recipients: ${recipientEmails}. The email directs them to the My Membership dashboard, where they can still apply and be reviewed.`;
-    this.selectedInviteEmployeeIds.clear();
+    forkJoin(
+      recipients.map((employee) => this.sendGroupInviteMail(employee).pipe(
+        map(() => ({ success: true, employee })),
+        catchError((error) => {
+          console.error(`Failed to send group invite email to ${employee.email}:`, error);
+          return of({ success: false, employee });
+        })
+      ))
+    ).subscribe({
+      next: (results) => {
+        const successfulRecipients = results.filter((result) => result.success).map((result) => result.employee);
+        const failedRecipients = results.filter((result) => !result.success).map((result) => result.employee.email);
+
+        if (successfulRecipients.length > 0) {
+          this.cooperativeService.recordGroupInvites(
+            this.selectedGroupForInvite!.id,
+            successfulRecipients.map(employee => ({
+              employeeId: employee.employeeId,
+              employeeName: employee.fullName,
+              employeeEmail: employee.email,
+              department: employee.department,
+              rank: employee.rank,
+              tenureMonths: employee.tenureMonths,
+              subject: emailSubject,
+              message: emailBody
+            }))
+          );
+          this.selectedGroupInviteHistory = this.cooperativeService.getGroupInviteHistory(this.selectedGroupForInvite!.id);
+        }
+
+        if (failedRecipients.length === 0) {
+          this.inviteMessage = `Invitation email sent to ${successfulRecipients.length} employee${successfulRecipients.length === 1 ? '' : 's'} for ${this.selectedGroupForInvite!.name}.`;
+        } else if (successfulRecipients.length === 0) {
+          this.inviteMessage = `No invitation emails were sent successfully. Failed recipients: ${failedRecipients.join(', ')}.`;
+        } else {
+          this.inviteMessage = `Invitation email sent to ${successfulRecipients.length} employee${successfulRecipients.length === 1 ? '' : 's'}. Failed recipients: ${failedRecipients.join(', ')}.`;
+        }
+
+        this.selectedInviteEmployeeIds.clear();
+        this.isSendingInviteEmails = false;
+      },
+      error: () => {
+        this.inviteMessage = 'Unable to send invitation emails right now.';
+        this.isSendingInviteEmails = false;
+      }
+    });
+  }
+
+  private buildGroupInviteMail(employee: GroupInviteEmployeeRow): { name: string; to: string; recieverEmail: string; receiverEmail: string; subject: string; body: string } {
+    const dashboardUrl = `${window.location.origin}/member/cooperative/dashboard/${this.currentUuid}`;
+    const groupName = this.selectedGroupForInvite?.name || 'the selected cooperative group';
+    const groupCode = this.selectedGroupForInvite?.code ? ` (${this.selectedGroupForInvite.code})` : '';
+    const description = this.selectedGroupForInvite?.description ? `<p><strong>Group overview:</strong> ${this.selectedGroupForInvite.description}</p>` : '';
+
+    return {
+      name: employee.fullName,
+      to: employee.email,
+      recieverEmail: employee.email,
+      receiverEmail: employee.email,
+      subject: this.inviteEmailSubject,
+      body: `
+        <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+          <p>Dear ${employee.fullName},</p>
+          <p>A cooperative group has opened for applications and you are eligible to apply.</p>
+          <ul>
+            <li><strong>Group:</strong> ${groupName}${groupCode}</li>
+            <li><strong>Department:</strong> ${employee.department}</li>
+            <li><strong>Rank:</strong> ${employee.rank}</li>
+          </ul>
+          ${description}
+          <p>To apply, sign in and open your <strong>My Membership</strong> dashboard:</p>
+          <p><a href="${dashboardUrl}" target="_blank" rel="noopener noreferrer">Open My Membership Dashboard</a></p>
+          <p>Please note that applications are still reviewed and can be approved or rejected based on group criteria.</p>
+          <p>Regards,<br/><strong>Cooperative Admin</strong></p>
+        </div>
+      `
+    };
+  }
+
+  private sendGroupInviteMail(employee: GroupInviteEmployeeRow) {
+    const rawApiKey = String(environment.apiKey || '').trim();
+    const apiKey = rawApiKey.startsWith('ApiKey ') ? rawApiKey : `ApiKey ${rawApiKey}`;
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey
+    });
+
+    return this.http.post(
+      'https://automation.optimaxsuites.com/webhook/735f4d81-3f63-4390-9b03-098be2a31469',
+      this.buildGroupInviteMail(employee),
+      { headers }
+    );
   }
 
   get groupInviteHistoryCount(): number {
@@ -534,6 +816,10 @@ private showMessage(message: string, type: 'success' | 'error'): void {
   }
 
   getInviteStatusLabel(employee: GroupInviteEmployeeRow): string {
+    if (!this.isEmployeeSalaryEligible(employee)) {
+      return 'INELIGIBLE';
+    }
+
     const member = this.getMemberByEmployeeEmail(employee.email);
     if (!member || !this.selectedGroupForInvite) {
       return 'Eligible';
@@ -551,9 +837,19 @@ private showMessage(message: string, type: 'success' | 'error'): void {
     return 'Eligible';
   }
 
-  cancelForm(): void {
-    this.showGroupForm = false;
-    this.editingGroupId = null;
+  cancelForm(delayMs = 0): void {
+    const finalize = (): void => {
+      this.showGroupForm = false;
+      this.editingGroupId = null;
+      this.clearFormMessage();
+    };
+
+    if (delayMs > 0) {
+      window.setTimeout(finalize, delayMs);
+      return;
+    }
+
+    finalize();
   }
 
   formatCurrency(amount: number): string {
@@ -606,8 +902,19 @@ private showMessage(message: string, type: 'success' | 'error'): void {
       department,
       rank: this.mapRank(levelName),
       employmentStartDate: normalizedStartDate,
-      tenureMonths: this.getTenureMonths(normalizedStartDate)
+      tenureMonths: this.getTenureMonths(normalizedStartDate),
+      monthlySalary: Number(employee?.monthlySalary || employee?.salary || employee?.baseSalary || 0)
     };
+  }
+
+  private isEmployeeSalaryEligible(employee: GroupInviteEmployeeRow): boolean {
+    if (!this.selectedGroupForInvite) {
+      return true;
+    }
+
+    const minimumSalary = Number(this.selectedGroupForInvite.minEligibleSalary || 0);
+    const employeeSalary = Number(this.employeeSalaryById[employee.employeeId] ?? employee.monthlySalary ?? 0);
+    return employeeSalary >= minimumSalary;
   }
 
   private mapRank(value: string): CooperativeEmployeeProfile['rank'] {

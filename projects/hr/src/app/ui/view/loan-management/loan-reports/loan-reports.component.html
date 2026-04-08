@@ -1,10 +1,14 @@
 <div class="reports-container">
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Loading loan reports...</p>
+  </div>
   <div *ngIf="!isLoading" class="reports-content">
     <!-- Header -->
     <div class="reports-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1>Loan Reports</h1>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan Reports</h1>
       </div>
       <div class="header-actions">
         <button class="export-btn excel" (click)="exportToExcel()">
@@ -85,7 +89,7 @@
           <label>Status</label>
           <select [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
             <option value="">All Statuses</option>
-            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+            <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
           </select>
         </div>
         <div class="filter-group">
@@ -106,7 +110,7 @@
 
     <!-- Results Info -->
     <div class="results-info">
-      <span>Showing {{ filteredLoans.length }} of {{ allLoans.length }} loans</span>
+      <span>Showing {{ paginationStart }}-{{ paginationEnd }} of {{ filteredLoans.length }} filtered loans</span>
       <span class="total-amount">Total: ₦{{ getFilteredTotal() | number:'1.2-2' }}</span>
     </div>
 
@@ -134,6 +138,7 @@
             <th (click)="setSort('interestRate')" class="sortable">
               Interest <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
             </th>
+            <th class="amount">Interest Amount</th>
             <th (click)="setSort('totalRepayable')" class="sortable amount">
               Repayable Amount <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
             </th>
@@ -149,7 +154,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let loan of filteredLoans">
+          <tr *ngFor="let loan of paginatedLoans">
             <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
             <td>
               <div class="employee-info">
@@ -161,12 +166,13 @@
             <td class="purpose" [title]="formatPurposeDisplay(loan.purpose)">{{ formatPurposeDisplay(loan.purpose) | slice:0:30 }}{{ formatPurposeDisplay(loan.purpose).length > 30 ? '...' : '' }}</td>
             <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
             <td>{{ loan.interestRate || 0 }}%</td>
+            <td class="amount">₦{{ getLoanInterestAmount(loan) | number:'1.2-2' }}</td>
             <td>₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
             <td class="paid">₦{{ (loan.totalPaid || 0) | number:'1.2-2' }}</td>
             <td class="balance">₦{{ (loan.currentBalance || 0) | number:'1.2-2' }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-                {{ loan.status }}
+                {{ getStatusLabel(loan.status) }}
               </span>
             </td>
             <td>{{ loan.requestDate | date:'mediumDate' }}</td>
@@ -179,7 +185,7 @@
             </td>
           </tr>
           <tr *ngIf="filteredLoans.length === 0">
-            <td colspan="12" class="no-data">
+            <td colspan="13" class="no-data">
               <i class="fas fa-search"></i>
               <p>No loans match your filters</p>
               <button class="reset-btn" (click)="resetFilters()">Clear Filters</button>
@@ -187,6 +193,14 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
+        <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>
+        <div class="pagination-actions">
+          <button type="button" class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+          <button type="button" class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -33,6 +33,13 @@
     border-radius: 12px;
     padding: 16px 20px;
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     .header-actions {
       display: flex;
       gap: 10px;
@@ -43,6 +50,10 @@
       font-size: 1.25rem;
       letter-spacing: 0.5px;
       margin: 0;
+
+      i {
+        margin-right: 10px;
+      }
     }
 
     .cancel-btn,

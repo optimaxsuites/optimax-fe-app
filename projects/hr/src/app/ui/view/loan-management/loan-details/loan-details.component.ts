@@ -10,6 +10,7 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import {
+  formatLoanRepaymentDayDisplay,
   getLoanRepaymentStatusTitle,
   hasLoanBeenDisbursed,
   hasLoanRepaymentStarted,
@@ -22,6 +23,27 @@ import {
   resolveLoanTotalPaid,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
+
+type LoanLifecycleStage = {
+  status: LoanApplication['status'];
+  label: string;
+  color: string;
+  notes: string;
+  fieldLabel: string;
+};
+
+const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
+  { status: 'PENDING', label: 'Pending', color: '#ffc107', notes: 'Loan application submitted', fieldLabel: 'Applied On' },
+  { status: 'AWAITING_INTEREST_ACCEPTANCE', label: 'Awaiting Employee Acceptance', color: '#eb9b3f', notes: 'Awaiting employee acceptance of the proposed interest rate', fieldLabel: 'Interest Proposal Sent On' },
+  { status: 'APPROVED', label: 'Approved', color: '#4f7cff', notes: 'Loan approved', fieldLabel: 'Approved On' },
+  { status: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', color: '#0284c7', notes: 'Loan is ready for disbursement', fieldLabel: 'Ready for Disbursement On' },
+  { status: 'ACTIVE', label: 'Active', color: '#17a2b8', notes: 'Loan disbursed', fieldLabel: 'Disbursed On' },
+  { status: 'SKIPPED', label: 'Skipped', color: '#8b5cf6', notes: 'Grace period approved for the current installment', fieldLabel: 'Grace Period Approved On' },
+  { status: 'OVERDUE', label: 'Overdue', color: '#ef4444', notes: 'Repayment is overdue', fieldLabel: 'Overdue Since' },
+  { status: 'DEFAULTED', label: 'Defaulted', color: '#7f1d1d', notes: 'Loan defaulted after repeated overdue installments', fieldLabel: 'Defaulted On' },
+  { status: 'PAUSED', label: 'Paused', color: '#475569', notes: 'Repayment temporarily paused by admin', fieldLabel: 'Paused On' },
+  { status: 'COMPLETED', label: 'Completed', color: '#6c757d', notes: 'Loan completed', fieldLabel: 'Completed On' }
+];
 
 @Component({
   selector: 'app-loan-details',
@@ -42,19 +64,26 @@ export class LoanDetailsComponent implements OnInit {
   selectedAction: LoanApplication['status'] | '' = '';
   messages: Message[] = [];
   suggestedInterestRate = 0;
+  showOverrideModal = false;
+  overrideTargetStatus: 'ACTIVE' | 'PAUSED' = 'PAUSED';
+  overrideReason = '';
   approvalPreview = {
     repaymentAmount: 0,
     totalRepayment: 0,
     totalInterest: 0
   };
+
+  get lifecycleStageFields(): Array<{ label: string; value: string }> {
+    return LOAN_LIFECYCLE_STAGES.map((stage) => ({
+      label: stage.fieldLabel,
+      value: this.formatDate(this.getLifecycleStageDate(stage.status))
+    }));
+  }
   
   statusOptions = [
-    { value: 'PENDING', label: 'Pending', color: '#ffc107' },
-    { value: 'APPROVED', label: 'Approved', color: '#4f7cff' },
-    { value: 'REJECTED', label: 'Rejected', color: '#dc3545' },
-    { value: 'ACTIVE', label: 'Active', color: '#17a2b8' },
-    { value: 'COMPLETED', label: 'Completed', color: '#6c757d' }
-  ];
+    ...LOAN_LIFECYCLE_STAGES,
+    { status: 'REJECTED' as LoanApplication['status'], value: 'REJECTED', label: 'Rejected', color: '#dc3545', notes: 'Loan rejected', fieldLabel: 'Rejected On' }
+  ].map((stage) => ({ value: stage.status, label: stage.label, color: stage.color }));
 
   constructor(
     private location: Location,
@@ -68,6 +97,8 @@ export class LoanDetailsComponent implements OnInit {
     this.commentForm = this.fb.group({
       comment: ['', Validators.required],
       interestRate: [0, [Validators.min(0), Validators.max(100)]],
+      lateFeePercentage: [2, [Validators.required, Validators.min(0), Validators.max(100)]],
+      lateFeeGracePeriodDays: [15, [Validators.required, Validators.min(0), Validators.max(365)]],
       repaymentDay: [15, [Validators.required, Validators.min(1), Validators.max(31)]]
     });
   }
@@ -87,6 +118,14 @@ export class LoanDetailsComponent implements OnInit {
 
   get interestRateControl(): FormControl {
     return this.commentForm.get('interestRate') as FormControl;
+  }
+
+  get lateFeePercentageControl(): FormControl {
+    return this.commentForm.get('lateFeePercentage') as FormControl;
+  }
+
+  get lateFeeGracePeriodDaysControl(): FormControl {
+    return this.commentForm.get('lateFeeGracePeriodDays') as FormControl;
   }
 
   get repaymentDayControl(): FormControl {
@@ -132,59 +171,20 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   private buildStatusTimeline(loan: LoanApplication): StatusChange[] {
-    const timeline = [...(loan.statusHistory || [])];
-    const requestDate = this.normalizeDate(loan.requestDate);
-    const approvedDate = this.normalizeDate(loan.approvedDate);
-    const rejectedDate = this.normalizeDate(loan.rejectedDate);
-    const disbursedDate = this.normalizeDate(loan.disbursedDate);
-    const completedDate = this.normalizeDate(loan.completedDate);
+    const timeline = [...(loan.statusHistory || [])]
+      .map((item) => ({ ...item, status: this.normalizeStatus(item.status) || 'PENDING' as LoanApplication['status'] }))
+      .filter((item) => !!this.normalizeDate(item.changedAt));
 
-    if (requestDate) {
-      timeline.push({
-        status: 'PENDING',
-        changedAt: requestDate,
-        changedBy: resolveLoanEmployeeName(loan),
-        notes: 'Loan application submitted'
-      });
-    }
+    this.buildDerivedLifecycleEntries(loan).forEach((entry) => {
+      const duplicateIndex = timeline.findIndex((item) =>
+        item.status === entry.status && this.normalizeDate(item.changedAt) === this.normalizeDate(entry.changedAt)
+      );
+      if (duplicateIndex < 0) {
+        timeline.push(entry);
+      }
+    });
 
-    if (approvedDate) {
-      timeline.push({
-        status: 'APPROVED',
-        changedAt: approvedDate,
-        changedBy: this.formatHistoryActor(loan.approvedBy),
-        notes: loan.adminComment || 'Loan approved'
-      });
-    }
-
-    if (rejectedDate) {
-      timeline.push({
-        status: 'REJECTED',
-        changedAt: rejectedDate,
-        changedBy: this.formatHistoryActor(loan.rejectedBy),
-        notes: loan.adminComment || 'Loan rejected'
-      });
-    }
-
-    if (disbursedDate) {
-      timeline.push({
-        status: 'ACTIVE',
-        changedAt: disbursedDate,
-        changedBy: this.formatHistoryActor(loan.disbursedBy),
-        notes: 'Loan disbursed'
-      });
-    }
-
-    if (completedDate) {
-      timeline.push({
-        status: 'COMPLETED',
-        changedAt: completedDate,
-        changedBy: resolveCompletedLoanActor(loan),
-        notes: 'Loan completed'
-      });
-    }
-
-    return timeline.sort((left, right) => 
+    return timeline.sort((left, right) =>
       new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime()
     );
   }
@@ -209,7 +209,7 @@ export class LoanDetailsComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     const statusOption = this.statusOptions.find(option => option.value === status);
-    return statusOption ? statusOption.label : 'Unknown';
+    return statusOption ? statusOption.label : this.toTitleCase(String(status || '').replace(/_/g, ' ').replace(/-/g, ' ')) || 'Unknown';
   }
 
   formatDate(date: string): string {
@@ -225,8 +225,7 @@ export class LoanDetailsComponent implements OnInit {
 
   // Format repayment day with ordinal suffix (1st, 2nd, 3rd, etc.)
   formatRepaymentDay(day: number | undefined): string {
-    if (!day) return 'N/A';
-    return `${day}${this.getDayOrdinal(day)}`;
+    return formatLoanRepaymentDayDisplay(day);
   }
 
   // Get ordinal suffix for a number
@@ -254,19 +253,45 @@ export class LoanDetailsComponent implements OnInit {
   // Get displayed repayment start date from loan
   getDisplayedRepaymentStartDate(loan: LoanApplication | null): string {
     if (!loan) return 'N/A';
-    return this.formatRepaymentStartDate(
-      loan.repaymentStartDate ||
-      loan.repaymentSchedule?.[0]?.dueDate
-    );
+    return this.formatRepaymentStartDate(loan.repaymentStartDate);
+  }
+
+  getDisplayedRepaymentDay(loan: LoanApplication | null): string {
+    return this.formatRepaymentDay(loan?.repaymentDay);
+  }
+
+  getLifecycleStageDate(status: LoanApplication['status']): string {
+    if (!this.loan) return '';
+
+    switch (status) {
+      case 'PENDING':
+        return this.loan.requestDate || this.getStatusHistoryByStatus('PENDING')?.changedAt || '';
+      case 'APPROVED':
+        return this.loan.approvedDate || this.getStatusHistoryByStatus('APPROVED')?.changedAt || '';
+      case 'ACTIVE':
+        return this.loan.disbursedDate || this.getStatusHistoryByStatus('ACTIVE')?.changedAt || '';
+      case 'COMPLETED':
+        return this.loan.completedDate || this.getStatusHistoryByStatus('COMPLETED')?.changedAt || '';
+      case 'REJECTED':
+        return this.loan.rejectedDate || this.getStatusHistoryByStatus('REJECTED')?.changedAt || '';
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+      case 'READY_FOR_DISBURSEMENT':
+      default:
+        return this.getStatusHistoryByStatus(status)?.changedAt || '';
+    }
   }
 
   openCommentModal(action: LoanApplication['status']): void {
     this.selectedAction = action;
     this.commentForm.reset();
     this.suggestedInterestRate = this.loan ? this.loanApprovalService.determineInterestRate(this.loan) : 0;
+    const currentInterestRate = Number(this.loan?.interestRate || this.suggestedInterestRate);
     
     this.commentForm.patchValue({
-      interestRate: action === 'APPROVED' ? this.suggestedInterestRate : this.loan?.interestRate ?? 0,
+      interestRate: action === 'APPROVED' ? currentInterestRate : this.loan?.interestRate ?? 0,
+      lateFeePercentage: this.loan?.lateFeePercentage ?? 2,
+      lateFeeGracePeriodDays: this.loan?.lateFeeGracePeriodDays ?? 15,
+      comment: '',
       repaymentDay: this.loan?.repaymentDay || 15
     });
 
@@ -294,6 +319,71 @@ export class LoanDetailsComponent implements OnInit {
     };
   }
 
+  canPauseLoan(): boolean {
+    return this.loan?.status === 'ACTIVE' || this.loan?.status === 'SKIPPED' || this.loan?.status === 'OVERDUE';
+  }
+
+  canRestoreActiveLoan(): boolean {
+    return this.loan?.status === 'PAUSED'
+      || this.loan?.status === 'DEFAULTED'
+      || this.loan?.status === 'OVERDUE'
+      || this.loan?.status === 'SKIPPED';
+  }
+
+  openOverrideModal(targetStatus: 'ACTIVE' | 'PAUSED'): void {
+    this.overrideTargetStatus = targetStatus;
+    this.overrideReason = '';
+    this.showOverrideModal = true;
+  }
+
+  closeOverrideModal(): void {
+    this.showOverrideModal = false;
+    this.overrideReason = '';
+  }
+
+  submitOverrideStatusChange(): void {
+    if (!this.loan) {
+      return;
+    }
+
+    if (!this.overrideReason.trim()) {
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Reason Required',
+        detail: 'Please provide a reason for overriding the loan status.'
+      }];
+      return;
+    }
+
+    this.loanApprovalService.overrideLoanStatus(this.loan.id, this.overrideTargetStatus, this.overrideReason.trim()).subscribe({
+      next: () => {
+        this.messages = [{
+          severity: 'success',
+          summary: 'Status Overridden',
+          detail: `Loan status changed to ${this.getStatusLabel(this.overrideTargetStatus)}.`
+        }];
+        this.closeOverrideModal();
+        this.loadLoanDetails();
+      },
+      error: (error) => {
+        console.error('Error overriding loan status:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Override Failed',
+          detail: this.errorMessageService.getUserMessage(error, 'Failed to override loan status.')
+        }];
+      }
+    });
+  }
+
+  getOverrideModalTitle(): string {
+    return this.overrideTargetStatus === 'PAUSED' ? 'Pause Loan' : 'Restore Active Status';
+  }
+
+  getOverrideSubmitLabel(): string {
+    return this.overrideTargetStatus === 'PAUSED' ? 'Pause Loan' : 'Set Active';
+  }
+
   onInterestRateInput(): void {
     if (this.selectedAction !== 'APPROVED') {
       return;
@@ -311,8 +401,10 @@ export class LoanDetailsComponent implements OnInit {
       return;
     }
 
-    if (this.selectedAction === 'APPROVED' && (this.interestRateControl.invalid || this.repaymentDayControl.invalid)) {
+    if (this.selectedAction === 'APPROVED' && (this.interestRateControl.invalid || this.lateFeePercentageControl.invalid || this.lateFeeGracePeriodDaysControl.invalid || this.repaymentDayControl.invalid)) {
       this.interestRateControl.markAsTouched();
+      this.lateFeePercentageControl.markAsTouched();
+      this.lateFeeGracePeriodDaysControl.markAsTouched();
       this.repaymentDayControl.markAsTouched();
       return;
     }
@@ -329,13 +421,18 @@ export class LoanDetailsComponent implements OnInit {
 
     if (this.selectedAction === 'APPROVED') {
       const repaymentDay = this.commentForm.value.repaymentDay;
+      const repaymentStartDate = normalizeLoanRepaymentStartDate(this.loan.repaymentStartDate);
+      const lateFeePercentage = Number(this.commentForm.value.lateFeePercentage ?? 2);
+      const lateFeeGracePeriodDays = Number(this.commentForm.value.lateFeeGracePeriodDays ?? 15);
       
       this.loanApprovalService.approveLoan(
         this.loan.id, 
         statusUpdate.notes, 
         statusUpdate.interestRate, 
-        undefined, 
-        repaymentDay
+        repaymentStartDate, 
+        repaymentDay,
+        lateFeePercentage,
+        lateFeeGracePeriodDays
       ).subscribe({
         next: () => {
           this.messages = [{
@@ -382,6 +479,50 @@ export class LoanDetailsComponent implements OnInit {
 
   approveLoan(): void {
     this.openCommentModal('APPROVED');
+  }
+
+  getRepaymentDaySuggestion(): string {
+    const repaymentStartDate = normalizeLoanRepaymentStartDate(this.loan?.repaymentStartDate);
+    if (!repaymentStartDate) {
+      return 'Suggestion: use the same day of month as the employee selected for their repayment start date.';
+    }
+
+    const date = new Date(repaymentStartDate);
+    const suggestedDay = date.getDate();
+    const monthYear = date.toLocaleDateString('en-NG', {
+      month: 'long',
+      year: 'numeric'
+    });
+    const firstInstallmentDate = date.toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const selectedDay = Number(this.commentForm.value.repaymentDay || suggestedDay);
+
+    return `Suggestion: use ${suggestedDay} so repayments after ${monthYear} stay on the ${suggestedDay}${this.getDayOrdinal(suggestedDay)} of each month. You can still choose ${selectedDay}; the first installment will remain ${firstInstallmentDate}.`;
+  }
+
+  getEmployeeInterestRejectionComment(): string {
+    if (!this.loan || this.loan.status !== 'AWAITING_INTEREST_ACCEPTANCE') {
+      return '';
+    }
+
+    const timelineComment = [...(this.loan.statusHistory || [])]
+      .filter((entry) => entry.status === 'AWAITING_INTEREST_ACCEPTANCE' && !!entry.notes?.trim())
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())
+      .map((entry) => this.extractEmployeeInterestRejectionReason(entry.notes || ''))
+      .find(Boolean);
+
+    if (timelineComment) {
+      return timelineComment;
+    }
+
+    if (this.loan.interestAgreement?.status === 'DECLINED' && this.loan.interestAgreement.notes) {
+      return this.extractEmployeeInterestRejectionReason(this.loan.interestAgreement.notes);
+    }
+
+    return this.extractEmployeeInterestRejectionReason(this.loan.adminComment || '');
   }
   
   rejectLoan(): void {
@@ -463,6 +604,81 @@ export class LoanDetailsComponent implements OnInit {
       .filter(Boolean)
       .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
       .join(' ');
+  }
+
+  private extractEmployeeInterestRejectionReason(note: string): string {
+    const trimmedNote = String(note || '').trim();
+    if (!trimmedNote) {
+      return '';
+    }
+
+    const matchedReason = trimmedNote.match(/Employee rejected proposed interest rate\. Reason:\s*(.+?)(?:\.\s*Admin review required.*)?$/i);
+    if (matchedReason?.[1]) {
+      return matchedReason[1].trim();
+    }
+
+    if (/declined|rejected/i.test(trimmedNote)) {
+      return trimmedNote;
+    }
+
+    return '';
+  }
+
+  private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
+    const normalizedStatus = String(status || '').trim().toUpperCase();
+    if (normalizedStatus === 'READY-FOR-DISBURSEMENT') {
+      return 'READY_FOR_DISBURSEMENT';
+    }
+    const validStatuses: LoanApplication['status'][] = ['PENDING', 'AWAITING_INTEREST_ACCEPTANCE', 'APPROVED', 'READY_FOR_DISBURSEMENT', 'REJECTED', 'ACTIVE', 'COMPLETED'];
+    return validStatuses.includes(normalizedStatus as LoanApplication['status']) ? normalizedStatus as LoanApplication['status'] : null;
+  }
+
+  private getStatusHistoryByStatus(status: LoanApplication['status']): StatusChange | null {
+    const entries = this.statusTimeline
+      .filter((item) => item.status === status)
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
+    return entries[0] ?? null;
+  }
+
+  private buildDerivedLifecycleEntries(loan: LoanApplication): StatusChange[] {
+    const entries: StatusChange[] = [];
+    const includeApprovedEntry = loan.status !== 'AWAITING_INTEREST_ACCEPTANCE';
+    const stageEntries: Array<StatusChange | null> = [
+      this.buildLifecycleEntry('PENDING', loan.requestDate, resolveLoanEmployeeName(loan), 'Loan application submitted'),
+      includeApprovedEntry
+        ? this.buildLifecycleEntry('APPROVED', loan.approvedDate, this.formatHistoryActor(loan.approvedBy), loan.adminComment || 'Loan approved')
+        : null,
+      this.buildLifecycleEntry('ACTIVE', loan.disbursedDate, this.formatHistoryActor(loan.disbursedBy), 'Loan disbursed'),
+      this.buildLifecycleEntry('COMPLETED', loan.completedDate, resolveCompletedLoanActor(loan), 'Loan completed'),
+      this.buildLifecycleEntry('REJECTED', loan.rejectedDate, this.formatHistoryActor(loan.rejectedBy), loan.adminComment || 'Loan rejected')
+    ];
+
+    stageEntries.forEach((entry) => {
+      if (entry) {
+        entries.push(entry);
+      }
+    });
+
+    return entries;
+  }
+
+  private buildLifecycleEntry(
+    status: LoanApplication['status'],
+    changedAt: string | undefined,
+    changedBy: string,
+    notes: string
+  ): StatusChange | null {
+    const normalizedChangedAt = this.normalizeDate(changedAt);
+    if (!normalizedChangedAt) {
+      return null;
+    }
+
+    return {
+      status,
+      changedAt: normalizedChangedAt,
+      changedBy,
+      notes
+    };
   }
 
   private updateApprovalPreview(interestRate: number): void {

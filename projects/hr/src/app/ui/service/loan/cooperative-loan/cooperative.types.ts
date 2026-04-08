@@ -6,9 +6,13 @@ export interface CooperativeMember {
   email: string;
   phone: string;
   joinDate: string;
+  monthlySalary?: number;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   shareCapital: number;
   address?: string;
+  cooperativeGroup?: any[];
+  contributionHistory?: any[];
+  loanHistory?: any[];
   emergencyContact?: {
     name: string;
     phone: string;
@@ -20,6 +24,7 @@ export interface CooperativeMember {
 
 export interface CooperativeLoanGroup {
   id: number;
+  code?: string;
   name: string;
   description: string;
   minEligibleSalary?: number;
@@ -37,6 +42,22 @@ export interface CooperativeLoanGroup {
   quickDisbursement?: boolean;
   patronageEligible: boolean;
   patronageRate: number;
+  patronageAmount?: number;
+  memberLimit?: number;
+  withdrawCap?: number;
+  currentBalance?: number;
+  contributionsBankName: string;
+  contributionsAccount: string;
+  principalBankName: string;
+  principalCollectionAccount: string;
+  interestBankName: string;
+  interestCollectionAccount: string;
+  lateFeePercentage?: number;
+  lateFeeGraceDays?: number;
+  lateFeeBankName: string;
+  lateFeeCollectionAccount: string;
+  accountingEmail?: string;
+  accountingWebhookUrl?: string;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -44,15 +65,59 @@ export interface CooperativeGroupMembership {
   id: number;
   memberId: number;
   groupId: number;
-  status: 'PENDING' | 'ACTIVE' | 'REJECTED';
+  membershipId?: number;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE';
   monthlyContributionAmount: number;
   totalContribution: number;
   joinedAt: string;
   requestedAt?: string;
+  approvedAt?: string;
+  activatedAt?: string;
+  rejectedAt?: string;
+  inactiveAt?: string;
   reviewedAt?: string;
+  reviewedBy?: number;
   reviewNote?: string;
   rejectionReason?: string;
+  lastContributionAmount?: number;
   lastContributionDate?: string;
+  expectedContributionDay?: number;
+  membershipHistory?: CooperativeGroupMembershipHistory[];
+}
+
+export interface CooperativeGroupMembershipHistory {
+  id: number;
+  membershipId: number;
+  groupId: number;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE';
+  changedAt: string;
+  changedBy?: number;
+  notes?: string;
+}
+
+export type CooperativeContributionPaymentMethod =
+  | 'BANK_TRANSFER'
+  | 'CARD'
+  | 'CASH'
+  | 'PAYROLL_DEDUCTION'
+  | 'MOBILE_MONEY';
+
+export type CooperativeContributionRequestStatus = 'PENDING_CONFIRMATION' | 'CONFIRMED';
+
+export interface CooperativePendingContributionRequest {
+  id: number;
+  membershipId: number;
+  memberId: number;
+  groupId: number;
+  amount: number;
+  contributionMonth: string;
+  requestedAt: string;
+  paymentMethod: CooperativeContributionPaymentMethod;
+  accountingEmail: string;
+  contributionsBankName: string;
+  contributionsAccount: string;
+  status: CooperativeContributionRequestStatus;
+  confirmedAt?: string;
 }
 
 export interface CooperativeContributionEntry {
@@ -64,6 +129,9 @@ export interface CooperativeContributionEntry {
   contributionMonth: string;
   contributedAt: string;
   status: 'POSTED';
+  paymentMethod?: CooperativeContributionPaymentMethod;
+  paymentRecordId?: number;
+  postedBy?: number;
 }
 
 export interface CooperativeGroupInviteHistoryEntry {

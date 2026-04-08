@@ -216,7 +216,9 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     forkJoin({
       groups: this.cooperativeService.loadGroups(),
       loans: this.cooperativeService.getLoans(),
-      members: this.cooperativeService.getMembers()
+      members: this.cooperativeService.getMembers(),
+      memberships: this.cooperativeService.loadGroupMemberships(),
+      contributions: this.cooperativeService.loadContributionEntries()
     }).subscribe(({ groups, loans, members }: { groups: any; loans: CooperativeLoan[]; members: CooperativeMember[] }) => {
       // Groups
       // (groups are loaded for side effects, no assignment needed here)
@@ -263,6 +265,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     return this.cooperativeService.getGroupMemberships().filter((item: CooperativeGroupMembership) => item.status === 'PENDING').length;
   }
 
+  get activeGroupsCount(): number {
+    return this.cooperativeService.getGroups().filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE').length;
+  }
+
   get isAllInviteCandidatesSelected(): boolean {
     return this.inviteCandidates.length > 0 && this.selectedInviteEmployeeIds.size === this.inviteCandidates.length;
   }
@@ -280,11 +286,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     if (latestLoan) {
       const memberId = this.getLoanMemberId(latestLoan);
       const groupId = this.getLoanGroupId(latestLoan);
-      const member = memberId ? memberMap.get(Number(memberId)) : undefined;
       const group = groupId ? this.cooperativeService.getGroupById(Number(groupId)) : undefined;
       activities.push({
         icon: 'fas fa-file-signature',
-        message: `${member?.fullName || 'A member'} applied for ${this.formatCurrency(latestLoan.amount)} (${group?.name || 'Loan'})`,
+        message: `${this.cooperativeService.getMemberDisplayName(memberId)} applied for ${this.formatCurrency(latestLoan.amount)} (${group?.name || 'Loan'})`,
         time: this.getRelativeTime(latestLoan.requestDate)
       });
     }
@@ -301,10 +306,9 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const activeLoan = this.allLoans.find(loan => loan.status === 'ACTIVE');
     if (activeLoan) {
       const memberId = this.getLoanMemberId(activeLoan);
-      const member = memberId ? memberMap.get(Number(memberId)) : undefined;
       activities.push({
         icon: 'fas fa-money-check-alt',
-        message: `${member?.fullName || 'A member'} made payment of ${this.formatCurrency(activeLoan.repaymentAmount || activeLoan.repaymentAmount || 0)}`,
+        message: `${this.cooperativeService.getMemberDisplayName(memberId)} made payment of ${this.formatCurrency(activeLoan.repaymentAmount || activeLoan.repaymentAmount || 0)}`,
         time: '5h ago'
       });
     }
@@ -456,14 +460,20 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   approveGroupJoinApplication(id: number, note = ''): void {
-    const membership = this.cooperativeGroupService.approveGroupMembership(this.cooperativeGroupContext, id, note);
-    if (!membership) {
-      this.groupJoinActionMessage = 'Unable to approve the selected group join request.';
-      return;
-    }
-    const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
-    this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} has been approved to join ${groupName}.`;
-    this.loadDashboard();
+    this.cooperativeService.approveGroupMembership(id, note).subscribe({
+      next: (membership) => {
+        if (!membership) {
+          this.groupJoinActionMessage = 'Unable to approve the selected group join request.';
+          return;
+        }
+        const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
+        this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} has been approved to join ${groupName}.`;
+        this.loadDashboard();
+      },
+      error: () => {
+        this.groupJoinActionMessage = 'Unable to approve the selected group join request.';
+      }
+    });
   }
 
   rejectGroupJoinApplication(id: number, reason: string): void {
@@ -472,14 +482,20 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       this.groupJoinActionMessage = 'A rejection reason is required.';
       return;
     }
-    const membership = this.cooperativeGroupService.rejectGroupMembership(this.cooperativeGroupContext, id, trimmedReason);
-    if (!membership) {
-      this.groupJoinActionMessage = 'Unable to reject the selected group join request.';
-      return;
-    }
-    const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
-    this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} was not approved to join ${groupName}.`;
-    this.loadDashboard();
+    this.cooperativeService.rejectGroupMembership(id, trimmedReason).subscribe({
+      next: (membership) => {
+        if (!membership) {
+          this.groupJoinActionMessage = 'Unable to reject the selected group join request.';
+          return;
+        }
+        const groupName = this.cooperativeGroupContext.groups.find(g => g.id === membership.groupId)?.name || 'the selected group';
+        this.groupJoinActionMessage = `${this.getMemberName(membership.memberId)} was not approved to join ${groupName}.`;
+        this.loadDashboard();
+      },
+      error: () => {
+        this.groupJoinActionMessage = 'Unable to reject the selected group join request.';
+      }
+    });
   }
 
   viewLoan(id: number | undefined | null): void {
@@ -551,6 +567,18 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   manageLoans(): void {
     this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
+  }
+
+  openPurposeManagement(): void {
+    this.router.navigate(['/admin/hr/cooperative/loan-purposes', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
+  }
+
+  openGracePeriodRequests(): void {
+    this.router.navigate(['/admin/hr/cooperative/grace-period-requests', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -794,10 +822,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getMemberName(memberId: number | undefined): string {
-    if (memberId === undefined || memberId === null) {
-      return 'Unknown member';
-    }
-    return this.allMembers.find(member => member.id === memberId || member.memberId === memberId)?.fullName || memberId.toString();
+    return this.cooperativeService.getMemberDisplayName(memberId);
   }
 
   private getLoanMemberId(loan: CooperativeLoan): number {
@@ -835,14 +860,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeGroupContext.groups.map((group: CooperativeLoanGroup) => [group.id, group]));
 
     this.recentGroupJoinApplications = this.cooperativeGroupService.getGroupMemberships(this.cooperativeGroupContext)
+      .filter((membership: CooperativeGroupMembership) => membership.status === 'PENDING')
       .map((membership: CooperativeGroupMembership) => {
-        const member = memberMap.get(membership.memberId);
+        const member = memberMap.get(membership.memberId) || this.cooperativeService.getMemberById(membership.memberId);
         const group = groupMap.get(membership.groupId);
 
         return {
           id: membership.id,
           memberId: membership.memberId,
-          memberName: member?.fullName || 'Unknown member',
+          memberName: this.cooperativeService.getMemberDisplayName(membership.memberId),
           memberCode: member?.memberId || membership.memberId,
           groupId: membership.groupId,
           groupName: group?.name || 'Unknown group',

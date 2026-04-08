@@ -4,19 +4,19 @@
   <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="cooperative-loan-form">
     <div class="application-header lm-header-card" *ngIf="!isModal">
       <div class="header-copy">
-        <h1><i class="fas fa-hand-holding-usd"></i> Cooperative Loan Application</h1>
+        <h1><i class="fas fa-hand-holding-dollar"></i> Cooperative Loan Application</h1>
         <p class="confidential">Complete the request with the required details for cooperative loan processing.</p>
         <div class="header-meta" *ngIf="selectedMember">
           <span class="meta-chip" *ngIf="selectedMember.fullName"><i class="fas fa-user"></i> {{ selectedMember.fullName }}</span>
           <span class="meta-chip" *ngIf="selectedMember.memberId"><i class="fas fa-id-card"></i> Member ID: {{ selectedMember.memberId }}</span>
-          <span class="meta-chip" *ngIf="selectedMember.email"><i class="fas fa-envelope"></i> {{ selectedMember.email }}</span>
-          <span class="meta-chip" *ngIf="selectedMember.shareCapital"><i class="fas fa-chart-line"></i> Shares: {{ formatCurrency(selectedMember.shareCapital) }}</span>
+          <span class="meta-chip" *ngIf="getSelectedMemberEmail()"><i class="fas fa-envelope"></i> {{ getSelectedMemberEmail() }}</span>
+          <span class="meta-chip" *ngIf="selectedMemberSalary > 0"><i class="fas fa-wallet"></i> Salary: {{ formatCurrency(selectedMemberSalary) }}</span>
         </div>
       </div>
     </div>
 
     <div class="compact-intro" *ngIf="isModal">
-      <h1><i class="fas fa-hand-holding-usd"></i> New Cooperative Loan Request</h1>
+      <h1><i class="fas fa-hand-holding-dollar"></i> New Cooperative Loan Request</h1>
       <p>Fill in the details below to submit your cooperative loan request.</p>
     </div>
 
@@ -46,8 +46,8 @@
               <span class="detail-value">{{ getSelectedMemberEmail() }}</span>
             </div>
             <div class="member-detail">
-              <span class="detail-label">Available Shares</span>
-              <span class="detail-value">{{ formatCurrency(selectedMember.shareCapital) }}</span>
+              <span class="detail-label">Monthly Salary</span>
+              <span class="detail-value">{{ formatCurrency(selectedMemberSalary) }}</span>
             </div>
             <div class="member-detail">
               <span class="detail-label">Membership Tenure</span>
@@ -80,10 +80,6 @@
           </div>
           <p class="group-description">{{ selectedGroup.description }}</p>
           <div class="group-details-grid">
-            <div class="group-detail">
-              <span class="detail-label">Loan Range</span>
-              <span class="detail-value">{{ formatCurrency(selectedGroup.minAmount) }} - {{ formatCurrency(selectedGroup.maxAmount) }}</span>
-            </div>
             <div class="group-detail">
               <span class="detail-label">Duration Range</span>
               <span class="detail-value">{{ selectedGroup.minDuration }} - {{ selectedGroup.maxDuration }} months</span>
@@ -125,35 +121,61 @@
           <div class="form-group">
             <label>Loan Amount (₦) <span class="required">*</span></label>
             <input type="number" formControlName="amount" class="form-input" placeholder="e.g., 100000" min="1000">
-            <div class="field-hint" *ngIf="selectedGroup">
-              Min: {{ formatCurrency(selectedGroup.minAmount) }} | Max: {{ formatCurrency(selectedGroup.maxAmount) }}
-            </div>
             <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
               <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Loan amount is required</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum amount is {{ formatCurrency(selectedGroup?.minAmount || 0) }}</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['max']">Maximum amount is {{ formatCurrency(selectedGroup?.maxAmount || 0) }}</span>
+              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum amount is {{ formatCurrency(1000) }}</span>
               <span *ngIf="applicationForm.get('amount')?.errors?.['shareLimit']">For share-backed loans, amount cannot exceed member share capital.</span>
             </div>
           </div>
 
           <div class="form-group">
-            <label>Duration (Months) <span class="required">*</span></label>
-            <input type="number" formControlName="duration" class="form-input" placeholder="e.g., 12" min="1">
+            <label>Repayment Time (Months) <span class="required">*</span></label>
+            <input type="number" formControlName="repaymentTime" class="form-input" placeholder="e.g., 12" min="1">
             <div class="field-hint" *ngIf="selectedGroup">
               Range: {{ selectedGroup.minDuration }} - {{ selectedGroup.maxDuration }} months
             </div>
-            <div class="error" *ngIf="applicationForm.get('duration')?.invalid && applicationForm.get('duration')?.touched">
-              <span *ngIf="applicationForm.get('duration')?.errors?.['required']">Duration is required</span>
-              <span *ngIf="applicationForm.get('duration')?.errors?.['min']">Minimum {{ selectedGroup?.minDuration }} months</span>
-              <span *ngIf="applicationForm.get('duration')?.errors?.['max']">Maximum {{ selectedGroup?.maxDuration }} months</span>
+            <div class="error" *ngIf="applicationForm.get('repaymentTime')?.invalid && applicationForm.get('repaymentTime')?.touched">
+              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['required']">Repayment time is required</span>
+              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['min']">Minimum {{ selectedGroup?.minDuration }} months</span>
+              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['max']">Maximum {{ selectedGroup?.maxDuration }} months</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Mode Of Payment <span class="required">*</span></label>
+            <select formControlName="modeOfPayment" class="form-select">
+              <option value="MONTHLY">MONTHLY</option>
+              <option value="ONE_OFF">ONE_OFF</option>
+            </select>
+            <div class="field-hint">Choose whether this loan will be repaid monthly or in a single payment.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Request Date <span class="required">*</span></label>
+            <input type="datetime-local" formControlName="requestDate" class="form-input">
+            <div class="field-hint">This will be sent to the backend as the loan request timestamp.</div>
+            <div class="error" *ngIf="applicationForm.get('requestDate')?.invalid && applicationForm.get('requestDate')?.touched">
+              Request date is required
             </div>
           </div>
 
           <div class="form-group purpose-group">
             <label>Loan Purpose <span class="required">*</span></label>
-            <textarea formControlName="purpose" rows="3" class="form-input" placeholder="Please specify your reason for borrowing..."></textarea>
+            <select formControlName="purpose" class="form-select">
+              <option value="">-- Select loan purpose --</option>
+              <option *ngFor="let purpose of availablePurposes" [value]="purpose.name">{{ purpose.name }}</option>
+            </select>
+            <div class="eligibility-note blocked" *ngIf="!hasAvailablePurposes">
+              <i class="fas fa-exclamation-triangle"></i> No active cooperative loan purposes are currently configured.
+            </div>
+            <div class="field-hint" *ngIf="selectedPurposeDefinition">
+              {{ selectedPurposeDefinition.description || selectedPurposeDefinition.code }}
+            </div>
             <div class="error" *ngIf="applicationForm.get('purpose')?.invalid && applicationForm.get('purpose')?.touched">
               Loan purpose is required
+            </div>
+            <div class="error" *ngIf="applicationForm.get('purpose')?.touched && hasAvailablePurposes && !selectedPurposeDefinition && applicationForm.get('purpose')?.value">
+              Select a valid cooperative loan purpose.
             </div>
           </div>
         </div>
@@ -166,7 +188,7 @@
         
         <div class="repayment-preview">
           <div class="preview-card">
-            <span class="preview-label">Monthly Payment</span>
+            <span class="preview-label">{{ applicationForm.get('modeOfPayment')?.value === 'ONE_OFF' ? 'One-off Payment' : 'Monthly Payment' }}</span>
             <span class="preview-value">{{ formatCurrency(repaymentAmount) }}</span>
           </div>
           <div class="preview-card">
@@ -271,7 +293,7 @@
             <li>Late payments may incur additional charges as per cooperative bylaws.</li>
             <li>Approval is conditional upon meeting all eligibility requirements.</li>
             <li *ngIf="selectedGroup?.requiresGuarantors">Guarantor approval is required before final admin review.</li>
-            <li *ngIf="selectedGroup?.requiresShares">Share-backed conditions apply for this loan type.</li>
+            <li *ngIf="selectedGroup?.minimumGuarantors">A minimum of {{ selectedGroup?.minimumGuarantors }} guarantor(s) must stay valid for this request.</li>
           </ul>
           
           <div class="checkbox-group">
@@ -351,7 +373,7 @@
 
           <div class="confirmation-card" *ngIf="selectedGroup">
             <span class="label">Policy Route</span>
-            <strong>{{ selectedGroup.requiresShares ? 'Share-backed conditions apply' : 'Standard cooperative policy' }}</strong>
+            <strong>{{ selectedGroup.requiresGuarantors ? 'Guarantor-backed review flow' : 'Standard cooperative policy' }}</strong>
             <small>{{ guarantorRequirementLabel || 'None' }}</small>
           </div>
         </div>

@@ -3,13 +3,15 @@ import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
-import { finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
 import { normalizeLoanRepaymentStartDate } from '../../../service/loan/loan-display.util';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
   selector: 'app-loan-request-form',
@@ -41,8 +43,61 @@ export class LoanRequestFormComponent implements OnInit {
   private loanApplicationService: LoanApplicationService,
   private errorMessageService: ErrorMessageService,
   private loanPurposeService: LoanPurposeService,
-  private employeeLoanService: EmployeeLoanService  
+  private employeeLoanService: EmployeeLoanService,
+  private employeeService: EmployeeService
 ) {}
+
+  private extractSalaryAmount(payload: any): number {
+    if (Array.isArray(payload)) {
+      return payload.reduce((highest, item) => Math.max(highest, this.extractSalaryAmount(item)), 0);
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return Number(payload || 0);
+    }
+
+    const directAmount = Number(
+      payload?.baseSalary
+      || payload?.monthlySalary
+      || payload?.salary
+      || payload?.grossSalary
+      || payload?.netSalary
+      || 0
+    );
+
+    if (directAmount > 0) {
+      return directAmount;
+    }
+
+    const nestedKeys = ['data', 'content', 'result', 'salaryDetails', 'salaryData', 'payload'];
+    for (const key of nestedKeys) {
+      if (payload[key] !== undefined) {
+        const nestedAmount = this.extractSalaryAmount(payload[key]);
+        if (nestedAmount > 0) {
+          return nestedAmount;
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  private resolveEmployeeIdCandidate(): number {
+    const candidates = [
+      this.employeeId,
+      sessionStorage.getItem('employeeId'),
+      localStorage.getItem('employeeId')
+    ];
+
+    for (const candidate of candidates) {
+      const value = Number(candidate || 0);
+      if (Number.isFinite(value) && value > 0) {
+        return value;
+      }
+    }
+
+    return 0;
+  }
 
 
   ngOnInit(): void {
@@ -60,6 +115,7 @@ export class LoanRequestFormComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
       repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(60)]], // Updated: min 1, max 60 months
       repaymentStartDate: ['', Validators.required],
+      repaymentDay: [{ value: '', disabled: true }],
       repaymentAmountAmount: [{ value: '', disabled: true }, [Validators.required]],
       modeOfPayment: [{ value: '', disabled: true }, Validators.required],
       acknowledgment: [false, Validators.requiredTrue]
@@ -96,6 +152,7 @@ export class LoanRequestFormComponent implements OnInit {
       }
 
       this.calculateRepaymentAmount();
+      this.syncRepaymentDayControl();
     });
 
     this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe((mode: string) => {
@@ -107,7 +164,50 @@ export class LoanRequestFormComponent implements OnInit {
       } else {
         this.calculateRepaymentAmount();
       }
+
+      this.syncRepaymentDayControl();
     });
+
+    this.loanRequestForm.get('repaymentStartDate')?.valueChanges.subscribe(() => {
+      this.syncRepaymentDayControl();
+    });
+  }
+
+  private syncRepaymentDayControl(): void {
+    const repaymentDayControl = this.loanRequestForm.get('repaymentDay');
+    const modeOfPayment = String(this.loanRequestForm.get('modeOfPayment')?.value || '').trim().toUpperCase();
+    const repaymentStartDate = normalizeLoanRepaymentStartDate(this.loanRequestForm.get('repaymentStartDate')?.value);
+
+    if (modeOfPayment === 'MONTHLY') {
+      repaymentDayControl?.enable({ emitEvent: false });
+      repaymentDayControl?.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
+
+      const currentValue = Number(repaymentDayControl?.value || 0);
+      if (!Number.isFinite(currentValue) || currentValue < 1 || currentValue > 31) {
+        repaymentDayControl?.setValue(this.deriveRepaymentDay(repaymentStartDate), { emitEvent: false });
+      }
+    } else {
+      repaymentDayControl?.reset('', { emitEvent: false });
+      repaymentDayControl?.clearValidators();
+      repaymentDayControl?.disable({ emitEvent: false });
+    }
+
+    repaymentDayControl?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private deriveRepaymentDay(repaymentStartDate: string): number | null {
+    const normalizedDate = normalizeLoanRepaymentStartDate(repaymentStartDate);
+    if (!normalizedDate) {
+      return null;
+    }
+
+    const parsedDate = new Date(normalizedDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    const derivedDay = parsedDate.getDate();
+    return derivedDay >= 1 && derivedDay <= 31 ? derivedDay : null;
   }
 
   updateAmountValidator(): void {
@@ -151,40 +251,65 @@ export class LoanRequestFormComponent implements OnInit {
   }
 
 loadEmployeeSalary(): void {
-  if (!this.employeeId) return;
-  
+  const fallbackEmployeeId = this.resolveEmployeeIdCandidate();
+  if (!fallbackEmployeeId) return;
+
   this.isLoadingSalary = true;
-  console.log('Loading salary for employee ID:', this.employeeId);
-  
-  // First, try to get the employee ID as number
-  const empId = Number(this.employeeId);
-  
-  this.employeeLoanService.getSalaryByEmployeeId(empId).subscribe({
-    next: (salaryData: any) => {
-      console.log('Salary API response:', salaryData);
-      
-      // The salary endpoint returns { baseSalary, allowance, deductions, etc. }
-      this.monthlySalary = salaryData?.baseSalary || 0;
-      
-      console.log('Monthly salary found:', this.monthlySalary);
-      this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
+  console.log('Loading salary for employee ID:', this.employeeId || fallbackEmployeeId);
+
+  this.employeeService.getCurrentEmployee().pipe(
+    map((employee: any) => {
+      const resolvedEmployeeId = Number(employee?.id || employee?.employeeId || fallbackEmployeeId || 0);
+      return {
+        resolvedEmployeeId,
+        employee
+      };
+    }),
+    catchError(() => of({
+      resolvedEmployeeId: fallbackEmployeeId,
+      employee: null
+    })),
+    switchMap(({ resolvedEmployeeId, employee }) => {
+      if (!resolvedEmployeeId) {
+        return of({ salary: 0, employee });
+      }
+
+      this.employeeId = String(resolvedEmployeeId);
+
+      return this.employeeLoanService.getSalaryByEmployeeId(resolvedEmployeeId).pipe(
+        map((salaryData: any) => ({
+          salary: this.extractSalaryAmount(salaryData),
+          employee
+        })),
+        catchError((salaryError: any) => {
+          console.error('Error loading salary:', salaryError);
+          return this.employeeLoanService.getEmployeeById(resolvedEmployeeId).pipe(
+            map((employeeFallback: any) => ({
+              salary: this.extractSalaryAmount(employeeFallback) || this.extractSalaryAmount(employee),
+              employee: employeeFallback || employee
+            })),
+            catchError((fallbackErr: any) => {
+              console.error('Fallback also failed:', fallbackErr);
+              return of({
+                salary: this.extractSalaryAmount(employee),
+                employee
+              });
+            })
+          );
+        })
+      );
+    }),
+    finalize(() => {
       this.isLoadingSalary = false;
-    },
-    error: (err: any) => {
-      console.error('Error loading salary:', err);
-      // Try to get from employee endpoint as fallback
-      this.employeeLoanService.getEmployeeById(empId).subscribe({
-        next: (employee: any) => {
-          console.log('Employee fallback data:', employee);
-          this.monthlySalary = employee?.monthlySalary || employee?.salary || 0;
-          this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
-          this.isLoadingSalary = false;
-        },
-        error: (fallbackErr: any) => {
-          console.error('Fallback also failed:', fallbackErr);
-          this.isLoadingSalary = false;
-        }
-      });
+    })
+  ).subscribe({
+    next: ({ salary, employee }) => {
+      this.monthlySalary = Number(salary || 0);
+      if (employee) {
+        this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
+      }
+      this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
+      console.log('Monthly salary found:', this.monthlySalary);
     }
   });
 }
@@ -223,6 +348,7 @@ loadEmployeeSalary(): void {
   get amount(): AbstractControl | null { return this.loanRequestForm.get('amount'); }
   get repaymentTime(): AbstractControl | null { return this.loanRequestForm.get('repaymentTime'); }
   get repaymentStartDate(): AbstractControl | null { return this.loanRequestForm.get('repaymentStartDate'); }
+  get repaymentDay(): AbstractControl | null { return this.loanRequestForm.get('repaymentDay'); }
   get repaymentAmountAmount(): AbstractControl | null { return this.loanRequestForm.get('repaymentAmountAmount'); }
   get modeOfPayment(): AbstractControl | null { return this.loanRequestForm.get('modeOfPayment'); }
   get acknowledgment(): AbstractControl | null { return this.loanRequestForm.get('acknowledgment'); }
@@ -267,18 +393,31 @@ loadEmployeeSalary(): void {
       this.isLoading = true;
 
       const selectedPurpose = this.loanPurposes.find(p => p.code === this.loanRequestForm.get('purpose')?.value);
+      const normalizedPurpose = String(
+        this.showOtherPurpose
+          ? this.loanRequestForm.get('otherPurpose')?.value
+          : (selectedPurpose?.name || this.loanRequestForm.get('purpose')?.value)
+      ).trim();
+      const normalizedPurposeCode = String(this.showOtherPurpose ? 'other' : this.loanRequestForm.get('purpose')?.value || '').trim();
+      const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(this.loanRequestForm.get('repaymentStartDate')?.value);
+      const normalizedModeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
+      const normalizedRepaymentDay = normalizedModeOfPayment === 'MONTHLY'
+        ? Number(this.loanRequestForm.get('repaymentDay')?.value || this.deriveRepaymentDay(normalizedRepaymentStartDate) || 0)
+        : undefined;
+      const repaymentDay = typeof normalizedRepaymentDay === 'number' && normalizedRepaymentDay > 0
+        ? normalizedRepaymentDay
+        : undefined;
       
       const formData: LoanApplicationFormData = {
-        purpose: this.showOtherPurpose 
-          ? this.loanRequestForm.get('otherPurpose')?.value 
-          : (selectedPurpose?.name || this.loanRequestForm.get('purpose')?.value),
-        purposeCode: this.showOtherPurpose ? 'other' : this.loanRequestForm.get('purpose')?.value,
+        purpose: normalizedPurpose,
+        purposeCode: normalizedPurposeCode,
         otherPurpose: this.loanRequestForm.get('otherPurpose')?.value,
         amount: parseFloat(this.loanRequestForm.get('amount')?.value),
         repaymentTime: parseInt(this.loanRequestForm.get('repaymentTime')?.value, 10),
-        repaymentStartDate: normalizeLoanRepaymentStartDate(this.loanRequestForm.get('repaymentStartDate')?.value),
+        repaymentStartDate: normalizedRepaymentStartDate,
+        repaymentDay,
         repaymentAmount: parseFloat(this.loanRequestForm.get('repaymentAmountAmount')?.value),
-        modeOfPayment: this.loanRequestForm.get('modeOfPayment')?.value,
+        modeOfPayment: normalizedModeOfPayment,
         acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
         supportingDocuments: this.supportingDocuments,
         requestDate: new Date().toISOString(),

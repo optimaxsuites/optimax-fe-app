@@ -10,7 +10,7 @@
                 <div class="summary-metrics">
                     <div class="metric-chip">
                         <span>Status</span>
-                        <strong>{{ loan.status }}</strong>
+                            <strong>{{ getStatusDisplay(loan.status) }}</strong>
                     </div>
                     <div class="metric-chip">
                         <span>Amount</span>
@@ -63,21 +63,13 @@
                         </div>
                     </div>
                     <div class="detail-list">
-                        <div class="detail-row">
-                            <span class="row-label">Applied On</span>
-                            <span class="row-value">{{ getPreviewAppliedDate(loan) ? (getPreviewAppliedDate(loan) | date:'medium') : 'N/A' }}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="row-label">Approved On</span>
-                            <span class="row-value">{{ getPreviewApprovedDate(loan) ? (getPreviewApprovedDate(loan) | date:'medium') : 'N/A' }}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="row-label">Disbursed On</span>
-                            <span class="row-value">{{ getPreviewDisbursedDate(loan) ? (getPreviewDisbursedDate(loan) | date:'medium') : 'N/A' }}</span>
+                        <div class="detail-row" *ngFor="let field of getPreviewLifecycleStageFields(loan)">
+                            <span class="row-label">{{ field.label }}</span>
+                            <span class="row-value">{{ field.value }}</span>
                         </div>
                         <div class="detail-row status-row">
                             <span class="row-label">Current Status</span>
-                            <span class="status-chip" [ngClass]="getStatusClass(getPreviewDisplayedStatus(loan))">{{ getPreviewDisplayedStatus(loan) }}</span>
+                            <span class="status-chip" [ngClass]="getStatusClass(getPreviewDisplayedStatus(loan))">{{ getStatusDisplay(getPreviewDisplayedStatus(loan)) }}</span>
                         </div>
                         <div class="detail-row">
                             <span class="row-label">Interest Rate</span>
@@ -243,8 +235,7 @@
 
     <div>
         <header class="dashboard-header lm-header-card">
-            <div class="dashboard-title-group" style="display: flex; align-items: center; gap: 1rem;">
-                <!-- Only one instance of the dashboard title button is needed; removed duplicate -->
+            <div class="dashboard-title-group">
                 <div class="dashboard-switcher">
                     <button type="button" class="dashboard-title-link" (click)="navigateToCurrentDashboard()">
                         <i class="fas fa-hand-holding-dollar"></i> Advanced Loans Dashboard
@@ -270,36 +261,25 @@
             </div>
         </header>
 
-        <!-- Stats Cards with Icons -->
         <section class="stats-section">
-            <div class="stat-card" (click)="showActiveLoans()" style="cursor: pointer;">
-                <div class="card-icon active-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="card-content">
-                    <h3>Active Loans</h3> 
-                    <p class="stat-value">{{ dashboardStats.activeLoans }}</p>
-                </div>
-            </div>
-            <div class="stat-card" (click)="showPendingLoans()" style="cursor: pointer;">
-                <div class="card-icon pending-icon">
-                    <i class="fas fa-hourglass-half"></i>
-                </div>
-                <div class="card-content">
-                    <h3>Pending Applications</h3>  
-                    <p class="stat-value">{{ dashboardStats.pendingApplications }}</p>
-                </div>
-            </div>
-            <div class="stat-card"> 
-                <div class="card-icon balance-icon">
-                    <i class="fas fa-wallet"></i>
-                </div>
-                <div class="card-content">
-                    <h3>Total Balance</h3> 
-                    <p class="stat-value">
-                        ₦{{ dashboardStats.totalBalance | number:'1.2-2' }}
-                    </p> 
-                </div>
+            <div class="stats-primary-grid compact-admin-grid">
+                <button
+                    type="button"
+                    class="stat-card hero-card"
+                    *ngFor="let card of adminDashboardCards"
+                    [class.active]="activeFilter === card.filter"
+                    [class.balance-card]="card.accentClass === 'balance'"
+                    [attr.aria-pressed]="activeFilter === card.filter"
+                    (click)="setStatusFilter(card.filter)">
+                    <div class="card-icon" [ngClass]="card.accentClass + '-icon'">
+                        <i class="fas" [ngClass]="card.iconClass"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ card.title }}</h3>
+                        <p class="stat-value">{{ card.value }}</p>
+                        <span class="card-note">{{ card.note }}</span>
+                    </div>
+                </button>
             </div>
         </section>
 
@@ -318,20 +298,30 @@
                         <i class="fas fa-file-invoice"></i>
                         Recent Loan Applications
                     </h2>
-                    <span class="loan-count">Showing {{ filteredLoans.length }} most recent of {{ totalFilteredLoans }} applications</span>
+                    <span class="loan-count">Showing {{ filteredLoans.length }} most recent of {{ totalFilteredLoans }} {{ getDisplayedSubsetLabel() }} applications</span>
                 </div>
 
-                                <!-- Loading Spinner -->
-                                <div class="loading-spinner" *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
-                                    <mat-spinner diameter="48"></mat-spinner>
-                                </div>
+                <div class="table-loading-state" *ngIf="isLoading">
+                    <div class="spiral-loader" aria-hidden="true">
+                        <span class="spiral-ring ring-one"></span>
+                        <span class="spiral-ring ring-two"></span>
+                        <span class="spiral-ring ring-three"></span>
+                        <span class="spiral-core"></span>
+                    </div>
+                    <div class="loading-copy">
+                        <strong>Retrieving loan applications</strong>
+                        <p>Please wait while the latest requests load.</p>
+                    </div>
+                </div>
 
-                                <div *ngIf="filteredLoans.length === 0 && !isLoading" class="empty-state">
-                                        <p>No loan applications found.</p>
-                                        <button class="btn-primary" (click)="showAllLoans()">View All Loans</button>
-                                </div>
+                <div *ngIf="filteredLoans.length === 0 && !isLoading" class="empty-state">
+                    <p>No loan applications found.</p>
+                    <button *ngIf="shouldShowViewLoansAction()" type="button" (click)="manageEmployeeAdvanceLoans()">
+                        View Loans
+                    </button>
+                </div>
 
-                                <div class="table-wrapper" *ngIf="filteredLoans.length > 0 && !isLoading">
+                <div class="table-wrapper" *ngIf="filteredLoans.length > 0 && !isLoading">
                     <table appSortableTable class="loan-table"> 
                         <thead>
                             <tr>
@@ -358,7 +348,7 @@
                                 <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
                                 <td>                    
                                     <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
-                                        {{ loan.status }}
+                                        {{ getStatusDisplay(loan.status) }}
                                     </span>
                                 </td>
                                 <td>{{ loan.requestDate | date:'mediumDate' }}</td>
@@ -404,18 +394,31 @@
                         </span>
                     </div>
 
-                                        <div
-                                            class="command-pill"
-                                            role="button"
-                                            tabindex="0"
-                                            (click)="openPurposeManagement()"
-                                            (keydown.enter)="openPurposeManagement()">
-                                            <span class="command-icon"><i class="fas fa-tags"></i></span>
-                                            <span class="command-copy">
-                                                <strong>Manage Loan Purposes</strong>
-                                                <small>Create or manage loan purposes</small>
-                                            </span>
-                                        </div>
+                    <div
+                        class="command-pill"
+                        role="button"
+                        tabindex="0"
+                        (click)="openPurposeManagement()"
+                        (keydown.enter)="openPurposeManagement()">
+                        <span class="command-icon"><i class="fas fa-tags"></i></span>
+                        <span class="command-copy">
+                            <strong>Manage Loan Purposes</strong>
+                            <small>Create or manage loan purposes</small>
+                        </span>
+                    </div>
+
+                    <div
+                        class="command-pill"
+                        role="button"
+                        tabindex="0"
+                        (click)="openGracePeriodRequests()"
+                        (keydown.enter)="openGracePeriodRequests()">
+                        <span class="command-icon"><i class="fas fa-hourglass-half"></i></span>
+                        <span class="command-copy">
+                            <strong>Grace Period Requests</strong>
+                            <small>Review extension requests from employees</small>
+                        </span>
+                    </div>
 
                     <div
                         class="command-pill"

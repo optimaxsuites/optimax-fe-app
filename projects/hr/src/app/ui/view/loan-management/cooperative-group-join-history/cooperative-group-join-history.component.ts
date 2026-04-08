@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import {
@@ -78,7 +79,11 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       this.currentUuid = routeUuid;
     }
 
-    this.cooperativeService.loadGroups().subscribe(() => {
+    forkJoin({
+      groups: this.cooperativeService.loadGroups(),
+      members: this.cooperativeService.getMembers(),
+      memberships: this.cooperativeService.loadGroupMemberships()
+    }).subscribe(() => {
       this.loadApplications();
     });
   }
@@ -117,16 +122,22 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   }
 
   approveApplication(id: string, note = ''): void {
-    const updatedMembership = this.cooperativeService.approveGroupMembership(Number(id), note);
-    if (!updatedMembership) {
-      this.actionMessage = 'Unable to approve the selected join request.';
-      return;
-    }
+    this.cooperativeService.approveGroupMembership(Number(id), note).subscribe({
+      next: (updatedMembership) => {
+        if (!updatedMembership) {
+          this.actionMessage = 'Unable to approve the selected join request.';
+          return;
+        }
 
-    const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
-    const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
-    this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
-    this.loadApplications();
+        const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
+        const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
+        this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
+        this.loadApplications();
+      },
+      error: () => {
+        this.actionMessage = 'Unable to approve the selected join request.';
+      }
+    });
   }
 
   rejectApplication(id: string, reason: string): void {
@@ -136,16 +147,22 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       return;
     }
 
-    const updatedMembership = this.cooperativeService.rejectGroupMembership(Number(id), trimmedReason);
-    if (!updatedMembership) {
-      this.actionMessage = 'Unable to reject the selected join request.';
-      return;
-    }
+    this.cooperativeService.rejectGroupMembership(Number(id), trimmedReason).subscribe({
+      next: (updatedMembership) => {
+        if (!updatedMembership) {
+          this.actionMessage = 'Unable to reject the selected join request.';
+          return;
+        }
 
-    const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
-    const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
-    this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
-    this.loadApplications();
+        const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
+        const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
+        this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
+        this.loadApplications();
+      },
+      error: () => {
+        this.actionMessage = 'Unable to reject the selected join request.';
+      }
+    });
   }
 
   viewMember(memberId: string): void {
@@ -226,7 +243,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
         return {
           id: String(membership.id),
           memberId: String(membership.memberId),
-          memberName: member?.fullName || 'Unknown member',
+          memberName: this.cooperativeService.getMemberDisplayName(membership.memberId),
           memberCode: String(member?.memberId || membership.memberId),
           groupName: group?.name || 'Unknown group',
           status: membership.status,

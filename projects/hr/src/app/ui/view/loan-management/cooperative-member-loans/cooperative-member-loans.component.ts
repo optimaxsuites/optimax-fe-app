@@ -62,33 +62,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
   }
 
   private resolveCurrentMemberId(members: CooperativeMember[]): number {
-    const sessionUserId = Number(sessionStorage.getItem('userid') || 0);
-    const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
-    const userRegRaw = sessionStorage.getItem('userRegData');
-    const userRegData = userRegRaw ? JSON.parse(userRegRaw) : null;
-    const regEmail = String(userRegData?.email || '').trim().toLowerCase();
-
-    const matched = members.find(member => {
-      const memberId = member.id;
-      const memberCode = member.memberId;
-      const memberEmail = String(member.email || '').trim().toLowerCase();
-      const memberName = String(member.fullName || '').trim().toLowerCase();
-
-      if (sessionUserId && (memberId === sessionUserId || memberCode === sessionUserId)) {
-        return true;
-      }
-
-      if (regEmail && memberEmail === regEmail) {
-        return true;
-      }
-
-      if (sessionUsername && (memberEmail === sessionUsername || memberName === sessionUsername)) {
-        return true;
-      }
-
-      return false;
-    });
-
+    const matched = this.cooperativeService.resolveCurrentSessionMember(members);
     return matched?.id ?? members[0]?.id ?? 1;
   }
 
@@ -138,5 +112,11 @@ export class CooperativeMemberLoansComponent implements OnInit {
 
   get defaultedCount(): number {
     return this.loans.filter(item => item.status === 'DEFAULTED').length;
+  }
+
+  get memberDisplayName(): string {
+    return this.member
+      ? this.cooperativeService.getMemberDisplayName(this.member.id || this.member.memberId || this.member.employeeId)
+      : 'Cooperative Member';
   }
 }

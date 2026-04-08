@@ -5,39 +5,69 @@ export type AdvanceLoanStatus =
   | 'PENDING' 
   | 'AWAITING_INTEREST_ACCEPTANCE' 
   | 'APPROVED' 
+  | 'READY_FOR_DISBURSEMENT'
   | 'REJECTED' 
   | 'ACTIVE' 
-  | 'COMPLETED';
+  | 'COMPLETED'
+  | 'SKIPPED'
+  | 'OVERDUE'
+  | 'DEFAULTED'
+  | 'PAUSED';
 
 export interface AdvanceLoan {
   id: number;
   loanCode: string;
   employee: AdvanceLoanEmployee;
+  monthlySalary?: number;
   amount: number;
+  approvedAmount?: number;
   purpose: string;
   purposeCode?: string;
   repaymentAmount: number;
   repaymentTime: number;
+  repaymentPeriodMonths?: number;
   repaymentStartDate?: string;
   repaymentDay?: number;
   modeOfPayment: string;
+  interestRate?: number;
+  interestAgreement?: AdvanceLoanInterestAgreement;
+  totalRepayable?: number;
   requestDate: string;
   approvedDate: string;
-  approvedBy: AdvanceLoanUser;
+  approvedBy: number | AdvanceLoanUser;
+  disbursementInitiatedAt?: string;
+  disbursementInitiatedBy?: number | AdvanceLoanUser;
+  disbursementInstructionReference?: string;
+  disbursementConfirmedAt?: string;
+  disbursementConfirmedBy?: number | AdvanceLoanUser;
+  disbursementReference?: string;
+  disbursedAmount?: number;
   disbursedDate: string;
-  disbursedBy: AdvanceLoanUser;
+  disbursedBy: number | AdvanceLoanUser;
   completedDate: string;
   rejectedDate: string;
-  rejectedBy: AdvanceLoanUser;
+  rejectedBy: number | AdvanceLoanUser;
   status: AdvanceLoanStatus;
   adminComment: string;
   currentBalance: number;
   totalPaid: number;
   totalPrincipalPaid: number;
   totalInterestPaid: number;
+  totalLateFeesAccrued?: number;
+  totalLateFeesPaid?: number;
   outstandingPrincipal: number;
+  outstandingInterest?: number;
+  outstandingBalance?: number;
+  lateFeePercentage?: number;
+  lateFeeGracePeriodDays?: number;
+  lastPaymentReceived?: string;
+  lastPaymentAmount?: number;
+  nextPaymentDueDate?: string;
+  skippedPaymentsCount?: number;
+  overduePaymentsCount?: number;
+  employeeBankName?: string;
+  employeeAccountNumber?: string;
   statusBeforeOverride: string;
-  monthlySalary?: number;
   repaymentSchedule: AdvanceLoanRepaymentSchedule[];
   paymentHistory: AdvanceLoanPaymentHistory[];
   statusHistory: AdvanceLoanStatusHistory[];
@@ -131,16 +161,29 @@ export interface AdvanceLoanScheduleLoan {
   id: number;
   loanCode: string;
   employee: AdvanceLoanEmployee;
+  monthlySalary?: number;
   amount: number;
+  approvedAmount?: number;
   purpose: string;
   repaymentAmount: number;
   repaymentTime: number;
+  repaymentPeriodMonths?: number;
   repaymentStartDate?: string;
   repaymentDay?: number;
   modeOfPayment: string;
+  interestRate?: number;
+  interestAgreement?: AdvanceLoanInterestAgreement;
+  totalRepayable?: number;
   requestDate: string;
   approvedDate: string;
   approvedBy: number | AdvanceLoanUser;
+  disbursementInitiatedAt?: string;
+  disbursementInitiatedBy?: number | AdvanceLoanUser;
+  disbursementInstructionReference?: string;
+  disbursementConfirmedAt?: string;
+  disbursementConfirmedBy?: number | AdvanceLoanUser;
+  disbursementReference?: string;
+  disbursedAmount?: number;
   disbursedDate: string;
   disbursedBy: number | AdvanceLoanUser;
   completedDate: string;
@@ -152,12 +195,25 @@ export interface AdvanceLoanScheduleLoan {
   totalPaid: number;
   totalPrincipalPaid: number;
   totalInterestPaid: number;
+  totalLateFeesAccrued?: number;
+  totalLateFeesPaid?: number;
   outstandingPrincipal: number;
+  outstandingInterest?: number;
+  outstandingBalance?: number;
+  lateFeePercentage?: number;
+  lateFeeGracePeriodDays?: number;
+  lastPaymentReceived?: string;
+  lastPaymentAmount?: number;
+  nextPaymentDueDate?: string;
+  skippedPaymentsCount?: number;
+  overduePaymentsCount?: number;
+  employeeBankName?: string;
+  employeeAccountNumber?: string;
   statusBeforeOverride: string;
-  monthlySalary?: number;
   repaymentSchedule: string[];
   paymentHistory: string[];
   statusHistory: AdvanceLoanScheduleStatusHistory[];
+  gracePeriodRequests?: AdvanceLoanGracePeriodRequest[];
 }
 
 export interface AdvanceLoanScheduleStatusHistory {
@@ -177,14 +233,24 @@ export interface AdvanceLoanScheduleStatusHistory {
 export interface AdvanceLoanPaymentHistory {
   id: number;
   loanId: number;
+  paymentType?: string;
   paidAt: string;
+  amount?: number;
+  principalApplied?: number;
   principalAmount: number;
+  interestApplied?: number;
   interestPaid: number;
+  lateFeeApplied?: number;
   lateFeeAmount: number;
   totalAmount: number;
   remainingBalance: number;
-  modeofPayment: string;
+  paymentMethod?: string;
+  modeofPayment?: string;
+  paymentReference?: string;
   referenceNumber: string;
+  paidIntoAccount?: string;
+  paidFromAccount?: string;
+  installmentNumber?: number;
   installmentNo: number;
   notes: string;
   receiptNumber: string;
@@ -197,10 +263,10 @@ export interface AdvanceLoanStatusHistory {
   id: number;
   status: AdvanceLoanStatus;
   changedAt: string;
-  changedBy: AdvanceLoanUser;
+  changedBy: number | AdvanceLoanUser;
   notes: string;
   overrideOpen: boolean;
-  overrideBy: AdvanceLoanUser;
+  overrideBy: number | AdvanceLoanUser;
   overrideReason: string;
   statusBeforeOverride: string;
   interestRate?: number;

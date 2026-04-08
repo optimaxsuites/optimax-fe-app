@@ -61,7 +61,7 @@ export class ErrorMessageService {
   private extractServerMessage(payload: unknown): string | null {
     if (!payload) return null;
 
-    if (typeof payload === 'string') return payload;
+    if (typeof payload === 'string') return this.sanitizeServerMessage(payload);
 
     const obj = payload as {
       message?: unknown;
@@ -76,11 +76,13 @@ export class ErrorMessageService {
       this.asString(obj.error) ||
       this.asString(obj.detail) ||
       this.asString(obj.title);
-    if (direct) return direct;
+    if (direct) return this.sanitizeServerMessage(direct);
 
     if (Array.isArray(obj.errors) && obj.errors.length > 0) {
       const first = obj.errors[0] as unknown;
-      return this.asString(first) || this.asString((first as { message?: unknown })?.message);
+      return this.sanitizeServerMessage(
+        this.asString(first) || this.asString((first as { message?: unknown })?.message)
+      );
     }
 
     if (obj.errors && typeof obj.errors === 'object') {
@@ -88,12 +90,25 @@ export class ErrorMessageService {
       const firstKey = Object.keys(errorMap)[0];
       if (firstKey) {
         const val = errorMap[firstKey];
-        if (Array.isArray(val) && val.length > 0) return this.asString(val[0]);
-        return this.asString(val);
+        if (Array.isArray(val) && val.length > 0) return this.sanitizeServerMessage(this.asString(val[0]));
+        return this.sanitizeServerMessage(this.asString(val));
       }
     }
 
     return null;
+  }
+
+  private sanitizeServerMessage(message: string | null): string | null {
+    const trimmedMessage = String(message || '').trim();
+    if (!trimmedMessage) {
+      return null;
+    }
+
+    if (/java\.(net|lang)|connectexception|connection refused/i.test(trimmedMessage)) {
+      return 'A backend service is temporarily unavailable. Your action may still have completed successfully.';
+    }
+
+    return trimmedMessage;
   }
 
   private asString(value: unknown): string | null {

@@ -7,8 +7,12 @@ import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { Message } from 'primeng/api';
+import { CooperativeLoanPurposeApiResponse } from '../../../service/loan/cooperative-loan/cooperative-loan-api.service';
 
 @Component({
   selector: 'app-cooperative-loan-application',
@@ -19,6 +23,55 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   // Add messages property for p-messages component
   messages: Message[] = [];
 
+  private isValidEmailCandidate(email: unknown): email is string {
+    return typeof email === 'string'
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
+
+  private resolveBestEmailCandidate(...candidates: unknown[]): string {
+    for (const candidate of candidates) {
+      if (this.isValidEmailCandidate(candidate)) {
+        return candidate.trim();
+      }
+    }
+
+    return '';
+  }
+
+  private getSessionRegistrationEmail(): string {
+    const userRegDataRaw = sessionStorage.getItem('userRegData');
+    if (!userRegDataRaw) {
+      return '';
+    }
+
+    try {
+      const userRegData = JSON.parse(userRegDataRaw);
+      return this.resolveBestEmailCandidate(userRegData?.email);
+    } catch {
+      return '';
+    }
+  }
+
+  private resolveMemberEmail(member: CooperativeMember | undefined): string {
+    if (!member) {
+      return '';
+    }
+
+    const employeeMatch = this.employeeDirectory.find((employee) =>
+      String(employee.employeeId) === String(member.employeeId)
+      || String(employee.employeeId) === String(member.id)
+      || String(employee.employeeId) === String(member.memberId)
+      || (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
+    );
+
+    return this.resolveBestEmailCandidate(
+      employeeMatch?.email,
+      this.getSessionRegistrationEmail(),
+      member.email,
+      sessionStorage.getItem('email') || ''
+    );
+  }
+
   /**
    * Returns the most accurate email for the selected member by checking:
    * 1. Employee directory (by employeeId/memberId/fullName)
@@ -26,34 +79,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
    * 3. selectedMember.email as fallback
    */
   getSelectedMemberEmail(): string {
-    if (!this.selectedMember) return '';
-    // 1. Try employee directory
-    let foundEmail = '';
-    const emp = this.employeeDirectory.find(e =>
-      String(e.employeeId) === String(this.selectedMember?.id) ||
-      String(e.employeeId) === String(this.selectedMember?.memberId) ||
-      (e.fullName && this.selectedMember?.fullName && e.fullName.toLowerCase() === this.selectedMember.fullName.toLowerCase())
-    );
-    if (emp && emp.email && emp.email !== 'member@email.com') {
-      foundEmail = emp.email;
-    }
-    // 2. Try userRegData from sessionStorage
-    if (!foundEmail) {
-      const userRegDataRaw = sessionStorage.getItem('userRegData');
-      if (userRegDataRaw) {
-        try {
-          const userRegData = JSON.parse(userRegDataRaw);
-          if (userRegData.email && userRegData.email !== 'member@email.com') {
-            foundEmail = userRegData.email;
-          }
-        } catch {}
-      }
-    }
-    // 3. Fallback to selectedMember.email
-    if (!foundEmail && this.selectedMember.email && this.selectedMember.email !== 'member@email.com') {
-      foundEmail = this.selectedMember.email;
-    }
-    return foundEmail || '';
+    return this.resolveMemberEmail(this.selectedMember);
   }
   
   // --- UI/Template helpers ---
@@ -123,6 +149,41 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 });
   }
 
+  private toDateTimeLocal(value: Date | string): string {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  private normalizeRequestDate(value: string): string {
+    const trimmedValue = String(value || '').trim();
+    if (!trimmedValue) {
+      return new Date().toISOString();
+    }
+
+    const parsedDate = new Date(trimmedValue);
+    return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+  }
+
+  private extractSalaryAmount(payload: any): number {
+    return Number(
+      payload?.baseSalary
+      || payload?.monthlySalary
+      || payload?.salary
+      || payload?.grossSalary
+      || 0
+    );
+  }
+
   // Property to check rank eligibility (stub, update as needed)
   get canSubmitByRank(): boolean {
     // Add actual rank eligibility logic if needed
@@ -170,6 +231,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   eligibleMembers: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
   qualifiedGroups: CooperativeLoanGroup[] = [];
+  availablePurposes: CooperativeLoanPurposeApiResponse[] = [];
   selectedGroup?: CooperativeLoanGroup;
   selectedGroupMembership?: CooperativeGroupMembership;
   selectedMember?: CooperativeMember;
@@ -213,6 +275,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private router: Router,
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
+    private employeeLoanService: EmployeeLoanService,
     private guarantorService: GuarantorService
   ) {}
 
@@ -273,6 +336,14 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   loadData(): void {
+    this.cooperativeService.loadLoanPurposes().subscribe((purposes) => {
+      this.availablePurposes = purposes;
+      const selectedPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
+      if (selectedPurpose && !this.availablePurposes.some((purpose) => purpose.name === selectedPurpose)) {
+        this.applicationForm.patchValue({ purpose: '' }, { emitEvent: false });
+      }
+    });
+
     this.cooperativeService.getMembers().subscribe((members: CooperativeMember[]) => {
       this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
       this.cooperativeService.loadGroups().subscribe((groups: CooperativeLoanGroup[]) => {
@@ -327,7 +398,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       groupId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(1000)]],
       purpose: ['', Validators.required],
-      duration: ['', [Validators.required, Validators.min(1)]],
+      repaymentTime: ['', [Validators.required, Validators.min(1)]],
+      modeOfPayment: ['MONTHLY', Validators.required],
+      requestDate: [this.toDateTimeLocal(new Date()), Validators.required],
       guarantors: this.fb.array([]),
       acceptTerms: [false, Validators.requiredTrue],
       acceptAcknowledgement: [false, Validators.requiredTrue]
@@ -340,34 +413,11 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
     this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
       this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
-      // Always try to dynamically obtain the correct email
       if (this.selectedMember) {
-        let foundEmail = '';
-        // Try to match by employeeId, memberId, or fullName
-        const emp = this.employeeDirectory.find(e =>
-          String(e.employeeId) === String(this.selectedMember?.id) ||
-          String(e.employeeId) === String(this.selectedMember?.memberId) ||
-          (e.fullName && this.selectedMember?.fullName && e.fullName.toLowerCase() === this.selectedMember.fullName.toLowerCase())
-        );
-        if (emp && emp.email && emp.email !== 'member@email.com') {
-          foundEmail = emp.email;
-        }
-        // Fallback: try userRegData from sessionStorage
-        if (!foundEmail) {
-          const userRegDataRaw = sessionStorage.getItem('userRegData');
-          if (userRegDataRaw) {
-            try {
-              const userRegData = JSON.parse(userRegDataRaw);
-              if (userRegData.email && userRegData.email !== 'member@email.com') {
-                foundEmail = userRegData.email;
-              }
-            } catch {}
-          }
-        }
-        // Only set if found and valid
-        if (foundEmail && foundEmail !== 'member@email.com') {
-          this.selectedMember.email = foundEmail;
-        }
+        this.selectedMember = {
+          ...this.selectedMember,
+          email: this.resolveMemberEmail(this.selectedMember)
+        };
       }
       this.resolveSelectedMemberEligibility();
       this.refreshQualifiedGroups();
@@ -388,6 +438,19 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
+  get selectedPurposeDefinition(): CooperativeLoanPurposeApiResponse | undefined {
+    const currentPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
+    if (!currentPurpose) {
+      return undefined;
+    }
+
+    return this.availablePurposes.find((purpose) => String(purpose.name || '').trim() === currentPurpose);
+  }
+
+  get hasAvailablePurposes(): boolean {
+    return this.availablePurposes.length > 0;
+  }
+
   onGroupSelect(groupId: string): void {
     this.selectedGroup = this.qualifiedGroups.find(p => String(p.id) === String(groupId));
     this.selectedGroupMembership = this.selectedMember && this.selectedGroup
@@ -398,17 +461,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       // Set validators
       this.applicationForm.get('amount')?.setValidators([
         Validators.required,
-        Validators.min(this.selectedGroup.minAmount),
-        Validators.max(this.selectedGroup.maxAmount)
+        Validators.min(1000)
       ]);
-      this.applicationForm.get('duration')?.setValidators([
+      this.applicationForm.get('repaymentTime')?.setValidators([
         Validators.required,
         Validators.min(this.selectedGroup.minDuration),
         Validators.max(this.selectedGroup.maxDuration)
       ]);
       
       this.applicationForm.get('amount')?.updateValueAndValidity();
-      this.applicationForm.get('duration')?.updateValueAndValidity();
+      this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
 
       this.syncGuarantorControls();
       this.validateGuarantors();
@@ -553,13 +615,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   calculateRepayment(): void {
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
-    const duration = Number(this.applicationForm.get('duration')?.value || 0);
-    if (amount > 0 && duration > 0 && this.selectedGroup) {
+    const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
+    const modeOfPayment = String(this.applicationForm.get('modeOfPayment')?.value || 'MONTHLY').toUpperCase();
+    if (amount > 0 && repaymentTime > 0 && this.selectedGroup) {
       // Example calculation: simple interest
       const rate = Number(this.selectedGroup.interestRate || 0);
-      this.totalInterest = Math.round((amount * rate * duration) / 1200); // (amount * rate * months) / 12 / 100
+      this.totalInterest = Math.round((amount * rate * repaymentTime) / 1200); // (amount * rate * months) / 12 / 100
       this.totalRepayment = amount + this.totalInterest;
-      this.repaymentAmount = Math.round(this.totalRepayment / duration);
+      this.repaymentAmount = modeOfPayment === 'ONE_OFF'
+        ? this.totalRepayment
+        : Math.round(this.totalRepayment / repaymentTime);
     } else {
       this.totalInterest = 0;
       this.totalRepayment = 0;
@@ -568,7 +633,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     // Update confirmation details
     this.confirmationDetails = {
       amount,
-      duration,
+      duration: repaymentTime,
       repaymentAmount: this.repaymentAmount,
       totalRepayment: this.totalRepayment,
       totalInterest: this.totalInterest,
@@ -597,16 +662,21 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return false;
     }
 
-    const amount = Number(this.applicationForm.get('amount')?.value || 0);
-    const duration = Number(this.applicationForm.get('duration')?.value || 0);
-    this.validateGuarantors();
-
-    if (amount < this.selectedGroup.minAmount || amount > this.selectedGroup.maxAmount) {
-      this.submitError = `Amount must be between ${this.formatCurrency(this.selectedGroup.minAmount)} and ${this.formatCurrency(this.selectedGroup.maxAmount)}.`;
+    if (!this.hasAvailablePurposes) {
+      this.submitError = 'No active cooperative loan purposes are available right now.';
       return false;
     }
 
-    if (duration < this.selectedGroup.minDuration || duration > this.selectedGroup.maxDuration) {
+    if (!this.selectedPurposeDefinition) {
+      this.submitError = 'Select a valid cooperative loan purpose from the approved list.';
+      return false;
+    }
+
+    const amount = Number(this.applicationForm.get('amount')?.value || 0);
+    const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
+    this.validateGuarantors();
+
+    if (repaymentTime < this.selectedGroup.minDuration || repaymentTime > this.selectedGroup.maxDuration) {
       this.submitError = `Duration must be between ${this.selectedGroup.minDuration} and ${this.selectedGroup.maxDuration} months.`;
       return false;
     }
@@ -694,18 +764,26 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const applicationStage = this.selectedGroup?.requiresGuarantors
       ? 'PENDING_GUARANTOR_APPROVAL'
       : 'READY_FOR_ADMIN_REVIEW';
+    const requestDate = this.normalizeRequestDate(formValue.requestDate);
+    const modeOfPayment = String(formValue.modeOfPayment || 'MONTHLY').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
     const newLoan = {
+      cooperativeMemberId: Number(formValue.memberId),
+      cooperativeGroupId: Number(formValue.groupId),
       memberId: formValue.memberId,
       groupId: formValue.groupId,
       amount: Number(formValue.amount),
       purpose: String(formValue.purpose || '').trim(),
-      duration: Number(formValue.duration),
+      repaymentTime: Number(formValue.repaymentTime),
+      duration: Number(formValue.repaymentTime),
+      modeOfPayment,
+      requestDate,
       interestRate: this.selectedGroup?.interestRate,
       repaymentAmount: this.repaymentAmount,
+      totalRepayable: this.totalRepayment,
       totalRepayment: this.totalRepayment,
       status: 'PENDING' as const,
       applicationStage,
-      applicationDate: new Date().toISOString(),
+      applicationDate: requestDate,
       guarantors
     };
     this.cooperativeService.addLoan(newLoan as any).subscribe({
@@ -740,7 +818,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return {
       employeeId: employee.employeeId || employee.id || '',
       fullName: employee.fullName || employee.name || '',
-      email: employee.email || '',
+      email: this.resolveBestEmailCandidate(employee.email, employee.workEmail),
       monthlySalary: employee.monthlySalary || 0,
       phone: employee.phone || '',
       department: employee.department || '',
@@ -768,7 +846,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           return {
             ...member,
             fullName: emp.fullName || member.fullName,
-            email: (emp.email && emp.email !== 'member@email.com') ? emp.email : member.email
+            email: this.resolveBestEmailCandidate(emp.email, member.email)
           };
         }
         return member;
@@ -794,8 +872,20 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       this.selectedMemberSalary = 0;
       return;
     }
-    // Try to get monthlySalary from employeeDirectory
-    const emp = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
-    this.selectedMemberSalary = emp?.monthlySalary || 0;
+
+    const employeeId = Number(this.selectedMember.employeeId || this.selectedMember.id || this.selectedMember.memberId || 0);
+    const fallbackEmployee = this.employeeDirectory.find(e => String(e.employeeId) === String(employeeId));
+    const fallbackSalary = Number(fallbackEmployee?.monthlySalary || this.selectedMember.monthlySalary || 0);
+
+    if (!Number.isFinite(employeeId) || employeeId <= 0) {
+      this.selectedMemberSalary = fallbackSalary;
+      return;
+    }
+
+    this.employeeLoanService.getSalaryByEmployeeId(employeeId).pipe(
+      catchError(() => of({ baseSalary: fallbackSalary } as { baseSalary?: number; monthlySalary?: number; salary?: number; grossSalary?: number }))
+    ).subscribe((salaryData: { baseSalary?: number; monthlySalary?: number; salary?: number; grossSalary?: number }) => {
+      this.selectedMemberSalary = this.extractSalaryAmount(salaryData) || fallbackSalary;
+    });
   }
 }

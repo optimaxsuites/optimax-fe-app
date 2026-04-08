@@ -61,7 +61,17 @@ export class AdvanceInterestAgreementService {
 
   getAgreementByLoanId(loanId: number): Observable<AdvanceInterestAgreement | null> {
     return this.getAllAgreements({ loanId }).pipe(
-      map(agreements => agreements.length > 0 ? agreements[0] : null)
+      map((agreements) => {
+        if (!agreements.length) {
+          return null;
+        }
+
+        return [...agreements].sort((left, right) => {
+          const rightScore = Number(right.id || 0);
+          const leftScore = Number(left.id || 0);
+          return rightScore - leftScore;
+        })[0];
+      })
     );
   }
 

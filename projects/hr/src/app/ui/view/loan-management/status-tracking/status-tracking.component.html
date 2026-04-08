@@ -56,6 +56,18 @@
         <span class="label">Completed:</span>
         <span class="value">{{ formatDate(loan.completedDate) }}</span>
       </div>
+      <div *ngIf="loan.nextPaymentDueDate" class="summary-item">
+        <span class="label">Next Payment Due:</span>
+        <span class="value">{{ formatDate(loan.nextPaymentDueDate) }}</span>
+      </div>
+      <div *ngIf="loan.skippedPaymentsCount !== undefined" class="summary-item">
+        <span class="label">Skipped Payments:</span>
+        <span class="value">{{ loan.skippedPaymentsCount || 0 }}</span>
+      </div>
+      <div *ngIf="loan.overduePaymentsCount !== undefined" class="summary-item">
+        <span class="label">Overdue Payments:</span>
+        <span class="value">{{ loan.overduePaymentsCount || 0 }}</span>
+      </div>
     </div>
   </div>
 </div>

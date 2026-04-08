@@ -20,6 +20,8 @@ import {
   styleUrls: ['./loan-approval-ui.component.scss']
 })
 export class LoanApprovalUiComponent implements OnInit {
+  readonly pageSize = 20;
+  currentPage = 1;
   searchTerm: string = '';
   sortField: string = 'requestDate';
   sortDirection: 'asc' | 'desc' = 'desc';
@@ -28,6 +30,8 @@ export class LoanApprovalUiComponent implements OnInit {
     employeeId: '',
     department: '',
     status: '',
+    dateFrom: '',
+    dateTo: '',
     minAmount: null as number | null,
     maxAmount: null as number | null
   };
@@ -37,18 +41,22 @@ export class LoanApprovalUiComponent implements OnInit {
   isLoading = true;
   messages: Message[] = [];
 
-  // Repayment day properties
-  selectedRepaymentDay: number = 15;  // Add this property
-  repaymentStartDate: string = '';
-  availableRepaymentDays: number[] = [];
-  repaymentDayWarning: string = '';
-
   // Approval modal properties
   showApprovalModal = false;
   selectedLoanForApproval: LoanApplication | null = null;
   proposedInterestRate: number = 0;
+  proposedLateFeePercentage: number = 2;
+  proposedLateFeeGracePeriodDays: number = 15;
   proposedRepaymentDay: number = 15;
   approvalNotes: string = '';
+  repaymentStartDate: string = '';
+  availableRepaymentDays: number[] = [];
+  repaymentDayWarning: string = '';
+
+  // Reject modal properties
+  showRejectModal = false;
+  selectedLoanForRejection: LoanApplication | null = null;
+  rejectionReason: string = '';
 
   constructor(
     private location: Location,
@@ -132,8 +140,19 @@ export class LoanApprovalUiComponent implements OnInit {
     if (this.filters.status) {
       const term = this.filters.status.toUpperCase();
       results = results.filter(loan =>
-        loan.status.toUpperCase().includes(term)
+        loan.status.toUpperCase() === term
       );
+    }
+
+    if (this.filters.dateFrom) {
+      const fromDate = new Date(this.filters.dateFrom).getTime();
+      results = results.filter((loan) => new Date(loan.requestDate).getTime() >= fromDate);
+    }
+
+    if (this.filters.dateTo) {
+      const toDate = new Date(this.filters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      results = results.filter((loan) => new Date(loan.requestDate).getTime() <= toDate.getTime());
     }
 
     if (this.filters.minAmount !== null) {
@@ -153,6 +172,7 @@ export class LoanApprovalUiComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortData(results);
+    this.resetPagination();
   }
 
   onSearch(event: any) {
@@ -166,6 +186,8 @@ export class LoanApprovalUiComponent implements OnInit {
       employeeId: '',
       department: '',
       status: '',
+      dateFrom: '',
+      dateTo: '',
       minAmount: null,
       maxAmount: null
     };
@@ -174,8 +196,23 @@ export class LoanApprovalUiComponent implements OnInit {
     this.applyFilters();
   }
 
-  applyStatusFromCard(status: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED'): void {
-    this.filters.status = status;
+  applyStatusFromCard(status: string): void {
+    const allowedStatuses = new Set([
+      '',
+      'PENDING',
+      'AWAITING_INTEREST_ACCEPTANCE',
+      'APPROVED',
+      'READY_FOR_DISBURSEMENT',
+      'ACTIVE',
+      'SKIPPED',
+      'OVERDUE',
+      'PAUSED',
+      'DEFAULTED',
+      'REJECTED',
+      'COMPLETED'
+    ]);
+
+    this.filters.status = allowedStatuses.has(status) ? status : '';
     this.applyFilters();
   }
 
@@ -251,115 +288,233 @@ export class LoanApprovalUiComponent implements OnInit {
     return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: string | undefined): string {
+  switch (status) {
+    case 'PENDING': return 'status-pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
+    case 'APPROVED': return 'status-approved';
+    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
+    case 'ACTIVE': return 'status-active';
+    case 'REJECTED': return 'status-rejected';
+    case 'COMPLETED': return 'status-completed';
+    case 'SKIPPED': return 'status-skipped';
+    case 'OVERDUE': return 'status-overdue';
+    case 'DEFAULTED': return 'status-defaulted';
+    case 'PAUSED': return 'status-paused';
+    default: return 'status-default';
+  }
+}
+
+  getStatusLabel(status: string | undefined): string {
     switch (status) {
-      case 'APPROVED': return 'status-approved';
-      case 'PENDING': return 'status-pending';
-      case 'REJECTED': return 'status-rejected';
-      case 'ACTIVE': return 'status-active';
-      case 'COMPLETED': return 'status-completed';
-      default: return 'status-default';
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+        return 'AWAITING INTEREST ACCEPTANCE';
+      case 'READY_FOR_DISBURSEMENT':
+        return 'READY FOR DISBURSEMENT';
+      default:
+        return String(status || '').replace(/_/g, ' ');
     }
   }
 
   get statusCounts() {
     return {
       pending: this.loanApplications.filter(loan => loan.status === 'PENDING').length,
+      awaitingInterestAcceptance: this.loanApplications.filter(loan => loan.status === 'AWAITING_INTEREST_ACCEPTANCE').length,
       approved: this.loanApplications.filter(loan => loan.status === 'APPROVED').length,
+      readyForDisbursement: this.loanApplications.filter(loan => loan.status === 'READY_FOR_DISBURSEMENT').length,
       rejected: this.loanApplications.filter(loan => loan.status === 'REJECTED').length,
       active: this.loanApplications.filter(loan => loan.status === 'ACTIVE').length,
+      skipped: this.loanApplications.filter(loan => loan.status === 'SKIPPED').length,
+      overdue: this.loanApplications.filter(loan => loan.status === 'OVERDUE').length,
+      paused: this.loanApplications.filter(loan => loan.status === 'PAUSED').length,
+      defaulted: this.loanApplications.filter(loan => loan.status === 'DEFAULTED').length,
       completed: this.loanApplications.filter(loan => loan.status === 'COMPLETED').length,
       total: this.loanApplications.length
     };
   }
 
-  // Open approval modal
- openApprovalModal(loan: LoanApplication): void {
-  this.selectedLoanForApproval = loan;
-  this.proposedInterestRate = this.loanApprovalService.determineInterestRate(loan);
-  this.proposedRepaymentDay = loan.repaymentDay || 15;
-  this.approvalNotes = '';
-  
-  // Set default repayment start date (1 month from today)
-  const today = new Date();
-  today.setMonth(today.getMonth() + 1);
-  this.repaymentStartDate = today.toISOString().split('T')[0];
-  this.selectedRepaymentDay = this.proposedRepaymentDay;
-  
-  // Update available days based on the start date
-  this.onRepaymentStartDateChange(this.repaymentStartDate);
-  
-  this.showApprovalModal = true;
-}
+  get overviewCards(): Array<{ label: string; value: number; status: '' | 'PENDING' | 'AWAITING_INTEREST_ACCEPTANCE' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'DEFAULTED' | 'REJECTED' | 'COMPLETED'; icon: string; tone: string; note: string }> {
+    return [
+      { label: 'Pending', value: this.statusCounts.pending, status: 'PENDING', icon: 'fa-hourglass-half', tone: 'pending', note: 'New requests awaiting review' },
+      { label: 'Awaiting Interest', value: this.statusCounts.awaitingInterestAcceptance, status: 'AWAITING_INTEREST_ACCEPTANCE', icon: 'fa-percent', tone: 'awaiting', note: 'Employees yet to accept proposals' },
+      { label: 'Approved', value: this.statusCounts.approved, status: 'APPROVED', icon: 'fa-check-circle', tone: 'approved', note: 'Approved before disbursement prep' },
+      { label: 'Ready To Disburse', value: this.statusCounts.readyForDisbursement, status: 'READY_FOR_DISBURSEMENT', icon: 'fa-hand-holding-dollar', tone: 'ready', note: 'Cleared for fund release' },
+      { label: 'Active', value: this.statusCounts.active, status: 'ACTIVE', icon: 'fa-check-double', tone: 'active', note: 'Loans in repayment' },
+      { label: 'Skipped', value: this.statusCounts.skipped, status: 'SKIPPED', icon: 'fa-forward', tone: 'skipped', note: 'Grace-adjusted accounts' },
+      { label: 'Overdue', value: this.statusCounts.overdue, status: 'OVERDUE', icon: 'fa-triangle-exclamation', tone: 'overdue', note: 'Requires intervention now' },
+      { label: 'Paused', value: this.statusCounts.paused, status: 'PAUSED', icon: 'fa-circle-pause', tone: 'paused', note: 'Admin hold in effect' },
+      { label: 'Defaulted', value: this.statusCounts.defaulted, status: 'DEFAULTED', icon: 'fa-shield-halved', tone: 'defaulted', note: 'Critical repayment failures' },
+      { label: 'Total Applications', value: this.statusCounts.total, status: '', icon: 'fa-file-invoice', tone: 'total', note: `${this.statusCounts.completed} completed · ${this.statusCounts.rejected} rejected` }
+    ];
+  }
 
-  // Submit approval
-submitApproval(): void {
-  if (!this.selectedLoanForApproval) return;
-  
-  // Make sure we're passing the repayment start date and day
-  const repaymentStartDate = this.repaymentStartDate;
-  const repaymentDay = this.proposedRepaymentDay;
-  
-  console.log('Submitting approval with:', {
-    loanId: this.selectedLoanForApproval.id,
-    interestRate: this.proposedInterestRate,
-    repaymentStartDate: repaymentStartDate,
-    repaymentDay: repaymentDay
-  });
-  
-  this.loanApprovalService.approveLoan(
-    this.selectedLoanForApproval.id,
-    this.approvalNotes,
-    this.proposedInterestRate,
-    repaymentStartDate,  // Pass the start date
-    repaymentDay         // Pass the day
-  ).subscribe({
-    next: () => {
-      this.messages = [{
-        severity: 'success',
-        summary: 'Loan Approved',
-        detail: `Loan approved with ${this.proposedInterestRate}% interest rate. Awaiting employee acceptance.`
-      }];
-      this.showApprovalModal = false;
-      this.loadApplications();
-    },
-    error: (error) => {
-      console.error('Error approving loan:', error);
-      this.messages = [{
-        severity: 'error',
-        summary: 'Approval Failed',
-        detail: 'Failed to approve loan.'
-      }];
+  get primaryOverviewCards() {
+    return this.overviewCards.filter((card) =>
+      ['pending', 'awaiting', 'approved', 'ready', 'total'].includes(card.tone)
+    );
+  }
+
+  get secondaryOverviewCards() {
+    return this.overviewCards.filter((card) =>
+      !['pending', 'awaiting', 'approved', 'ready', 'total'].includes(card.tone)
+    );
+  }
+
+  get paginatedLoans(): LoanApplication[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredLoans.length / this.pageSize));
+  }
+
+  get paginationStart(): number {
+    return this.filteredLoans.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredLoans.length);
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
     }
-  });
-}
 
+    this.currentPage = page;
+  }
 
-  // Close approval modal
+  private resetPagination(): void {
+    this.currentPage = 1;
+  }
+
+  // Approval methods
+  openApprovalModal(loan: LoanApplication): void {
+    this.selectedLoanForApproval = loan;
+    this.proposedInterestRate = Number(loan.interestRate || this.loanApprovalService.determineInterestRate(loan));
+    this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
+    this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
+    this.repaymentStartDate = loan.repaymentStartDate || this.getMinRepaymentDate();
+    this.proposedRepaymentDay = loan.repaymentDay || 0;
+    this.approvalNotes = '';
+    this.onRepaymentStartDateChange(this.repaymentStartDate);
+    this.showApprovalModal = true;
+  }
+
+  getEmployeeInterestRejectionComment(loan: LoanApplication | null | undefined): string {
+    if (!loan || loan.status !== 'AWAITING_INTEREST_ACCEPTANCE') {
+      return '';
+    }
+
+    const statusHistoryComment = [...(loan.statusHistory || [])]
+      .filter((entry) => entry.status === 'AWAITING_INTEREST_ACCEPTANCE' && !!entry.notes?.trim())
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())
+      .map((entry) => this.extractEmployeeInterestRejectionReason(entry.notes || ''))
+      .find(Boolean);
+
+    if (statusHistoryComment) {
+      return statusHistoryComment;
+    }
+
+    if (loan.interestAgreement?.status === 'DECLINED' && loan.interestAgreement.notes) {
+      return this.extractEmployeeInterestRejectionReason(loan.interestAgreement.notes);
+    }
+
+    return this.extractEmployeeInterestRejectionReason(loan.adminComment || '');
+  }
+
+  private extractEmployeeInterestRejectionReason(note: string): string {
+    const trimmedNote = String(note || '').trim();
+    if (!trimmedNote) {
+      return '';
+    }
+
+    const matchedReason = trimmedNote.match(/Employee rejected proposed interest rate\. Reason:\s*(.+?)(?:\.\s*Admin review required.*)?$/i);
+    if (matchedReason?.[1]) {
+      return matchedReason[1].trim();
+    }
+
+    if (/declined|rejected/i.test(trimmedNote)) {
+      return trimmedNote;
+    }
+
+    return '';
+  }
+
   closeApprovalModal(): void {
     this.showApprovalModal = false;
     this.selectedLoanForApproval = null;
+    this.repaymentStartDate = '';
+    this.availableRepaymentDays = [];
+    this.repaymentDayWarning = '';
   }
 
-  // Reject loan
-  rejectLoan(applicationId: string | number, reason?: string): void {
-    const rejectionReason = (reason || '').trim();
-    if (!rejectionReason) {
+  submitApproval(): void {
+    if (!this.selectedLoanForApproval) return;
+    
+    this.loanApprovalService.approveLoan(
+      this.selectedLoanForApproval.id,
+      this.approvalNotes,
+      this.proposedInterestRate,
+      this.repaymentStartDate,
+      this.proposedRepaymentDay,
+      this.proposedLateFeePercentage,
+      this.proposedLateFeeGracePeriodDays
+    ).subscribe({
+      next: () => {
+        this.messages = [{
+          severity: 'success',
+          summary: 'Loan Approved',
+          detail: `Loan approved with ${this.proposedInterestRate}% interest rate. Awaiting employee acceptance.`
+        }];
+        this.closeApprovalModal();
+        this.loadApplications();
+      },
+      error: (error) => {
+        console.error('Error approving loan:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Approval Failed',
+          detail: 'Failed to approve loan.'
+        }];
+      }
+    });
+  }
+
+  // Reject methods
+  openRejectModal(loan: LoanApplication): void {
+    this.selectedLoanForRejection = loan;
+    this.rejectionReason = '';
+    this.showRejectModal = true;
+  }
+
+  closeRejectModal(): void {
+    this.showRejectModal = false;
+    this.selectedLoanForRejection = null;
+    this.rejectionReason = '';
+  }
+
+  confirmRejection(): void {
+    if (!this.rejectionReason.trim()) {
       this.messages = [{
         severity: 'warn',
         summary: 'Reason Required',
-        detail: 'Please provide a rejection reason.'
+        detail: 'Please provide a reason for rejecting this loan application.'
       }];
       return;
     }
 
-    this.loanApprovalService.rejectLoan(applicationId, rejectionReason).subscribe({
+    if (!this.selectedLoanForRejection) return;
+
+    this.loanApprovalService.rejectLoan(this.selectedLoanForRejection.id, this.rejectionReason).subscribe({
       next: () => {
         this.messages = [{
           severity: 'success',
           summary: 'Loan Rejected',
           detail: 'Loan rejected successfully.'
         }];
+        this.closeRejectModal();
         this.loadApplications();
       },
       error: (error) => {
@@ -397,8 +552,8 @@ submitApproval(): void {
     const suggestedDay = this.repaymentDayHelper.suggestRepaymentDay(date);
     if (!this.proposedRepaymentDay || !this.availableRepaymentDays.includes(this.proposedRepaymentDay)) {
       this.proposedRepaymentDay = suggestedDay;
-      this.selectedRepaymentDay = suggestedDay;
     }
+    this.repaymentDayWarning = this.getRepaymentDayWarning();
   }
 
   getRepaymentDayWarning(): string {
@@ -410,6 +565,26 @@ submitApproval(): void {
       return `Selected day (${this.proposedRepaymentDay}) is not valid for ${date.toLocaleString('default', { month: 'long' })} ${year}. Maximum days: ${this.repaymentDayHelper.getMaxDaysInMonth(year, month)}`;
     }
     return '';
+  }
+
+  getRepaymentDaySuggestion(): string {
+    if (!this.repaymentStartDate) {
+      return '';
+    }
+
+    const date = new Date(this.repaymentStartDate);
+    const suggestedDay = date.getDate();
+    const monthYear = date.toLocaleDateString('en-NG', {
+      month: 'long',
+      year: 'numeric'
+    });
+    const firstInstallmentDate = date.toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return `Suggestion: use ${suggestedDay} so repayments after ${monthYear} stay on the ${suggestedDay}${this.getDayOrdinal(suggestedDay)} of each month. You can still choose ${this.proposedRepaymentDay || suggestedDay}; the first installment will remain ${firstInstallmentDate}.`;
   }
 
   getDayOrdinal(day: number): string {

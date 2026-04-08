@@ -1,6 +1,20 @@
 // loan-disbursement-ui.component.scss
 @use '../loan-status-badges' as loanStatus;
 
+.status-badge, .status-pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+  text-align: center;
+  transition: all 0.2s ease;
+  
+  @include loanStatus.advance-loan-status-badges();
+}
 .loan-disbursement-container {
   padding: 24px;
   min-height: 100vh;
@@ -35,9 +49,9 @@
       font-size: 1.6rem;
       font-weight: 700;
 
-      i {
-        color: #eb9b3f;
-        margin-right: 12px;
+      .title-icon {
+        color: #2EB270;
+        margin-right: 10px;
       }
     }
 
@@ -66,7 +80,7 @@
   // Summary Cards
   .summary-strip {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
 
     .summary-card {
@@ -91,6 +105,22 @@
         i {
           color: white;
           font-size: 1.3rem;
+        }
+
+        &.approved-icon {
+          background: linear-gradient(135deg, #2e6276, #4291b1);
+        }
+
+        &.ready-icon {
+          background: linear-gradient(135deg, #2eb270, #239d60);
+        }
+
+        &.amount-icon {
+          background: linear-gradient(135deg, #eb9b3f, #f4b561);
+        }
+
+        &.selected-icon {
+          background: linear-gradient(135deg, #6a7ff5, #4f7cff);
         }
       }
 
@@ -148,6 +178,13 @@
     gap: 24px;
   }
 
+  .queue-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+
   // Surface Card Base
   .surface-card {
     background: white;
@@ -159,6 +196,97 @@
 
   // Table Card
   .table-card {
+    &.ready-queue-card {
+      border-color: rgba(46, 178, 112, 0.2);
+    }
+
+    .queue-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(248, 252, 253, 0.96), rgba(240, 247, 250, 0.92));
+      border: 1px solid #e8f0f3;
+    }
+
+    .queue-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .queue-metric-pill {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 110px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid #e3eef0;
+
+      .metric-label {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #8aadba;
+      }
+
+      strong {
+        font-size: 0.95rem;
+        color: #1a4b5c;
+      }
+
+      &.accent-approved {
+        background: linear-gradient(135deg, rgba(46, 98, 118, 0.1), rgba(66, 145, 177, 0.08));
+      }
+
+      &.accent-ready {
+        background: linear-gradient(135deg, rgba(46, 178, 112, 0.1), rgba(35, 157, 96, 0.08));
+      }
+    }
+
+    .queue-search {
+      position: relative;
+      min-width: 260px;
+      flex: 1;
+      max-width: 360px;
+
+      i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8aadba;
+      }
+
+      input {
+        width: 100%;
+        height: 46px;
+        padding: 0 14px 0 40px;
+        border-radius: 14px;
+        border: 1px solid #dce7ea;
+        background: white;
+        color: #1a4b5c;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+        &:focus {
+          border-color: #2e6276;
+          box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.12);
+        }
+      }
+
+      &.ready-search input:focus {
+        border-color: #2eb270;
+        box-shadow: 0 0 0 3px rgba(46, 178, 112, 0.12);
+      }
+    }
+
     .section-head {
       margin-bottom: 20px;
 
@@ -166,6 +294,10 @@
         color: #eb9b3f;
         font-size: 1.2rem;
         margin-right: 10px;
+
+        &.ready-heading {
+          color: #2eb270;
+        }
       }
 
       .section-copy {
@@ -214,6 +346,38 @@
           font-size: 0.85rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+
+          .sort-button {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            border: none;
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+            text-transform: inherit;
+            letter-spacing: inherit;
+            cursor: pointer;
+
+            i {
+              color: #8aadba;
+              font-size: 0.75rem;
+              transition: color 0.2s ease;
+            }
+
+            &:hover i,
+            &:focus-visible i {
+              color: #2e6276;
+            }
+
+            &.ready-sort:hover i,
+            &.ready-sort:focus-visible i {
+              color: #239d60;
+            }
+          }
         }
 
         tr {
@@ -247,8 +411,6 @@
           border-radius: 20px;
           font-size: 0.75rem;
           font-weight: 700;
-          background: rgba(79, 124, 255, 0.14);
-          color: #4f7cff;
         }
 
         .select-btn {
@@ -278,6 +440,62 @@
           text-align: center;
           padding: 40px;
           color: #8aadba;
+        }
+      }
+    }
+
+    .queue-footer {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+
+      .results-label {
+        font-size: 0.82rem;
+        color: #8aadba;
+      }
+
+      .pager-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pager-btn {
+        border: 1px solid #d7e5e9;
+        background: white;
+        color: #2e6276;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background: #2e6276;
+          border-color: #2e6276;
+          color: white;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      .pager-chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(46, 98, 118, 0.08);
+        color: #2e6276;
+        font-size: 0.8rem;
+        font-weight: 700;
+
+        &.ready-chip {
+          background: rgba(46, 178, 112, 0.1);
+          color: #239d60;
         }
       }
     }
@@ -706,6 +924,58 @@
             width: 110px;
             display: inline-block;
             font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .disbursement-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .header-actions {
+        flex-wrap: wrap;
+      }
+    }
+
+    .surface-card {
+      padding: 18px;
+    }
+
+    .table-card {
+      .queue-toolbar,
+      .queue-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .queue-search {
+        min-width: 0;
+        max-width: none;
+      }
+
+      .pager-controls {
+        justify-content: space-between;
+      }
+    }
+
+    .table-card {
+      .table-wrapper {
+        .approved-loans-table {
+          th, td {
+            padding: 12px 10px;
+            font-size: 0.82rem;
           }
         }
       }

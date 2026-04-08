@@ -13,9 +13,15 @@ export class StatusTrackingComponent {
   
   statusOptions = [
     { value: 'PENDING', label: 'Pending', color: '#8f8500' },
+    { value: 'AWAITING_INTEREST_ACCEPTANCE', label: 'Awaiting Interest Acceptance', color: '#eb9b3f' },
     { value: 'APPROVED', label: 'Approved', color: '#4f7cff' },
+    { value: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', color: '#0284c7' },
     { value: 'REJECTED', label: 'Rejected', color: '#ff2a3f' },
     { value: 'ACTIVE', label: 'Active', color: '#7efdff' },
+    { value: 'SKIPPED', label: 'Skipped', color: '#8b5cf6' },
+    { value: 'OVERDUE', label: 'Overdue', color: '#ef4444' },
+    { value: 'DEFAULTED', label: 'Defaulted', color: '#7f1d1d' },
+    { value: 'PAUSED', label: 'Paused', color: '#475569' },
     { value: 'COMPLETED', label: 'Completed', color: '#65f0a6' }
   ];
 

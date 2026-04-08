@@ -42,18 +42,56 @@ export class CooperativeMembershipService {
     private apiService: CooperativeLoanApiService // Inject the actual API service
   ) {}
 
-  private async getEmployeeIdFromUserId(userId: number): Promise<number> {
-    try {
-      const employee = await firstValueFrom(this.employeeService.getEmployeeByUserId(userId));
-      if (!employee || !employee.id) {
-        console.error(`Employee not found for user ID ${userId}`);
-        throw new Error(`Employee not found for user ID ${userId}`);
+  private async resolveEmployeeId(profile: Pick<CooperativeEmployeeProfile, 'employeeId' | 'fullName' | 'email'>): Promise<number> {
+    const candidateId = Number(profile.employeeId || 0);
+
+    if (candidateId > 0) {
+      try {
+        const directEmployee = await firstValueFrom(this.employeeService.getEmployeeById(candidateId));
+        if (directEmployee?.id) {
+          return Number(directEmployee.id);
+        }
+      } catch {
+        // Ignore and continue to alternative resolution strategies.
       }
-      return employee.id;
-    } catch (error) {
-      console.error(`Failed to find employee for user ID ${userId}:`, error);
-      throw error;
+
+      try {
+        const userEmployee = await firstValueFrom(this.employeeService.getEmployeeByUserId(candidateId));
+        if (userEmployee?.id) {
+          return Number(userEmployee.id);
+        }
+      } catch (error) {
+        console.warn(`Failed to resolve employee by user ID ${candidateId}:`, error);
+      }
     }
+
+    const employees = await firstValueFrom(this.employeeService.getAllEmployee());
+    const normalizedEmail = String(profile.email || '').trim().toLowerCase();
+    const normalizedFullName = String(profile.fullName || '').trim().toLowerCase();
+    const sessionUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
+
+    const matchedEmployee = employees.find((employee) => {
+      const employeeIds = [employee?.id, employee?.employeeId, employee?.userId, employee?.user?.id]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+      const employeeEmail = String(employee?.email || employee?.workEmail || '').trim().toLowerCase();
+      const employeeFullName = String(
+        employee?.fullName || [employee?.firstName, employee?.lastName].filter(Boolean).join(' ')
+      ).trim().toLowerCase();
+
+      return Boolean(
+        (candidateId > 0 && employeeIds.includes(String(candidateId)))
+        || (sessionUserId && employeeIds.includes(sessionUserId))
+        || (normalizedEmail && employeeEmail === normalizedEmail)
+        || (normalizedFullName && employeeFullName === normalizedFullName)
+      );
+    });
+
+    if (matchedEmployee?.id) {
+      return Number(matchedEmployee.id);
+    }
+
+    throw new Error(`Unable to resolve employee record for ${profile.fullName || profile.email || candidateId}`);
   }
 
   private async getFullMemberDetails(memberId: number): Promise<any> {
@@ -167,7 +205,7 @@ export class CooperativeMembershipService {
     // Always auto-approve: Directly create member in backend
     try {
       // Get the correct employee ID dynamically
-      const employeeId = await this.getEmployeeIdFromUserId(application.employee.employeeId);
+      const employeeId = await this.resolveEmployeeId(application.employee);
       
       // Create member using the API service (returns Observable)
       const createdMember = await firstValueFrom(this.apiService.createMember({
@@ -185,27 +223,14 @@ export class CooperativeMembershipService {
       try {
         fullMember = await this.getFullMemberDetails(createdMember.id);
       } catch (error) {
-        console.warn('Could not fetch full member details, using partial data:', error);
-        // Fallback to using the created member data and application data
-        fullMember = {
-          id: createdMember.id,
-          employeeId: createdMember.employeeId,
-          status: createdMember.status,
-          fullName: application.employee.fullName,
-          email: application.employee.email,
-          phone: application.employee.phone || '',
-          shareCapital: eligibility.policy.minShares,
-          address: application.employee.department || '',
-          joinDate: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+        console.error('Could not fetch full member details after member creation:', error);
+        throw error;
       }
       
       // Add to local context
       const newMember: CooperativeMember = {
         id: fullMember.id,
-        employeeId: application.employee.employeeId,
+        employeeId: employeeId,
         memberId: fullMember.id,
         fullName: fullMember.fullName || application.employee.fullName,
         email: fullMember.email || application.employee.email,
@@ -337,7 +362,11 @@ export class CooperativeMembershipService {
 
     try {
       // Get the correct employee ID dynamically
-      const employeeId = await this.getEmployeeIdFromUserId(application.employeeId);
+      const employeeId = await this.resolveEmployeeId({
+        employeeId: application.employeeId,
+        fullName: application.fullName,
+        email: ''
+      });
       
       // Create member using the API service (returns Observable)
       const createdMember = await firstValueFrom(this.apiService.createMember({
@@ -355,21 +384,8 @@ export class CooperativeMembershipService {
       try {
         fullMember = await this.getFullMemberDetails(createdMember.id);
       } catch (error) {
-        console.warn('Could not fetch full member details, using partial data:', error);
-        // Fallback to using the created member data
-        fullMember = {
-          id: createdMember.id,
-          employeeId: createdMember.employeeId,
-          status: createdMember.status,
-          fullName: application.fullName,
-          email: '',
-          phone: '',
-          shareCapital: 25000,
-          address: '',
-          joinDate: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+        console.error('Could not fetch full member details after approving membership:', error);
+        throw error;
       }
 
       // Remove from pending applications

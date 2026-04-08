@@ -24,6 +24,13 @@ export class CooperativeMemberDetailComponent implements OnInit {
   currentUuid = uuidV4();
   member!: CooperativeMember;
   memberLoans: CooperativeLoan[] = [];
+  activeGroups: Array<{
+    groupId: number;
+    groupName: string;
+    monthlyContributionAmount: number;
+    totalContribution: number;
+    joinedAt: string;
+  }> = [];
   isLoading = true;
 
   constructor(
@@ -53,14 +60,25 @@ export class CooperativeMemberDetailComponent implements OnInit {
       this.member = member;
       this.cooperativeService.getLoans().subscribe(loans => {
         this.memberLoans = loans.filter(loan => (loan.memberId || loan.cooperativeMemberId) === member.id);
-        this.isLoading = false;
+        this.cooperativeService.loadGroupMembershipsForMember(member).subscribe({
+          next: memberships => {
+            this.activeGroups = memberships
+              .filter(membership => membership.status === 'ACTIVE')
+              .map(membership => ({
+                groupId: membership.groupId,
+                groupName: this.cooperativeService.getGroupById(membership.groupId)?.name || 'Unknown Group',
+                monthlyContributionAmount: Number(membership.monthlyContributionAmount || 0),
+                totalContribution: Number(membership.totalContribution || 0),
+                joinedAt: membership.joinedAt || membership.requestedAt || ''
+              }));
+            this.isLoading = false;
+          },
+          error: () => {
+            this.activeGroups = [];
+            this.isLoading = false;
+          }
+        });
       });
-    });
-  }
-
-  editMember(): void {
-    this.router.navigate(['/admin/hr/cooperative/members/edit', this.member.id, this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
     });
   }
 
@@ -108,6 +126,10 @@ export class CooperativeMemberDetailComponent implements OnInit {
 
   getCompletedLoans(): CooperativeLoan[] {
     return this.memberLoans.filter(l => l.status === 'COMPLETED');
+  }
+
+  get memberTenureMonths(): number {
+    return this.cooperativeService.getMemberTenureMonths(this.member);
   }
 
   getRepaymentHistory(): RepaymentHistoryItem[] {

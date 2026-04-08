@@ -25,6 +25,8 @@ import {
   styleUrls: ['./employee-loan-history.component.scss']
 })
 export class EmployeeLoanHistoryComponent implements OnInit {
+  readonly pageSize = 20;
+  currentPage = 1;
   employeeId: string = '';
   employeeName: string = '';
   employeeLoans: LoanApplication[] = [];
@@ -41,14 +43,16 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // Sorting properties
   sortField: string = 'requestDate';
   sortDirection: 'asc' | 'desc' = 'desc';
-  statusFilter: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' = '';
+  statusFilter: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'AWAITING_INTEREST_ACCEPTANCE' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' = '';
   dateFrom: string = '';
   dateTo: string = '';
-  readonly statusOptions: Array<{ label: string; value: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' }> = [
+  readonly statusOptions: Array<{ label: string; value: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'AWAITING_INTEREST_ACCEPTANCE' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' }> = [
     { label: 'All Statuses', value: '' },
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
     { label: 'Rejected', value: 'REJECTED' },
+    { label: 'Awaiting Interest Acceptance', value: 'AWAITING_INTEREST_ACCEPTANCE' },
+    { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' }
   ];
@@ -182,12 +186,22 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     });
 
     // Only allow valid status values
-    const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'COMPLETED'];
-    let mappedStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' = 'PENDING';
-    if (loan.status === 'DEFAULTED') {
-      mappedStatus = 'ACTIVE';
-    } else if (allowedStatuses.includes(loan.status)) {
-      mappedStatus = loan.status as typeof mappedStatus;
+    const allowedStatuses: LoanApplication['status'][] = [
+      'PENDING',
+      'AWAITING_INTEREST_ACCEPTANCE',
+      'APPROVED',
+      'READY_FOR_DISBURSEMENT',
+      'REJECTED',
+      'ACTIVE',
+      'SKIPPED',
+      'OVERDUE',
+      'DEFAULTED',
+      'PAUSED',
+      'COMPLETED'
+    ];
+    let mappedStatus: LoanApplication['status'] = 'PENDING';
+    if (allowedStatuses.includes(loan.status as LoanApplication['status'])) {
+      mappedStatus = loan.status as LoanApplication['status'];
     } else {
       mappedStatus = 'PENDING';
     }
@@ -293,6 +307,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   // Apply sorting
   applySort(): void {
     this.filteredLoans = this.sortData(this.getFilteredLoans());
+    this.resetPagination();
   }
 
   onFiltersChanged(): void {
@@ -370,14 +385,31 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     this.selectedLoanForDetails = null;
   }
   
-  getStatusClass(status: string): string {
-    switch(status) {
-      case 'APPROVED': return 'status-approved';
-      case 'PENDING': return 'status-pending';
-      case 'REJECTED': return 'status-rejected';
-      case 'ACTIVE': return 'status-active';
-      case 'COMPLETED': return 'status-completed';
-      default: return 'status-default';
+ getStatusClass(status: string | undefined): string {
+  switch (status) {
+    case 'PENDING': return 'status-pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
+    case 'APPROVED': return 'status-approved';
+    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
+    case 'ACTIVE': return 'status-active';
+    case 'REJECTED': return 'status-rejected';
+    case 'COMPLETED': return 'status-completed';
+    case 'SKIPPED': return 'status-skipped';
+    case 'OVERDUE': return 'status-overdue';
+    case 'DEFAULTED': return 'status-defaulted';
+    case 'PAUSED': return 'status-paused';
+    default: return 'status-default';
+  }
+}
+
+  getStatusLabel(status: string | undefined): string {
+    switch (status) {
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+        return 'AWAITING INTEREST ACCEPTANCE';
+      case 'READY_FOR_DISBURSEMENT':
+        return 'READY FOR DISBURSEMENT';
+      default:
+        return String(status || '').replace(/_/g, ' ');
     }
   }
 
@@ -411,6 +443,31 @@ export class EmployeeLoanHistoryComponent implements OnInit {
 
   getLoanTotalRepayable(loan: LoanApplication): number {
     return resolveLoanTotalRepayableAmount(loan);
+  }
+
+  get paginatedLoans(): LoanApplication[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredLoans.length / this.pageSize));
+  }
+
+  get paginationStart(): number {
+    return this.filteredLoans.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredLoans.length);
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
   }
 
   exportToExcel(): void {
@@ -629,5 +686,9 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     anchor.download = filename;
     anchor.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  private resetPagination(): void {
+    this.currentPage = 1;
   }
 }

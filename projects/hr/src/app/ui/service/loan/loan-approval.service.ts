@@ -1,11 +1,25 @@
 // loan-approval.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { switchMap, map } from 'rxjs/operators';
-import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus } from './loan.types';
+import { switchMap, map, catchError } from 'rxjs/operators';
+import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanStatusUpdate } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
 import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
-import { normalizeLoanRepaymentStartDate, persistLoanInterestRate, persistLoanStatusActorName, persistLoanStatusNote } from './loan-display.util';
+import {
+  normalizeLoanRepaymentStartDate,
+  readPersistedLoanLateFeeGracePeriodDays,
+  readPersistedLoanLateFeePercentage,
+  readPersistedLoanRepaymentDay,
+  readPersistedLoanRepaymentStartDate,
+  persistLoanInterestRate,
+  persistLoanLateFeePercentage,
+  persistLoanLateFeeGracePeriodDays,
+  persistLoanRepaymentDay,
+  persistLoanRepaymentStartDate,
+  persistLoanStatusActorName,
+  persistLoanStatusChangedAt,
+  persistLoanStatusNote
+} from './loan-display.util';
 
 @Injectable({
   providedIn: 'root'
@@ -18,13 +32,21 @@ export class LoanApprovalService {
 
   updateApplicationStatus(
     loanId: string | number,
-    statusOrUpdate: LoanStatus | StatusChange
+    statusOrUpdate: LoanStatus | LoanStatusUpdate
   ): Observable<LoanApplication> {
     return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
         if (!application) {
           return throwError(() => new Error('Application not found'));
         }
+
+        const workingApplication: LoanApplication = {
+          ...application,
+          repaymentSchedule: [...(application.repaymentSchedule || [])],
+          paymentHistory: [...(application.paymentHistory || [])],
+          statusHistory: [...(application.statusHistory || [])],
+          gracePeriodRequests: [...(application.gracePeriodRequests || [])]
+        };
 
         const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
         const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
@@ -33,94 +55,154 @@ export class LoanApprovalService {
           ? new Date().toISOString()
           : this.toLoanDateTime(statusOrUpdate.changedAt) || new Date().toISOString();
         const interestRate = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.interestRate;
+        const lateFeePercentage = Number((statusOrUpdate as any).lateFeePercentage);
+        const lateFeeGracePeriodDays = Number((statusOrUpdate as any).lateFeeGracePeriodDays);
         const repaymentStartDate = normalizeLoanRepaymentStartDate((statusOrUpdate as any).repaymentStartDate);
         const repaymentDay = Number((statusOrUpdate as any).repaymentDay);
+        const disbursementInitiatedAt = this.toLoanDateTime((statusOrUpdate as any).disbursementInitiatedAt);
+        const disbursementInitiatedBy = (statusOrUpdate as any).disbursementInitiatedBy;
+        const disbursementInstructionReference = String((statusOrUpdate as any).disbursementInstructionReference || '').trim();
+        const overrideOpen = typeof statusOrUpdate === 'string' ? undefined : (statusOrUpdate as any).overrideOpen;
+        const overrideReason = typeof statusOrUpdate === 'string' ? undefined : String((statusOrUpdate as any).overrideReason || '').trim();
+        const statusBeforeOverride = typeof statusOrUpdate === 'string'
+          ? undefined
+          : ((statusOrUpdate as any).statusBeforeOverride as LoanStatus | undefined);
+        const previousStatus = application.status;
         
         if (interestRate !== undefined && Number.isFinite(interestRate)) {
-          application.interestRate = Number(interestRate.toFixed(2));
-          persistLoanInterestRate(application, application.interestRate);
+          workingApplication.interestRate = Number(interestRate.toFixed(2));
+          persistLoanInterestRate(workingApplication, workingApplication.interestRate);
+        }
+
+        if (Number.isFinite(lateFeePercentage) && lateFeePercentage >= 0) {
+          workingApplication.lateFeePercentage = Number(lateFeePercentage.toFixed(2));
+          persistLoanLateFeePercentage(workingApplication, workingApplication.lateFeePercentage);
+        }
+
+        if (Number.isFinite(lateFeeGracePeriodDays) && lateFeeGracePeriodDays >= 0) {
+          workingApplication.lateFeeGracePeriodDays = Math.round(lateFeeGracePeriodDays);
+          persistLoanLateFeeGracePeriodDays(workingApplication, workingApplication.lateFeeGracePeriodDays);
         }
         
-        application.status = status;
-        application.adminComment = notes || application.adminComment || '';
+        workingApplication.status = status;
+        workingApplication.adminComment = notes || workingApplication.adminComment || '';
+        if (overrideReason) {
+          workingApplication.statusBeforeOverride = statusBeforeOverride || previousStatus;
+        }
 
         if (notes?.trim()) {
-          persistLoanStatusNote(application, status, notes);
+          persistLoanStatusNote(workingApplication, status, notes);
         }
+        persistLoanStatusChangedAt(workingApplication, status, changedAt);
 
         if (repaymentStartDate) {
-          application.repaymentStartDate = repaymentStartDate;
+          workingApplication.repaymentStartDate = repaymentStartDate;
+          persistLoanRepaymentStartDate(workingApplication, repaymentStartDate);
         }
         if (Number.isFinite(repaymentDay) && repaymentDay > 0) {
-          application.repaymentDay = repaymentDay;
+          workingApplication.repaymentDay = repaymentDay;
+          persistLoanRepaymentDay(workingApplication, repaymentDay);
         }
+
+        const nextStatusHistoryEntry: StatusChange = {
+          status,
+          changedAt,
+          changedBy: actingUserId,
+          notes: notes || workingApplication.adminComment || '',
+          overrideOpen: typeof overrideOpen === 'boolean' ? overrideOpen : undefined,
+          overrideReason: overrideReason || undefined,
+          statusBeforeOverride: statusBeforeOverride || previousStatus,
+          interestRate: interestRate !== undefined && Number.isFinite(interestRate)
+            ? Number(interestRate.toFixed(2))
+            : undefined
+        };
 
         switch (status) {
           case 'AWAITING_INTEREST_ACCEPTANCE':
+            workingApplication.approvedDate = changedAt;
+            workingApplication.approvedBy = actingUserId;
+            persistLoanStatusActorName(workingApplication, 'APPROVED', actingUserId);
+            persistLoanStatusActorName(workingApplication, 'AWAITING_INTEREST_ACCEPTANCE', actingUserId);
+            this.ensureApprovalTerms(workingApplication);
+            this.recalculateApprovalTerms(workingApplication);
             break;
           case 'APPROVED':
-            application.approvedDate = changedAt;
-            application.approvedBy = actingUserId;
-            persistLoanStatusActorName(application, 'APPROVED', actingUserId);
-            this.recalculateApprovalTerms(application);
+            workingApplication.approvedDate = changedAt;
+            workingApplication.approvedBy = actingUserId;
+            persistLoanStatusActorName(workingApplication, 'APPROVED', actingUserId);
+            this.ensureApprovalTerms(workingApplication);
+            this.recalculateApprovalTerms(workingApplication);
             break;
           case 'ACTIVE':
-            application.disbursedDate = changedAt;
-            application.disbursedBy = actingUserId;
-            persistLoanStatusActorName(application, 'ACTIVE', actingUserId);
-            if (!application.repaymentSchedule?.length && application.repaymentStartDate && application.repaymentDay) {
-              application.repaymentSchedule = this.generateRepaymentScheduleWithStartDate(
-                application.amount,
-                application.repaymentTime,
-                Number(application.interestRate || 0),
-                application.modeOfPayment,
-                new Date(application.repaymentStartDate),
-                application.repaymentDay
+            workingApplication.disbursedDate = changedAt;
+            workingApplication.disbursedBy = actingUserId;
+            persistLoanStatusActorName(workingApplication, 'ACTIVE', actingUserId);
+            if (!workingApplication.repaymentSchedule?.length && workingApplication.repaymentStartDate && workingApplication.repaymentDay) {
+              workingApplication.repaymentSchedule = this.generateRepaymentScheduleWithStartDate(
+                workingApplication.amount,
+                workingApplication.repaymentTime,
+                Number(workingApplication.interestRate || 0),
+                workingApplication.modeOfPayment,
+                new Date(workingApplication.repaymentStartDate),
+                workingApplication.repaymentDay
               );
-            } else if (!application.repaymentSchedule?.length) {
-              application.repaymentSchedule = this.generateRepaymentSchedule(
-                application.amount,
-                application.repaymentTime,
-                Number(application.interestRate || 0),
-                application.modeOfPayment
+            } else if (!workingApplication.repaymentSchedule?.length) {
+              workingApplication.repaymentSchedule = this.generateRepaymentSchedule(
+                workingApplication.amount,
+                workingApplication.repaymentTime,
+                Number(workingApplication.interestRate || 0),
+                workingApplication.modeOfPayment
               );
             }
-            application.repaymentAmount = application.repaymentSchedule.length > 0
-              ? application.repaymentSchedule[0].totalAmount
+            workingApplication.repaymentAmount = workingApplication.repaymentSchedule.length > 0
+              ? workingApplication.repaymentSchedule[0].totalAmount
               : 0;
-            application.totalPaid = application.paymentHistory.reduce((sum, payment) => sum + payment.totalAmount, 0);
-            application.totalInterestPaid = application.paymentHistory.reduce(
+            workingApplication.totalPaid = workingApplication.paymentHistory.reduce((sum, payment) => sum + payment.totalAmount, 0);
+            workingApplication.totalInterestPaid = workingApplication.paymentHistory.reduce(
               (sum, payment) => sum + Number(payment.interestPaid || 0),
               0
             );
-            application.totalPrincipalPaid = application.paymentHistory.reduce(
+            workingApplication.totalPrincipalPaid = workingApplication.paymentHistory.reduce(
               (sum, payment) => sum + Number(payment.principalAmount || 0),
               0
             );
             {
-              const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + item.totalAmount, 0);
-              application.currentBalance = Math.max(totalRepayable - application.totalPaid, 0);
-              application.outstandingPrincipal = Math.max(
-                application.amount - Number(application.totalPrincipalPaid || 0),
+              const totalRepayable = workingApplication.repaymentSchedule.reduce((sum, item) => sum + item.totalAmount, 0);
+              workingApplication.currentBalance = Math.max(totalRepayable - workingApplication.totalPaid, 0);
+              workingApplication.outstandingPrincipal = Math.max(
+                workingApplication.amount - Number(workingApplication.totalPrincipalPaid || 0),
                 0
               );
             }
             break;
+          case 'READY_FOR_DISBURSEMENT':
+            workingApplication.disbursementInitiatedAt = disbursementInitiatedAt || workingApplication.disbursementInitiatedAt || changedAt;
+            workingApplication.disbursementInitiatedBy = disbursementInitiatedBy || workingApplication.disbursementInitiatedBy || actingUserId;
+            workingApplication.disbursementInstructionReference = disbursementInstructionReference || workingApplication.disbursementInstructionReference;
+            persistLoanStatusActorName(workingApplication, 'READY_FOR_DISBURSEMENT', actingUserId);
+            break;
           case 'COMPLETED':
-            application.completedDate = changedAt;
-            application.currentBalance = 0;
-            application.outstandingPrincipal = 0;
+            workingApplication.completedDate = changedAt;
+            workingApplication.currentBalance = 0;
+            workingApplication.outstandingPrincipal = 0;
             break;
           case 'REJECTED':
-            application.rejectedDate = changedAt;
-            application.rejectedBy = actingUserId;
-            persistLoanStatusActorName(application, 'REJECTED', actingUserId);
+            workingApplication.rejectedDate = changedAt;
+            workingApplication.rejectedBy = actingUserId;
+            persistLoanStatusActorName(workingApplication, 'REJECTED', actingUserId);
             break;
           case 'PENDING':
             break;
         }
 
-        return this.loanApplicationService.saveApplication(application).pipe(
+        workingApplication.statusHistory = [
+          ...(workingApplication.statusHistory || []).filter((entry) =>
+            !(entry.status === nextStatusHistoryEntry.status && entry.changedAt === nextStatusHistoryEntry.changedAt)
+          ),
+          nextStatusHistoryEntry
+        ].sort((left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime());
+
+        return this.loanApplicationService.saveApplication(workingApplication, previousStatus).pipe(
           switchMap((savedApp) => {
             console.log('Status updated successfully to:', savedApp.status);
             return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
@@ -171,11 +253,50 @@ export class LoanApprovalService {
       : 0;
 
     const totalRepayable = application.repaymentSchedule.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
+    const totalInterest = application.repaymentSchedule.reduce((sum, item) => sum + Number(item.interestAmount || 0), 0);
     application.currentBalance = Number(Math.max(totalRepayable - Number(application.totalPaid || 0), 0).toFixed(2));
     application.outstandingPrincipal = Number(Math.max(application.amount - Number(application.totalPrincipalPaid || 0), 0).toFixed(2));
+    application.outstandingInterest = Number(Math.max(totalInterest - Number(application.totalInterestPaid || 0), 0).toFixed(2));
+    application.outstandingBalance = Number(application.currentBalance.toFixed(2));
   }
 
-  approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number): Observable<LoanApplication> {
+  private ensureApprovalTerms(application: LoanApplication): void {
+    const persistedRepaymentStartDate = readPersistedLoanRepaymentStartDate(application);
+    const firstInstallmentDueDate = normalizeLoanRepaymentStartDate(application.repaymentSchedule?.[0]?.dueDate);
+    const resolvedRepaymentStartDate = normalizeLoanRepaymentStartDate(
+      application.repaymentStartDate || persistedRepaymentStartDate || firstInstallmentDueDate
+    );
+
+    if (resolvedRepaymentStartDate) {
+      application.repaymentStartDate = resolvedRepaymentStartDate;
+      persistLoanRepaymentStartDate(application, resolvedRepaymentStartDate);
+    }
+
+    const firstInstallmentDay = firstInstallmentDueDate ? new Date(firstInstallmentDueDate).getDate() : 0;
+    const persistedRepaymentDay = readPersistedLoanRepaymentDay(application);
+    const resolvedRepaymentDay = Number(application.repaymentDay || persistedRepaymentDay || firstInstallmentDay || 0);
+
+    if (Number.isFinite(resolvedRepaymentDay) && resolvedRepaymentDay > 0) {
+      application.repaymentDay = resolvedRepaymentDay;
+      persistLoanRepaymentDay(application, resolvedRepaymentDay);
+    }
+
+    const persistedLateFeePercentage = readPersistedLoanLateFeePercentage(application);
+    const resolvedLateFeePercentage = Number(application.lateFeePercentage || persistedLateFeePercentage || 2);
+    if (Number.isFinite(resolvedLateFeePercentage) && resolvedLateFeePercentage >= 0) {
+      application.lateFeePercentage = Number(resolvedLateFeePercentage.toFixed(2));
+      persistLoanLateFeePercentage(application, application.lateFeePercentage);
+    }
+
+    const persistedLateFeeGracePeriodDays = readPersistedLoanLateFeeGracePeriodDays(application);
+    const resolvedLateFeeGracePeriodDays = Number(application.lateFeeGracePeriodDays || persistedLateFeeGracePeriodDays || 15);
+    if (Number.isFinite(resolvedLateFeeGracePeriodDays) && resolvedLateFeeGracePeriodDays >= 0) {
+      application.lateFeeGracePeriodDays = Math.round(resolvedLateFeeGracePeriodDays);
+      persistLoanLateFeeGracePeriodDays(application, application.lateFeeGracePeriodDays);
+    }
+  }
+
+  approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number, lateFeePercentage?: number, lateFeeGracePeriodDays?: number): Observable<LoanApplication> {
     console.log('Approving loan - setting status to AWAITING_INTEREST_ACCEPTANCE');
     
     return this.updateApplicationStatus(loanId, {
@@ -183,19 +304,40 @@ export class LoanApprovalService {
       notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`,
       changedAt: new Date().toISOString(),
       interestRate: interestRate,
+      lateFeePercentage: lateFeePercentage,
+      lateFeeGracePeriodDays: lateFeeGracePeriodDays,
       repaymentStartDate: repaymentStartDate,
       repaymentDay: repaymentDay
     } as any).pipe(
       switchMap((loan) => {
         if (loan && interestRate) {
-          return this.interestAgreementService.createAgreement({
-            loanId: loan.id,
-            employeeId: loan.employeeId,
-            proposedInterestRate: interestRate,
-            agreementMethod: 'DASHBOARD',
-            notes: notes
-          }).pipe(
-            map(() => loan)
+          return this.interestAgreementService.getAgreementByLoanId(Number(loan.id)).pipe(
+            switchMap((agreement) => {
+              const agreementPayload = {
+                loanId: loan.id,
+                employeeId: loan.employeeId,
+                proposedInterestRate: interestRate,
+                agreementMethod: 'DASHBOARD' as const,
+                notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`
+              };
+
+              if (agreement?.id && agreement.status !== 'ACCEPTED') {
+                return this.interestAgreementService.updateAgreement(agreement.id, {
+                  proposedInterestRate: agreementPayload.proposedInterestRate,
+                  status: 'PENDING',
+                  agreementMethod: agreementPayload.agreementMethod,
+                  notes: agreementPayload.notes
+                }).pipe(map(() => loan));
+              }
+
+              return this.interestAgreementService.createAgreement(agreementPayload).pipe(
+                map(() => loan)
+              );
+            }),
+            catchError((error) => {
+              console.error('Interest agreement sync failed after loan approval:', error);
+              return of(loan);
+            })
           );
         }
         return of(loan);
@@ -224,10 +366,28 @@ export class LoanApprovalService {
         return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
           switchMap((agreement: any) => {
             if (agreement && agreement.id) {
-              return this.interestAgreementService.acceptAgreement(agreement.id, acceptedRate).pipe(
-                map(() => loan)
+              return this.interestAgreementService.updateAgreement(agreement.id, {
+                loanId: agreement.loanId,
+                employeeId: agreement.employeeId,
+                proposedInterestRate: agreement.proposedInterestRate,
+                agreedInterestRate: acceptedRate,
+                status: 'ACCEPTED',
+                agreedAt: new Date().toISOString(),
+                agreementMethod: agreement.agreementMethod || 'DASHBOARD',
+                ipAddress: agreement.ipAddress || '0.0.0.0',
+                notes: agreement.notes
+              }).pipe(
+                map(() => loan),
+                catchError((error) => {
+                  console.error('Interest agreement acceptance update failed after loan approval:', error);
+                  return of(loan);
+                })
               );
             }
+            return of(loan);
+          }),
+          catchError((error) => {
+            console.error('Interest agreement lookup failed after loan approval:', error);
             return of(loan);
           })
         );
@@ -236,24 +396,73 @@ export class LoanApprovalService {
   }
 
   rejectInterestRate(loanId: string | number, reason: string): Observable<LoanApplication> {
-    console.log('Employee rejecting interest rate - setting status back to PENDING');
+    console.log('Employee rejecting interest rate - keeping status as AWAITING_INTEREST_ACCEPTANCE for admin revision');
     
     return this.updateApplicationStatus(loanId, {
-      status: 'PENDING',
-      notes: `Employee rejected proposed interest rate. Reason: ${reason}`,
+      status: 'AWAITING_INTEREST_ACCEPTANCE',
+      notes: `Employee rejected proposed interest rate. Reason: ${reason}. Admin review required before resubmission.`,
       changedAt: new Date().toISOString()
     }).pipe(
       switchMap((loan) => {
         return this.interestAgreementService.getAgreementByLoanId(Number(loanId)).pipe(
           switchMap((agreement: any) => {
             if (agreement && agreement.id) {
-              return this.interestAgreementService.declineAgreement(agreement.id, reason).pipe(
-                map(() => loan)
+              if (agreement.status === 'DECLINED') {
+                return of(loan);
+              }
+
+              return this.interestAgreementService.updateAgreement(agreement.id, {
+                loanId: agreement.loanId,
+                employeeId: agreement.employeeId,
+                proposedInterestRate: agreement.proposedInterestRate,
+                agreedInterestRate: agreement.agreedInterestRate,
+                status: 'DECLINED',
+                agreementMethod: agreement.agreementMethod || 'DASHBOARD',
+                ipAddress: agreement.ipAddress || '0.0.0.0',
+                notes: reason || 'Interest rate declined by employee'
+              }).pipe(
+                map(() => loan),
+                catchError((error) => {
+                  console.error('Interest agreement rejection update failed after loan status update:', error);
+                  return of(loan);
+                })
               );
             }
             return of(loan);
+          }),
+          catchError((error) => {
+            console.error('Interest agreement lookup failed after loan rejection feedback:', error);
+            return of(loan);
           })
         );
+      })
+    );
+  }
+
+  overrideLoanStatus(
+    loanId: string | number,
+    nextStatus: Extract<LoanStatus, 'ACTIVE' | 'PAUSED'>,
+    reason: string
+  ): Observable<LoanApplication> {
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
+      switchMap((application) => {
+        if (!application) {
+          return throwError(() => new Error('Application not found'));
+        }
+
+        const previousStatus = application.status;
+        const displayStatus = (status: LoanStatus) => status.replace(/_/g, ' ');
+
+        return this.updateApplicationStatus(loanId, {
+          status: nextStatus,
+          changedAt: new Date().toISOString(),
+          notes: `Admin override changed loan status from ${displayStatus(previousStatus)} to ${displayStatus(nextStatus)}. Reason: ${reason}`,
+          overrideOpen: nextStatus !== 'ACTIVE',
+          overrideReason: reason,
+          statusBeforeOverride: previousStatus,
+          repaymentStartDate: application.repaymentStartDate,
+          repaymentDay: application.repaymentDay
+        } as any);
       })
     );
   }

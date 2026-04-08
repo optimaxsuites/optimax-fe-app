@@ -1,35 +1,138 @@
-@mixin loan-status-badge-variant($background, $color, $border-color, $include-border: true) {
-  background: $background;
-  color: $color;
+// _loan-status-badges.scss
+// Light metallic badge styles — professional, airy, enterprise-grade
 
-  @if $include-border {
-    border: 1px solid $border-color;
+@mixin loan-status-badge-variant($bg-gradient, $text-color, $border-color, $shadow-intensity: 'low') {
+  $shadow-map: (
+    'low': 0 1px 2px rgba(0, 0, 0, 0.03),
+    'medium': 0 1px 3px rgba(0, 0, 0, 0.05),
+    'high': 0 2px 4px rgba(0, 0, 0, 0.08)
+  );
+  
+  background: $bg-gradient;
+  color: $text-color;
+  border: 1px solid $border-color;
+  box-shadow: map-get($shadow-map, $shadow-intensity), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 }
 
 @mixin advance-loan-status-badges($include-border: true) {
+  
+  // PENDING - Light gold metallic
   &.status-pending {
-    @include loan-status-badge-variant(rgba(143, 133, 0, 0.14), #8f8500, rgba(143, 133, 0, 0.28), $include-border);
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #fef3c7, #fde68a),
+      #b45309,
+      #fcd34d,
+      'low'
+    );
   }
 
+  // AWAITING_INTEREST_ACCEPTANCE - Light orange metallic
   &.status-awaiting_interest_acceptance {
-    @include loan-status-badge-variant(rgba(235, 155, 63, 0.14), #eb9b3f, rgba(235, 155, 63, 0.28), $include-border);
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #ffedd5, #fed7aa),
+      #9a3412,
+      #fdba74,
+      'low'
+    );
   }
 
+  // APPROVED - Light blue metallic
   &.status-approved {
-    @include loan-status-badge-variant(rgba(79, 124, 255, 0.14), #4f7cff, rgba(79, 124, 255, 0.28), $include-border);
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #dbeafe, #bfdbfe),
+      #1e40af,
+      #93c5fd,
+      'low'
+    );
+  }
+
+  // READY_FOR_DISBURSEMENT - Light purple metallic
+  &.status-ready_for_disbursement {
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #ede9fe, #ddd6fe),
+      #6d28d9,
+      #c4b5fd,
+      'low'
+    );
   }
 
 
-  &.status-active {
-    @include loan-status-badge-variant(rgba(56, 189, 248, 0.14), #38bdf8, rgba(56, 189, 248, 0.32), $include-border);
-  }
+// ACTIVE - Premium shiny silver metallic with elegant dark grey text
+&.status-active {
+  @include loan-status-badge-variant(
+    linear-gradient(135deg, #f8f9fa, #e9ecef, #dee2e6),
+    #2c3e50 !important,  // !important inside the string
+    #ced4da,
+    'low'
+  );
+}
 
+  // REJECTED - Light rose metallic
   &.status-rejected {
-    @include loan-status-badge-variant(rgba(255, 42, 63, 0.12), #ff2a3f, rgba(255, 42, 63, 0.28), $include-border);
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #fee2e2, #fecaca),
+      #991b1b,
+      #fca5a5,
+      'low'
+    );
   }
 
+  // COMPLETED - Light emerald metallic
   &.status-completed {
-    @include loan-status-badge-variant(rgba(101, 240, 166, 0.14), #65f0a6, rgba(101, 240, 166, 0.28), $include-border);
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #d1fae5, #a7f3d0),
+      #065f46,
+      #6ee7b7,
+      'low'
+    );
+  }
+
+  // SKIPPED - Light gray metallic
+  &.status-skipped {
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #f3f4f6, #e5e7eb),
+      #374151,
+      #d1d5db,
+      'low'
+    );
+  }
+
+  // OVERDUE - Brownish red metallic
+  &.status-overdue {
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #f5e6d3, #e8c9b0),
+      #8b3a1a,
+      #d4a373,
+      'low'
+    );
+  }
+
+  // DEFAULTED - Light red metallic
+  &.status-defaulted {
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #fecaca, #fca5a5),
+      #7f1d1d,
+      #f87171,
+      'low'
+    );
+  }
+
+  // PAUSED - Light slate metallic
+  &.status-paused {
+    @include loan-status-badge-variant(
+      linear-gradient(135deg, #f1f5f9, #e2e8f0),
+      #334155,
+      #cbd5e1,
+      'low'
+    );
   }
 }

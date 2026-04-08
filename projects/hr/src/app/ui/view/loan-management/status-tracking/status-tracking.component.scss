@@ -34,6 +34,21 @@
   }
 }
 
+.status-badge,
+.timeline-dot {
+  &.status-pending { background: #8f8500; box-shadow: 0 0 0 3px rgba(143, 133, 0, 0.18); }
+  &.status-awaiting_interest_acceptance { background: #eb9b3f; box-shadow: 0 0 0 3px rgba(235, 155, 63, 0.18); }
+  &.status-approved { background: #4f7cff; box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.18); }
+  &.status-ready_for_disbursement { background: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18); }
+  &.status-rejected { background: #ff2a3f; box-shadow: 0 0 0 3px rgba(255, 42, 63, 0.18); }
+  &.status-active { background: #17a2b8; box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.18); }
+  &.status-skipped { background: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18); }
+  &.status-overdue { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18); }
+  &.status-defaulted { background: #7f1d1d; box-shadow: 0 0 0 3px rgba(127, 29, 29, 0.18); }
+  &.status-paused { background: #475569; box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.18); }
+  &.status-completed { background: #65f0a6; box-shadow: 0 0 0 3px rgba(101, 240, 166, 0.18); }
+}
+
 .status-controls {
   margin-bottom: 25px;
   padding: 15px;

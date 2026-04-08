@@ -41,6 +41,11 @@
         <input type="text" [(ngModel)]="cardHolderName" placeholder="Name on card" />
         <label>Card Last 4 Digits</label>
         <input type="text" maxlength="4" [(ngModel)]="cardLast4" placeholder="1234" />
+      
+            <div class="loading-state" *ngIf="isLoading">
+              <mat-spinner diameter="48"></mat-spinner>
+              <p>Loading your loans...</p>
+            </div>
       </div>
 
       <div class="form-section-block" *ngIf="selectedmodeofPayment === 'CASH'">
@@ -99,44 +104,23 @@
       <div class="user-avatar">{{ getInitials(employeeName) }}</div>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon pending-icon"><i class="fas fa-hourglass-half"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Pending Applications</span>
-          <span class="stat-value">{{ loanCounts.pending }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon approved-icon"><i class="fas fa-stamp"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Approved Loans</span>
-          <span class="stat-value">{{ loanCounts.approved }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon active-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Active Loans</span>
-          <span class="stat-value">{{ loanCounts.active }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon rejected-icon"><i class="fas fa-ban"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Rejected Applications</span>
-          <span class="stat-value">{{ loanCounts.rejected }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon completed-icon"><i class="fas fa-flag-checkered"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Completed Payments</span>
-          <span class="stat-value">{{ loanCounts.completed }}</span>
-          <span class="stat-sub">Total requests: {{ getTotalRequests() }}</span>
+    <div class="stats-overview">
+      <div class="stats-grid primary-grid employee-summary-grid">
+        <div class="stat-card hero-card" *ngFor="let card of employeeDashboardCards" [ngClass]="'tone-' + card.tone">
+          <div class="stat-icon"><i class="fas" [ngClass]="card.icon"></i></div>
+          <div class="stat-content">
+            <span class="stat-label">{{ card.label }}</span>
+            <span class="stat-value">{{ card.value }}</span>
+            <span class="stat-sub">{{ card.note }}</span>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Add before the dashboard-workspace -->
+  <div class="payment-reminder-widget" *ngIf="allLoans.length > 0">
+  <app-employee-payment-reminder [loans]="allLoans"></app-employee-payment-reminder>
+  </div>
 
     <div class="dashboard-workspace">
       <aside class="quick-actions-panel card">
@@ -152,10 +136,11 @@
           </span>
         </button>
         <button class="quick-action-btn" (click)="openPaymentFormModal()">
+          <span class="action-lock-pill" *ngIf="!payableLoans.length">Locked</span>
           <span class="action-icon"><i class="fas fa-credit-card"></i></span>
           <span class="action-copy">
             <strong>Make Payment</strong>
-            <small>Pay into an active balance</small>
+            <small>{{ getPaymentActionNote() }}</small>
           </span>
         </button>
         <button class="quick-action-btn" (click)="toggleHistory()">
@@ -198,17 +183,26 @@
       </aside>
 
       <div class="workspace-main">
-        <!-- Loading Spinner -->
-        <div class="loading-spinner" *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
-          <mat-spinner diameter="48"></mat-spinner>
-        </div>
-        <div class="card loan-history-section" *ngIf="showHistory && !isLoading">
+        <div class="card loan-history-section" *ngIf="showHistory">
           <div class="card-header">
             <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
             <span class="history-subtitle">Showing last 5 requests</span>
           </div>
 
-          <div class="table-container" *ngIf="allLoans.length > 0">
+          <div class="table-loading-state" *ngIf="isLoading">
+            <div class="spiral-loader" aria-hidden="true">
+              <span class="spiral-ring ring-one"></span>
+              <span class="spiral-ring ring-two"></span>
+              <span class="spiral-ring ring-three"></span>
+              <span class="spiral-core"></span>
+            </div>
+            <div class="loading-copy">
+              <strong>Loading your loan requests</strong>
+              <p>Fetching your latest applications and repayment status.</p>
+            </div>
+          </div>
+
+          <div class="table-container" *ngIf="allLoans.length > 0 && !isLoading">
             <table appSortableTable class="history-table">
               <thead>
                 <tr>
@@ -233,12 +227,13 @@
                   <td>
                     <div>{{ formatRepaymentMonthYear(loan.repaymentStartDate) }}</div>
                     <small>{{ formatRepaymentDay(loan.repaymentDay) }}</small>
+                    <div class="policy-summary">{{ getOverduePolicySummary(loan) }}</div>
                   </td>
                   <td class="loan-amount">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
                   <td>
-                    <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
-                      {{ getStatusDisplay(loan.status) }}
-                    </span>
+                   <span class="status-badge" [ngClass]="'status-' + getStatusClass(loan.status)">
+                    {{ getStatusDisplay(loan.status) }}
+                  </span>
                   </td>
                   <td class="actions-col">
                     <div class="table-actions">
@@ -255,7 +250,7 @@
             </table>
           </div>
 
-          <div class="empty-state" *ngIf="allLoans.length === 0">
+            <div class="empty-state" *ngIf="allLoans.length === 0 && !isLoading">
             <i class="fas fa-inbox"></i>
             <p>You haven't submitted any loan requests yet.</p>
             <button class="quick-action-btn" (click)="openLoanFormModal()">

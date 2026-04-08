@@ -36,9 +36,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   
   loanCounts = {
     pending: 0,
+    awaitingInterestAcceptance: 0,
+    readyForDisbursement: 0,
     approved: 0,
     active: 0,
-    requested: 0,
+    skipped: 0,
+    overdue: 0,
+    paused: 0,
+    defaulted: 0,
     rejected: 0,
     completed: 0
   };
@@ -111,6 +116,55 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> {
     return this.applicationUpdates.slice(0, 3);
+  }
+
+  get dashboardStatusCards(): Array<{
+    label: string;
+    value: number;
+    tone: string;
+    icon: string;
+    note: string;
+  }> {
+    return [
+      { label: 'Pending', value: this.loanCounts.pending, tone: 'pending', icon: 'fa-hourglass-half', note: 'Submitted and waiting for review' },
+      { label: 'Awaiting Interest', value: this.loanCounts.awaitingInterestAcceptance, tone: 'awaiting', icon: 'fa-percent', note: 'Awaiting your decision on interest' },
+      { label: 'Ready To Disburse', value: this.loanCounts.readyForDisbursement, tone: 'ready', icon: 'fa-hand-holding-dollar', note: 'Approved and lined up for release' },
+      { label: 'Active', value: this.loanCounts.active, tone: 'active', icon: 'fa-check-circle', note: 'Repayments currently running' },
+      { label: 'Skipped', value: this.loanCounts.skipped, tone: 'skipped', icon: 'fa-forward', note: 'Grace-adjusted repayment windows' },
+      { label: 'Overdue', value: this.loanCounts.overdue, tone: 'overdue', icon: 'fa-triangle-exclamation', note: 'Repayments behind schedule' },
+      { label: 'Paused', value: this.loanCounts.paused, tone: 'paused', icon: 'fa-circle-pause', note: 'Admin has temporarily locked actions' },
+      { label: 'Defaulted', value: this.loanCounts.defaulted, tone: 'defaulted', icon: 'fa-shield-halved', note: 'Repayment is locked pending admin action' },
+      { label: 'Rejected', value: this.loanCounts.rejected, tone: 'rejected', icon: 'fa-ban', note: 'Requests that did not pass review' },
+      { label: 'Completed', value: this.loanCounts.completed, tone: 'completed', icon: 'fa-flag-checkered', note: `Total requests: ${this.getTotalRequests()}` }
+    ];
+  }
+
+  get primaryDashboardStatusCards() {
+    return this.dashboardStatusCards.filter((card) =>
+      ['awaiting', 'ready', 'active', 'overdue'].includes(card.tone)
+    );
+  }
+
+  get secondaryDashboardStatusCards() {
+    return this.dashboardStatusCards.filter((card) =>
+      !['awaiting', 'ready', 'active', 'overdue'].includes(card.tone)
+    );
+  }
+
+  get employeeDashboardCards(): Array<{
+    label: string;
+    value: number;
+    tone: string;
+    icon: string;
+    note: string;
+  }> {
+    return [
+      { label: 'Pending', value: this.loanCounts.pending, tone: 'pending', icon: 'fa-hourglass-half', note: 'Submitted and waiting for review' },
+      { label: 'Approved', value: this.loanCounts.approved, tone: 'approved', icon: 'fa-check-circle', note: 'Approved and awaiting next step' },
+      { label: 'Active', value: this.loanCounts.active, tone: 'active', icon: 'fa-check-circle', note: 'Repayments currently running' },
+      { label: 'Rejected', value: this.loanCounts.rejected, tone: 'rejected', icon: 'fa-ban', note: 'Requests that did not pass review' },
+      { label: 'Completed', value: this.loanCounts.completed, tone: 'completed', icon: 'fa-flag-checkered', note: `Total requests: ${this.getTotalRequests()}` }
+    ];
   }
 
   getLoanTotalRepayable(loan: LoanApplication): number {
@@ -313,9 +367,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   calculateLoanCounts(): void {
     this.loanCounts = {
       pending: 0,
+      awaitingInterestAcceptance: 0,
+      readyForDisbursement: 0,
       approved: 0,
       active: 0,
-      requested: 0,
+      skipped: 0,
+      overdue: 0,
+      paused: 0,
+      defaulted: 0,
       rejected: 0,
       completed: 0
     };
@@ -324,10 +383,15 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       switch(loan.status) {
         case 'PENDING':
           this.loanCounts.pending++;
-          this.loanCounts.requested++;
+          break;
+        case 'AWAITING_INTEREST_ACCEPTANCE':
+          this.loanCounts.awaitingInterestAcceptance++;
           break;
         case 'APPROVED':
           this.loanCounts.approved++;
+          break;
+        case 'READY_FOR_DISBURSEMENT':
+          this.loanCounts.readyForDisbursement++;
           break;
         case 'REJECTED':
           this.loanCounts.rejected++;
@@ -337,6 +401,18 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           break;
         case 'ACTIVE':
           this.loanCounts.active++;
+          break;
+        case 'SKIPPED':
+          this.loanCounts.skipped++;
+          break;
+        case 'OVERDUE':
+          this.loanCounts.overdue++;
+          break;
+        case 'PAUSED':
+          this.loanCounts.paused++;
+          break;
+        case 'DEFAULTED':
+          this.loanCounts.defaulted++;
           break;
       }
     });
@@ -392,6 +468,16 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   openPaymentFormModal(): void {
     this.resetPaymentForm();
     this.refreshPayableLoans();
+
+    if (!this.payableLoans.length) {
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Repayment Action Locked',
+        detail: this.getPaymentActionNote()
+      }];
+      return;
+    }
+
     this.showPaymentForm = true;
   }
 
@@ -518,33 +604,73 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     return formatLoanRepaymentDayDisplay(day);
   }
 
+  getLateFeePercentageDisplay(loan: LoanApplication): string {
+    return `${Number(loan.lateFeePercentage ?? 2).toFixed(2)}%`;
+  }
+
+  getLateFeeGracePeriodDisplay(loan: LoanApplication): string {
+    const gracePeriodDays = Math.round(Number(loan.lateFeeGracePeriodDays ?? 15));
+    return `${gracePeriodDays} day${gracePeriodDays === 1 ? '' : 's'}`;
+  }
+
+  getOverduePolicySummary(loan: LoanApplication): string {
+    return `${this.getLateFeePercentageDisplay(loan)} late fee after ${this.getLateFeeGracePeriodDisplay(loan)} grace`;
+  }
+
   getTotalRequests(): number {
     return this.allLoans.length;
   }
 
-  getStatusDisplay(status: string): string {
-    switch(status) {
-      case 'PENDING': return 'Pending';
-      case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Acceptance';
-      case 'APPROVED': return 'Approved';
-      case 'ACTIVE': return 'Active';
-      case 'REJECTED': return 'Rejected';
-      case 'COMPLETED': return 'Completed';
-      default: return status;
-    }
-  }
+  // getStatusDisplay(status: string): string {
+  //   switch (status) {
+  //     case 'PENDING': return 'Pending';
+  //     case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Interest';
+  //     case 'APPROVED': return 'Approved';
+  //     case 'READY_FOR_DISBURSEMENT': return 'Ready for Disbursement';
+  //     case 'ACTIVE': return 'Active';
+  //     case 'REJECTED': return 'Rejected';
+  //     case 'COMPLETED': return 'Completed';
+  //     case 'SKIPPED': return 'Skipped';
+  //     case 'OVERDUE': return 'Overdue';
+  //     case 'DEFAULTED': return 'Defaulted';
+  //     case 'PAUSED': return 'Paused';
+  //     default: return status;
+  //   }
+  // }
 
-  getStatusClass(status: string): string {
-    switch(status) {
-      case 'PENDING': return 'pending';
-      case 'AWAITING_INTEREST_ACCEPTANCE': return 'pending';
-      case 'APPROVED': return 'approved';
-      case 'ACTIVE': return 'active';
-      case 'REJECTED': return 'rejected';
-      case 'COMPLETED': return 'completed';
-      default: return status.toLowerCase();
-    }
+getStatusClass(status: string): string {
+  switch(status) {
+    case 'PENDING': return 'pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'awaiting_interest_acceptance';
+    case 'APPROVED': return 'approved';
+    case 'READY_FOR_DISBURSEMENT': return 'ready_for_disbursement';
+    case 'ACTIVE': return 'active';
+    case 'REJECTED': return 'rejected';
+    case 'COMPLETED': return 'completed';
+    case 'SKIPPED': return 'skipped';
+    case 'OVERDUE': return 'overdue';
+    case 'DEFAULTED': return 'defaulted';
+    case 'PAUSED': return 'paused';
+    default: return status.toLowerCase();
   }
+}
+
+getStatusDisplay(status: string): string {
+  switch(status) {
+    case 'PENDING': return 'Pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Interest Acceptance';
+    case 'APPROVED': return 'Approved';
+    case 'READY_FOR_DISBURSEMENT': return 'Ready for Disbursement';
+    case 'ACTIVE': return 'Active';
+    case 'REJECTED': return 'Rejected';
+    case 'COMPLETED': return 'Completed';
+    case 'SKIPPED': return 'Skipped';
+    case 'OVERDUE': return 'Overdue';
+    case 'DEFAULTED': return 'Defaulted';
+    case 'PAUSED': return 'Paused';
+    default: return status;
+  }
+}
 
   viewLoanDetails(loan: LoanApplication): void {
     this.selectedLoanForDetails = loan;
@@ -591,14 +717,38 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+
   closeRepaymentSchedule(): void {
     this.selectedLoanForSchedule = null;
   }
 
+  makePaymentFromReminder(loan: LoanApplication, installment: RepaymentScheduleItem): void {
+  this.selectedLoanForSchedule = loan;
+  // Open payment modal for this specific installment
+  // You can emit an event or open the modal directly
+}
   private refreshPayableLoans(): void {
     this.payableLoans = this.allLoans.filter(loan =>
-      (loan.status === 'ACTIVE' || loan.status === 'APPROVED') && loan.currentBalance > 0
+      (loan.status === 'ACTIVE' || loan.status === 'SKIPPED' || loan.status === 'OVERDUE') && loan.currentBalance > 0
     );
+  }
+
+  hasRepaymentActionLock(): boolean {
+    return this.allLoans.some((loan) =>
+      (loan.status === 'PAUSED' || loan.status === 'DEFAULTED') && Number(loan.currentBalance || 0) > 0
+    );
+  }
+
+  getPaymentActionNote(): string {
+    if (this.payableLoans.length > 0) {
+      return `You can pay ${this.payableLoans.length} loan${this.payableLoans.length > 1 ? 's' : ''} right now.`;
+    }
+
+    if (this.hasRepaymentActionLock()) {
+      return 'One or more loans are paused or defaulted. Repayment actions stay locked until admin restores the loan.';
+    }
+
+    return 'No repayment is due right now. Payment opens automatically when a loan becomes active, skipped, or overdue.';
   }
 
   private syncSelectedLoanDetails(): void {

@@ -172,7 +172,7 @@
       <div class="welcome-header lm-header-card">
         <div>
           <h1><i class="fas fa-hand-holding-dollar"></i> Welcome back, {{ displayMemberName }}!</h1>
-          <p class="member-id">Member since: {{ member.joinDate | date:'MMM yyyy' }} | Member ID: {{ member.memberId || member.id || 'N/A' }}</p>
+          <p class="member-id">Member since: {{ member.joinDate | date:'MMM yyyy' }} | Tenure: {{ currentMemberTenureMonths }} month(s) | Member ID: {{ member.memberId || member.id || 'N/A' }}</p>
         </div>
         <div class="user-avatar">{{ getInitials(displayMemberName) }}</div>
       </div>
@@ -185,11 +185,12 @@
         <div class="stats-grid full-width">
           <div class="stat-card">
             <div class="stat-icon shares-icon">
-              <i class="fas fa-piggy-bank"></i>
+              <i class="fas fa-layer-group"></i>
             </div>
             <div class="stat-content">
-              <span class="stat-label">My Shares</span>
-              <span class="stat-value">{{ formatCurrency(member.shareCapital) }}</span>
+              <span class="stat-label">Groups</span>
+              <span class="stat-value">{{ memberGroups.length }}</span>
+              <span class="stat-sub">Tenure {{ currentMemberTenureMonths }} month(s)</span>
             </div>
           </div>
           <div class="stat-card">

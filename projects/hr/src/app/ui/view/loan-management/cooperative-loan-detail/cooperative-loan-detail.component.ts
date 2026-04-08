@@ -25,6 +25,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   showRejectModal = false;
   showRequestChangesModal = false;
   showRecordPaymentModal = false;
+  showGracePeriodModal = false;
   rejectionReason = '';
   requestChangesNote = '';
   paymentAmount = 0;
@@ -76,6 +77,23 @@ export class CooperativeLoanDetailComponent implements OnInit {
   cancelRecordPayment(): void {
     this.showRecordPaymentModal = false;
     this.seedPaymentDefaults();
+  }
+
+  openGracePeriodModal(): void {
+    if (!this.loan || this.loan.status !== 'ACTIVE' || !this.nextGracePeriodInstallment) {
+      return;
+    }
+
+    this.showGracePeriodModal = true;
+  }
+
+  closeGracePeriodModal(): void {
+    this.showGracePeriodModal = false;
+  }
+
+  handleGracePeriodSubmitted(): void {
+    this.showGracePeriodModal = false;
+    this.loadLoan(this.loan.id);
   }
 
   recordPayment(): void {
@@ -377,14 +395,24 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return this.cooperativeService.formatCurrency(amount);
   }
 
+  get memberDisplayName(): string {
+    const memberId = this.loan?.cooperativeMemberId ?? this.loan?.memberId;
+    return this.cooperativeService.getMemberDisplayName(memberId);
+  }
+
  getStatusClass(status: string | undefined): string {
   switch (status) {
-    case 'APPROVED': return 'status-approved';
-    case 'ACTIVE': return 'status-active';
     case 'PENDING': return 'status-pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
+    case 'APPROVED': return 'status-approved';
+    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
+    case 'ACTIVE': return 'status-active';
     case 'REJECTED': return 'status-rejected';
     case 'COMPLETED': return 'status-completed';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-pending'; // or 'status-warning'
+    case 'SKIPPED': return 'status-skipped';
+    case 'OVERDUE': return 'status-overdue';
+    case 'DEFAULTED': return 'status-defaulted';
+    case 'PAUSED': return 'status-paused';
     default: return 'status-default';
   }
 }
@@ -394,7 +422,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   getGuarantorMemberName(memberId: number): string {
-    return this.cooperativeService.getMemberById(memberId)?.fullName || memberId.toString();
+    return this.cooperativeService.getMemberDisplayName(memberId);
   }
 
   getmodeofPaymentLabel(method?: CooperativeRepayment['modeofPayment']): string {
@@ -473,6 +501,12 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   get hasOpenRepayments(): boolean {
     return this.repaymentSchedule.some(item => item.status !== 'PAID');
+  }
+
+  get nextGracePeriodInstallment(): CooperativeRepayment | undefined {
+    return this.repaymentSchedule
+      .filter(item => item.status !== 'PAID')
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
   }
 
   get previousLoansCount(): number {

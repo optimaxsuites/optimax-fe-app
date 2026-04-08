@@ -1,10 +1,8 @@
 <div class="groups-container">
-  <div class="groups-header lm-header-card">
+  <div class="groups-header approval-header lm-header-card">
     <div class="header-left">
-      <button class="back-btn" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
-      <h1>Cooperative Loan Groups</h1>
+      <app-back-button (click)="goBack()"></app-back-button>
+      <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Cooperative Loan Groups</h1>
     </div>
     <button class="add-btn" (click)="openAddForm()">
       <i class="fas fa-plus"></i> Add New Group
@@ -60,13 +58,15 @@
     </div>
 
     <div class="details-line">
-      <span><strong>Amount:</strong> {{ formatCurrency(group.minAmount) }} - {{ formatCurrency(group.maxAmount) }}</span>
+      <span><strong>Code:</strong> {{ group.code || '—' }}</span>
       <span><strong>Interest:</strong> {{ group.interestRate }}%</span>
+      <span><strong>Member limit:</strong> {{ group.memberLimit || 'No limit' }}</span>
       <span><strong>Duration:</strong> {{ group.minDuration }}-{{ group.maxDuration }}mo</span>
     </div>
 
     <div class="details-line">
-      <span><strong>Requires shares:</strong> {{ group.requiresShares ? 'YES' : 'NO' }}</span>
+      <span><strong>Requires guarantors:</strong> {{ group.requiresGuarantors ? 'YES' : 'NO' }}</span>
+      <span *ngIf="group.requiresGuarantors"><strong>Minimum guarantors:</strong> {{ group.minimumGuarantors || 1 }}</span>
       <span><strong>Total contributions:</strong> {{ formatCurrency(getGroupMetrics(group.id).totalContribution) }}</span>
       <span>
         <strong>Patronage eligible:</strong>
@@ -84,14 +84,26 @@
       <p class="description">{{ selectedGroupForDetails.description }}</p>
 
       <div class="form-grid details-grid">
+        <div class="detail-row"><strong>Group code:</strong> {{ selectedGroupForDetails.code || '—' }}</div>
         <div class="detail-row"><strong>Status:</strong> {{ selectedGroupForDetails.status }}</div>
         <div class="detail-row"><strong>Interest rate:</strong> {{ selectedGroupForDetails.interestRate }}%</div>
+        <div class="detail-row"><strong>Member limit:</strong> {{ selectedGroupForDetails.memberLimit || 'No limit' }}</div>
         <div class="detail-row"><strong>Patronage rate:</strong> {{ selectedGroupForDetails.patronageRate }}%</div>
         <div class="detail-row"><strong>Borrow/withdrawal cap:</strong> {{ selectedGroupForDetails.maxBorrowingPercentage }}%</div>
         <div class="detail-row"><strong>Monthly contribution:</strong> {{ formatCurrency(selectedGroupForDetails.monthlyContributionAmount) }}</div>
         <div class="detail-row"><strong>Total contributions so far:</strong> {{ formatCurrency(getGroupMetrics(selectedGroupForDetails.id).totalContribution) }}</div>
         <div class="detail-row"><strong>Eligible salary floor:</strong> {{ formatCurrency(selectedGroupForDetails.minEligibleSalary || 0) }}</div>
+        <div class="detail-row"><strong>Requires guarantors:</strong> {{ selectedGroupForDetails.requiresGuarantors ? 'YES' : 'NO' }}</div>
+        <div class="detail-row" *ngIf="selectedGroupForDetails.requiresGuarantors"><strong>Minimum guarantors:</strong> {{ selectedGroupForDetails.minimumGuarantors || 1 }}</div>
         <div class="detail-row"><strong>Member count:</strong> {{ getGroupMetrics(selectedGroupForDetails.id).memberCount }}</div>
+        <div class="detail-row"><strong>Contributions bank:</strong> {{ selectedGroupForDetails.contributionsBankName }} ({{ selectedGroupForDetails.contributionsAccount }})</div>
+        <div class="detail-row"><strong>Principal bank:</strong> {{ selectedGroupForDetails.principalBankName }} ({{ selectedGroupForDetails.principalCollectionAccount }})</div>
+        <div class="detail-row"><strong>Interest bank:</strong> {{ selectedGroupForDetails.interestBankName }} ({{ selectedGroupForDetails.interestCollectionAccount }})</div>
+        <div class="detail-row"><strong>Late fee percentage:</strong> {{ selectedGroupForDetails.lateFeePercentage }}%</div>
+        <div class="detail-row"><strong>Late fee bank:</strong> {{ selectedGroupForDetails.lateFeeBankName }} ({{ selectedGroupForDetails.lateFeeCollectionAccount }})</div>
+        <div class="detail-row"><strong>Late fee grace days:</strong> {{ selectedGroupForDetails.lateFeeGraceDays }}</div>
+        <div class="detail-row"><strong>Accounting email:</strong> {{ selectedGroupForDetails.accountingEmail }}</div>
+        <div class="detail-row"><strong>Accounting webhook:</strong> {{ selectedGroupForDetails.accountingWebhookUrl || '—' }}</div>
       </div>
 
       <div class="member-list" *ngIf="getGroupMetrics(selectedGroupForDetails.id).members.length > 0">
@@ -252,78 +264,223 @@
 
       <div class="form-actions invite-actions-row">
         <button type="button" class="secondary" (click)="closeInviteMembersModal()">Cancel</button>
-        <button type="button" class="primary" (click)="sendGroupInviteEmails()" [disabled]="selectedInviteCount === 0">
-          {{ inviteActionLabel }}
+        <button type="button" class="primary" (click)="sendGroupInviteEmails()" [disabled]="selectedInviteCount === 0 || isSendingInviteEmails">
+          {{ isSendingInviteEmails ? 'Sending...' : inviteActionLabel }}
         </button>
       </div>
     </div>
   </div>
 
   <div class="overlay" *ngIf="showGroupForm">
-    <div class="form-modal">
-      <h3>{{ editingGroupId ? 'Edit Loan Group' : 'Add Loan Group' }}</h3>
+    <div class="form-modal group-form-modal">
+      <div class="form-header">
+        <div>
+          <h3>{{ editingGroupId ? 'Edit Loan Group' : 'Add Loan Group' }}</h3>
+          <p>Set up the group profile, contribution rules, and collection accounts in one place.</p>
+        </div>
+        <div class="form-badge">{{ editingGroupId ? 'Editing Existing Group' : 'New Group Setup' }}</div>
+      </div>
+
+      <p-message *ngIf="formMessage" [severity]="formMessageSeverity" class="group-form-message">
+        <ng-template pTemplate="message">
+          <strong>{{ formMessageSeverity === 'success' ? 'Saved' : 'Unable to Save' }}</strong><br>
+          {{ formMessage }}
+        </ng-template>
+      </p-message>
 
       <form [formGroup]="groupForm" (ngSubmit)="saveGroup()" class="group-form">
-        <div class="form-group">
-          <label>Name</label>
-          <input type="text" formControlName="name" />
+        <div class="form-section">
+          <div class="section-heading">
+            <h4>Group Basics</h4>
+            <span>Core identifiers and contribution rules.</span>
+          </div>
+
+          <div class="form-grid compact-grid">
+            <div class="form-group" [class.invalid]="hasControlError('code')">
+              <label>Group Code</label>
+              <input type="text" formControlName="code" />
+              <small class="field-hint">Short internal identifier for the group.</small>
+              <small class="error-text" *ngIf="hasControlError('code')">{{ getControlErrorMessage('code') }}</small>
+            </div>
+
+            <div class="form-group" [class.invalid]="hasControlError('name')">
+              <label>Name</label>
+              <input type="text" formControlName="name" />
+              <small class="error-text" *ngIf="hasControlError('name')">{{ getControlErrorMessage('name') }}</small>
+            </div>
+          </div>
+
+          <div class="form-group form-group-wide" [class.invalid]="hasControlError('description')">
+            <label>Description</label>
+            <textarea rows="3" formControlName="description"></textarea>
+            <small class="error-text" *ngIf="hasControlError('description')">{{ getControlErrorMessage('description') }}</small>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Minimum Salary</label>
+              <input type="number" formControlName="minEligibleSalary" />
+              <small class="error-text" *ngIf="hasControlError('minEligibleSalary')">{{ getControlErrorMessage('minEligibleSalary') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Monthly Contribution Amount</label>
+              <input type="number" formControlName="monthlyContributionAmount" />
+              <small class="error-text" *ngIf="hasControlError('monthlyContributionAmount')">{{ getControlErrorMessage('monthlyContributionAmount') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Max Borrowing Percentage (%)</label>
+              <input type="number" formControlName="maxBorrowingPercentage" />
+              <small class="error-text" *ngIf="hasControlError('maxBorrowingPercentage')">{{ getControlErrorMessage('maxBorrowingPercentage') }}</small>
+            </div>
+            <div class="form-group" [class.invalid]="hasControlError('memberLimit')">
+              <label>Member Limit</label>
+              <input type="number" formControlName="memberLimit" />
+              <small class="field-hint">Optional. Leave empty for no cap.</small>
+              <small class="error-text" *ngIf="hasControlError('memberLimit')">{{ getControlErrorMessage('memberLimit') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Interest Rate (%)</label>
+              <input type="number" step="0.1" formControlName="interestRate" />
+              <small class="error-text" *ngIf="hasControlError('interestRate')">{{ getControlErrorMessage('interestRate') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select formControlName="status">
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+            </div>
+            <div class="form-group" [class.invalid]="hasControlError('minDuration')">
+              <label>Min Duration (mo)</label>
+              <input type="number" formControlName="minDuration" />
+              <small class="error-text" *ngIf="hasControlError('minDuration')">{{ getControlErrorMessage('minDuration') }}</small>
+            </div>
+            <div class="form-group" [class.invalid]="hasControlError('maxDuration')">
+              <label>Max Duration (mo)</label>
+              <input type="number" formControlName="maxDuration" />
+              <small class="error-text" *ngIf="hasControlError('maxDuration')">{{ getControlErrorMessage('maxDuration') }}</small>
+            </div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Description</label>
-          <textarea rows="2" formControlName="description"></textarea>
+        <div class="form-section bank-section">
+          <div class="section-heading">
+            <h4>Settlement Accounts</h4>
+            <span>Required collection accounts for contribution, principal, interest, and late-fee postings.</span>
+          </div>
+
+          <div class="bank-grid">
+            <div class="account-card">
+              <h5>Contributions</h5>
+              <div class="form-group" [class.invalid]="hasControlError('contributionsBankName')">
+                <label>Bank Name</label>
+                <input type="text" formControlName="contributionsBankName" required />
+                <small class="field-hint">Use the exact bank name tied to the contributions ledger.</small>
+                <small class="error-text" *ngIf="hasControlError('contributionsBankName')">{{ getControlErrorMessage('contributionsBankName') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('contributionsAccount')">
+                <label>Account</label>
+                <input type="text" formControlName="contributionsAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('contributionsAccount')" />
+                <small class="field-hint">Enter the 10-digit settlement account exactly as issued by the bank.</small>
+                <small class="error-text" *ngIf="hasControlError('contributionsAccount')">{{ getControlErrorMessage('contributionsAccount') }}</small>
+              </div>
+            </div>
+
+            <div class="account-card">
+              <h5>Principal</h5>
+              <div class="form-group" [class.invalid]="hasControlError('principalBankName')">
+                <label>Bank Name</label>
+                <input type="text" formControlName="principalBankName" required />
+                <small class="field-hint">This receives principal repayments for the group.</small>
+                <small class="error-text" *ngIf="hasControlError('principalBankName')">{{ getControlErrorMessage('principalBankName') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('principalCollectionAccount')">
+                <label>Account</label>
+                <input type="text" formControlName="principalCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('principalCollectionAccount')" />
+                <small class="field-hint">Use the 10-digit principal repayment account.</small>
+                <small class="error-text" *ngIf="hasControlError('principalCollectionAccount')">{{ getControlErrorMessage('principalCollectionAccount') }}</small>
+              </div>
+            </div>
+
+            <div class="account-card">
+              <h5>Interest</h5>
+              <div class="form-group" [class.invalid]="hasControlError('interestBankName')">
+                <label>Bank Name</label>
+                <input type="text" formControlName="interestBankName" required />
+                <small class="field-hint">Use the interest income collection bank.</small>
+                <small class="error-text" *ngIf="hasControlError('interestBankName')">{{ getControlErrorMessage('interestBankName') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('interestCollectionAccount')">
+                <label>Account</label>
+                <input type="text" formControlName="interestCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('interestCollectionAccount')" />
+                <small class="field-hint">Keep this aligned with your 10-digit posted interest account.</small>
+                <small class="error-text" *ngIf="hasControlError('interestCollectionAccount')">{{ getControlErrorMessage('interestCollectionAccount') }}</small>
+              </div>
+            </div>
+
+            <div class="account-card">
+              <h5>Late Fees</h5>
+              <div class="form-group" [class.invalid]="hasControlError('lateFeeBankName')">
+                <label>Bank Name</label>
+                <input type="text" formControlName="lateFeeBankName" required />
+                <small class="field-hint">Use the bank where late-fee recoveries are recorded.</small>
+                <small class="error-text" *ngIf="hasControlError('lateFeeBankName')">{{ getControlErrorMessage('lateFeeBankName') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('lateFeeCollectionAccount')">
+                <label>Account</label>
+                <input type="text" formControlName="lateFeeCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('lateFeeCollectionAccount')" />
+                <small class="field-hint">Enter the 10-digit destination account for all late-fee receipts.</small>
+                <small class="error-text" *ngIf="hasControlError('lateFeeCollectionAccount')">{{ getControlErrorMessage('lateFeeCollectionAccount') }}</small>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Minimum Salary</label>
-            <input type="number" formControlName="minEligibleSalary" />
+        <div class="form-section">
+          <div class="section-heading">
+            <h4>Fees and Controls</h4>
+            <span>Late fee settings, accounting contact, and optional patronage behaviour.</span>
           </div>
-          <div class="form-group">
-            <label>Monthly Contribution Amount</label>
-            <input type="number" formControlName="monthlyContributionAmount" />
-          </div>
-          <div class="form-group">
-            <label>Max Borrowing Percentage (%)</label>
-            <input type="number" formControlName="maxBorrowingPercentage" />
-          </div>
-          <div class="form-group">
-            <label>Min Amount</label>
-            <input type="number" formControlName="minAmount" />
-          </div>
-          <div class="form-group">
-            <label>Max Amount</label>
-            <input type="number" formControlName="maxAmount" />
-          </div>
-          <div class="form-group">
-            <label>Interest Rate (%)</label>
-            <input type="number" step="0.1" formControlName="interestRate" />
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select formControlName="status">
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Min Duration (mo)</label>
-            <input type="number" formControlName="minDuration" />
-          </div>
-          <div class="form-group">
-            <label>Max Duration (mo)</label>
-            <input type="number" formControlName="maxDuration" />
-          </div>
-        </div>
 
-        <div class="checkbox-row">
-          <label><input type="checkbox" formControlName="requiresShares" /> Requires shares</label>
-          <label><input type="checkbox" formControlName="patronageEligible" /> Patronage eligible</label>
-        </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Late Fee Percentage (%)</label>
+              <input type="number" step="0.1" formControlName="lateFeePercentage" />
+              <small class="error-text" *ngIf="hasControlError('lateFeePercentage')">{{ getControlErrorMessage('lateFeePercentage') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Late Fee Grace Days</label>
+              <input type="number" formControlName="lateFeeGraceDays" />
+              <small class="error-text" *ngIf="hasControlError('lateFeeGraceDays')">{{ getControlErrorMessage('lateFeeGraceDays') }}</small>
+            </div>
+            <div class="form-group" [class.invalid]="hasControlError('accountingEmail')">
+              <label>Accounting Email</label>
+              <input type="email" formControlName="accountingEmail" />
+              <small class="error-text" *ngIf="hasControlError('accountingEmail')">{{ getControlErrorMessage('accountingEmail') }}</small>
+            </div>
+            <div class="form-group">
+              <label>Accounting Webhook</label>
+              <input type="url" formControlName="accountingWebhookUrl" />
+              <small class="field-hint">Optional callback for posting accounting events.</small>
+            </div>
+          </div>
 
-        <div class="form-group" *ngIf="groupForm.get('patronageEligible')?.value">
-          <label>Patronage Rate (%)</label>
-          <input type="number" step="0.1" formControlName="patronageRate" />
+          <div class="checkbox-row modern-checkbox-row">
+            <label class="toggle-chip"><input type="checkbox" formControlName="requiresGuarantors" /> Requires guarantors</label>
+            <label class="toggle-chip"><input type="checkbox" formControlName="patronageEligible" /> Patronage eligible</label>
+          </div>
+
+          <div class="form-group inline-form-group" *ngIf="groupForm.get('requiresGuarantors')?.value" [class.invalid]="hasControlError('minimumGuarantors')">
+            <label>Minimum Guarantors Required</label>
+            <input type="number" min="1" formControlName="minimumGuarantors" />
+            <small class="error-text" *ngIf="hasControlError('minimumGuarantors')">{{ getControlErrorMessage('minimumGuarantors') }}</small>
+          </div>
+
+          <div class="form-group inline-form-group" *ngIf="groupForm.get('patronageEligible')?.value" [class.invalid]="hasControlError('patronageRate')">
+            <label>Patronage Rate (%)</label>
+            <input type="number" step="0.1" formControlName="patronageRate" />
+            <small class="error-text" *ngIf="hasControlError('patronageRate')">{{ getControlErrorMessage('patronageRate') }}</small>
+          </div>
         </div>
 
         <div class="form-actions">

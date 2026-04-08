@@ -2,13 +2,17 @@
   <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
     <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()"></app-employee-loan-details-modal>
   </app-side-modal>
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Loading loan history...</p>
+  </div>
   <div *ngIf="!isLoading" class="history-content">
     <!-- Header with Back Button -->
     <div class="history-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
         <div class="header-copy">
-          <h1>Loan History: {{ employeeName }}</h1>
+          <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan History: {{ employeeName }}</h1>
           <p class="employee-id">Employee ID: {{ employeeId }}</p>
         </div>
       </div>
@@ -74,6 +78,10 @@
       </div>
     </div>
 
+    <div class="results-info">
+      Showing {{ paginationStart }}-{{ paginationEnd }} of {{ filteredLoans.length }} filtered loans
+    </div>
+
     <!-- Loans Table -->
     <div class="table-container">
       <div class="table-head">
@@ -123,7 +131,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let loan of filteredLoans">
+          <tr *ngFor="let loan of paginatedLoans">
             <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
             <td>{{ loan.requestDate | date:'mediumDate' }}</td>
             <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
@@ -134,7 +142,7 @@
             <td class="balance">₦{{ getLoanResolvedBalance(loan) | number:'1.2-2' }}</td>
             <td>
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-                {{ loan.status }}
+                {{ getStatusLabel(loan.status) }}
               </span>
             </td>
             <td class="actions-col">
@@ -151,6 +159,14 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
+        <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>
+        <div class="pagination-actions">
+          <button type="button" class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+          <button type="button" class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

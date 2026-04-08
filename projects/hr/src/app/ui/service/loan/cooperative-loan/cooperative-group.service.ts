@@ -17,6 +17,9 @@ export interface CooperativeGroupApiResponse {
   code?: string;
   name?: string;
   monthlyAmount?: number;
+  minMemberTenureMonths?: number;
+  requiresGuarantors?: boolean;
+  minimumGuarantors?: number;
   memberIds?: number[];
   memberLimit?: number;
   withdrawCap?: number;
@@ -28,6 +31,18 @@ export interface CooperativeGroupApiResponse {
   description?: string;
   patronageRate?: number;
   patronageAmount?: number;
+  contributionsBankName?: string;
+  contributionsAccount?: string;
+  principalBankName?: string;
+  principalCollectionAccount?: string;
+  interestBankName?: string;
+  interestCollectionAccount?: string;
+  lateFeePercentage?: number;
+  lateFeeGraceDays?: number;
+  lateFeeBankName?: string;
+  lateFeeCollectionAccount?: string;
+  accountingEmail?: string;
+  accountingWebhookUrl?: string;
 }
 
 export interface CooperativeGroupApiPayload {
@@ -35,6 +50,9 @@ export interface CooperativeGroupApiPayload {
   code?: string;
   name: string;
   monthlyAmount: number;
+  minMemberTenureMonths?: number;
+  requiresGuarantors?: boolean;
+  minimumGuarantors?: number;
   memberIds?: number[];
   memberLimit?: number;
   withdrawCap: number;
@@ -46,6 +64,18 @@ export interface CooperativeGroupApiPayload {
   description?: string;
   patronageRate?: number;
   patronageAmount?: number;
+  contributionsBankName: string;
+  contributionsAccount: string;
+  principalBankName: string;
+  principalCollectionAccount: string;
+  interestBankName: string;
+  interestCollectionAccount: string;
+  lateFeePercentage?: number;
+  lateFeeGraceDays?: number;
+  lateFeeBankName: string;
+  lateFeeCollectionAccount: string;
+  accountingEmail?: string;
+  accountingWebhookUrl?: string;
 }
 
 export interface CooperativeGroupContext {
@@ -162,7 +192,6 @@ export class CooperativeGroupService {
       .filter(item => item.status === 'ACTIVE')
       .filter(item => tenureMonths >= (item.minMemberTenureMonths || 0))
       .filter(item => monthlySalary >= Number(item.minEligibleSalary || 0))
-      .filter(item => !item.requiresShares || member.shareCapital > 0)
       .map(item => ({ ...item }));
   }
 

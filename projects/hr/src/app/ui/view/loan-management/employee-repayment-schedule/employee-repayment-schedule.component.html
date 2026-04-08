@@ -6,197 +6,286 @@
       <span class="loan-purpose">{{ formatPurposeDisplay(loan.purpose) }}</span>
     </div>
     <div class="loan-status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
-      {{ loan.status }}
+      {{ getLoanStatusDisplay() }}
     </div>
   </div>
 
-  <div class="empty-state" *ngIf="!loan.repaymentSchedule.length">
-    <i class="fas fa-calendar-xmark"></i>
-    <p>No repayment schedule is available for this loan yet.</p>
-  </div>
-
-  <ng-container *ngIf="loan.repaymentSchedule.length">
-  <!-- Summary Cards -->
-  <div class="summary-cards">
-    <div class="summary-card">
-      <div class="card-icon">
-        <i class="fas fa-naira-sign"></i>
-      </div>
-      <div class="card-content">
-        <span class="label">Total Loan</span>
-        <span class="value">₦{{ loan.amount | number:'1.2-2' }}</span>
-      </div>
-    </div>
-
-    <div class="summary-card">
-      <div class="card-icon">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="card-content">
-        <span class="label">Paid Back</span>
-        <span class="value">₦{{ totalPaid | number:'1.2-2' }}</span>
-      </div>
-    </div>
-
-    <div class="summary-card">
-      <div class="card-icon">
-        <i class="fas fa-hourglass-half"></i>
-      </div>
-      <div class="card-content">
-        <span class="label">Remaining Balance</span>
-        <span class="value">₦{{ totalRemaining | number:'1.2-2' }}</span>
-      </div>
-    </div>
-
-    <div class="summary-card">
-      <div class="card-icon">
-        <i class="fas fa-percentage"></i>
-      </div>
-      <div class="card-content">
-        <span class="label">Interest Rate</span>
-        <span class="value">{{ loan.interestRate }}%</span>
-      </div>
-    </div>
-
-    <div class="summary-card" *ngIf="nextPaymentDate">
-      <div class="card-icon">
-        <i class="fas fa-calendar-alt"></i>
-      </div>
-      <div class="card-content">
-        <span class="label">Next Payment</span>
-        <span class="value">₦{{ nextPaymentAmount | number:'1.2-2' }}</span>
-        <span class="date">{{ formatDate(nextPaymentDate) }}</span>
-      </div>
+  <!-- Message for non-active loans -->
+  <div class="info-message" *ngIf="!hasBeenDisbursed() && loan.status !== 'ACTIVE'">
+    <i class="fas fa-info-circle"></i>
+    <div class="message-content">
+      <strong>Loan Not Yet Active</strong>
+      <p>Your repayment schedule will be available once your loan has been disbursed and becomes active.</p>
     </div>
   </div>
 
-  <!-- Progress Bar -->
-  <div class="progress-section">
-    <div class="repayment-snapshot-band" *ngIf="hasBeenDisbursed()">
-      <div class="snapshot-chip emphasis">
-        <span>State</span>
-        <strong>{{ getRepaymentStatusTitle() }}</strong>
-      </div>
-      <div class="snapshot-chip">
-        <span>Installments</span>
-        <strong>{{ paidCount }}/{{ loan.repaymentSchedule.length }}</strong>
-      </div>
-      <div class="snapshot-chip">
-        <span>Total Repayable</span>
-        <strong>₦{{ totalRepayable | number:'1.2-2' }}</strong>
-      </div>
+  <!-- Message for ready_for_disbursement loans -->
+  <div class="info-message warning" *ngIf="loan.status === 'READY_FOR_DISBURSEMENT'">
+    <i class="fas fa-clock"></i>
+    <div class="message-content">
+      <strong>Awaiting Disbursement</strong>
+      <p>Your loan has been approved and is pending disbursement. The repayment schedule will appear once funds are released.</p>
+    </div>
+  </div>
+
+  <!-- Action Buttons for Active Loans -->
+  <div class="info-message warning lock-message" *ngIf="isRepaymentLocked()">
+    <i class="fas fa-lock"></i>
+    <div class="message-content">
+      <strong>{{ getRepaymentLockTitle() }}</strong>
+      <p>{{ getRepaymentLockMessage() }}</p>
+    </div>
+  </div>
+
+  <div class="action-buttons" *ngIf="canTakeRepaymentActions()">
+    <button class="btn-make-payment" (click)="openPaymentModal()">
+      <i class="fas fa-credit-card"></i> Make Payment
+    </button>
+    <button class="btn-request-extension" (click)="openGracePeriodModal()">
+      <i class="fas fa-hourglass-half"></i> Apply for Extension
+    </button>
+  </div>
+
+  <!-- Only show schedule for ACTIVE loans -->
+  <ng-container *ngIf="hasRepaymentScheduleAccess()">
+    <div class="empty-state" *ngIf="!loan.repaymentSchedule.length">
+      <i class="fas fa-calendar-xmark"></i>
+      <p>No repayment schedule is available for this loan yet.</p>
     </div>
 
-    <div class="progress-header">
-      <span class="progress-title">Repayment Progress</span>
-      <span class="progress-percentage">{{ completionPercentage.toFixed(1) }}% Complete</span>
-    </div>
-    
-    <div class="progress-bar-container">
-      <div class="progress-bar">
-        <div class="progress-fill" 
-             [style.width]="completionPercentage + '%'"
-             [style.background]="getProgressColor()">
-          <span class="progress-text" *ngIf="completionPercentage > 15">
-            {{ paidCount }}/{{ loan.repaymentSchedule.length }} cleared
-          </span>
+    <ng-container *ngIf="loan.repaymentSchedule.length">
+      <!-- Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="card-icon">
+            <i class="fas fa-naira-sign"></i>
+          </div>
+          <div class="card-content">
+            <span class="label">Total Loan</span>
+            <span class="value">₦{{ loan.amount | number:'1.2-2' }}</span>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <p class="progress-note" *ngIf="hasBeenDisbursed()">
-      {{ getRepaymentStatusTitle() }}.
-      <span *ngIf="!hasRepaymentStarted()">No repayment has been recorded yet, so progress remains at 0%.</span>
-    </p>
-
-    <!-- Status Indicators -->
-    <div class="status-indicators">
-      <div class="indicator">
-        <span class="dot paid"></span>
-        <span>Paid ({{ paidCount }})</span>
-      </div>
-      <div class="indicator">
-        <span class="dot pending"></span>
-        <span>Upcoming ({{ upcomingCount }})</span>
-      </div>
-      <div class="indicator" *ngIf="overdueCount > 0">
-        <span class="dot overdue"></span>
-        <span>Overdue ({{ overdueCount }})</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Timeline View -->
-  <div class="timeline-section">
-    <h4>Payment Timeline</h4>
-    <div class="timeline-grid">
-      <div *ngFor="let item of loan.repaymentSchedule" 
-           class="timeline-item" 
-           [ngClass]="getStatusClass(item.status)">
-        <div class="item-header">
-          <i [ngClass]="getStatusIcon(item.status)"></i>
-          <span class="month">Installment {{ item.installmentNo }}</span>
+        <div class="summary-card">
+          <div class="card-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="card-content">
+            <span class="label">Paid Back</span>
+            <span class="value">₦{{ totalPaid | number:'1.2-2' }}</span>
+          </div>
         </div>
-        <div class="item-content">
-          <div class="amount-row">
-            <span>Principal:</span>
-            <span>₦{{ item.principalAmount | number:'1.2-2' }}</span>
+
+        <div class="summary-card">
+          <div class="card-icon">
+            <i class="fas fa-hourglass-half"></i>
           </div>
-          <div class="amount-row">
-            <span>Interest:</span>
-            <span>₦{{ item.interestAmount | number:'1.2-2' }}</span>
+          <div class="card-content">
+            <span class="label">Remaining Balance</span>
+            <span class="value">₦{{ totalRemaining | number:'1.2-2' }}</span>
           </div>
-          <div class="total-row">
-            <span>Total:</span>
-            <span>₦{{ item.totalAmount | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="summary-card">
+          <div class="card-icon">
+            <i class="fas fa-percentage"></i>
           </div>
-          <div class="due-date">
-            <i class="fas fa-calendar"></i>
-            {{ formatDate(item.dueDate) }}
+          <div class="card-content">
+            <span class="label">Interest Rate</span>
+            <span class="value">{{ loan.interestRate }}%</span>
           </div>
-          <div class="status-badge" [ngClass]="getStatusClass(item.status)">
-            {{ item.status }}
+        </div>
+
+        <div class="summary-card" *ngIf="nextPaymentDate">
+          <div class="card-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="card-content">
+            <span class="label">Next Payment</span>
+            <span class="value">₦{{ nextPaymentAmount | number:'1.2-2' }}</span>
+            <span class="date">{{ formatDate(nextPaymentDate) }}</span>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Detailed Table (Collapsible) -->
-  <details class="detailed-table">
-    <summary>
-      <i class="fas fa-table"></i> View Detailed Breakdown
-    </summary>
-    <div class="table-container">
-      <table class="detailed-breakdown-table">
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Due Date</th>
-            <th>Principal</th>
-            <th>Interest</th>
-            <th>Total</th>
-            <th>Balance</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of loan.repaymentSchedule">
-            <td>{{ item.installmentNo }}</td>
-            <td>{{ formatDate(item.dueDate) }}</td>
-            <td>₦{{ item.principalAmount | number:'1.2-2' }}</td>
-            <td>₦{{ item.interestAmount | number:'1.2-2' }}</td>
-            <td>₦{{ item.totalAmount | number:'1.2-2' }}</td>
-            <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
-            <td>
-              <span class="status-badge-small" [ngClass]="getStatusClass(item.status)">
-                {{ item.status }}
+      <!-- Progress Bar -->
+      <div class="progress-section">
+        <div class="repayment-snapshot-band" *ngIf="hasBeenDisbursed()">
+          <div class="snapshot-chip emphasis">
+            <span>State</span>
+            <strong>{{ getRepaymentStatusTitle() }}</strong>
+          </div>
+          <div class="snapshot-chip">
+            <span>Installments</span>
+            <strong>{{ paidCount }}/{{ loan.repaymentSchedule.length }}</strong>
+          </div>
+          <div class="snapshot-chip">
+            <span>Total Repayable</span>
+            <strong>₦{{ totalRepayable | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="progress-header">
+          <span class="progress-title">Repayment Progress</span>
+          <span class="progress-percentage">{{ completionPercentage.toFixed(1) }}% Complete</span>
+        </div>
+        
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div class="progress-fill" 
+                 [style.width]="completionPercentage + '%'"
+                 [style.background]="getProgressColor()">
+              <span class="progress-text" *ngIf="completionPercentage > 15">
+                {{ paidCount }}/{{ loan.repaymentSchedule.length }} cleared
               </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </details>
+            </div>
+          </div>
+        </div>
+
+        <p class="progress-note" *ngIf="hasBeenDisbursed()">
+          {{ getRepaymentStatusTitle() }}.
+          <span *ngIf="!hasRepaymentStarted()">No repayment has been recorded yet, so progress remains at 0%.</span>
+        </p>
+
+        <!-- Status Indicators -->
+        <div class="status-indicators">
+          <div class="indicator">
+            <span class="dot paid"></span>
+            <span>Paid ({{ paidCount }})</span>
+          </div>
+          <div class="indicator">
+            <span class="dot pending"></span>
+            <span>Upcoming ({{ upcomingCount }})</span>
+          </div>
+          <div class="indicator" *ngIf="overdueCount > 0">
+            <span class="dot overdue"></span>
+            <span>Overdue ({{ overdueCount }})</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline View -->
+      <div class="timeline-section">
+        <h4>Payment Timeline</h4>
+        <div class="timeline-grid">
+          <div *ngFor="let item of loan.repaymentSchedule" 
+               class="timeline-item" 
+               [ngClass]="getStatusClass(item.status)">
+            <div class="item-header">
+              <i [ngClass]="getStatusIcon(item.status)"></i>
+              <span class="month">Installment {{ item.installmentNo }}</span>
+            </div>
+            <div class="item-content">
+              <div class="amount-row">
+                <span>Principal:</span>
+                <span>₦{{ item.principalAmount | number:'1.2-2' }}</span>
+              </div>
+              <div class="amount-row">
+                <span>Interest:</span>
+                <span>₦{{ item.interestAmount | number:'1.2-2' }}</span>
+              </div>
+              <div class="total-row">
+                <span>Total:</span>
+                <span>₦{{ item.totalAmount | number:'1.2-2' }}</span>
+              </div>
+              <div class="due-date">
+                <i class="fas fa-calendar"></i>
+                {{ formatDate(item.dueDate) }}
+              </div>
+              <div class="action-buttons-inline" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')">
+                <button class="btn-pay" (click)="openPaymentModal(item)">
+                  <i class="fas fa-credit-card"></i> Pay Now
+                </button>
+                <button class="btn-extend" (click)="openGracePeriodModal(item)">
+                  <i class="fas fa-hourglass-half"></i> Extend
+                </button>
+              </div>
+              <div class="status-badge" [ngClass]="getStatusClass(item.status)">
+                {{ item.status }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Table (Collapsible) -->
+      <details class="detailed-table">
+        <summary>
+          <i class="fas fa-table"></i> View Detailed Breakdown
+        </summary>
+        <div class="table-container">
+          <table class="detailed-breakdown-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Due Date</th>
+                <th>Principal</th>
+                <th>Interest</th>
+                <th>Total</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of loan.repaymentSchedule">
+                <td>{{ item.installmentNo }}</td>
+                <td>{{ formatDate(item.dueDate) }}</td>
+                <td>₦{{ item.principalAmount | number:'1.2-2' }}</td>
+                <td>₦{{ item.interestAmount | number:'1.2-2' }}</td>
+                <td>₦{{ item.totalAmount | number:'1.2-2' }}</td>
+                <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
+                <td>
+                  <span class="status-badge-small" [ngClass]="getStatusClass(item.status)">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="action-buttons-cell">
+                  <button class="btn-pay-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openPaymentModal(item)" title="Make Payment">
+                    <i class="fas fa-credit-card"></i>
+                  </button>
+                  <button class="btn-extend-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openGracePeriodModal(item)" title="Request Extension">
+                    <i class="fas fa-hourglass-half"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </ng-container>
   </ng-container>
+
+  <!-- Show placeholder for non-active loans -->
+  <div class="placeholder-message" *ngIf="!hasRepaymentScheduleAccess() && loan.status !== 'READY_FOR_DISBURSEMENT'">
+    <i class="fas fa-lock"></i>
+    <div class="message-content">
+      <strong>Repayment Schedule Locked</strong>
+      <p>The repayment schedule will be available after your loan is approved and disbursed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" *ngIf="showPaymentModal" (click)="closePaymentModal()">
+  <div class="payment-modal-container" (click)="$event.stopPropagation()">
+    <app-payment-modal
+      [loan]="loan"
+      [installment]="selectedInstallment"
+      (close)="closePaymentModal()"
+      (paymentSuccess)="onPaymentSuccess()">
+    </app-payment-modal>
+  </div>
+</div>
+
+<!-- Grace Period Request Modal -->
+<div class="modal-overlay" *ngIf="showGracePeriodModal" (click)="closeGracePeriodModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <app-grace-period-requests
+      [loan]="loan"
+      [installment]="selectedInstallment"
+      (close)="closeGracePeriodModal()"
+      (requestSubmitted)="onGracePeriodSubmitted()">
+    </app-grace-period-requests>
+  </div>
 </div>

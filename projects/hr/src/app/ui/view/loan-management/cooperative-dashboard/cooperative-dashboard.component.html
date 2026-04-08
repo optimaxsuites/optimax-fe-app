@@ -221,13 +221,6 @@
       </div>
     </div>
 
-    <section class="alerts-section" *ngIf="alerts.length > 0">
-      <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
-        <i class="pi" [ngClass]="alert.level === 'danger' ? 'pi-exclamation-triangle' : 'pi-bell'"></i>
-        <span>{{ alert.message }}</span>
-      </div>
-    </section>
-
     <div class="section-title-row">
       <h2>Co-op Health</h2>
     </div>
@@ -257,32 +250,30 @@
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon fund-icon">
-          <i class="pi pi-wallet"></i>
+        <div class="stat-icon groups-icon">
+          <i class="pi pi-th-large"></i>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Total Fund</span>
-          <span class="stat-value">{{ formatCurrency(stats.totalFund) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon portfolio-icon">
-          <i class="pi pi-chart-line"></i>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Loan Portfolio</span>
-          <span class="stat-value">{{ formatCurrency(stats.loanPortfolio) }}</span>
+          <span class="stat-label">Groups Active</span>
+          <span class="stat-value">{{ activeGroupsCount }}</span>
+          <span class="stat-sub">Currently active cooperative groups</span>
         </div>
       </div>
     </div>
 
+    <section class="alerts-section" *ngIf="alerts.length > 0">
+      <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
+        <i class="pi" [ngClass]="alert.level === 'danger' ? 'pi-exclamation-triangle' : 'pi-bell'"></i>
+        <span>{{ alert.message }}</span>
+      </div>
+    </section>
+
 
     <!-- Two Column Layout: Admin Tools (left), Recent Loans (right, top), Group Join Applications (right, bottom) -->
 
-    <div class="dashboard-grid" style="align-items: flex-start; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <div class="dashboard-grid dashboard-grid-admin">
       <!-- Left Column: Recent Loans and Group Join Applications -->
-      <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div class="dashboard-grid-main">
         <!-- Recent Loan Applications -->
         <div class="card">
           <div class="card-header">
@@ -367,7 +358,7 @@
         </div>
       </div>
       <!-- Right Column: Admin Tools only -->
-      <div>
+      <div class="dashboard-grid-side">
         <!-- Admin Tools -->
         <div class="card">
           <div class="card-header">
@@ -387,6 +378,20 @@
               <span class="command-copy">
                 <strong>Disburse Loans</strong>
                 <small>Release approved cooperative loan funds</small>
+              </span>
+            </div>
+            <div class="command-pill" role="button" tabindex="0" (click)="openPurposeManagement()" (keydown.enter)="openPurposeManagement()" (keydown.space)="openPurposeManagement()">
+              <span class="command-icon"><i class="fas fa-tags"></i></span>
+              <span class="command-copy">
+                <strong>Manage Loan Purposes</strong>
+                <small>Create or manage cooperative loan purposes</small>
+              </span>
+            </div>
+            <div class="command-pill" role="button" tabindex="0" (click)="openGracePeriodRequests()" (keydown.enter)="openGracePeriodRequests()" (keydown.space)="openGracePeriodRequests()">
+              <span class="command-icon"><i class="fas fa-hourglass-half"></i></span>
+              <span class="command-copy">
+                <strong>Grace Period Requests</strong>
+                <small>Review cooperative grace period extension requests</small>
               </span>
             </div>
             <div class="command-pill" role="button" tabindex="0" (click)="runPatronageCalculator()" (keydown.enter)="runPatronageCalculator()" (keydown.space)="runPatronageCalculator()">

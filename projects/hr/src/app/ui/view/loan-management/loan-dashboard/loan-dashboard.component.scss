@@ -1,10 +1,131 @@
 @use '../loan-status-badges' as loanStatus;
 
+.status-badge, .status-pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+  text-align: center;
+  transition: all 0.2s ease;
+  
+  @include loanStatus.advance-loan-status-badges();
+}
 .loan-dashboard-container {
   padding: 24px;
   min-height: 100vh;
   background-color: #f8feff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  .table-loading-state {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    gap: 14px;
+    color: #2e6276;
+    background: white;
+    border: 1px solid #e3eef0;
+    border-radius: 16px;
+    padding: 28px 20px;
+    box-shadow: 0 10px 20px rgba(46, 98, 118, 0.06);
+
+    .spiral-loader {
+      width: 72px;
+      height: 72px;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .spiral-ring,
+    .spiral-core {
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    .spiral-ring {
+      border-style: solid;
+      border-color: transparent;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+
+    .ring-one {
+      inset: 0;
+      border-width: 3px;
+      border-top-color: #2e6276;
+      border-right-color: rgba(46, 98, 118, 0.32);
+      animation: dashboard-spiral-spin 1s infinite;
+    }
+
+    .ring-two {
+      inset: 12px;
+      border-width: 3px;
+      border-bottom-color: #6f8792;
+      border-left-color: rgba(111, 135, 146, 0.26);
+      animation: dashboard-spiral-spin-reverse 0.9s infinite;
+    }
+
+    .ring-three {
+      display: none;
+    }
+
+    .spiral-core {
+      width: 10px;
+      height: 10px;
+      background: #2e6276;
+      box-shadow: 0 0 0 6px rgba(46, 98, 118, 0.08);
+    }
+
+    .loading-copy {
+      display: grid;
+      gap: 2px;
+      text-align: center;
+
+      strong {
+        color: #1f4654;
+        font-size: 0.98rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0;
+        color: #5f7b86;
+        font-size: 0.86rem;
+      }
+    }
+  }
+
+  @keyframes dashboard-spiral-spin {
+    from {
+      transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+      transform: rotate(180deg) scale(1.04);
+    }
+
+    to {
+      transform: rotate(360deg) scale(1);
+    }
+  }
+
+  @keyframes dashboard-spiral-spin-reverse {
+    from {
+      transform: rotate(0deg) scale(0.98);
+    }
+
+    50% {
+      transform: rotate(-180deg) scale(1.02);
+    }
+
+    to {
+      transform: rotate(-360deg) scale(0.98);
+    }
+  }
 
   .modal-overlay {
     position: fixed;
@@ -279,6 +400,16 @@
       &.status-approved {
           background: rgba(79, 124, 255, 0.14);
           color: #4f7cff;
+      }
+
+      &.status-awaiting_interest_acceptance {
+        background: rgba(235, 155, 63, 0.16);
+        color: #b86a08;
+      }
+
+      &.status-ready_for_disbursement {
+        background: rgba(2, 132, 199, 0.14);
+        color: #0369a1;
       }
 
       &.status-rejected {
@@ -663,23 +794,35 @@
 
   .stats-section {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: 14px;
     margin-bottom: 40px;
+
+    .stats-primary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+
+      &.compact-admin-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
 
     .stat-card {
       background: white;
-      border-radius: 12px;
-      padding: 24px;
+      border-radius: 18px;
+      padding: 14px 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border: 1px solid #e3eef0;
       transition: all 0.3s ease;
       display: flex;
-      align-items: center;
-      gap: 16px;
+      align-items: flex-start;
+      gap: 12px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
+      min-width: 0;
+      text-align: left;
+      appearance: none;
 
       &::before {
         content: '';
@@ -706,22 +849,12 @@
         border: 2px solid #2E6276;
         transform: translateY(-2px);
         box-shadow: 0 8px 16px rgba(46, 98, 118, 0.15);
-        
-        &::after {
-          content: '✓';
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          color: #2E6276;
-          font-weight: bold;
-          font-size: 1.2rem;
-        }
       }
 
       .card-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -730,20 +863,44 @@
 
         i {
           color: white;
-          font-size: 1.8rem;
+          font-size: 1.1rem;
           transition: transform 0.3s ease;
         }
 
         &.active-icon {
-          background: #2E6276;
+          background: linear-gradient(135deg, #2E6276, #4291b1);
         }
 
         &.pending-icon {
-          background: #2E6276;
+          background: linear-gradient(135deg, #b87c00, #eb9b3f);
+        }
+
+        &.awaiting-icon {
+          background: linear-gradient(135deg, #b86a08, #eb9b3f);
+        }
+
+        &.ready-icon {
+          background: linear-gradient(135deg, #0369a1, #38bdf8);
+        }
+
+        &.skipped-icon {
+          background: linear-gradient(135deg, #64748b, #94a3b8);
+        }
+
+        &.overdue-icon {
+          background: linear-gradient(135deg, #c2410c, #fb923c);
+        }
+
+        &.paused-icon {
+          background: linear-gradient(135deg, #475569, #64748b);
+        }
+
+        &.defaulted-icon {
+          background: linear-gradient(135deg, #7f1d1d, #dc2626);
         }
 
         &.balance-icon {
-          background: #2E6276;
+          background: linear-gradient(135deg, #14532d, #2EB270);
         }
       }
 
@@ -757,6 +914,8 @@
 
       .card-content {
         flex: 1;
+        display: grid;
+        gap: 4px;
 
         h3 {
           color: #495057;
@@ -775,11 +934,85 @@
           line-height: 1.2;
           transition: color 0.3s ease;
         }
+
+        .card-note {
+          color: #7a8f99;
+          font-size: 0.74rem;
+          line-height: 1.35;
+        }
       }
 
       &:hover .stat-value {
         color: #4291b1;
       }
+    }
+
+    .stats-secondary-rail {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status-pill-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid #dce9ec;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 12px 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(46, 98, 118, 0.08);
+      }
+
+      &.active {
+        border-color: #2E6276;
+        background: #f8feff;
+        box-shadow: 0 0 0 1px rgba(46, 98, 118, 0.12);
+      }
+
+      .pill-copy {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+
+        strong {
+          color: #1f4654;
+          font-size: 0.82rem;
+        }
+
+        small {
+          color: #78909b;
+          font-size: 0.72rem;
+          line-height: 1.3;
+        }
+      }
+
+      .pill-value {
+        flex-shrink: 0;
+        min-width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(46, 98, 118, 0.08);
+        color: #2E6276;
+        font-weight: 700;
+        font-size: 0.88rem;
+      }
+
+      &.tone-awaiting .pill-value { background: rgba(235, 155, 63, 0.14); color: #b86a08; }
+      &.tone-skipped .pill-value { background: rgba(100, 116, 139, 0.14); color: #475569; }
+      &.tone-overdue .pill-value { background: rgba(251, 146, 60, 0.16); color: #c2410c; }
+      &.tone-paused .pill-value { background: rgba(100, 116, 139, 0.16); color: #334155; }
+      &.tone-defaulted .pill-value { background: rgba(220, 38, 38, 0.14); color: #991b1b; }
     }
   }
 
@@ -820,23 +1053,37 @@
 
       .loan-count {
         color: #8a8a8a;
+        min-width: 0;
+        display: grid;
+        gap: 4px;
+
+        .card-note {
+          color: #7a8f99;
+          font-size: 0.68rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-weight: 700;
+          line-height: 1.35;
+        }
         font-size: 0.95rem;
         background: #f8feff;
         padding: 6px 12px;
-        border-radius: 20px;
-        border: 1px solid #e3eef0;
-        transition: all 0.3s ease;
-
-        &:hover {
+          font-size: 0.92rem;
+          font-weight: 700;
+          margin: 0;
+          text-transform: none;
+          letter-spacing: 0;
+          line-height: 1.25;
           background: #e3eef0;
           color: #2E6276;
         }
       }
-    }
+          font-size: 1.35rem;
 
     .empty-state {
       text-align: center;
       padding: 60px 20px;
+          word-break: break-word;
       background: #f8feff;
       border-radius: 8px;
       border: 2px dashed #B6D6E2;
@@ -1379,21 +1626,28 @@
     }
 
     .stats-section {
-      gap: 16px;
+      .stats-primary-grid {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .stats-secondary-rail {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+      }
       
       .stat-card {
-        padding: 20px;
+        padding: 14px;
         
         .stat-value {
-          font-size: 1.8rem;
+          font-size: 1.2rem;
         }
 
         .card-icon {
-          width: 50px;
-          height: 50px;
+          width: 40px;
+          height: 40px;
 
           i {
-            font-size: 1.5rem;
+            font-size: 1rem;
           }
         }
       }
@@ -1404,7 +1658,13 @@
 @media (max-width: 992px) {
   .loan-dashboard-container {
     .stats-section {
-      grid-template-columns: repeat(2, 1fr);
+      .stats-primary-grid {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+
+      .stats-secondary-rail {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
     }
 
     .dashboard-side-rail {
@@ -1442,8 +1702,11 @@
     }
 
     .stats-section {
-      grid-template-columns: 1fr;
-      gap: 12px;
+      .stats-primary-grid,
+      .stats-secondary-rail {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
     }
 
     .command-bar {
@@ -1540,7 +1803,7 @@
       }
       
       .stat-value {
-        font-size: 1.5rem;
+        font-size: 1.1rem;
       }
     }
 

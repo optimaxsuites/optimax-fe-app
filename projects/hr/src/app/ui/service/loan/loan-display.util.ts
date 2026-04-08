@@ -3,8 +3,13 @@ import { LoanApplication, LoanAuditUser, PaymentRecord } from './loan.types';
 const loanActorCacheKey = 'advance-loan-actor-name-cache';
 const loanStatusActorCacheKey = 'advance-loan-status-actor-cache';
 const loanInterestRateCacheKey = 'advance-loan-interest-rate-cache';
+const loanLateFeePercentageCacheKey = 'advance-loan-late-fee-percentage-cache';
+const loanLateFeeGracePeriodDaysCacheKey = 'advance-loan-late-fee-grace-period-days-cache';
+const loanRequestedAmountCacheKey = 'advance-loan-requested-amount-cache';
 const loanStatusNoteCacheKey = 'advance-loan-status-note-cache';
 const loanRepaymentStartDateCacheKey = 'advance-loan-repayment-start-date-cache';
+const loanRepaymentDayCacheKey = 'advance-loan-repayment-day-cache';
+const loanStatusChangedAtCacheKey = 'advance-loan-status-changed-at-cache';
 
 export function formatLoanPurposeDisplay(purpose?: string | null): string {
   return toTitleCase((purpose || '').replace(/_/g, ' ')) || 'N/A';
@@ -264,6 +269,111 @@ export function readPersistedLoanInterestRate(
   return Number.isFinite(cachedValue) ? cachedValue : 0;
 }
 
+export function persistLoanLateFeePercentage(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  lateFeePercentage: number | undefined | null
+): void {
+  const normalizedLateFeePercentage = Number(lateFeePercentage);
+  if (!Number.isFinite(normalizedLateFeePercentage) || normalizedLateFeePercentage < 0) {
+    return;
+  }
+
+  const cache = readLoanLateFeePercentageCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const roundedLateFeePercentage = Number(normalizedLateFeePercentage.toFixed(2));
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = roundedLateFeePercentage;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = roundedLateFeePercentage;
+  }
+
+  writeLoanLateFeePercentageCache(cache);
+}
+
+export function readPersistedLoanLateFeePercentage(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): number {
+  const cache = readLoanLateFeePercentageCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const cachedValue = Number(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`]);
+  return Number.isFinite(cachedValue) && cachedValue >= 0 ? cachedValue : 0;
+}
+
+export function persistLoanLateFeeGracePeriodDays(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  gracePeriodDays: number | undefined | null
+): void {
+  const normalizedGracePeriodDays = Number(gracePeriodDays);
+  if (!Number.isFinite(normalizedGracePeriodDays) || normalizedGracePeriodDays < 0) {
+    return;
+  }
+
+  const cache = readLoanLateFeeGracePeriodDaysCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const roundedGracePeriodDays = Math.round(normalizedGracePeriodDays);
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = roundedGracePeriodDays;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = roundedGracePeriodDays;
+  }
+
+  writeLoanLateFeeGracePeriodDaysCache(cache);
+}
+
+export function readPersistedLoanLateFeeGracePeriodDays(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): number {
+  const cache = readLoanLateFeeGracePeriodDaysCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const cachedValue = Number(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`]);
+  return Number.isFinite(cachedValue) && cachedValue >= 0 ? Math.round(cachedValue) : 0;
+}
+
+export function persistLoanRequestedAmount(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  amount: number | undefined | null
+): void {
+  const normalizedAmount = Number(amount);
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    return;
+  }
+
+  const cache = readLoanRequestedAmountCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const roundedAmount = Number(normalizedAmount.toFixed(2));
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = roundedAmount;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = roundedAmount;
+  }
+
+  writeLoanRequestedAmountCache(cache);
+}
+
+export function readPersistedLoanRequestedAmount(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): number {
+  const cache = readLoanRequestedAmountCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const cachedValue = Number(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`]);
+  return Number.isFinite(cachedValue) ? cachedValue : 0;
+}
+
 export function persistLoanRepaymentStartDate(
   loan: Pick<LoanApplication, 'id' | 'loanCode'>,
   repaymentStartDate: unknown
@@ -295,6 +405,80 @@ export function readPersistedLoanRepaymentStartDate(
   const loanId = Number(loan.id || 0);
   const loanCode = String(loan.loanCode || '').trim();
   return normalizeLoanRepaymentStartDate(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`] ?? '');
+}
+
+export function persistLoanRepaymentDay(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  repaymentDay: number | string | undefined | null
+): void {
+  const normalizedRepaymentDay = Number(repaymentDay);
+  if (!Number.isFinite(normalizedRepaymentDay) || normalizedRepaymentDay < 1 || normalizedRepaymentDay > 31) {
+    return;
+  }
+
+  const cache = readLoanRepaymentDayCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = normalizedRepaymentDay;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = normalizedRepaymentDay;
+  }
+
+  writeLoanRepaymentDayCache(cache);
+}
+
+export function readPersistedLoanRepaymentDay(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): number {
+  const cache = readLoanRepaymentDayCache();
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const cachedValue = Number(cache[`id:${loanId}`] ?? cache[`code:${loanCode}`]);
+  return Number.isFinite(cachedValue) && cachedValue >= 1 && cachedValue <= 31 ? cachedValue : 0;
+}
+
+export function persistLoanStatusChangedAt(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  status: LoanApplication['status'],
+  changedAt: string | undefined | null
+): void {
+  const normalizedChangedAt = normalizeStoredValue(changedAt);
+  if (!normalizedChangedAt || Number.isNaN(new Date(normalizedChangedAt).getTime())) {
+    return;
+  }
+
+  const cache = readLoanStatusChangedAtCache();
+  const normalizedStatus = String(status || '').toUpperCase();
+  const nextEntry = {
+    ...readLoanStatusChangedAtEntry(cache, loan),
+    [normalizedStatus]: normalizedChangedAt
+  };
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+
+  if (loanId > 0) {
+    cache[`id:${loanId}`] = nextEntry;
+  }
+
+  if (loanCode) {
+    cache[`code:${loanCode}`] = nextEntry;
+  }
+
+  writeLoanStatusChangedAtCache(cache);
+}
+
+export function readPersistedLoanStatusChangedAt(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>,
+  status: LoanApplication['status']
+): string {
+  const normalizedStatus = String(status || '').toUpperCase();
+  const entry = readLoanStatusChangedAtEntry(readLoanStatusChangedAtCache(), loan);
+  const value = String(entry[normalizedStatus] || '').trim();
+  return Number.isNaN(new Date(value).getTime()) ? '' : value;
 }
 
 export function persistLoanStatusNote(
@@ -395,7 +579,7 @@ export function resolveLoanTotalPaid(loan: Pick<LoanApplication, 'totalPaid' | '
 }
 
 export function resolveLoanTotalRepayableAmount(
-  loan: Pick<LoanApplication, 'repaymentSchedule' | 'repaymentAmount' | 'repaymentTime' | 'amount'>
+  loan: Pick<LoanApplication, 'repaymentSchedule' | 'repaymentAmount' | 'repaymentTime' | 'amount'> & Partial<Pick<LoanApplication, 'status' | 'modeOfPayment'>>
 ): number {
   const scheduledTotal = (loan.repaymentSchedule || []).reduce(
     (sum, item) => sum + Number(item.totalAmount || 0),
@@ -405,13 +589,40 @@ export function resolveLoanTotalRepayableAmount(
     return Number(scheduledTotal.toFixed(2));
   }
 
+  const normalizedStatus = String(loan.status || '').toUpperCase();
+  if (normalizedStatus === 'PENDING' || normalizedStatus === 'AWAITING_INTEREST_ACCEPTANCE') {
+    return Number(Number(loan.amount || 0).toFixed(2));
+  }
+
   const periodicRepayment = Number(loan.repaymentAmount || 0);
   const tenureMonths = Number(loan.repaymentTime || 0);
+  const normalizedMode = String(loan.modeOfPayment || '').toUpperCase();
+  if (normalizedMode === 'ONE_OFF' && periodicRepayment > 0) {
+    return Number(periodicRepayment.toFixed(2));
+  }
+
   if (periodicRepayment > 0 && tenureMonths > 0) {
     return Number((periodicRepayment * tenureMonths).toFixed(2));
   }
 
-  return Number(loan.amount || 0);
+  return Number(Number(loan.amount || 0).toFixed(2));
+}
+
+export function resolveLoanInterestAmount(
+  loan: Pick<LoanApplication, 'repaymentSchedule' | 'repaymentAmount' | 'repaymentTime' | 'amount'> & Partial<Pick<LoanApplication, 'status' | 'modeOfPayment'>>
+): number {
+  const scheduledInterest = (loan.repaymentSchedule || []).reduce(
+    (sum, item) => sum + Number(item.interestAmount || 0),
+    0
+  );
+
+  if (scheduledInterest > 0) {
+    return Number(scheduledInterest.toFixed(2));
+  }
+
+  const totalRepayable = resolveLoanTotalRepayableAmount(loan);
+  const principalAmount = Number(loan.amount || 0);
+  return Number(Math.max(totalRepayable - principalAmount, 0).toFixed(2));
 }
 
 export function resolveLoanOutstandingBalance(
@@ -429,6 +640,56 @@ export function resolveLoanOutstandingBalance(
   const totalRepayable = resolveLoanTotalRepayableAmount(loan);
   const totalPaid = resolveLoanTotalPaid(loan);
   return Number(Math.max(totalRepayable - totalPaid, 0).toFixed(2));
+}
+
+export function resolveLoanOutstandingAccruedFees(
+  loan: Pick<LoanApplication, 'repaymentSchedule' | 'paymentHistory' | 'totalLateFeesAccrued' | 'totalLateFeesPaid'>
+): number {
+  const explicitOutstandingFees = Math.max(
+    Number(loan.totalLateFeesAccrued || 0) - Number(loan.totalLateFeesPaid || 0),
+    0
+  );
+  const scheduledOutstandingFees = (loan.repaymentSchedule || []).reduce(
+    (sum, item) => sum + Number(item.lateFeeAmount || 0),
+    0
+  );
+  const paidFeesFromHistory = (loan.paymentHistory || []).reduce(
+    (sum, item) => sum + Number(item.lateFeeAmount || 0),
+    0
+  );
+
+  return Number(Math.max(explicitOutstandingFees, scheduledOutstandingFees - paidFeesFromHistory, scheduledOutstandingFees, 0).toFixed(2));
+}
+
+export function resolveLoanOutstandingExposure(
+  loan: Pick<LoanApplication, 'currentBalance' | 'status' | 'paymentHistory' | 'repaymentSchedule' | 'repaymentAmount' | 'repaymentTime' | 'amount' | 'totalPaid' | 'totalLateFeesAccrued' | 'totalLateFeesPaid'>
+): number {
+  const outstandingBalance = resolveLoanOutstandingBalance(loan);
+  const outstandingAccruedFees = resolveLoanOutstandingAccruedFees(loan);
+
+  if (outstandingAccruedFees <= 0 || loan.status === 'COMPLETED') {
+    return outstandingBalance;
+  }
+
+  const scheduledBaseRepayable = (loan.repaymentSchedule || []).reduce(
+    (sum, item) => sum + Number(item.principalAmount || 0) + Number(item.interestAmount || 0),
+    0
+  );
+  const paidFeesFromHistory = (loan.paymentHistory || []).reduce(
+    (sum, item) => sum + Number(item.lateFeeAmount || 0),
+    0
+  );
+  const explicitPaidFees = Number(loan.totalLateFeesPaid || 0);
+  const paidFees = Math.max(paidFeesFromHistory, explicitPaidFees, 0);
+  const nonFeePaid = Math.max(resolveLoanTotalPaid(loan) - paidFees, 0);
+  const baseRepayableWithoutFees = scheduledBaseRepayable > 0
+    ? scheduledBaseRepayable
+    : resolveLoanTotalRepayableAmount(loan);
+  const baseOutstandingWithoutFees = Math.max(baseRepayableWithoutFees - nonFeePaid, 0);
+  const accruedFeesAlreadyCaptured = Math.max(outstandingBalance - baseOutstandingWithoutFees, 0);
+  const residualAccruedFees = Math.max(outstandingAccruedFees - accruedFeesAlreadyCaptured, 0);
+
+  return Number((outstandingBalance + residualAccruedFees).toFixed(2));
 }
 
 export function resolveLoanRepaymentProgress(
@@ -668,6 +929,66 @@ function writeLoanInterestRateCache(cache: Record<string, number>): void {
   sessionStorage.setItem(loanInterestRateCacheKey, serializedCache);
 }
 
+function readLoanLateFeePercentageCache(): Record<string, number> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanLateFeePercentageCacheKey) || sessionStorage.getItem(loanLateFeePercentageCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, number> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanLateFeePercentageCache(cache: Record<string, number>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanLateFeePercentageCacheKey, serializedCache);
+  sessionStorage.setItem(loanLateFeePercentageCacheKey, serializedCache);
+}
+
+function readLoanLateFeeGracePeriodDaysCache(): Record<string, number> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanLateFeeGracePeriodDaysCacheKey) || sessionStorage.getItem(loanLateFeeGracePeriodDaysCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, number> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanLateFeeGracePeriodDaysCache(cache: Record<string, number>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanLateFeeGracePeriodDaysCacheKey, serializedCache);
+  sessionStorage.setItem(loanLateFeeGracePeriodDaysCacheKey, serializedCache);
+}
+
+function readLoanRequestedAmountCache(): Record<string, number> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanRequestedAmountCacheKey) || sessionStorage.getItem(loanRequestedAmountCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, number> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanRequestedAmountCache(cache: Record<string, number>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanRequestedAmountCacheKey, serializedCache);
+  sessionStorage.setItem(loanRequestedAmountCacheKey, serializedCache);
+}
+
 function readLoanRepaymentStartDateCache(): Record<string, string> {
   const rawValue = normalizeStoredValue(localStorage.getItem(loanRepaymentStartDateCacheKey) || sessionStorage.getItem(loanRepaymentStartDateCacheKey));
   if (!rawValue) {
@@ -686,6 +1007,26 @@ function writeLoanRepaymentStartDateCache(cache: Record<string, string>): void {
   const serializedCache = JSON.stringify(cache);
   localStorage.setItem(loanRepaymentStartDateCacheKey, serializedCache);
   sessionStorage.setItem(loanRepaymentStartDateCacheKey, serializedCache);
+}
+
+function readLoanRepaymentDayCache(): Record<string, number> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanRepaymentDayCacheKey) || sessionStorage.getItem(loanRepaymentDayCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue as Record<string, number> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanRepaymentDayCache(cache: Record<string, number>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanRepaymentDayCacheKey, serializedCache);
+  sessionStorage.setItem(loanRepaymentDayCacheKey, serializedCache);
 }
 
 function readLoanStatusNoteEntry(
@@ -718,6 +1059,38 @@ function writeLoanStatusNoteCache(cache: Record<string, Record<string, string>>)
   const serializedCache = JSON.stringify(cache);
   localStorage.setItem(loanStatusNoteCacheKey, serializedCache);
   sessionStorage.setItem(loanStatusNoteCacheKey, serializedCache);
+}
+
+function readLoanStatusChangedAtEntry(
+  cache: Record<string, Record<string, string>>,
+  loan: Pick<LoanApplication, 'id' | 'loanCode'>
+): Record<string, string> {
+  const loanId = Number(loan.id || 0);
+  const loanCode = String(loan.loanCode || '').trim();
+  const entry = cache[`id:${loanId}`] || cache[`code:${loanCode}`] || {};
+  return entry && typeof entry === 'object' ? entry : {};
+}
+
+function readLoanStatusChangedAtCache(): Record<string, Record<string, string>> {
+  const rawValue = normalizeStoredValue(localStorage.getItem(loanStatusChangedAtCacheKey) || sessionStorage.getItem(loanStatusChangedAtCacheKey));
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object'
+      ? parsedValue as Record<string, Record<string, string>>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoanStatusChangedAtCache(cache: Record<string, Record<string, string>>): void {
+  const serializedCache = JSON.stringify(cache);
+  localStorage.setItem(loanStatusChangedAtCacheKey, serializedCache);
+  sessionStorage.setItem(loanStatusChangedAtCacheKey, serializedCache);
 }
 
 function parseStoredJson(value: string | null): Record<string, unknown> | null {

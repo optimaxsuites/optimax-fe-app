@@ -99,7 +99,7 @@ export class EmployeeInterestAcceptanceComponent implements OnInit {
     this.isLoading = true;
     this.loanApprovalService.rejectInterestRate(this.loan!.id, this.rejectionReason).subscribe({
       next: () => {
-        this.showMessage('info', 'Interest Rate Rejected', `You have rejected the proposed interest rate. The loan has been returned to pending status.`);
+        this.showMessage('info', 'Interest Rate Rejected', 'Your feedback has been sent to admin. The proposal stays under review until a revised rate is sent back to you.');
         this.decisionMade.emit({ accepted: false, message: this.rejectionReason });
         this.isLoading = false;
       },

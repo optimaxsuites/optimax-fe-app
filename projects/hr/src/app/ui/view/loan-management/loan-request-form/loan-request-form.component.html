@@ -94,6 +94,16 @@
             <div class="error" *ngIf="repaymentStartDate?.invalid && repaymentStartDate?.touched">Repayment start date is required</div>
           </div>
 
+          <div class="form-group" *ngIf="modeOfPayment?.value === 'MONTHLY'">
+            <label>Repayment Day <span class="required">*</span></label>
+            <input type="number" formControlName="repaymentDay" class="form-input" min="1" max="31" placeholder="Enter repayment day">
+            <div class="field-hint">Monthly repayments are due on this day each month. It defaults to the day from the selected start date.</div>
+            <div class="error" *ngIf="repaymentDay?.invalid && repaymentDay?.touched">
+              <span *ngIf="repaymentDay?.errors?.['required']">Repayment day is required for monthly repayment</span>
+              <span *ngIf="repaymentDay?.errors?.['min'] || repaymentDay?.errors?.['max']">Repayment day must be between 1 and 31</span>
+            </div>
+          </div>
+
           <div class="form-group mode-group">
             <label>Mode of Repayment <span class="required">*</span></label>
             <select formControlName="modeOfPayment" class="form-select">

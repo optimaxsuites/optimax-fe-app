@@ -1,14 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 import {
   CooperativeContributionEntry,
+  CooperativeContributionPaymentMethod,
   CooperativeGroupMembership,
   CooperativeLoanGroup,
   CooperativeMember,
+  CooperativePendingContributionRequest,
   CooperativeRepayment
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
@@ -36,6 +41,16 @@ interface GroupContributionRow {
   joinedAt: string;
 }
 
+interface GroupMonthlyContributionSnapshotRow {
+  memberId: number;
+  memberName: string;
+  memberCode: number;
+  expectedAmount: number;
+  postedAmount: number;
+  status: 'POSTED' | 'PENDING';
+  contributedAt: string;
+}
+
 interface ContributionHistoryPoint {
   monthKey: string;
   monthLabel: string;
@@ -56,7 +71,8 @@ interface GroupActivityItem {
   templateUrl: './cooperative-member-group-dashboard.component.html',
   styleUrls: ['./cooperative-member-group-dashboard.component.scss']
 })
-export class CooperativeMemberGroupDashboardComponent implements OnInit {
+export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestroy {
+  private readonly invalidDisplayNamePattern = /^(unknown member|member\s*(undefined|\d+)|\d+)$/i;
   currentUuid = uuidV4();
   /**
    * Call this method after approving a group membership to force the dashboard to reload.
@@ -77,7 +93,8 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
   isSubmittingContribution = false;
   contributionForm = {
     amount: 0,
-    contributionMonth: ''
+    contributionMonth: '',
+    paymentMethod: 'BANK_TRANSFER' as CooperativeContributionPaymentMethod
   };
   contributionError = '';
 
@@ -88,11 +105,14 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
   groupMembers: CooperativeMember[] = [];
   groupLoans: CooperativeLoan[] = [];
   groupContributionEntries: CooperativeContributionEntry[] = [];
+  pendingContributionRequests: CooperativePendingContributionRequest[] = [];
   borrowerRows: GroupBorrowerRow[] = [];
   contributionRows: GroupContributionRow[] = [];
+  selectedContributionMonth = '';
   recentJoiners: CooperativeMember[] = [];
   contributionHistory: ContributionHistoryPoint[] = [];
   activityFeed: GroupActivityItem[] = [];
+  private membersSubscription?: Subscription;
 
   readonly contributionColumns: TableColumn<GroupContributionRow>[] = [
     { header: 'Member', field: 'memberName' },
@@ -109,20 +129,37 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     { header: 'Joined', formatter: row => row.joinDate ? new Date(row.joinDate).toLocaleDateString('en-US') : '—' }
   ];
 
+  readonly contributionPaymentMethodOptions: Array<{ value: CooperativeContributionPaymentMethod; label: string }> = [
+    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+    { value: 'CARD', label: 'Card' },
+    { value: 'CASH', label: 'Cash' },
+    { value: 'PAYROLL_DEDUCTION', label: 'Payroll Deduction' },
+    { value: 'MOBILE_MONEY', label: 'Mobile Money' }
+  ];
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     public readonly cooperativeService: CooperativeService,
-    private readonly backNavigationService: BackNavigationService
+    private readonly backNavigationService: BackNavigationService,
+    private readonly mailNotificationService: MailNotificationService
   ) {}
 
   ngOnInit(): void {
+    this.membersSubscription = this.cooperativeService.getMembersObservable().subscribe((members) => {
+      this.syncMemberDisplayState(members);
+    });
+
     this.route.params.subscribe(params => {
       this.currentUuid = params['uuid'] || this.currentUuid;
       this.currentGroupId = params['groupId'] || this.currentGroupId;
       this.currentMemberId = String(window.history.state?.memberId || '').trim() || this.resolveCurrentMemberId();
       this.loadDashboard();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.membersSubscription?.unsubscribe();
   }
 
   get totalMembers(): number {
@@ -159,6 +196,20 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return Math.round(total / this.borrowerRows.length);
   }
 
+  get currentMemberDisplayName(): string {
+    const resolvedName = this.currentMember
+      ? this.cooperativeService.getMemberDisplayName(this.currentMember.id || this.currentMember.memberId || this.currentMember.employeeId)
+      : '';
+    return this.getSafeDisplayName(resolvedName, this.currentMember?.fullName);
+  }
+
+  getMemberDisplayName(memberId: number | string | undefined): string {
+    const normalizedId = Number(memberId || 0);
+    const resolvedName = this.cooperativeService.getMemberDisplayName(memberId);
+    const cachedName = normalizedId > 0 ? this.cooperativeService.getMemberById(normalizedId)?.fullName : '';
+    return this.getSafeDisplayName(resolvedName, cachedName, normalizedId > 0 ? `Member ${normalizedId}` : 'Cooperative Member');
+  }
+
   get completedBorrowerNames(): string[] {
     return this.borrowerRows
       .filter(row => row.status === 'COMPLETED')
@@ -173,6 +224,63 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return !!this.currentMembership && this.currentMembership.status === 'ACTIVE';
   }
 
+  get currentGroupAccountingEmail(): string {
+    return String(this.group?.accountingEmail || '').trim();
+  }
+
+  get currentGroupContributionBankName(): string {
+    return String(this.group?.contributionsBankName || '').trim();
+  }
+
+  get currentGroupContributionAccount(): string {
+    return String(this.group?.contributionsAccount || '').trim();
+  }
+
+  get contributionMonthOptions(): Array<{ value: string; label: string }> {
+    const monthKeys = new Set<string>();
+    this.contributionHistory.forEach((item) => monthKeys.add(item.monthKey));
+    this.groupContributionEntries.forEach((entry) => {
+      if (entry.contributionMonth) {
+        monthKeys.add(entry.contributionMonth);
+      }
+    });
+
+    if (monthKeys.size === 0) {
+      monthKeys.add(this.getDefaultContributionMonth());
+    }
+
+    return Array.from(monthKeys)
+      .sort((left, right) => right.localeCompare(left))
+      .map((value) => ({ value, label: this.getContributionMonthLabel(value) }));
+  }
+
+  get selectedContributionMonthLabel(): string {
+    return this.selectedContributionMonth ? this.getContributionMonthLabel(this.selectedContributionMonth) : 'Selected Month';
+  }
+
+  get monthlyContributionSnapshotRows(): GroupMonthlyContributionSnapshotRow[] {
+    const targetMonth = this.selectedContributionMonth || this.getDefaultContributionMonth();
+
+    return this.groupMemberships.map((membership) => {
+      const member = this.cooperativeService.getMemberById(membership.memberId);
+      const monthEntries = this.groupContributionEntries.filter((entry) =>
+        entry.membershipId === membership.id && entry.contributionMonth === targetMonth
+      );
+      const postedAmount = monthEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+      const latestEntry = [...monthEntries].sort((left, right) => new Date(right.contributedAt).getTime() - new Date(left.contributedAt).getTime())[0];
+
+      return {
+        memberId: Number(membership.memberId),
+        memberName: this.getMemberDisplayName(membership.memberId),
+        memberCode: member?.memberId ? Number(member.memberId) : Number(membership.memberId),
+        expectedAmount: Number(membership.monthlyContributionAmount || 0),
+        postedAmount,
+        status: postedAmount > 0 ? 'POSTED' as const : 'PENDING' as const,
+        contributedAt: latestEntry?.contributedAt || ''
+      };
+    }).sort((left, right) => left.memberName.localeCompare(right.memberName));
+  }
+
   get hasExistingContributionForSelectedMonth(): boolean {
     if (!this.currentMembership || !this.contributionForm.contributionMonth) {
       return false;
@@ -181,6 +289,18 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     return this.groupContributionEntries.some(entry => {
       return entry.membershipId === this.currentMembership?.id && entry.contributionMonth === this.contributionForm.contributionMonth;
     });
+  }
+
+  get hasExistingPendingContributionRequestForSelectedMonth(): boolean {
+    if (!this.currentMembership || !this.contributionForm.contributionMonth) {
+      return false;
+    }
+
+    return this.pendingContributionRequests.some((request) =>
+      request.membershipId === this.currentMembership?.id
+      && request.contributionMonth === this.contributionForm.contributionMonth
+      && request.status === 'PENDING_CONFIRMATION'
+    );
   }
 
   loadDashboard(): void {
@@ -195,42 +315,50 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
         return;
       }
 
-      this.groupMemberships = this.cooperativeService.getGroupMemberships()
-        .filter(item => String(item.groupId) === this.currentGroupId && item.status === 'ACTIVE')
-        .sort((a, b) => new Date(b.joinedAt || b.requestedAt || '').getTime() - new Date(a.joinedAt || a.requestedAt || '').getTime());
+      forkJoin({
+        members: this.cooperativeService.getMembers(),
+        memberships: this.cooperativeService.loadGroupMemberships(),
+        contributions: this.cooperativeService.loadContributionEntries(),
+        loans: this.cooperativeService.getLoans()
+      }).subscribe(({ loans }) => {
+        this.groupMemberships = this.cooperativeService.getGroupMemberships()
+          .filter(item => String(item.groupId) === this.currentGroupId && item.status === 'ACTIVE')
+          .sort((a, b) => new Date(b.joinedAt || b.requestedAt || '').getTime() - new Date(a.joinedAt || a.requestedAt || '').getTime());
 
-      this.groupMembers = this.groupMemberships
-        .map(item => this.cooperativeService.getMemberById(item.memberId))
-        .filter((member): member is CooperativeMember => !!member);
+        this.groupMembers = this.groupMemberships
+          .map(item => this.cooperativeService.getMemberById(item.memberId))
+          .filter((member): member is CooperativeMember => !!member);
 
-      this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(Number(this.currentGroupId));
+        this.groupContributionEntries = this.cooperativeService.getContributionEntriesByGroup(Number(this.currentGroupId));
+        this.pendingContributionRequests = this.cooperativeService.getPendingContributionRequestsByGroup(Number(this.currentGroupId));
 
-      this.currentMember = this.cooperativeService.getMemberById(Number(this.currentMemberId));
-      this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
+        this.currentMember = this.cooperativeService.getMemberById(Number(this.currentMemberId));
+        this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
+        this.refreshCurrentMemberFromBackend();
 
-      this.recentJoiners = [...this.groupMembers]
-        .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-        .slice(0, 5);
+        this.recentJoiners = [...this.groupMembers]
+          .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+          .slice(0, 5);
 
-      this.contributionRows = this.groupMemberships.map(membership => {
-        const member = this.cooperativeService.getMemberById(membership.memberId);
-        const totalContribution = this.groupContributionEntries
-          .filter(entry => entry.membershipId === membership.id)
-          .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+        this.contributionRows = this.groupMemberships.map(membership => {
+          const member = this.cooperativeService.getMemberById(membership.memberId);
+          const totalContribution = this.groupContributionEntries
+            .filter(entry => entry.membershipId === membership.id)
+            .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
 
-        return {
-          memberId: Number(membership.memberId),
-          memberName: member?.fullName || 'Unknown member',
-          memberCode: member?.memberId ? Number(member.memberId) : Number(membership.memberId),
-          monthlyContribution: Number(membership.monthlyContributionAmount || 0),
-          totalContribution: totalContribution || Number(membership.totalContribution || 0),
-          joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
-        };
-      });
+          return {
+            memberId: Number(membership.memberId),
+            memberName: this.cooperativeService.getMemberDisplayName(membership.memberId),
+            memberCode: member?.memberId ? Number(member.memberId) : Number(membership.memberId),
+            monthlyContribution: Number(membership.monthlyContributionAmount || 0),
+            totalContribution: totalContribution || Number(membership.totalContribution || 0),
+            joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
+          };
+        });
 
-      this.contributionHistory = this.buildContributionHistory();
+        this.contributionHistory = this.buildContributionHistory();
+        this.selectedContributionMonth = this.contributionMonthOptions[0]?.value || this.getDefaultContributionMonth();
 
-      this.cooperativeService.getLoans().subscribe(loans => {
         this.groupLoans = loans.filter(loan => String(loan.groupId || loan.cooperativeGroupId || '') === this.currentGroupId);
         this.borrowerRows = this.groupLoans
           .filter(loan => loan.status !== 'REJECTED' && loan.status !== 'PENDING')
@@ -281,7 +409,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
           id: `join-${membership.id}`,
           type: 'join',
           title: 'New Member Joined',
-          description: `${member.fullName} joined the group.`,
+          description: `${this.cooperativeService.getMemberDisplayName(membership.memberId)} joined the group.`,
           occurredAt: membership.joinedAt || membership.requestedAt || member.joinDate || new Date().toISOString()
         });
       }
@@ -290,12 +418,13 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     // Add loan activities
     this.groupLoans.forEach(loan => {
       const member = this.cooperativeService.getMemberById(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
+      const memberName = this.cooperativeService.getMemberDisplayName(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
       if (loan.status === 'COMPLETED') {
         activities.push({
           id: `loan-completed-${loan.id}`,
           type: 'completion',
           title: 'Loan Completed',
-          description: `${member?.fullName || 'A member'} completed repayment for loan ${String(loan.loanCode || loan.loanId || loan.id)}.`,
+          description: `${memberName} completed repayment for loan ${String(loan.loanCode || loan.loanId || loan.id)}.`,
           occurredAt: loan.completedDate || loan.completionDate || loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       } else if (loan.status === 'ACTIVE' && loan.disbursedDate) {
@@ -303,7 +432,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
           id: `loan-active-${loan.id}`,
           type: 'loan',
           title: 'Loan Disbursed',
-          description: `${member?.fullName || 'A member'} received a loan of ${this.formatCurrency(loan.amount)}.`,
+          description: `${memberName} received a loan of ${this.formatCurrency(loan.amount)}.`,
           occurredAt: loan.disbursedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       } else if (loan.status === 'APPROVED') {
@@ -311,7 +440,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
           id: `loan-approved-${loan.id}`,
           type: 'loan',
           title: 'Loan Approved',
-          description: `${member?.fullName || 'A member'}'s loan application was approved.`,
+          description: `${memberName}'s loan application was approved.`,
           occurredAt: loan.approvedDate || loan.applicationDate || loan.requestDate || new Date().toISOString()
         });
       }
@@ -319,7 +448,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
 
     // Add repayment activities
     this.groupLoans.forEach(loan => {
-      const member = this.cooperativeService.getMemberById(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
+      const memberName = this.cooperativeService.getMemberDisplayName(Number(loan.memberId ?? loan.cooperativeMemberId ?? 0));
       const repayments = this.cooperativeService.getRepaymentsByLoanId(Number(loan.id));
       repayments.forEach(repayment => {
         if (repayment.status === 'PAID' && repayment.paidDate) {
@@ -327,7 +456,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
             id: `repayment-${repayment.id}`,
             type: 'repayment',
             title: 'Repayment Made',
-            description: `${member?.fullName || 'A member'} made a repayment of ${this.formatCurrency(repayment.amount)}.`,
+            description: `${memberName} made a repayment of ${this.formatCurrency(repayment.amount)}.`,
             occurredAt: repayment.paidDate
           });
         } else if (repayment.status === 'OVERDUE') {
@@ -335,7 +464,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
             id: `repayment-overdue-${repayment.id}`,
             type: 'repayment',
             title: 'Overdue Payment',
-            description: `${member?.fullName || 'A member'}'s repayment of ${this.formatCurrency(repayment.amount)} is overdue.`,
+            description: `${memberName}'s repayment of ${this.formatCurrency(repayment.amount)} is overdue.`,
             occurredAt: repayment.dueDate
           });
         }
@@ -350,7 +479,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
           id: `contribution-${entry.id}`,
           type: 'contribution',
           title: 'Contribution Posted',
-          description: `${member.fullName} contributed ${this.formatCurrency(entry.amount)} for ${this.getContributionMonthLabel(entry.contributionMonth)}.`,
+          description: `${this.cooperativeService.getMemberDisplayName(entry.memberId)} contributed ${this.formatCurrency(entry.amount)} for ${this.getContributionMonthLabel(entry.contributionMonth)}.`,
           occurredAt: entry.contributedAt
         });
       }
@@ -371,7 +500,8 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
     this.isContributionModalOpen = true;
     this.contributionForm = {
       amount: Number(this.currentMembership.monthlyContributionAmount || 0),
-      contributionMonth: this.getDefaultContributionMonth()
+      contributionMonth: this.getDefaultContributionMonth(),
+      paymentMethod: 'BANK_TRANSFER'
     };
   }
 
@@ -394,6 +524,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
 
     const amount = Number(this.contributionForm.amount || 0);
     const contributionMonth = String(this.contributionForm.contributionMonth || '').trim();
+    const paymentMethod = this.contributionForm.paymentMethod;
     if (amount <= 0) {
       this.contributionError = 'Enter a valid contribution amount.';
       return;
@@ -404,26 +535,91 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
       return;
     }
 
-    this.isSubmittingContribution = true;
-    this.contributionError = '';
-
-    const entry = this.cooperativeService.recordGroupContribution(this.currentMembership.id, {
-      amount,
-      contributionMonth,
-      contributedAt: new Date().toISOString()
-    });
-
-    this.isSubmittingContribution = false;
-
-    if (!entry) {
-      this.contributionError = 'The contribution could not be posted. Check the month and try again.';
+    if (this.hasExistingPendingContributionRequestForSelectedMonth) {
+      this.contributionError = 'A confirmation request for this month is already waiting for accounting review.';
       return;
     }
 
-    this.closeContributionModal();
-    this.loadDashboard();
-    this.actionMessageTone = 'success';
-    this.actionMessage = `Contribution posted for ${this.getContributionMonthLabel(contributionMonth)}.`;
+    if (!this.currentGroupAccountingEmail || !this.currentGroupContributionBankName || !this.currentGroupContributionAccount) {
+      this.contributionError = 'This group is missing the accounting email or contribution bank details.';
+      return;
+    }
+
+    this.isSubmittingContribution = true;
+    this.contributionError = '';
+
+    this.mailNotificationService.sendMail({
+      name: 'Accounting Team',
+      recieverEmail: this.currentGroupAccountingEmail,
+      subject: `Contribution Confirmation Request - ${this.group?.name || 'Cooperative Group'} - ${this.getContributionMonthLabel(contributionMonth)}`,
+      body: this.buildContributionConfirmationMailBody(amount, contributionMonth, paymentMethod)
+    }).subscribe({
+      next: () => {
+        this.cooperativeService.createContributionConfirmationRequest(this.currentMembership!.id, {
+          amount,
+          contributionMonth,
+          paymentMethod
+        }).subscribe((request) => {
+          this.isSubmittingContribution = false;
+
+          if (!request) {
+            this.contributionError = 'The contribution confirmation request could not be created. Check the month and try again.';
+            return;
+          }
+
+          this.closeContributionModal();
+          this.loadDashboard();
+          this.actionMessageTone = 'success';
+          this.actionMessage = `Contribution confirmation request sent for ${this.getContributionMonthLabel(contributionMonth)}.`;
+        });
+      },
+      error: () => {
+        this.isSubmittingContribution = false;
+        this.contributionError = 'The accounting confirmation email could not be sent. Please try again.';
+      }
+    });
+  }
+
+  getPendingContributionRequestsForCurrentMember(): CooperativePendingContributionRequest[] {
+    if (!this.currentMember) {
+      return [];
+    }
+
+    return this.pendingContributionRequests.filter((request) => request.memberId === this.currentMember?.id);
+  }
+
+  getContributionRequestStatusClass(status: CooperativePendingContributionRequest['status']): string {
+    return `request-${status.toLowerCase().replace(/_/g, '-')}`;
+  }
+
+  getContributionPaymentMethodLabel(paymentMethod: CooperativeContributionPaymentMethod): string {
+    return paymentMethod.replace(/_/g, ' ');
+  }
+
+  private buildContributionConfirmationMailBody(
+    amount: number,
+    contributionMonth: string,
+    paymentMethod: CooperativeContributionPaymentMethod
+  ): string {
+    const contributionMonthLabel = this.getContributionMonthLabel(contributionMonth);
+    return `
+      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+        <p>Dear Accounting Team,</p>
+        <p>A cooperative member has submitted a monthly contribution and is requesting payment confirmation.</p>
+        <ul>
+          <li><strong>Group:</strong> ${this.group?.name || 'Cooperative Group'}</li>
+          <li><strong>Member:</strong> ${this.currentMemberDisplayName}</li>
+          <li><strong>Member ID:</strong> ${this.currentMember?.memberId || this.currentMember?.id || this.currentMemberId || 'N/A'}</li>
+          <li><strong>Contribution Month:</strong> ${contributionMonthLabel}</li>
+          <li><strong>Amount:</strong> ${this.formatCurrency(amount)}</li>
+          <li><strong>Payment Method:</strong> ${this.getContributionPaymentMethodLabel(paymentMethod)}</li>
+          <li><strong>Contribution Bank:</strong> ${this.currentGroupContributionBankName}</li>
+          <li><strong>Contribution Account:</strong> ${this.currentGroupContributionAccount}</li>
+        </ul>
+        <p>Please confirm the payment by updating the contribution record in the accounting workflow. The group contribution totals will update after confirmation.</p>
+        <p>Regards,<br/><strong>Cooperative Member Portal</strong></p>
+      </div>
+    `;
   }
 
   private toBorrowerRow(loan: CooperativeLoan): GroupBorrowerRow {
@@ -440,7 +636,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
 
     return {
       memberId,
-      memberName: member?.fullName || 'Unknown member',
+      memberName: this.cooperativeService.getMemberDisplayName(memberId),
       loanId: String(loan.loanCode || loan.loanId || loan.id || ''),
       status: loan.status,
       amount: Number(loan.amount || 0),
@@ -485,35 +681,94 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit {
   }
 
   private resolveCurrentMemberId(): string {
-    const members = this.cooperativeService.getMembersSnapshot();
-    const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
-    const sessionUsername = String(sessionStorage.getItem('username') || '').trim().toLowerCase();
-    const userRegDataRaw = sessionStorage.getItem('userRegData');
-    const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
-    const regEmail = String(userRegData?.email || '').trim().toLowerCase();
+    const matched = this.cooperativeService.resolveCurrentSessionMember(this.cooperativeService.getMembersSnapshot());
+    return matched ? String(matched.id) : '';
+  }
 
-    const matched = members.find(member => {
-      const memberId = String(member.id || '').trim();
-      const memberCode = String(member.memberId || '').trim();
-      const memberEmail = String(member.email || '').trim().toLowerCase();
-      const memberName = String(member.fullName || '').trim().toLowerCase();
+  private syncMemberDisplayState(members: CooperativeMember[]): void {
+    if (!this.group) {
+      return;
+    }
 
-      if (sessionUserId && (memberId === sessionUserId || memberCode === sessionUserId)) {
-        return true;
-      }
+    const normalizedCurrentMemberId = Number(this.currentMember?.id || this.currentMember?.memberId || this.currentMember?.employeeId || this.currentMemberId || 0);
+    const matchedCurrentMember = normalizedCurrentMemberId > 0
+      ? members.find((member) =>
+          Number(member.id || 0) === normalizedCurrentMemberId
+          || Number(member.memberId || 0) === normalizedCurrentMemberId
+          || Number(member.employeeId || 0) === normalizedCurrentMemberId
+        )
+      : this.cooperativeService.resolveCurrentSessionMember(members);
 
-      if (regEmail && memberEmail === regEmail) {
-        return true;
-      }
+    if (matchedCurrentMember) {
+      this.currentMember = matchedCurrentMember;
+      this.currentMemberId = String(matchedCurrentMember.id || matchedCurrentMember.memberId || matchedCurrentMember.employeeId || this.currentMemberId);
+      this.currentMembership = this.groupMemberships.find(item => item.memberId === matchedCurrentMember.id);
+    }
 
-      if (sessionUsername && (memberEmail === sessionUsername || memberName === sessionUsername)) {
-        return true;
-      }
+    this.groupMembers = this.groupMemberships
+      .map(item => this.cooperativeService.getMemberById(item.memberId))
+      .filter((member): member is CooperativeMember => !!member);
 
-      return false;
+    this.contributionRows = this.groupMemberships.map(membership => {
+      const member = this.cooperativeService.getMemberById(membership.memberId);
+      const totalContribution = this.groupContributionEntries
+        .filter(entry => entry.membershipId === membership.id)
+        .reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+
+      return {
+        memberId: Number(membership.memberId),
+        memberName: this.getMemberDisplayName(membership.memberId),
+        memberCode: member?.memberId ? Number(member.memberId) : Number(membership.memberId),
+        monthlyContribution: Number(membership.monthlyContributionAmount || 0),
+        totalContribution: totalContribution || Number(membership.totalContribution || 0),
+        joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
+      };
     });
 
-    return matched ? String(matched.id) : '';
+    this.recentJoiners = [...this.groupMembers]
+      .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+      .slice(0, 5);
+
+    this.borrowerRows = this.groupLoans
+      .filter(loan => loan.status !== 'REJECTED' && loan.status !== 'PENDING')
+      .map(loan => this.toBorrowerRow(loan))
+      .sort((a, b) => b.progressPercent - a.progressPercent);
+
+    this.activityFeed = this.buildActivityFeed();
+
+    if (!this.selectedContributionMonth || !this.contributionMonthOptions.some((option) => option.value === this.selectedContributionMonth)) {
+      this.selectedContributionMonth = this.contributionMonthOptions[0]?.value || this.getDefaultContributionMonth();
+    }
+  }
+
+  private refreshCurrentMemberFromBackend(): void {
+    const memberId = Number(this.currentMember?.id || this.currentMember?.memberId || this.currentMember?.employeeId || 0);
+    if (!Number.isFinite(memberId) || memberId <= 0) {
+      return;
+    }
+
+    this.cooperativeService.loadMemberById(memberId).subscribe({
+      next: (member) => {
+        if (!member) {
+          return;
+        }
+
+        this.currentMember = member;
+        this.currentMemberId = String(member.id || member.memberId || member.employeeId || this.currentMemberId);
+        this.syncMemberDisplayState(this.cooperativeService.getMembersSnapshot());
+      },
+      error: (error) => {
+        console.error('Failed to refresh current group member from backend:', error);
+      }
+    });
+  }
+
+  private getSafeDisplayName(primaryName?: string | null, secondaryName?: string | null, fallbackName = 'Cooperative Member'): string {
+    const candidates = [primaryName, secondaryName, this.currentMember?.fullName, sessionStorage.getItem('fullname'), sessionStorage.getItem('username')]
+      .map((value) => String(value || '').trim())
+      .filter((value) => value && !this.invalidDisplayNamePattern.test(value));
+
+    return candidates[0] || fallbackName;
   }
 
   openMemberLoanHistory(memberId: string): void {

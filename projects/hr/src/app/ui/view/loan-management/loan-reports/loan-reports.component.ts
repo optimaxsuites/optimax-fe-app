@@ -11,6 +11,7 @@ import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
   formatLoanPurposeDisplay,
+  resolveLoanInterestAmount,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
 
@@ -20,6 +21,8 @@ import {
   styleUrls: ['./loan-reports.component.scss']
 })
 export class LoanReportsComponent implements OnInit {
+  readonly pageSize = 20;
+  currentPage = 1;
   isLoading = false;
   allLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
@@ -41,7 +44,15 @@ export class LoanReportsComponent implements OnInit {
   
   // Available departments and statuses for dropdowns
   departments: string[] = [];
-  statuses: string[] = ['PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'COMPLETED'];
+  statuses: Array<{ value: string; label: string }> = [
+    { value: 'PENDING', label: 'PENDING' },
+    { value: 'APPROVED', label: 'APPROVED' },
+    { value: 'REJECTED', label: 'REJECTED' },
+    { value: 'AWAITING_INTEREST_ACCEPTANCE', label: 'AWAITING INTEREST ACCEPTANCE' },
+    { value: 'READY_FOR_DISBURSEMENT', label: 'READY FOR DISBURSEMENT' },
+    { value: 'ACTIVE', label: 'ACTIVE' },
+    { value: 'COMPLETED', label: 'COMPLETED' }
+  ];
   
   // Summary stats
   summaryStats = {
@@ -74,6 +85,10 @@ export class LoanReportsComponent implements OnInit {
 
   getLoanTotalRepayable(loan: LoanApplication): number {
     return resolveLoanTotalRepayableAmount(loan);
+  }
+
+  getLoanInterestAmount(loan: LoanApplication): number {
+    return resolveLoanInterestAmount(loan);
   }
 
   loadLoans(): void {
@@ -176,6 +191,7 @@ export class LoanReportsComponent implements OnInit {
 
     this.filteredLoans = this.sortData(results);
     this.calculateSummaryStats();
+    this.resetPagination();
   }
 
   resetFilters(): void {
@@ -268,6 +284,7 @@ export class LoanReportsComponent implements OnInit {
       'Purpose': loan.purpose,
       'Loan Amount': loan.amount,
       'Interest Rate': loan.interestRate + '%',
+      'Interest Amount': this.getLoanInterestAmount(loan),
       'Repayable Amount': this.getLoanTotalRepayable(loan),
       'Total Paid': loan.totalPaid || 0,
       'Current Balance': loan.currentBalance || 0,
@@ -294,7 +311,7 @@ export class LoanReportsComponent implements OnInit {
   exportToCSV(): void {
     const headers = [
       'Loan ID', 'Employee ID', 'Employee Name', 'Department', 'Purpose',
-      'Loan Amount', 'Interest Rate', 'Repayable Amount', 'Total Paid', 'Current Balance',
+      'Loan Amount', 'Interest Rate', 'Interest Amount', 'Repayable Amount', 'Total Paid', 'Current Balance',
       'Repayment Period', 'Status', 'Date Submitted',
       'Approved Date', 'Start Date', 'End Date'
     ];
@@ -307,6 +324,7 @@ export class LoanReportsComponent implements OnInit {
       loan.purpose,
       loan.amount,
       loan.interestRate + '%',
+      this.getLoanInterestAmount(loan),
       this.getLoanTotalRepayable(loan),
       loan.totalPaid || 0,
       loan.currentBalance || 0,
@@ -320,14 +338,12 @@ export class LoanReportsComponent implements OnInit {
 
     const csvContent = [
       headers.join(','),
-      ...csvData.map(row => row.join(','))
+      ...csvData.map(row => row.map(value => this.escapeCsvValue(value)).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const reportDate = formatDate(new Date(), 'yyyy-MM-dd', 'en-US');
-    // saveAs(blob, `loan_report_for_${reportDate}.csv`);
-    const date = formatDate(new Date(), 'yyyyMMdd_HHmmss', 'en-US');
-    //saveAs(blob, `loan_report_${date}.csv`);
+    this.downloadBlob(blob, `loan_report_for_${reportDate}.csv`);
   }
 
   // Print Report
@@ -399,6 +415,7 @@ export class LoanReportsComponent implements OnInit {
                 <th>Department</th>
                 <th>Amount</th>
                 <th>Interest</th>
+                <th>Interest Amount</th>
                 <th>Repayable Amount</th>
                 <th>Paid</th>
                 <th>Balance</th>
@@ -414,6 +431,7 @@ export class LoanReportsComponent implements OnInit {
                   <td>${loan.department}</td>
                   <td>₦${loan.amount.toLocaleString()}</td>
                   <td>${loan.interestRate || 0}%</td>
+                  <td>₦${this.getLoanInterestAmount(loan).toLocaleString()}</td>
                   <td>₦${this.getLoanTotalRepayable(loan).toLocaleString()}</td>
                   <td>₦${(loan.totalPaid || 0).toLocaleString()}</td>
                   <td>₦${(loan.currentBalance || 0).toLocaleString()}</td>
@@ -441,14 +459,31 @@ export class LoanReportsComponent implements OnInit {
   //   this.router.navigate(['/admin/hr/loan-management/loan-details', loanId]);
   // }
 
-  getStatusClass(status: string): string {
-    switch(status) {
-      case 'APPROVED': return 'status-approved';
-      case 'PENDING': return 'status-pending';
-      case 'REJECTED': return 'status-rejected';
-      case 'ACTIVE': return 'status-active';
-      case 'COMPLETED': return 'status-completed';
-      default: return 'status-default';
+ getStatusClass(status: string | undefined): string {
+  switch (status) {
+    case 'PENDING': return 'status-pending';
+    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
+    case 'APPROVED': return 'status-approved';
+    case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
+    case 'ACTIVE': return 'status-active';
+    case 'REJECTED': return 'status-rejected';
+    case 'COMPLETED': return 'status-completed';
+    case 'SKIPPED': return 'status-skipped';
+    case 'OVERDUE': return 'status-overdue';
+    case 'DEFAULTED': return 'status-defaulted';
+    case 'PAUSED': return 'status-paused';
+    default: return 'status-default';
+  }
+}
+
+  getStatusLabel(status: string | undefined): string {
+    switch (status) {
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+        return 'AWAITING INTEREST ACCEPTANCE';
+      case 'READY_FOR_DISBURSEMENT':
+        return 'READY FOR DISBURSEMENT';
+      default:
+        return String(status || '').replace(/_/g, ' ');
     }
   }
 
@@ -459,6 +494,49 @@ export class LoanReportsComponent implements OnInit {
  getFilteredTotal(): number {
   return this.filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
 }
+
+  get paginatedLoans(): LoanApplication[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredLoans.length / this.pageSize));
+  }
+
+  get paginationStart(): number {
+    return this.filteredLoans.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredLoans.length);
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+  }
+
+  private resetPagination(): void {
+    this.currentPage = 1;
+  }
+
+  private escapeCsvValue(value: unknown): string {
+    const normalized = String(value ?? '');
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  }
 
   goBack(): void {
   if (window.history.length > 1) {

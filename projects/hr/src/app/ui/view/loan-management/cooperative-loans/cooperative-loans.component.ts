@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Message } from 'primeng/api';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
@@ -8,6 +9,8 @@ import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { EmployeeService } from '../../../service/employee.service';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 
 @Component({
   selector: 'app-cooperative-loans',
@@ -15,6 +18,12 @@ import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../servic
   styleUrls: ['./cooperative-loans.component.scss']
 })
 export class CooperativeLoansComponent implements OnInit {
+  private readonly advanceStatusFilters = ['PENDING', 'APPROVED', 'READY_FOR_DISBURSEMENT', 'ACTIVE', 'COMPLETED', 'DEFAULTED', 'REJECTED'] as const;
+  private isAdvanceStatusFilter(status: string | null): status is (typeof this.advanceStatusFilters)[number] {
+    return !!status && this.advanceStatusFilters.includes(status as (typeof this.advanceStatusFilters)[number]);
+  }
+  readonly pageSize = 20;
+  currentPage = 1;
   toStringId(id: string | number | undefined): string {
     return id !== undefined && id !== null ? String(id) : '';
   }
@@ -28,9 +37,21 @@ export class CooperativeLoansComponent implements OnInit {
   members: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
   isLoading = true;
+  isLoadingEmployeeDetails = false;
+  isSubmittingDisbursement = false;
+  disbursementViewMode = false;
   searchTerm = '';
   showDisbursementModal = false;
   selectedDisbursementLoanId = '';
+  selectedEmployeeDetails: any = null;
+  accountingEmail = '';
+  emailNotes = '';
+  disbursementInstructionReference = '';
+  disbursementInitiatedAt = '';
+  disbursementInitiatedBy = '';
+  disbursementReference = '';
+  paymentMethod: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION' = 'BANK_TRANSFER';
+  messages: Message[] = [];
   disbursedDate = '';
   disbursementAmount = 0;
   disbursementRecipientType: 'BORROWER' | 'THIRD_PARTY' = 'BORROWER';
@@ -39,7 +60,7 @@ export class CooperativeLoansComponent implements OnInit {
   checklistAccountVerified = false;
   checklistComplianceCleared = false;
   checklistFundsReserved = false;
-  statusFilter: '' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' = '';
+  statusFilter: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' = '';
   stageFilter: '' | 'READY_FOR_ADMIN_REVIEW' | 'PENDING_GUARANTOR_APPROVAL' | 'INFO_REQUESTED' = '';
   groupFilter = '';
   openDisbursementOnLoad = false;
@@ -48,9 +69,10 @@ export class CooperativeLoansComponent implements OnInit {
   sortField = 'applicationDate';
   sortDirection: 'asc' | 'desc' = 'desc';
 
-  statusOptions: Array<{ label: string; value: 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' }> = [
+  statusOptions: Array<{ label: string; value: 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' }> = [
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
+    { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' },
     { label: 'Defaulted', value: 'DEFAULTED' },
@@ -59,6 +81,8 @@ export class CooperativeLoansComponent implements OnInit {
 
   constructor(
     private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService,
+    private mailNotificationService: MailNotificationService,
     private backNavigationService: BackNavigationService,
     private router: Router,
     private route: ActivatedRoute
@@ -72,10 +96,15 @@ export class CooperativeLoansComponent implements OnInit {
 
     this.route.queryParamMap.subscribe(params => {
       const status = params.get('status');
-      if (status === 'PENDING' || status === 'APPROVED' || status === 'ACTIVE' || status === 'COMPLETED' || status === 'DEFAULTED' || status === 'REJECTED') {
+      if (this.isAdvanceStatusFilter(status)) {
         this.statusFilter = status;
       }
-      this.openDisbursementOnLoad = params.get('mode') === 'disburse';
+      this.disbursementViewMode = params.get('mode') === 'disburse';
+      this.openDisbursementOnLoad = this.disbursementViewMode;
+      const requestedLoanId = String(params.get('loanId') || '').trim();
+      if (requestedLoanId) {
+        this.selectedDisbursementLoanId = requestedLoanId;
+      }
       const stage = params.get('stage');
       if (stage === 'READY_FOR_ADMIN_REVIEW' || stage === 'PENDING_GUARANTOR_APPROVAL' || stage === 'INFO_REQUESTED') {
         this.stageFilter = stage;
@@ -101,7 +130,9 @@ export class CooperativeLoansComponent implements OnInit {
       this.applyFilters();
       this.isLoading = false;
 
-      if (this.openDisbursementOnLoad && this.approvedLoans.length > 0) {
+      if (this.disbursementViewMode) {
+        this.initializeDisbursementWorkspace();
+      } else if (this.openDisbursementOnLoad && this.approvedLoans.length > 0) {
         this.openDisbursementModal();
         this.openDisbursementOnLoad = false;
       }
@@ -140,6 +171,7 @@ export class CooperativeLoansComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortData(results);
+    this.resetPagination();
   }
 
   sortData(data: CooperativeLoan[]): CooperativeLoan[] {
@@ -211,11 +243,11 @@ export class CooperativeLoansComponent implements OnInit {
     this.loadLoans();
   }
 
-  applyStatusFromCard(status: '' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'): void {
+  applyStatusFromCard(status: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'): void {
     this.setStatusFilter(status);
   }
 
-  setStatusFilter(status: '' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'): void {
+  setStatusFilter(status: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'): void {
     this.statusFilter = status;
     this.applyFilters();
   }
@@ -232,10 +264,23 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   openDisbursementModal(loanId?: string | number): void {
+    if (!this.disbursementViewMode) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {
+          mode: 'disburse',
+          loanId: loanId ? String(loanId) : null,
+          dashboard: 'cooperative'
+        },
+        queryParamsHandling: 'merge'
+      });
+      return;
+    }
+
     this.showDisbursementModal = true;
     const targetLoanId = loanId && this.approvedLoans.some(item => String(item.id) === String(loanId))
       ? String(loanId)
-      : String(this.approvedLoans[0]?.id || '');
+      : String(this.readyForDisbursementLoans[0]?.id || this.approvedLoans[0]?.id || '');
 
     this.selectedDisbursementLoanId = targetLoanId;
     this.disbursementRecipientType = 'BORROWER';
@@ -247,6 +292,15 @@ export class CooperativeLoansComponent implements OnInit {
     this.syncDisbursementFields();
   }
 
+  exitDisbursementView(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { mode: null, loanId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
   closeDisbursementModal(): void {
     this.showDisbursementModal = false;
   }
@@ -256,19 +310,76 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   disburseSelectedLoan(): void {
-    if (!this.canDisburseSelectedLoan || !this.selectedDisbursementLoan) {
+    if (!this.canDisburseSelectedLoan || !this.selectedDisbursementLoan || this.isSubmittingDisbursement) {
       return;
     }
 
+    this.isSubmittingDisbursement = true;
     this.cooperativeService.disburseLoan(Number(this.selectedDisbursementLoan.id)).subscribe((updated: CooperativeLoan | undefined) => {
       if (!updated) {
+        this.messages = [{ severity: 'warn', summary: 'Disbursement Failed', detail: 'Only approved loans can be disbursed.' }];
+        this.isSubmittingDisbursement = false;
         return;
       }
 
-      this.closeDisbursementModal();
+      this.messages = [{ severity: 'success', summary: 'Loan Disbursed', detail: `Loan ${updated.loanCode || updated.loanId || updated.id} has been marked as disbursed.` }];
       this.loadLoans();
       this.statusFilter = 'ACTIVE';
       this.applyFilters();
+      this.isSubmittingDisbursement = false;
+    });
+  }
+
+  sendToAccounting(): void {
+    if (!this.selectedDisbursementLoan || !this.accountingEmail.trim() || this.isSubmittingDisbursement) {
+      return;
+    }
+
+    const selectedLoan = this.selectedDisbursementLoan;
+    const selectedGroup = this.getSelectedDisbursementGroup();
+    const nowIso = new Date().toISOString();
+    const initiatedBy = this.getCurrentUserDisplayName();
+    const instructionReference = this.disbursementInstructionReference || this.generateDisbursementReference(selectedLoan);
+    const memberName = this.getMemberName(selectedLoan.cooperativeMemberId || selectedLoan.memberId);
+
+    this.isSubmittingDisbursement = true;
+    this.mailNotificationService.sendMail(this.buildAccountingMailBody()).subscribe({
+      next: () => {
+        const updatedLoan: CooperativeLoan = {
+          ...selectedLoan,
+          status: 'READY_FOR_DISBURSEMENT',
+          applicationStage: 'READY_FOR_DISBURSEMENT',
+          disbursementInitiatedAt: nowIso,
+          disbursementInitiatedBy: Number(sessionStorage.getItem('userid') || 0) || selectedLoan.disbursementInitiatedBy,
+          disbursementInstructionLoanReference: instructionReference,
+          adminComment: this.emailNotes?.trim()
+            ? `${selectedLoan.adminComment ? `${selectedLoan.adminComment}\n` : ''}Accounting note: ${this.emailNotes.trim()}`
+            : selectedLoan.adminComment
+        };
+
+        this.cooperativeService.updateLoan(updatedLoan).subscribe({
+          next: () => {
+            this.disbursementInitiatedAt = nowIso;
+            this.disbursementInitiatedBy = initiatedBy;
+            this.disbursementInstructionReference = instructionReference;
+            this.messages = [{
+              severity: 'success',
+              summary: 'Sent to Accounting',
+              detail: `${memberName}'s cooperative loan was sent to accounting for disbursement processing.`
+            }];
+            this.loadLoans();
+            this.isSubmittingDisbursement = false;
+          },
+          error: () => {
+            this.messages = [{ severity: 'error', summary: 'Update Failed', detail: 'The email was sent, but the loan tracking fields could not be updated.' }];
+            this.isSubmittingDisbursement = false;
+          }
+        });
+      },
+      error: () => {
+        this.messages = [{ severity: 'error', summary: 'Email Failed', detail: `Unable to send the disbursement email to ${this.accountingEmail}.` }];
+        this.isSubmittingDisbursement = false;
+      }
     });
   }
 
@@ -292,7 +403,32 @@ export class CooperativeLoansComponent implements OnInit {
     return `status-${status.toLowerCase()}`;
   }
 
+  getStatusLabel(status: string | undefined): string {
+    return String(status || '').replace(/_/g, ' ');
+  }
+
+  getStageDisplayLabel(stage: string | undefined): string {
+    if (!stage) {
+      return 'All Stages';
+    }
+
+    switch (stage) {
+      case 'READY_FOR_ADMIN_REVIEW':
+        return 'Ready for Admin Review';
+      case 'PENDING_GUARANTOR_APPROVAL':
+        return 'Pending Guarantor Approval';
+      case 'INFO_REQUESTED':
+        return 'Info Requested';
+      default:
+        return String(stage).replace(/_/g, ' ');
+    }
+  }
+
   getStageLabel(loan: CooperativeLoan): string {
+    if (loan.status === 'READY_FOR_DISBURSEMENT') {
+      return 'Ready For Disbursement';
+    }
+
     if (loan.status === 'APPROVED') {
       return 'Awaiting Disbursement';
     }
@@ -317,16 +453,7 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   getMemberName(memberId: string | number | undefined): string {
-    if (memberId === undefined || memberId === null || memberId === '') {
-      return 'Unknown member';
-    }
-
-    const normalizedMemberId = Number(memberId);
-    const member = this.members.find(item => {
-      const idNum = typeof item.id === 'number' ? item.id : Number(item.id);
-      return idNum === normalizedMemberId;
-    });
-    return (member && 'fullName' in member ? (member as any).fullName : undefined) || String(normalizedMemberId);
+    return this.cooperativeService.getMemberDisplayName(memberId);
   }
 
   getGroupName(groupId: string | number | undefined): string {
@@ -365,6 +492,10 @@ export class CooperativeLoansComponent implements OnInit {
     return this.loans.filter(l => l.status === 'APPROVED').length;
   }
 
+  get readyForDisbursementCount(): number {
+    return this.loans.filter(l => l.status === 'READY_FOR_DISBURSEMENT').length;
+  }
+
   get activeCount(): number {
     return this.loans.filter(l => l.status === 'ACTIVE').length;
   }
@@ -391,16 +522,79 @@ export class CooperativeLoansComponent implements OnInit {
       .reduce((sum, l) => sum + l.amount, 0);
   }
 
-  get statusCounts(): { pending: number; approved: number; active: number; completed: number; defaulted: number; rejected: number; total: number } {
+  get statusCounts(): { pending: number; approved: number; readyForDisbursement: number; active: number; completed: number; defaulted: number; rejected: number; total: number } {
     return {
       pending: this.pendingCount,
       approved: this.approvedCount,
+      readyForDisbursement: this.readyForDisbursementCount,
       active: this.activeCount,
       completed: this.completedCount,
       defaulted: this.defaultedCount,
       rejected: this.rejectedCount,
       total: this.loans.length
     };
+  }
+
+  get stageCounts(): { readyForReview: number; pendingGuarantorApproval: number; infoRequested: number; awaitingDisbursement: number } {
+    return {
+      readyForReview: this.loans.filter((loan) => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW').length,
+      pendingGuarantorApproval: this.loans.filter((loan) => loan.applicationStage === 'PENDING_GUARANTOR_APPROVAL').length,
+      infoRequested: this.loans.filter((loan) => loan.applicationStage === 'INFO_REQUESTED').length,
+      awaitingDisbursement: this.readyForDisbursementCount
+    };
+  }
+
+  get overviewCards(): Array<{ label: string; value: number; status: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'; icon: string; tone: string; note: string }> {
+    return [
+      { label: 'Pending', value: this.statusCounts.pending, status: 'PENDING', icon: 'fa-hourglass-half', tone: 'pending', note: 'Applications waiting in queue' },
+      { label: 'Approved', value: this.statusCounts.approved, status: 'APPROVED', icon: 'fa-check-circle', tone: 'approved', note: 'Approved cooperative loans' },
+      { label: 'Ready To Disburse', value: this.statusCounts.readyForDisbursement, status: 'READY_FOR_DISBURSEMENT', icon: 'fa-hand-holding-dollar', tone: 'ready', note: 'Cleared for fund release' },
+      { label: 'Active', value: this.statusCounts.active, status: 'ACTIVE', icon: 'fa-wallet', tone: 'active', note: 'Loans currently in repayment' },
+      { label: 'Defaulted', value: this.statusCounts.defaulted, status: 'DEFAULTED', icon: 'fa-shield-halved', tone: 'defaulted', note: 'Repayments needing escalation' },
+      { label: 'Total Applications', value: this.statusCounts.total, status: '', icon: 'fa-file-invoice', tone: 'total', note: `${this.statusCounts.completed} completed · ${this.statusCounts.rejected} rejected` }
+    ];
+  }
+
+  get secondaryOverviewCards(): Array<{ label: string; value: number; stage: '' | 'READY_FOR_ADMIN_REVIEW' | 'PENDING_GUARANTOR_APPROVAL' | 'INFO_REQUESTED'; tone: string; note: string }> {
+    return [
+      { label: 'Ready For Review', value: this.stageCounts.readyForReview, stage: 'READY_FOR_ADMIN_REVIEW', tone: 'ready-review', note: 'Admin-ready applications' },
+      { label: 'Guarantor Queue', value: this.stageCounts.pendingGuarantorApproval, stage: 'PENDING_GUARANTOR_APPROVAL', tone: 'guarantor', note: 'Waiting on guarantor action' },
+      { label: 'Info Requested', value: this.stageCounts.infoRequested, stage: 'INFO_REQUESTED', tone: 'info-requested', note: 'Members asked for updates' }
+    ];
+  }
+
+  applyStageFromCard(stage: '' | 'READY_FOR_ADMIN_REVIEW' | 'PENDING_GUARANTOR_APPROVAL' | 'INFO_REQUESTED'): void {
+    this.stageFilter = stage;
+    this.applyFilters();
+  }
+
+  handleSecondaryCardClick(card: { stage: '' | 'READY_FOR_ADMIN_REVIEW' | 'PENDING_GUARANTOR_APPROVAL' | 'INFO_REQUESTED'; tone: string }): void {
+    this.applyStageFromCard(card.stage);
+  }
+
+  get paginatedLoans(): CooperativeLoan[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredLoans.length / this.pageSize));
+  }
+
+  get paginationStart(): number {
+    return this.filteredLoans.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredLoans.length);
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
   }
 
   get groupOptions(): CooperativeLoanGroup[] {
@@ -421,8 +615,25 @@ export class CooperativeLoansComponent implements OnInit {
       .sort((a, b) => new Date(b.approvedDate || b.requestDate || b.applicationDate || 0).getTime() - new Date(a.approvedDate || a.requestDate || a.applicationDate || 0).getTime());
   }
 
+  get readyForDisbursementLoans(): CooperativeLoan[] {
+    return this.loans
+      .filter(item => item.status === 'READY_FOR_DISBURSEMENT' || (item.status === 'APPROVED' && (item.applicationStage === 'READY_FOR_DISBURSEMENT' || !!item.disbursementInitiatedAt)))
+      .sort((a, b) => new Date(b.disbursementInitiatedAt || b.approvedDate || b.requestDate || b.applicationDate || 0).getTime() - new Date(a.disbursementInitiatedAt || a.approvedDate || a.requestDate || a.applicationDate || 0).getTime());
+  }
+
   get selectedDisbursementLoan(): CooperativeLoan | undefined {
-    return this.approvedLoans.find(item => String(item.id) === this.selectedDisbursementLoanId);
+    return [...this.readyForDisbursementLoans, ...this.approvedLoans].find(item => String(item.id) === this.selectedDisbursementLoanId);
+  }
+
+  get canSendToAccounting(): boolean {
+    return !!this.selectedDisbursementLoan && !!this.accountingEmail.trim() && !this.isSubmittingDisbursement;
+  }
+
+  get canMarkSelectedAsDisbursed(): boolean {
+    return !!this.selectedDisbursementLoan
+      && this.selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT'
+      && this.canDisburseSelectedLoan
+      && !this.isSubmittingDisbursement;
   }
 
   get canDisburseSelectedLoan(): boolean {
@@ -459,5 +670,120 @@ export class CooperativeLoansComponent implements OnInit {
 
     this.disbursedDate = `${yyyy}-${mm}-${dd}`;
     this.disbursementAmount = Number(loan?.amount || 0);
+    this.accountingEmail = this.getSelectedDisbursementGroup()?.accountingEmail || this.accountingEmail || '';
+    this.disbursementInstructionReference = loan?.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
+    this.disbursementInitiatedAt = loan?.disbursementInitiatedAt || '';
+    this.disbursementInitiatedBy = this.getAuditUserLabel(loan?.disbursementInitiatedBy) || '';
+    this.disbursementReference = loan?.disbursementReference || '';
+    this.loadSelectedEmployeeDetails();
+  }
+
+  private initializeDisbursementWorkspace(): void {
+    const preferredLoanId = this.selectedDisbursementLoanId && [...this.readyForDisbursementLoans, ...this.approvedLoans].some((loan) => String(loan.id) === this.selectedDisbursementLoanId)
+      ? this.selectedDisbursementLoanId
+      : String(this.readyForDisbursementLoans[0]?.id || this.approvedLoans[0]?.id || '');
+
+    if (!preferredLoanId) {
+      this.selectedDisbursementLoanId = '';
+      return;
+    }
+
+    this.selectedDisbursementLoanId = preferredLoanId;
+    this.syncDisbursementFields();
+  }
+
+  selectDisbursementLoan(loan: CooperativeLoan): void {
+    this.selectedDisbursementLoanId = String(loan.id);
+    this.syncDisbursementFields();
+  }
+
+  private loadSelectedEmployeeDetails(): void {
+    const selectedLoan = this.selectedDisbursementLoan;
+    const selectedMember = selectedLoan ? this.members.find((member) => member.id === (selectedLoan.cooperativeMemberId || selectedLoan.memberId) || member.memberId === (selectedLoan.cooperativeMemberId || selectedLoan.memberId)) : undefined;
+    const employeeId = Number(selectedMember?.employeeId || 0);
+
+    if (!Number.isFinite(employeeId) || employeeId <= 0) {
+      this.selectedEmployeeDetails = null;
+      return;
+    }
+
+    this.isLoadingEmployeeDetails = true;
+    this.employeeService.getEmployeeById(employeeId).subscribe({
+      next: (employee) => {
+        this.selectedEmployeeDetails = employee;
+        this.isLoadingEmployeeDetails = false;
+      },
+      error: () => {
+        this.selectedEmployeeDetails = null;
+        this.isLoadingEmployeeDetails = false;
+      }
+    });
+  }
+
+  private getSelectedDisbursementGroup(): CooperativeLoanGroup | undefined {
+    const selectedLoan = this.selectedDisbursementLoan;
+    return selectedLoan ? this.groups.find((group) => group.id === (selectedLoan.groupId || selectedLoan.cooperativeGroupId)) : undefined;
+  }
+
+  private buildAccountingMailBody(): { name: string; to: string; subject: string; body: string } {
+    const loan = this.selectedDisbursementLoan;
+    const group = this.getSelectedDisbursementGroup();
+    const memberName = loan ? this.getMemberName(loan.cooperativeMemberId || loan.memberId) : 'Member';
+    const employeeEmail = this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || 'N/A';
+    const bankName = this.selectedEmployeeDetails?.bankName || loan?.memberBankName || 'N/A';
+    const accountNumber = this.selectedEmployeeDetails?.accountNumber || loan?.memberAccountNumber || 'N/A';
+    const loanId = loan?.loanCode || loan?.loanId || loan?.id || '';
+
+    return {
+      name: 'Accounting Team',
+      to: this.accountingEmail,
+      subject: `Cooperative Loan Disbursement Request - ${loanId}`,
+      body: `
+        <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
+          <p>Dear Accounting Team,</p>
+          <p>A cooperative loan has been approved and is ready for disbursement processing.</p>
+          <ul>
+            <li><strong>Loan ID:</strong> ${loanId}</li>
+            <li><strong>Member:</strong> ${memberName}</li>
+            <li><strong>Member Email:</strong> ${employeeEmail}</li>
+            <li><strong>Group:</strong> ${group?.name || 'Unknown Group'}</li>
+            <li><strong>Approved Amount:</strong> ${this.formatCurrency(Number(loan?.amount || 0))}</li>
+            <li><strong>Interest Rate:</strong> ${loan?.interestRate || 0}%</li>
+            <li><strong>Repayment Period:</strong> ${loan?.duration || loan?.repaymentTime || 0} months</li>
+            <li><strong>Purpose:</strong> ${this.formatPurposeDisplay(loan?.purpose)}</li>
+            <li><strong>Bank Name:</strong> ${bankName}</li>
+            <li><strong>Account Number:</strong> ${accountNumber}</li>
+            <li><strong>Disbursement Reference:</strong> ${this.disbursementInstructionReference || this.generateDisbursementReference(loan)}</li>
+          </ul>
+          ${this.emailNotes?.trim() ? `<p><strong>Additional Notes:</strong> ${this.emailNotes.trim()}</p>` : ''}
+          <p>Regards,<br/><strong>HR Management</strong></p>
+        </div>
+      `
+    };
+  }
+
+  private generateDisbursementReference(loan?: CooperativeLoan): string {
+    const loanPrefix = String(loan?.loanCode || loan?.loanId || loan?.id || 'COOP').replace(/[^A-Z0-9]/gi, '').slice(-6).toUpperCase();
+    return `COOP-DISB-${loanPrefix}-${Date.now().toString().slice(-6)}`;
+  }
+
+  private getAuditUserLabel(value: number | object | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      return String((value as { fullname?: string; username?: string }).fullname || (value as { username?: string }).username || '').trim();
+    }
+
+    return this.getCurrentUserDisplayName();
+  }
+
+  private getCurrentUserDisplayName(): string {
+    return String(sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin').trim();
+  }
+
+  private resetPagination(): void {
+    this.currentPage = 1;
   }
 }

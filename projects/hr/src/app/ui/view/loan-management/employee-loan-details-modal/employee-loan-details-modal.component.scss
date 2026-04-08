@@ -1,9 +1,42 @@
 @use '../loan-status-badges' as loanStatus;
 
+.status-pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+  text-align: center;
+  transition: all 0.2s ease;
+  
+  @include loanStatus.advance-loan-status-badges();
+}
+
 .employee-loan-details {
   padding: 10px 12px 18px;
   display: grid;
   gap: 14px;
+
+  .detail-loading-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #d7e4ea;
+    background: #f6fbfd;
+    color: #355462;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  &.empty-state-card {
+    min-height: 220px;
+    align-content: start;
+  }
 
   .summary-card {
     display: grid;
@@ -13,6 +46,30 @@
     background: #ffffff;
     border: 1px solid #dbe8ed;
     box-shadow: 0 8px 20px rgba(31, 60, 74, 0.06);
+  }
+
+  .repayment-lock-banner {
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #f1d6aa;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+
+    .lock-copy {
+      display: grid;
+      gap: 6px;
+
+      strong {
+        color: #9f6a00;
+        font-size: 0.95rem;
+      }
+
+      p {
+        margin: 0;
+        color: #6b818d;
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+    }
   }
 
   .summary-copy {
@@ -127,7 +184,7 @@
   }
 
   .status-pill {
-    padding: 3px 6px;
+    padding: 5px 10px;
     border-radius: 999px;
     font-size: 0.78rem;
     font-weight: 700;
@@ -136,6 +193,10 @@
     align-items: center;
     justify-content: center;
     line-height: 1.1;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
 
     @include loanStatus.advance-loan-status-badges(false);
 
@@ -146,6 +207,7 @@
 
     &.inline-pill {
       min-width: 0;
+      flex: 0 1 auto;
     }
   }
 
@@ -280,7 +342,7 @@
     }
 
     &.status-row {
-      align-items: center;
+      align-items: flex-start;
     }
   }
 
@@ -291,6 +353,7 @@
       letter-spacing: 0.04em;
       font-weight: 600;
       min-width: 112px;
+        flex: 0 0 112px;
   }
 
   .row-value {
@@ -300,6 +363,8 @@
       word-break: break-word;
       text-align: right;
       line-height: 1.45;
+        min-width: 0;
+        flex: 1 1 auto;
 
       &.mono {
         font-family: 'SFMono-Regular', 'Menlo', 'Monaco', monospace;
@@ -374,6 +439,7 @@
     border-radius: 12px;
     border: 1px solid #e4edf1;
     background: #ffffff;
+    min-width: 0;
   }
 
   .timeline-topline {
@@ -382,6 +448,7 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
+    flex-wrap: wrap;
   }
 
   .timeline-status-group {
@@ -410,6 +477,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     text-align: right;
+    max-width: 100%;
   }
 
   .timeline-note {

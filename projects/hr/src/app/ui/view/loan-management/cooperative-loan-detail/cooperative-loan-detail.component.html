@@ -13,7 +13,7 @@
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
         <h1>
-          <i class="fas fa-file-invoice-dollar"></i>
+          <i class="fas fa-hand-holding-dollar"></i>
           Loan Details: {{ loan.loanId }}
           <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
             {{ loan.status }}
@@ -24,13 +24,16 @@
         <button class="record-btn" *ngIf="loan.status === 'ACTIVE' && hasOpenRepayments" (click)="openRecordPaymentModal()">
           Record Payment
         </button>
+        <button class="changes-btn" *ngIf="loan.status === 'ACTIVE' && nextGracePeriodInstallment" (click)="openGracePeriodModal()">
+          Request Grace Period
+        </button>
       </div>
     </div>
 
     <div class="details-panel">
       <section class="overview-card">
         <div class="top-line" *ngIf="member">
-          <strong>Member:</strong> {{ member.fullName }} ({{ member.memberId }})
+          <strong>Member:</strong> {{ memberDisplayName }} ({{ member.memberId }})
         </div>
         <div class="top-line" *ngIf="group">
           <strong>group:</strong> {{ group.name }} ({{ group.interestRate }}% interest)
@@ -155,11 +158,19 @@
         <div class="repayment-actions">
           <button class="changes-btn" (click)="sendReminder()">Send Reminder</button>
           <button class="reject-btn" [disabled]="!canMarkDefaulted" (click)="markDefaulted()">Mark as Defaulted</button>
-          <button class="ghost-btn" disabled title="Schedule adjustment flow can be added here">Adjust Schedule</button>
+          <button class="changes-btn" *ngIf="nextGracePeriodInstallment" (click)="openGracePeriodModal()">Request Grace Period</button>
         </div>
       </section>
 
-      <section class="actions-card" *ngIf="loan.status === 'PENDING' || loan.status === 'APPROVED'">
+      <section class="info-card" *ngIf="loan.gracePeriodRequests?.length">
+        <h3>Grace Period Requests</h3>
+        <div class="info-row" *ngFor="let request of loan.gracePeriodRequests">
+          <span>Installment {{ request.installmentNumber }} - {{ request.requestedDays }} day(s)</span>
+          <strong>{{ request.status }}</strong>
+        </div>
+      </section>
+
+      <section class="actions-card" *ngIf="loan.status === 'PENDING' || loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'">
         <h3>Actions</h3>
 
         <div class="action-buttons" *ngIf="loan.status === 'PENDING' && loan.applicationStage !== 'PENDING_GUARANTOR_APPROVAL'">
@@ -173,8 +184,8 @@
           <button class="changes-btn" disabled>Waiting For Guarantor Responses</button>
         </div>
 
-        <div class="action-buttons" *ngIf="loan.status === 'APPROVED'">
-          <button class="disburse-btn" (click)="disburseLoan()">Disburse</button>
+        <div class="action-buttons" *ngIf="loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'">
+          <button class="disburse-btn" (click)="disburseLoan()">Mark as Disbursed</button>
           <button class="changes-btn" (click)="showRequestChangesDialog()">Request Changes</button>
         </div>
 
@@ -288,6 +299,15 @@
           <button class="confirm-btn" (click)="recordPayment()" [disabled]="paymentAmount <= 0">Record Payment</button>
         </div>
       </div>
+    </app-modal>
+
+    <app-modal *ngIf="showGracePeriodModal" [header]="'Request Grace Period'" (close)="closeGracePeriodModal()">
+      <app-grace-period-requests
+        [cooperativeLoan]="loan"
+        [cooperativeInstallment]="nextGracePeriodInstallment || null"
+        (close)="closeGracePeriodModal()"
+        (requestSubmitted)="handleGracePeriodSubmitted()">
+      </app-grace-period-requests>
     </app-modal>
   </div>
 </div>

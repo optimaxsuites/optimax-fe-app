@@ -1,10 +1,32 @@
 @use '../loan-status-badges' as loanStatus;
 
+.status-badge, .status-pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+  text-align: center;
+  transition: all 0.2s ease;
+  
+  @include loanStatus.advance-loan-status-badges();
+}
 .employee-history-container {
   padding: 24px;
   min-height: 100vh;
   background-color: #f8feff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  .loading-state {
+    min-height: 280px;
+    display: grid;
+    place-items: center;
+    gap: 12px;
+    color: #2e6276;
+  }
 
   .history-header {
     display: flex;
@@ -53,6 +75,11 @@
       font-size: 1.6rem;
       font-weight: 600;
       margin: 0;
+
+      .title-icon {
+        color: #2E6276;
+        margin-right: 10px;
+      }
     }
 
     .employee-id {
@@ -95,6 +122,13 @@
         }
       }
     }
+  }
+
+  .results-info {
+    margin-bottom: 16px;
+    color: #6c8791;
+    font-size: 0.88rem;
+    font-weight: 600;
   }
 
   .stats-grid {
@@ -400,6 +434,40 @@
               margin: 0;
             }
           }
+        }
+      }
+    }
+
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 16px;
+
+      .pagination-meta {
+        color: #6c8791;
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+
+      .pagination-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .pagination-btn {
+        border: 1px solid #d7e7ec;
+        background: white;
+        color: #2e6276;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
       }
     }

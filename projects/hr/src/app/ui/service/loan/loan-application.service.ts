@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { LoanApplication, LoanApplicationFormData } from './loan.types';
 import { LoanService } from './loan.service';
 import { EmployeeService } from '../../service/employee.service';
+import { LoanStatusNotificationService } from './loan-status-notification.service';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 @Injectable({
@@ -15,11 +16,13 @@ export class LoanApplicationService {
 
   constructor(
     private loanService: LoanService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private loanStatusNotificationService: LoanStatusNotificationService
   ) {}
 
   submitLoanApplication(formData: LoanApplicationFormData): Observable<LoanApplication> {
   return this.loanService.createLoanApplication(formData).pipe(
+    catchError((error) => this.recoverSubmittedApplication(formData, error)),
     tap((createdApplication) => {
       this.hasLoadedApplications = true;
       this.upsertApplication(this.buildOptimisticSubmittedApplication(formData, createdApplication), true);
@@ -75,9 +78,24 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
   return this.applicationsSubject.asObservable();
 }
 
-  saveApplication(application: LoanApplication): Observable<LoanApplication> {
+  saveApplication(
+    application: LoanApplication,
+    previousStatusOverride?: LoanApplication['status'] | null
+  ): Observable<LoanApplication> {
+    const previousApplication = this.findMatchingApplication(this.applicationsSubject.value, application);
+    const previousStatus = previousStatusOverride ?? previousApplication?.status;
+
     return this.loanService.saveLoanApplication(application).pipe(
-      tap((savedApplication) => this.upsertApplication(savedApplication, true))
+      tap((savedApplication) => this.upsertApplication(savedApplication, true)),
+      switchMap((savedApplication) => {
+        if (!this.shouldNotifyStatusChange(previousStatus, savedApplication.status)) {
+          return of(savedApplication);
+        }
+
+        return this.loanStatusNotificationService.notifyStatusChange(savedApplication, previousStatus || undefined).pipe(
+          map(() => savedApplication)
+        );
+      })
     );
   }
 
@@ -253,6 +271,15 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     this.applicationsSubject.next(currentApplications);
   }
 
+  private findMatchingApplication(applications: LoanApplication[], target: LoanApplication): LoanApplication | undefined {
+    const existingIndex = this.findMatchingApplicationIndex(applications, target);
+    return existingIndex >= 0 ? applications[existingIndex] : undefined;
+  }
+
+  private shouldNotifyStatusChange(previousStatus: LoanApplication['status'] | undefined, nextStatus: LoanApplication['status'] | undefined): boolean {
+    return !!nextStatus && !!previousStatus && previousStatus !== nextStatus;
+  }
+
   private mergeApplicationCollections(
     currentApplications: LoanApplication[],
     fetchedApplications: LoanApplication[]
@@ -293,8 +320,11 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       repaymentDay: incoming.repaymentDay || existing.repaymentDay,
       modeOfPayment: incoming.modeOfPayment || existing.modeOfPayment,
       status: incoming.status || existing.status,
+      approvedAmount: incoming.approvedAmount ?? existing.approvedAmount,
+      interestAgreement: incoming.interestAgreement ?? existing.interestAgreement,
       approvedDate: incoming.approvedDate ?? existing.approvedDate,
       approvedBy: incoming.approvedBy ?? existing.approvedBy,
+      disbursedAmount: incoming.disbursedAmount ?? existing.disbursedAmount,
       disbursedDate: incoming.disbursedDate ?? existing.disbursedDate,
       disbursedBy: incoming.disbursedBy ?? existing.disbursedBy,
       completedDate: incoming.completedDate ?? existing.completedDate,
@@ -305,8 +335,30 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       totalPaid: incoming.totalPaid ?? existing.totalPaid,
       totalPrincipalPaid: incoming.totalPrincipalPaid ?? existing.totalPrincipalPaid,
       totalInterestPaid: incoming.totalInterestPaid ?? existing.totalInterestPaid,
+      outstandingBalance: incoming.outstandingBalance ?? existing.outstandingBalance,
+      outstandingInterest: incoming.outstandingInterest ?? existing.outstandingInterest,
       outstandingPrincipal: incoming.outstandingPrincipal ?? existing.outstandingPrincipal,
+      nextPaymentDueDate: incoming.nextPaymentDueDate ?? existing.nextPaymentDueDate,
+      skippedPaymentsCount: incoming.skippedPaymentsCount ?? existing.skippedPaymentsCount,
+      overduePaymentsCount: incoming.overduePaymentsCount ?? existing.overduePaymentsCount,
+      disbursementInitiatedAt: incoming.disbursementInitiatedAt ?? existing.disbursementInitiatedAt,
+      disbursementInitiatedBy: incoming.disbursementInitiatedBy ?? existing.disbursementInitiatedBy,
+      disbursementInstructionReference: incoming.disbursementInstructionReference ?? existing.disbursementInstructionReference,
+      disbursementConfirmedAt: incoming.disbursementConfirmedAt ?? existing.disbursementConfirmedAt,
+      disbursementConfirmedBy: incoming.disbursementConfirmedBy ?? existing.disbursementConfirmedBy,
+      disbursementReference: incoming.disbursementReference ?? existing.disbursementReference,
+      employeeBankName: incoming.employeeBankName ?? existing.employeeBankName,
+      employeeAccountNumber: incoming.employeeAccountNumber ?? existing.employeeAccountNumber,
+      memberBankName: incoming.memberBankName ?? existing.memberBankName,
+      memberAccountNumber: incoming.memberAccountNumber ?? existing.memberAccountNumber,
+      totalLateFeesAccrued: incoming.totalLateFeesAccrued ?? existing.totalLateFeesAccrued,
+      totalLateFeesPaid: incoming.totalLateFeesPaid ?? existing.totalLateFeesPaid,
       interestRate: incoming.interestRate ?? existing.interestRate,
+      lateFeePercentage: incoming.lateFeePercentage ?? existing.lateFeePercentage,
+      lateFeeGracePeriodDays: incoming.lateFeeGracePeriodDays ?? existing.lateFeeGracePeriodDays,
+      lastPaymentReceived: incoming.lastPaymentReceived ?? existing.lastPaymentReceived,
+      lastPaymentAmount: incoming.lastPaymentAmount ?? existing.lastPaymentAmount,
+      gracePeriodRequests: incoming.gracePeriodRequests?.length ? incoming.gracePeriodRequests : existing.gracePeriodRequests,
       repaymentSchedule: incoming.repaymentSchedule?.length ? incoming.repaymentSchedule : existing.repaymentSchedule,
       paymentHistory: incoming.paymentHistory?.length ? incoming.paymentHistory : existing.paymentHistory,
       statusHistory: incoming.statusHistory?.length ? incoming.statusHistory : existing.statusHistory,
@@ -411,6 +463,79 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
 
   private normalizeValue(value: string): string {
     return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  private recoverSubmittedApplication(
+    formData: LoanApplicationFormData,
+    error: unknown
+  ): Observable<LoanApplication> {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 500) {
+      return throwError(() => error);
+    }
+
+    const candidateSignature = this.buildClientSubmissionKey({
+      employeeId: Number(formData.employeeId || 0),
+      amount: Number(formData.amount || 0),
+      purpose: formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose || '',
+      modeOfPayment: formData.modeOfPayment,
+      requestDate: formData.requestDate
+    });
+
+    return this.loanService.listLoanApplications().pipe(
+      map((applications) => {
+        const recoveredApplication = applications.find((application) => {
+          if (this.buildClientSubmissionKey(application) === candidateSignature) {
+            return true;
+          }
+
+          return this.matchesSubmittedApplication(application, formData);
+        });
+
+        if (!recoveredApplication) {
+          throw error;
+        }
+
+        if (isDevMode()) {
+          console.warn('Recovered advance-loan submission after backend 500 response', {
+            requestedAt: formData.requestDate,
+            recoveredLoanId: recoveredApplication.id,
+            recoveredLoanCode: recoveredApplication.loanCode
+          });
+        }
+
+        return recoveredApplication;
+      })
+    );
+  }
+
+  private matchesSubmittedApplication(application: LoanApplication, formData: LoanApplicationFormData): boolean {
+    const normalizedPurpose = this.normalizeValue(
+      formData.purpose === 'other' ? formData.otherPurpose || 'Other' : formData.purpose || ''
+    );
+    const normalizedApplicationPurpose = this.normalizeValue(application.purpose || '');
+    if (normalizedPurpose !== normalizedApplicationPurpose) {
+      return false;
+    }
+
+    if (Number(application.employeeId || 0) !== Number(formData.employeeId || 0)) {
+      return false;
+    }
+
+    if (Number(application.amount || 0) !== Number(formData.amount || 0)) {
+      return false;
+    }
+
+    if (String(application.modeOfPayment || '') !== String(formData.modeOfPayment || '')) {
+      return false;
+    }
+
+    const requestedAt = new Date(String(formData.requestDate || '')).getTime();
+    const applicationRequestedAt = new Date(String(application.requestDate || '')).getTime();
+    if (!Number.isFinite(requestedAt) || !Number.isFinite(applicationRequestedAt)) {
+      return false;
+    }
+
+    return Math.abs(applicationRequestedAt - requestedAt) <= 5 * 60 * 1000;
   }
 
  private handleError(error: any): Observable<never> {
