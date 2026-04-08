@@ -37,11 +37,16 @@ import { CooperativeMemberLoansComponent } from './ui/view/loan-management/coope
 import { CooperativeMemberGroupDashboardComponent } from './ui/view/loan-management/cooperative-member-group-dashboard/cooperative-member-group-dashboard.component';
 import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
 import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
+import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
 // import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
+import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
+import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
+
+const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
 const routes: Routes = [
   {
@@ -55,7 +60,7 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     // redirectTo: 'leave/uu',
     pathMatch: 'full',
   },
@@ -66,22 +71,22 @@ const routes: Routes = [
   // },
   {
     path: 'loan-dashboard/:legacyId',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
   {
     path: 'admin/hr/loan-dashboard',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
   {
     path: 'admin/hr/loan-dashboard/:legacyId',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
   {
     path: 'admin/hr/loan-management/loan-dashboard',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
   {
@@ -136,9 +141,17 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-purposes/:uuid',
     component: LoanPurposeManagementComponent,
   },
+    {
+      path: 'admin/hr/cooperative/loan-purposes/:uuid',
+      component: CooperativeLoanPurposeManagementComponent,
+    },
   {
     path: 'admin/hr/loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/grace-period-requests/:uuid',
+    component: LoanGracePeriodRequestsManagementComponent,
   },
 
   // {
@@ -246,6 +259,10 @@ const routes: Routes = [
     path: 'admin/hr/cooperative/group-join-applications/:uuid',
     component: CooperativeGroupJoinHistoryComponent,
   },
+  {
+    path: 'admin/hr/cooperative/grace-period-requests/:uuid',
+    component: CooperativeGracePeriodRequestsManagementComponent,
+  },
   // Member routes
   {
     path: 'member/cooperative/dashboard/:uuid',
@@ -292,10 +309,6 @@ const routes: Routes = [
     path: 'payroll/:uuid',
     component: EmployeePayrollComponent,
   },
-   {
-    path: 'payroll-operations/:uuid',
-    component: PayrolExtrasComponent,
-  },
   {
     path: 'payroll-operations/:uuid',
     component: PayrolExtrasComponent,
@@ -324,7 +337,7 @@ const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'loan/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
   },
 ];
 @NgModule({

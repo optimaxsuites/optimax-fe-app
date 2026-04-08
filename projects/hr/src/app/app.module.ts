@@ -64,7 +64,7 @@ import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.comp
 import { SideModalComponent } from './ui/shared-component/view/side-modal/side-modal.component';
 import { LargeSideModalComponent } from './ui/shared-component/view/large-side-modal/large-side-modal.component';
 import { ModalComponent } from './ui/shared-component/view/modal/modal.component';
-import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
+import { BackButtonModule } from './ui/shared-component/view/back-button/back-button.module';
 import { ButtonComponent } from './ui/shared-component/view/button/button.component';
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
@@ -208,6 +208,12 @@ import { MenuModule } from 'primeng/menu';
 import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
+import { GracePeriodRequestsComponent } from './ui/view/loan-management/grace-period-requests/grace-period-requests.component';
+import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
+import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
+import { LoanPaymentModalComponent } from './ui/view/loan-management/loan-payment-modal/loan-payment-modal.component';
+import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
+import { EmployeePaymentReminderComponent } from './ui/view/loan-management/employee-payment-reminder/employee-payment-reminder.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -219,7 +225,6 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     RecruitmentFormComponent,
     CandidateComponent,
     ScheduledInterviewComponent,
-    BackButtonComponent,
     InterviewInviteComponent,
     OfferLetterComponent,
     AppointmentLetterComponent,
@@ -343,7 +348,13 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     EmployeeInterestAcceptanceComponent,
     AdHocComponent,
     QueryComponent,
-    PayrolExtrasComponent
+    PayrolExtrasComponent,
+    GracePeriodRequestsComponent,
+    LoanGracePeriodRequestsManagementComponent,
+    CooperativeGracePeriodRequestsManagementComponent,
+    LoanPaymentModalComponent,
+    EmployeePaymentHistoryComponent,
+    EmployeePaymentReminderComponent
   ],
   imports: [
     // BrowserModule,
@@ -396,6 +407,7 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
     ButtonModule,
     NgSelectModule,
     FullCalendarModule,
+    BackButtonModule,
     LargeSideModalComponent,
     FooterComponent,
     MenuModule
