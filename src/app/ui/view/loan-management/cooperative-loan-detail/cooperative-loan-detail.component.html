@@ -1,0 +1,313 @@
+<div class="loan-detail-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading loan details...</p>
+  </div>
+
+  <div *ngIf="!isLoading && loan" class="detail-content">
+    <!-- Header -->
+    <div class="detail-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1>
+          <i class="fas fa-hand-holding-dollar"></i>
+          Loan Details: {{ loan.loanId }}
+          <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+            {{ loan.status }}
+          </span>
+        </h1>
+      </div>
+      <div class="header-actions">
+        <button class="record-btn" *ngIf="loan.status === 'ACTIVE' && hasOpenRepayments" (click)="openRecordPaymentModal()">
+          Record Payment
+        </button>
+        <button class="changes-btn" *ngIf="loan.status === 'ACTIVE' && nextGracePeriodInstallment" (click)="openGracePeriodModal()">
+          Request Grace Period
+        </button>
+      </div>
+    </div>
+
+    <div class="details-panel">
+      <section class="overview-card">
+        <div class="top-line" *ngIf="member">
+          <strong>Member:</strong> {{ memberDisplayName }} ({{ member.memberId }})
+        </div>
+        <div class="top-line" *ngIf="group">
+          <strong>group:</strong> {{ group.name }} ({{ group.interestRate }}% interest)
+        </div>
+        <div class="top-line">
+          <strong>Amount:</strong> {{ formatCurrency(loan.amount) }}
+          <span class="separator">|</span>
+          <strong>Duration:</strong> {{ loan.duration }} months
+        </div>
+        <div class="top-line">
+          <strong>Monthly:</strong> {{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}
+          <span class="separator">|</span>
+          <strong>Total repay:</strong> {{ formatCurrency(loan.totalRepayment || 0) }}
+        </div>
+        <div class="top-line purpose-line">
+          <strong>Purpose:</strong> {{ formatPurposeDisplay(loan.purpose) }}
+        </div>
+      </section>
+
+      <section class="info-card" *ngIf="guarantors.length > 0">
+        <h3>Guarantors</h3>
+        <div class="info-row">
+          <span>Status summary:</span>
+          <strong>{{ approvedGuarantorsCount }}/{{ guarantors.length }} approved</strong>
+        </div>
+        <div class="info-row">
+          <span>Coverage:</span>
+          <strong>{{ formatCurrency(guarantorCoverageAmount) }}</strong>
+        </div>
+        <ul class="guarantor-list">
+          <li *ngFor="let guarantor of guarantors">
+            <span>{{ getGuarantorMemberName(guarantor.memberId) }} - {{ formatCurrency(guarantor.guaranteedAmount) }}</span>
+            <span class="guarantor-status" [ngClass]="getGuarantorStatusClass(guarantor.status)">{{ guarantor.status }}</span>
+            <div class="guarantor-actions" *ngIf="loan.status === 'PENDING' && guarantor.status === 'PENDING'">
+              <button class="approve-btn" type="button" (click)="approveGuarantor(guarantor.memberId)">Approve</button>
+              <button class="reject-btn" type="button" (click)="rejectGuarantor(guarantor.memberId)">Reject</button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="info-card" *ngIf="loan.status === 'PENDING'">
+        <h3>Application Stage</h3>
+        <div class="info-row"><span>Current stage:</span> <strong>{{ loan.applicationStage || 'READY_FOR_ADMIN_REVIEW' }}</strong></div>
+        <div class="info-row" *ngIf="loan.applicationStage === 'PENDING_GUARANTOR_APPROVAL'">
+          <span>Pending guarantor responses:</span>
+          <strong>{{ pendingGuarantorsCount }}</strong>
+        </div>
+      </section>
+
+      <section class="info-card" *ngIf="member">
+        <h3>Member Status</h3>
+        <div class="info-row"><span>Member since:</span> <strong>{{ member.joinDate | date:'MMM yyyy' }}</strong></div>
+        <div class="info-row"><span>Share capital:</span> <strong>{{ formatCurrency(member.shareCapital) }}</strong></div>
+        <div class="info-row"><span>Previous loans:</span> <strong>{{ previousLoansCount }}</strong></div>
+        <div class="info-row"><span>Completed on time:</span> <strong>{{ completedPreviousLoansCount }}</strong></div>
+      </section>
+
+      <section class="info-card" *ngIf="member">
+        <h3>Risk Assessment</h3>
+        <div class="info-row"><span>Loan-to-share ratio:</span> <strong>{{ loanToShareRatio }}%</strong></div>
+        <div class="info-row"><span>Repayment capacity:</span> <strong>{{ repaymentCapacityLabel }}</strong></div>
+        <div class="info-row"><span>Credit history:</span> <strong>{{ creditHistoryLabel }}</strong></div>
+      </section>
+
+      <section class="repayment-card" *ngIf="loan.status === 'ACTIVE' && repaymentSchedule.length > 0">
+        <div class="repayment-card-header">
+          <h3>Active Loan: {{ loan.loanId }}</h3>
+          <button class="record-btn" *ngIf="hasOpenRepayments" (click)="openRecordPaymentModal()">Record Payment</button>
+        </div>
+
+        <div class="loan-summary-line">
+          <span>Loan Summary: {{ formatCurrency(loan.amount) }} at {{ loan.interestRate }}% for {{ loan.duration }} months</span>
+        </div>
+        <div class="loan-summary-line monthly">
+          <span>Monthly payment: {{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-label">Progress</div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="paymentProgress"></div>
+          </div>
+          <div class="progress-meta">{{ paymentProgress | number:'1.0-0' }}% paid</div>
+          <div class="progress-amounts">
+            Paid: <strong>{{ formatCurrency(paidAmount) }}</strong>
+            <span class="separator">|</span>
+            Remaining: <strong>{{ formatCurrency(remainingAmount) }}</strong>
+          </div>
+        </div>
+
+        <div class="repayment-alert" *ngIf="overdueRepaymentsCount > 0">
+          {{ overdueRepaymentsCount }} repayment(s) are overdue.
+        </div>
+
+        <h4>Payment History</h4>
+        <div class="schedule-table-wrap">
+          <table appSortableTable class="schedule-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let repayment of repaymentSchedule">
+                <td>{{ repayment.dueDate | date:'mediumDate' }}</td>
+                <td>{{ formatCurrency(repayment.amount) }}</td>
+                <td>{{ getmodeofPaymentLabel(repayment.modeofPayment) }}</td>
+                <td>
+                  <span class="repayment-status" [ngClass]="getStatusClass(repayment.status)">
+                    {{ getRepaymentStatusLabel(repayment) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="repayment-actions">
+          <button class="changes-btn" (click)="sendReminder()">Send Reminder</button>
+          <button class="reject-btn" [disabled]="!canMarkDefaulted" (click)="markDefaulted()">Mark as Defaulted</button>
+          <button class="changes-btn" *ngIf="nextGracePeriodInstallment" (click)="openGracePeriodModal()">Request Grace Period</button>
+        </div>
+      </section>
+
+      <section class="info-card" *ngIf="loan.gracePeriodRequests?.length">
+        <h3>Grace Period Requests</h3>
+        <div class="info-row" *ngFor="let request of loan.gracePeriodRequests">
+          <span>Installment {{ request.installmentNumber }} - {{ request.requestedDays }} day(s)</span>
+          <strong>{{ request.status }}</strong>
+        </div>
+      </section>
+
+      <section class="actions-card" *ngIf="loan.status === 'PENDING' || loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'">
+        <h3>Actions</h3>
+
+        <div class="action-buttons" *ngIf="loan.status === 'PENDING' && loan.applicationStage !== 'PENDING_GUARANTOR_APPROVAL'">
+          <button class="approve-btn" (click)="approveLoan()">Approve</button>
+          <button class="reject-btn" (click)="showRejectDialog()">Reject</button>
+          <button class="changes-btn" (click)="setPendingReview()">Keep Pending</button>
+          <button class="changes-btn" (click)="showRequestChangesDialog()">Request Changes</button>
+        </div>
+
+        <div class="action-buttons" *ngIf="loan.status === 'PENDING' && loan.applicationStage === 'PENDING_GUARANTOR_APPROVAL'">
+          <button class="changes-btn" disabled>Waiting For Guarantor Responses</button>
+        </div>
+
+        <div class="action-buttons" *ngIf="loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'">
+          <button class="disburse-btn" (click)="disburseLoan()">Mark as Disbursed</button>
+          <button class="changes-btn" (click)="showRequestChangesDialog()">Request Changes</button>
+        </div>
+
+        <div class="reason-input" *ngIf="loan.status === 'PENDING'">
+          <label>Rejection reason (if rejecting):</label>
+          <input type="text" [(ngModel)]="rejectionReason" placeholder="Enter rejection reason" />
+        </div>
+      </section>
+
+      <section class="info-card rejection" *ngIf="loan.status === 'REJECTED' && loan.rejectionReason">
+        <h3>Rejection Reason</h3>
+        <p>{{ loan.rejectionReason }}</p>
+      </section>
+
+      <section class="info-card rejection" *ngIf="loan.status === 'DEFAULTED'">
+        <h3>Defaulted Loan</h3>
+        <p>
+          This loan has been marked as defaulted
+          <span *ngIf="loan.defaultedDate">on {{ loan.defaultedDate | date:'mediumDate' }}</span>.
+        </p>
+      </section>
+
+      <section class="info-card" *ngIf="loan.adminRequestNote">
+        <h3>Requested Changes</h3>
+        <p>{{ loan.adminRequestNote }}</p>
+      </section>
+
+      <section class="timeline-card">
+        <h3>Timeline</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.applicationDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Application Submitted</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.approvedDate">
+            <div class="timeline-dot approved"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.approvedDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Approved</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.disbursedDate">
+            <div class="timeline-dot active"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.disbursedDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Disbursed</div>
+            </div>
+          </div>
+          <div class="timeline-item" *ngIf="loan.completionDate">
+            <div class="timeline-dot completed"></div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ loan.completionDate | date:'mediumDate' }}</div>
+              <div class="timeline-title">Completed</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Reject Modal -->
+    <app-modal *ngIf="showRejectModal" [header]="'Reject Application'" (close)="cancelReject()">
+      <div class="modal-content">
+        <h3>Reject Application</h3>
+        <p>Please provide a reason for rejection:</p>
+        <textarea [(ngModel)]="rejectionReason" rows="4" placeholder="Enter reason..."></textarea>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="cancelReject()">Cancel</button>
+          <button class="confirm-btn" (click)="rejectLoan()" [disabled]="!rejectionReason.trim()">Confirm Rejection</button>
+        </div>
+      </div>
+    </app-modal>
+
+    <!-- Request Changes Modal -->
+    <app-modal *ngIf="showRequestChangesModal" [header]="'Request Changes'" (close)="cancelRequestChanges()">
+      <div class="modal-content">
+        <h3>Request Changes</h3>
+        <p>Send a note to the member with required updates:</p>
+        <textarea [(ngModel)]="requestChangesNote" rows="4" placeholder="Enter requested changes..."></textarea>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="cancelRequestChanges()">Cancel</button>
+          <button class="confirm-btn" (click)="requestChanges()" [disabled]="!requestChangesNote.trim()">Send Request</button>
+        </div>
+      </div>
+    </app-modal>
+
+    <app-modal *ngIf="showRecordPaymentModal" [header]="'Record Repayment'" (close)="cancelRecordPayment()">
+      <div class="modal-content">
+        <h3>Record Repayment</h3>
+        <p>Capture repayment received for {{ loan.loanId }}.</p>
+        <div class="form-grid">
+          <label>
+            Amount
+            <input type="number" [(ngModel)]="paymentAmount" min="1" step="0.01" />
+          </label>
+          <label>
+            Method
+            <select [(ngModel)]="modeofPayment">
+              <option value="BANK_TRANSFER">Bank Transfer</option>
+              <option value="CASH">Cash</option>
+              <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
+              <option value="MOBILE_MONEY">Mobile Money</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="cancelRecordPayment()">Cancel</button>
+          <button class="confirm-btn" (click)="recordPayment()" [disabled]="paymentAmount <= 0">Record Payment</button>
+        </div>
+      </div>
+    </app-modal>
+
+    <app-modal *ngIf="showGracePeriodModal" [header]="'Request Grace Period'" (close)="closeGracePeriodModal()">
+      <app-grace-period-requests
+        [cooperativeLoan]="loan"
+        [cooperativeInstallment]="nextGracePeriodInstallment || null"
+        (close)="closeGracePeriodModal()"
+        (requestSubmitted)="handleGracePeriodSubmitted()">
+      </app-grace-period-requests>
+    </app-modal>
+  </div>
+</div>

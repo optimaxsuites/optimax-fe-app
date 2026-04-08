@@ -1,0 +1,158 @@
+<!-- payment-modal.component.html -->
+<div class="payment-modal-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+  
+  <div class="modal-header">
+    <h2><i class="fas fa-credit-card"></i> Make Payment</h2>
+    <button class="close-btn" (click)="cancel()"><i class="fas fa-times"></i></button>
+  </div>
+  
+  <div class="modal-body">
+    <!-- Payment Summary -->
+    <div class="payment-summary">
+      <div class="summary-row">
+        <span>Loan ID:</span>
+        <strong>{{ loan?.loanCode || loan?.id }}</strong>
+      </div>
+      <div class="summary-row" *ngIf="installment">
+        <span>Installment:</span>
+        <strong>Installment {{ installment.installmentNo }}</strong>
+      </div>
+      <div class="summary-row">
+        <span>Due Date:</span>
+        <strong>{{ (installment?.dueDate || loan?.repaymentStartDate) | date:'mediumDate' }}</strong>
+      </div>
+      <div class="summary-row total">
+        <span>{{ paymentAmountLabel }}:</span>
+        <strong class="amount">{{ formatCurrency(selectedAmountDue) }}</strong>
+      </div>
+    </div>
+
+    <form [formGroup]="paymentForm" (ngSubmit)="onSubmit()">
+      <!-- Payment Type Selection -->
+      <div class="form-group">
+        <label>Payment Type <span class="required">*</span></label>
+        <div class="payment-type-grid">
+          <div 
+            *ngFor="let type of paymentTypes"
+            class="payment-type-card"
+            [class.selected]="paymentForm.get('paymentType')?.value === type.value"
+            (click)="paymentForm.get('paymentType')?.setValue(type.value)">
+            <i [class]="type.icon"></i>
+            <div class="type-info">
+              <strong>{{ type.label }}</strong>
+              <small>{{ type.description }}</small>
+            </div>
+            <div class="radio-indicator">
+              <i class="fas" [class.fa-check-circle]="paymentForm.get('paymentType')?.value === type.value" [class.fa-circle]="paymentForm.get('paymentType')?.value !== type.value"></i>
+            </div>
+          </div>
+        </div>
+        <div class="error" *ngIf="paymentForm.get('paymentType')?.invalid && paymentForm.get('paymentType')?.touched">
+          Please select a payment type
+        </div>
+
+        <div class="info-box" *ngIf="selectedPaymentType === 'LATE_FEE'">
+          <i class="fas fa-percent"></i>
+          <div class="info-text">
+            <strong>How this late fee was calculated</strong>
+            <p *ngIf="hasLateFeeDue">Your late fee is {{ lateFeePercentage | number:'1.0-2' }}% of the overdue installment amount of {{ formatCurrency(baseInstallmentAmount) }}, charged once for this installment after a {{ lateFeeGracePeriodDays }}-day grace period. Late fee due: {{ formatCurrency(lateFeeAmountDue) }}. Total overdue installment with fee: {{ formatCurrency(lateFeeTotalExposure) }}.</p>
+            <p *ngIf="!hasLateFeeDue">No late fee is currently due for this installment.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Account Details -->
+      <div class="bank-details-card">
+        <div class="card-header">
+          <i class="fas fa-university"></i>
+          <span>Payment Account Details</span>
+        </div>
+        <div class="bank-info">
+          <div class="info-row">
+            <span>Bank Name:</span>
+            <strong>{{ accountingBankDetails.bankName }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Account Name:</span>
+            <strong>{{ accountingBankDetails.accountName }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Account Number:</span>
+            <strong>{{ accountingBankDetails.accountNumber }}</strong>
+          </div>
+        </div>
+        <div class="field-hint">
+          <i class="fas fa-info-circle"></i>
+          Make your transfer to this account and enter the transaction reference below.
+        </div>
+      </div>
+
+      <!-- Payment Method -->
+      <div class="form-group">
+        <label>Payment Method <span class="required">*</span></label>
+        <select formControlName="paymentMethod" class="form-select">
+          <option value="BANK_TRANSFER">Bank Transfer</option>
+          <option value="CARD">Card Payment</option>
+          <option value="CASH">Cash</option>
+          <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
+        </select>
+      </div>
+
+      <!-- Payment Reference -->
+      <div class="form-group">
+        <label>Transaction Reference <span class="required">*</span></label>
+        <input 
+          type="text" 
+          formControlName="paymentReference" 
+          class="form-input"
+          placeholder="Enter your bank transaction reference number">
+        <div class="field-hint">The reference number from your bank transfer</div>
+        <div class="error" *ngIf="paymentForm.get('paymentReference')?.invalid && paymentForm.get('paymentReference')?.touched">
+          Transaction reference is required
+        </div>
+      </div>
+
+      <!-- Account Number (Last 4 digits) -->
+      <div class="form-group">
+        <label>Account Number (Last 4 digits) <span class="required">*</span></label>
+        <input 
+          type="text" 
+          formControlName="paidFromAccount" 
+          class="form-input"
+          placeholder="Enter last 4 digits of your account"
+          maxlength="4">
+        <div class="field-hint">Last 4 digits of the account you're paying from</div>
+        <div class="error" *ngIf="paymentForm.get('paidFromAccount')?.invalid && paymentForm.get('paidFromAccount')?.touched">
+          Please enter the last 4 digits of your account number
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label>Notes (Optional)</label>
+        <textarea 
+          formControlName="notes" 
+          rows="2" 
+          class="form-textarea"
+          placeholder="Any additional information about this payment"></textarea>
+      </div>
+
+      <div class="info-box">
+        <i class="fas fa-clock"></i>
+        <div class="info-text">
+          <strong>Processing Time:</strong>
+          <p>Payments are typically processed within 1-2 business days. You'll receive a confirmation once your payment is verified.</p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="isLoading || paymentForm.invalid || selectedAmountDue <= 0">
+          <span *ngIf="!isLoading">Submit Payment</span>
+          <span *ngIf="isLoading" class="loading">Processing...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

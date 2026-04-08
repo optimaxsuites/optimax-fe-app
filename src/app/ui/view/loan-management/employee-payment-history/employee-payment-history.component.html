@@ -1,0 +1,47 @@
+<div class="payment-history-container">
+  <div class="section-header">
+    <h3><i class="fas fa-history"></i> Payment History</h3>
+    <span class="total-paid">Total Paid: {{ formatCurrency(totalPaid) }}</span>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading payment history...</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && paymentRecords.length === 0">
+    <i class="fas fa-receipt"></i>
+    <p>No payment records found</p>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!isLoading && paymentRecords.length > 0">
+    <table class="payment-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Payment Type</th>
+          <th>Amount</th>
+          <th>Reference</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of paymentRecords">
+          <td class="date">{{ formatDate(record.paidAt || record.recordedAt) }}</td>
+          <td>
+            <span class="payment-type-badge" [ngClass]="getPaymentTypeClass(record.paymentType)">
+              {{ getPaymentTypeLabel(record.paymentType) }}
+            </span>
+          </td>
+          <td class="amount">{{ formatCurrency(record.amount) }}</td>
+          <td class="reference">{{ record.paymentReference }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(record.status)">
+              {{ record.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

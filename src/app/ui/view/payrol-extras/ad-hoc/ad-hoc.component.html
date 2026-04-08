@@ -1,0 +1,187 @@
+<div class="employee-toolbar table-item border-2 rounded-3xl table-item">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="text-gray-700 text-[20px] font-semibold">Ad Hocs</p>
+      <p class="text-[12px] text-gray-500">Manage disputes and verdicts.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <app-button
+        *ngIf="isAdmin"
+        text="Create Ad Hocs"
+        class="btn-navigate gap-2"
+        (click)="toggleCreateForm()"
+      ></app-button>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mt-4">
+    <button
+      *ngIf="isAdmin"
+      class="px-4 py-2 rounded-md text-[13px]"
+      [ngClass]="
+        activeTab === 'all'
+          ? 'bg-customBlue text-white'
+          : 'bg-gray-100 text-gray-600'
+      "
+      (click)="setActiveTab('all')"
+    >
+      All Ad Hocs
+    </button>
+    <button
+      class="px-4 py-2 rounded-md text-[13px]"
+      [ngClass]="
+        activeTab === 'mine'
+          ? 'bg-customBlue text-white'
+          : 'bg-gray-100 text-gray-600'
+      "
+      (click)="setActiveTab('mine')"
+    >
+      My Ad Hocs
+    </button>
+  </div>
+
+  <div class="flex justify-between items-center gap-4 mt-4 h-full">
+    <div class="flex gap-3 w-1/2">
+      <div class="w-full flex gap-2 items-center">
+        <label class="text-[12px] text-gray-500">Status</label>
+        <select
+          class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
+          [(ngModel)]="statusFilter"
+          (change)="onFilterChange()"
+        >
+          <option value="All">All</option>
+          <option value="Open">Applied</option>
+          <option value="Responded">Pending</option>
+        </select>
+      </div>
+    </div>
+    <div class="search-bar w-[60%]">
+      <input
+        type="text"
+        placeholder="Search by employee"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onFilterChange()"
+        class="editInput w-full bg-gray-50 outline-none"
+      />
+    </div>
+  </div>
+
+  <app-table
+    [columns]="bonusColumns"
+    [rows]="filteredBonus"
+    [actions]="bonusActions"
+    [paginator]="true"
+    [rowsPerPage]="10"
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '800px' }"
+    [emptyMessage]="'No ad hoc found for period'"
+    (actionClick)="handleAction($event)"
+  >
+  </app-table>
+</div>
+
+<app-side-modal *ngIf="showCreateForm && isAdmin" (close)="toggleCreateForm()">
+  <div class="flex items-start justify-between text-gray-700">
+    <div>
+      <p class="text-[18px] font-semibold">Create Ad Hoc</p>
+      <p class="text-[12px] text-gray-500">
+        Log a bonus or adjustment for an employee.
+      </p>
+    </div>
+    <button
+      class="border border-customBlue text-customBlue px-3 py-1 rounded-lg text-[12px]"
+      (click)="toggleCreateForm()"
+    >
+      Close
+    </button>
+  </div>
+
+  <div class="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <!-- Employee Selection -->
+      <div class="flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Employee</label>
+        <ng-select
+          class=""
+          [multiple]="true"
+          [(ngModel)]="createForm.employeeId"
+        >
+          <!-- <option *ngFor="let emp of employees" [value]="emp.employeeId">{{ emp.employeeName }}</option> -->
+
+          <ng-option *ngFor="let type of employees" [value]="type.id"
+            >{{ type.firstName }} {{ type.lastName }}</ng-option
+          >
+        </ng-select>
+      </div>
+
+      <!-- Amount -->
+      <div class="flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Amount (₦)</label>
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-2"
+          [(ngModel)]="createForm.amount"
+        />
+      </div>
+
+      <!-- Reason / Description -->
+      <div class="col-span-1 md:col-span-2 flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Reason</label>
+        <textarea
+          rows="3"
+          class="bg-white border border-gray-200 rounded-md px-2 py-2"
+          [(ngModel)]="createForm.reason"
+          placeholder="Enter reason for this ad hoc"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <app-button
+        text="Cancel"
+        class="btn-navigate gap-2"
+        (click)="toggleCreateForm()"
+      ></app-button>
+      <app-button
+        text="Submit"
+        class="btn-navigate gap-2"
+        (click)="createAdHoc()"
+      ></app-button>
+    </div>
+  </div>
+</app-side-modal>
+
+<app-modal *ngIf="showDetail" (close)="closeDetail()">
+  <div class="py-3 text-customBlue table-item">
+    <div class="flex justify-between items-center">
+      <p class="text-center text-[16px] font-semibold">Ad Hocs Details</p>
+      <!-- <span class="text-[12px] text-gray-500">{{ selectedQuery?.id }}</span> -->
+    </div>
+
+    <div class="mt-4 grid grid-cols-2 gap-6">
+      <div>
+        <p class="font-semibold text-gray-700">Employee</p>
+        <p class="text-gray-600">
+          {{ selectedQuery.employee.firstName }} ({{
+            selectedQuery.employee.lastName
+          }})
+        </p>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-700">Period</p>
+        <p class="text-gray-600">
+          {{ selectedQuery ? formatPeriod(selectedQuery.createdAt) : "" }}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-3">
+      <p class="font-semibold text-gray-700">Reason</p>
+      <textarea
+        rows="4"
+        class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
+        readonly
+        [(ngModel)]="selectedQuery.reason"
+      ></textarea>
+    </div>
+  </div>
+</app-modal>

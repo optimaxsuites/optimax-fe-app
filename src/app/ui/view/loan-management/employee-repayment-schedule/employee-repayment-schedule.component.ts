@@ -1,0 +1,242 @@
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import {
+  formatLoanPurposeDisplay,
+  getLoanRepaymentStatusTitle,
+  hasLoanBeenDisbursed,
+  hasLoanRepaymentStarted,
+  resolveLoanOutstandingBalance,
+  resolveLoanRepaymentProgress,
+  resolveLoanTotalPaid,
+  resolveLoanTotalRepayableAmount
+} from '../../../service/loan/loan-display.util';
+
+@Component({
+  selector: 'app-employee-repayment-schedule',
+  templateUrl: './employee-repayment-schedule.component.html',
+  styleUrls: ['./employee-repayment-schedule.component.scss']
+})
+export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
+  @Input() loan!: LoanApplication;
+  
+  // Summary stats
+  totalPaid: number = 0;
+  totalRemaining: number = 0;
+  totalRepayable: number = 0;
+  paidCount: number = 0;
+  upcomingCount: number = 0;
+  overdueCount: number = 0;
+  completionPercentage: number = 0;
+  
+  // For visualization
+  nextPaymentDate: string = '';
+  nextPaymentAmount: number = 0;
+  
+  // Modal visibility
+  showPaymentModal = false;
+  showGracePeriodModal = false;
+  selectedInstallment: RepaymentScheduleItem | null = null;
+  
+  ngOnInit() {
+    this.calculateStats();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['loan']) {
+      this.calculateStats();
+    }
+  }
+  
+  calculateStats(): void {
+    if (!this.loan?.repaymentSchedule?.length) {
+      this.totalPaid = 0;
+      this.totalRemaining = 0;
+      this.totalRepayable = 0;
+      this.paidCount = 0;
+      this.upcomingCount = 0;
+      this.overdueCount = 0;
+      this.completionPercentage = 0;
+      this.nextPaymentDate = '';
+      this.nextPaymentAmount = 0;
+      return;
+    }
+
+    this.totalPaid = resolveLoanTotalPaid(this.loan);
+    this.totalRepayable = resolveLoanTotalRepayableAmount(this.loan);
+    this.totalRemaining = resolveLoanOutstandingBalance(this.loan);
+    
+    this.paidCount = this.loan.repaymentSchedule
+      .filter(item => item.status === 'PAID').length;
+    
+    this.upcomingCount = this.loan.repaymentSchedule
+      .filter(item => item.status === 'PENDING').length;
+    
+    this.overdueCount = this.loan.repaymentSchedule
+      .filter(item => item.status === 'OVERDUE').length;
+
+    this.completionPercentage = resolveLoanRepaymentProgress(this.loan);
+    
+    // Find next payment
+    const nextPayment = this.loan.repaymentSchedule
+      .find(item => item.status === 'PENDING');
+    
+    if (nextPayment) {
+      this.nextPaymentDate = nextPayment.dueDate;
+      this.nextPaymentAmount = nextPayment.totalAmount;
+    } else {
+      this.nextPaymentDate = '';
+      this.nextPaymentAmount = 0;
+    }
+  }
+  
+  // Open payment modal for a specific installment
+  openPaymentModal(installment?: RepaymentScheduleItem): void {
+    if (!this.canTakeRepaymentActions()) {
+      return;
+    }
+
+    if (installment) {
+      this.selectedInstallment = installment;
+    } else {
+      // Find the next pending installment
+      this.selectedInstallment = this.loan?.repaymentSchedule
+        .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
+    }
+    this.showPaymentModal = true;
+  }
+  
+  // Close payment modal
+  closePaymentModal(): void {
+    this.showPaymentModal = false;
+    this.selectedInstallment = null;
+  }
+  
+  // Open grace period modal
+  openGracePeriodModal(installment?: RepaymentScheduleItem): void {
+    if (!this.canTakeRepaymentActions()) {
+      return;
+    }
+
+    if (installment) {
+      this.selectedInstallment = installment;
+    } else {
+      // Find the next pending installment
+      this.selectedInstallment = this.loan?.repaymentSchedule
+        .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
+    }
+    this.showGracePeriodModal = true;
+  }
+  
+  // Close grace period modal
+  closeGracePeriodModal(): void {
+    this.showGracePeriodModal = false;
+    this.selectedInstallment = null;
+  }
+  
+  // Handle successful payment
+  onPaymentSuccess(): void {
+    this.closePaymentModal();
+    // Refresh the loan data
+    this.calculateStats();
+    // Emit event to parent to refresh the loan
+    if (this.loan?.id) {
+      // You can add an @Output() refresh event here
+    }
+  }
+  
+  // Handle successful grace period request
+  onGracePeriodSubmitted(): void {
+    this.closeGracePeriodModal();
+    // Show success message
+  }
+  
+  getStatusIcon(status: string): string {
+    switch(status) {
+      case 'PAID': return 'fas fa-check-circle';
+      case 'PENDING': return 'fas fa-clock';
+      case 'OVERDUE': return 'fas fa-exclamation-triangle';
+      case 'SKIPPED': return 'fas fa-ban';
+      default: return 'fas fa-circle';
+    }
+  }
+  
+  getStatusClass(status: string): string {
+    switch(status) {
+      case 'PAID': return 'status-paid';
+      case 'PENDING': return 'status-pending';
+      case 'OVERDUE': return 'status-overdue';
+      case 'SKIPPED': return 'status-skipped';
+      default: return '';
+    }
+  }
+  
+  getProgressColor(): string {
+    if (this.overdueCount > 0) return '#ea580c';
+    if (this.completionPercentage >= 100) return '#059669';
+    if (this.completionPercentage >= 50) return '#f59e0b';
+    return '#3b82f6';
+  }
+  
+  formatDate(date: string): string {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  formatPurposeDisplay(purpose?: string | null): string {
+    return formatLoanPurposeDisplay(purpose);
+  }
+
+  hasBeenDisbursed(): boolean {
+    return hasLoanBeenDisbursed(this.loan);
+  }
+
+  hasRepaymentStarted(): boolean {
+    return hasLoanRepaymentStarted(this.loan);
+  }
+
+  getRepaymentStatusTitle(): string {
+    return getLoanRepaymentStatusTitle(this.loan);
+  }
+
+  getLoanStatusDisplay(): string {
+    return String(this.loan?.status || '').replace(/_/g, ' ');
+  }
+
+  canTakeRepaymentActions(): boolean {
+    return this.loan?.status === 'ACTIVE' || this.loan?.status === 'SKIPPED' || this.loan?.status === 'OVERDUE';
+  }
+
+  hasRepaymentScheduleAccess(): boolean {
+    return this.canTakeRepaymentActions()
+      || this.loan?.status === 'PAUSED'
+      || this.loan?.status === 'DEFAULTED'
+      || this.loan?.status === 'COMPLETED'
+      || this.hasBeenDisbursed();
+  }
+
+  isRepaymentLocked(): boolean {
+    return this.loan?.status === 'PAUSED' || this.loan?.status === 'DEFAULTED';
+  }
+
+  getRepaymentLockTitle(): string {
+    return this.loan?.status === 'DEFAULTED' ? 'Repayment Locked By Default' : 'Repayment Temporarily Paused';
+  }
+
+  getRepaymentLockMessage(): string {
+    if (this.loan?.status === 'DEFAULTED') {
+      return 'This loan has been marked as defaulted. You can still review the schedule, but payment and extension requests stay locked until admin intervenes.';
+    }
+
+    return 'This loan is currently paused by admin. You can review the repayment schedule, but payment and extension requests are temporarily unavailable.';
+  }
+  
+  isOverdue(item: RepaymentScheduleItem): boolean {
+    if (item.status !== 'PENDING') return false;
+    const dueDate = new Date(item.dueDate);
+    const today = new Date();
+    return dueDate < today;
+  }
+}
