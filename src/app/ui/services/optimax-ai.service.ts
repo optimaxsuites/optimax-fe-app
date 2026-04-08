@@ -92,9 +92,13 @@ export class OptimaxAiService {
       Authorization: `Bearer ${sessionStorage.getItem('token') || ''}`,
     });
     return this.http.post<AgentPromptResponse>(
-      `${this.baseUrl}/ai/agent/prompt`,
+      `${this.baseUrl}/x/api/v2/ai/agent/prompt`,
       payload,
-      { headers },
     );
+    // return this.http.post<AgentPromptResponse>(
+    //   `${this.baseUrl}/ai/agent/prompt`,
+    //   payload,
+    //   { headers },
+    // );
   }
 }

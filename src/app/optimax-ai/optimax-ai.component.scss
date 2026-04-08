@@ -1,24 +1,360 @@
 /* optimax-ai.component.scss
-   Keyframes only — all layout is Tailwind.
    Add to index.html:
    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 */
 
 @keyframes oai-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
-
 @keyframes oai-bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30%           { transform: translateY(-5px); }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
 }
-
 @keyframes oai-glow-ring {
-  0%, 100% { box-shadow: 0 2px 16px rgba(46, 98, 118, 0.10); }
-  50%       { box-shadow: 0 2px 28px rgba(46, 98, 118, 0.22); }
+  0%,
+  100% {
+    box-shadow: 0 2px 16px rgba(46, 98, 118, 0.1);
+  }
+  50% {
+    box-shadow: 0 2px 28px rgba(46, 98, 118, 0.22);
+  }
 }
 
-.oai-pulse { animation: oai-pulse 2s ease-in-out infinite; }
-.oai-dot   { animation: oai-bounce 1.3s ease-in-out infinite; }
-.oai-glow  { animation: oai-glow-ring 3s ease-in-out infinite; }
+.oai-pulse {
+  animation: oai-pulse 2s ease-in-out infinite;
+}
+.oai-dot {
+  animation: oai-bounce 1.3s ease-in-out infinite;
+}
+.oai-glow {
+  animation: oai-glow-ring 3s ease-in-out infinite;
+}
+
+// ─────────────────────────────────────────────────────
+//  Markdown rendered body — scoped to .oai-markdown-body
+//
+//  ngx-markdown emits real HTML elements:
+//    <h1> <h2> <h3> <p> <strong> <em> <code> <pre>
+//    <ul> <ol> <li> <table> <thead> <tbody> <tr> <th> <td>
+//    <blockquote> <hr> <a> <img>
+//
+//  We use ::ng-deep to pierce the Angular view encapsulation
+//  and style those native elements inside .oai-markdown-body.
+//  All rules are scoped under .oai-markdown-body so they
+//  don't leak out to the rest of the app.
+// ─────────────────────────────────────────────────────
+.oai-markdown-body {
+  font-size: 12.5px;
+  color: #2e4a5a;
+  line-height: 1.75;
+
+  ::ng-deep {
+    // ── Headings ──────────────────────────────────
+    h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a2733;
+      margin: 10px 0 4px;
+      line-height: 1.4;
+    }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a2733;
+      margin: 10px 0 4px;
+      border-bottom: 1px solid #f0f4f7;
+      padding-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #2e4a5a;
+      margin: 8px 0 3px;
+      line-height: 1.4;
+    }
+
+    // ── Paragraphs ────────────────────────────────
+    p {
+      margin: 0 0 6px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    // ── Inline styles ────────────────────────────
+    strong {
+      color: #1a2733;
+      font-weight: 700;
+    }
+
+    em {
+      color: #4a6272;
+      font-style: italic;
+    }
+
+    del {
+      color: #a0b0bc;
+      text-decoration: line-through;
+    }
+
+    // ── Inline code ───────────────────────────────
+    code {
+      font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      font-size: 11px;
+      background: #eaf2f6;
+      color: #2e6276;
+      border-radius: 4px;
+      padding: 1px 5px;
+      // Don't apply to code inside pre (fenced blocks)
+      pre & {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+        color: inherit;
+        font-size: inherit;
+      }
+    }
+
+    // ── Fenced code blocks ────────────────────────
+    pre {
+      background: #1a2733;
+      color: #c8dae6;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      overflow-x: auto;
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    // ── Lists ─────────────────────────────────────
+    ol {
+      margin: 4px 0 8px;
+      padding-left: 18px;
+
+      li {
+        margin-bottom: 3px;
+        font-size: 12.5px;
+        color: #4a6272;
+
+        &::marker {
+          color: #2e6276;
+          font-weight: 600;
+        }
+      }
+    }
+
+    ul {
+      margin: 4px 0 8px;
+      padding-left: 16px;
+      list-style: none;
+
+      li {
+        margin-bottom: 3px;
+        font-size: 12.5px;
+        color: #4a6272;
+        position: relative;
+        padding-left: 10px;
+
+        &::before {
+          content: "•";
+          color: #2e6276;
+          font-weight: 700;
+          position: absolute;
+          left: 0;
+        }
+      }
+    }
+
+    // ── Tables ────────────────────────────────────
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      margin: 8px 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e2e8ed;
+    }
+
+    th {
+      background: #eaf2f6;
+      color: #2e6276;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid #d4e4ec;
+    }
+
+    td {
+      padding: 6px 10px;
+      color: #4a6272;
+      border-bottom: 1px solid #f0f4f7;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) td {
+      background: #f9fbfc;
+    }
+
+    // ── Horizontal rule ───────────────────────────
+    hr {
+      border: none;
+      border-top: 1px solid #e2e8ed;
+      margin: 10px 0;
+    }
+
+    // ── Blockquote ────────────────────────────────
+    blockquote {
+      margin: 6px 0;
+      padding: 6px 12px;
+      border-left: 3px solid #2e6276;
+      background: #f4f8fa;
+      border-radius: 0 6px 6px 0;
+      color: #4a6272;
+      font-style: italic;
+      font-size: 12px;
+
+      p {
+        margin: 0;
+      }
+    }
+
+    // ── Links ─────────────────────────────────────
+    a {
+      color: #2e6276;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+
+      &:hover {
+        color: #1a3d4a;
+      }
+    }
+
+    // ── Images ────────────────────────────────────
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 6px 0;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────
+//  CSS Heatmap
+// ─────────────────────────────────────────────────────
+.oai-heatmap-wrap {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.oai-heatmap-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b8898;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.oai-heatmap-labels-col,
+.oai-heatmap-values-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.oai-heatmap-label {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8ed;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a2733;
+  line-height: 1.35;
+}
+
+.oai-heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(46, 98, 118, 0.15);
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.88;
+  }
+}
+
+.oai-heatmap-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2733;
+}
+
+.oai-heatmap-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: #4a6272;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.oai-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #a0b0bc;
+  flex-wrap: wrap;
+}
+
+.oai-heatmap-legend-bar {
+  width: 140px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgba(46, 98, 118, 0.12),
+    rgba(46, 98, 118, 0.95)
+  );
+  border: 1px solid rgba(46, 98, 118, 0.2);
+}
