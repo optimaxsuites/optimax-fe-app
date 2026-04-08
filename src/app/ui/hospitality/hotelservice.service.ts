@@ -331,8 +331,10 @@ export class HotelserviceService {
       balanceAmount: String(booking.balanceAmount || 0),
       status: booking.status || 'CONFIRMED',
       guest: gId ? Number(gId) : null,
+      guestId: gId ? Number(gId) : null,
       payment: paymentId ? Number(paymentId) : null,
       rooms: roomIds.map((id) => Number(id)),
+      roomIds: roomIds.map((id) => Number(id)),
     };
 
     console.log(
