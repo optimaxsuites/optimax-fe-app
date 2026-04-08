@@ -47,9 +47,15 @@
           <div class="p-5 mt-2 border-t border-gray-50">
             <div class="flex justify-between items-center mb-4">
               <h5 class="text-sm font-bold text-customBlue uppercase tracking-widest">Workflow Stages</h5>
-              <button type="button" (click)="addStage(module.title, app.appName)" class="text-sm bg-customBlue text-white px-3 py-1 rounded-lg hover:bg-opacity-90">
+              <div class="flex items-center gap-2">
+              <button type="button" (click)="addStage(module.title, app.appName)" class="text-sm border border-customBlue text-customBlue px-3 py-1 rounded-lg hover:bg-opacity-90">
                 + Add New Stage
               </button>
+              <button type="button" (click)="saveSettings(module, app)" class="text-sm bg-customBlue text-white px-3 py-1 rounded-lg hover:bg-opacity-90">
+                Save Workflow
+              </button>
+              </div>
+             
             </div>
 
             <div formArrayName="stages" class="space-y-6">

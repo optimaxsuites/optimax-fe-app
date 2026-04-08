@@ -41,7 +41,7 @@ export class ApprovalComponent implements OnInit {
   }
 
   ngOnInit() {
-    // 1. Fetch Roles for the "Who" dropdown
+    // 1. Fetch Roles for the Who dropdown
     this.moduleService.getRoles().subscribe(apiRoles => {
       this.roles = apiRoles;
     });
@@ -149,11 +149,39 @@ removeAssignment(moduleTitle: string, appName: string, stageIndex: number, assig
   this.getAssignments(moduleTitle, appName, stageIndex).removeAt(assignIndex);
 }
 
-  saveSettings(moduleTitle: string, appName: string) {
-    const controlName = `${moduleTitle}_${appName}`;
+  saveSettings(module: any, app: any) {
+    const controlName = `${module.title}_${app.appName}`;
     const settings = this.approvalForm.get(`submodules.${controlName}`)?.value;
-    console.log(`Saving Approval Flow for ${appName}:`, settings);
+    console.log(`Saving Approval Flow for ${app.appName}:`, settings);
     // [Inference] Send this to your backend service to update the Workflow Policy table
-    //todo: this.moduleService.updateApprovalPolicy(moduleTitle, appName, settings).subscribe(...);
+    //todo: this.moduleService.updateApprovalPolicy(module.title, app.appName, settings).subscribe(...);
+    const date = new Date();
+    const now = date.toISOString();
+    const payload = {
+      id: 0,
+      name: controlName,
+      description: controlName,
+      module: module.id,
+      submoduleId: app.id,
+      createdAt: now,
+      updatedAt: now,
+      isActive: true,
+      version: 1,
+      stages: settings.stages.map((stage: any, index: number) => ({
+        name: stage.name,
+        orderIndex: stage.orderIndex,
+        approvalType: stage.approvalType,
+        rejectionPolicy: stage.rejectionPolicy,
+        isOptional: stage.isOptional,
+        minApprovals: stage.minApprovals,
+        allowSelfApproval: stage.allowSelfApproval,
+        assignment: stage.assignment.map((assign: any) => ({
+          userId: assign.userId,
+          roleId: assign.roleId,
+          position: assign.position
+        }))
+      }))
+    }
+    console.log(payload)
   }
 }
