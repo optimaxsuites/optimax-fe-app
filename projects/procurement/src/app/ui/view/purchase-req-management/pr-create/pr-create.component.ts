@@ -497,6 +497,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { PrStorageService } from '../../../service/pr-storage.service';
 import { PrApprovalWorkflowService } from '../../../service/pr-approval-workflow.service';
 import { PurchaseRequisitionLS } from '../../../domain/procurement.dto';
+import { VendorDto, VendorStatus } from '../../../domain/vendor.dto';
+import { MailerServiceService } from '../../../service/mailer-service.service';
 
 type PRStatus =
   | 'Draft'
@@ -594,6 +596,7 @@ export class PrCreateComponent implements OnInit, OnChanges {
     private store: PrStorageService,
     private workflow: PrApprovalWorkflowService,
     private messageService: MessageService,
+    private mailerService: MailerServiceService,
   ) {
     this.form = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(120)]],
@@ -605,6 +608,16 @@ export class PrCreateComponent implements OnInit, OnChanges {
       currency: ['NGN', Validators.required],
       // budgetCodeId: ['', Validators.required],
       // budgetCapAmount: [0, Validators.required],
+    });
+  }
+
+  formatDate(value: string): string {
+    if (!value) return '---';
+
+    return new Date(value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   }
 
@@ -735,25 +748,6 @@ export class PrCreateComponent implements OnInit, OnChanges {
       const updatedList = existing.map((pr: any) => {
         if (pr.id !== this.purchaseReqData.id) return pr;
 
-        // return {
-        //   ...pr,
-        //   title: formData.title,
-        //   department: formData.departmentId,
-        //   costCenterId: formData.costCenterId,
-        //   requiredByDate: formData.requiredByDate,
-        //   justification: formData.justification,
-        //   items: formData.items,
-        //   updatedAt: new Date().toISOString(),
-        //   status: 'UnderReview'
-        //   // auditTrail: [
-        //   //   ...(pr.auditTrail || []),
-        //   //   {
-        //   //     action: 'UPDATED',
-        //   //     by: requesterUserId,
-        //   //     at: new Date().toISOString(),
-        //   //   },
-        //   // ],
-        // };
         return {
           ...pr,
           title: formData.title,
@@ -794,30 +788,6 @@ export class PrCreateComponent implements OnInit, OnChanges {
     this.status = 'Submitted';
     const prmNo = `PR-${Date.now()}`;
 
-    // const pr: PurchaseRequisitionLS = {
-    //   id: Date.now() + Math.floor(Math.random() * 1000),
-    //   prmNo,
-    //   title: formData.title,
-    //   department: formData.departmentId,
-    //   costCenterId: formData.costCenterId,
-    //   requiredByDate: formData.requiredByDate,
-    //   justification: formData.justification,
-    //   comment:'',
-    //   status: 'Submitted',
-    //   createdAt: new Date().toISOString(),
-    //   items: formData.items,
-    //   // auditTrail: [
-    //   //   {
-    //   //     action: 'CREATED',
-    //   //     by: requesterUserId,
-    //   //     at: new Date().toISOString(),
-    //   //   },
-    //   // ],
-    //   budgetCodeId: '',
-    //   currency: '',
-    //   budgetCapAmount: 0,
-    // };
-
     const pr: PurchaseRequisitionLS = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       prmNo,
@@ -837,6 +807,7 @@ export class PrCreateComponent implements OnInit, OnChanges {
 
     this.store.add(pr);
     this.workflow.submitForApproval(pr.id, requesterUserId);
+    this.notifyEligibleVendorsForPr(pr);
 
     this.messageService.add({
       severity: 'success',
@@ -987,5 +958,96 @@ export class PrCreateComponent implements OnInit, OnChanges {
 
   addCategoryMetadata(index: number): void {
     console.log('Open add category modal for row', index);
+  }
+
+  notifyEligibleVendorsForPr(pr: any): void {
+    const vendors: VendorDto[] = JSON.parse(
+      localStorage.getItem('vendors') || '[]',
+    );
+
+    const eligibleVendors = vendors.filter((vendor) =>
+      this.isVendorEligibleForPr(vendor, pr),
+    );
+
+    if (!eligibleVendors.length) {
+      console.warn('No approved vendors matched this PR department.');
+      return;
+    }
+
+    eligibleVendors.forEach((vendor) => {
+      this.mailerService
+        .sendPrInvitationEmail({
+          vendorName: vendor.companyProfile.legalName,
+          recieverEmail: vendor.companyProfile.companyEmail,
+          prmNo: pr.prmNo,
+          prTitle: pr.title,
+          departmentName: this.getDepartmentName(pr.department),
+          requiredByDate: this.formatDate(pr.requiredByDate),
+        })
+        .subscribe({
+          next: () => {
+            console.log(
+              `Invitation sent to ${vendor.companyProfile.legalName}`,
+            );
+          },
+          error: (err) => {
+            console.error(
+              `Failed to send invitation to ${vendor.companyProfile.legalName}`,
+              err,
+            );
+          },
+        });
+    });
+  }
+
+  private getDepartmentById(departmentId: string): any | null {
+    return (
+      this.departments.find(
+        (d) => String(d.id).trim() === String(departmentId).trim(),
+      ) || null
+    );
+  }
+
+  private getDepartmentName(departmentId: string): string {
+    const department = this.getDepartmentById(departmentId);
+    return department ? department.name : String(departmentId || '');
+  }
+
+  private getVendorCategoryNames(vendor: any): string[] {
+    const categories = vendor?.category || vendor?.categories || [];
+
+    return categories
+      .map((cat: any) =>
+        String(cat?.name || '')
+          .trim()
+          .toLowerCase(),
+      )
+      .filter((name: string) => !!name);
+  }
+
+  private isVendorEligibleForPr(vendor: VendorDto, pr: any): boolean {
+    if (vendor.status !== VendorStatus.Approved) {
+      return false;
+    }
+
+    const department = this.getDepartmentById(pr.department);
+
+    if (!department) {
+      return false;
+    }
+
+    const vendorCategoryNames = this.getVendorCategoryNames(vendor);
+
+    if (!vendorCategoryNames.length) {
+      return false;
+    }
+
+    const allowedCategories = (department.categories || []).map(
+      (category: string) => category.trim().toLowerCase(),
+    );
+
+    return vendorCategoryNames.some((vendorCategory: string) =>
+      allowedCategories.includes(vendorCategory),
+    );
   }
 }

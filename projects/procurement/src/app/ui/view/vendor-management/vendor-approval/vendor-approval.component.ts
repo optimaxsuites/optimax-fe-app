@@ -3,6 +3,7 @@ import { VendorApprovalService } from '../../../service/vendor/vendor-approval.s
 import { VendorDto, VendorStatus } from '../../../domain/vendor.dto';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { MailerServiceService } from '../../../service/mailer-service.service';
 // import {
 //   addVendorAuditEvent,
 //   VendorAuditEventType,
@@ -26,24 +27,23 @@ export class VendorApprovalComponent implements OnInit {
   displayVendorDialog: boolean = false;
 
   rejectDialogVisible = false;
-selectedVendorForRejection: VendorDto | null = null;
+  selectedVendorForRejection: VendorDto | null = null;
   rejectionReason!: string;
-
 
   columns = [
     { header: 'Vendor Id', field: 'id', sortable: true },
 
-{
-  header: 'Business Name',
-  field: 'companyProfile.legalName',
-  sortable: true,
-  formatter: (row: VendorDto) => {
-    const name = row.companyProfile?.legalName ?? '—';
-    const id = row.companyProfile?.id;
+    {
+      header: 'Business Name',
+      field: 'companyProfile.legalName',
+      sortable: true,
+      formatter: (row: VendorDto) => {
+        const name = row.companyProfile?.legalName ?? '—';
+        const id = row.companyProfile?.id;
 
-    return id ? `${name} (#${id})` : name;
-  },
-},
+        return id ? `${name} (#${id})` : name;
+      },
+    },
 
     {
       header: 'Registration Token',
@@ -109,6 +109,7 @@ selectedVendorForRejection: VendorDto | null = null;
     private router: Router,
     private cdr: ChangeDetectorRef,
     private messageService: MessageService,
+    private mailerService: MailerServiceService,
   ) {}
 
   ngOnInit(): void {
@@ -149,9 +150,7 @@ selectedVendorForRejection: VendorDto | null = null;
       const data = JSON.parse(localStorage.getItem('vendors') || '[]');
 
       this.vendors = data.filter(
-        (v: any) =>
-          v.status === 'Submitted' ||
-          v.status === 'UnderReview'
+        (v: any) => v.status === 'Submitted' || v.status === 'UnderReview',
       );
 
       console.log(this.vendors);
@@ -248,27 +247,20 @@ selectedVendorForRejection: VendorDto | null = null;
     const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
     const now = new Date().toISOString();
 
+    let approvedVendor!: VendorDto;
+
     const updated = vendors.map((x) => {
       if (x.id === v.id) {
         // If manual approval (Admin)
         if (x.status !== VendorStatus.Approved) {
           const fromStatus = x.status;
 
-          // Set status and approval timestamp
           x.status = VendorStatus.Approved;
           x.approvedAt = now;
-          x.approvedBy = 'Admin'; // You can dynamically set this if you have auth context
-
-          // Add to audit
-          // x = addVendorAuditEvent(x, {
-          //   type: VendorAuditEventType.Approved,
-          //   fromStatus,
-          //   toStatus: VendorStatus.Approved,
-          //   actorId: 'admin-id', // Add dynamic actor ID if needed
-          //   actorName: 'Admin', // Replace with dynamic actor name if needed
-          // });
+          x.approvedBy = 'Admin';
         }
 
+        approvedVendor = x;
         return x;
       }
 
@@ -281,22 +273,35 @@ selectedVendorForRejection: VendorDto | null = null;
 
         x.status = VendorStatus.Approved;
         x.approvedAt = now;
-        x.approvedBy = 'System'; // Set the system as approver for AI approvals
-
-        // Add to audit log
-        // x = addVendorAuditEvent(x, {
-        //   type: VendorAuditEventType.Approved,
-        //   fromStatus,
-        //   toStatus: VendorStatus.Approved,
-        //   actorId: 'system-id', // Optional: If you need a system ID
-        //   actorName: 'System', // System automatically approves
-        // });
+        x.approvedBy = 'System';
       }
 
       return x;
     });
 
     localStorage.setItem(key, JSON.stringify(updated));
+
+    if (approvedVendor) {
+      this.mailerService.sendVendorApprovalEmail(approvedVendor).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Vendor Approved',
+            detail: 'Vendor approved and approval email sent successfully.',
+            life: 3000,
+          });
+        },
+        error: (err) => {
+          console.error('Approval email failed', err);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Vendor Approved',
+            detail: 'Vendor approved, but approval email could not be sent.',
+            life: 3000,
+          });
+        },
+      });
+    }
 
     // Fetch back the updated vendors and filter only UnderReview
     this.vendors = this.getVendorsFromStorage().filter(
@@ -415,61 +420,96 @@ selectedVendorForRejection: VendorDto | null = null;
   // }
 
   openRejectDialog(v: VendorDto): void {
-  this.selectedVendorForRejection = v;
-  this.rejectionReason = v.rejectionReason || '';
-  this.rejectDialogVisible = true;
-}
+    this.selectedVendorForRejection = v;
+    this.rejectionReason = v.rejectionReason || '';
+    this.rejectDialogVisible = true;
+  }
 
-closeRejectDialog(): void {
-  this.rejectDialogVisible = false;
-  this.selectedVendorForRejection = null;
-  this.rejectionReason = '';
-}
+  closeRejectDialog(): void {
+    this.rejectDialogVisible = false;
+    this.selectedVendorForRejection = null;
+    this.rejectionReason = '';
+  }
 
-confirmRejectVendor(): void {
-  if (!this.selectedVendorForRejection) return;
+  confirmRejectVendor(): void {
+    if (!this.selectedVendorForRejection) return;
 
-  const reason = this.rejectionReason.trim();
-  if (!reason) return;
-
-  this.rejectVendor(this.selectedVendorForRejection, reason);
-  this.closeRejectDialog();
-}
-
-rejectVendor(v: VendorDto, reason: string): void {
-  const key = 'vendors';
-  const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
-  const now = new Date().toISOString();
-
-  const updated = vendors.map((x) => {
-    if (x.id === v.id) {
-      if (x.status !== VendorStatus.Rejected) {
-        x.status = VendorStatus.Rejected;
-        x.rejectedAt = now;
-        x.rejectedBy = 'Admin';
-        x.rejectionReason = reason.trim();
-        x.lastUpdatedAt = now;
-      }
-      return x;
+    const reason = this.rejectionReason.trim();
+    if (!reason) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Rejection Reason Required',
+        detail: 'Please provide a reason for rejecting this vendor.',
+        life: 3000,
+      });
+      return;
     }
 
-    return x;
-  });
+    this.rejectVendor(this.selectedVendorForRejection, reason);
+    this.closeRejectDialog();
+  }
 
-  localStorage.setItem(key, JSON.stringify(updated));
+  rejectVendor(v: VendorDto, reason: string): void {
+    const key = 'vendors';
+    const vendors: VendorDto[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+    const now = new Date().toISOString();
 
-  this.vendors = this.getVendorsFromStorage().filter(
-    (x) => x.status === VendorStatus.UnderReview
-  );
+    let rejectedVendor!: VendorDto;
 
-  this.cdr?.markForCheck?.();
+    const updated = vendors.map((x) => {
+      if (x.id === v.id) {
+        if (x.status !== VendorStatus.Rejected) {
+          x.status = VendorStatus.Rejected;
+          x.rejectedAt = now;
+          x.rejectedBy = 'Admin';
+          x.rejectionReason = reason.trim();
+          x.lastUpdatedAt = now;
+        }
+        rejectedVendor = x;
+        return x;
+      }
 
-  this.messageService.add({
-    severity: 'success',
-    summary: 'Vendor Rejected',
-    detail: `${v.companyProfile?.legalName ?? 'Vendor'} was rejected successfully.`
-  });
-}
+      return x;
+    });
+
+    localStorage.setItem(key, JSON.stringify(updated));
+
+    this.vendors = this.getVendorsFromStorage().filter(
+      (x) => x.status === VendorStatus.UnderReview,
+    );
+
+    this.cdr?.markForCheck?.();
+
+    if (rejectedVendor) {
+      this.mailerService
+        .sendVendorRejectionEmail(rejectedVendor, reason.trim())
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Vendor Rejected',
+              detail: `${
+                rejectedVendor?.companyProfile?.legalName ?? 'Vendor'
+              } was rejected and the rejection email was sent successfully.`,
+              life: 3000,
+            });
+          },
+          error: (err) => {
+            console.error('Rejection email failed', err);
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Vendor Rejected',
+              detail: `${
+                rejectedVendor?.companyProfile?.legalName ?? 'Vendor'
+              } was rejected, but the rejection email could not be sent.`,
+              life: 3000,
+            });
+          },
+        });
+
+      return;
+    }
+  }
 
   submitAction() {
     const vendorId = this.selected?.id;
@@ -481,12 +521,12 @@ rejectVendor(v: VendorDto, reason: string): void {
     //     action: this.action,
     //     reason: this.reason?.trim() || undefined,
     //   })
-      // .subscribe({
-      //   next: () => {
-      //     this.actionDialog = false;
-      //     this.fetch();
-      //   },
-      // });
+    // .subscribe({
+    //   next: () => {
+    //     this.actionDialog = false;
+    //     this.fetch();
+    //   },
+    // });
   }
 
   reviewVendor(v: any): void {

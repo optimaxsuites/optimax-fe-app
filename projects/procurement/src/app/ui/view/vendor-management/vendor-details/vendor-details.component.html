@@ -717,12 +717,10 @@
                 </div>
               </div>
             </div>
-
             <ng-template #noBanks>
               <div class="text-slate-600">—</div>
             </ng-template>
           </div>
-
           <!-- Categories -->
           <div class="md:col-span-2 rounded-xl border border-slate-200 p-4">
             <div class="font-semibold text-slate-900 mb-2">
@@ -730,7 +728,6 @@
             </div>
             <div class="text-slate-700">
               <div class="text-xs text-slate-500 mb-1">Categories</div>
-
               <div *ngIf="vendor.category?.length; else noCategories" class="space-y-2">
                 <div
                   *ngFor="let cat of vendor.category"
