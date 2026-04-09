@@ -27,6 +27,8 @@ export class ApprovalComponent implements OnInit {
   modules: any[] = [];
   roles: any[] = [];
   users: any[] = [];
+  readonly AVAILABLE_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
+  selectedAction: { [key: string]: string } = {}
 
   constructor(
     private fb: FormBuilder, 
@@ -80,73 +82,98 @@ buildApprovalForm() {
 
   this.modules.forEach(module => {
     module.appRegister.forEach((app: any) => {
+      // Create the exact key: "Point of Sale (POS)_Inventory"
       const controlName = `${module.title}_${app.appName}`;
+      
+      this.selectedAction[controlName] = 'CREATE';
+
+      const actionsGroup = this.fb.group({});
+      this.AVAILABLE_ACTIONS.forEach(action => {
+        actionsGroup.addControl(action, this.fb.group({
+          isEnabled: [action === 'CREATE'],
+          stages: this.fb.array([]) 
+        }));
+      });
+
+      // Add the control to the 'submodules' group
       submodulesGroup.addControl(controlName, this.fb.group({
-        isEnabled: [false], 
-        isActive: [true],   
-        submoduleId: [app.id], 
-        version: [1],      
-        stages: this.fb.array([]) 
+        submoduleId: [app.id],
+        isEnabled: [false], // The master toggle
+        actions: actionsGroup
       }));
     });
   });
-  
   this.cdr.detectChanges();
 }
 
-// Helper to get Stages FormArray
-getStages(moduleTitle: string, appName: string): FormArray {
-  const controlName = `${moduleTitle}_${appName}`;
-  return this.approvalForm.get(`submodules.${controlName}.stages`) as FormArray;
-}
+addStage(moduleTitle: string, appName: string, actionKey: string) {
+  // 1. Get the array
+  const stages = this.getStages(moduleTitle, appName, actionKey);
+  
+  if (!stages) {
+    console.error(`Target FormArray not found: submodules.${moduleTitle}_${appName}.actions.${actionKey}.stages`);
+    return;
+  }
 
-addStage(moduleTitle: string, appName: string) {
-  const stages = this.getStages(moduleTitle, appName);
-  stages.push(this.fb.group({
-    name: [`Stage ${stages.length + 1}`, Validators.required],  
-    orderIndex: [stages.length + 1],  
-    approvalType: ['ANY', Validators.required],  
+  // 2. Create the group
+  const stageGroup = this.fb.group({
+    name: [`Stage ${stages.length + 1}`, Validators.required],
+    orderIndex: [stages.length + 1],
+    approvalType: ['ANY', Validators.required],
     rejectionPolicy: ['STOP', Validators.required],
     isOptional: [false],
-    minApprovals: [1, [Validators.min(1)]],  
-    allowSelfApproval: [false],  
-    assignment: this.fb.array([]) 
-  }));
+    minApprovals: [1, [Validators.min(1)]],
+    allowSelfApproval: [false],
+    assignment: this.fb.array([])
+  });
+
+  // 3. Push and Force Detection
+  stages.push(stageGroup);
+  this.cdr.markForCheck(); 
+  this.cdr.detectChanges();
 }
 
-getAssignments(moduleTitle: string, appName: string, stageIndex: number): FormArray {
-  return this.getStages(moduleTitle, appName).at(stageIndex).get('assignment') as FormArray;
+getStages(moduleTitle: string, appName: string, actionKey: string): FormArray {
+  const controlName = `${moduleTitle}_${appName}`;
+  // Use dot notation and wrap the control name in quotes if it contains special characters
+  const path = `submodules.${controlName}.actions.${actionKey}.stages`;
+  return this.approvalForm.get(path) as FormArray;
 }
 
-addAssignment(moduleTitle: string, appName: string, stageIndex: number) {
-  const assignments = this.getAssignments(moduleTitle, appName, stageIndex);
+// Update this helper to include actionKey
+getAssignments(moduleTitle: string, appName: string, actionKey: string, stageIndex: number): FormArray {
+  return this.getStages(moduleTitle, appName, actionKey).at(stageIndex).get('assignment') as FormArray;
+}
+
+// Update removeAssignment to include actionKey
+removeAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number, assignIndex: number) {
+  this.getAssignments(moduleTitle, appName, actionKey, stageIndex).removeAt(assignIndex);
+}
+
+// Update addAssignment to include actionKey
+addAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
+  const assignments = this.getAssignments(moduleTitle, appName, actionKey, stageIndex);
   
   const assignmentGroup = this.fb.group({
     userId: [null],
     roleId: [null],
-    position: [assignments.length + 1] 
   });
 
-
-  const userCtrl = assignmentGroup.get('userId');
-  const roleCtrl = assignmentGroup.get('roleId');
-
-  userCtrl?.valueChanges.subscribe(val => {
-    if (val) roleCtrl?.setValue(null, { emitEvent: false });
+  // Enforce "Either/Or" logic
+  assignmentGroup.get('userId')?.valueChanges.subscribe(val => {
+    if (val) assignmentGroup.get('roleId')?.setValue(null, { emitEvent: false });
   });
-
-  roleCtrl?.valueChanges.subscribe(val => {
-    if (val) userCtrl?.setValue(null, { emitEvent: false });
+  assignmentGroup.get('roleId')?.valueChanges.subscribe(val => {
+    if (val) assignmentGroup.get('userId')?.setValue(null, { emitEvent: false });
   });
 
   assignments.push(assignmentGroup);
 }
-removeStage(moduleTitle: string, appName: string, stageIndex: number) {
-  this.getStages(moduleTitle, appName).removeAt(stageIndex);
-}
 
-removeAssignment(moduleTitle: string, appName: string, stageIndex: number, assignIndex: number) {
-  this.getAssignments(moduleTitle, appName, stageIndex).removeAt(assignIndex);
+// Update removeStage to include actionKey
+removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
+  const stages = this.getStages(moduleTitle, appName, actionKey);
+  stages.removeAt(stageIndex);
 }
 
   saveSettings(module: any, app: any) {

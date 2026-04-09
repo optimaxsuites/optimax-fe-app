@@ -47,7 +47,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressSpinnerModule, MatSpinner } from '@angular/material/progress-spinner';
 import { SettingsPageComponent } from './ui/view/settings-page.component';
 import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scoresheet-config.component';
 import { NavigationLinksService } from './ui/sharedComponents/service/navigation-links/navigation-links.service';
@@ -196,6 +196,7 @@ import { ApprovalComponent } from './ui/view/user-setting/approval/approval.comp
     LargeSideModalComponent,
     SideModalComponent,
     MatSnackBarModule,
+    MatProgressSpinnerModule
   ],
   providers: [
     NavigationLinksService,
