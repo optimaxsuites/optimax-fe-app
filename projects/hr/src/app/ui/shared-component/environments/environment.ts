@@ -2,7 +2,7 @@
 //     groupion: false,
 //     baseUrl: "https://be.optimaxsuites.com",
 //     apiBaseUrl: "https://be.optimaxsuites.com",
-//     env: "development",
+//     env: "development",1
 
 //     project: 'ERP',
 //     apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071'
