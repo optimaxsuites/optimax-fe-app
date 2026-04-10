@@ -158,9 +158,34 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     }
 
     this.initializeForm();
-    this.loadMembers();
-    this.loadGroups();
-    this.loadEmployeeDirectory();
+    this.loadInitialData();
+  }
+
+  private loadInitialData(): void {
+    forkJoin({
+      members: this.cooperativeService.getMembers(),
+      groups: this.cooperativeService.loadGroups(),
+      employees: this.employeeService.getAllEmployee()
+    }).subscribe({
+      next: ({ members, groups, employees }) => {
+        this.members = members;
+        this.groups = groups;
+        this.employeeDirectory = (Array.isArray(employees) ? employees : [])
+          .map(employee => this.mapEmployeeToInviteRow(employee))
+          .filter((employee): employee is GroupInviteEmployeeRow => !!employee)
+          .sort((left, right) => left.fullName.localeCompare(right.fullName));
+
+        this.rebuildGroupMetrics();
+        this.loadEmployeeSalaries();
+      },
+      error: () => {
+        this.members = [];
+        this.groups = [];
+        this.employeeDirectory = [];
+        this.employeeSalaryById = {};
+        this.rebuildGroupMetrics();
+      }
+    });
   }
 
   loadMembers(): void {
@@ -863,7 +888,7 @@ private showMessage(message: string, type: 'success' | 'error'): void {
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
+    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

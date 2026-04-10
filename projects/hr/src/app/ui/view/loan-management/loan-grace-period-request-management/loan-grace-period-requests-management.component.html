@@ -58,76 +58,55 @@
 
     <!-- Requests Table -->
     <div class="table-container">
-      <table class="requests-table">
-        <thead>
-          <tr>
-            <th (click)="setSort('id')" class="sortable">
-              ID <i class="fas" [ngClass]="getSortIcon('id')"></i>
-            </th>
-            <th (click)="setSort('loanId')" class="sortable">
-              Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
-            </th>
-            <th>Employee</th>
-            <th (click)="setSort('installmentNumber')" class="sortable">
-              Installment <i class="fas" [ngClass]="getSortIcon('installmentNumber')"></i>
-            </th>
-            <th (click)="setSort('paymentSubtype')" class="sortable">
-              Payment Type <i class="fas" [ngClass]="getSortIcon('paymentSubtype')"></i>
-            </th>
-            <th (click)="setSort('requestedDays')" class="sortable">
-              Days Requested <i class="fas" [ngClass]="getSortIcon('requestedDays')"></i>
-            </th>
-            <th>Reason</th>
-            <th (click)="setSort('requestedAt')" class="sortable">
-              Requested On <i class="fas" [ngClass]="getSortIcon('requestedAt')"></i>
-            </th>
-            <th (click)="setSort('status')" class="sortable">
-              Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let request of filteredRequests">
-            <td class="id">{{ request.id }}</td>
-            <td class="loan-id">{{ request.loanId }}</td>
-            <td class="employee">{{ getEmployeeName(request) }}</td>
-            <td class="installment">{{ request.installmentNumber }}</td>
-            <td class="payment-type">
-              <span class="payment-badge" [ngClass]="getPaymentTypeClass(request.paymentSubtype)">
-                {{ formatPaymentType(request.paymentSubtype) }}
-              </span>
-            </td>
-            <td class="days">{{ request.requestedDays }} days</td>
-            <td class="reason" [title]="request.reason">
-              {{ request.reason.length > 50 ? (request.reason | slice:0:50) + '...' : request.reason }}
-            </td>
-            <td class="date">{{ formatDate(request.requestedAt) }}</td>
-            <td class="status">
-              <span class="status-badge" [ngClass]="getStatusClass(request.status)">
-                {{ request.status }}
-              </span>
-            </td>
-            <td class="actions">
-              <button *ngIf="request.status === 'PENDING'" class="btn-approve" (click)="openApprovalModal(request)" title="Approve">
-                <i class="fas fa-check-circle"></i>
-              </button>
-              <button *ngIf="request.status === 'PENDING'" class="btn-reject" (click)="openRejectModal(request)" title="Reject">
-                <i class="fas fa-ban"></i>
-              </button>
-              <button class="btn-view" (click)="viewRequestDetails(request)" title="View Details">
-                <i class="fas fa-eye"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredRequests.length === 0">
-            <td colspan="10" class="no-data">
-              <i class="fas fa-inbox"></i>
-              <p>No grace period requests found</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="[
+          { header: 'ID', field: 'id', sortable: true },
+          { header: 'Loan ID', field: 'loanId', sortable: true },
+          { header: 'Employee' },
+          { header: 'Installment', field: 'installmentNumber', sortable: true },
+          { header: 'Payment Type', field: 'paymentSubtype', sortable: true },
+          { header: 'Days Requested', field: 'requestedDays', sortable: true },
+          { header: 'Reason' },
+          { header: 'Requested On', field: 'requestedAt', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Actions' }
+        ]"
+        [rows]="filteredRequests"
+        [emptyMessage]="'No grace period requests found'"
+        tableClass="requests-table">
+        <ng-template appTableBody let-request>
+          <td class="id">{{ request.id }}</td>
+          <td class="loan-id">{{ request.loanId }}</td>
+          <td class="employee">{{ getEmployeeName(request) }}</td>
+          <td class="installment">{{ request.installmentNumber }}</td>
+          <td class="payment-type">
+            <span class="payment-badge" [ngClass]="getPaymentTypeClass(request.paymentSubtype)">
+              {{ formatPaymentType(request.paymentSubtype) }}
+            </span>
+          </td>
+          <td class="days">{{ request.requestedDays }} days</td>
+          <td class="reason" [title]="request.reason">
+            {{ request.reason.length > 50 ? (request.reason | slice:0:50) + '...' : request.reason }}
+          </td>
+          <td class="date">{{ formatDate(request.requestedAt) }}</td>
+          <td class="status">
+            <span class="status-badge" [ngClass]="getStatusClass(request.status)">
+              {{ request.status }}
+            </span>
+          </td>
+          <td class="actions">
+            <button *ngIf="request.status === 'PENDING'" class="btn-approve" (click)="openApprovalModal(request)" title="Approve">
+              <i class="fas fa-check-circle"></i>
+            </button>
+            <button *ngIf="request.status === 'PENDING'" class="btn-reject" (click)="openRejectModal(request)" title="Reject">
+              <i class="fas fa-ban"></i>
+            </button>
+            <button class="btn-view" (click)="viewRequestDetails(request)" title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
     </div>
   </div>
 

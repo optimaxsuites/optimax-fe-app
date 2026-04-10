@@ -171,6 +171,24 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     return resolveLoanTotalRepayableAmount(loan);
   }
 
+  formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {
+    if (!loan) {
+      return '';
+    }
+
+    const rawCode = String(loan.loanCode || loan.id || '').trim();
+    if (!rawCode) {
+      return '';
+    }
+
+    return /^ADVLO-/i.test(rawCode) ? rawCode : `ADVLO-${rawCode}`;
+  }
+
+  getShortAdvanceLoanDisplayId(loan: LoanApplication | undefined | null, maxLength = 14): string {
+    const displayId = this.formatAdvanceLoanDisplayId(loan);
+    return displayId.length > maxLength ? `${displayId.slice(0, maxLength)}...` : displayId;
+  }
+
   private sortLoansByRecent(loans: LoanApplication[]): LoanApplication[] {
     return [...loans].sort((a, b) => {
       const timestampA = new Date(a.requestDate).getTime();
@@ -862,10 +880,10 @@ getStatusDisplay(status: string): string {
         (loan.statusHistory || [])
           .filter(item => item.status !== 'PENDING')
           .map(item => ({
-            loanId: loan.id,
+            loanId: this.formatAdvanceLoanDisplayId(loan),
             status: item.status,
             changedAt: item.changedAt,
-            message: item.notes || `Loan ${loan.loanCode} status updated to ${item.status}.`
+            message: item.notes || `Loan ${this.formatAdvanceLoanDisplayId(loan)} status updated to ${item.status}.`
           }))
       )
       .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())

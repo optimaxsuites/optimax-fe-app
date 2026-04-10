@@ -662,7 +662,49 @@
       font-size: 0.75rem;
       font-weight: 700;
 
-      @include loanStatus.advance-loan-status-badges(false);
+      @include loanStatus.advanceLoanStatusBadges(false);
+    }
+
+    .status-stack {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+    }
+
+    .lifecycle-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      max-width: 180px;
+    }
+
+    .lifecycle-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef7fa;
+      color: #2E6276;
+      border: 1px solid #d9e8ed;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .audit-note {
+      max-width: 220px;
+      color: #455a64;
+      font-size: 0.76rem;
+      line-height: 1.35;
+    }
+
+    .audit-meta {
+      color: #7a8f98;
+      font-size: 0.7rem;
+      line-height: 1.2;
     }
 
     .pagination-bar {

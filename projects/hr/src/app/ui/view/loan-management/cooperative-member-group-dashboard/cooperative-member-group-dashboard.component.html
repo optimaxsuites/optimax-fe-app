@@ -17,7 +17,7 @@
         <div class="welcome-block" *ngIf="currentMember as member">
           <div class="welcome-title">Welcome {{ currentMemberDisplayName }}</div>
           <div class="welcome-ids">
-            Employee Id: {{ member.employeeId || '—' }} |
+            Group Membership Id: {{ currentMembership?.id || '—' }} |
             Member Id: {{ member.memberId || '—' }}
           </div>
         </div>
@@ -195,30 +195,27 @@
         </div>
 
         <div class="monthly-snapshot-table" *ngIf="monthlyContributionSnapshotRows.length > 0; else noMonthlySnapshot">
-          <table appSortableTable>
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Member ID</th>
-                <th>Expected</th>
-                <th>Posted</th>
-                <th>Status</th>
-                <th>Posted On</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of monthlyContributionSnapshotRows">
-                <td>{{ row.memberName }}</td>
-                <td>{{ row.memberCode }}</td>
-                <td>{{ formatCurrency(row.expectedAmount) }}</td>
-                <td>{{ formatCurrency(row.postedAmount) }}</td>
-                <td>
-                  <span class="snapshot-status" [ngClass]="row.status.toLowerCase()">{{ row.status }}</span>
-                </td>
-                <td>{{ row.contributedAt ? (row.contributedAt | date:'mediumDate') : 'Not yet posted' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <app-table
+            [columns]="[
+              { header: 'Member' },
+              { header: 'Member ID' },
+              { header: 'Expected' },
+              { header: 'Posted' },
+              { header: 'Status' },
+              { header: 'Posted On' }
+            ]"
+            [rows]="monthlyContributionSnapshotRows">
+            <ng-template appTableBody let-row>
+              <td>{{ row.memberName }}</td>
+              <td>{{ row.memberCode }}</td>
+              <td>{{ formatCurrency(row.expectedAmount) }}</td>
+              <td>{{ formatCurrency(row.postedAmount) }}</td>
+              <td>
+                <span class="snapshot-status" [ngClass]="row.status.toLowerCase()">{{ row.status }}</span>
+              </td>
+              <td>{{ row.contributedAt ? (row.contributedAt | date:'mediumDate') : 'Not yet posted' }}</td>
+            </ng-template>
+          </app-table>
         </div>
 
         <ng-template #noMonthlySnapshot>
@@ -255,6 +252,39 @@
     </div>
 
     <div class="dashboard-grid">
+      <div class="card span-2">
+        <div class="card-header">
+          <h2>Group Member Directory</h2>
+          <button type="button" class="secondary-button directory-launch" (click)="openMemberDirectoryModal()">
+            <i class="fas fa-table-columns"></i>
+            Open Directory
+          </button>
+        </div>
+
+        <p class="directory-card-copy">Open the member directory in a side panel to search the roster and jump to member profiles without crowding the main dashboard.</p>
+        <p class="directory-results">{{ groupMemberRosterRows.length }} member{{ groupMemberRosterRows.length === 1 ? '' : 's' }} in this group</p>
+
+        <div class="directory-preview-list" *ngIf="previewGroupMemberRosterRows.length > 0; else emptyDirectoryPreview">
+          <button
+            *ngFor="let row of previewGroupMemberRosterRows"
+            type="button"
+            class="directory-preview-item"
+            (click)="viewMemberProfile(row.memberRecordId)">
+            <div>
+              <strong>{{ row.memberName }}</strong>
+              <span>Membership ID {{ row.membershipId }}</span>
+            </div>
+            <small>{{ row.joinedAt ? (row.joinedAt | date:'mediumDate') : 'Joined date unavailable' }}</small>
+          </button>
+        </div>
+
+        <ng-template #emptyDirectoryPreview>
+          <div class="empty-state">
+            <p>No members have joined this group yet.</p>
+          </div>
+        </ng-template>
+      </div>
+
       <div class="card span-2">
         <div class="card-header">
           <h2>Contribution Roster</h2>
@@ -302,6 +332,70 @@
       </div>
     </div>
   </div>
+
+  <app-side-modal *ngIf="showMemberDirectoryModal" (close)="closeMemberDirectoryModal()">
+    <div class="member-directory-panel">
+      <div class="member-directory-panel-head">
+        <div>
+          <span class="eyebrow">Group Member Directory</span>
+          <h2>{{ group?.name || 'Group Members' }}</h2>
+          <p class="member-directory-panel-copy">A side modal looks better here than a centered modal because the table keeps usable width while the rest of the dashboard remains visually in context.</p>
+        </div>
+        <button type="button" class="close-button" (click)="closeMemberDirectoryModal()" aria-label="Close member directory">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="directory-toolbar">
+        <label class="directory-search" for="group-member-directory-search">
+          <span>Find Member</span>
+          <input
+            id="group-member-directory-search"
+            type="search"
+            class="filter-input"
+            [(ngModel)]="memberDirectoryQuery"
+            placeholder="Search by name, member ID, or membership ID">
+        </label>
+        <button
+          *ngIf="memberDirectoryQuery"
+          type="button"
+          class="secondary-button directory-clear"
+          (click)="clearMemberDirectoryQuery()">
+          Clear
+        </button>
+      </div>
+
+      <p class="directory-results">
+        Showing {{ filteredGroupMemberRosterRows.length }} of {{ groupMemberRosterRows.length }} member{{ groupMemberRosterRows.length === 1 ? '' : 's' }}
+      </p>
+
+      <div class="member-directory-panel-table">
+        <app-table
+          [columns]="groupMemberRosterColumns"
+          [rows]="filteredGroupMemberRosterRows"
+          [striped]="true"
+          [compact]="true"
+          [emptyMessage]="memberDirectoryQuery ? 'No members match the current search.' : 'No members have joined this group yet.'">
+          <ng-template appTableBody let-row>
+            <td>{{ row.memberName }}</td>
+            <td>{{ row.memberCode }}</td>
+            <td>{{ row.membershipId }}</td>
+            <td>{{ row.joinedAt ? (row.joinedAt | date:'mediumDate') : '—' }}</td>
+            <td>
+              <button
+                type="button"
+                class="icon-btn"
+                (click)="viewMemberProfile(row.memberRecordId)"
+                title="View member profile"
+                aria-label="View member profile">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </ng-template>
+        </app-table>
+      </div>
+    </div>
+  </app-side-modal>
 
   <div class="modal-backdrop" *ngIf="isContributionModalOpen">
     <div class="contribution-modal" role="dialog" aria-modal="true" aria-labelledby="contribution-modal-title">

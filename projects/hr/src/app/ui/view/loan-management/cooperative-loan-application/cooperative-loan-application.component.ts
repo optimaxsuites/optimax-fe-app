@@ -1,18 +1,20 @@
 // Restore missing methods after cleanup
+import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
+import { forkJoin, of } from 'rxjs';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
-import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CooperativeMember, CooperativeLoanGroup, CooperativeGroupMembership, CooperativeEmployeeProfile, CooperativeMembershipEligibility } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { Message } from 'primeng/api';
 import { CooperativeLoanPurposeApiResponse } from '../../../service/loan/cooperative-loan/cooperative-loan-api.service';
+import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 
 @Component({
   selector: 'app-cooperative-loan-application',
@@ -22,6 +24,7 @@ import { CooperativeLoanPurposeApiResponse } from '../../../service/loan/coopera
 export class CooperativeLoanApplicationComponent implements OnInit {
   // Add messages property for p-messages component
   messages: Message[] = [];
+  supportingDocuments: LoanSupportingDocument[] = [];
 
   private isValidEmailCandidate(email: unknown): email is string {
     return typeof email === 'string'
@@ -141,6 +144,146 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   errorKeys(errors: any): string[] {
     if (!errors) return [];
     return Object.keys(errors);
+  }
+
+  get requiresSupportingDocuments(): boolean {
+    return Boolean(this.selectedPurposeDefinition?.requiresDocumentation);
+  }
+
+  get requiredDocumentationTypes(): string[] {
+    return this.selectedPurposeDefinition?.documentationTypes || [];
+  }
+
+  get hasDocumentRequirementGap(): boolean {
+    return this.requiresSupportingDocuments && this.supportingDocuments.length === 0;
+  }
+
+  get previewRepaymentSchedule(): RepaymentScheduleItem[] {
+    const amount = Number(this.applicationForm?.get('amount')?.value || 0);
+    const repaymentTime = Number(this.applicationForm?.get('repaymentTime')?.value || 0);
+    const modeOfPayment = String(this.applicationForm?.get('modeOfPayment')?.value || 'MONTHLY').toUpperCase();
+    const requestDateRaw = String(this.applicationForm?.get('requestDate')?.value || '').trim();
+    const baseDate = requestDateRaw ? new Date(requestDateRaw) : new Date();
+
+    if (!this.selectedGroup || amount <= 0 || repaymentTime <= 0 || Number.isNaN(baseDate.getTime())) {
+      return [];
+    }
+
+    if (modeOfPayment === 'ONE_OFF') {
+      const dueDate = new Date(baseDate);
+      dueDate.setMonth(dueDate.getMonth() + repaymentTime);
+      return [{
+        installmentNo: 1,
+        dueDate: dueDate.toISOString(),
+        principalAmount: amount,
+        interestAmount: this.totalInterest,
+        totalAmount: this.totalRepayment,
+        paidAmount: 0,
+        remainingBalance: this.totalRepayment,
+        status: 'PENDING'
+      }];
+    }
+
+    const principalPerInstallment = amount / repaymentTime;
+    const interestPerInstallment = this.totalInterest / repaymentTime;
+
+    return Array.from({ length: repaymentTime }, (_, index) => {
+      const dueDate = new Date(baseDate);
+      dueDate.setMonth(dueDate.getMonth() + index + 1);
+      const totalAmount = Number((principalPerInstallment + interestPerInstallment).toFixed(2));
+      const remainingBalance = Math.max(Number((this.totalRepayment - totalAmount * (index + 1)).toFixed(2)), 0);
+
+      return {
+        installmentNo: index + 1,
+        dueDate: dueDate.toISOString(),
+        principalAmount: Number(principalPerInstallment.toFixed(2)),
+        interestAmount: Number(interestPerInstallment.toFixed(2)),
+        totalAmount,
+        paidAmount: 0,
+        remainingBalance,
+        status: 'PENDING' as const
+      };
+    });
+  }
+
+  get workflowTimelinePreview(): Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> {
+    const steps: Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> = [{
+      title: 'Application Submitted',
+      description: 'The loan request is created with your selected group, purpose, and financial terms.',
+      tone: 'accent'
+    }];
+
+    if (this.selectedGroup?.requiresGuarantors) {
+      steps.push({
+        title: 'Guarantor Review',
+        description: `At least ${this.requiredGuarantorCount || 1} guarantor approval${(this.requiredGuarantorCount || 1) > 1 ? 's are' : ' is'} required before admin review.`,
+        tone: 'neutral'
+      });
+    }
+
+    steps.push(
+      {
+        title: 'Admin Review',
+        description: 'Cooperative admins validate the request, policy fit, and attached supporting evidence.',
+        tone: 'neutral'
+      },
+      {
+        title: 'Disbursement Routing',
+        description: 'Approved requests move into the cooperative disbursement workflow for accounting action.',
+        tone: 'neutral'
+      },
+      {
+        title: 'Repayment Monitoring',
+        description: 'Once disbursed, repayment entries, reminders, grace handling, and status changes are tracked over time.',
+        tone: 'success'
+      }
+    );
+
+    return steps;
+  }
+
+  buildMailLink(email?: string): string | null {
+    const text = String(email || '').trim();
+    return text ? `mailto:${text}` : null;
+  }
+
+  getSelectedGroupAccountingEmail(): string {
+    return String(this.selectedGroup?.accountingEmail || '').trim();
+  }
+
+  onDocumentsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files?.length) {
+      return;
+    }
+
+    const selectedDocuments: LoanSupportingDocument[] = Array.from(files).map((file) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type || 'application/octet-stream',
+      uploadedAt: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
+    }));
+
+    this.supportingDocuments = [...this.supportingDocuments, ...selectedDocuments];
+    input.value = '';
+  }
+
+  removeDocument(index: number): void {
+    this.supportingDocuments = this.supportingDocuments.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  getDocumentSizeLabel(size: number): string {
+    if (!Number.isFinite(size) || size <= 0) {
+      return 'Unknown size';
+    }
+    if (size < 1024) {
+      return `${size} B`;
+    }
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
   
   // Utility to format currency
@@ -336,23 +479,23 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   loadData(): void {
-    this.cooperativeService.loadLoanPurposes().subscribe((purposes) => {
+    forkJoin({
+      purposes: this.cooperativeService.loadLoanPurposes(),
+      members: this.cooperativeService.getMembers(),
+      groups: this.cooperativeService.loadGroups()
+    }).subscribe(({ purposes, members, groups }: { purposes: CooperativeLoanPurposeApiResponse[]; members: CooperativeMember[]; groups: CooperativeLoanGroup[] }) => {
       this.availablePurposes = purposes;
       const selectedPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
       if (selectedPurpose && !this.availablePurposes.some((purpose) => purpose.name === selectedPurpose)) {
         this.applicationForm.patchValue({ purpose: '' }, { emitEvent: false });
       }
-    });
 
-    this.cooperativeService.getMembers().subscribe((members: CooperativeMember[]) => {
       this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
-      this.cooperativeService.loadGroups().subscribe((groups: CooperativeLoanGroup[]) => {
-        this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
-        this.refreshEligibleMembers();
-        this.tryApplyPrefillMember();
-        this.resolveSelectedMemberEligibility();
-        this.refreshQualifiedGroups();
-      });
+      this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
+      this.refreshEligibleMembers();
+      this.tryApplyPrefillMember();
+      this.resolveSelectedMemberEligibility();
+      this.refreshQualifiedGroups();
     });
   }
 
@@ -429,7 +572,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       this.validateGuarantors();
     });
 
-    this.applicationForm.get('duration')?.valueChanges.subscribe(() => {
+    this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
       this.calculateRepayment();
     });
 
@@ -672,6 +815,11 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return false;
     }
 
+    if (this.requiresSupportingDocuments && this.supportingDocuments.length === 0) {
+      this.submitError = 'Upload the required supporting document(s) before submitting this cooperative loan request.';
+      return false;
+    }
+
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
     this.validateGuarantors();
@@ -784,7 +932,21 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       status: 'PENDING' as const,
       applicationStage,
       applicationDate: requestDate,
-      guarantors
+      guarantors,
+      supportingDocuments: this.supportingDocuments,
+      statusHistory: [{
+        id: 0,
+        status: 'PENDING',
+        changedAt: requestDate,
+        changedBy: Number(sessionStorage.getItem('userid') || 0) || 0,
+        notes: this.selectedGroup?.requiresGuarantors
+          ? 'Application submitted and awaiting guarantor approval.'
+          : 'Application submitted and routed for admin review.',
+        overrideOpen: false,
+        overrideBy: 0,
+        overrideReason: '',
+        statusBeforeOverride: ''
+      }]
     };
     this.cooperativeService.addLoan(newLoan as any).subscribe({
       next: () => {
@@ -793,6 +955,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           : 'Application submitted successfully and sent for admin review.';
         this.showConfirmation = false;
         this.isSubmitting = false;
+        this.supportingDocuments = [];
         setTimeout(() => {
           if (this.isModal) {
             this.applicationSubmitted.emit();

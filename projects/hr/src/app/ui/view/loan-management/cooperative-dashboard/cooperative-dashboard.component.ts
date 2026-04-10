@@ -19,6 +19,7 @@ import { EmployeeService } from '../../../service/employee.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 import { CooperativeMembershipApplicationsComponent } from '../cooperative-membership-applications/cooperative-membership-applications.component';
+import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
 
 interface DashboardActivity {
   icon: string;
@@ -157,7 +158,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     this.stats = this.cooperativeService.getStats();
     this.loadDashboard();
-    this.loadEmployeeDirectory();
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -218,8 +218,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       loans: this.cooperativeService.getLoans(),
       members: this.cooperativeService.getMembers(),
       memberships: this.cooperativeService.loadGroupMemberships(),
-      contributions: this.cooperativeService.loadContributionEntries()
-    }).subscribe(({ groups, loans, members }: { groups: any; loans: CooperativeLoan[]; members: CooperativeMember[] }) => {
+      contributions: this.cooperativeService.loadContributionEntries(),
+      employees: this.employeeService.getAllEmployee()
+    }).subscribe({
+      next: ({ loans, members, employees }: { groups: any; loans: CooperativeLoan[]; members: CooperativeMember[]; memberships: any; contributions: any; employees: any[] }) => {
       // Groups
       // (groups are loaded for side effects, no assignment needed here)
 
@@ -241,11 +243,31 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
         .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
         .slice(0, 5);
 
+      const rawEmployees = Array.isArray(employees) ? employees : [];
+      this.employeeDirectory = rawEmployees
+        .map((employee: any) => this.mapEmployeeToProfile(employee))
+        .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
+
       // Dependent refreshes
+      this.stats = this.cooperativeService.getStats();
       this.loadRecentGroupJoinApplications();
       this.refreshDashboardSignals();
       this.refreshInviteCandidates();
       this.isLoading = false;
+      },
+      error: () => {
+        this.allLoans = [];
+        this.allMembers = [];
+        this.recentLoans = [];
+        this.pendingApprovals = [];
+        this.recentMembers = [];
+        this.employeeDirectory = [];
+        this.stats = this.cooperativeService.getStats();
+        this.loadRecentGroupJoinApplications();
+        this.refreshDashboardSignals();
+        this.refreshInviteCandidates();
+        this.isLoading = false;
+      }
     });
   }
 
@@ -408,9 +430,18 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateTo(path: string): void {
+    if (path === 'loans') {
+      this.reviewPendingApprovals();
+      return;
+    }
+
     this.router.navigate([`/admin/hr/cooperative/${path}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });
+  }
+
+  openMembersList(): void {
+    this.navigateTo('members');
   }
 
   viewMember(id: number): void {
@@ -540,7 +571,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   openCooperativeApprovalForm(loan: CooperativeLoan): void {
     this.closeLoanSummaryModal();
     this.router.navigate([`/admin/hr/cooperative/loans/${loan.id}/${this.currentUuid}`], {
-      queryParams: { dashboard: 'cooperative' }
+      queryParams: { dashboard: 'cooperative', mode: 'review' }
     });
   }
 
@@ -552,23 +583,180 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   reviewPendingApprovals(): void {
-    this.manageLoans();
+    this.router.navigate(['/admin/hr/cooperative/loan-approval', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   disburseLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+    this.router.navigate(['/admin/hr/cooperative/loan-disbursement', this.currentUuid], {
       queryParams: { status: 'APPROVED', mode: 'disburse', dashboard: 'cooperative' }
     });
   }
 
+  openReports(): void {
+    this.router.navigate(['/admin/hr/cooperative/reports', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
+  }
+
   reviewDefaultedLoans(): void {
-    this.manageLoans();
+    this.router.navigate(['/admin/hr/cooperative/loan-approval', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative', status: 'DEFAULTED' }
+    });
   }
 
   manageLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
+    this.router.navigate(['/admin/hr/cooperative/loan-approval', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
+  }
+
+  getSelectedLoanGroupCode(): string {
+    const loan = this.selectedLoanForSummary;
+    if (!loan) {
+      return 'N/A';
+    }
+
+    const groupId = this.getLoanGroupId(loan);
+    return groupId ? this.cooperativeService.getGroupById(Number(groupId))?.code || 'N/A' : 'N/A';
+  }
+
+  getSelectedLoanRepayments(loan: CooperativeLoan): CooperativeRepayment[] {
+    return this.cooperativeService.getRepaymentsByLoanId(loan.id);
+  }
+
+  getPreviewLifecycleStageFields(loan: CooperativeLoan): Array<{ label: string; value: string }> {
+    return [
+      { label: 'Applied On', value: this.formatPreviewDate(loan.requestDate || loan.applicationDate) },
+      { label: 'Approved On', value: this.formatPreviewDate(loan.approvedDate) },
+      { label: 'Disbursed On', value: this.formatPreviewDate(loan.disbursedDate) },
+      { label: 'Repayment Start', value: this.formatPreviewDate(loan.repaymentStartDate) }
+    ];
+  }
+
+  formatPreviewDate(dateValue?: string): string {
+    if (!dateValue) {
+      return 'N/A';
+    }
+
+    return new Date(dateValue).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  getPreviewStatusClass(status?: string): string {
+    return `status-${String(status || 'pending').toLowerCase()}`;
+  }
+
+  getPreviewAmountPaid(loan: CooperativeLoan): number {
+    return Number(loan.totalPaid || 0);
+  }
+
+  getPreviewOutstandingBalance(loan: CooperativeLoan): number {
+    return Number(loan.outstandingBalance || loan.outstandingPrincipal || Math.max(Number(loan.totalRepayment || loan.totalRepayable || 0) - Number(loan.totalPaid || 0), 0));
+  }
+
+  getPreviewLateFeesTotal(loan: CooperativeLoan): number {
+    return Number(loan.totalLateFeesAccrued || 0);
+  }
+
+  getPreviewOverdueInstallmentsCount(loan: CooperativeLoan): number {
+    return this.getSelectedLoanRepayments(loan).filter((repayment) => repayment.status === 'OVERDUE').length;
+  }
+
+  getPreviewSkippedInstallmentsCount(loan: CooperativeLoan): number {
+    return this.getSelectedLoanRepayments(loan).filter((repayment) => repayment.status === 'SKIPPED').length;
+  }
+
+  hasPreviewBeenDisbursed(loan: CooperativeLoan): boolean {
+    return !!loan.disbursedDate || ['ACTIVE', 'OVERDUE', 'SKIPPED', 'PAUSED', 'DEFAULTED', 'COMPLETED'].includes(loan.status || '');
+  }
+
+  getPreviewProgressPercentage(loan: CooperativeLoan): number {
+    const totalRepayable = Number(loan.totalRepayment || loan.totalRepayable || 0);
+    if (!totalRepayable) {
+      return 0;
+    }
+
+    return Math.min((Number(loan.totalPaid || 0) / totalRepayable) * 100, 100);
+  }
+
+  getPreviewPaidInstallmentsCount(loan: CooperativeLoan): number {
+    return this.getSelectedLoanRepayments(loan).filter((repayment) => repayment.status === 'PAID').length;
+  }
+
+  getPreviewTotalInstallmentsCount(loan: CooperativeLoan): number {
+    return this.getSelectedLoanRepayments(loan).length;
+  }
+
+  getPreviewRepaymentStatusTitle(loan: CooperativeLoan): string {
+    if (loan.status === 'PAUSED') {
+      return 'Repayment Paused';
+    }
+    if (loan.status === 'DEFAULTED') {
+      return 'Defaulted';
+    }
+    if (loan.status === 'OVERDUE') {
+      return 'Overdue';
+    }
+    if (loan.status === 'SKIPPED') {
+      return 'Grace Shift Active';
+    }
+    if (loan.status === 'COMPLETED') {
+      return 'Completed';
+    }
+    return this.hasPreviewBeenDisbursed(loan) ? 'Repayment Active' : 'Awaiting Disbursement';
+  }
+
+  getPreviewAdminFeedback(loan: CooperativeLoan): StatusHistory | null {
+    const timelineComment = [...(loan.statusHistory || [])]
+      .filter((item) => !!item?.notes)
+      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0];
+
+    return timelineComment || null;
+  }
+
+  getLifecycleInstallmentsPreview(loan: CooperativeLoan): CooperativeRepayment[] {
+    return this.getSelectedLoanRepayments(loan).slice(0, 6);
+  }
+
+  getInstallmentLifecycleLabel(item: CooperativeRepayment): string {
+    if (item.status === 'PAID') {
+      return 'Paid';
+    }
+    if (item.status === 'OVERDUE') {
+      return 'Overdue';
+    }
+    if (item.status === 'SKIPPED') {
+      return 'Skipped';
+    }
+    return 'Upcoming';
+  }
+
+  getSelectedLoanPaymentHistory(loan: CooperativeLoan): PaymentHistory[] {
+    return [...(loan.paymentHistory || [])]
+      .sort((left, right) => new Date(right.paidAt || right.recordedAt || 0).getTime() - new Date(left.paidAt || left.recordedAt || 0).getTime())
+      .slice(0, 4);
+  }
+
+  getPaymentMethodLabel(method?: string): string {
+    switch (String(method || '').toUpperCase()) {
+      case 'BANK_TRANSFER':
+        return 'Bank Transfer';
+      case 'CASH':
+        return 'Cash';
+      case 'PAYROLL_DEDUCTION':
+        return 'Payroll Deduction';
+      case 'CHEQUE':
+        return 'Cheque';
+      case 'MOBILE_MONEY':
+        return 'Mobile Money';
+      default:
+        return method || 'Not set';
+    }
   }
 
   openPurposeManagement(): void {
@@ -880,26 +1068,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       })
       .sort((a: any, b: any) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
       .slice(0, 5);
-  }
-
-  private loadEmployeeDirectory(): void {
-    this.employeeService.getAllEmployee().subscribe({
-      next: (data) => {
-        const rawEmployees = Array.isArray(data)
-          ? data : []
-          
-
-        this.employeeDirectory = rawEmployees
-          .map((employee: any) => this.mapEmployeeToProfile(employee))
-          .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
-
-        this.refreshInviteCandidates();
-      },
-      error: () => {
-        this.employeeDirectory = [];
-        this.refreshInviteCandidates();
-      }
-    });
   }
 
   private refreshInviteCandidates(): void {

@@ -21,15 +21,14 @@ import type {
   CooperativeGroupMembershipHistoryApiPayload,
   CooperativeLoanApiAuditUser,
   CooperativeLoanPurposeApiResponse,
-  CooperativeLoanGuarantorApiPayload,
-  CooperativeLoanDisbursementConfirmationApiPayload
+  CooperativeLoanGuarantorApiPayload
 } from './cooperative-loan-api.service';
 import type { CooperativeNotificationContext } from './cooperative-notification.service';
 import type { CooperativeRepaymentContext } from './cooperative-repayment.service';
 
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError, switchMap, finalize, shareReplay } from 'rxjs/operators';
 import {
   CooperativeMember,
   CooperativeLoanGroup,
@@ -48,13 +47,22 @@ import { PendingMembershipApplication, CooperativeMembershipContext } from './co
 import { CooperativeMembershipService } from './cooperative-membership.service';
 import { CooperativeNotificationService } from './cooperative-notification.service';
 import { CooperativeLoanApiService } from './cooperative-loan-api.service';
+import {
+  CooperativeDisbursementConfirmationService,
+  CreateCooperativeDisbursementPayload,
+  CooperativeDisbursementConfirmation
+} from './cooperative-disbursement-confirmation.service';
 import { CooperativeGroupService, CooperativeGroupContext } from './cooperative-group.service';
+import { CooperativePaymentRecordService } from './cooperative-payment-record.service';
 import { CooperativeRepaymentService } from './cooperative-repayment.service';
 import { LoanStatusNotificationService } from '../loan-status-notification.service';
 import { EmployeeService } from '../../employee.service';
+import { LoanSupportingDocument } from '../loan.types';
 
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
+  private readonly collectionCacheTtlMs = 30_000;
+
   private saveToStorage(): void {
     // Cooperative state is intentionally not persisted locally.
   }
@@ -67,13 +75,12 @@ export class CooperativeService {
   private readonly cooperativeMembershipService = inject(CooperativeMembershipService);
   private readonly cooperativeNotificationService = inject(CooperativeNotificationService);
   private readonly cooperativeLoanApiService = inject(CooperativeLoanApiService);
+  private readonly cooperativeDisbursementConfirmationService = inject(CooperativeDisbursementConfirmationService);
   private readonly cooperativeGroupService = inject(CooperativeGroupService);
+  private readonly cooperativePaymentRecordService = inject(CooperativePaymentRecordService);
   private readonly cooperativeRepaymentService = inject(CooperativeRepaymentService);
   private readonly loanStatusNotificationService = inject(LoanStatusNotificationService);
   private readonly employeeService = inject(EmployeeService);
-  private storageKey = 'cooperative_data';
-  private readonly dashboardTestingResetKey = `${this.storageKey}_dashboard_testing_reset_v1`;
-  private readonly skipGroupMembershipSeedKey = `${this.storageKey}_skip_group_membership_seed`;
   private readonly repaymentDueDay = 15;
   private readonly repaymentGraceDays = 5;
   private readonly repaymentOverdueDays = 15;
@@ -91,9 +98,7 @@ export class CooperativeService {
   private notifications: CooperativeNotification[] = [];
   private pendingMembershipApplications: PendingMembershipApplication[] = [];
 
-  constructor() {
-    localStorage.removeItem(this.storageKey);
-  }
+  constructor() {}
 
   private membersSubject = new BehaviorSubject<CooperativeMember[]>([]);
   private loansSubject = new BehaviorSubject<CooperativeLoan[]>([]);
@@ -104,8 +109,42 @@ export class CooperativeService {
   private groupMembershipApiRecords: Record<string, CooperativeGroupMembershipApiResponse> = {};
   private contributionApiRecords: Record<string, CooperativeContributionHistoryApiResponse> = {};
   private memberNameLookupInFlight = new Set<number>();
+  private membersLoadedAt = 0;
+  private groupsLoadedAt = 0;
+  private groupMembershipsLoadedAt = 0;
+  private contributionEntriesLoadedAt = 0;
+  private loansLoadedAt = 0;
+  private membersRequest$?: Observable<CooperativeMember[]>;
+  private groupsRequest$?: Observable<CooperativeLoanGroup[]>;
+  private groupMembershipsRequest$?: Observable<CooperativeGroupMembership[]>;
+  private contributionEntriesRequest$?: Observable<CooperativeContributionEntry[]>;
+  private loansRequest$?: Observable<CooperativeLoan[]>;
 
   usingRealApiData = true;
+
+  private hasFreshCache(loadedAt: number): boolean {
+    return loadedAt > 0 && (Date.now() - loadedAt) < this.collectionCacheTtlMs;
+  }
+
+  private markMembersCacheFresh(): void {
+    this.membersLoadedAt = Date.now();
+  }
+
+  private markGroupsCacheFresh(): void {
+    this.groupsLoadedAt = Date.now();
+  }
+
+  private markGroupMembershipsCacheFresh(): void {
+    this.groupMembershipsLoadedAt = Date.now();
+  }
+
+  private markContributionEntriesCacheFresh(): void {
+    this.contributionEntriesLoadedAt = Date.now();
+  }
+
+  private markLoansCacheFresh(): void {
+    this.loansLoadedAt = Date.now();
+  }
 
   private publishState(): void {
     this.membersSubject.next([...this.members]);
@@ -309,11 +348,19 @@ export class CooperativeService {
   // ==================== MEMBER METHODS ====================
 
   public getMembers(): Observable<CooperativeMember[]> {
+    if (this.hasFreshCache(this.membersLoadedAt)) {
+      return of([...this.members]);
+    }
+
+    if (this.membersRequest$) {
+      return this.membersRequest$;
+    }
+
     this.debugTokenStatus();
     this.checkUserPermissions();
     console.log('=== Getting members from API ===');
 
-    return this.cooperativeLoanApiService.getAllMembers().pipe(
+    this.membersRequest$ = this.cooperativeLoanApiService.getAllMembers().pipe(
       switchMap((rawMembers) => {
         console.log('Raw members from API:', rawMembers);
         
@@ -326,6 +373,7 @@ export class CooperativeService {
         if (!rawMembers || rawMembers.length === 0) {
           console.log('No members found in backend. This is normal if you haven\'t applied for membership yet.');
           this.usingRealApiData = true;
+          this.syncMemberCache([], []);
           return of([] as CooperativeMember[]);
         }
 
@@ -349,8 +397,14 @@ export class CooperativeService {
         console.error('Failed to load cooperative members from backend:', error);
         this.usingRealApiData = false;
         return throwError(() => error);
-      })
+      }),
+      finalize(() => {
+        this.membersRequest$ = undefined;
+      }),
+      shareReplay(1)
     );
+
+    return this.membersRequest$;
   }
 
   public getMembersObservable(): Observable<CooperativeMember[]> {
@@ -568,8 +622,16 @@ export class CooperativeService {
   // ==================== GROUP METHODS ====================
 
   public loadGroups(): Observable<CooperativeLoanGroup[]> {
+    if (this.hasFreshCache(this.groupsLoadedAt)) {
+      return of([...this.groups]);
+    }
+
+    if (this.groupsRequest$) {
+      return this.groupsRequest$;
+    }
+
     console.log('[CooperativeService] Loading groups from backend');
-    return this.cooperativeGroupService.getAllCooperativeGroups().pipe(
+    this.groupsRequest$ = this.cooperativeGroupService.getAllCooperativeGroups().pipe(
       map((rawGroups) => {
         console.log('[CooperativeService] Raw groups from API:', rawGroups);
         if (rawGroups && (rawGroups as any).error) {
@@ -579,6 +641,7 @@ export class CooperativeService {
         }
         if (!rawGroups || rawGroups.length === 0) {
           console.warn('[CooperativeService] No groups found in backend.');
+          this.syncGroupCache([], []);
           return [];
         }
         this.usingRealApiData = true;
@@ -591,8 +654,14 @@ export class CooperativeService {
         console.error('[CooperativeService] Failed to load cooperative groups:', error);
         this.usingRealApiData = false;
         return throwError(() => error);
-      })
+      }),
+      finalize(() => {
+        this.groupsRequest$ = undefined;
+      }),
+      shareReplay(1)
     );
+
+    return this.groupsRequest$;
   }
 
   public loadGroupById(id: number): Observable<CooperativeLoanGroup | undefined> {
@@ -764,7 +833,15 @@ export class CooperativeService {
   // ==================== GROUP MEMBERSHIP METHODS ====================
 
   public loadGroupMemberships(): Observable<CooperativeGroupMembership[]> {
-    return this.cooperativeLoanApiService.getAllGroupMemberships().pipe(
+    if (this.hasFreshCache(this.groupMembershipsLoadedAt)) {
+      return of(this.getGroupMemberships());
+    }
+
+    if (this.groupMembershipsRequest$) {
+      return this.groupMembershipsRequest$;
+    }
+
+    this.groupMembershipsRequest$ = this.cooperativeLoanApiService.getAllGroupMemberships().pipe(
       map((rawMemberships) => {
         const memberships = rawMemberships.map((membership) => this.mapApiGroupMembershipToMembership(membership));
         this.syncGroupMembershipCache(memberships, rawMemberships);
@@ -773,12 +850,22 @@ export class CooperativeService {
       catchError((error) => {
         console.error('Failed to load cooperative group memberships', error);
         return of(this.getGroupMemberships());
-      })
+      }),
+      finalize(() => {
+        this.groupMembershipsRequest$ = undefined;
+      }),
+      shareReplay(1)
     );
+
+    return this.groupMembershipsRequest$;
   }
 
   public loadGroupMembershipsByMember(memberId: number): Observable<CooperativeGroupMembership[]> {
     if (!Number.isFinite(memberId)) {
+      return of(this.getGroupMembershipsByMember(memberId));
+    }
+
+    if (this.hasFreshCache(this.groupMembershipsLoadedAt)) {
       return of(this.getGroupMembershipsByMember(memberId));
     }
 
@@ -807,6 +894,10 @@ export class CooperativeService {
       Number(member.memberId || 0),
       Number(member.employeeId || 0)
     ].filter((value) => Number.isFinite(value) && value > 0)));
+
+    if (this.hasFreshCache(this.groupMembershipsLoadedAt)) {
+      return of(this.groupMemberships.filter((item) => candidateIds.includes(Number(item.memberId || 0))).map((item) => ({ ...item })));
+    }
 
     const tryLoad = (index: number): Observable<CooperativeGroupMembership[]> => {
       if (index >= candidateIds.length) {
@@ -998,7 +1089,15 @@ export class CooperativeService {
   }
 
   public loadContributionEntries(): Observable<CooperativeContributionEntry[]> {
-    return this.cooperativeLoanApiService.getAllContributionHistories().pipe(
+    if (this.hasFreshCache(this.contributionEntriesLoadedAt)) {
+      return of([...this.contributionEntries]);
+    }
+
+    if (this.contributionEntriesRequest$) {
+      return this.contributionEntriesRequest$;
+    }
+
+    this.contributionEntriesRequest$ = this.cooperativeLoanApiService.getAllContributionHistories().pipe(
       map((rawEntries) => {
         const entries = rawEntries.map((entry) => this.mapApiContributionEntryToLocal(entry));
         this.syncContributionCache(entries, rawEntries);
@@ -1009,8 +1108,14 @@ export class CooperativeService {
         console.error('Failed to load cooperative contribution histories', error);
         this.reconcilePendingContributionRequests();
         return of([...this.contributionEntries]);
-      })
+      }),
+      finalize(() => {
+        this.contributionEntriesRequest$ = undefined;
+      }),
+      shareReplay(1)
     );
+
+    return this.contributionEntriesRequest$;
   }
 
   public getPendingContributionRequestsByGroup(groupId: number): CooperativePendingContributionRequest[] {
@@ -1213,10 +1318,19 @@ export class CooperativeService {
   // ==================== LOAN METHODS ====================
 
   public getLoans(): Observable<CooperativeLoan[]> {
-    return this.cooperativeLoanApiService.getAllLoans().pipe(
+    if (this.hasFreshCache(this.loansLoadedAt)) {
+      return of([...this.loans]);
+    }
+
+    if (this.loansRequest$) {
+      return this.loansRequest$;
+    }
+
+    this.loansRequest$ = this.cooperativeLoanApiService.getAllLoans().pipe(
       map((rawLoans) => {
         if (rawLoans && (rawLoans as any).error) {
           console.warn('API returned error for loans:', (rawLoans as any).error);
+          this.syncLoanCache([]);
           return [];
         }
         this.mergeLoanReferenceData(rawLoans);
@@ -1227,8 +1341,14 @@ export class CooperativeService {
       catchError((error) => {
         console.error('Failed to load cooperative loans', error);
         return of([]);
-      })
+      }),
+      finalize(() => {
+        this.loansRequest$ = undefined;
+      }),
+      shareReplay(1)
     );
+
+    return this.loansRequest$;
   }
 
   public getLoansObservable(): Observable<CooperativeLoan[]> {
@@ -1311,6 +1431,156 @@ export class CooperativeService {
     );
   }
 
+  public approveLoanWithTerms(
+    id: number,
+    options: { repaymentDay?: number; repaymentStartDate?: string; adminComment?: string; interestRate?: number }
+  ): Observable<CooperativeLoan | undefined> {
+    return this.loadLoanById(id).pipe(
+      switchMap((loan) => {
+        if (!loan || loan.status !== 'PENDING') {
+          return of(undefined);
+        }
+        const previousStatus = loan.status;
+        const previousStage = loan.applicationStage;
+        loan.status = 'APPROVED';
+        loan.approvedDate = new Date().toISOString();
+        (loan as any).fundsReserved = true;
+        if (options.interestRate != null)    loan.interestRate      = options.interestRate;
+        if (options.repaymentDay)      loan.repaymentDay      = options.repaymentDay;
+        if (options.repaymentStartDate) loan.repaymentStartDate = options.repaymentStartDate;
+        if (options.adminComment)       loan.adminComment       = options.adminComment;
+        loan.updatedAt = new Date().toISOString();
+        this.appendLoanStatusHistory(loan, 'APPROVED', options.adminComment || 'Loan approved and funds reserved for disbursement.');
+        return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
+      })
+    );
+  }
+
+  public sendLoanToAccountingForDisbursement(
+    id: number,
+    options?: {
+      accountingEmail?: string;
+      disbursementInstructionReference?: string;
+      disbursementReference?: string;
+      paymentMethod?: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION';
+      notes?: string;
+    }
+  ): Observable<CooperativeLoan | undefined> {
+    return this.loadLoanById(id).pipe(
+      switchMap((loan) => {
+        if (!loan || loan.status !== 'APPROVED') {
+          return of(undefined);
+        }
+
+        return this.loadGroups().pipe(
+          switchMap((groups) => {
+            const groupId = Number(loan.groupId || loan.cooperativeGroupId || 0);
+            const group = groups.find((item) => Number(item.id) === groupId);
+            const previousStatus = loan.status;
+            const previousStage = loan.applicationStage;
+            const initiatedAt = new Date().toISOString();
+            const auditUserId = this.getCurrentAuditUserId();
+            const instructionReference = options?.disbursementInstructionReference
+              || loan.disbursementInstructionLoanReference
+              || loan.loanCode
+              || `COOP-${loan.id}`;
+            const disbursementReference = options?.disbursementReference
+              || loan.disbursementReference
+              || `PENDING-${instructionReference}`;
+            const workflowNote = options?.notes?.trim() || 'Loan sent to accounting for disbursement.';
+            const paymentMethod = options?.paymentMethod || 'BANK_TRANSFER';
+            const memberId = Number(loan.memberId || loan.cooperativeMemberId || 0) || undefined;
+            const groupMembershipId = Number(loan.membershipId || 0) || undefined;
+            const groupName = String(group?.name || '').trim() || undefined;
+
+            loan.status = 'READY_FOR_DISBURSEMENT';
+            loan.applicationStage = 'READY_FOR_DISBURSEMENT';
+            loan.disbursementInitiatedAt = initiatedAt;
+            loan.disbursementInitiatedBy = auditUserId;
+            loan.disbursementInstructionLoanReference = instructionReference;
+            loan.disbursementReference = disbursementReference;
+            loan.updatedAt = initiatedAt;
+            loan.adminComment = options?.notes?.trim()
+              ? `${loan.adminComment ? `${loan.adminComment}\n` : ''}Accounting note: ${options.notes.trim()}`
+              : loan.adminComment;
+
+            this.appendLoanStatusHistory(loan, 'READY_FOR_DISBURSEMENT', workflowNote, initiatedAt);
+
+            return this.cooperativeDisbursementConfirmationService.getConfirmationByLoanId(loan.id).pipe(
+              switchMap((confirmation) => {
+                const confirmationPayload: Partial<CooperativeDisbursementConfirmation> = {
+                  loanId: loan.id,
+                  disbursedAmount: Number(loan.amount || 0),
+                  memberId,
+                  groupMembershipId,
+                  groupName,
+                  disbursementInstructionReference: instructionReference,
+                  disbursementReference,
+                  paymentMethod,
+                  notes: workflowNote
+                };
+
+                const persistConfirmation$ = confirmation?.id
+                  ? this.cooperativeDisbursementConfirmationService.updateConfirmation(confirmation.id, confirmationPayload)
+                  : this.cooperativeDisbursementConfirmationService.createConfirmation({
+                      loanId: loan.id,
+                      disbursedAmount: Number(loan.amount || 0),
+                      memberId,
+                      groupMembershipId,
+                      groupName,
+                      disbursementInstructionReference: instructionReference,
+                      disbursementReference,
+                      paymentMethod,
+                      notes: workflowNote
+                    } as CreateCooperativeDisbursementPayload);
+
+                return persistConfirmation$.pipe(
+                  switchMap(() => this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage)),
+                  switchMap((updatedLoan) => {
+                    const webhookPayload = {
+                      loanId: updatedLoan.id,
+                      loanCode: updatedLoan.loanCode,
+                      status: updatedLoan.status,
+                      amount: Number(updatedLoan.amount || 0),
+                      disbursementInstructionReference: updatedLoan.disbursementInstructionLoanReference,
+                      disbursementReference: updatedLoan.disbursementReference,
+                      disbursementInitiatedAt: updatedLoan.disbursementInitiatedAt,
+                      disbursementInitiatedBy: auditUserId,
+                      paymentMethod,
+                      accountingEmail: String(options?.accountingEmail || group?.accountingEmail || '').trim() || undefined,
+                      group: group ? {
+                        id: group.id,
+                        code: group.code,
+                        name: group.name,
+                        accountingEmail: group.accountingEmail,
+                        accountingWebhookUrl: group.accountingWebhookUrl,
+                        principalBankName: group.principalBankName,
+                        principalCollectionAccount: group.principalCollectionAccount,
+                        interestRate: group.interestRate,
+                        lateFeePercentage: group.lateFeePercentage,
+                        lateFeeGraceDays: group.lateFeeGraceDays
+                      } : undefined,
+                      memberId: updatedLoan.memberId || updatedLoan.cooperativeMemberId,
+                      membershipId: updatedLoan.membershipId,
+                      notes: workflowNote
+                    };
+
+                    return this.cooperativeDisbursementConfirmationService
+                      .notifyAccountingWebhook(group?.accountingWebhookUrl, webhookPayload)
+                      .pipe(
+                        catchError(() => of(null)),
+                        map(() => updatedLoan)
+                      );
+                  })
+                );
+              })
+            );
+          })
+        );
+      })
+    );
+  }
+
   public rejectLoan(id: number, reason: string): Observable<CooperativeLoan | undefined> {
     return this.loadLoanById(id).pipe(
       switchMap((loan) => {
@@ -1329,10 +1599,18 @@ export class CooperativeService {
     );
   }
 
-  public disburseLoan(id: number): Observable<CooperativeLoan | undefined> {
+  public disburseLoan(
+    id: number,
+    options?: {
+      disbursedAmount?: number;
+      disbursementReference?: string;
+      paymentMethod?: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION';
+      notes?: string;
+    }
+  ): Observable<CooperativeLoan | undefined> {
     return this.loadLoanById(id).pipe(
       switchMap((loan) => {
-        if (!loan || (loan.status !== 'APPROVED' && loan.status !== 'READY_FOR_DISBURSEMENT')) {
+        if (!loan || loan.status !== 'READY_FOR_DISBURSEMENT') {
           return of(undefined);
         }
         const previousStatus = loan.status;
@@ -1341,24 +1619,53 @@ export class CooperativeService {
         loan.disbursedDate = new Date().toISOString();
         loan.disbursementConfirmedAt = loan.disbursedDate;
         loan.disbursementConfirmedBy = this.getCurrentAuditUserId();
-        loan.disbursedAmount = Number(loan.disbursedAmount || loan.amount || 0);
-        loan.disbursementReference = loan.disbursementReference || `COOP-DISB-${loan.id}-${Date.now()}`;
+        loan.disbursedAmount = Number(options?.disbursedAmount || loan.disbursedAmount || loan.amount || 0);
+        loan.disbursementReference = options?.disbursementReference || loan.disbursementReference || `COOP-DISB-${loan.id}-${Date.now()}`;
         loan.disbursementInstructionLoanReference = loan.disbursementInstructionLoanReference || loan.loanCode || `COOP-${loan.id}`;
         loan.updatedAt = new Date().toISOString();
-        this.appendLoanStatusHistory(loan, 'ACTIVE', 'Loan disbursed and activated.');
-        const confirmationPayload: CooperativeLoanDisbursementConfirmationApiPayload = {
-          loanId: loan.id,
-          disbursedAmount: Number(loan.disbursedAmount || loan.amount || 0),
-          disbursementConfirmedAt: loan.disbursedDate,
-          disbursementConfirmedBy: this.getCurrentAuditUserId(),
-          disbursementInstructionReference: loan.disbursementInstructionLoanReference,
-          disbursementReference: loan.disbursementReference,
-          paymentMethod: 'BANK_TRANSFER',
-          notes: 'Disbursement confirmed from cooperative loan workflow.'
-        };
+        this.appendLoanStatusHistory(loan, 'ACTIVE', options?.notes || 'Loan disbursed and activated.');
 
-        return this.cooperativeLoanApiService.createDisbursementConfirmation(confirmationPayload).pipe(
-          switchMap(() => this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan)))
+        return this.cooperativeDisbursementConfirmationService.getConfirmationByLoanId(loan.id).pipe(
+          switchMap((confirmation) => {
+            const paymentMethod = options?.paymentMethod || 'BANK_TRANSFER';
+            const disbursementInstructionReference = loan.disbursementInstructionLoanReference || loan.loanCode || `COOP-${loan.id}`;
+            const disbursementReference = loan.disbursementReference || `COOP-DISB-${loan.id}-${Date.now()}`;
+            const memberId = Number(loan.memberId || loan.cooperativeMemberId || 0) || undefined;
+            const groupMembershipId = Number(loan.membershipId || 0) || undefined;
+            const groupName = this.getGroupById(Number(loan.groupId || loan.cooperativeGroupId || 0))?.name || undefined;
+
+            const confirmationPayload: Partial<CooperativeDisbursementConfirmation> = {
+              loanId: loan.id,
+              disbursedAmount: Number(loan.disbursedAmount || loan.amount || 0),
+              memberId,
+              groupMembershipId,
+              groupName,
+              disbursementConfirmedAt: loan.disbursedDate,
+              disbursementConfirmedBy: this.getCurrentAuditUserId(),
+              disbursementInstructionReference,
+              disbursementReference,
+              paymentMethod,
+              notes: options?.notes || 'Disbursement confirmed from cooperative loan workflow.'
+            };
+
+            const persistConfirmation$ = confirmation?.id
+              ? this.cooperativeDisbursementConfirmationService.updateConfirmation(confirmation.id, confirmationPayload)
+              : this.cooperativeDisbursementConfirmationService.createConfirmation({
+                  loanId: loan.id,
+                  disbursedAmount: Number(loan.disbursedAmount || loan.amount || 0),
+                  memberId,
+                  groupMembershipId,
+                  groupName,
+                  disbursementInstructionReference,
+                  disbursementReference,
+                  paymentMethod,
+                  notes: options?.notes || 'Disbursement confirmed from cooperative loan workflow.'
+                } as CreateCooperativeDisbursementPayload);
+
+            return persistConfirmation$.pipe(
+              switchMap(() => this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan)))
+            );
+          })
         );
       })
     );
@@ -1397,6 +1704,57 @@ export class CooperativeService {
         }
         loan.updatedAt = new Date().toISOString();
         this.appendLoanStatusHistory(loan, 'PENDING', note || 'Loan kept pending for admin review.');
+        return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
+      })
+    );
+  }
+
+  public pauseLoan(id: number, note = 'Repayment paused by admin.'): Observable<CooperativeLoan | undefined> {
+    return this.loadLoanById(id).pipe(
+      switchMap((loan) => {
+        if (!loan || !['ACTIVE', 'OVERDUE', 'SKIPPED'].includes(loan.status || '')) {
+          return of(undefined);
+        }
+
+        const previousStatus = loan.status;
+        const previousStage = loan.applicationStage;
+        loan.status = 'PAUSED';
+        loan.updatedAt = new Date().toISOString();
+        loan.adminComment = note
+          ? `${loan.adminComment ? `${loan.adminComment}\n` : ''}${note}`
+          : loan.adminComment;
+        this.appendLoanStatusHistory(loan, 'PAUSED', note);
+        if (loan.statusHistory?.length) {
+          loan.statusHistory[0].overrideOpen = true;
+          loan.statusHistory[0].overrideReason = note;
+          loan.statusHistory[0].statusBeforeOverride = previousStatus || '';
+        }
+        return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
+      })
+    );
+  }
+
+  public restorePausedLoan(id: number, note = 'Repayment restored by admin.'): Observable<CooperativeLoan | undefined> {
+    return this.loadLoanById(id).pipe(
+      switchMap((loan) => {
+        if (!loan || loan.status !== 'PAUSED') {
+          return of(undefined);
+        }
+
+        const previousStatus = loan.status;
+        const previousStage = loan.applicationStage;
+        loan.status = 'ACTIVE';
+        loan.updatedAt = new Date().toISOString();
+        loan.adminComment = note
+          ? `${loan.adminComment ? `${loan.adminComment}\n` : ''}${note}`
+          : loan.adminComment;
+        this.syncLoanLifecycleFromRepayments(loan);
+        this.appendLoanStatusHistory(loan, loan.status || 'ACTIVE', note);
+        if (loan.statusHistory?.length) {
+          loan.statusHistory[0].overrideOpen = true;
+          loan.statusHistory[0].overrideReason = note;
+          loan.statusHistory[0].statusBeforeOverride = previousStatus || 'PAUSED';
+        }
         return this.saveLoanWorkflowUpdate(loan, previousStatus, previousStage).pipe(map((updatedLoan) => updatedLoan || loan));
       })
     );
@@ -1459,7 +1817,13 @@ export class CooperativeService {
   public markLoanAsDefaulted(id: number): Observable<CooperativeLoan | undefined> {
     return this.loadLoanById(id).pipe(
       switchMap((loan) => {
-        if (!loan || (loan.status !== 'ACTIVE' && loan.status !== 'APPROVED')) {
+        if (!loan || !['ACTIVE', 'OVERDUE', 'SKIPPED'].includes(loan.status || '')) {
+          return of(undefined);
+        }
+
+        this.refreshLoanRepaymentStatuses(loan.id);
+        const overdueInstallments = this.repayments.filter((repayment) => repayment.loanId === loan.id && repayment.status === 'OVERDUE').length;
+        if (overdueInstallments < 3) {
           return of(undefined);
         }
         const previousStatus = loan.status;
@@ -1480,28 +1844,107 @@ export class CooperativeService {
   // ==================== REPAYMENT METHODS ====================
 
   public getRepaymentsByLoanId(loanId: number): CooperativeRepayment[] {
-    return this.repayments.filter(repayment => repayment.loanId === loanId);
+    this.refreshLoanRepaymentStatuses(loanId);
+    return this.repayments
+      .filter(repayment => repayment.loanId === loanId)
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
   }
 
   public recordRepayment(loanId: number, payload: { amount: number; modeofPayment: CooperativeRepayment['modeofPayment']; paidDate?: string }): Observable<CooperativeRepayment | undefined> {
     return this.loadLoanById(loanId).pipe(
       switchMap((loan) => {
-        if (!loan || loan.status !== 'ACTIVE') {
+        if (!loan || !['ACTIVE', 'OVERDUE', 'SKIPPED'].includes(loan.status || '')) {
           return of(undefined);
         }
-        const repayment: CooperativeRepayment = {
-          id: Date.now(),
-          loanId,
+        const previousStatus = loan.status;
+        const previousStage = loan.applicationStage;
+        const openRepayments = this.getRepaymentsByLoanId(loanId).filter((repayment) => repayment.status !== 'PAID');
+        const targetRepayment = openRepayments[0];
+        const installmentNumber = targetRepayment ? this.getRepaymentInstallmentNumber(loanId, targetRepayment.id) : 0;
+        const paidAt = payload.paidDate || new Date().toISOString();
+
+        const repayment = this.cooperativeRepaymentService.recordRepayment(this.getRepaymentContext(), loanId, {
           amount: payload.amount,
-          dueDate: new Date().toISOString(),
-          paidDate: payload.paidDate || new Date().toISOString(),
           modeofPayment: payload.modeofPayment,
-          status: 'PAID'
-        };
-        this.repayments.push(repayment);
-        loan.totalPaid = Number((Number(loan.totalPaid || 0) + payload.amount).toFixed(2));
-        this.saveToStorage();
-        return of(repayment);
+          paidDate: paidAt
+        });
+
+        if (!repayment) {
+          return of(undefined);
+        }
+
+        const updatedLoan = this.loans.find((item) => item.id === loanId) || loan;
+        const paymentReference = repayment.receiptNumber || `COOP-PAY-${loanId}-${Date.now()}`;
+        const memberId = Number(updatedLoan.memberId || updatedLoan.cooperativeMemberId || 0);
+        const membershipId = Number(updatedLoan.membershipId || 0) || undefined;
+        const groupId = Number(updatedLoan.groupId || updatedLoan.cooperativeGroupId || 0) || undefined;
+        const interestApplied = Number(targetRepayment?.interestComponent || 0);
+        const lateFeeApplied = Number(targetRepayment?.lateFeeAmount || 0);
+        const principalApplied = Math.max(Number(payload.amount || 0) - interestApplied - lateFeeApplied, 0);
+
+        return this.cooperativePaymentRecordService.createPaymentRecord({
+          loanId,
+          memberId,
+          membershipId,
+          groupId,
+          paymentType: lateFeeApplied > 0 && principalApplied === 0 && interestApplied === 0 ? 'LATE_FEE' : 'PRINCIPAL_REPAYMENT',
+          installmentNumber,
+          amount: Number(payload.amount || 0),
+          principalApplied,
+          interestApplied,
+          lateFeeApplied,
+          remainingBalance: Number(updatedLoan.outstandingBalance || updatedLoan.outstandingPrincipal || 0),
+          paymentMethod: payload.modeofPayment || 'BANK_TRANSFER',
+          paymentReference,
+          paidIntoAccount: this.getGroupById(groupId || 0)?.principalCollectionAccount || '',
+          paidAt,
+          notes: `Repayment recorded via ${payload.modeofPayment || 'BANK_TRANSFER'}`,
+          receiptNumber: repayment.receiptNumber
+        }).pipe(
+          switchMap((paymentRecord) => {
+            updatedLoan.paymentHistory = [
+              {
+                id: paymentRecord.id,
+                paymentType: paymentRecord.paymentType,
+                membershipId,
+                loanId,
+                groupId,
+                installmentNumber,
+                installmentNo: installmentNumber,
+                paidAt: paymentRecord.paidAt,
+                amount: paymentRecord.amount,
+                principalApplied: paymentRecord.principalApplied,
+                principalAmount: paymentRecord.principalApplied,
+                interestApplied: paymentRecord.interestApplied,
+                referenceNumber: paymentRecord.paymentReference,
+                interest: Number(paymentRecord.interestApplied || 0),
+                lateFeeApplied: paymentRecord.lateFeeApplied,
+                remainingBalance: Number(paymentRecord.remainingBalance || 0),
+                paymentMethod: paymentRecord.paymentMethod,
+                paymentReference: paymentRecord.paymentReference,
+                paidIntoAccount: paymentRecord.paidIntoAccount,
+                paidFromAccount: paymentRecord.paidFromAccount || '',
+                recordedBy: paymentRecord.recordedBy,
+                recordedAt: paymentRecord.recordedAt,
+                recordStatus: paymentRecord.status,
+                modeofPayment: paymentRecord.paymentMethod,
+                status: paymentRecord.status,
+                lateFeeAmount: Number(paymentRecord.lateFeeApplied || 0),
+                totalPayment: paymentRecord.amount,
+                notes: paymentRecord.notes || '',
+                receiptNumber: paymentRecord.receiptNumber || paymentRecord.paymentReference
+              },
+              ...(updatedLoan.paymentHistory || [])
+            ];
+            updatedLoan.lastPaymentReceived = paymentRecord.paidAt;
+            updatedLoan.lastPaymentAmount = paymentRecord.amount;
+            updatedLoan.updatedAt = new Date().toISOString();
+
+            return this.saveLoanWorkflowUpdate(updatedLoan, previousStatus, previousStage).pipe(
+              map(() => repayment)
+            );
+          })
+        );
       })
     );
   }
@@ -1623,10 +2066,58 @@ export class CooperativeService {
       notifications: this.notifications,
       saveToStorage: () => this.saveToStorage(),
       getMemberById: (id: number) => this.getMemberById(id),
-      getLoanById: (id: number) => undefined,
+      getLoanById: (id: number) => this.loans.find((loan) => loan.id === id),
       getGroupById: (id: number) => this.getGroupById(id),
       formatCurrency: (amount: number) => this.formatCurrency(amount)
     };
+  }
+
+  private getRepaymentContext(): CooperativeRepaymentContext {
+    return {
+      loans: this.loans,
+      repayments: this.repayments,
+      notifications: this.notifications,
+      repaymentDueDay: this.repaymentDueDay,
+      repaymentGraceDays: this.repaymentGraceDays,
+      repaymentOverdueDays: this.repaymentOverdueDays,
+      lateFeeRate: this.lateFeeRate,
+      creditReportDays: this.creditReportDays,
+      saveToStorage: () => this.saveToStorage(),
+      formatCurrency: (amount: number) => this.formatCurrency(amount),
+      createMemberStatusNotification: (loan, title, message) => this.createMemberStatusNotification(loan, title, message),
+      createRepaymentReminderNotification: (repayment, message) => this.createRepaymentReminderNotification(repayment, message),
+      createCreditReportNotification: (repayment) => this.createCreditReportNotification(repayment)
+    };
+  }
+
+  private getRepaymentInstallmentNumber(loanId: number, repaymentId: number): number {
+    const loanRepayments = this.getRepaymentsByLoanId(loanId);
+    const repaymentIndex = loanRepayments.findIndex((item) => item.id === repaymentId);
+    return repaymentIndex >= 0 ? repaymentIndex + 1 : 0;
+  }
+
+  private createMemberStatusNotification(loan: CooperativeLoan, title: string, message: string): void {
+    this.cooperativeNotificationService.createMemberStatusNotification(
+      this.getNotificationContext(),
+      loan,
+      title,
+      message
+    );
+  }
+
+  private createRepaymentReminderNotification(repayment: CooperativeRepayment, message: string): void {
+    this.cooperativeNotificationService.createRepaymentReminderNotification(
+      this.getNotificationContext(),
+      repayment,
+      message
+    );
+  }
+
+  private createCreditReportNotification(repayment: CooperativeRepayment): void {
+    this.cooperativeNotificationService.createCreditReportNotification(
+      this.getNotificationContext(),
+      repayment
+    );
   }
 
   private extractNumericId(value: unknown): number {
@@ -1675,7 +2166,7 @@ export class CooperativeService {
     const fullName = this.extractMemberDisplayName(rawMember);
     const joinedAt = this.extractDateValue((rawMember as any).joinDate)
       || this.extractDateValue(rawMember.createdAt)
-      || new Date().toISOString();
+      || '';
 
     return {
       id: Number(rawMember.id),
@@ -1752,6 +2243,7 @@ export class CooperativeService {
         : [];
     const paymentHistory = Array.isArray(rawLoan.paymentHistory) ? rawLoan.paymentHistory : [];
     const statusHistory = Array.isArray(rawLoan.statusHistory) ? rawLoan.statusHistory : [];
+    const supportingDocuments = Array.isArray(rawLoan.supportingDocuments) ? rawLoan.supportingDocuments : [];
 
     return {
       id: Number(rawLoan.id),
@@ -1880,6 +2372,12 @@ export class CooperativeService {
         overrideReason: String(history.overrideReason || ''),
         statusBeforeOverride: String(history.statusBeforeOverride || '')
       })),
+      supportingDocuments: supportingDocuments.map((document: any) => ({
+        name: String(document?.name || document?.fileName || 'Supporting document'),
+        size: Number(document?.size || 0),
+        type: String(document?.type || document?.mimeType || 'application/octet-stream'),
+        uploadedAt: String(document?.uploadedAt || document?.createdAt || new Date().toISOString())
+      })) as LoanSupportingDocument[],
       loanId: typeof rawLoan.loanCode === 'string' && !isNaN(Number(rawLoan.loanCode)) ? Number(rawLoan.loanCode) : (typeof rawLoan.id === 'number' ? rawLoan.id : undefined),
       memberId: memberId,
       groupId: groupId,
@@ -1967,7 +2465,8 @@ export class CooperativeService {
       memberAccountNumber: loan.memberAccountNumber,
       gracePeriodRequests: loan.gracePeriodRequests,
       paymentHistory: loan.paymentHistory as any,
-      statusHistory: loan.statusHistory as any
+      statusHistory: loan.statusHistory as any,
+      supportingDocuments: loan.supportingDocuments as any
     };
   }
 
@@ -2035,7 +2534,8 @@ export class CooperativeService {
       memberAccountNumber: loan.memberAccountNumber,
       gracePeriodRequests: loan.gracePeriodRequests,
       paymentHistory: loan.paymentHistory,
-      statusHistory: loan.statusHistory
+      statusHistory: loan.statusHistory,
+      supportingDocuments: loan.supportingDocuments
     };
   }
 
@@ -2333,19 +2833,147 @@ export class CooperativeService {
       return;
     }
 
-    targetRepayment.dueDate = request.newDueDate;
-    targetRepayment.status = 'PENDING';
-    targetRepayment.reminderSentAt = undefined;
-    targetRepayment.creditReportedAt = undefined;
+    const targetIndex = sortedRepayments.findIndex((repayment) => repayment.id === targetRepayment.id);
+    const previousDueDate = new Date(targetRepayment.dueDate);
+    const approvedDueDate = new Date(request.newDueDate);
+    const shiftMilliseconds = approvedDueDate.getTime() - previousDueDate.getTime();
+
+    sortedRepayments.forEach((repayment, index) => {
+      if (index < targetIndex || repayment.status === 'PAID') {
+        return;
+      }
+
+      const baseDueDate = new Date(repayment.dueDate);
+      const shiftedDueDate = index === targetIndex
+        ? approvedDueDate
+        : new Date(baseDueDate.getTime() + shiftMilliseconds);
+
+      repayment.dueDate = shiftedDueDate.toISOString();
+      repayment.reminderSentAt = undefined;
+      repayment.creditReportedAt = undefined;
+
+      if (index === targetIndex) {
+        repayment.status = 'SKIPPED';
+      } else {
+        repayment.status = 'PENDING';
+      }
+    });
 
     const loan = this.loans.find((item) => item.id === request.loanId);
     if (loan) {
       loan.nextPaymentDueDate = request.newDueDate;
       loan.updatedAt = new Date().toISOString();
+      if (loan.status !== 'PAUSED' && loan.status !== 'COMPLETED' && loan.status !== 'DEFAULTED') {
+        loan.status = 'SKIPPED';
+      }
+      this.syncLoanLifecycleFromRepayments(loan);
     }
 
     this.saveToStorage();
     this.publishState();
+  }
+
+  private getLoanLateFeeGraceDays(loan: CooperativeLoan): number {
+    const groupId = loan.groupId || loan.cooperativeGroupId;
+    const group = groupId ? this.getGroupById(groupId) : undefined;
+    return Math.max(Number(group?.lateFeeGraceDays || this.repaymentOverdueDays || 0), 0);
+  }
+
+  private refreshLoanRepaymentStatuses(loanId: number): void {
+    const loan = this.loans.find((item) => item.id === loanId);
+    if (!loan || loan.status === 'COMPLETED' || loan.status === 'DEFAULTED' || loan.status === 'REJECTED') {
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const graceDays = this.getLoanLateFeeGraceDays(loan);
+    let hasChanges = false;
+
+    this.repayments
+      .filter((repayment) => repayment.loanId === loanId && repayment.status !== 'PAID')
+      .forEach((repayment) => {
+        if (loan.status === 'PAUSED') {
+          return;
+        }
+
+        const dueDate = new Date(repayment.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        const overdueDays = Math.max(Math.floor((today.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)), 0);
+
+        let nextStatus = repayment.status;
+        if (overdueDays > graceDays) {
+          nextStatus = 'OVERDUE';
+        } else if (repayment.status !== 'SKIPPED') {
+          nextStatus = 'PENDING';
+        }
+
+        if (nextStatus !== repayment.status) {
+          repayment.status = nextStatus;
+          hasChanges = true;
+        }
+      });
+
+    if (this.syncLoanLifecycleFromRepayments(loan)) {
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      loan.updatedAt = new Date().toISOString();
+      this.saveToStorage();
+      this.publishState();
+    }
+  }
+
+  private syncLoanLifecycleFromRepayments(loan: CooperativeLoan): boolean {
+    const openRepayments = this.repayments
+      .filter((repayment) => repayment.loanId === loan.id && repayment.status !== 'PAID')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
+
+    const skippedCount = openRepayments.filter((repayment) => repayment.status === 'SKIPPED').length;
+    const overdueCount = openRepayments.filter((repayment) => repayment.status === 'OVERDUE').length;
+    const nextDueDate = openRepayments[0]?.dueDate;
+    let changed = false;
+
+    if (loan.skippedPaymentsCount !== skippedCount) {
+      loan.skippedPaymentsCount = skippedCount;
+      changed = true;
+    }
+
+    if (loan.overduePaymentsCount !== overdueCount) {
+      loan.overduePaymentsCount = overdueCount;
+      changed = true;
+    }
+
+    if ((loan.nextPaymentDueDate || '') !== (nextDueDate || '')) {
+      loan.nextPaymentDueDate = nextDueDate;
+      changed = true;
+    }
+
+    if (loan.status === 'PAUSED' || loan.status === 'COMPLETED' || loan.status === 'REJECTED') {
+      return changed;
+    }
+
+    let nextStatus = loan.status;
+    if (overdueCount >= 3) {
+      nextStatus = 'DEFAULTED';
+      if (!loan.defaultedDate) {
+        loan.defaultedDate = new Date().toISOString();
+      }
+    } else if (overdueCount > 0) {
+      nextStatus = 'OVERDUE';
+    } else if (skippedCount > 0) {
+      nextStatus = 'SKIPPED';
+    } else if (loan.disbursedDate) {
+      nextStatus = 'ACTIVE';
+    }
+
+    if (nextStatus !== loan.status) {
+      loan.status = nextStatus;
+      changed = true;
+    }
+
+    return changed;
   }
 
   private syncGroupMembershipCache(
@@ -2359,6 +2987,7 @@ export class CooperativeService {
       }, {});
     }
     this.groupMemberships = [...memberships];
+    this.markGroupMembershipsCacheFresh();
     this.publishState();
   }
 
@@ -2376,6 +3005,7 @@ export class CooperativeService {
     if (rawMembership) {
       this.groupMembershipApiRecords[String(rawMembership.id)] = rawMembership;
     }
+    this.markGroupMembershipsCacheFresh();
     if (publish) {
       this.publishState();
     }
@@ -2392,6 +3022,7 @@ export class CooperativeService {
       }, {});
     }
     this.contributionEntries = [...entries];
+    this.markContributionEntriesCacheFresh();
     this.reconcilePendingContributionRequests();
     this.publishState();
   }
@@ -2410,6 +3041,7 @@ export class CooperativeService {
     if (rawEntry) {
       this.contributionApiRecords[String(rawEntry.id)] = rawEntry;
     }
+    this.markContributionEntriesCacheFresh();
     this.reconcilePendingContributionRequests();
     if (publish) {
       this.publishState();
@@ -2454,6 +3086,7 @@ export class CooperativeService {
       }, {});
     }
     this.groups = [...groups];
+    this.markGroupsCacheFresh();
     this.refreshGroupMembershipAmountsFromGroups();
     this.publishState();
   }
@@ -2468,6 +3101,7 @@ export class CooperativeService {
     if (rawGroup) {
       this.groupApiRecords[String(rawGroup.id)] = rawGroup;
     }
+    this.markGroupsCacheFresh();
     this.refreshGroupMembershipAmountsFromGroups();
     if (publish) {
       this.publishState();
@@ -2493,6 +3127,7 @@ export class CooperativeService {
       return records;
     }, {});
     this.members = members;
+    this.markMembersCacheFresh();
     this.publishState();
   }
 
@@ -2512,11 +3147,13 @@ export class CooperativeService {
         this.memberApiRecords[String(rawMember.employeeId)] = rawMember;
       }
     }
+    this.markMembersCacheFresh();
     this.publishState();
   }
 
   private syncLoanCache(loans: CooperativeLoan[]): void {
     this.loans = [...loans];
+    this.markLoansCacheFresh();
     this.publishState();
   }
 
@@ -2527,6 +3164,7 @@ export class CooperativeService {
     } else {
       this.loans = this.loans.map((item, index) => (index === existingIndex ? loan : item));
     }
+    this.markLoansCacheFresh();
     this.publishState();
   }
 
@@ -2577,15 +3215,15 @@ export class CooperativeService {
       fullName,
       email: String(employee?.workEmail || employee?.email || ''),
       phone: String(employee?.phone || ''),
-      joinDate: new Date().toISOString(),
+      joinDate: String((memberRef as any).joinDate || (memberRef as any).createdAt || ''),
       monthlySalary: Number(memberRef.monthlySalary || 0),
       status: this.normalizeMemberStatus(memberRef.status),
       shareCapital: 0,
       cooperativeGroup: Array.isArray(memberRef.cooperativeGroup) ? memberRef.cooperativeGroup : [],
       contributionHistory: Array.isArray(memberRef.contributionHistory) ? memberRef.contributionHistory : [],
       loanHistory: Array.isArray(memberRef.loanHistory) ? memberRef.loanHistory : [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: String((memberRef as any).createdAt || ''),
+      updatedAt: String((memberRef as any).updatedAt || (memberRef as any).createdAt || '')
     };
   }
 
@@ -2673,7 +3311,7 @@ export class CooperativeService {
         id: Date.now(),
         status,
         changedAt,
-        changedBy: undefined as any,
+        changedBy: this.getCurrentAuditUserId() as any,
         notes,
         overrideOpen: false,
         overrideBy: undefined as any,

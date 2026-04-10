@@ -44,51 +44,49 @@
   </div>
 
   <div class="table-container" *ngIf="!isLoading">
-    <table class="purposes-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Min Amount</th>
-          <th>Max Amount</th>
-          <th>Default Interest</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let purpose of filteredPurposes">
-          <td class="code-cell">{{ purpose.code }}</td>
-          <td class="name-cell"><strong>{{ purpose.name }}</strong></td>
-          <td class="description-cell">{{ getDescriptionDisplay(purpose.description) }}</td>
-          <td class="amount-cell">{{ getAmountDisplay(purpose.minLoanAmount) }}</td>
-          <td class="amount-cell">{{ getAmountDisplay(purpose.maxLoanAmount) }}</td>
-          <td class="interest-cell">{{ getInterestRateDisplay(purpose.defaultInterestRate) }}</td>
-          <td class="status-cell">
-            <span class="status-badge" [class.active]="purpose.isActive" [class.inactive]="!purpose.isActive">
-              <i class="fas fa-circle"></i>
-              {{ purpose.isActive ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button class="btn-edit" type="button" (click)="openEditModal(purpose)" title="Edit Purpose">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-toggle" type="button" (click)="togglePurposeStatus(purpose)" [title]="purpose.isActive ? 'Deactivate' : 'Activate'">
-              <i class="fas" [class.fa-ban]="purpose.isActive" [class.fa-check-circle]="!purpose.isActive"></i>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="filteredPurposes.length === 0">
-          <td colspan="8" class="no-data">
-            <i class="fas fa-inbox"></i>
-            <p>No loan purposes found</p>
-            <button type="button" class="btn-create-small" (click)="openCreateModal()">Create your first purpose</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <app-table
+      *ngIf="filteredPurposes.length > 0"
+      [columns]="[
+        { header: 'Code' },
+        { header: 'Name' },
+        { header: 'Description' },
+        { header: 'Min Amount' },
+        { header: 'Max Amount' },
+        { header: 'Default Interest' },
+        { header: 'Status' },
+        { header: 'Actions' }
+      ]"
+      [rows]="filteredPurposes"
+      tableClass="purposes-table">
+      <ng-template appTableBody let-purpose>
+        <td class="code-cell">{{ purpose.code }}</td>
+        <td class="name-cell"><strong>{{ purpose.name }}</strong></td>
+        <td class="description-cell">{{ getDescriptionDisplay(purpose.description) }}</td>
+        <td class="amount-cell">{{ getAmountDisplay(purpose.minLoanAmount) }}</td>
+        <td class="amount-cell">{{ getAmountDisplay(purpose.maxLoanAmount) }}</td>
+        <td class="interest-cell">{{ getInterestRateDisplay(purpose.defaultInterestRate) }}</td>
+        <td class="status-cell">
+          <span class="status-badge" [class.active]="purpose.isActive" [class.inactive]="!purpose.isActive">
+            <i class="fas fa-circle"></i>
+            {{ purpose.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </td>
+        <td class="actions-cell">
+          <button class="btn-edit" type="button" (click)="openEditModal(purpose)" title="Edit Purpose">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn-toggle" type="button" (click)="togglePurposeStatus(purpose)" [title]="purpose.isActive ? 'Deactivate' : 'Activate'">
+            <i class="fas" [class.fa-ban]="purpose.isActive" [class.fa-check-circle]="!purpose.isActive"></i>
+          </button>
+        </td>
+      </ng-template>
+    </app-table>
+
+    <div class="no-data" *ngIf="filteredPurposes.length === 0">
+      <i class="fas fa-inbox"></i>
+      <p>No loan purposes found</p>
+      <button type="button" class="btn-create-small" (click)="openCreateModal()">Create your first purpose</button>
+    </div>
   </div>
 
   <div class="loading-state" *ngIf="isLoading">

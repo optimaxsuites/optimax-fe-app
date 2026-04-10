@@ -13,7 +13,7 @@
   text-align: center;
   transition: all 0.2s ease;
   
-  @include loanStatus.advance-loan-status-badges();
+  @include loanStatus.advanceLoanStatusBadges();
 }
 .loan-disbursement-container {
   padding: 24px;

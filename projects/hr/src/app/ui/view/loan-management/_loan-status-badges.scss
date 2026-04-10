@@ -136,3 +136,7 @@
     );
   }
 }
+
+@mixin advanceLoanStatusBadges($include-border: true) {
+  @include advance-loan-status-badges($include-border);
+}

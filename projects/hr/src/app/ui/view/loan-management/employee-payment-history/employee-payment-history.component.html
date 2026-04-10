@@ -15,33 +15,31 @@
   </div>
 
   <div class="table-wrapper" *ngIf="!isLoading && paymentRecords.length > 0">
-    <table class="payment-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Payment Type</th>
-          <th>Amount</th>
-          <th>Reference</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let record of paymentRecords">
-          <td class="date">{{ formatDate(record.paidAt || record.recordedAt) }}</td>
-          <td>
-            <span class="payment-type-badge" [ngClass]="getPaymentTypeClass(record.paymentType)">
-              {{ getPaymentTypeLabel(record.paymentType) }}
-            </span>
-          </td>
-          <td class="amount">{{ formatCurrency(record.amount) }}</td>
-          <td class="reference">{{ record.paymentReference }}</td>
-          <td>
-            <span class="status-badge" [ngClass]="getStatusClass(record.status)">
-              {{ record.status }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <app-table
+      [columns]="[
+        { header: 'Date' },
+        { header: 'Payment Type' },
+        { header: 'Amount' },
+        { header: 'Reference' },
+        { header: 'Status' }
+      ]"
+      [rows]="paymentRecords"
+      tableClass="payment-table">
+      <ng-template appTableBody let-record>
+        <td class="date">{{ formatDate(record.paidAt || record.recordedAt) }}</td>
+        <td>
+          <span class="payment-type-badge" [ngClass]="getPaymentTypeClass(record.paymentType)">
+            {{ getPaymentTypeLabel(record.paymentType) }}
+          </span>
+        </td>
+        <td class="amount">{{ formatCurrency(record.amount) }}</td>
+        <td class="reference">{{ record.paymentReference }}</td>
+        <td>
+          <span class="status-badge" [ngClass]="getStatusClass(record.status)">
+            {{ record.status }}
+          </span>
+        </td>
+      </ng-template>
+    </app-table>
   </div>
 </div>

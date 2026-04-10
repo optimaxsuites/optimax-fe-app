@@ -43,6 +43,9 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
 // import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
 import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
+import { CooperativeLoanApprovalUiComponent } from './ui/view/loan-management/cooperative-loan-approval-ui/cooperative-loan-approval-ui.component';
+import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
+import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
 
@@ -262,6 +265,30 @@ const routes: Routes = [
   {
     path: 'admin/hr/cooperative/grace-period-requests/:uuid',
     component: CooperativeGracePeriodRequestsManagementComponent,
+  },
+  {
+    path: 'cooperative/loan-approval/:uuid',
+    component: CooperativeLoanApprovalUiComponent,
+  },
+  {
+    path: 'admin/hr/cooperative/loan-approval/:uuid',
+    component: CooperativeLoanApprovalUiComponent,
+  },
+  {
+    path: 'cooperative/loan-disbursement/:uuid',
+    component: CooperativeLoanDisbursementUiComponent,
+  },
+  {
+    path: 'admin/hr/cooperative/loan-disbursement/:uuid',
+    component: CooperativeLoanDisbursementUiComponent,
+  },
+  {
+    path: 'cooperative/reports/:uuid',
+    component: CooperativeLoanReportsComponent,
+  },
+  {
+    path: 'admin/hr/cooperative/reports/:uuid',
+    component: CooperativeLoanReportsComponent,
   },
   // Member routes
   {

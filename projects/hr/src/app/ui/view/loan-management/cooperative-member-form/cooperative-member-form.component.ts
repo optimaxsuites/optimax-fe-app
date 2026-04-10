@@ -138,7 +138,7 @@ export class CooperativeMemberFormComponent implements OnInit {
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
+    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

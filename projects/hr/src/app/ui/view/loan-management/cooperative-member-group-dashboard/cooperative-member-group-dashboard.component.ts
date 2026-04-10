@@ -41,6 +41,14 @@ interface GroupContributionRow {
   joinedAt: string;
 }
 
+interface GroupMemberRosterRow {
+  memberRecordId: number;
+  memberName: string;
+  memberCode: number;
+  membershipId: number;
+  joinedAt: string;
+}
+
 interface GroupMonthlyContributionSnapshotRow {
   memberId: number;
   memberName: string;
@@ -86,6 +94,8 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
   }
   currentGroupId = '';
   currentMemberId = '';
+  memberDirectoryQuery = '';
+  showMemberDirectoryModal = false;
   isLoading = true;
   actionMessage = '';
   actionMessageTone: 'error' | 'success' = 'error';
@@ -108,6 +118,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
   pendingContributionRequests: CooperativePendingContributionRequest[] = [];
   borrowerRows: GroupBorrowerRow[] = [];
   contributionRows: GroupContributionRow[] = [];
+  groupMemberRosterRows: GroupMemberRosterRow[] = [];
   selectedContributionMonth = '';
   recentJoiners: CooperativeMember[] = [];
   contributionHistory: ContributionHistoryPoint[] = [];
@@ -120,6 +131,14 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
     { header: 'Monthly', formatter: row => this.formatCurrency(row.monthlyContribution) },
     { header: 'Total', formatter: row => this.formatCurrency(row.totalContribution) },
     { header: 'Joined', formatter: row => row.joinedAt ? new Date(row.joinedAt).toLocaleDateString('en-US') : '—' }
+  ];
+
+  readonly groupMemberRosterColumns: TableColumn<GroupMemberRosterRow>[] = [
+    { header: 'Member', field: 'memberName' },
+    { header: 'Member ID', field: 'memberCode' },
+    { header: 'Membership ID', field: 'membershipId' },
+    { header: 'Joined', formatter: row => row.joinedAt ? new Date(row.joinedAt).toLocaleDateString('en-US') : '—' },
+    { header: 'Actions' }
   ];
 
   readonly recentJoinerColumns: TableColumn<CooperativeMember>[] = [
@@ -164,6 +183,22 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   get totalMembers(): number {
     return this.groupMembers.length;
+  }
+
+  get filteredGroupMemberRosterRows(): GroupMemberRosterRow[] {
+    const query = this.normalizeDirectoryQuery(this.memberDirectoryQuery);
+    if (!query) {
+      return this.groupMemberRosterRows;
+    }
+
+    return this.groupMemberRosterRows.filter((row) => {
+      return [row.memberName, row.memberCode, row.membershipId]
+        .some((value) => this.normalizeDirectoryQuery(value).includes(query));
+    });
+  }
+
+  get previewGroupMemberRosterRows(): GroupMemberRosterRow[] {
+    return this.groupMemberRosterRows.slice(0, 3);
   }
 
   get activeBorrowersCount(): number {
@@ -355,6 +390,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
             joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
           };
         });
+        this.groupMemberRosterRows = this.buildGroupMemberRosterRows();
 
         this.contributionHistory = this.buildContributionHistory();
         this.selectedContributionMonth = this.contributionMonthOptions[0]?.value || this.getDefaultContributionMonth();
@@ -724,6 +760,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
         joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
       };
     });
+    this.groupMemberRosterRows = this.buildGroupMemberRosterRows();
 
     this.recentJoiners = [...this.groupMembers]
       .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
@@ -760,6 +797,43 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
       error: (error) => {
         console.error('Failed to refresh current group member from backend:', error);
       }
+    });
+  }
+
+  private buildGroupMemberRosterRows(): GroupMemberRosterRow[] {
+    return this.groupMemberships.map((membership) => {
+      const member = this.cooperativeService.getMemberById(membership.memberId);
+      const fallbackMemberId = Number(membership.memberId || 0);
+
+      return {
+        memberRecordId: Number(member?.id || fallbackMemberId),
+        memberName: this.getMemberDisplayName(membership.memberId),
+        memberCode: member?.memberId ? Number(member.memberId) : fallbackMemberId,
+        membershipId: Number(membership.id || 0),
+        joinedAt: membership.joinedAt || membership.requestedAt || member?.joinDate || ''
+      };
+    }).sort((left, right) => left.memberName.localeCompare(right.memberName));
+  }
+
+  clearMemberDirectoryQuery(): void {
+    this.memberDirectoryQuery = '';
+  }
+
+  openMemberDirectoryModal(): void {
+    this.showMemberDirectoryModal = true;
+  }
+
+  closeMemberDirectoryModal(): void {
+    this.showMemberDirectoryModal = false;
+  }
+
+  viewMemberProfile(memberId: number): void {
+    if (!Number.isFinite(memberId) || memberId <= 0) {
+      return;
+    }
+
+    this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative', source: 'group-dashboard', groupId: this.currentGroupId }
     });
   }
 
@@ -841,5 +915,9 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
       month: 'long',
       year: 'numeric'
     });
+  }
+
+  private normalizeDirectoryQuery(value: string | number | null | undefined): string {
+    return String(value ?? '').trim().toLowerCase();
   }
 }

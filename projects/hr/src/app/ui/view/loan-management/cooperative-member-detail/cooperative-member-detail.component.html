@@ -131,32 +131,32 @@
       </div>
 
       <div class="table-container" *ngIf="memberLoans.length > 0">
-        <table appSortableTable class="loans-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Amount</th>
-              <th>Purpose</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let loan of memberLoans" (click)="viewLoan(loan.id)">
-              <td class="loan-id">{{ loan.loanCode }}</td>
-              <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-              <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
-                  {{ loan.status }}
-                </span>
-              </td>
-              <td>{{ loan.requestDate | date:'MMM yyyy' }}</td>
-              <td class="actions-col"><i class="fas fa-chevron-right"></i></td>
-            </tr>
-          </tbody>
-        </table>
+        <app-table
+          [columns]="[
+            { header: 'ID' },
+            { header: 'Amount' },
+            { header: 'Purpose' },
+            { header: 'Status' },
+            { header: 'Date' },
+            { header: 'Actions' }
+          ]"
+          [rows]="memberLoans"
+          [rowClickable]="true"
+          (rowClick)="viewLoan($event.id)"
+          tableClass="loans-table">
+          <ng-template appTableBody let-loan>
+            <td class="loan-id">{{ loan.loanCode }}</td>
+            <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+            <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
+                {{ loan.status }}
+              </span>
+            </td>
+            <td>{{ loan.requestDate | date:'MMM yyyy' }}</td>
+            <td class="actions-col"><i class="fas fa-chevron-right"></i></td>
+          </ng-template>
+        </app-table>
       </div>
 
       <div *ngIf="memberLoans.length === 0" class="empty-state">
@@ -171,30 +171,28 @@
       </div>
 
       <div class="table-container" *ngIf="getRepaymentHistory().length > 0">
-        <table appSortableTable class="loans-table">
-          <thead>
-            <tr>
-              <th>Loan ID</th>
-              <th>Paid</th>
-              <th>Outstanding</th>
-              <th>Last Payment</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of getRepaymentHistory()">
-              <td class="loan-id">{{ item.loanId }}</td>
-              <td class="amount">{{ formatCurrency(item.paidAmount) }}</td>
-              <td>{{ formatCurrency(item.outstandingAmount) }}</td>
-              <td>{{ item.lastPaymentDate | date:'mediumDate' }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="getRepaymentStatusClass(item.status)">
-                  {{ item.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <app-table
+          [columns]="[
+            { header: 'Loan ID' },
+            { header: 'Paid' },
+            { header: 'Outstanding' },
+            { header: 'Last Payment' },
+            { header: 'Status' }
+          ]"
+          [rows]="getRepaymentHistory()"
+          tableClass="loans-table">
+          <ng-template appTableBody let-item>
+            <td class="loan-id">{{ item.loanId }}</td>
+            <td class="amount">{{ formatCurrency(item.paidAmount) }}</td>
+            <td>{{ formatCurrency(item.outstandingAmount) }}</td>
+            <td>{{ item.lastPaymentDate | date:'mediumDate' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getRepaymentStatusClass(item.status)">
+                {{ item.status }}
+              </span>
+            </td>
+          </ng-template>
+        </app-table>
       </div>
     </div>
   </div>

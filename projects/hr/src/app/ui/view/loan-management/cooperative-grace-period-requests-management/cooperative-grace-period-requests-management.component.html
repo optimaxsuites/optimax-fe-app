@@ -27,37 +27,32 @@
   </div>
 
   <div class="table-card" *ngIf="!isLoading; else loadingState">
-    <table appSortableTable>
-      <thead>
-        <tr>
-          <th>Loan</th>
-          <th>Payment Type</th>
-          <th>Requested Days</th>
-          <th>Status</th>
-          <th>Requested On</th>
-          <th>Reason</th>
-          <th class="actions-col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let request of filteredRequests">
-          <td>{{ request.loanId }}</td>
-          <td>{{ formatPaymentType(request.paymentSubtype) }}</td>
-          <td>{{ request.requestedDays }}</td>
-          <td><span class="status-badge" [ngClass]="getStatusClass(request.status)">{{ request.status }}</span></td>
-          <td>{{ request.requestedAt | date:'mediumDate' }}</td>
-          <td>{{ request.reason }}</td>
-          <td class="actions-col">
-            <button class="action-btn approve" *ngIf="request.status === 'PENDING'" (click)="openApprovalModal(request)">Approve</button>
-            <button class="action-btn reject" *ngIf="request.status === 'PENDING'" (click)="openRejectModal(request)">Reject</button>
-            <span *ngIf="request.status !== 'PENDING'">Reviewed</span>
-          </td>
-        </tr>
-        <tr *ngIf="filteredRequests.length === 0">
-          <td colspan="7" class="empty-cell">No cooperative grace period requests match the current filters.</td>
-        </tr>
-      </tbody>
-    </table>
+    <app-table
+      [columns]="[
+        { header: 'Loan' },
+        { header: 'Payment Type' },
+        { header: 'Requested Days' },
+        { header: 'Status' },
+        { header: 'Requested On' },
+        { header: 'Reason' },
+        { header: 'Actions' }
+      ]"
+      [rows]="filteredRequests"
+      [emptyMessage]="'No cooperative grace period requests match the current filters.'">
+      <ng-template appTableBody let-request>
+        <td>{{ request.loanId }}</td>
+        <td>{{ formatPaymentType(request.paymentSubtype) }}</td>
+        <td>{{ request.requestedDays }}</td>
+        <td><span class="status-badge" [ngClass]="getStatusClass(request.status)">{{ request.status }}</span></td>
+        <td>{{ request.requestedAt | date:'mediumDate' }}</td>
+        <td>{{ request.reason }}</td>
+        <td class="actions-col">
+          <button class="action-btn approve" *ngIf="request.status === 'PENDING'" (click)="openApprovalModal(request)">Approve</button>
+          <button class="action-btn reject" *ngIf="request.status === 'PENDING'" (click)="openRejectModal(request)">Reject</button>
+          <span *ngIf="request.status !== 'PENDING'">Reviewed</span>
+        </td>
+      </ng-template>
+    </app-table>
   </div>
 
   <ng-template #loadingState>

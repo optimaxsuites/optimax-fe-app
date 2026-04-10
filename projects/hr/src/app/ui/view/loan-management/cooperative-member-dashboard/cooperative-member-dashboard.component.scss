@@ -542,18 +542,102 @@
   }
 
   .cooperative-loan-details {
+    padding: 10px 12px 18px;
+    display: grid;
+    gap: 14px;
+
+    .summary-card {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbfc 100%);
+      border: 1px solid #dbe8ed;
+      box-shadow: 0 10px 24px rgba(31, 60, 74, 0.08);
+    }
+
+    .group-banner {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f5c72 0%, #2EB270 100%);
+      color: #fff;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: auto -60px -70px auto;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .group-banner-tag {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      h2 {
+        position: relative;
+        z-index: 1;
+        margin: 12px 0 6px;
+        font-size: 1.65rem;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        position: relative;
+        z-index: 1;
+        margin: 0;
+        max-width: 540px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+    }
+
+    .summary-copy {
+      display: grid;
+      gap: 10px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6a8794;
+      font-weight: 700;
+    }
+
     .modal-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
+      align-items: flex-start;
+      gap: 12px;
 
-      h2 {
+      h3 {
         margin: 0;
-        color: #2E6276;
-        font-size: 1.35rem;
+        color: #203945;
+        font-size: 1.28rem;
         font-weight: 700;
+
+        i {
+          color: #eb9b3f;
+        }
       }
 
       .header-actions {
@@ -563,12 +647,12 @@
       }
 
       .close-btn {
-        width: 30px;
-        height: 30px;
+        width: 34px;
+        height: 34px;
         border: none;
         border-radius: 50%;
         background: #eef4f6;
-        color: #2E6276;
+        color: #2d667a;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -581,72 +665,241 @@
     }
 
     .subtitle {
-      margin: 0 0 14px;
-      color: #6b7280;
-      font-size: 0.9rem;
+      margin: 6px 0 0;
+      color: #6b818d;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #f4f8fa;
+        border: 1px solid #e2ecef;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #355462;
+      }
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-stat {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fbfc;
+      border: 1px solid #e2ecef;
+
+      span {
+        display: block;
+        margin-bottom: 4px;
+        color: #6b818d;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+      }
+
+      strong {
+        display: block;
+        color: #203945;
+        font-size: 0.98rem;
+        line-height: 1.3;
+      }
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h3 {
+        margin: 6px 0 0;
+        color: #203945;
+        font-size: 1.08rem;
+      }
     }
 
     .status-pill {
-      padding: 6px 10px;
+      padding: 5px 10px;
       border-radius: 999px;
       font-size: 0.78rem;
       font-weight: 700;
       text-transform: uppercase;
-      background: #eef4f6;
-      color: #2E6276;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.1;
+      max-width: 100%;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+
+      @include loanStatus.advanceLoanStatusBadges(false);
+
+      &.status-default {
+        background: rgba(107, 114, 128, 0.12);
+        color: #4b5563;
+      }
+
+      &.inline-pill {
+        min-width: 0;
+        flex: 0 1 auto;
+      }
     }
 
     .details-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .detail-group {
+      display: grid;
+      gap: 12px;
+      padding: 15px;
+      border-radius: 16px;
+      border: 1px solid #dbe8ed;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(31, 60, 74, 0.05);
+
+      &:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .group-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .group-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef6f9;
+        color: #2d667a;
+
+        &.finance {
+          background: #edf9f2;
+          color: #237e52;
+        }
+
+        &.review {
+          background: #fff5e8;
+          color: #c47a19;
+        }
+      }
+
+      .group-label {
+        display: block;
+        color: #6b818d;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      h4 {
+        margin: 4px 0 0;
+        color: #203945;
+        font-size: 1rem;
+      }
+    }
+
+    .detail-list {
+      display: grid;
       gap: 10px;
     }
 
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #edf2f4;
+
+      &:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      &.status-row {
+        align-items: center;
+      }
+    }
+
+    .row-label {
+      color: #6b818d;
+      font-size: 0.85rem;
+    }
+
+    .row-value {
+      color: #203945;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: right;
+      word-break: break-word;
+
+      &.mono {
+        font-family: monospace;
+      }
+
+      &.money {
+        color: #237e52;
+      }
+
+      &.warning {
+        color: #b25c00;
+      }
+
+      &.strong {
+        font-weight: 700;
+      }
+    }
+
     .modal-actions {
-      margin-top: 12px;
       display: flex;
       justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
 
-      .btn-secondary {
+      .btn-secondary,
+      .btn-ghost {
         border: none;
-        border-radius: 8px;
-        padding: 9px 12px;
+        border-radius: 10px;
+        padding: 10px 14px;
         font-weight: 700;
         cursor: pointer;
-        background: #2E6276;
-        color: #fff;
         display: inline-flex;
         align-items: center;
         gap: 8px;
       }
-    }
 
-    .detail-item {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      padding: 10px;
-      border: 1px solid #e3eef0;
-      border-radius: 10px;
-      background: #fff;
-
-      &.full {
-        grid-column: 1 / -1;
+      .btn-secondary {
+        background: #2E6276;
+        color: #fff;
       }
 
-      .label {
-        color: #6b7280;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-        font-weight: 600;
-      }
-
-      .value {
-        color: #1f2937;
-        font-size: 0.92rem;
-        font-weight: 600;
-        word-break: break-word;
+      .btn-ghost {
+        background: #eef6f9;
+        color: #2d667a;
       }
     }
   }
@@ -1004,7 +1257,7 @@
                 font-size: 0.8rem;
                 font-weight: 600;
 
-                @include loanStatus.advance-loan-status-badges();
+                @include loanStatus.advanceLoanStatusBadges();
               }
 
               .icon-btn {
@@ -1012,12 +1265,22 @@
                 background: transparent;
                 color: #2E6276;
                 border-radius: 6px;
-                padding: 6px 10px;
+                min-width: 38px;
+                min-height: 38px;
+                padding: 8px 10px;
                 cursor: pointer;
 
                 &:hover {
                   background: #f8feff;
                 }
+              }
+
+              .table-actions {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                flex-wrap: wrap;
               }
             }
           }
@@ -1248,6 +1511,13 @@
         font-size: 1rem;
       }
     }
+
+    .cooperative-loan-details {
+      .summary-stats,
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   }
 }
 
@@ -1346,6 +1616,42 @@
           flex-direction: column;
           align-items: flex-start;
         }
+      }
+    }
+
+    .cooperative-loan-details {
+      padding: 4px 0 12px;
+
+      .group-banner {
+        padding: 16px;
+
+        h2 {
+          font-size: 1.35rem;
+        }
+      }
+
+      .modal-header,
+      .detail-row {
+        flex-direction: column;
+      }
+
+      .header-actions,
+      .modal-actions {
+        width: 100%;
+      }
+
+      .modal-actions {
+        justify-content: stretch;
+
+        .btn-secondary,
+        .btn-ghost {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      .row-value {
+        text-align: left;
       }
     }
   }

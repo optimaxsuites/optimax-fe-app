@@ -12,7 +12,7 @@
   text-align: center;
   transition: all 0.2s ease;
   
-  @include loanStatus.advance-loan-status-badges();
+  @include loanStatus.advanceLoanStatusBadges();
 }
 .employee-history-container {
   padding: 24px;
@@ -386,7 +386,7 @@
               text-transform: uppercase;
               text-align: center;
 
-              @include loanStatus.advance-loan-status-badges();
+              @include loanStatus.advanceLoanStatusBadges();
             }
 
             .view-btn {

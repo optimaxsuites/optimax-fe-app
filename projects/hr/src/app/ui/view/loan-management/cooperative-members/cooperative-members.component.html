@@ -10,7 +10,7 @@
     <div class="members-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-hand-holding-dollar"></i> Cooperative Members</h1>
+        <h1><i class="fas fa-hand-holding-dollar"></i> Active Cooperative Members</h1>
       </div>
       <button class="add-btn" (click)="addMember()">
         <i class="fas fa-user-plus"></i> Add Member
@@ -59,99 +59,84 @@
 
     <!-- Results count -->
     <div class="results-info">
-      Showing {{ filteredMembers.length }} of {{ members.length }} members
+      Showing {{ filteredMembers.length }} of {{ activeMembersCount }} active members
     </div>
 
     <!-- Table -->
     <div class="table-card">
-      <table appSortableTable class="members-table">
-        <thead>
-          <tr>
-            <th (click)="setSort('memberId')" class="sortable">
-              Member ID <i class="fas" [ngClass]="getSortIcon('memberId')"></i>
-            </th>
-            <th (click)="setSort('fullName')" class="sortable">
-              Name <i class="fas" [ngClass]="getSortIcon('fullName')"></i>
-            </th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th (click)="setSort('shareCapital')" class="sortable">
-              Shares <i class="fas" [ngClass]="getSortIcon('shareCapital')"></i>
-            </th>
-            <th (click)="setSort('status')" class="sortable">
-              Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </th>
-            <th (click)="setSort('joinDate')" class="sortable">
-              Date Joined <i class="fas" [ngClass]="getSortIcon('joinDate')"></i>
-            </th>
-            <th class="actions-col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let member of filteredMembers" (click)="viewMember(member.id)">
-            <td class="member-id">{{ member.memberId }}</td>
-            <td class="member-name">{{ member.fullName }}</td>
-            <td>{{ member.email }}</td>
-            <td>{{ member.phone }}</td>
-            <td class="shares">{{ formatCurrency(member.shareCapital) }}</td>
-            <td>
-              <span class="status-badge" [ngClass]="getStatusClass(member.status)">
-                {{ member.status }}
-              </span>
-              <select
-                class="status-select"
-                [ngModel]="member.status"
-                (click)="$event.stopPropagation()"
-                (ngModelChange)="updateMemberStatus(member, $event)">
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
-            </td>
-            <td>{{ member.joinDate | date:'shortDate' }}</td>
-            <td class="actions-col">
-              <div class="row-actions" (click)="$event.stopPropagation()">
-                <button class="action-btn" (click)="viewMember(member.id)">
-                  <i class="fas fa-user"></i> Profile
-                </button>
-                <button class="action-btn history-icon-btn" (click)="viewLoanHistory(member.id, $event)" title="See History" aria-label="See History">
-                  <i class="fas fa-history"></i>
-                </button>
-                <button
-                  *ngIf="member.status !== 'INACTIVE'"
-                  class="action-btn inactive"
-                  (click)="markMemberInactive(member, $event)">
-                  <i class="fas fa-user-clock"></i> Inactive
-                </button>
-                <button
-                  *ngIf="member.status === 'INACTIVE'"
-                  class="action-btn activate"
-                  (click)="activateInactiveMember(member, $event)">
-                  <i class="fas fa-user-check"></i> Activate
-                </button>
-                <button
-                  *ngIf="member.status !== 'SUSPENDED'"
-                  class="action-btn suspend"
-                  (click)="suspendMember(member, $event)">
-                  <i class="fas fa-user-slash"></i> Suspend
-                </button>
-                <button
-                  *ngIf="member.status === 'SUSPENDED'"
-                  class="action-btn reactivate"
-                  (click)="reactivateMember(member, $event)">
-                  <i class="fas fa-user-check"></i> Reactivate
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="filteredMembers.length === 0">
-            <td colspan="8" class="no-data">
-              <i class="fas fa-users-slash"></i>
-              <p>No members found</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="[
+          { header: 'Member ID', field: 'memberId', sortable: true },
+          { header: 'Name', field: 'fullName', sortable: true },
+          { header: 'Email' },
+          { header: 'Phone' },
+          { header: 'Shares', field: 'shareCapital', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Date Joined', field: 'joinDate', sortable: true },
+          { header: 'Actions' }
+        ]"
+        [rows]="filteredMembers"
+        [emptyMessage]="'No members found'"
+        [rowClickable]="true"
+        (rowClick)="viewMember($event.id)"
+        tableClass="members-table">
+        <ng-template appTableBody let-member>
+          <td class="member-id">{{ member.memberId }}</td>
+          <td class="member-name">{{ member.fullName }}</td>
+          <td>{{ member.email }}</td>
+          <td>{{ member.phone }}</td>
+          <td class="shares">{{ formatCurrency(member.shareCapital) }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(member.status)">
+              {{ member.status }}
+            </span>
+            <select
+              class="status-select"
+              [ngModel]="member.status"
+              (click)="$event.stopPropagation()"
+              (ngModelChange)="updateMemberStatus(member, $event)">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          </td>
+          <td>{{ member.joinDate | date:'shortDate' }}</td>
+          <td class="actions-col">
+            <div class="row-actions" (click)="$event.stopPropagation()">
+              <button class="action-btn view-icon-btn" (click)="viewMember(member.id)" title="View member profile" aria-label="View member profile">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="action-btn history-icon-btn" (click)="viewLoanHistory(member.id, $event)" title="See History" aria-label="See History">
+                <i class="fas fa-history"></i>
+              </button>
+              <button
+                *ngIf="member.status !== 'INACTIVE'"
+                class="action-btn inactive"
+                (click)="markMemberInactive(member, $event)">
+                <i class="fas fa-user-clock"></i> Inactive
+              </button>
+              <button
+                *ngIf="member.status === 'INACTIVE'"
+                class="action-btn activate"
+                (click)="activateInactiveMember(member, $event)">
+                <i class="fas fa-user-check"></i> Activate
+              </button>
+              <button
+                *ngIf="member.status !== 'SUSPENDED'"
+                class="action-btn suspend"
+                (click)="suspendMember(member, $event)">
+                <i class="fas fa-user-slash"></i> Suspend
+              </button>
+              <button
+                *ngIf="member.status === 'SUSPENDED'"
+                class="action-btn reactivate"
+                (click)="reactivateMember(member, $event)">
+                <i class="fas fa-user-check"></i> Reactivate
+              </button>
+            </div>
+          </td>
+        </ng-template>
+      </app-table>
     </div>
   </div>
 </div>

@@ -176,45 +176,43 @@
       </div>
 
       <div class="invite-table-wrapper" *ngIf="filteredInviteEmployees.length > 0; else emptyInviteState">
-        <table class="invite-table">
-          <thead>
-            <tr>
-              <th class="checkbox-col">Select</th>
-              <th>Employee</th>
-              <th>Email</th>
-              <th>Department</th>
-              <th>Rank</th>
-              <th>Tenure</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let employee of filteredInviteEmployees">
-              <td class="checkbox-col">
-                <input
-                  type="checkbox"
-                  [checked]="isInviteSelected(employee.employeeId)"
-                  (change)="toggleInviteSelection(employee.employeeId)"
-                  [disabled]="!canInviteEmployee(employee)"
-                  [attr.aria-label]="'Select ' + employee.fullName" />
-              </td>
-              <td>
-                <div class="employee-cell">
-                  <strong>{{ employee.fullName }}</strong>
-                </div>
-              </td>
-              <td>{{ employee.email }}</td>
-              <td>{{ employee.department }}</td>
-              <td>{{ employee.rank }}</td>
-              <td>{{ getInviteTenureLabel(employee) }}</td>
-              <td>
-                <span class="invite-status" [class.disabled]="!canInviteEmployee(employee)">
-                  {{ getInviteStatusLabel(employee) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <app-table
+          [columns]="[
+            { header: 'Select' },
+            { header: 'Employee' },
+            { header: 'Email' },
+            { header: 'Department' },
+            { header: 'Rank' },
+            { header: 'Tenure' },
+            { header: 'Status' }
+          ]"
+          [rows]="filteredInviteEmployees"
+          tableClass="invite-table">
+          <ng-template appTableBody let-employee>
+            <td class="checkbox-col">
+              <input
+                type="checkbox"
+                [checked]="isInviteSelected(employee.employeeId)"
+                (change)="toggleInviteSelection(employee.employeeId)"
+                [disabled]="!canInviteEmployee(employee)"
+                [attr.aria-label]="'Select ' + employee.fullName" />
+            </td>
+            <td>
+              <div class="employee-cell">
+                <strong>{{ employee.fullName }}</strong>
+              </div>
+            </td>
+            <td>{{ employee.email }}</td>
+            <td>{{ employee.department }}</td>
+            <td>{{ employee.rank }}</td>
+            <td>{{ getInviteTenureLabel(employee) }}</td>
+            <td>
+              <span class="invite-status" [class.disabled]="!canInviteEmployee(employee)">
+                {{ getInviteStatusLabel(employee) }}
+              </span>
+            </td>
+          </ng-template>
+        </app-table>
       </div>
 
       <ng-template #emptyInviteState>

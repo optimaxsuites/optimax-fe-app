@@ -1,0 +1,425 @@
+@use '../loan-status-badges' as loanStatus;
+
+.coop-disbursement-container {
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8feff 0%, #eef7fb 100%);
+}
+
+.inline-messages {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.inline-message {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eef7fb;
+  color: #17485c;
+  border: 1px solid #d8eaf1;
+
+  &.success {
+    background: #eefaf3;
+    color: #0f5d3b;
+    border-color: #cfe9d8;
+  }
+
+  &.error {
+    background: #fff1f2;
+    color: #991b1b;
+    border-color: #fecdd3;
+  }
+
+  &.warn {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+}
+
+.loading-state,
+.empty-state {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #4d7180;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid #d8eaf1;
+  border-top-color: #2e6276;
+  animation: spin 0.9s linear infinite;
+}
+
+.page-header,
+.card-panel {
+  background: #fff;
+  border: 1px solid rgba(46, 98, 118, 0.12);
+  border-radius: 22px;
+  box-shadow: 0 12px 28px rgba(46, 98, 118, 0.08);
+}
+
+.page-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #7d9cab;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2 {
+  color: #173f50;
+}
+
+.back-button,
+.ghost-btn,
+.secondary-btn,
+.primary-btn,
+.pager button {
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #edf6f9;
+  color: #24586d;
+}
+
+.header-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header-pill {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: #edf6f9;
+  color: #24586d;
+
+  &.ready {
+    background: #eff7ff;
+    color: #1d4ed8;
+  }
+
+  &.total {
+    background: #eefaf3;
+    color: #15803d;
+  }
+}
+
+.queue-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.queue-column,
+.detail-column {
+  padding: 18px;
+}
+
+.queue-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.queue-panel {
+  border: 1px solid #ebf2f5;
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+
+  &.ready-panel {
+    background: linear-gradient(180deg, #fbfdff 0%, #f4f9ff 100%);
+  }
+}
+
+.panel-head,
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.queue-count {
+  min-width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #edf6f9;
+  color: #24586d;
+  font-weight: 800;
+}
+
+.search-box {
+  position: relative;
+
+  i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8ba5b1;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px 11px 36px;
+    border-radius: 12px;
+    border: 1px solid #dbe8ed;
+    outline: none;
+  }
+}
+
+.queue-list {
+  display: grid;
+  gap: 10px;
+}
+
+.queue-item {
+  border: 1px solid #dbe8ed;
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 14px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+
+  strong {
+    color: #173f50;
+  }
+
+  span,
+  small {
+    color: #5f7e8c;
+  }
+
+  &.active {
+    border-color: #2e6276;
+    box-shadow: 0 0 0 2px rgba(46, 98, 118, 0.12);
+  }
+
+  &.ready {
+    background: #f8fbff;
+  }
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: #5f7e8c;
+
+  button {
+    padding: 8px 14px;
+    background: #edf6f9;
+    color: #24586d;
+  }
+}
+
+.detail-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  @include loanStatus.advanceLoanStatusBadges();
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.secondary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.detail-card,
+.notes-card,
+.precheck-box {
+  border: 1px solid #ebf2f5;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fbfdfe;
+}
+
+.detail-card {
+  display: grid;
+  gap: 6px;
+
+  span {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8ba5b1;
+    font-weight: 700;
+  }
+
+  strong,
+  input,
+  select {
+    color: #173f50;
+    font-weight: 700;
+  }
+
+  input,
+  select {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #dbe8ed;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 500;
+  }
+}
+
+.notes-card {
+  display: grid;
+  gap: 10px;
+
+  label {
+    font-weight: 700;
+    color: #173f50;
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #dbe8ed;
+    border-radius: 12px;
+    padding: 12px;
+    resize: vertical;
+    min-height: 110px;
+  }
+}
+
+.precheck-box {
+  display: grid;
+  gap: 10px;
+
+  label {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: #355664;
+  }
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ghost-btn,
+.secondary-btn,
+.primary-btn {
+  padding: 11px 18px;
+}
+
+.ghost-btn {
+  background: #edf6f9;
+  color: #24586d;
+}
+
+.secondary-btn {
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  color: #fff;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1100px) {
+  .queue-layout,
+  .detail-grid,
+  .secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .coop-disbursement-container {
+    padding: 14px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-left,
+  .action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

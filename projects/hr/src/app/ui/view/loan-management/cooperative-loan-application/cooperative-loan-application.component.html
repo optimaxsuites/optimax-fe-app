@@ -108,6 +108,12 @@
               <span class="detail-label">Max Borrowable Now</span>
               <span class="detail-value highlight">{{ formatCurrency(maxBorrowableAmount || 0) }}</span>
             </div>
+            <div class="group-detail" *ngIf="getSelectedGroupAccountingEmail()">
+              <span class="detail-label">Accounting Email</span>
+              <span class="detail-value email-row">
+                <a [attr.href]="buildMailLink(getSelectedGroupAccountingEmail())">{{ getSelectedGroupAccountingEmail() }}</a>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -210,11 +216,109 @@
             <strong>Estimated Annual Refund:</strong> {{ formatCurrency(estimatedAnnualPatronageRefund || 0) }}/year ({{ selectedGroup.patronageRate }}%)
           </div>
         </div>
+
+        <div class="schedule-preview" *ngIf="previewRepaymentSchedule.length > 0">
+          <div class="preview-subhead">
+            <div>
+              <span class="eyebrow">Estimated Schedule</span>
+              <h3>{{ applicationForm.get('modeOfPayment')?.value === 'ONE_OFF' ? 'Single repayment timeline' : 'Projected installment schedule' }}</h3>
+            </div>
+          </div>
+
+          <div class="schedule-table-wrap">
+            <app-table
+              [columns]="[
+                { header: '#' },
+                { header: 'Due Date' },
+                { header: 'Principal' },
+                { header: 'Interest' },
+                { header: 'Total' },
+                { header: 'Remaining' }
+              ]"
+              [rows]="previewRepaymentSchedule"
+              tableClass="schedule-preview-table">
+              <ng-template appTableBody let-item>
+                <td>{{ item.installmentNo }}</td>
+                <td>{{ item.dueDate | date:'mediumDate' }}</td>
+                <td>{{ formatCurrency(item.principalAmount) }}</td>
+                <td>{{ formatCurrency(item.interestAmount) }}</td>
+                <td>{{ formatCurrency(item.totalAmount) }}</td>
+                <td>{{ formatCurrency(item.remainingBalance) }}</td>
+              </ng-template>
+            </app-table>
+          </div>
+        </div>
+
+        <div class="workflow-preview" *ngIf="workflowTimelinePreview.length > 0">
+          <div class="preview-subhead">
+            <div>
+              <span class="eyebrow">Workflow Timeline</span>
+              <h3>What happens after submission</h3>
+            </div>
+          </div>
+
+          <div class="workflow-steps">
+            <div class="workflow-step" *ngFor="let step of workflowTimelinePreview" [ngClass]="step.tone">
+              <span class="step-dot"></span>
+              <div>
+                <strong>{{ step.title }}</strong>
+                <p>{{ step.description }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section wide">
+        <h2><i class="fas fa-paperclip"></i> 4. Supporting Documents</h2>
+        <p class="section-copy">Attach evidence that supports the selected purpose and helps the admin review faster.</p>
+
+        <div class="document-requirements" *ngIf="selectedPurposeDefinition">
+          <div class="requirement-banner" [class.required]="requiresSupportingDocuments">
+            <i class="fas" [class.fa-circle-check]="!requiresSupportingDocuments" [class.fa-file-circle-check]="requiresSupportingDocuments"></i>
+            <div>
+              <strong>{{ requiresSupportingDocuments ? 'Documents required for this purpose' : 'Documents optional for this purpose' }}</strong>
+              <p>
+                {{ requiresSupportingDocuments
+                  ? 'Upload at least one supporting file before submitting this request.'
+                  : 'You can still upload files to speed up verification and approval.' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="required-doc-tags" *ngIf="requiredDocumentationTypes.length > 0">
+            <span class="doc-tag" *ngFor="let docType of requiredDocumentationTypes">{{ docType }}</span>
+          </div>
+        </div>
+
+        <div class="document-upload-box">
+          <input
+            type="file"
+            id="cooperativeSupportingDocuments"
+            class="form-input doc-upload-input"
+            multiple
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            (change)="onDocumentsSelected($event)">
+          <p class="field-hint">Upload files like invoices, medical records, approvals, quotations, payslips, or any required policy evidence.</p>
+          <div class="error" *ngIf="hasDocumentRequirementGap">
+            Upload at least one supporting document for this purpose before submitting.
+          </div>
+
+          <ul class="uploaded-documents" *ngIf="supportingDocuments.length > 0">
+            <li *ngFor="let document of supportingDocuments; let i = index" class="document-item">
+              <div>
+                <strong>{{ document.name }}</strong>
+                <small>{{ document.type || 'Document' }} · {{ getDocumentSizeLabel(document.size) }}</small>
+              </div>
+              <button type="button" class="remove-document" (click)="removeDocument(i)">Remove</button>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <!-- Guarantors Section -->
       <div class="form-section wide" *ngIf="selectedGroup?.requiresGuarantors">
-        <h2><i class="fas fa-users"></i> 4. Guarantors</h2>
+        <h2><i class="fas fa-users"></i> 5. Guarantors</h2>
         <p class="section-copy">Add at least {{ requiredGuarantorCount || 0 }} guarantor(s). Each guarantor will receive a pending approval request.</p>
 
         <div formArrayName="guarantors" class="guarantor-list">
@@ -282,7 +386,7 @@
 
       <!-- Acknowledgement Section -->
       <div class="form-section wide acknowledgement-section">
-        <h2><i class="fas fa-shield-check"></i> 5. Acknowledgement</h2>
+        <h2><i class="fas fa-shield-check"></i> 6. Acknowledgement</h2>
         <p class="section-copy">Review the declarations below before you submit the application.</p>
         
         <div class="acknowledgement-box">
@@ -360,6 +464,12 @@
           </div>
 
           <div class="confirmation-card">
+            <span class="label">Supporting Documents</span>
+            <strong>{{ supportingDocuments.length }}</strong>
+            <small>{{ requiresSupportingDocuments ? 'Required by selected purpose' : 'Optional evidence attached' }}</small>
+          </div>
+
+          <div class="confirmation-card">
             <span class="label">Monthly Repayment</span>
             <strong>{{ formatCurrency(confirmationDetails.repaymentAmount || 0) }}</strong>
             <small>Total repayment {{ formatCurrency(confirmationDetails.totalRepayment || 0) }}</small>
@@ -375,6 +485,12 @@
             <span class="label">Policy Route</span>
             <strong>{{ selectedGroup.requiresGuarantors ? 'Guarantor-backed review flow' : 'Standard cooperative policy' }}</strong>
             <small>{{ guarantorRequirementLabel || 'None' }}</small>
+          </div>
+
+          <div class="confirmation-card" *ngIf="getSelectedGroupAccountingEmail()">
+            <span class="label">Accounting Contact</span>
+            <strong>{{ getSelectedGroupAccountingEmail() }}</strong>
+            <small>Used when approved requests move to disbursement routing</small>
           </div>
         </div>
 

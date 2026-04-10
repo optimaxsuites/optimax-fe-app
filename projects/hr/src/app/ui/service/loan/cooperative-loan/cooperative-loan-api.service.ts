@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 import { getTokenFromStorage } from './token-util';
@@ -152,6 +152,7 @@ export interface CooperativeLoanApiResponse {
   gracePeriodRequests?: unknown[];
   paymentHistory?: unknown[];
   statusHistory?: unknown[];
+  supportingDocuments?: unknown[];
   createdAt?: string;
   updatedAt?: string;
   adminRequestNote?: string;
@@ -366,7 +367,10 @@ export interface CooperativeLoanDisbursementConfirmationApiResponse {
   id: number;
   loanId: number;
   disbursedAmount: number;
-  disbursementConfirmedAt: string;
+  memberId?: number;
+  groupMembershipId?: number;
+  groupName?: string;
+  disbursementConfirmedAt?: string;
   disbursementConfirmedBy?: number | CooperativeLoanApiAuditUser;
   disbursementInstructionReference: string;
   disbursementReference: string;
@@ -378,7 +382,10 @@ export interface CooperativeLoanDisbursementConfirmationApiPayload {
   id?: number;
   loanId: number;
   disbursedAmount: number;
-  disbursementConfirmedAt: string;
+  memberId?: number;
+  groupMembershipId?: number;
+  groupName?: string;
+  disbursementConfirmedAt?: string;
   disbursementConfirmedBy?: number;
   disbursementInstructionReference: string;
   disbursementReference: string;
@@ -938,6 +945,30 @@ export class CooperativeLoanApiService {
     const headers = this.getAuthHeaders();
     return this.http.post<CooperativeLoanDisbursementConfirmationApiResponse>(url, payload, { headers }).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error, 'createDisbursementConfirmation'))
+    );
+  }
+
+  getDisbursementConfirmations(params?: { page?: number; size?: number; loanId?: number }): Observable<CooperativeLoanDisbursementConfirmationApiResponse[]> {
+    const url = this.disbursementConfirmationsBaseUrl;
+    this.logRequest('GET', url);
+    const headers = this.getAuthHeaders();
+    let httpParams = new HttpParams();
+    if (params?.page !== undefined) httpParams = httpParams.set('page', String(params.page));
+    if (params?.size !== undefined) httpParams = httpParams.set('size', String(params.size));
+    if (params?.loanId !== undefined) httpParams = httpParams.set('loanId', String(params.loanId));
+
+    return this.http.get<unknown>(url, { headers, params: httpParams }).pipe(
+      map((response) => this.mapCollectionResponse<CooperativeLoanDisbursementConfirmationApiResponse>(response)),
+      catchError((error: HttpErrorResponse) => this.handleError(error, 'getDisbursementConfirmations'))
+    );
+  }
+
+  updateDisbursementConfirmation(id: number, payload: Partial<CooperativeLoanDisbursementConfirmationApiPayload>): Observable<CooperativeLoanDisbursementConfirmationApiResponse> {
+    const url = `${this.disbursementConfirmationsBaseUrl}/${id}`;
+    this.logRequest('PUT', url);
+    const headers = this.getAuthHeaders();
+    return this.http.put<CooperativeLoanDisbursementConfirmationApiResponse>(url, payload, { headers }).pipe(
+      catchError((error: HttpErrorResponse) => this.handleError(error, 'updateDisbursementConfirmation'))
     );
   }
 }

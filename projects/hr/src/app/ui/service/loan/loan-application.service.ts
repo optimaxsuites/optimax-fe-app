@@ -12,6 +12,7 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 })
 export class LoanApplicationService {
   private readonly applicationsSubject = new BehaviorSubject<LoanApplication[]>([]);
+  private readonly applicationsCacheKeyPrefix = 'advance-loan-applications-cache';
   private hasLoadedApplications = false;
 
   constructor(
@@ -34,6 +35,11 @@ export class LoanApplicationService {
 }
 
   getAllApplications(): Observable<LoanApplication[]> {
+    const cachedApplications = this.getCachedApplications();
+    if (cachedApplications) {
+      return of(cachedApplications);
+    }
+
     return this.refreshApplications();
   }
 
@@ -60,13 +66,14 @@ export class LoanApplicationService {
   }
 
   getApplicationsByEmployeeId(employeeId: string, employeeName?: string): Observable<LoanApplication[]> {
-    return this.refreshApplications().pipe(
+    return this.getAllApplications().pipe(
       map((applications) => this.filterApplicationsByEmployee(applications, employeeId, employeeName))
     );
   }
 
 getApplicationsObservable(): Observable<LoanApplication[]> {
-  if (!this.hasLoadedApplications) {
+  const cachedApplications = this.getCachedApplications();
+  if (!cachedApplications && !this.hasLoadedApplications) {
     this.refreshApplications().subscribe({
       error: (err) => {
         // Don't show error for connection refused
@@ -105,6 +112,7 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       tap((applications) => {
         this.hasLoadedApplications = true;
         this.applicationsSubject.next(applications);
+        this.writeCachedApplications(applications);
       })
     );
   }
@@ -269,6 +277,46 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     }
 
     this.applicationsSubject.next(currentApplications);
+
+    if (persistLocally) {
+      this.hasLoadedApplications = true;
+      this.writeCachedApplications(currentApplications);
+    }
+  }
+
+  private getCachedApplications(): LoanApplication[] | null {
+    if (this.hasLoadedApplications) {
+      return this.applicationsSubject.value;
+    }
+
+    const rawCache = sessionStorage.getItem(this.getApplicationsCacheKey());
+    if (!rawCache) {
+      return null;
+    }
+
+    try {
+      const parsedCache = JSON.parse(rawCache);
+      if (!Array.isArray(parsedCache)) {
+        return null;
+      }
+
+      const applications = parsedCache as LoanApplication[];
+      this.hasLoadedApplications = true;
+      this.applicationsSubject.next(applications);
+      return applications;
+    } catch {
+      sessionStorage.removeItem(this.getApplicationsCacheKey());
+      return null;
+    }
+  }
+
+  private writeCachedApplications(applications: LoanApplication[]): void {
+    sessionStorage.setItem(this.getApplicationsCacheKey(), JSON.stringify(applications));
+  }
+
+  private getApplicationsCacheKey(): string {
+    const sessionUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim() || 'anonymous';
+    return `${this.applicationsCacheKeyPrefix}:${sessionUserId}`;
   }
 
   private findMatchingApplication(applications: LoanApplication[], target: LoanApplication): LoanApplication | undefined {

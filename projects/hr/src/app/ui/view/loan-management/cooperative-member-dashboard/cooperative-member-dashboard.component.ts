@@ -2,13 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { of } from 'rxjs';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
-import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { CooperativeLoan, PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
 import {
   CooperativeMember,
   CooperativeRepayment,
@@ -203,14 +203,14 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.employeeService.getCurrentEmployee().subscribe({
       next: (employee) => {
         this.currentEmployeeProfile = this.mapEmployeeToProfile(employee);
-        this.loadMemberData();
       },
       error: (error) => {
         console.warn('Failed to resolve current employee profile for cooperative dashboard:', error);
+      },
+      complete: () => {
+        this.loadMemberData();
       }
     });
-
-    this.loadMemberData();
   }
 
   loadMemberData(): void {
@@ -218,61 +218,41 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.actionMessage = '';
     // Always show dashboard for registered members, even if no groups
 
-    this.cooperativeService.loadGroups().subscribe({
-      next: (groups) => {
+    forkJoin({
+      groups: this.cooperativeService.loadGroups(),
+      members: this.cooperativeService.getMembers()
+    }).subscribe({
+      next: ({ groups, members }) => {
         console.log('Groups loaded:', groups);
+        console.log('Loaded members:', members);
         console.log('Using real API data:', this.cooperativeService.isUsingRealData());
-        
-        this.cooperativeService.getMembers().subscribe({
-          next: (members: CooperativeMember[]) => {
-            console.log('Loaded members:', members);
-            console.log('Using real API data:', this.cooperativeService.isUsingRealData());
-            this.usingRealData = this.cooperativeService.isUsingRealData();
+        this.usingRealData = this.cooperativeService.isUsingRealData();
 
-            const member = this.resolveDashboardMember(members);
+        const member = this.resolveDashboardMember(members);
 
-            if (member && this.isResolvedMemberActive(member)) {
-              this.loadDashboardForMember(member);
-            } else {
-              this.member = undefined;
-              this.loans = [];
-              this.repaymentsByLoanId = {};
-              this.memberGroups = [];
-              this.availableJoinGroups = [];
-              this.eligibleJoinGroupIds = [];
-              this.actionMessage = 'No member profile found. Please apply for membership.';
-              this.actionMessageTone = 'error';
-              this.isLoading = false;
-            }
-          },
-          error: (error) => {
-            console.error('Error loading members:', error);
-            this.tryResolveCurrentMemberDirectly('Failed to load member data. Please try again later.');
-          }
-        });
+        if (member && this.isResolvedMemberActive(member)) {
+          this.loadDashboardForMember(member);
+          return;
+        }
+
+        if (member) {
+          this.loadRegisteredMemberState(member);
+          return;
+        }
+
+        this.member = undefined;
+        this.loans = [];
+        this.repaymentsByLoanId = {};
+        this.memberGroups = [];
+        this.availableJoinGroups = [];
+        this.eligibleJoinGroupIds = [];
+        this.actionMessage = 'No member profile found. Please apply for membership.';
+        this.actionMessageTone = 'error';
+        this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading groups:', error);
-        this.cooperativeService.getMembers().subscribe({
-          next: (members: CooperativeMember[]) => {
-            console.log('Loaded members (groups failed):', members);
-            this.usingRealData = this.cooperativeService.isUsingRealData();
-            const member = this.resolveDashboardMember(members);
-            
-            if (member && this.isResolvedMemberActive(member)) {
-              this.loadDashboardForMember(member);
-              if (!this.usingRealData) {
-                this.actionMessageTone = 'error';
-                this.actionMessage = 'Failed to load some cooperative data from the backend.';
-              }
-            }
-            this.isLoading = false;
-          },
-          error: (err) => {
-            console.error('Error loading members:', err);
-            this.tryResolveCurrentMemberDirectly('Failed to load member data. Please try again later.');
-          }
-        });
+        console.error('Error loading cooperative dashboard data:', error);
+        this.tryResolveCurrentMemberDirectly('Failed to load member data. Please try again later.');
       }
     });
   }
@@ -281,55 +261,63 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.member = member;
     this.currentMemberId = Number(member.id || member.memberId || this.currentMemberId || 0);
     this.applyMemberProfile(member);
-    this.refreshMemberFromBackend(member);
-
-    this.cooperativeService.getLoans().subscribe({
-      next: (loans) => {
+    forkJoin({
+      loans: this.cooperativeService.getLoans(),
+      memberships: this.cooperativeService.loadGroupMembershipsForMember(member)
+    }).subscribe({
+      next: ({ loans, memberships }) => {
         this.loans = loans
           .filter(loan => loan.cooperativeMemberId === member.id || loan.memberId === member.id)
           .sort((a: CooperativeLoan, b: CooperativeLoan) =>
             new Date(b.requestDate || b.approvedDate || b.requestDate || '').getTime() -
             new Date(a.requestDate || a.approvedDate || a.requestDate || '').getTime()
           );
-        this.cooperativeService.loadGroupMembershipsForMember(member).subscribe({
-          next: (memberships) => {
-            this.memberGroups = memberships
-              .filter((item: CooperativeGroupMembership) => item.status === 'ACTIVE')
-              .map((item: CooperativeGroupMembership) => ({
-                membership: item,
-                groupName: this.cooperativeService.getGroupById(item.groupId || item.groupId)?.name || 'Unknown Group',
-                maxBorrowable: this.cooperativeService.getMaxBorrowableAmountForGroup(member.id, item.groupId || item.groupId)
-              }));
 
-            this.refreshJoinGroupOptions(member.id);
-            const hasSelectedGroup = this.selectedGroupId !== null
-              && this.memberGroups.some(group => group.membership.groupId === this.selectedGroupId);
-            this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : null;
-            this.loadRepayments();
-            this.actionMessage = this.usingRealData ? '' : this.actionMessage;
-            this.updateMemberStatusUpdates();
-            this.updateActivityFeed();
-            this.isLoading = false;
-          },
-          error: (membershipError) => {
-            console.error('Error loading group memberships:', membershipError);
-            this.memberGroups = [];
-            this.availableJoinGroups = [];
-            this.eligibleJoinGroupIds = [];
-            this.updateMemberStatusUpdates();
-            this.updateActivityFeed();
-            this.isLoading = false;
-          }
-        });
+        this.memberGroups = memberships
+          .filter((item: CooperativeGroupMembership) => item.status === 'ACTIVE')
+          .map((item: CooperativeGroupMembership) => ({
+            membership: item,
+            groupName: this.cooperativeService.getGroupById(item.groupId || item.groupId)?.name || 'Unknown Group',
+            maxBorrowable: this.cooperativeService.getMaxBorrowableAmountForGroup(member.id, item.groupId || item.groupId)
+          }));
+
+        this.refreshJoinGroupOptions(member.id);
+        const hasSelectedGroup = this.selectedGroupId !== null
+          && this.memberGroups.some(group => group.membership.groupId === this.selectedGroupId);
+        this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : null;
+        this.loadRepayments();
+        this.actionMessage = this.usingRealData ? '' : this.actionMessage;
+        this.updateMemberStatusUpdates();
+        this.updateActivityFeed();
+        this.isLoading = false;
       },
-      error: (loanError) => {
-        console.error('Error loading loans:', loanError);
+      error: (dashboardError) => {
+        console.error('Error loading member loan dashboard:', dashboardError);
         this.loans = [];
+        this.memberGroups = [];
+        this.availableJoinGroups = [];
+        this.eligibleJoinGroupIds = [];
         this.updateMemberStatusUpdates();
         this.updateActivityFeed();
         this.isLoading = false;
       }
     });
+  }
+
+  private loadRegisteredMemberState(member: CooperativeMember): void {
+    this.member = member;
+    this.currentMemberId = Number(member.id || member.memberId || this.currentMemberId || 0);
+    this.applyMemberProfile(member);
+    this.loans = [];
+    this.repaymentsByLoanId = {};
+    this.memberGroups = [];
+    this.availableJoinGroups = [];
+    this.eligibleJoinGroupIds = [];
+    this.updateMemberStatusUpdates();
+    this.updateActivityFeed();
+    this.actionMessage = this.getRegisteredMemberStateMessage(member.status);
+    this.actionMessageTone = 'error';
+    this.isLoading = false;
   }
 
   private tryResolveCurrentMemberDirectly(failureMessage: string): void {
@@ -361,6 +349,11 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
             this.usingRealData = true;
             this.actionMessage = '';
             this.loadDashboardForMember(member);
+            return;
+          }
+          if (member) {
+            this.usingRealData = true;
+            this.loadRegisteredMemberState(member);
             return;
           }
           tryCandidate(index + 1);
@@ -414,26 +407,6 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       phone: member.phone || this.currentEmployeeProfile.phone,
       department: member.address || this.currentEmployeeProfile.department
     };
-  }
-
-  private refreshMemberFromBackend(member: CooperativeMember): void {
-    const memberId = Number(member.id || 0);
-    if (!Number.isFinite(memberId) || memberId <= 0) {
-      return;
-    }
-
-    this.cooperativeService.loadMemberById(memberId).subscribe({
-      next: (freshMember) => {
-        if (!freshMember) {
-          return;
-        }
-        this.member = freshMember;
-        this.applyMemberProfile(freshMember);
-      },
-      error: (error) => {
-        console.error('Failed to refresh cooperative member from backend:', error);
-      }
-    });
   }
 
   get hasMembership(): boolean {
@@ -536,6 +509,56 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   private isResolvedMemberActive(member: CooperativeMember | undefined): boolean {
     const normalizedStatus = String(member?.status || '').trim().toUpperCase();
     return !!member && normalizedStatus !== 'INACTIVE' && normalizedStatus !== 'SUSPENDED' && normalizedStatus !== 'REJECTED';
+  }
+
+  private extractKnownDate(value: string | undefined | null): string {
+    const normalizedValue = String(value || '').trim();
+    if (!normalizedValue) {
+      return '';
+    }
+
+    const parsed = new Date(normalizedValue);
+    return Number.isNaN(parsed.getTime()) ? '' : normalizedValue;
+  }
+
+  private calculateTenureMonths(startDate: string): number {
+    if (!startDate) {
+      return 0;
+    }
+
+    const start = new Date(startDate);
+    const today = new Date();
+
+    if (Number.isNaN(start.getTime()) || start > today) {
+      return 0;
+    }
+
+    let months = (today.getFullYear() - start.getFullYear()) * 12;
+    months += today.getMonth() - start.getMonth();
+
+    if (today.getDate() < start.getDate()) {
+      months -= 1;
+    }
+
+    return Math.max(months, 0);
+  }
+
+  private getRegisteredMemberStateMessage(status: string | undefined): string {
+    const normalizedStatus = String(status || '').trim().toUpperCase();
+
+    if (normalizedStatus === 'SUSPENDED') {
+      return 'Your cooperative membership is suspended. Contact an administrator for assistance.';
+    }
+
+    if (normalizedStatus === 'INACTIVE') {
+      return 'Your cooperative membership is inactive. Contact an administrator for assistance.';
+    }
+
+    if (normalizedStatus === 'REJECTED') {
+      return 'Your cooperative membership record is rejected. Contact an administrator for clarification.';
+    }
+
+    return 'Your cooperative membership is not active right now. Contact an administrator for assistance.';
   }
 
   private mapRank(value: string): CooperativeEmployeeProfile['rank'] {
@@ -645,8 +668,21 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     return this.memberGroups.find(group => group.membership.groupId === this.selectedGroupId)?.groupName || 'Selected Group';
   }
 
+  get currentMemberSinceDate(): string {
+    const membershipDates = this.memberGroups
+      .map((group) => this.extractKnownDate(group.membership.joinedAt || group.membership.activatedAt || group.membership.approvedAt || group.membership.requestedAt))
+      .filter((value): value is string => !!value)
+      .sort((left, right) => new Date(left).getTime() - new Date(right).getTime());
+
+    return membershipDates[0]
+      || this.extractKnownDate(this.member?.joinDate)
+      || this.extractKnownDate(this.member?.createdAt)
+      || this.extractKnownDate(this.member?.updatedAt)
+      || '';
+  }
+
   get currentMemberTenureMonths(): number {
-    return this.member ? this.cooperativeService.getMemberTenureMonths(this.member) : 0;
+    return this.calculateTenureMonths(this.currentMemberSinceDate);
   }
 
   getLoanGroupName(loan: CooperativeLoan): string {
@@ -799,8 +835,12 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate([`/member/cooperative/loans/${loanId}/${this.currentUuid}`]);
   }
 
-  viewRepaymentHistory(id: number): void {
+  viewRepaymentSchedule(id: number): void {
     this.selectedRepaymentHistoryLoanId = this.selectedRepaymentHistoryLoanId === id ? null : id;
+  }
+
+  viewRepaymentHistory(id: number): void {
+    this.viewRepaymentSchedule(id);
   }
 
   closeRepaymentHistory(): void {
@@ -810,6 +850,28 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   get selectedRepaymentHistoryLoan(): CooperativeLoan | null {
     if (!this.selectedRepaymentHistoryLoanId) return null;
     return this.loans.find(item => item.id === this.selectedRepaymentHistoryLoanId) || null;
+  }
+
+  get selectedLoanPaymentHistory(): PaymentHistory[] {
+    const loan = this.selectedLoanForDetails;
+    if (!loan) {
+      return [];
+    }
+
+    return [...(loan.paymentHistory || [])].sort((left, right) =>
+      new Date(right.paidAt || right.recordedAt || 0).getTime() - new Date(left.paidAt || left.recordedAt || 0).getTime()
+    );
+  }
+
+  get selectedLoanTimeline(): StatusHistory[] {
+    const loan = this.selectedLoanForDetails;
+    if (!loan) {
+      return [];
+    }
+
+    return [...(loan.statusHistory || [])]
+      .filter((entry) => !!entry?.changedAt)
+      .sort((left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime());
   }
 
   get selectedRepaymentHistoryRows(): CooperativeRepayment[] {
@@ -846,8 +908,18 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
         paidAmount: item.status === 'PAID' ? totalPayment : 0
       };
     });
-    const mappedStatus: LoanApplication['status'] = loan.status === 'DEFAULTED' ? 'ACTIVE' : 
-      loan.status === 'PENDING' || loan.status === 'APPROVED' || loan.status === 'REJECTED' || loan.status === 'ACTIVE' || loan.status === 'COMPLETED' ? loan.status : 'PENDING';
+    const mappedStatus: LoanApplication['status'] = loan.status === 'PENDING'
+      || loan.status === 'APPROVED'
+      || loan.status === 'REJECTED'
+      || loan.status === 'READY_FOR_DISBURSEMENT'
+      || loan.status === 'ACTIVE'
+      || loan.status === 'SKIPPED'
+      || loan.status === 'OVERDUE'
+      || loan.status === 'DEFAULTED'
+      || loan.status === 'PAUSED'
+      || loan.status === 'COMPLETED'
+      ? loan.status
+      : 'PENDING';
     return {
       id: Number(loan.loanId || loan.id || 0),
       loanCode: String(loan.loanCode || loan.loanId || loan.id || ''),
@@ -932,6 +1004,90 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       .filter(item => item.status === 'PAID' && !!item.paidDate)
       .sort((a, b) => new Date(b.paidDate as string).getTime() - new Date(a.paidDate as string).getTime())[0];
     return lastPaid?.paidDate || null;
+  }
+
+  getPaymentMethodLabel(method?: string): string {
+    switch (String(method || '').toUpperCase()) {
+      case 'BANK_TRANSFER':
+        return 'Bank Transfer';
+      case 'CASH':
+        return 'Cash';
+      case 'PAYROLL_DEDUCTION':
+        return 'Payroll Deduction';
+      case 'CHEQUE':
+        return 'Cheque';
+      case 'MOBILE_MONEY':
+        return 'Mobile Money';
+      default:
+        return method || 'Not set';
+    }
+  }
+
+  getLoanRepaymentStartDate(loan: CooperativeLoan): string {
+    return loan.repaymentStartDate || loan.requestDate || loan.applicationDate || '';
+  }
+
+  getLoanRepaymentDayDisplay(loan: CooperativeLoan): string {
+    const repaymentDay = Number(loan.repaymentDay || 0);
+    if (!repaymentDay) {
+      return 'Not set';
+    }
+
+    return `${repaymentDay}${this.getDayOrdinal(repaymentDay)}`;
+  }
+
+  getLoanDisbursementStatusText(loan: CooperativeLoan): string {
+    if (loan.disbursedDate || loan.status === 'ACTIVE' || loan.status === 'COMPLETED') {
+      return 'Disbursed';
+    }
+
+    if (loan.disbursementConfirmedAt) {
+      return 'Confirmed';
+    }
+
+    if (loan.disbursementInitiatedAt || loan.status === 'READY_FOR_DISBURSEMENT') {
+      return 'Ready For Disbursement';
+    }
+
+    return 'Not Disbursed';
+  }
+
+  getLoanDisbursementStatusClass(loan: CooperativeLoan): string {
+    const status = this.getLoanDisbursementStatusText(loan);
+    if (status === 'Disbursed') {
+      return 'status-active';
+    }
+    if (status === 'Confirmed' || status === 'Ready For Disbursement') {
+      return 'status-ready_for_disbursement';
+    }
+    return 'status-pending';
+  }
+
+  getTimelineActor(entry: StatusHistory): string {
+    const actor = entry.changedBy;
+    if (actor && typeof actor === 'object') {
+      return String(actor.fullname || actor.username || actor.email || 'System').trim();
+    }
+
+    const numericActor = Number(actor || 0);
+    return numericActor > 0 ? `Admin #${numericActor}` : 'System';
+  }
+
+  private getDayOrdinal(day: number): string {
+    if (day > 3 && day < 21) {
+      return 'th';
+    }
+
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   formatCurrency(amount: number): string {
