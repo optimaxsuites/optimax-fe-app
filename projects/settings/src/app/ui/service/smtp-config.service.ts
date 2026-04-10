@@ -35,6 +35,10 @@ export class SmtpConfigService {
     return this.http.post(`${this.baseUrl}/x/api/v2/us/smtp-config`, payload).pipe(catchError(this.handleError));;
   }
 
+  testConfig(payload: SmtpConfig): Observable<any> {
+    return this.http.post(`${this.baseUrl}/x/api/v2/us/smtp-config/test-connection`, payload).pipe(catchError(this.handleError));;
+  }
+  
   getConfig(): Observable<any> {
     return this.http.get(`${this.baseUrl}/x/api/v2/us/smtp-config`).pipe(catchError(this.handleError));;
   }

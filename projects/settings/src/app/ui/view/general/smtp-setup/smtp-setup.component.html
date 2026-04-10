@@ -7,87 +7,140 @@
 </div>
 <hr>
 
-<form [formGroup]="smtpForm" (ngSubmit)="submit()" class="smtp-form">
+<div class="flex justify-end mb-4">
 
-  <div class="form-grid">
-    <div class="field-container">
-      <label>Configuration Name</label>
-      <input type="text" placeholder="e.g. Primary Mailer" formControlName="name" />
-      <small class="p-error" *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched">Name is required</small>
-    </div>
-    <div class="field-container">
-      <label>Host</label>
-      <input type="text" placeholder="smtp.example.com" formControlName="host" />
-      <small class="p-error" *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched">Host is required</small>
-    </div>
-    <div class="field-container">
-      <label>Port</label>
-      <input type="number" placeholder="587" formControlName="port" />
-      <small class="p-error" *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched">Port is required</small>
-    </div>
-    <div class="field-container">
-      <label>Protocol</label>
-      <input type="text" placeholder="SMTP" formControlName="protocol" />
-      <small class="p-error" *ngIf="smtpForm.get('protocol')?.invalid && smtpForm.get('protocol')?.touched">Protocol is required</small>
-    </div>
-  </div>
-
-  <div class="form-grid">
-    <div class="field-container">
-      <label>Username</label>
-      <input type="text" formControlName="username" />
-      <small class="p-error" *ngIf="smtpForm.get('username')?.invalid && smtpForm.get('username')?.touched">Username is required</small>
-    </div>
-    <div class="field-container">
-      <label>Password</label>
-      <input type="password" formControlName="password" />
-      <small class="p-error" *ngIf="smtpForm.get('password')?.invalid && smtpForm.get('password')?.touched">Password is required</small>
-    </div>
-    <div class="field-container">
-      <label>From Address</label>
-      <input type="email" placeholder="noreply@domain.com" formControlName="fromAddress" />
-      <small class="p-error" *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched">
-        <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From Address is required</span>
-        <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
-      </small>
-    </div>
-  </div>
-
-  <div class="checkbox-grid">
-    <label class="check-label">
-      <input type="checkbox" formControlName="authEnabled" /> Auth Enabled
-    </label>
-    <label class="check-label">
-      <input type="checkbox" formControlName="startTlsEnabled" /> STARTTLS Enabled
-    </label>
-    <label class="check-label">
-      <input type="checkbox" formControlName="sslEnabled" /> SSL Enabled
-    </label>
-    <label class="check-label">
-      <input type="checkbox" formControlName="active" /> Active Configuration
-    </label>
-  </div>
-
-  <div class="form-grid">
-    <div class="field-container">
-      <label>Connection Timeout (ms)</label>
-      <input type="number" formControlName="connectionTimeoutMs" />
-    </div>
-    <div class="field-container">
-      <label>Timeout (ms)</label>
-      <input type="number" formControlName="timeoutMs" />
-    </div>
-    <div class="field-container">
-      <label>Write Timeout (ms)</label>
-      <input type="number" formControlName="writeTimeoutMs" />
-    </div>
-  </div>
-
-  <button type="submit" [disabled]="loading || smtpForm.invalid" class="submit-btn disabled:cursor-not-allowed disabled:bg-gray-400">
-    {{ loading ? 'Saving...' : 'Save SMTP Configuration' }}
+  <button (click)="createNew = !createNew" class="bg-customBlue text-white px-4 py-2 rounded-lg hover:bg-customBlue/90">
+    {{ createNew ? 'View All Configurations' : 'Create New Configuration' }}
   </button>
+</div>
 
-</form>
+<div *ngIf="createNew">
+  <form [formGroup]="smtpForm" (ngSubmit)="test()" class="smtp-form">
+
+    <div class="form-grid">
+      <div class="field-container">
+        <label>Configuration Name</label>
+        <input type="text" placeholder="e.g. Primary Mailer" formControlName="name" />
+        <small class="p-error" *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched">Name is required</small>
+      </div>
+      <div class="field-container">
+        <label>Host</label>
+        <input type="text" placeholder="smtp.example.com" formControlName="host" />
+        <small class="p-error" *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched">Host is required</small>
+      </div>
+      <div class="field-container">
+        <label>Port</label>
+        <input type="number" placeholder="587" formControlName="port" />
+        <small class="p-error" *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched">Port is required</small>
+      </div>
+      <div class="field-container">
+        <label>Protocol</label>
+        <input type="text" placeholder="SMTP" formControlName="protocol" />
+        <small class="p-error" *ngIf="smtpForm.get('protocol')?.invalid && smtpForm.get('protocol')?.touched">Protocol is required</small>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-container">
+        <label>Username</label>
+        <input type="text" formControlName="username" />
+        <small class="p-error" *ngIf="smtpForm.get('username')?.invalid && smtpForm.get('username')?.touched">Username is required</small>
+      </div>
+      <div class="field-container">
+        <label>Password</label>
+        <input type="password" formControlName="password" />
+        <small class="p-error" *ngIf="smtpForm.get('password')?.invalid && smtpForm.get('password')?.touched">Password is required</small>
+      </div>
+      <div class="field-container">
+        <label>From Address</label>
+        <input type="email" placeholder="noreply@domain.com" formControlName="fromAddress" />
+        <small class="p-error" *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched">
+          <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From Address is required</span>
+          <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
+        </small>
+      </div>
+    </div>
+
+    <div class="checkbox-grid">
+      <label class="check-label">
+        <input type="checkbox" formControlName="authEnabled" /> Auth Enabled
+      </label>
+      <label class="check-label">
+        <input type="checkbox" formControlName="startTlsEnabled" /> STARTTLS Enabled
+      </label>
+      <label class="check-label">
+        <input type="checkbox" formControlName="sslEnabled" /> SSL Enabled
+      </label>
+      <label class="check-label">
+        <input type="checkbox" formControlName="active" /> Active Configuration
+      </label>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-container">
+        <label>Connection Timeout (ms)</label>
+        <input type="number" formControlName="connectionTimeoutMs" />
+      </div>
+      <div class="field-container">
+        <label>Timeout (ms)</label>
+        <input type="number" formControlName="timeoutMs" />
+      </div>
+      <div class="field-container">
+        <label>Write Timeout (ms)</label>
+        <input type="number" formControlName="writeTimeoutMs" />
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="loading || smtpForm.invalid" class="submit-btn disabled:cursor-not-allowed disabled:bg-gray-400">
+      {{ loading ? 'Testing...' : 'Test Configuration' }}
+    </button>
+
+  </form>
+</div>
+
+<div *ngIf="!createNew">
+   <mat-accordion class="">
+      @for(config of allConfigs; track config.name){
+        <mat-expansion-panel #panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title class="capitalize">
+              {{ config.name }}
+            </mat-panel-title>
+            <mat-panel-description class="action-buttons">
+               <button (click)="activateConfig(config,  $event)" class="text-yellow-600 hover:bg-yellow-200 p-3 rounded-xl">
+                <i class="fa-solid fa-power-off cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">{{ !config.allowEcodeAuth ? 'Activate' : 'Deactivate' }}</span>
+              </button>
+              <button (click)="editConfig(config,  $event)" class="text-green-600 hover:bg-green-200 p-3 rounded-xl">
+                <i class="fa-solid fa-pen cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">Edit</span>
+              </button>
+              <button (click)="confirmDeleteConfig(config, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!config.isEditing">
+                <i class="fa-solid fa-trash text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">Delete</span>
+              </button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          
+          <div>
+            <p><strong>Host:</strong> {{ config.host }}</p>
+            <p><strong>Port:</strong> {{ config.port }}</p>
+            <p><strong>Protocol:</strong> {{ config.protocol }}</p>
+            <p><strong>Username:</strong> {{ config.username }}</p>
+            <p><strong>From Address:</strong> {{ config.fromAddress }}</p>
+            <p><strong>Auth Enabled:</strong> {{ config.authEnabled ? 'Yes' : 'No' }}</p>
+            <p><strong>STARTTLS Enabled:</strong> {{ config.startTlsEnabled ? 'Yes' : 'No' }}</p>
+            <p><strong>SSL Enabled:</strong> {{ config.sslEnabled ? 'Yes' : 'No' }}</p>
+            <p><strong>Active Configuration:</strong> {{ config.active ? 'Yes' : 'No' }}</p>
+            <p><strong>Connection Timeout (ms):</strong> {{ config.connectionTimeoutMs }}</p>
+            <p><strong>Timeout (ms):</strong> {{ config.timeoutMs }}</p>
+            <p><strong>Write Timeout (ms):</strong> {{ config.writeTimeoutMs }}</p>
+          </div>
+        </mat-expansion-panel>
+      }
+      @empty {<li>There are no items.</li>}
+    </mat-accordion>
+</div>
 
 <!-- <div *ngIf="response" class="response-log">
   <pre>{{ response | json }}</pre>
