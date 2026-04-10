@@ -54,11 +54,16 @@ export class ApprovalComponent implements OnInit {
 
     // 2. Fetch Modules and Build the Form
     this.moduleService.getModules().subscribe({
-      next: (data) => {
-        this.modules = data;
-        this.buildApprovalForm();
-      }
-    });
+        next: (modules) => {
+          this.modules = modules;
+          this.buildApprovalForm();
+          
+          // Load existing configurations from backend
+          this.workflowService.getWorkflows().subscribe(existingWorkflows => {
+            this.patchExistingWorkflows(existingWorkflows);
+          });
+        }
+      });
 
      this.userService.getUsers().subscribe({
       next: (data) => {
@@ -94,6 +99,7 @@ export class ApprovalComponent implements OnInit {
         const actionsGroup = this.fb.group({});
         this.AVAILABLE_ACTIONS.forEach(action => {
           actionsGroup.addControl(action, this.fb.group({
+            id: [0],
             isEnabled: [true],
             stages: this.fb.array([]) 
           }));
@@ -101,6 +107,7 @@ export class ApprovalComponent implements OnInit {
 
         // Add the control to the 'submodules' group
         submodulesGroup.addControl(controlName, this.fb.group({
+          id: [0],
           submoduleId: [app.id],
           isEnabled: [false], // The master toggle
           actions: actionsGroup
@@ -180,6 +187,64 @@ export class ApprovalComponent implements OnInit {
     stages.removeAt(stageIndex);
   }
 
+  patchExistingWorkflows(workflows: any[]) {
+  workflows.forEach(flow => {
+    // 1. Identify the correct submodule control name
+    const controlName = `${flow.module.title}_${flow.submodule.appName}`;
+    const submoduleGroup = this.approvalForm.get(`submodules.${controlName}`) as FormGroup;
+
+    if (submoduleGroup) {
+      const actionGroup = submoduleGroup.get(`actions.${flow.actionKey}`) as FormGroup;
+      
+      if (actionGroup) {
+        // Patch high-level flow data including ID for updates
+        actionGroup.patchValue({
+          id: flow.id, // Store the workflow ID
+          isEnabled: flow.isActive
+        }, { emitEvent: false });
+
+        // Master toggle logic: If any action is active, submodule is enabled
+        if (flow.isActive) {
+          submoduleGroup.patchValue({ isEnabled: true }, { emitEvent: false });
+        }
+
+        // 2. Clear and Rebuild Stages
+        const stagesArray = actionGroup.get('stages') as FormArray;
+        stagesArray.clear();
+
+        flow.stages.forEach((stage: any) => {
+          const stageGroup = this.fb.group({
+            id: [stage.id], // ID for the stage
+            name: [stage.name, Validators.required],
+            orderIndex: [stage.orderIndex],
+            approvalType: [stage.approvalType, Validators.required],
+            rejectionPolicy: [stage.onReject, Validators.required],
+            isOptional: [stage.isOptional || false],
+            minApprovals: [stage.minApprovals, [Validators.min(1)]],
+            allowSelfApproval: [stage.allowSelfApproval],
+            isDocumentRequired: [stage.isDocumentRequired],
+            canEditRecord: [stage.canEditRecord],
+            assignment: this.fb.array([])
+          });
+
+          // 3. Patch Assignments
+          const assignmentsArray = stageGroup.get('assignment') as FormArray;
+          stage.assignment.forEach((assign: any) => {
+            assignmentsArray.push(this.fb.group({
+              id: [assign.id], // ID for the assignment
+              userId: [assign.userId ? assign.userId.id : null],
+              roleId: [assign.roleId ? assign.roleId.id : null]
+            }));
+          });
+
+          stagesArray.push(stageGroup);
+        });
+      }
+    }
+  });
+  this.cdr.detectChanges();
+}
+
   saveSettings(module: any, app: any) {
     const controlName = `${module.title}_${app.appName}`;
     const submoduleGroup = this.approvalForm.get(`submodules.${controlName}`);
@@ -197,17 +262,16 @@ export class ApprovalComponent implements OnInit {
 
       if (actionSettings.isEnabled && hasStages) {
         const payload = {
-          id: 0,
+          id: actionSettings.id || 0,
           moduleId: module.id , 
           submoduleId: app.id ,
           actionKey: actionKey, 
           isActive: true,
           version: 1,
-          callbackEnabled: true,
           createdAt: now,
           updatedAt: now,
           stages: actionSettings.stages.map((stage: any, index: number) => ({
-            id: 0,
+            id: stage.id || 0,
             name: stage.name,
             orderIndex: index + 1,
             minApprovals: stage.minApprovals || 0,
@@ -219,7 +283,7 @@ export class ApprovalComponent implements OnInit {
             createdAt: now,
             updatedAt: now,
             assignment: stage.assignment.map((assign: any, aIndex: number) => ({
-              id: 0,
+              id:  assign.id || 0,
               userId: assign.userId ? assign.userId : null,
               roleId: assign.roleId ? assign.roleId : null,
               position: aIndex + 1,

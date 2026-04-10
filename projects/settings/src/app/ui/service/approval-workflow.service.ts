@@ -16,6 +16,13 @@ export class ApprovalWorkflowService {
       .post<any>(this.baseUrl + `/x/api/v2/workflow/approvals`, payload)
       .pipe(catchError(this.handleError));
     }
+
+    getWorkflows(){
+      return this.http
+      .get<any>(this.baseUrl + `/x/api/v2/workflow/approvals`)
+      .pipe(catchError(this.handleError));
+    }
+
   
    private handleError(error: HttpErrorResponse) {
       let errorMessage = 'An unknown error occurred!';
