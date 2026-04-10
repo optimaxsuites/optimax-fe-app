@@ -1,0 +1,240 @@
+<!-- <p-confirmDialog></p-confirmDialog> -->
+<p-confirmDialog class="table-item"  icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+
+<p-toast class="table-item"></p-toast>
+
+<div class="card p-3">
+  <app-table
+    [columns]="columns"
+    [rows]="prQuoteReviewList"
+    [actions]="actions"
+    [paginator]="true"
+    [rowsPerPage]="10"
+    [selectable]="false"
+    dataKey="id"
+    (rowClick)="openPrReview($event)"
+    (actionClick)="onAction($event)"
+  ></app-table>
+</div>
+
+<app-large-side-modal
+  *ngIf="displayPrQuoteView && selectedPr"
+  header="PR Quote Review"
+  subheader="Review vendor submissions for this purchase requisition and make a procurement decision."
+  (close)="closePrQuoteView()"
+>
+  <div class="p-4 space-y-6">
+    <div class="border-b border-slate-200 pb-4">
+      <h2 class="text-xl font-semibold text-slate-800">
+        {{ selectedPr.prmNo }} - {{ selectedPr.title }}
+      </h2>
+
+      <div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
+        <span><strong>Department:</strong> {{ getDepartmentName(selectedPr.department) }}</span>
+        <span><strong>Required By:</strong> {{ selectedPr.requiredByDate }}</span>
+        <!-- <span><strong>Currency:</strong> {{ selectedPr.currency }}</span> -->
+        <!-- <span><strong>Budget Cap:</strong> {{ formatCurrency(selectedPr.budgetCapAmount, selectedPr.currency) }}</span> -->
+        <span><strong>Status:</strong> {{ selectedPr.status }}</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Quotes Received</p>
+        <h3 class="mt-2 text-2xl font-semibold text-slate-800">{{ summaryCards.quoteCount }}</h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Lowest Quote</p>
+        <h3 class="mt-2 text-2xl font-semibold text-slate-800">
+          {{ formatCurrency(summaryCards.lowestQuote, selectedPr.currency) }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Highest Quote</p>
+        <h3 class="mt-2 text-2xl font-semibold text-slate-800">
+          {{ formatCurrency(summaryCards.highestQuote, selectedPr.currency) }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Submitted</p>
+        <h3 class="mt-2 text-2xl font-semibold text-amber-600">{{ summaryCards.submittedCount }}</h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Under Review</p>
+        <h3 class="mt-2 text-2xl font-semibold text-sky-600">{{ summaryCards.underReviewCount }}</h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Approved / Rejected</p>
+        <h3 class="mt-2 text-2xl font-semibold text-slate-800">
+          {{ summaryCards.approvedCount }} / {{ summaryCards.rejectedCount }}
+        </h3>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <h3 class="mb-2 text-base font-semibold text-slate-800">PR Justification</h3>
+      <p class="text-sm leading-6 text-slate-700">
+        {{ selectedPr.justification || 'N/A' }}
+      </p>
+    </div>
+
+    <div class="space-y-3">
+      <h3 class="text-lg font-semibold text-slate-800">Vendor Quotes</h3>
+
+      <div class="card p-0">
+        <app-table
+          [columns]="quoteColumns"
+          [rows]="selectedPrQuotes"
+          [actions]="quoteActions"
+          [paginator]="true"
+          [rowsPerPage]="5"
+          [selectable]="false"
+          dataKey="id"
+          (rowClick)="openQuote($event)"
+          (actionClick)="onQuoteAction($event)"
+        ></app-table>
+      </div>
+    </div>
+  </div>
+</app-large-side-modal>
+
+<app-large-side-modal
+  *ngIf="displayQuoteView && selectedQuote"
+  header="Vendor Quote Details"
+  subheader="View quote summary, requisition reference, quoted items, and submission details."
+  (close)="closeQuoteView()"
+>
+  <div class="p-4 space-y-6">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Vendor</p>
+        <h3 class="mt-2 text-lg font-semibold text-slate-800">
+          {{ getVendorName(selectedQuote.vendorId) || '---' }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">PR No</p>
+        <h3 class="mt-2 text-lg font-semibold text-slate-800">
+          {{ selectedQuote.prmNo }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Status</p>
+        <h3 class="mt-2 text-lg font-semibold text-slate-800">
+          {{ selectedQuote.status }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Submitted At</p>
+        <h3 class="mt-2 text-base font-semibold text-slate-800">
+          {{ formatDate(selectedQuote.submittedAt)|| 'N/A' }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Delivery Timeline</p>
+        <h3 class="mt-2 text-base font-semibold text-slate-800">
+          {{ selectedQuote.deliveryTimeline || 'N/A' }}
+        </h3>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Quote Total</p>
+        <h3 class="mt-2 text-base font-semibold text-slate-800">
+          {{ formatCurrency(selectedQuote.computedTotal, selectedPr?.currency || 'NGN') }}
+        </h3>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h3 class="mb-4 text-lg font-semibold text-slate-800">Quoted Items</h3>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Item</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Description</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Qty</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Unit</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Unit Price</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Total</th>
+              <th class="px-4 py-3 text-left font-semibold text-slate-600">Budget Cap</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 bg-white">
+            <tr *ngFor="let item of selectedQuote.items">
+              <td class="px-4 py-3 text-slate-700">{{ item.name }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ item.description || 'N/A' }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ item.quantity }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ item.unitOfMeasure }}</td>
+              <td class="px-4 py-3 text-slate-700">
+                {{ formatCurrency(item.unitPrice, selectedPr?.currency || 'NGN') }}
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                {{ formatCurrency(item.totalPrice, selectedPr?.currency || 'NGN') }}
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                {{ formatCurrency(item.prBudgetCap || 0, selectedPr?.currency || 'NGN') }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <h3 class="mb-2 text-base font-semibold text-slate-800">Vendor Notes</h3>
+      <p class="text-sm text-slate-700">
+        {{ selectedQuote.notes || 'N/A' }}
+      </p>
+    </div>
+
+    <div
+      *ngIf="selectedQuote.rejectionReason"
+      class="rounded-xl border border-rose-200 bg-rose-50 p-4"
+    >
+      <h3 class="mb-2 text-sm font-semibold text-rose-700">Rejection Reason</h3>
+      <p class="text-sm text-rose-700">
+        {{ selectedQuote.rejectionReason }}
+      </p>
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
+      <button
+        *ngIf="canMarkUnderReview(selectedQuote)"
+        type="button"
+        (click)="markUnderReview(selectedQuote)"
+        class="rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+      >
+        Mark Under Review
+      </button>
+
+      <button
+        *ngIf="canReject(selectedQuote)"
+        type="button"
+        (click)="confirmRejectQuote(selectedQuote)"
+        class="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+      >
+        Reject Quote
+      </button>
+
+      <button
+        *ngIf="canApprove(selectedQuote)"
+        type="button"
+        (click)="confirmApproveQuote(selectedQuote)"
+        class="rounded-lg bg-[#2E6276] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#245060]"
+      >
+        Approve Quote
+      </button>
+    </div>
+  </div>
+</app-large-side-modal>

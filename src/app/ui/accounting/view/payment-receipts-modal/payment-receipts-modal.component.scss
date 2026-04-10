@@ -1,0 +1,111 @@
+.overallContainer {
+  padding: 2rem;
+  box-sizing: border-box;
+  height: 1000px;
+}
+
+.selectClients {
+  box-shadow: 0px 5px 5px rgb(180, 180, 180);
+  margin-bottom: 2rem;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  border-radius: 10px;
+}
+
+.formField {
+  width: 14rem;
+}
+
+.mainSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.sectionButton {
+  font-weight: bold;
+  border: none;
+  padding: 1rem;
+  background-color: #314a72;
+  color: #fff;
+  border-radius: 1rem;
+  margin-top: 1rem;
+}
+
+// Administration takes care of the settings.
+
+.example-form {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.downSvg {
+  height: 3rem;
+}
+
+.addNew {
+  margin-bottom: 0.6rem;
+}
+
+.divButton {
+  margin-top: 0.5rem;
+}
+
+.description-box {
+  max-width: 61.3%;
+  padding: 1rem;
+  box-sizing: border-box;
+  // height: 500px;
+  // background-color: black;
+}
+
+.btn-light {
+  width: -webkit-fill-available;
+}
+
+.close-btn {
+  margin-top: 1rem;
+}
+
+.close-btn:hover {
+  margin-top: 1rem;
+  background-color: #e1edf5;
+}
+
+.mainSection3 {
+  display: block;
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactDetails > button {
+  align-self: self-start;
+}
+
+.mainSection2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+}
+
+.tableDiv {
+  padding: 3rem;
+  box-shadow: 0 0 25px -9px #023d50;
+  width: 50%;
+  margin-top: 1rem;
+}
+.form {
+  width: 100%;
+}
+.smallTable {
+  padding: 1.5rem;
+  box-shadow: 0 0 25px -9px #24143d;
+  width: 50%;
+}

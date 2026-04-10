@@ -1,0 +1,340 @@
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&family=Material+Symbols+Rounded&family=Material+Symbols+Sharp" rel="stylesheet" />
+
+<div class="p-6">
+
+  <!-- Cards Section -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Expenses Card -->
+    <div class="bg-sky-600 text-white p-5 rounded-2xl shadow-lg">
+      <h2 class="text-base font-semibold flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-xl">receipt</span>
+        Total Expenses
+      </h2>
+      <p class="text-2xl font-bold">{{ totalExpenses | currency: '₦' }}</p>
+      <p class="text-lg text-white/80">Top Category: {{ topCategory }}</p>
+    </div>
+
+    <!-- Pending Approvals Card -->
+    <div class="bg-yellow-500 text-white p-5 rounded-2xl shadow-lg">
+      <h2 class="text-base font-semibold flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-xl">pending_actions</span>
+        Pending Approvals
+      </h2>
+      <p class="text-2xl font-bold">{{ pendingCount }}</p>
+      <p class="text-lg text-white/80 mt-2">Oldest Request: {{ oldestPendingRequest !== null ? oldestPendingRequest + ' day ago' : 'No pending requests' }}</p>
+      <p class="text-lg text-white/80">Pending Users: {{ pendingCount }}</p>
+    </div>
+
+    <!-- Approved Requests Card -->
+    <div class="bg-green-600 text-white p-5 rounded-2xl shadow-lg">
+      <h2 class="text-base font-semibold flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-xl">task_alt</span>
+        Approved Requests
+      </h2>
+      <p class="text-2xl font-bold">{{ approvedCount }}</p>
+      <p class="text-lg text-white/80 mt-2">This Week: {{ thisWeekApprovedCount + ' Approved' }}</p>
+      <p class="text-lg text-white/80">Avg. Amount: ₦{{ avgApprovedAmount }}</p>
+    </div>
+
+    <!-- Rejected Requests Card -->
+    <div class="bg-red-500 text-white p-5 rounded-2xl shadow-lg">
+      <h2 class="text-base font-semibold flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-xl">block</span>
+        Rejected Requests
+      </h2>
+      <p class="text-2xl font-bold">{{ rejectedCount }}</p>
+      <p class="text-lg text-white/80 mt-2">Last Rejected: {{ lastRejectedDays }} days ago</p>
+    </div>
+  </div>
+
+  <!-- Tabs Section -->
+  <div class="bg-white rounded-xl shadow mb-6">
+    <div class="border-b border-gray-200">
+      <nav class="flex space-x-8 px-6" aria-label="Tabs">
+        <button 
+          *ngFor="let tab of tabs" 
+          (click)="selectTab(tab)"
+          [class.border-green-500]="selectedTab === tab"
+          [class.text-green-600]="selectedTab === tab"
+          [class.border-transparent]="selectedTab !== tab"
+          [class.text-gray-500]="selectedTab !== tab"
+          class="py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300 transition">
+          {{ tab }}
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="p-6">
+      <!-- Overview Tab -->
+      <div *ngIf="selectedTab === 'Overview'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Expense Trend Chart -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Sales Trend ({{ dateRangeLabel }})</h3>
+            <apx-chart
+              [series]="salesTrendChartOptions.series!"
+              [chart]="salesTrendChartOptions.chart!"
+              [xaxis]="salesTrendChartOptions.xaxis!"
+              [yaxis]="salesTrendChartOptions.yaxis!"
+              [stroke]="salesTrendChartOptions.stroke!"
+              [fill]="salesTrendChartOptions.fill!"
+              [colors]="salesTrendChartOptions.colors!"
+              [dataLabels]="salesTrendChartOptions.dataLabels!"
+              [grid]="salesTrendChartOptions.grid!"
+              [tooltip]="salesTrendChartOptions.tooltip!">
+            </apx-chart>
+          </div>
+          
+          <!-- Status Distribution Chart -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Payment Method Distribution</h3>
+            <apx-chart
+              [series]="paymentMethodChartOptions.series!"
+              [chart]="paymentMethodChartOptions.chart!"
+              [labels]="paymentMethodChartOptions.labels!"
+              [colors]="paymentMethodChartOptions.colors!"
+              [legend]="paymentMethodChartOptions.legend!"
+              [dataLabels]="paymentMethodChartOptions.dataLabels!"
+              [plotOptions]="paymentMethodChartOptions.plotOptions!"
+              [tooltip]="paymentMethodChartOptions.tooltip!">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Additional Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <!-- Revenue by Branch Chart -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Revenue by Branch</h3>
+            <apx-chart
+              [series]="revenueBranchChartOptions.series!"
+              [chart]="revenueBranchChartOptions.chart!"
+              [xaxis]="revenueBranchChartOptions.xaxis!"
+              [plotOptions]="revenueBranchChartOptions.plotOptions!"
+              [colors]="revenueBranchChartOptions.colors!"
+              [dataLabels]="revenueBranchChartOptions.dataLabels!"
+              [grid]="revenueBranchChartOptions.grid!"
+              [yaxis]="revenueBranchChartOptions.yaxis!">
+            </apx-chart>
+          </div>
+
+          <!-- Top Selling Products Chart -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Top Selling Products</h3>
+            <apx-chart
+              [series]="topProductsChartOptions.series!"
+              [chart]="topProductsChartOptions.chart!"
+              [xaxis]="topProductsChartOptions.xaxis!"
+              [plotOptions]="topProductsChartOptions.plotOptions!"
+              [colors]="topProductsChartOptions.colors!"
+              [dataLabels]="topProductsChartOptions.dataLabels!"
+              [grid]="topProductsChartOptions.grid!"
+              [yaxis]="topProductsChartOptions.yaxis!">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Tab -->
+      <div *ngIf="selectedTab === 'Categories'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Expenses by Category</h3>
+            <apx-chart
+              [series]="categoryBarChartOptions.series!"
+              [chart]="categoryBarChartOptions.chart!"
+              [xaxis]="categoryBarChartOptions.xaxis!"
+              [plotOptions]="categoryBarChartOptions.plotOptions!"
+              [colors]="categoryBarChartOptions.colors!"
+              [dataLabels]="categoryBarChartOptions.dataLabels!"
+              [grid]="categoryBarChartOptions.grid!"
+              [yaxis]="categoryBarChartOptions.yaxis!">
+            </apx-chart>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Category Distribution</h3>
+            <apx-chart
+              [series]="categoryPieChartOptions.series!"
+              [chart]="categoryPieChartOptions.chart!"
+              [labels]="categoryPieChartOptions.labels!"
+              [colors]="categoryPieChartOptions.colors!"
+              [legend]="categoryPieChartOptions.legend!"
+              [dataLabels]="categoryPieChartOptions.dataLabels!">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submitters Tab -->
+      <div *ngIf="selectedTab === 'Submitters'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Expenses by Submitter</h3>
+            <apx-chart
+              [series]="submitterChartOptions.series!"
+              [chart]="submitterChartOptions.chart!"
+              [xaxis]="submitterChartOptions.xaxis!"
+              [plotOptions]="submitterChartOptions.plotOptions!"
+              [colors]="submitterChartOptions.colors!"
+              [dataLabels]="submitterChartOptions.dataLabels!"
+              [grid]="submitterChartOptions.grid!"
+              [yaxis]="submitterChartOptions.yaxis!">
+            </apx-chart>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Submitter Activity</h3>
+            <div class="space-y-3">
+              <div *ngFor="let submitter of topSubmittersData" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div>
+                  <p class="font-medium text-gray-800">{{ submitter.name }}</p>
+                  <p class="text-sm text-gray-500">{{ submitter.count }} expenses</p>
+                </div>
+                <p class="text-lg font-semibold text-sky-600">₦{{ submitter.total | number }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Tab -->
+      <div *ngIf="selectedTab === 'Status'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Status Overview</h3>
+            <apx-chart
+              [series]="statusDoughnutChartOptions.series!"
+              [chart]="statusDoughnutChartOptions.chart!"
+              [labels]="statusDoughnutChartOptions.labels!"
+              [colors]="statusDoughnutChartOptions.colors!"
+              [legend]="statusDoughnutChartOptions.legend!"
+              [dataLabels]="statusDoughnutChartOptions.dataLabels!"
+              [plotOptions]="statusDoughnutChartOptions.plotOptions!">
+            </apx-chart>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold mb-3 text-gray-700">Status Breakdown</h3>
+            <div class="space-y-3">
+              <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-600 font-medium">Approved</p>
+                    <p class="text-2xl font-bold text-green-600">{{ approvedCount }}</p>
+                  </div>
+                  <p class="text-xl font-semibold text-green-600">₦{{ approvedTotal | number }}</p>
+                </div>
+              </div>
+              <div class="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-600 font-medium">Pending</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ pendingCount }}</p>
+                  </div>
+                  <p class="text-xl font-semibold text-yellow-600">₦{{ pendingTotal | number }}</p>
+                </div>
+              </div>
+              <div class="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-600 font-medium">Rejected</p>
+                    <p class="text-2xl font-bold text-red-600">{{ rejectedCount }}</p>
+                  </div>
+                  <p class="text-xl font-semibold text-red-600">₦{{ rejectedTotal | number }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Report Tab -->
+      <div *ngIf="selectedTab === 'Detailed Report'">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold">Comprehensive Expense Report</h3>
+          <p class="text-sm text-gray-500">Detailed breakdown of all expenses with filters applied</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Sorting Section -->
+  <div class="mb-4 bg-white p-4 rounded-xl shadow">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div>
+        <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status:</label>
+        <select id="statusFilter" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500" (change)="applyStatusFilter($event)">
+          <option value="all">All</option>
+          <option value="approved">Approved</option>
+          <option value="pending">Pending</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="categoryFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Category:</label>
+        <select id="categoryFilter" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500" (change)="applyCategoryFilter($event)">
+          <option value="all">All Categories</option>
+          <option *ngFor="let cat of uniqueCategories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="paidByFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Submitted By:</label>
+        <select id="paidByFilter" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500" (change)="applyPaidByFilter($event)">
+          <option value="all">All Users</option>
+          <option *ngFor="let user of uniqueSubmitters" [value]="user">{{ user }}</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="recurringFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Type:</label>
+        <select id="recurringFilter" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500" (change)="applyRecurringFilter($event)">
+          <option value="all">All Types</option>
+          <option value="recurring">Recurring</option>
+          <option value="one-time">One-time</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="flex justify-between items-center">
+      <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition" (click)="clearAllFilters()">
+        Clear All Filters
+      </button>
+      <div>
+        <button class="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition">Export to Excel</button>
+        <button class="px-4 py-2 bg-sky-500 text-white rounded ml-2 hover:bg-sky-600 transition">Export to PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div class="bg-white p-4 shadow rounded">
+    <h3 class="text-lg font-semibold mb-2">Approval Report</h3>
+    <table class="w-full table-auto border">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2 border">Expense Name</th>
+          <th class="p-2 border">Amount</th>
+          <th class="p-2 border">Status</th>
+          <th class="p-2 border">Date Submitted</th>
+          <th class="p-2 border">Submitted By</th>
+          <th class="p-2 border">Approved By</th>
+          <th class="p-2 border">Approval Date</th>
+          <th class="p-2 border">Comment/Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredTableData">
+          <td class="p-2 border">{{ item.name }}</td>
+          <td class="p-2 border">{{ item.amount | currency: '₦' }}</td>
+          <td class="p-2 border">{{ item.status }}</td>
+          <td class="p-2 border">{{ item.eventDate | date }}</td>
+          <td class="p-2 border">{{ item.id }}</td>
+          <td class="p-2 border">{{ item.approvedBy }}</td>
+          <td class="p-2 border">{{ item.approvalDate | date }}</td>
+          <td class="p-2 border">{{ item.comment }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

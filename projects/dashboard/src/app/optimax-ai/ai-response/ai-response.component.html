@@ -1,0 +1,117 @@
+<!-- Matched Scenario badge -->
+<div *ngIf="matchedScenario" class="flex items-center gap-1.5 mb-0.5">
+  <span class="px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-[#eaf2f6] text-[#2e6276] border border-[#2e6276]/15 uppercase tracking-wide">
+    {{ matchedScenario }}
+  </span>
+</div>
+
+<!-- ══════════════════════════════════════
+     FORMAT: MARKDOWN
+══════════════════════════════════════ -->
+<ng-container *ngIf="format === 'markdown'">
+
+  <!-- Analysis card with rendered markdown -->
+  <div *ngIf="text"
+    class="bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3.5 shadow-[0_1px_6px_rgba(46,98,118,0.05)]">
+    <div class="flex items-center gap-2 mb-2.5 pb-2 border-b border-[#f0f4f7]">
+      <div class="w-0.5 h-3.5 bg-[#2e6276] rounded shrink-0"></div>
+      <p class="text-[10px] font-semibold text-[#2e6276] tracking-widest uppercase">Analysis</p>
+      <span class="ml-auto text-[9px] text-[#a0b0bc]">{{ time }}</span>
+    </div>
+    <div class="oai-markdown-body">
+      <markdown [data]="text" />
+    </div>
+  </div>
+
+  <!-- KPI Snapshot grid -->
+  <div *ngIf="displayKpis(kpis).length > 0"
+    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]">
+    <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]">
+      <div class="w-0.5 h-3.5 bg-[#4a9db5] rounded"></div>
+      <span class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest">KPI Snapshot</span>
+    </div>
+    <div class="grid grid-cols-3 gap-px bg-[#f0f4f7] p-px">
+      <div *ngFor="let kpi of displayKpis(kpis)" class="bg-white px-4 py-3 flex flex-col gap-0.5">
+        <p class="text-[9px] uppercase tracking-widest text-[#a0b0bc] font-semibold">{{ kpi.metric }}</p>
+        <p class="text-[16px] font-bold text-[#1a2733] leading-none">{{ kpi.value }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Coverage warning -->
+  <div *ngIf="coverage && coverage.length > 0"
+    class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+    <div class="flex items-center gap-2 mb-1.5">
+      <svg width="11" height="11" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-widest">Data Coverage</span>
+    </div>
+    <p *ngFor="let c of coverage" class="text-[11.5px] text-amber-800 leading-relaxed">{{ c }}</p>
+  </div>
+
+  <!-- Suggested Actions -->
+  <div *ngIf="actions && actions.length > 0"
+    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]">
+    <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]">
+      <div class="w-0.5 h-3.5 bg-amber-400 rounded"></div>
+      <span class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest">Suggested Actions</span>
+    </div>
+    <ul class="px-4 py-3 flex flex-col gap-1.5 list-none m-0">
+      <li *ngFor="let a of actions; let i = index"
+        class="flex items-start gap-2.5 text-[12px] text-[#4a6272] leading-relaxed px-3 py-2 bg-[#fffdf4] rounded-lg border border-amber-100">
+        <span class="shrink-0 w-4 h-4 rounded-full bg-amber-100 text-amber-600 text-[9px] font-bold flex items-center justify-center mt-0.5">{{ i + 1 }}</span>
+        {{ a }}
+      </li>
+    </ul>
+  </div>
+
+</ng-container>
+
+<!-- ══════════════════════════════════════
+     FORMAT: CHART
+     Delegates all chart rendering to
+     <app-chart-renderer>
+══════════════════════════════════════ -->
+<ng-container *ngIf="format === 'chart'">
+  <app-chart-renderer
+    [chart]="chart ?? null"
+    [isHeatmap]="isHeatmap"
+    [heatmapCells]="heatmapCells ?? []"
+    [apexSeries]="apexSeries"
+    [apexOptions]="apexOptions"
+    [fallbackText]="text"
+    [actions]="actions ?? []">
+  </app-chart-renderer>
+</ng-container>
+
+<!-- ══════════════════════════════════════
+     FORMAT: JSON
+══════════════════════════════════════ -->
+<ng-container *ngIf="format === 'json'">
+  <div class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]">
+    <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]">
+      <div class="w-0.5 h-3.5 bg-[#2e6276] rounded"></div>
+      <span class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest">Raw JSON Response</span>
+      <button (click)="copyRequested.emit(rawJson || '')"
+        class="ml-auto flex items-center gap-1 text-[9px] text-[#a0b0bc] bg-transparent border-0 cursor-pointer hover:text-[#2e6276] transition-colors">
+        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        Copy
+      </button>
+    </div>
+    <pre class="px-4 py-3 font-mono text-[11px] text-[#2e6276] m-0 overflow-x-auto leading-relaxed bg-[#f4f8fa] whitespace-pre max-h-[280px] overflow-y-auto">{{ rawJson }}</pre>
+  </div>
+</ng-container>
+
+<!-- ── Follow-up prompts (all formats) ── -->
+<div *ngIf="followUpPrompts && followUpPrompts.length > 0" class="flex flex-wrap gap-1.5 mt-1">
+  <button *ngFor="let fp of followUpPrompts"
+    (click)="followUpSelected.emit(fp)"
+    class="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-white border border-[#e2e8ed] text-[#2e6276] cursor-pointer hover:bg-[#eaf2f6] hover:border-[#2e6276]/40 transition-all">
+    {{ fp }}
+  </button>
+</div>
