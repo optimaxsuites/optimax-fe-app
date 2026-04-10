@@ -65,10 +65,10 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                  <!-- <label class="flex items-center gap-2 cursor-pointer">
+                  <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" formControlName="isEnabled" class="rounded text-customBlue">
                     <span class="text-sm font-bold text-gray-600">Enable Workflow</span>
-                  </label> -->
+                  </label>
                   <button type="button" 
                     (click)="addStage(module.title, app.appName, selectedAction[module.title + '_' + app.appName])"
                     class="text-sm border border-customBlue text-customBlue px-3 py-1 rounded-lg hover:bg-customBlue hover:text-white transition-all">
@@ -105,7 +105,7 @@
                       </div>
                     </div>
 
-                    <div class="flex items-center gap-6 py-2 border-y border-gray-50 my-4">
+                    <div class="flex flex-wrap items-center gap-6 py-2 border-y border-gray-50 my-4">
                       <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" formControlName="isOptional" class="rounded">
                         <span class="text-sm font-semibold text-gray-500">Optional Stage</span>
@@ -114,18 +114,40 @@
                         <input type="checkbox" formControlName="allowSelfApproval" class="rounded">
                         <span class="text-sm font-semibold text-gray-500">Self Approval</span>
                       </label>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" formControlName="isDocumentRequired" class="rounded">
+                        <span class="text-sm font-semibold text-gray-500">Document Required</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" formControlName="requiresComment" class="rounded">
+                        <span class="text-sm font-semibold text-gray-500">Force Comment</span>
+                      </label>
                     </div>
+
+                    <div class="flex gap-4 items-center mt-3">
+                        <!-- <div class="flex items-center gap-2 p-2 bg-slate-50 rounded border border-gray-100 w-fit">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase">SLA (Hours):</span>
+                          <input type="number" formControlName="slaHours" class="w-14 border rounded p-1 text-center text-xs">
+                        </div> -->
+
+                        @if(stage.get('approvalType')?.value === 'QUORUM') {
+                          <div class="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-100 w-fit">
+                            <span class="text-[10px] font-bold text-customBlue uppercase">Min. Approvals:</span>
+                            <input type="number" formControlName="minApprovals" class="w-12 border rounded p-1 text-center text-sm">
+                          </div>
+                        }
+                      </div>
 
                     <div class="bg-slate-50/50 rounded-lg p-4">
                       <div formArrayName="assignment" class="space-y-2">
                         @for(assign of getAssignments(module.title, app.appName, selectedAction[module.title + '_' + app.appName], sIndex).controls; track assign; let aIndex = $index) {
                         <div [formGroupName]="aIndex" class="flex gap-2 items-center bg-white p-2 rounded border border-gray-100 shadow-sm">
-                          <select formControlName="roleId" class="flex-grow text-sm" [attr.disabled]="assign.get('userId')?.value ? true : null">
+                          <select formControlName="roleId" class="flex-grow text-sm disabled:bg-gray-100 disabled:text-gray-200 disabled:cursor-not-allowed" [attr.disabled]="assign.get('userId')?.value ? true : null">
                             <option [ngValue]="null">Select Role</option>
                             @for(role of roles; track role.id) { <option [value]="role.id">👥 {{ role.name }}</option> }
                           </select>
                           <span class="text-[10px] font-bold text-gray-300">OR</span>
-                          <select formControlName="userId" class="flex-grow text-sm" [attr.disabled]="assign.get('roleId')?.value ? true : null">
+                          <select formControlName="userId" class="flex-grow text-sm disabled:bg-gray-100 disabled:text-gray-200 disabled:cursor-not-allowed" [attr.disabled]="assign.get('roleId')?.value ? true : null">
                             <option [ngValue]="null">Select User</option>
                             @for(user of users; track user.id) { <option [value]="user.id">👤 {{ user.username }}</option> }
                           </select>

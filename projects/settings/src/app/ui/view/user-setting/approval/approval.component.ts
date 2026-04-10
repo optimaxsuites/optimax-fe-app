@@ -90,7 +90,7 @@ buildApprovalForm() {
       const actionsGroup = this.fb.group({});
       this.AVAILABLE_ACTIONS.forEach(action => {
         actionsGroup.addControl(action, this.fb.group({
-          isEnabled: [action === 'CREATE'],
+          isEnabled: [true],
           stages: this.fb.array([]) 
         }));
       });
@@ -117,7 +117,7 @@ addStage(moduleTitle: string, appName: string, actionKey: string) {
 
   // 2. Create the group
   const stageGroup = this.fb.group({
-    name: [`Stage ${stages.length + 1}`, Validators.required],
+    name: [`${actionKey} Stage ${stages.length + 1}`, Validators.required],
     orderIndex: [stages.length + 1],
     approvalType: ['ANY', Validators.required],
     rejectionPolicy: ['STOP', Validators.required],
@@ -180,8 +180,7 @@ removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex:
     const controlName = `${module.title}_${app.appName}`;
     const settings = this.approvalForm.get(`submodules.${controlName}`)?.value;
     console.log(`Saving Approval Flow for ${app.appName}:`, settings);
-    // [Inference] Send this to your backend service to update the Workflow Policy table
-    //todo: this.moduleService.updateApprovalPolicy(module.title, app.appName, settings).subscribe(...);
+
     const date = new Date();
     const now = date.toISOString();
     const payload = {
