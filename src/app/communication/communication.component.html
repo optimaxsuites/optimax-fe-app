@@ -9,7 +9,6 @@
   (click)="closeSearch()"
   [class.resizing]="isResizingSidebar || isResizingThread"
 >
-
   <!-- ══════════════════════════════════════
        LEFT SIDEBAR
   ══════════════════════════════════════ -->
@@ -20,26 +19,60 @@
     <!-- Workspace header -->
     <div class="px-3 pt-3.5 pb-2.5 border-b border-gray-200 flex-shrink-0">
       <div class="flex items-center gap-2.5 mb-3">
-        <div class="w-8 h-8 rounded-lg bg-[#2e6276] flex items-center justify-center flex-shrink-0 shadow-sm">
-          <svg width="14" height="14" fill="none" stroke="white" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1M7 8V6a2 2 0 012-2h9a2 2 0 012 2v6a2 2 0 01-2 2H9l-4 4V8z"/>
+        <div
+          class="w-8 h-8 rounded-lg bg-[#2e6276] flex items-center justify-center flex-shrink-0 shadow-sm"
+        >
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            stroke="white"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1M7 8V6a2 2 0 012-2h9a2 2 0 012 2v6a2 2 0 01-2 2H9l-4 4V8z"
+            />
           </svg>
         </div>
         <div>
-          <p class="text-[13px] font-bold text-gray-800 leading-none tracking-tight">OptimaX</p>
+          <p
+            class="text-[13px] font-bold text-gray-800 leading-none tracking-tight"
+          >
+            OptimaX
+          </p>
           <div class="flex items-center gap-1 mt-0.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            <span class="text-[9px] text-gray-400 uppercase tracking-widest">Workspace</span>
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"
+            ></span>
+            <span class="text-[9px] text-gray-400 uppercase tracking-widest"
+              >Workspace</span
+            >
           </div>
         </div>
       </div>
 
       <!-- Search -->
       <div class="relative" (click)="$event.stopPropagation()">
-        <div class="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md">
-          <svg class="text-gray-400 flex-shrink-0" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        <div
+          class="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md"
+        >
+          <svg
+            class="text-gray-400 flex-shrink-0"
+            width="11"
+            height="11"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           <input
             type="text"
@@ -55,14 +88,24 @@
           *ngIf="showSearch"
           class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-72 overflow-y-auto"
         >
-          <div *ngIf="!searchResults.length" class="px-3 py-3 text-[12px] text-gray-400">No results found</div>
+          <div
+            *ngIf="!searchResults.length"
+            class="px-3 py-3 text-[12px] text-gray-400"
+          >
+            No results found
+          </div>
           <div
             *ngFor="let r of searchResults"
             class="px-3 py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
             (click)="jumpTo(r)"
           >
-            <p class="text-[10px] font-semibold text-[#2e6276] mb-0.5">#{{ r.channelName }}</p>
-            <p class="text-[11px] text-gray-600 truncate">{{ r.msg.content | slice:0:60 }}{{ r.msg.content.length > 60 ? '…' : '' }}</p>
+            <p class="text-[10px] font-semibold text-[#2e6276] mb-0.5">
+              #{{ r.channelName }}
+            </p>
+            <p class="text-[11px] text-gray-600 truncate">
+              {{ r.msg.content | slice: 0 : 60
+              }}{{ r.msg.content.length > 60 ? "…" : "" }}
+            </p>
           </div>
         </div>
       </div>
@@ -70,7 +113,6 @@
 
     <!-- Nav -->
     <nav class="flex-1 overflow-y-auto py-1.5 sidebar-scroll">
-
       <!-- Quick nav -->
       <div class="px-2 mb-1">
         <button
@@ -78,8 +120,20 @@
           class="sidebar-item flex items-center gap-2.5 w-full px-2.5 py-[5px] rounded text-[13px] transition-colors text-left"
           [class.active]="activeView === 'threads'"
         >
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="flex-shrink-0 opacity-80">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+          <svg
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            class="flex-shrink-0 opacity-80"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            />
           </svg>
           <span>Threads</span>
         </button>
@@ -90,13 +144,27 @@
       <!-- Channels -->
       <div class="px-2 mb-1">
         <div class="flex items-center justify-between pl-1 pr-0.5 mb-0.5 mt-1">
-          <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Channels</span>
+          <span
+            class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest"
+            >Channels</span
+          >
           <button
             (click)="toggleAddChannel()"
             class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors"
           >
-            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            <svg
+              width="10"
+              height="10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         </div>
@@ -113,19 +181,69 @@
           <button
             (click)="addChannel()"
             class="px-2 py-1 bg-[#2e6276] text-white text-[10px] font-semibold rounded hover:bg-[#255264] transition-colors flex-shrink-0"
-          >Add</button>
+          >
+            Add
+          </button>
         </div>
 
-        <button
-          *ngFor="let ch of channels"
-          (click)="selectChannel(ch.id)"
-          class="sidebar-item flex items-center gap-2 w-full px-2.5 py-[5px] rounded text-[13px] transition-colors text-left"
-          [class.active]="activeChannelId === ch.id && activeView === 'channel'"
-          [class.unread]="ch.hasUnread && !(activeChannelId === ch.id && activeView === 'channel')"
+        <!-- ═══════════════════════════════════════════
+             PATCH: replace the static channel list with
+             this block. Everything above and below in the
+             template stays exactly as it was.
+        ═══════════════════════════════════════════ -->
+
+        <!-- Loading skeleton -->
+        <div *ngIf="channelsLoading" class="px-2 mt-1 flex flex-col gap-1">
+          <div class="h-6 bg-gray-100 rounded animate-pulse w-4/5"></div>
+          <div class="h-6 bg-gray-100 rounded animate-pulse w-3/5"></div>
+          <div class="h-6 bg-gray-100 rounded animate-pulse w-4/5"></div>
+        </div>
+
+        <!-- Error notice (shows fallback channels, just flags the issue) -->
+        <div
+          *ngIf="channelsError && !channelsLoading"
+          class="mx-2 mb-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1.5"
         >
-          <span class="text-[#72767d] flex-shrink-0 text-[13px] font-medium">#</span>
-          <span class="flex-1 truncate">{{ ch.name }}</span>
-        </button>
+          <svg
+            class="text-amber-500 flex-shrink-0"
+            width="10"
+            height="10"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+          <span class="text-[9.5px] text-amber-700 leading-snug">{{
+            channelsError
+          }}</span>
+        </div>
+
+        <!-- Channel buttons — now driven by the API response -->
+        <ng-container *ngIf="!channelsLoading">
+          <button
+            *ngFor="let ch of channels"
+            (click)="selectChannel(ch.id)"
+            class="sidebar-item flex items-center gap-2 w-full px-2.5 py-[5px] rounded text-[13px] transition-colors text-left"
+            [class.active]="
+              activeChannelId === ch.id && activeView === 'channel'
+            "
+            [class.unread]="
+              ch.hasUnread &&
+              !(activeChannelId === ch.id && activeView === 'channel')
+            "
+          >
+            <span class="text-[#72767d] flex-shrink-0 text-[13px] font-medium"
+              >#</span
+            >
+            <span class="flex-1 truncate">{{ ch.name }}</span>
+          </button>
+        </ng-container>
       </div>
 
       <div class="mx-2 my-1 h-px bg-gray-100"></div>
@@ -133,7 +251,10 @@
       <!-- DMs -->
       <div class="px-2">
         <div class="pl-1 mb-0.5 mt-1">
-          <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Direct Messages</span>
+          <span
+            class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest"
+            >Direct Messages</span
+          >
         </div>
 
         <button
@@ -141,13 +262,17 @@
           (click)="selectDm(dm.id)"
           class="sidebar-item flex items-center gap-2 w-full px-2 py-[5px] rounded text-[13px] transition-colors text-left"
           [class.active]="activeDmId === dm.id && activeView === 'dm'"
-          [class.unread]="dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')"
+          [class.unread]="
+            dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')
+          "
         >
           <div class="relative flex-shrink-0">
             <div
               class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
               [style.background]="dm.avatarColor"
-            >{{ dm.initials }}</div>
+            >
+              {{ dm.initials }}
+            </div>
             <span
               class="absolute -bottom-px -right-px w-2 h-2 rounded-full border-2 border-white"
               [class.bg-emerald-400]="dm.online"
@@ -160,15 +285,25 @@
     </nav>
 
     <!-- User bar -->
-    <div class="border-t border-gray-200 px-3 py-2 flex items-center gap-2 flex-shrink-0 bg-gray-50">
+    <div
+      class="border-t border-gray-200 px-3 py-2 flex items-center gap-2 flex-shrink-0 bg-gray-50"
+    >
       <div class="relative flex-shrink-0">
-        <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold bg-[#2e6276]">
+        <div
+          class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold bg-[#2e6276]"
+        >
           {{ me.initials }}
         </div>
-        <span class="absolute -bottom-px -right-px w-2.5 h-2.5 rounded-full border-2 border-gray-50 bg-emerald-400"></span>
+        <span
+          class="absolute -bottom-px -right-px w-2.5 h-2.5 rounded-full border-2 border-gray-50 bg-emerald-400"
+        ></span>
       </div>
       <div class="min-w-0">
-        <p class="text-[12px] font-semibold text-gray-800 leading-none truncate">{{ me.shortName }}</p>
+        <p
+          class="text-[12px] font-semibold text-gray-800 leading-none truncate"
+        >
+          {{ me.shortName }}
+        </p>
         <p class="text-[10px] text-emerald-500 mt-0.5">Active</p>
       </div>
     </div>
@@ -184,22 +319,28 @@
        MAIN AREA
   ══════════════════════════════════════ -->
   <main class="flex flex-1 overflow-hidden min-w-0">
-
     <!-- ── CHANNEL / DM VIEW ─────────────── -->
     <ng-container *ngIf="activeView === 'channel' || activeView === 'dm'">
       <div class="flex flex-col flex-1 overflow-hidden min-w-0">
-
         <!-- Top bar -->
-        <div class="flex items-center justify-between px-5 h-12 bg-white border-b border-gray-200 flex-shrink-0 shadow-sm">
+        <div
+          class="flex items-center justify-between px-5 h-12 bg-white border-b border-gray-200 flex-shrink-0 shadow-sm"
+        >
           <div class="flex items-center gap-2.5 min-w-0">
-            <span *ngIf="activeView === 'channel'" class="text-[#2e6276] font-semibold text-base leading-none">#</span>
+            <span
+              *ngIf="activeView === 'channel'"
+              class="text-[#2e6276] font-semibold text-base leading-none"
+              >#</span
+            >
 
             <ng-container *ngIf="activeView === 'dm' && activeDm">
               <div class="relative flex-shrink-0">
                 <div
                   class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
                   [style.background]="activeDm.avatarColor"
-                >{{ activeDm.initials }}</div>
+                >
+                  {{ activeDm.initials }}
+                </div>
                 <span
                   class="absolute -bottom-px -right-px w-2 h-2 rounded-full border border-white"
                   [class.bg-emerald-400]="activeDm.online"
@@ -209,17 +350,28 @@
             </ng-container>
 
             <h2 class="text-[13px] font-bold text-gray-900 truncate">
-              <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.name }}</ng-container>
-              <ng-container *ngIf="activeView === 'dm'">{{ activeDm?.shortName }}</ng-container>
+              <ng-container *ngIf="activeView === 'channel'">{{
+                activeChannel?.name
+              }}</ng-container>
+              <ng-container *ngIf="activeView === 'dm'">{{
+                activeDm?.shortName
+              }}</ng-container>
             </h2>
-            <span class="w-px h-4 bg-gray-200 flex-shrink-0 hidden sm:block"></span>
-            <span class="text-[12px] text-gray-400 truncate hidden sm:block" *ngIf="activeView === 'channel'">{{ activeChannel?.description }}</span>
+            <span
+              class="w-px h-4 bg-gray-200 flex-shrink-0 hidden sm:block"
+            ></span>
+            <span
+              class="text-[12px] text-gray-400 truncate hidden sm:block"
+              *ngIf="activeView === 'channel'"
+              >{{ activeChannel?.description }}</span
+            >
             <span
               class="text-[12px] hidden sm:block"
               *ngIf="activeView === 'dm'"
               [class.text-emerald-500]="isDmOnline()"
               [class.text-gray-400]="!isDmOnline()"
-            >{{ isDmOnline() ? 'Active now' : 'Offline' }}</span>
+              >{{ isDmOnline() ? "Active now" : "Offline" }}</span
+            >
           </div>
 
           <!-- Right actions -->
@@ -231,8 +383,19 @@
               class="pin-pill flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors"
               [class.active]="showPinnedPanel"
             >
-              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+              <svg
+                width="11"
+                height="11"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                />
               </svg>
               {{ pinnedMessages.length }} pinned
             </button>
@@ -248,32 +411,59 @@
           <!-- Date separator -->
           <div class="flex items-center gap-3 mb-5">
             <div class="flex-1 h-px bg-gray-100"></div>
-            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">Today</span>
+            <span
+              class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100"
+              >Today</span
+            >
             <div class="flex-1 h-px bg-gray-100"></div>
           </div>
 
           <!-- Empty state -->
-          <div *ngIf="!rawMessages.length" class="flex flex-col items-center justify-center py-20 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-300 mb-4">
-              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+          <div
+            *ngIf="!rawMessages.length"
+            class="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div
+              class="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-300 mb-4"
+            >
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                />
               </svg>
             </div>
             <p class="text-[13px] font-semibold text-gray-600 mb-1">
-              {{ activeView === 'channel' ? '#' + activeChannel?.name : activeDm?.shortName }}
+              {{
+                activeView === "channel"
+                  ? "#" + activeChannel?.name
+                  : activeDm?.shortName
+              }}
             </p>
             <p class="text-[12px] text-gray-400 max-w-xs leading-relaxed">
-              {{ activeChannel?.description || 'This is the beginning of your conversation.' }}
+              {{
+                activeChannel?.description ||
+                  "This is the beginning of your conversation."
+              }}
             </p>
           </div>
 
           <!-- ── ALL MESSAGES (no separate pinned section) ── -->
           <ng-container *ngFor="let msg of rawMessages; trackBy: trackById">
-
             <!-- System message -->
             <div *ngIf="msg.isSystem" class="flex items-center gap-3 my-3">
               <div class="flex-1 h-px bg-gray-100"></div>
-              <span class="text-[10px] text-gray-400 italic">{{ msg.content }}</span>
+              <span class="text-[10px] text-gray-400 italic">{{
+                msg.content
+              }}</span>
               <div class="flex-1 h-px bg-gray-100"></div>
             </div>
 
@@ -286,60 +476,120 @@
               [class.flash]="isFlashing(msg.id)"
             >
               <!-- Pin indicator bar -->
-              <div *ngIf="msg.pinned" class="absolute left-0 top-1 bottom-1 w-0.5 bg-[#f59e0b] rounded-r"></div>
+              <div
+                *ngIf="msg.pinned"
+                class="absolute left-0 top-1 bottom-1 w-0.5 bg-[#f59e0b] rounded-r"
+              ></div>
 
               <div
                 class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-sm"
                 [style.background]="msg.avatarColor"
-              >{{ msg.initials }}</div>
+              >
+                {{ msg.initials }}
+              </div>
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-2 mb-0.5">
-                  <span class="text-[13px] font-semibold text-gray-700">{{ msg.author }}</span>
+                  <span class="text-[13px] font-semibold text-gray-700">{{
+                    msg.author
+                  }}</span>
                   <span
                     *ngIf="msg.role"
                     class="text-[9px] font-semibold text-gray-500 uppercase tracking-wide bg-gray-100 px-1.5 py-0.5 rounded"
-                  >{{ msg.role }}</span>
+                    >{{ msg.role }}</span
+                  >
                   <span class="text-[10px] text-gray-400">{{ msg.time }}</span>
-                  <span *ngIf="msg.pinned" class="ml-0.5 flex items-center gap-0.5 text-[10px] text-amber-500 font-medium">
-                    <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                  <span
+                    *ngIf="msg.pinned"
+                    class="ml-0.5 flex items-center gap-0.5 text-[10px] text-amber-500 font-medium"
+                  >
+                    <svg
+                      width="9"
+                      height="9"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
                     </svg>
                     Pinned
                   </span>
                 </div>
 
-                <p class="text-[13px] text-gray-700 leading-relaxed break-words">{{ msg.content }}</p>
+                <p
+                  class="text-[13px] text-gray-700 leading-relaxed break-words"
+                >
+                  {{ msg.content }}
+                </p>
 
                 <!-- Attachment -->
                 <div
                   *ngIf="msg.attachment"
                   class="flex items-center gap-2.5 mt-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg w-fit max-w-xs"
                 >
-                  <div class="w-8 h-8 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0">
-                    <svg class="text-[#2e6276]" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                  <div
+                    class="w-8 h-8 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0"
+                  >
+                    <svg
+                      class="text-[#2e6276]"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
                     </svg>
                   </div>
                   <div>
-                    <p class="text-[12px] font-semibold text-gray-700 leading-tight">{{ msg.attachment.name }}</p>
-                    <p class="text-[10px] text-gray-400 mt-0.5">{{ msg.attachment.size }}</p>
+                    <p
+                      class="text-[12px] font-semibold text-gray-700 leading-tight"
+                    >
+                      {{ msg.attachment.name }}
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">
+                      {{ msg.attachment.size }}
+                    </p>
                   </div>
                 </div>
 
                 <!-- Action row — visible on hover -->
-                <div class="action-row flex items-center gap-0 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  class="action-row flex items-center gap-0 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <button
                     (click)="openThread(msg, $event)"
                     class="action-btn flex items-center gap-1.5 text-[11px]"
                     [class.text-[#2e6276]]="activeThreadId === msg.id"
                     [class.font-semibold]="activeThreadId === msg.id"
                   >
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                      />
                     </svg>
-                    {{ msg.replies.length ? msg.replies.length + ' ' + (msg.replies.length === 1 ? 'reply' : 'replies') : 'Reply' }}
+                    {{
+                      msg.replies.length
+                        ? msg.replies.length +
+                          " " +
+                          (msg.replies.length === 1 ? "reply" : "replies")
+                        : "Reply"
+                    }}
                   </button>
 
                   <button
@@ -348,11 +598,21 @@
                     [class.text-rose-500]="msg.liked"
                     [class.font-semibold]="msg.liked"
                   >
-                    <svg width="12" height="12" [attr.fill]="msg.liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    <svg
+                      width="12"
+                      height="12"
+                      [attr.fill]="msg.liked ? 'currentColor' : 'none'"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
                     </svg>
-                    {{ msg.likeCount || '' }}
+                    {{ msg.likeCount || "" }}
                   </button>
 
                   <button
@@ -361,10 +621,21 @@
                     [class.text-amber-500]="msg.pinned"
                     [class.font-semibold]="msg.pinned"
                   >
-                    <svg width="12" height="12" [attr.fill]="msg.pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    <svg
+                      width="12"
+                      height="12"
+                      [attr.fill]="msg.pinned ? 'currentColor' : 'none'"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
                     </svg>
-                    {{ msg.pinned ? 'Unpin' : 'Pin' }}
+                    {{ msg.pinned ? "Unpin" : "Pin" }}
                   </button>
                 </div>
 
@@ -379,12 +650,20 @@
                       *ngFor="let r of getTopReplies(msg)"
                       class="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white text-[7px] font-bold"
                       [style.background]="r.avatarColor"
-                    >{{ r.initials }}</div>
+                    >
+                      {{ r.initials }}
+                    </div>
                   </div>
-                  <span class="text-[12px] text-[#2e6276] font-semibold group-hover/thread:underline">
-                    {{ msg.replies.length }} {{ msg.replies.length === 1 ? 'reply' : 'replies' }}
+                  <span
+                    class="text-[12px] text-[#2e6276] font-semibold group-hover/thread:underline"
+                  >
+                    {{ msg.replies.length }}
+                    {{ msg.replies.length === 1 ? "reply" : "replies" }}
                   </span>
-                  <span class="text-[11px] text-gray-400">Last reply {{ msg.replies[msg.replies.length-1].time }}</span>
+                  <span class="text-[11px] text-gray-400"
+                    >Last reply
+                    {{ msg.replies[msg.replies.length - 1].time }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -394,16 +673,47 @@
 
         <!-- Pending attachment preview -->
         <div *ngIf="pendingAttachment" class="px-4 pt-2 bg-white flex-shrink-0">
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg w-fit">
-            <svg class="text-[#2e6276]" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+          <div
+            class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg w-fit"
+          >
+            <svg
+              class="text-[#2e6276]"
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+              />
             </svg>
-            <span class="text-[11px] text-gray-700 font-medium">{{ pendingAttachment.name }}</span>
-            <span class="text-[10px] text-gray-400">{{ pendingAttachment.size }}</span>
-            <button (click)="removePendingAttachment()" class="ml-1 text-gray-400 hover:text-gray-600 transition-colors">
-              <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            <span class="text-[11px] text-gray-700 font-medium">{{
+              pendingAttachment.name
+            }}</span>
+            <span class="text-[10px] text-gray-400">{{
+              pendingAttachment.size
+            }}</span>
+            <button
+              (click)="removePendingAttachment()"
+              class="ml-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -411,7 +721,9 @@
 
         <!-- Composer -->
         <div class="px-4 pb-4 pt-2 flex-shrink-0 bg-white">
-          <div class="composer-box border border-gray-200 rounded-xl bg-white transition-all">
+          <div
+            class="composer-box border border-gray-200 rounded-xl bg-white transition-all"
+          >
             <div class="flex items-end gap-2 px-3 py-2">
               <textarea
                 #composerEl
@@ -424,15 +736,30 @@
               ></textarea>
 
               <!-- File attach -->
-              <input #fileInput type="file" class="hidden" (change)="onFileSelected($event)" />
+              <input
+                #fileInput
+                type="file"
+                class="hidden"
+                (change)="onFileSelected($event)"
+              />
               <button
                 (click)="triggerFileInput()"
                 class="toolbar-btn flex-shrink-0 mb-0.5"
                 title="Attach file"
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  />
                 </svg>
               </button>
 
@@ -442,15 +769,27 @@
                 class="send-btn flex-shrink-0 mb-0.5 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
                 [class.ready]="draft.trim() || pendingAttachment"
               >
-                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                <svg
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
                 </svg>
               </button>
             </div>
           </div>
           <p class="text-[10px] text-gray-400 mt-1.5 px-1 hidden sm:block">
             <kbd class="bg-gray-100 px-1 rounded text-[9px]">Enter</kbd> send ·
-            <kbd class="bg-gray-100 px-1 rounded text-[9px]">Shift+Enter</kbd> new line
+            <kbd class="bg-gray-100 px-1 rounded text-[9px]">Shift+Enter</kbd>
+            new line
           </p>
         </div>
       </div>
@@ -459,13 +798,23 @@
     <!-- ── THREADS VIEW ──────────────────── -->
     <ng-container *ngIf="activeView === 'threads'">
       <div class="flex flex-col flex-1 overflow-hidden min-w-0 bg-white">
-        <div class="flex items-center px-5 h-12 border-b border-gray-200 flex-shrink-0">
+        <div
+          class="flex items-center px-5 h-12 border-b border-gray-200 flex-shrink-0"
+        >
           <h2 class="text-[13px] font-bold text-gray-900">Threads</h2>
         </div>
-        <div class="flex-1 overflow-y-auto px-4 py-4" style="scrollbar-width: thin">
-          <div *ngIf="!allThreaded.length" class="flex flex-col items-center justify-center py-20 text-center text-gray-400">
+        <div
+          class="flex-1 overflow-y-auto px-4 py-4"
+          style="scrollbar-width: thin"
+        >
+          <div
+            *ngIf="!allThreaded.length"
+            class="flex flex-col items-center justify-center py-20 text-center text-gray-400"
+          >
             <p class="text-[13px] font-medium mb-1">No threads yet</p>
-            <p class="text-[12px]">Click Reply on any message to start a thread.</p>
+            <p class="text-[12px]">
+              Click Reply on any message to start a thread.
+            </p>
           </div>
           <div
             *ngFor="let t of allThreaded"
@@ -476,22 +825,35 @@
               <div
                 class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0"
                 [style.background]="t.msg.avatarColor"
-              >{{ t.msg.initials }}</div>
-              <span class="text-[12px] font-semibold text-gray-700">{{ t.msg.author }}</span>
-              <span class="text-[11px] font-semibold text-[#2e6276]">#{{ t.channelName }}</span>
-              <span class="text-[10px] text-gray-400 ml-auto">{{ t.msg.time }}</span>
+              >
+                {{ t.msg.initials }}
+              </div>
+              <span class="text-[12px] font-semibold text-gray-700">{{
+                t.msg.author
+              }}</span>
+              <span class="text-[11px] font-semibold text-[#2e6276]"
+                >#{{ t.channelName }}</span
+              >
+              <span class="text-[10px] text-gray-400 ml-auto">{{
+                t.msg.time
+              }}</span>
             </div>
-            <p class="text-[12px] text-gray-600 leading-relaxed mb-2.5">{{ t.msg.content }}</p>
+            <p class="text-[12px] text-gray-600 leading-relaxed mb-2.5">
+              {{ t.msg.content }}
+            </p>
             <div class="flex items-center gap-2">
               <div class="flex -space-x-1.5">
                 <div
                   *ngFor="let r of getTopReplies(t.msg)"
                   class="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white text-[7px] font-bold"
                   [style.background]="r.avatarColor"
-                >{{ r.initials }}</div>
+                >
+                  {{ r.initials }}
+                </div>
               </div>
               <span class="text-[12px] font-semibold text-[#2e6276]">
-                {{ t.msg.replies.length }} {{ t.msg.replies.length === 1 ? 'reply' : 'replies' }}
+                {{ t.msg.replies.length }}
+                {{ t.msg.replies.length === 1 ? "reply" : "replies" }}
               </span>
             </div>
           </div>
@@ -515,50 +877,117 @@
 
       <!-- ── PINNED PANEL ── -->
       <ng-container *ngIf="rightPanelMode === 'pinned'">
-        <div class="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0">
+        <div
+          class="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0"
+        >
           <div class="flex items-center gap-2">
-            <svg class="text-amber-500" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+            <svg
+              class="text-amber-500"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+              />
             </svg>
             <h3 class="text-[13px] font-bold text-gray-800">Pinned Messages</h3>
-            <span class="px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold rounded">{{ pinnedMessages.length }}</span>
+            <span
+              class="px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold rounded"
+              >{{ pinnedMessages.length }}</span
+            >
           </div>
           <button (click)="closePinnedPanel()" class="panel-close-btn">
-            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              width="11"
+              height="11"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-4 py-3" style="scrollbar-width: thin">
+        <div
+          class="flex-1 overflow-y-auto px-4 py-3"
+          style="scrollbar-width: thin"
+        >
           <div *ngIf="!pinnedMessages.length" class="text-center py-10">
-            <p class="text-[12px] text-gray-400">No pinned messages in this channel.</p>
+            <p class="text-[12px] text-gray-400">
+              No pinned messages in this channel.
+            </p>
           </div>
 
           <div
             *ngFor="let msg of pinnedMessages; trackBy: trackById"
             class="pinned-card mb-3 p-3.5 rounded-xl border border-gray-100 bg-gray-50 hover:border-gray-200 transition-all cursor-pointer"
-            (click)="jumpTo({ msg: msg, channelId: activeChannelId, channelName: activeChannel?.name || '' })"
+            (click)="
+              jumpTo({
+                msg: msg,
+                channelId: activeChannelId,
+                channelName: activeChannel?.name || '',
+              })
+            "
           >
             <div class="flex items-center gap-2 mb-2">
               <div
                 class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0"
                 [style.background]="msg.avatarColor"
-              >{{ msg.initials }}</div>
-              <div class="min-w-0 flex-1">
-                <span class="text-[12px] font-bold text-gray-800">{{ msg.author }}</span>
-                <span *ngIf="msg.role" class="ml-1.5 text-[9px] text-gray-400 uppercase tracking-wide">{{ msg.role }}</span>
+              >
+                {{ msg.initials }}
               </div>
-              <span class="text-[10px] text-gray-400 flex-shrink-0">{{ msg.time }}</span>
+              <div class="min-w-0 flex-1">
+                <span class="text-[12px] font-bold text-gray-800">{{
+                  msg.author
+                }}</span>
+                <span
+                  *ngIf="msg.role"
+                  class="ml-1.5 text-[9px] text-gray-400 uppercase tracking-wide"
+                  >{{ msg.role }}</span
+                >
+              </div>
+              <span class="text-[10px] text-gray-400 flex-shrink-0">{{
+                msg.time
+              }}</span>
             </div>
-            <p class="text-[12px] text-gray-700 leading-relaxed">{{ msg.content }}</p>
+            <p class="text-[12px] text-gray-700 leading-relaxed">
+              {{ msg.content }}
+            </p>
 
-            <div *ngIf="msg.attachment" class="flex items-center gap-2 mt-2 p-2 bg-white border border-gray-200 rounded-lg">
-              <svg class="text-[#2e6276]" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+            <div
+              *ngIf="msg.attachment"
+              class="flex items-center gap-2 mt-2 p-2 bg-white border border-gray-200 rounded-lg"
+            >
+              <svg
+                class="text-[#2e6276]"
+                width="11"
+                height="11"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                />
               </svg>
-              <span class="text-[11px] text-gray-600 font-medium truncate">{{ msg.attachment.name }}</span>
+              <span class="text-[11px] text-gray-600 font-medium truncate">{{
+                msg.attachment.name
+              }}</span>
             </div>
 
             <div class="flex items-center justify-between mt-2.5">
@@ -566,8 +995,13 @@
                 (click)="togglePin(msg, $event)"
                 class="text-[11px] text-amber-500 hover:text-amber-700 font-semibold transition-colors flex items-center gap-1"
               >
-                <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                <svg
+                  width="10"
+                  height="10"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
                 Unpin
               </button>
@@ -575,7 +1009,10 @@
                 (click)="openThread(msg, $event)"
                 class="text-[11px] text-[#2e6276] hover:text-[#255264] font-medium transition-colors"
               >
-                {{ msg.replies.length ? msg.replies.length + ' replies' : 'Reply' }} →
+                {{
+                  msg.replies.length ? msg.replies.length + " replies" : "Reply"
+                }}
+                →
               </button>
             </div>
           </div>
@@ -585,69 +1022,126 @@
       <!-- ── THREAD PANEL ── -->
       <ng-container *ngIf="rightPanelMode === 'thread' && activeThread">
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0">
+        <div
+          class="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0"
+        >
           <div class="flex items-center gap-2">
-            <svg class="text-[#2e6276]" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+            <svg
+              class="text-[#2e6276]"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
             </svg>
             <h3 class="text-[13px] font-bold text-gray-800">Thread</h3>
           </div>
           <button (click)="closeThread()" class="panel-close-btn">
-            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              width="11"
+              height="11"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <!-- Scrollable content -->
-        <div #threadEl class="flex-1 overflow-y-auto px-4 py-3" style="scrollbar-width: thin">
+        <div
+          #threadEl
+          class="flex-1 overflow-y-auto px-4 py-3"
+          style="scrollbar-width: thin"
+        >
           <!-- Parent message -->
-          <div class="flex gap-3 p-3 bg-gray-50 rounded-xl mb-4 border border-gray-100">
+          <div
+            class="flex gap-3 p-3 bg-gray-50 rounded-xl mb-4 border border-gray-100"
+          >
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
               [style.background]="activeThread.avatarColor"
-            >{{ activeThread.initials }}</div>
+            >
+              {{ activeThread.initials }}
+            </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-baseline gap-2 mb-1">
-                <span class="text-[13px] font-bold text-gray-800">{{ activeThread.author }}</span>
-                <span class="text-[10px] text-gray-400">{{ activeThread.time }}</span>
+                <span class="text-[13px] font-bold text-gray-800">{{
+                  activeThread.author
+                }}</span>
+                <span class="text-[10px] text-gray-400">{{
+                  activeThread.time
+                }}</span>
               </div>
-              <p class="text-[12px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
+              <p class="text-[12px] text-gray-700 leading-relaxed">
+                {{ activeThread.content }}
+              </p>
             </div>
           </div>
 
           <!-- Reply count divider -->
           <div class="flex items-center gap-3 mb-3">
             <div class="flex-1 h-px bg-gray-100"></div>
-            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-              {{ activeThread.replies.length }} {{ activeThread.replies.length === 1 ? 'reply' : 'replies' }}
+            <span
+              class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+            >
+              {{ activeThread.replies.length }}
+              {{ activeThread.replies.length === 1 ? "reply" : "replies" }}
             </span>
             <div class="flex-1 h-px bg-gray-100"></div>
           </div>
 
           <div *ngIf="!activeThread.replies.length" class="text-center py-6">
-            <p class="text-[12px] text-gray-400">No replies yet. Be the first!</p>
+            <p class="text-[12px] text-gray-400">
+              No replies yet. Be the first!
+            </p>
           </div>
 
-          <div *ngFor="let r of activeThread.replies; trackBy: trackById" class="flex gap-2.5 mb-3">
+          <div
+            *ngFor="let r of activeThread.replies; trackBy: trackById"
+            class="flex gap-2.5 mb-3"
+          >
             <div
               class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
               [style.background]="r.avatarColor"
-            >{{ r.initials }}</div>
+            >
+              {{ r.initials }}
+            </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-baseline gap-2 mb-0.5">
-                <span class="text-[12px] font-bold text-gray-800">{{ r.author }}</span>
+                <span class="text-[12px] font-bold text-gray-800">{{
+                  r.author
+                }}</span>
                 <span class="text-[10px] text-gray-400">{{ r.time }}</span>
               </div>
-              <p class="text-[12px] text-gray-600 leading-relaxed">{{ r.content }}</p>
+              <p class="text-[12px] text-gray-600 leading-relaxed">
+                {{ r.content }}
+              </p>
             </div>
           </div>
         </div>
 
         <!-- Reply composer -->
         <div class="border-t border-gray-200 px-3 py-3 flex-shrink-0">
-          <div class="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-white focus-within:border-[#2e6276]/40 transition-all">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0 bg-[#2e6276]">
+          <div
+            class="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-white focus-within:border-[#2e6276]/40 transition-all"
+          >
+            <div
+              class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0 bg-[#2e6276]"
+            >
               {{ me.initials }}
             </div>
             <input
@@ -662,8 +1156,19 @@
               class="send-btn w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
               [class.ready]="threadReplyDraft.trim()"
             >
-              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              <svg
+                width="11"
+                height="11"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
               </svg>
             </button>
           </div>
@@ -698,9 +1203,16 @@
   }
 
   /* Sidebar scroll */
-  .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-  .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-  .sidebar-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+  }
 
   /* Pin pill button */
   .pin-pill {
@@ -708,7 +1220,8 @@
     background: #fef3c7;
     border: 1px solid #fde68a;
   }
-  .pin-pill:hover, .pin-pill.active {
+  .pin-pill:hover,
+  .pin-pill.active {
     background: #fde68a;
     color: #78350f;
   }
@@ -727,8 +1240,12 @@
     animation: flash-fade 1.8s ease-out forwards;
   }
   @keyframes flash-fade {
-    0%   { background: #fef08a; }
-    100% { background: transparent; }
+    0% {
+      background: #fef08a;
+    }
+    100% {
+      background: transparent;
+    }
   }
 
   /* Action buttons */
@@ -736,7 +1253,9 @@
     padding: 3px 8px;
     border-radius: 6px;
     color: #6b7280;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
     font-size: 11px;
   }
   .action-btn:hover {
@@ -753,7 +1272,9 @@
     align-items: center;
     justify-content: center;
     color: #9ca3af;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
   .toolbar-btn:hover {
     background: #f3f4f6;
@@ -788,7 +1309,9 @@
     align-items: center;
     justify-content: center;
     color: #9ca3af;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
   .panel-close-btn:hover {
     background: #f3f4f6;
@@ -797,7 +1320,7 @@
 
   /* Pinned card */
   .pinned-card:hover {
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   }
 
   /* Resize handles */

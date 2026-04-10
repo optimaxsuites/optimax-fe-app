@@ -8,6 +8,10 @@ import {
   OnDestroy,
   HostListener,
 } from '@angular/core';
+import {
+  CollabChannel,
+  CollaborationService,
+} from '../ui/services/collaboration.service';
 
 export interface Message {
   id: string;
@@ -79,6 +83,10 @@ export class CommunicationComponent
   newChannelName = '';
   pendingAttachment: { name: string; size: string; type: string } | null = null;
 
+  // ── Loading state for channels ──────────────
+  channelsLoading = true;
+  channelsError: string | null = null;
+
   // Sidebar resize
   sidebarWidth = 220;
   threadPanelWidth = 360;
@@ -97,34 +105,8 @@ export class CommunicationComponent
   private flashId: string | null = null;
   private flashTimer: any;
 
-  channels: Channel[] = [
-    {
-      id: 'general',
-      name: 'general',
-      description: 'Company-wide announcements',
-      hasUnread: true,
-    },
-    {
-      id: 'erp-hr',
-      name: 'erp-hr',
-      description: 'HR discussions',
-      hasUnread: true,
-    },
-    {
-      id: 'erp-accounting',
-      name: 'erp-accounting',
-      description: 'Finance & accounting',
-    },
-    { id: 'erp-pos', name: 'erp-pos', description: 'Point of Sale' },
-    {
-      id: 'erp-expenses',
-      name: 'erp-expenses',
-      description: 'Expense approvals',
-      hasUnread: true,
-    },
-    { id: 'engineering', name: 'engineering', description: 'Dev team' },
-    { id: 'random', name: 'random', description: 'Off-topic' },
-  ];
+  // ── Channels — starts empty, filled from API ──
+  channels: Channel[] = [];
 
   directMessages: DirectMessage[] = [
     {
@@ -168,11 +150,16 @@ export class CommunicationComponent
   channelMessages: Record<string, Message[]> = {};
   dmMessages: Record<string, Message[]> = {};
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private collabService: CollaborationService, // ← NEW
+  ) {}
 
   ngOnInit() {
+    this.loadChannels(); // ← NEW — replaces static channel list
     this.seed();
   }
+
   ngOnDestroy() {
     if (this.flashTimer) clearTimeout(this.flashTimer);
   }
@@ -193,6 +180,78 @@ export class CommunicationComponent
       this.scrollThread = false;
     }
   }
+
+  // ── Load channels from backend ────────────────────────────────────
+  private loadChannels() {
+    this.channelsLoading = true;
+    this.channelsError = null;
+
+    this.collabService.getChannels().subscribe({
+      next: (backendChannels: CollabChannel[]) => {
+        console.log('[Collaboration] Channels loaded:', backendChannels);
+
+        // Map backend shape → component Channel shape
+        this.channels = backendChannels.map((c) => ({
+          id: c.channelCode, // use channelCode as the local id (unique string key)
+          name: c.name,
+          description: c.description,
+          hasUnread: false,
+        }));
+
+        this.channelsLoading = false;
+
+        // If the previously-active channel no longer exists in the list,
+        // fall back to the first available channel so the UI isn't broken.
+        const stillExists = this.channels.find(
+          (c) => c.id === this.activeChannelId,
+        );
+        if (!stillExists && this.channels.length > 0) {
+          this.activeChannelId = this.channels[0].id;
+        }
+
+        this.cdr.detectChanges();
+      },
+
+      error: (err) => {
+        console.error('[Collaboration] Failed to load channels:', err);
+        this.channelsError = 'Could not load channels. Showing cached data.';
+        this.channelsLoading = false;
+
+        // Graceful fallback — keep the UI usable with the seed data channels
+        this.channels = [
+          {
+            id: 'general',
+            name: 'general',
+            description: 'Company-wide announcements',
+            hasUnread: true,
+          },
+          {
+            id: 'erp-hr',
+            name: 'erp-hr',
+            description: 'HR discussions',
+            hasUnread: true,
+          },
+          {
+            id: 'erp-accounting',
+            name: 'erp-accounting',
+            description: 'Finance & accounting',
+          },
+          { id: 'erp-pos', name: 'erp-pos', description: 'Point of Sale' },
+          {
+            id: 'erp-expenses',
+            name: 'erp-expenses',
+            description: 'Expense approvals',
+            hasUnread: true,
+          },
+          { id: 'engineering', name: 'engineering', description: 'Dev team' },
+          { id: 'random', name: 'random', description: 'Off-topic' },
+        ];
+
+        this.cdr.detectChanges();
+      },
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────
 
   // ── Resize handlers ─────────────────────
 
