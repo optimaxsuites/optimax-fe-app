@@ -1,0 +1,83 @@
+<!-- ── USER MESSAGE ── -->
+<ng-container *ngIf="msg.sender === 'user'">
+  <div class="flex justify-end mb-1">
+    <div class="max-w-[62%] bg-[#2e6276] text-white rounded-2xl rounded-tr-[5px] px-4 py-2.5 text-[13px] leading-relaxed shadow-[0_2px_12px_rgba(46,98,118,0.22)]">
+      {{ msg.text }}
+    </div>
+  </div>
+  <div class="flex justify-end">
+    <p class="text-[10px] text-[#b8c8d4] mr-1">{{ msg.time }}</p>
+  </div>
+</ng-container>
+
+<!-- ── AI MESSAGE ── -->
+<ng-container *ngIf="msg.sender === 'ai'">
+  <div class="flex items-start gap-3 mb-1">
+
+    <!-- Avatar -->
+    <div class="w-7 h-7 rounded-lg bg-white border border-[#2e6276]/20 shadow-sm flex items-center justify-center text-[#2e6276] shrink-0 mt-0.5">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+      </svg>
+    </div>
+
+    <div class="flex-1 max-w-[84%] flex flex-col gap-2">
+
+      <!-- Loading dots -->
+      <div *ngIf="msg.loading"
+        class="flex items-center gap-1.5 bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3 shadow-sm w-fit">
+        <span class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot" style="animation-delay:0ms"></span>
+        <span class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot" style="animation-delay:180ms"></span>
+        <span class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot" style="animation-delay:360ms"></span>
+      </div>
+
+      <!-- Error state -->
+      <div *ngIf="!msg.loading && msg.error"
+        class="bg-red-50 border border-red-200 rounded-2xl rounded-tl-[5px] px-4 py-3">
+        <p class="text-[12.5px] text-red-600 leading-relaxed">{{ msg.text }}</p>
+        <p class="text-[10.5px] text-red-400 mt-1">{{ msg.error }}</p>
+      </div>
+
+      <!-- Full AI response — delegated to <app-ai-response> -->
+      <app-ai-response
+        *ngIf="!msg.loading && !msg.error"
+        [format]="msg.format || 'markdown'"
+        [text]="msg.text"
+        [time]="msg.time"
+        [matchedScenario]="msg.matchedScenario"
+        [kpis]="msg.kpis"
+        [actions]="msg.actions"
+        [coverage]="msg.coverage"
+        [followUpPrompts]="msg.followUpPrompts"
+        [rawJson]="msg.rawJson"
+        [chart]="msg.chart"
+        [isHeatmap]="msg.isHeatmap ?? false"
+        [heatmapCells]="msg.heatmapCells"
+        [apexSeries]="msg.apexSeries"
+        [apexOptions]="msg.apexOptions"
+        (followUpSelected)="followUpSelected.emit($event)"
+        (copyRequested)="copyRequested.emit($event)">
+      </app-ai-response>
+
+      <!-- Bottom meta row: copy / format badge / time -->
+      <div *ngIf="!msg.loading" class="flex items-center gap-0.5 mt-0.5 ml-0.5">
+        <button (click)="copyRequested.emit(msg.text)"
+          class="flex items-center gap-1 px-2 py-1 text-[10.5px] text-[#a0b0bc] bg-transparent border-0 rounded cursor-pointer hover:text-[#2e4a5a]">
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy
+        </button>
+        <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
+        <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide" [ngClass]="formatBadgeClass">
+          {{ msg.format || 'markdown' }}
+        </span>
+        <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
+        <p class="text-[10px] text-[#b8c8d4] px-1">{{ msg.time }}</p>
+      </div>
+
+    </div>
+  </div>
+</ng-container>

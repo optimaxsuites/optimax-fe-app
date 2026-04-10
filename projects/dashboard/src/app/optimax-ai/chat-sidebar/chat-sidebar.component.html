@@ -1,0 +1,48 @@
+<aside class="w-[220px] min-w-[220px] flex flex-col overflow-hidden h-full bg-white border-r border-[#e2e8ed]">
+
+  <!-- Brand -->
+  <div class="px-4 pt-5 pb-3.5 border-b border-[#e2e8ed] shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 rounded-lg bg-[#2e6276] flex items-center justify-center shrink-0">
+        <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+        </svg>
+      </div>
+      <p class="text-[12.5px] font-bold text-[#1a2733] leading-none tracking-tight">OptimaXAI</p>
+    </div>
+  </div>
+
+  <!-- New Chat -->
+  <div class="px-3 py-2.5 border-b border-[#e2e8ed] shrink-0">
+    <button (click)="newChatClicked.emit()"
+      class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-[#2e6276] text-[#2e6276] text-[11px] font-semibold tracking-wide cursor-pointer bg-transparent transition-all hover:bg-[#eaf2f6]">
+      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+      </svg>
+      NEW CHAT
+    </button>
+  </div>
+
+  <!-- Session List -->
+  <div class="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-2.5">
+    <p class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a0b0bc] mb-1.5 px-1">Recent Chats</p>
+
+    <div *ngIf="sessions.length === 0" class="flex flex-col items-center py-8 text-center">
+      <p class="text-[10.5px] text-[#a0b0bc] leading-relaxed">No chats yet</p>
+    </div>
+
+    <ng-container *ngFor="let s of sessions">
+      <button (click)="sessionSelected.emit(s.id)"
+        class="w-full text-left px-2.5 py-2 rounded-lg mb-0.5 cursor-pointer border-0 transition-all relative"
+        [ngClass]="s.id === activeChatId
+          ? 'bg-[#eaf2f6] text-[#1a2733]'
+          : 'bg-transparent text-[#6b8898] hover:bg-[#f4f8fa] hover:text-[#2e4a5a]'">
+        <div *ngIf="s.id === activeChatId"
+          class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#2e6276] rounded-r"></div>
+        <p class="text-[11px] font-medium truncate pl-1 mt-0.5">{{ s.title }}</p>
+      </button>
+    </ng-container>
+  </div>
+
+</aside>
