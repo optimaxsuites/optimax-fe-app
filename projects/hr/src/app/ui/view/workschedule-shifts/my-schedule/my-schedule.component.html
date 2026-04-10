@@ -1,0 +1,92 @@
+<div class="calendar-container">
+
+  <!-- TOGGLE -->
+  <div class="view-toggle">
+    <button [class.active]="viewMode === 'calendar'" (click)="setView('calendar')">
+      <i class="fa-solid fa-calendar"></i> Calendar
+    </button>
+
+    <button [class.active]="viewMode === 'table'" (click)="setView('table')">
+      <i class="fa-solid fa-table"></i> Table
+    </button>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div *ngIf="viewMode === 'calendar'">
+
+    <div class="calendar-header">
+      <button (click)="prevMonth()">‹</button>
+      <span>{{ monthLabel }}</span>
+      <button (click)="nextMonth()">›</button>
+    </div>
+
+    <div class="date-grid">
+      <div
+        class="date-cell"
+        *ngFor="let day of calendarDays"
+        [class.has-schedule]="hasSchedule(day.date)"
+        [class.conflict]="hasConflict(formatDateLocal(day.date))"
+        (click)="selectDate(day)"
+      >
+        {{ day.date.getDate() }}
+      </div>
+    </div>
+
+    <!-- DAY DETAILS -->
+    <div class="day-detail">
+
+      <h4>{{ selectedDateLabel }}</h4>
+
+      <div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
+        ⚠ You have overlapping shifts
+      </div>
+
+      <div *ngIf="shiftsForSelectedDate.length === 0">
+        No shifts
+      </div>
+
+      <div *ngFor="let item of shiftsForSelectedDate" class="shift-card">
+        <strong>{{ item.shift?.name }}</strong>
+        <div>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</div>
+        <div>{{ item.project }}</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div *ngIf="viewMode === 'table'">
+
+    <h4>{{ selectedDateLabel }}</h4>
+
+    <table *ngIf="shiftsForSelectedDate.length > 0">
+      <thead>
+        <tr>
+          <th>Shift</th>
+          <th>Time</th>
+          <th>Project</th>
+          <th>Conflict</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let item of shiftsForSelectedDate">
+          <td>{{ item.shift?.name }}</td>
+          <td>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</td>
+          <td>{{ item.project }}</td>
+          <td>
+            <span *ngIf="hasConflict(selectedDate)">⚠</span>
+            <span *ngIf="!hasConflict(selectedDate)">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="shiftsForSelectedDate.length === 0">
+      No shifts
+    </div>
+
+  </div>
+
+</div>

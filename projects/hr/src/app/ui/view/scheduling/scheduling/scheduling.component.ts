@@ -5,6 +5,7 @@ import { ShiftCalendarComponent } from '../../workschedule-shifts/shift-calendar
 import { MySchedulesComponent } from './my-schedules/my-schedules.component';
 import { SchedulesComponent } from './schedules/schedules.component';
 import { TimeSheetComponent } from '../../attendance/time-sheet/time-sheet.component';
+import { MyScheduleComponent } from '../../workschedule-shifts/my-schedule/my-schedule.component';
 
 @Component({
   selector: 'app-scheduling',
@@ -19,6 +20,11 @@ export class SchedulingComponent {
       { name: 'Shift List', 
         component: ShiftListComponent
       },      
+      {
+        name: 'My Schedule',
+        component: MyScheduleComponent
+
+      },
       {
         name: 'beta Schedules',
         component: SchedulesComponent
