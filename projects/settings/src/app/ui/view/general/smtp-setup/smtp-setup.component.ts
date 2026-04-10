@@ -94,13 +94,11 @@ export class SmtpSetupComponent implements OnInit {
           this.loading = false;
           this.messageService.add({ severity: 'error', summary: 'Error', detail: res.message || 'SMTP Configuration test failed', key: 'tl', life: 5000 });
         }
-        // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'SMTP Configuration saved successfully', key: 'tl'});
       },
       error: (err) => {
         console.error(err);
         this.loading = false;
           this.messageService.add({ severity: 'error', summary: 'Error', detail: err, key: 'tl' });
-        // this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save SMTP Configuration', key: 'tl' });
       }
     });
   }
