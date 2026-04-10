@@ -176,38 +176,57 @@ removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex:
   stages.removeAt(stageIndex);
 }
 
-  saveSettings(module: any, app: any) {
-    const controlName = `${module.title}_${app.appName}`;
-    const settings = this.approvalForm.get(`submodules.${controlName}`)?.value;
-    console.log(`Saving Approval Flow for ${app.appName}:`, settings);
+ saveSettings(module: any, app: any) {
+  const controlName = `${module.title}_${app.appName}`;
+  const submoduleGroup = this.approvalForm.get(`submodules.${controlName}`);
+  
+  if (!submoduleGroup) return;
 
-    const date = new Date();
-    const now = date.toISOString();
-    const payload = {
-      id: 0,
-      name: controlName,
-      description: controlName,
-      module: module.id,
-      submoduleId: app.id,
-      createdAt: now,
-      updatedAt: now,
-      isActive: true,
-      version: 1,
-      stages: settings.stages.map((stage: any, index: number) => ({
-        name: stage.name,
-        orderIndex: stage.orderIndex,
-        approvalType: stage.approvalType,
-        rejectionPolicy: stage.rejectionPolicy,
-        isOptional: stage.isOptional,
-        minApprovals: stage.minApprovals,
-        allowSelfApproval: stage.allowSelfApproval,
-        assignment: stage.assignment.map((assign: any) => ({
-          userId: assign.userId,
-          roleId: assign.roleId,
-          position: assign.position
+  const actionsData = submoduleGroup.get('actions')?.value;
+  const now = new Date().toISOString();
+
+  this.AVAILABLE_ACTIONS.forEach(actionKey => {
+    const actionSettings = actionsData[actionKey];
+
+    if (actionSettings.isEnabled) {
+      const payload = {
+        id: 0,
+        moduleId: module.id, 
+        submoduleId: app.id ,
+        actionKey: actionKey, 
+        isActive: true,
+        version: 1,
+        callbackEnabled: true,
+        createdAt: now,
+        updatedAt: now,
+        stages: actionSettings.stages.map((stage: any, index: number) => ({
+          id: 0,
+          name: stage.name,
+          orderIndex: index + 1,
+          minApprovals: stage.minApprovals || 0,
+          approvalType: stage.approvalType,
+          allowSelfApproval: stage.allowSelfApproval || false,
+          isDocumentRequired: stage.isDocumentRequired || false,
+          canEditRecord: stage.canEditRecord || false,
+          onReject: stage.rejectionPolicy || 'STOP',
+          createdAt: now,
+          updatedAt: now,
+          assignment: stage.assignment.map((assign: any, aIndex: number) => ({
+            id: 0,
+            userId: assign.id ? assign.id : null,
+            roleId: assign.id ? assign.id : null,
+            position: aIndex + 1,
+            createdAt: now,
+            updatedAt: now
+          }))
         }))
-      }))
+      };
+
+      console.log(`Payload for ${controlName} - ${actionKey}:`, payload);
+      
+      // Call your service here
+      // this.workflowService.postWorkflow(payload).subscribe(...);
     }
-    console.log(payload)
-  }
+  });
+}
 }
