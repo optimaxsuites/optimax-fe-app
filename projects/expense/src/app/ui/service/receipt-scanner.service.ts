@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import * as Tesseract from 'tesseract.js';  // ✅ STATIC IMPORT - Works in production!
 
 export interface ScannedReceiptData {
   merchantName:     string;
@@ -7,14 +8,14 @@ export interface ScannedReceiptData {
   merchantEmail?:   string;
   merchantContact?: string;
   expenseName:      string;
-  description:      string;      // All line items formatted as a readable list
-  amount:           number | null; // Grand total (tax-inclusive)
-  subTotal:         number | null; // Pre-tax subtotal if found
-  taxAmount:        number | null; // Tax monetary value if found
-  taxRate:          number | null; // Tax percentage if found (e.g. 7.5)
-  taxLabel:         string;        // Tax label found on receipt (e.g. "VAT", "GST")
-  quantity:         number | null; // Total number of distinct line items
-  date:             string;        // YYYY-MM-DD
+  description:      string;      
+  amount:           number | null;
+  subTotal:         number | null;
+  taxAmount:        number | null;
+  taxRate:          number | null;
+  taxLabel:         string;
+  quantity:         number | null;
+  date:             string;
   lineItems:        ScannedLineItem[];
   confidence:       'high' | 'medium' | 'low';
   rawText:          string;
@@ -27,9 +28,9 @@ export interface ScannedLineItem {
   price: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────
 // KEYWORD MAPS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────
 
 const TOTAL_KEYWORDS = [
   /\bgrand\s+total\b/i,
@@ -76,23 +77,131 @@ const FOOTER_KEYWORDS = [
 
 @Injectable({ providedIn: 'root' })
 export class ReceiptScannerService {
+  
+  private worker: any = null;
+  private isWorkerInitialized = false;
 
+  constructor() {}
 
+  /**
+   * Initialize Tesseract worker (once per service instance)
+   * Safe to call multiple times - only initializes once
+   */
+  private async _ensureWorkerReady(): Promise<void> {
+    if (this.isWorkerInitialized && this.worker) {
+      console.log('[ReceiptScanner] Worker already initialized');
+      return;
+    }
 
+    try {
+      console.log('[ReceiptScanner] Initializing Tesseract worker...');
+      // ✅ STATIC IMPORT - Tesseract.createWorker exists because import is at module level
+      this.worker = await Tesseract.createWorker('eng');
+      this.isWorkerInitialized = true;
+      console.log('[ReceiptScanner] ✅ Tesseract worker initialized successfully');
+    } catch (error) {
+      console.error('[ReceiptScanner] ❌ Failed to initialize worker:', error);
+      throw new Error('Failed to initialize OCR service: ' + (error as any).message);
+    }
+  }
+
+  /**
+   * Scan receipt from File object (main method called from component)
+   * ✅ Uses static import - works in production builds
+   */
   async scanImage(file: File): Promise<ScannedReceiptData> {
-    const Tesseract = await import('tesseract.js');
-    const result = await Tesseract.recognize(file, 'eng', {});
-    const rawText = result.data.text;
-    console.log('[ReceiptScanner] Raw OCR text:\n', rawText);
-    return this._parseReceiptText(rawText);
+    if (!file) {
+      throw new Error('File is required');
+    }
+
+    try {
+      console.log('[ReceiptScanner] Starting OCR for file:', file.name);
+      
+      // ✅ Ensure worker is ready
+      await this._ensureWorkerReady();
+
+      if (!this.worker) {
+        throw new Error('Worker not initialized');
+      }
+
+      // ✅ Tesseract.recognize can accept File objects directly
+      console.log('[ReceiptScanner] Recognizing text from file...');
+      const result = await this.worker.recognize(file);
+      
+      const rawText = result?.data?.text || '';
+      
+      if (!rawText || rawText.trim().length === 0) {
+        console.warn('[ReceiptScanner] ⚠️  No text extracted from file');
+        throw new Error('No text could be extracted from the receipt image');
+      }
+
+      console.log('[ReceiptScanner] ✅ Raw OCR text extracted, length:', rawText.length);
+      console.log('[ReceiptScanner] Raw text preview:\n', rawText.substring(0, 200) + '...');
+
+      return this._parseReceiptText(rawText);
+    } catch (error: any) {
+      console.error('[ReceiptScanner] OCR failed:', error);
+      throw error;
+    }
   }
 
+  /**
+   * Scan receipt from data URL (alternative method)
+   * ✅ Uses static import - works in production builds
+   */
   async scanFromDataUrl(dataUrl: string): Promise<ScannedReceiptData> {
-    const Tesseract = await import('tesseract.js');
-    const result    = await Tesseract.recognize(dataUrl, 'eng', {});
-    return this._parseReceiptText(result.data.text);
+    if (!dataUrl) {
+      throw new Error('Data URL is required');
+    }
+
+    try {
+      console.log('[ReceiptScanner] Starting OCR from data URL');
+      
+      // ✅ Ensure worker is ready
+      await this._ensureWorkerReady();
+
+      if (!this.worker) {
+        throw new Error('Worker not initialized');
+      }
+
+      // ✅ Tesseract.recognize can accept data URLs
+      console.log('[ReceiptScanner] Recognizing text from data URL...');
+      const result = await this.worker.recognize(dataUrl);
+      
+      const rawText = result?.data?.text || '';
+      
+      if (!rawText || rawText.trim().length === 0) {
+        console.warn('[ReceiptScanner] ⚠️  No text extracted from data URL');
+        throw new Error('No text could be extracted from the receipt image');
+      }
+
+      console.log('[ReceiptScanner] ✅ Raw OCR text extracted from data URL, length:', rawText.length);
+
+      return this._parseReceiptText(rawText);
+    } catch (error: any) {
+      console.error('[ReceiptScanner] OCR from data URL failed:', error);
+      throw error;
+    }
   }
 
+  /**
+   * Terminate worker when done (call on component destroy)
+   */
+  async terminateWorker(): Promise<void> {
+    if (this.worker) {
+      try {
+        console.log('[ReceiptScanner] Terminating worker...');
+        await this.worker.terminate();
+        this.worker = null;
+        this.isWorkerInitialized = false;
+        console.log('[ReceiptScanner] ✅ Worker terminated');
+      } catch (error) {
+        console.error('[ReceiptScanner] Error terminating worker:', error);
+      }
+    }
+  }
+
+  // ─── PARSING LOGIC ──
 
   private _parseReceiptText(raw: string): ScannedReceiptData {
     const warnings: string[] = [];
@@ -152,7 +261,6 @@ export class ReceiptScannerService {
     };
   }
 
-
   private _extractFinancials(lines: string[], rawText: string): {
     total:     number | null;
     subTotal:  number | null;
@@ -169,7 +277,7 @@ export class ReceiptScannerService {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // ── Tax line ─────────────────────────────────────────────────────────
+      // ── Tax line ─
       if (TAX_KEYWORDS.some(kw => kw.test(line)) &&
           !SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) {
 
@@ -207,7 +315,7 @@ export class ReceiptScannerService {
         continue;
       }
 
-      // ── Total line ────────────────────────────────────────────────────────
+      // ── Total line 
       if (TOTAL_KEYWORDS.some(kw => kw.test(line)) &&
           !SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) {
         const n = this._extractNumber(line) ??
@@ -219,7 +327,7 @@ export class ReceiptScannerService {
       }
     }
 
-    // Fallback loop (similar to first version)
+    // Fallback loop
     if (total === null) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -235,7 +343,7 @@ export class ReceiptScannerService {
       }
     }
 
-    // ✅ RAW TEXT FALLBACK (restored from first version)
+    // ✅ RAW TEXT FALLBACK
     if (total === null) {
       const rawMatch = rawText.match(/total[^\d\n]*([=₦$£€\s]*[\d,\.]+)/i);
       if (rawMatch) {
@@ -258,7 +366,6 @@ export class ReceiptScannerService {
     return { total, subTotal, taxAmount, taxRate, taxLabel };
   }
 
- 
   private _extractMerchant(lines: string[]): string {
     const skipPatterns = [
       /^\d{2}[-/]\d{2}[-/]\d{4}/,
@@ -306,7 +413,6 @@ export class ReceiptScannerService {
 
     return '';
   }
-
 
   private _extractLineItems(lines: string[], merchantName: string): ScannedLineItem[] {
     const items: ScannedLineItem[] = [];
@@ -402,9 +508,6 @@ export class ReceiptScannerService {
     return '';
   }
 
-
-
-  // ✅ FIX: now accepts 1+ digits (not requiring 2)
   private _extractNumber(s: string): number | null {
     if (!s) return null;
     const cleaned = s.replace(/[=₦$£€,\s]/gi, '');
