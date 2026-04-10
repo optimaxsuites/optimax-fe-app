@@ -2,6 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
+import { ApprovalWorkflowService } from '../../../service/approval-workflow.service';
+import { MessageService } from 'primeng/api';
 
 type ApprovalStrategy = 'ANY' | 'ALL' | 'QUORUM' | 'SEQUENTIAL';
 interface StageForm {
@@ -34,7 +36,9 @@ export class ApprovalComponent implements OnInit {
     private fb: FormBuilder, 
     private moduleService: ModulesService, 
     private cdr: ChangeDetectorRef,
-    private userService: UserService
+    private userService: UserService,
+    private workflowService: ApprovalWorkflowService,
+    private messageService: MessageService
   ) {
     this.approvalForm = this.fb.group({
       submodules: this.fb.group({}) // Container for dynamic submodules
@@ -77,156 +81,170 @@ export class ApprovalComponent implements OnInit {
     this.getApprovers(moduleTitle, appName).removeAt(index);
   }
 
-buildApprovalForm() {
-  const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
+  buildApprovalForm() {
+    const submodulesGroup = this.approvalForm.get('submodules') as FormGroup;
 
-  this.modules.forEach(module => {
-    module.appRegister.forEach((app: any) => {
-      // Create the exact key: "Point of Sale (POS)_Inventory"
-      const controlName = `${module.title}_${app.appName}`;
-      
-      this.selectedAction[controlName] = 'CREATE';
+    this.modules.forEach(module => {
+      module.appRegister.forEach((app: any) => {
+        // Create the exact key: "Point of Sale (POS)_Inventory"
+        const controlName = `${module.title}_${app.appName}`;
+        
+        this.selectedAction[controlName] = 'CREATE';
 
-      const actionsGroup = this.fb.group({});
-      this.AVAILABLE_ACTIONS.forEach(action => {
-        actionsGroup.addControl(action, this.fb.group({
-          isEnabled: [true],
-          stages: this.fb.array([]) 
+        const actionsGroup = this.fb.group({});
+        this.AVAILABLE_ACTIONS.forEach(action => {
+          actionsGroup.addControl(action, this.fb.group({
+            isEnabled: [true],
+            stages: this.fb.array([]) 
+          }));
+        });
+
+        // Add the control to the 'submodules' group
+        submodulesGroup.addControl(controlName, this.fb.group({
+          submoduleId: [app.id],
+          isEnabled: [false], // The master toggle
+          actions: actionsGroup
         }));
       });
-
-      // Add the control to the 'submodules' group
-      submodulesGroup.addControl(controlName, this.fb.group({
-        submoduleId: [app.id],
-        isEnabled: [false], // The master toggle
-        actions: actionsGroup
-      }));
     });
-  });
-  this.cdr.detectChanges();
-}
-
-addStage(moduleTitle: string, appName: string, actionKey: string) {
-  // 1. Get the array
-  const stages = this.getStages(moduleTitle, appName, actionKey);
-  
-  if (!stages) {
-    console.error(`Target FormArray not found: submodules.${moduleTitle}_${appName}.actions.${actionKey}.stages`);
-    return;
+    this.cdr.detectChanges();
   }
 
-  // 2. Create the group
-  const stageGroup = this.fb.group({
-    name: [`${actionKey} Stage ${stages.length + 1}`, Validators.required],
-    orderIndex: [stages.length + 1],
-    approvalType: ['ANY', Validators.required],
-    rejectionPolicy: ['STOP', Validators.required],
-    isOptional: [false],
-    minApprovals: [1, [Validators.min(1)]],
-    allowSelfApproval: [false],
-    assignment: this.fb.array([])
-  });
+  addStage(moduleTitle: string, appName: string, actionKey: string) {
+    // 1. Get the array
+    const stages = this.getStages(moduleTitle, appName, actionKey);
+    
+    if (!stages) {
+      console.error(`Target FormArray not found: submodules.${moduleTitle}_${appName}.actions.${actionKey}.stages`);
+      return;
+    }
 
-  // 3. Push and Force Detection
-  stages.push(stageGroup);
-  this.cdr.markForCheck(); 
-  this.cdr.detectChanges();
-}
+    // 2. Create the group
+    const stageGroup = this.fb.group({
+      name: [`${actionKey} Stage ${stages.length + 1}`, Validators.required],
+      orderIndex: [stages.length + 1],
+      approvalType: ['ANY', Validators.required],
+      rejectionPolicy: ['STOP', Validators.required],
+      isOptional: [false],
+      minApprovals: [1, [Validators.min(1)]],
+      allowSelfApproval: [false],
+      assignment: this.fb.array([])
+    });
 
-getStages(moduleTitle: string, appName: string, actionKey: string): FormArray {
-  const controlName = `${moduleTitle}_${appName}`;
-  // Use dot notation and wrap the control name in quotes if it contains special characters
-  const path = `submodules.${controlName}.actions.${actionKey}.stages`;
-  return this.approvalForm.get(path) as FormArray;
-}
+    // 3. Push and Force Detection
+    stages.push(stageGroup);
+    this.cdr.markForCheck(); 
+    this.cdr.detectChanges();
+  }
 
-// Update this helper to include actionKey
-getAssignments(moduleTitle: string, appName: string, actionKey: string, stageIndex: number): FormArray {
-  return this.getStages(moduleTitle, appName, actionKey).at(stageIndex).get('assignment') as FormArray;
-}
+  getStages(moduleTitle: string, appName: string, actionKey: string): FormArray {
+    const controlName = `${moduleTitle}_${appName}`;
+    // Use dot notation and wrap the control name in quotes if it contains special characters
+    const path = `submodules.${controlName}.actions.${actionKey}.stages`;
+    return this.approvalForm.get(path) as FormArray;
+  }
 
-// Update removeAssignment to include actionKey
-removeAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number, assignIndex: number) {
-  this.getAssignments(moduleTitle, appName, actionKey, stageIndex).removeAt(assignIndex);
-}
+  // Update this helper to include actionKey
+  getAssignments(moduleTitle: string, appName: string, actionKey: string, stageIndex: number): FormArray {
+    return this.getStages(moduleTitle, appName, actionKey).at(stageIndex).get('assignment') as FormArray;
+  }
 
-// Update addAssignment to include actionKey
-addAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
-  const assignments = this.getAssignments(moduleTitle, appName, actionKey, stageIndex);
-  
-  const assignmentGroup = this.fb.group({
-    userId: [null],
-    roleId: [null],
-  });
+  // Update removeAssignment to include actionKey
+  removeAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number, assignIndex: number) {
+    this.getAssignments(moduleTitle, appName, actionKey, stageIndex).removeAt(assignIndex);
+  }
 
-  // Enforce "Either/Or" logic
-  assignmentGroup.get('userId')?.valueChanges.subscribe(val => {
-    if (val) assignmentGroup.get('roleId')?.setValue(null, { emitEvent: false });
-  });
-  assignmentGroup.get('roleId')?.valueChanges.subscribe(val => {
-    if (val) assignmentGroup.get('userId')?.setValue(null, { emitEvent: false });
-  });
+  // Update addAssignment to include actionKey
+  addAssignment(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
+    const assignments = this.getAssignments(moduleTitle, appName, actionKey, stageIndex);
+    
+    const assignmentGroup = this.fb.group({
+      userId: [null],
+      roleId: [null],
+    });
 
-  assignments.push(assignmentGroup);
-}
+    // Enforce "Either/Or" logic
+    assignmentGroup.get('userId')?.valueChanges.subscribe(val => {
+      if (val) assignmentGroup.get('roleId')?.setValue(null, { emitEvent: false });
+    });
+    assignmentGroup.get('roleId')?.valueChanges.subscribe(val => {
+      if (val) assignmentGroup.get('userId')?.setValue(null, { emitEvent: false });
+    });
 
-// Update removeStage to include actionKey
-removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
-  const stages = this.getStages(moduleTitle, appName, actionKey);
-  stages.removeAt(stageIndex);
-}
+    assignments.push(assignmentGroup);
+  }
 
- saveSettings(module: any, app: any) {
-  const controlName = `${module.title}_${app.appName}`;
-  const submoduleGroup = this.approvalForm.get(`submodules.${controlName}`);
-  
-  if (!submoduleGroup) return;
+  // Update removeStage to include actionKey
+  removeStage(moduleTitle: string, appName: string, actionKey: string, stageIndex: number) {
+    const stages = this.getStages(moduleTitle, appName, actionKey);
+    stages.removeAt(stageIndex);
+  }
 
-  const actionsData = submoduleGroup.get('actions')?.value;
-  const now = new Date().toISOString();
+  saveSettings(module: any, app: any) {
+    const controlName = `${module.title}_${app.appName}`;
+    const submoduleGroup = this.approvalForm.get(`submodules.${controlName}`);
+    
+    if (!submoduleGroup) return;
 
-  this.AVAILABLE_ACTIONS.forEach(actionKey => {
-    const actionSettings = actionsData[actionKey];
+    const actionsData = submoduleGroup.get('actions')?.value;
+    const now = new Date().toISOString();
 
-    if (actionSettings.isEnabled) {
-      const payload = {
-        id: 0,
-        moduleId: module.id, 
-        submoduleId: app.id ,
-        actionKey: actionKey, 
-        isActive: true,
-        version: 1,
-        callbackEnabled: true,
-        createdAt: now,
-        updatedAt: now,
-        stages: actionSettings.stages.map((stage: any, index: number) => ({
+    this.AVAILABLE_ACTIONS.forEach(actionKey => {
+      const actionSettings = actionsData[actionKey];
+
+      // Filter: Only proceed if the action is enabled AND has at least one stage
+      const hasStages = actionSettings.stages && actionSettings.stages.length > 0;
+
+      if (actionSettings.isEnabled && hasStages) {
+        const payload = {
           id: 0,
-          name: stage.name,
-          orderIndex: index + 1,
-          minApprovals: stage.minApprovals || 0,
-          approvalType: stage.approvalType,
-          allowSelfApproval: stage.allowSelfApproval || false,
-          isDocumentRequired: stage.isDocumentRequired || false,
-          canEditRecord: stage.canEditRecord || false,
-          onReject: stage.rejectionPolicy || 'STOP',
+          moduleId: module.id , 
+          submoduleId: app.id ,
+          actionKey: actionKey, 
+          isActive: true,
+          version: 1,
+          callbackEnabled: true,
           createdAt: now,
           updatedAt: now,
-          assignment: stage.assignment.map((assign: any, aIndex: number) => ({
+          stages: actionSettings.stages.map((stage: any, index: number) => ({
             id: 0,
-            userId: assign.id ? assign.id : null,
-            roleId: assign.id ? assign.id : null,
-            position: aIndex + 1,
+            name: stage.name,
+            orderIndex: index + 1,
+            minApprovals: stage.minApprovals || 0,
+            approvalType: stage.approvalType,
+            allowSelfApproval: stage.allowSelfApproval || false,
+            isDocumentRequired: stage.isDocumentRequired || false,
+            canEditRecord: stage.canEditRecord || false,
+            onReject: stage.rejectionPolicy || 'STOP',
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            assignment: stage.assignment.map((assign: any, aIndex: number) => ({
+              id: 0,
+              userId: assign.userId ? assign.userId : null,
+              roleId: assign.roleId ? assign.roleId : null,
+              position: aIndex + 1,
+              createdAt: now,
+              updatedAt: now
+            }))
           }))
-        }))
-      };
+        };
 
-      console.log(`Payload for ${controlName} - ${actionKey}:`, payload);
-      
-      // Call your service here
-      // this.workflowService.postWorkflow(payload).subscribe(...);
-    }
-  });
-}
+        console.log(`Saving workflow for ${actionKey}...`, payload);
+        
+        this.workflowService.createWorkflow(payload).subscribe({
+          next: (res) => {
+            console.log(`${actionKey} saved successfully`)
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'SMTP Configuration saved successfully', key: 'tl'});
+
+          },
+          error: (err) => {
+            console.error(`Error saving ${actionKey}`, err)
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save SMTP Configuration', key: 'tl'});
+          }
+        });
+      } else if (actionSettings.isEnabled && !hasStages) {
+        console.warn(`Action ${actionKey} is enabled but has no stages. Skipping save.`);
+      }
+    });
+  }
 }

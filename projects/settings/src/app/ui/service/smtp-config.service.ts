@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment';
 
 
@@ -32,10 +32,33 @@ export class SmtpConfigService {
   constructor(private http: HttpClient) {}
 
   createConfig(payload: SmtpConfig): Observable<any> {
-    return this.http.post(`${this.baseUrl}/x/api/v2/us/smtp-config`, payload);
+    return this.http.post(`${this.baseUrl}/x/api/v2/us/smtp-config`, payload).pipe(catchError(this.handleError));;
   }
 
   getConfig(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/x/api/v2/us/smtp-config`);
+    return this.http.get(`${this.baseUrl}/x/api/v2/us/smtp-config`).pipe(catchError(this.handleError));;
   }
+
+  private handleError(error: HttpErrorResponse) {
+      let errorMessage = 'An unknown error occurred!';
+      if (error.error instanceof ErrorEvent) {
+        // Client-side error
+        errorMessage = `Error: ${error.error.message}`;
+      } else {
+        // Server-side error
+        if (error.status === 500) {
+          errorMessage =
+            'Server error: ' + error.error.message ||
+            'Check form details and try again.';
+        } else if (error.status === 404) {
+          errorMessage = 'Resource not found. Please try again.';
+        } else if (error.status === 0) {
+          errorMessage =
+            'Unable to connect to the server. Please check your internet connection.';
+        } else {
+          errorMessage = error.error.message || 'An unexpected error occurred.';
+        }
+      }
+      return throwError(() => errorMessage);
+    }
 }

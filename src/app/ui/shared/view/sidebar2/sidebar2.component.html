@@ -4,7 +4,7 @@
   </div>
   <div class="toggle-wrapper" [ngClass]="{
     'max-w-full mx-auto  pl-8 my-3': sidebarHidden,
-    'absolute -right-4 top-14 z-50': !sidebarHidden
+    'absolute -right-4 top-14 z-[100]': !sidebarHidden
   }">
     <button class="toggle-btn text-xl h-9 w-9 rounded-full text-white" (click)="onToggleSidebar()">
       <i *ngIf="sidebarHidden" class="pi pi-angle-right text-xl"></i>
