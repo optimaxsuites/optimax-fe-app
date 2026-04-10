@@ -113,82 +113,50 @@
 
     <!-- Table Section -->
     <div class="approval-table-container">
-      <table class="loans-table">
-        <thead>
-          <tr>
-            <th class="sortable" (click)="setSort('loanId')">
-              Application ID
-              <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('fullName')">
-              Employee
-              <i class="fas" [ngClass]="getSortIcon('fullName')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('employeeId')">
-              Employee ID
-              <i class="fas" [ngClass]="getSortIcon('employeeId')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('department')">
-              Department
-              <i class="fas" [ngClass]="getSortIcon('department')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('amount')">
-              Loan Amount
-              <i class="fas" [ngClass]="getSortIcon('amount')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('purpose')">
-              Purpose
-              <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('interestRate')">
-              Interest
-              <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('totalRepayable')">
-              Repayable Amount
-              <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('status')">
-              Status
-              <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('requestDate')">
-              Date Submitted
-              <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
-            </th>
-            <th class="actions-col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let loan of paginatedLoans">
-            <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
-            <td>{{ loan.fullName || 'N/A' }}</td>
-            <td>{{ loan.employeeId || 'N/A' }}</td>
-            <td>{{ formatDepartmentDisplay(loan.department) }}</td>
-            <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
-            <td>{{ formatPurposeDisplay(loan.purpose) }}</td>
-            <td>{{ loan.interestRate || 0 }}%</td>
-            <td class="amount-cell">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
-            <td>
-              <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-                {{ getStatusLabel(loan.status) }}
-              </span>
-            </td>
-            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
-            <td class="actions actions-col">
-              <button class="btn-view" type="button" (click)="openLoanDetails(loan)" title="View" aria-label="View">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn-history" type="button" (click)="seeLoanHistory(loan.employeeId)" title="See History" aria-label="See History">
-                <i class="fas fa-history"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredLoans.length === 0">
-            <td class="no-results" colspan="11">No loan applications found matching your filters</td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="[
+          { header: 'Application ID', field: 'loanId', sortable: true },
+          { header: 'Employee', field: 'fullName', sortable: true },
+          { header: 'Employee ID', field: 'employeeId', sortable: true },
+          { header: 'Department', field: 'department', sortable: true },
+          { header: 'Loan Amount', field: 'amount', sortable: true },
+          { header: 'Purpose', field: 'purpose', sortable: true },
+          { header: 'Interest', field: 'interestRate', sortable: true },
+          { header: 'Late Fee / Grace' },
+          { header: 'Repayable Amount', field: 'totalRepayable', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Date Submitted', field: 'requestDate', sortable: true },
+          { header: 'Actions' }
+        ]"
+        [rows]="paginatedLoans"
+        [emptyMessage]="'No loan applications found matching your filters'"
+        tableClass="loans-table">
+        <ng-template appTableBody let-loan>
+          <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+          <td>{{ loan.fullName || 'N/A' }}</td>
+          <td>{{ loan.employeeId || 'N/A' }}</td>
+          <td>{{ formatDepartmentDisplay(loan.department) }}</td>
+          <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
+          <td>{{ formatPurposeDisplay(loan.purpose) }}</td>
+          <td>{{ loan.interestRate || 0 }}%</td>
+          <td>{{ getOverduePolicySummary(loan) }}</td>
+          <td class="amount-cell">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+              {{ getStatusLabel(loan.status) }}
+            </span>
+          </td>
+          <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+          <td class="actions actions-col">
+            <button class="btn-view" type="button" (click)="openLoanDetails(loan)" title="View" aria-label="View">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn-history" type="button" (click)="seeLoanHistory(loan.employeeId)" title="See History" aria-label="See History">
+              <i class="fas fa-history"></i>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
 
       <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
         <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>

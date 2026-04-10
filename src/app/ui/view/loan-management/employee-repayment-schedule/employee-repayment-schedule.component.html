@@ -214,43 +214,41 @@
           <i class="fas fa-table"></i> View Detailed Breakdown
         </summary>
         <div class="table-container">
-          <table class="detailed-breakdown-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Due Date</th>
-                <th>Principal</th>
-                <th>Interest</th>
-                <th>Total</th>
-                <th>Balance</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of loan.repaymentSchedule">
-                <td>{{ item.installmentNo }}</td>
-                <td>{{ formatDate(item.dueDate) }}</td>
-                <td>₦{{ item.principalAmount | number:'1.2-2' }}</td>
-                <td>₦{{ item.interestAmount | number:'1.2-2' }}</td>
-                <td>₦{{ item.totalAmount | number:'1.2-2' }}</td>
-                <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
-                <td>
-                  <span class="status-badge-small" [ngClass]="getStatusClass(item.status)">
-                    {{ item.status }}
-                  </span>
-                </td>
-                <td class="action-buttons-cell">
-                  <button class="btn-pay-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openPaymentModal(item)" title="Make Payment">
-                    <i class="fas fa-credit-card"></i>
-                  </button>
-                  <button class="btn-extend-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openGracePeriodModal(item)" title="Request Extension">
-                    <i class="fas fa-hourglass-half"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <app-table
+            [columns]="[
+              { header: 'Month' },
+              { header: 'Due Date' },
+              { header: 'Principal' },
+              { header: 'Interest' },
+              { header: 'Total' },
+              { header: 'Balance' },
+              { header: 'Status' },
+              { header: 'Actions' }
+            ]"
+            [rows]="loan.repaymentSchedule"
+            tableClass="detailed-breakdown-table">
+            <ng-template appTableBody let-item>
+              <td>{{ item.installmentNo }}</td>
+              <td>{{ formatDate(item.dueDate) }}</td>
+              <td>₦{{ item.principalAmount | number:'1.2-2' }}</td>
+              <td>₦{{ item.interestAmount | number:'1.2-2' }}</td>
+              <td>₦{{ item.totalAmount | number:'1.2-2' }}</td>
+              <td>₦{{ item.remainingBalance | number:'1.2-2' }}</td>
+              <td>
+                <span class="status-badge-small" [ngClass]="getStatusClass(item.status)">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td class="action-buttons-cell">
+                <button class="btn-pay-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openPaymentModal(item)" title="Make Payment">
+                  <i class="fas fa-credit-card"></i>
+                </button>
+                <button class="btn-extend-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openGracePeriodModal(item)" title="Request Extension">
+                  <i class="fas fa-hourglass-half"></i>
+                </button>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
       </details>
     </ng-container>

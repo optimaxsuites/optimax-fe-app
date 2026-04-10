@@ -51,58 +51,306 @@
 
   <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
     <div class="cooperative-loan-details" *ngIf="selectedLoanForDetails as loan">
-      <div class="modal-header">
-        <h2>Loan Details</h2>
-        <div class="header-actions">
-          <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
-          <button class="close-btn" type="button" (click)="closeLoanDetailsModal()" aria-label="Close loan details">
-            <i class="fas fa-times"></i>
-          </button>
+      <div class="summary-card">
+        <div class="group-banner">
+          <span class="group-banner-tag"><i class="fas fa-people-group"></i> Cooperative Group</span>
+          <h2>{{ getLoanGroupName(loan) }}</h2>
+          <p>This loan is tied to your group strength, contribution pattern, and repayment performance.</p>
+        </div>
+
+        <div class="summary-copy">
+          <span class="eyebrow">Cooperative Loan Details</span>
+          <div class="modal-header">
+            <div>
+              <h3><i class="fas fa-file-lines"></i> Loan Application Details</h3>
+              <p class="subtitle">A focused snapshot of your request, financial position, and repayment activity.</p>
+            </div>
+            <div class="header-actions">
+              <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+              <button class="close-btn" type="button" (click)="closeLoanDetailsModal()" aria-label="Close loan details">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-meta">
+            <span><i class="fas fa-hashtag"></i>{{ loan.loanCode || loan.loanId || loan.id }}</span>
+            <span><i class="fas fa-layer-group"></i>{{ getLoanGroupName(loan) }}</span>
+            <span><i class="fas fa-calendar-day"></i>{{ (loan.applicationDate || loan.requestDate) | date:'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <span>Requested</span>
+            <strong>{{ formatCurrency(loan.amount) }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Monthly</span>
+            <strong>{{ formatCurrency(loan.repaymentAmount || 0) }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Outstanding</span>
+            <strong>{{ formatCurrency(getOutstandingAmount(loan)) }}</strong>
+          </div>
         </div>
       </div>
 
-      <p class="subtitle">A concise view of your cooperative loan information.</p>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Loan Snapshot</span>
+          <h3>What matters right now</h3>
+        </div>
+      </div>
 
       <div class="details-grid">
-        <div class="detail-item">
-          <span class="label">Loan ID</span>
-          <span class="value">{{ loan.loanId }}</span>
+        <div class="detail-group">
+          <div class="group-head">
+            <span class="group-icon"><i class="fas fa-file-signature"></i></span>
+            <div>
+              <span class="group-label">Application</span>
+              <h4>Identity and submission</h4>
+            </div>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <span class="row-label">Loan ID</span>
+              <span class="row-value mono">{{ loan.loanCode || loan.loanId || loan.id }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Group</span>
+              <span class="row-value">{{ getLoanGroupName(loan) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Applied On</span>
+              <span class="row-value">{{ (loan.applicationDate || loan.requestDate) | date:'mediumDate' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Duration</span>
+              <span class="row-value">{{ loan.duration || loan.repaymentTime || 0 }} months</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Purpose</span>
+              <span class="row-value">{{ formatPurposeDisplay(loan.purpose) }}</span>
+            </div>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="label">Status</span>
-          <span class="value">{{ loan.status }}</span>
+
+        <div class="detail-group">
+          <div class="group-head">
+            <span class="group-icon finance"><i class="fas fa-wallet"></i></span>
+            <div>
+              <span class="group-label">Financials</span>
+              <h4>Amounts and repayment</h4>
+            </div>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <span class="row-label">Requested Amount</span>
+              <span class="row-value money">{{ formatCurrency(loan.amount) }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.approvedAmount">
+              <span class="row-label">Approved Amount</span>
+              <span class="row-value money">{{ formatCurrency(loan.approvedAmount) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Monthly Repayment</span>
+              <span class="row-value money">{{ formatCurrency(loan.repaymentAmount || 0) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Interest Rate</span>
+              <span class="row-value strong">{{ loan.interestRate || 0 }}%</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Repayment Period</span>
+              <span class="row-value">{{ loan.duration || loan.repaymentTime || 0 }} months</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Repayment Start Date</span>
+              <span class="row-value">{{ getLoanRepaymentStartDate(loan) ? (getLoanRepaymentStartDate(loan) | date:'mediumDate') : 'Not scheduled yet' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Repayment Day</span>
+              <span class="row-value">{{ getLoanRepaymentDayDisplay(loan) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Outstanding Balance</span>
+              <span class="row-value money warning">{{ formatCurrency(getOutstandingAmount(loan)) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Total Repaid</span>
+              <span class="row-value money">{{ formatCurrency(loan.totalPaid || 0) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Total Repayable</span>
+              <span class="row-value money">{{ formatCurrency(loan.totalRepayment || loan.totalRepayable || 0) }}</span>
+            </div>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="label">Applied On</span>
-          <span class="value">{{ loan.applicationDate | date:'mediumDate' }}</span>
+
+        <div class="detail-group">
+          <div class="group-head">
+            <span class="group-icon review"><i class="fas fa-chart-line"></i></span>
+            <div>
+              <span class="group-label">Activity</span>
+              <h4>Status and due dates</h4>
+            </div>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row status-row">
+              <span class="row-label">Current Status</span>
+              <span class="status-pill inline-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Mode of Payment</span>
+              <span class="row-value">{{ loan.modeOfPayment || 'MONTHLY' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Next Payment Due</span>
+              <span class="row-value">{{ getNextDueDate(loan.id) ? (getNextDueDate(loan.id) | date:'mediumDate') : 'Not scheduled yet' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Last Payment Received</span>
+              <span class="row-value">{{ getLastPaymentDate(loan.id) ? (getLastPaymentDate(loan.id) | date:'mediumDate') : 'No payment yet' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Outstanding Principal</span>
+              <span class="row-value money">{{ formatCurrency(loan.outstandingPrincipal || getOutstandingAmount(loan)) }}</span>
+            </div>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="label">Duration</span>
-          <span class="value">{{ loan.duration }} months</span>
+
+        <div class="detail-group">
+          <div class="group-head">
+            <span class="group-icon"><i class="fas fa-hand-holding-dollar"></i></span>
+            <div>
+              <span class="group-label">Disbursement</span>
+              <h4>Status and references</h4>
+            </div>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row status-row">
+              <span class="row-label">Disbursement Status</span>
+              <span class="status-pill inline-pill" [ngClass]="getLoanDisbursementStatusClass(loan)">{{ getLoanDisbursementStatusText(loan) }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.disbursementInitiatedAt">
+              <span class="row-label">Initiated On</span>
+              <span class="row-value">{{ loan.disbursementInitiatedAt | date:'medium' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.disbursementInstructionLoanReference">
+              <span class="row-label">Instruction Ref</span>
+              <span class="row-value mono">{{ loan.disbursementInstructionLoanReference }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.disbursementReference">
+              <span class="row-label">Disbursement Ref</span>
+              <span class="row-value mono">{{ loan.disbursementReference }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.disbursedDate">
+              <span class="row-label">Disbursed On</span>
+              <span class="row-value">{{ loan.disbursedDate | date:'medium' }}</span>
+            </div>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="label">Amount</span>
-          <span class="value">{{ formatCurrency(loan.amount) }}</span>
+
+        <div class="detail-group">
+          <div class="group-head">
+            <span class="group-icon review"><i class="fas fa-clipboard-check"></i></span>
+            <div>
+              <span class="group-label">Review</span>
+              <h4>Terms and decisions</h4>
+            </div>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <span class="row-label">Late Fee Percentage</span>
+              <span class="row-value">{{ loan.totalLateFeesAccrued ? (loan.totalLateFeesAccrued | number:'1.2-2') : '0.00' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Late Fees Paid</span>
+              <span class="row-value money">{{ formatCurrency(loan.totalLateFeesPaid || 0) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Skipped Payments</span>
+              <span class="row-value">{{ loan.skippedPaymentsCount || 0 }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="row-label">Overdue Payments</span>
+              <span class="row-value">{{ loan.overduePaymentsCount || 0 }}</span>
+            </div>
+            <div class="detail-row" *ngIf="loan.adminComment">
+              <span class="row-label">Admin Note</span>
+              <span class="row-value">{{ loan.adminComment }}</span>
+            </div>
+          </div>
         </div>
-        <div class="detail-item">
-          <span class="label">Interest Rate</span>
-          <span class="value">{{ loan.interestRate }}%</span>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-group full">
+          <div class="group-head">
+            <span class="group-icon review"><i class="fas fa-receipt"></i></span>
+            <div>
+              <span class="group-label">Payments</span>
+              <h4>Recent payment history</h4>
+            </div>
+          </div>
+
+          <div class="detail-list" *ngIf="selectedLoanPaymentHistory.length > 0; else noSelectedLoanPayments">
+            <div class="detail-row" *ngFor="let payment of selectedLoanPaymentHistory | slice:0:5">
+              <span class="row-label">
+                {{ payment.paidAt | date:'mediumDate' }}
+                <small>· {{ getPaymentMethodLabel(payment.modeofPayment || payment.paymentMethod) }}</small>
+              </span>
+              <span class="row-value money">
+                {{ formatCurrency(payment.totalPayment || payment.amount || 0) }}
+              </span>
+            </div>
+          </div>
+
+          <ng-template #noSelectedLoanPayments>
+            <p class="group-copy">No payment records have been posted yet.</p>
+          </ng-template>
         </div>
-        <div class="detail-item">
-          <span class="label">Monthly Repayment</span>
-          <span class="value">{{ formatCurrency(loan.repaymentAmount || loan.repaymentAmount || 0) }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Outstanding Balance</span>
-          <span class="value">{{ formatCurrency(getOutstandingAmount(loan)) }}</span>
-        </div>
-        <div class="detail-item full">
-          <span class="label">Purpose</span>
-          <span class="value">{{ formatPurposeDisplay(loan.purpose) }}</span>
+
+        <div class="detail-group full">
+          <div class="group-head">
+            <span class="group-icon review"><i class="fas fa-route"></i></span>
+            <div>
+              <span class="group-label">Timeline</span>
+              <h4>Status progression</h4>
+            </div>
+          </div>
+
+          <div class="detail-list" *ngIf="selectedLoanTimeline.length > 0; else noSelectedLoanTimeline">
+            <div class="detail-row" *ngFor="let entry of selectedLoanTimeline">
+              <span class="row-label">
+                <span class="status-pill inline-pill" [ngClass]="getStatusClass(entry.status)">{{ entry.status }}</span>
+                <small>· {{ getTimelineActor(entry) }}</small>
+              </span>
+              <span class="row-value">{{ entry.changedAt | date:'medium' }}</span>
+            </div>
+            <div class="detail-row" *ngFor="let entry of selectedLoanTimeline">
+              <span class="row-label" *ngIf="entry.notes">Note</span>
+              <span class="row-value" *ngIf="entry.notes">{{ entry.notes }}</span>
+            </div>
+          </div>
+
+          <ng-template #noSelectedLoanTimeline>
+            <p class="group-copy">No lifecycle events have been recorded yet.</p>
+          </ng-template>
         </div>
       </div>
 
       <div class="modal-actions">
+        <button class="btn-ghost" type="button" (click)="viewRepaymentSchedule(loan.id)">
+          <i class="fas fa-calendar-alt"></i>
+          View Repayment Schedule
+        </button>
         <button class="btn-secondary" type="button" (click)="openFullLoanDetailsFromModal()">
           <i class="fas fa-arrow-right"></i>
           View Full Loan Page
@@ -172,7 +420,7 @@
       <div class="welcome-header lm-header-card">
         <div>
           <h1><i class="fas fa-hand-holding-dollar"></i> Welcome back, {{ displayMemberName }}!</h1>
-          <p class="member-id">Member since: {{ member.joinDate | date:'MMM yyyy' }} | Tenure: {{ currentMemberTenureMonths }} month(s) | Member ID: {{ member.memberId || member.id || 'N/A' }}</p>
+          <p class="member-id">Member since: {{ currentMemberSinceDate ? (currentMemberSinceDate | date:'MMM yyyy') : 'N/A' }} | Tenure: {{ currentMemberTenureMonths }} month(s) | Member ID: {{ member.memberId || member.id || 'N/A' }}</p>
         </div>
         <div class="user-avatar">{{ getInitials(displayMemberName) }}</div>
       </div>
@@ -364,40 +612,42 @@
             </div>
 
             <div class="table-container full-width" *ngIf="displayedLoans.length > 0">
-              <table appSortableTable class="loans-table compact full-width">
-                <thead>
-                  <tr>
-                    <th>Loan ID</th>
-                    <th>Group</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Outstanding</th>
-                    <th class="actions-col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let loan of displayedLoans | slice:0:5">
-                    <td class="loan-id">{{ loan.loanId }}</td>
-                    <td>{{ getLoanGroupName(loan) }}</td>
-                    <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                    <td>
-                      <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
-                    </td>
-                    <td>{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
-                    <td class="actions-col">
-                      <button class="icon-btn" (click)="viewLoanDetails(loan.id)"><i class="fas fa-eye"></i></button>
-                      <button class="icon-btn" (click)="viewRepaymentHistory(loan.id)" title="View Repayment History" aria-label="View Repayment History">
-                        <i class="fas fa-history"></i>
+              <app-table
+                [columns]="[
+                  { header: 'Loan ID' },
+                  { header: 'Group' },
+                  { header: 'Amount' },
+                  { header: 'Status' },
+                  { header: 'Outstanding' },
+                  { header: 'Actions' }
+                ]"
+                [rows]="displayedLoans | slice:0:5"
+                tableClass="loans-table compact full-width">
+                <ng-template appTableBody let-loan>
+                  <td class="loan-id">{{ loan.loanId }}</td>
+                  <td>{{ getLoanGroupName(loan) }}</td>
+                  <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+                  </td>
+                  <td>{{ formatCurrency(getOutstandingAmount(loan)) }}</td>
+                  <td class="actions-col">
+                    <div class="table-actions">
+                      <button class="icon-btn" (click)="viewLoanDetails(loan.id)" title="View Details" aria-label="View Details">
+                        <i class="fas fa-eye"></i>
                       </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      <button class="icon-btn" (click)="viewRepaymentSchedule(loan.id)" title="View Repayment Schedule" aria-label="View Repayment Schedule">
+                        <i class="fas fa-calendar-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </ng-template>
+              </app-table>
             </div>
 
             <div class="repayment-history-block" *ngIf="selectedRepaymentHistoryLoan as historyLoan">
               <div class="history-head">
-                <h3><i class="fas fa-history"></i> Repayment History - {{ historyLoan.loanId }}</h3>
+                <h3><i class="fas fa-calendar-alt"></i> Repayment Schedule & History - {{ historyLoan.loanCode || historyLoan.loanId || historyLoan.id }}</h3>
                 <button class="icon-btn" (click)="closeRepaymentHistory()" title="Close">
                   <i class="fas fa-times"></i>
                 </button>

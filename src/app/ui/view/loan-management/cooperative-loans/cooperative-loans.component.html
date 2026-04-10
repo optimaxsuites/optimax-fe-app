@@ -40,7 +40,7 @@
               <button type="button" class="queue-item ready" *ngFor="let loan of readyForDisbursementLoans" [class.active]="selectedDisbursementLoanId === toStringId(loan.id)" (click)="selectDisbursementLoan(loan)">
                 <strong>{{ loan.loanCode || loan.loanId }}</strong>
                 <span>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</span>
-                <small>{{ disbursementInitiatedAt ? 'Sent to accounting' : 'Ready to release' }}</small>
+                <small>{{ loan.disbursementInitiatedAt ? 'Sent to accounting' : 'Ready to release' }}</small>
               </button>
             </div>
           </div>
@@ -66,16 +66,23 @@
 
           <div class="detail-grid">
             <div class="detail-card"><span>Amount</span><strong>{{ formatCurrency(loan.amount) }}</strong></div>
-            <div class="detail-card"><span>Interest Rate</span><strong>{{ loan.interestRate || 0 }}%</strong></div>
+            <div class="detail-card"><span>Interest Rate</span><strong>{{ selectedDisbursementGroup?.interestRate || loan.interestRate || 0 }}%</strong></div>
             <div class="detail-card"><span>Duration</span><strong>{{ loan.duration || loan.repaymentTime || 0 }} months</strong></div>
             <div class="detail-card"><span>Purpose</span><strong>{{ formatPurposeDisplay(loan.purpose) }}</strong></div>
           </div>
 
           <div class="detail-grid secondary">
+            <div class="detail-card"><span>Group Code</span><strong>{{ selectedDisbursementGroup?.code || '—' }}</strong></div>
+            <div class="detail-card"><span>Group ID</span><strong>{{ selectedDisbursementGroup?.id || loan.groupId || loan.cooperativeGroupId || '—' }}</strong></div>
+            <div class="detail-card"><span>Member ID</span><strong>{{ loan.memberId || loan.cooperativeMemberId || '—' }}</strong></div>
+            <div class="detail-card"><span>Membership ID</span><strong>{{ loan.membershipId || '—' }}</strong></div>
             <div class="detail-card"><span>Accounting Email</span><input type="email" [(ngModel)]="accountingEmail" placeholder="Enter accounting email" /></div>
             <div class="detail-card"><span>Reference</span><input type="text" [(ngModel)]="disbursementInstructionReference" placeholder="Disbursement reference" /></div>
+            <div class="detail-card"><span>Funding Bank</span><strong>{{ selectedDisbursementGroup?.principalBankName || 'N/A' }}</strong></div>
+            <div class="detail-card"><span>Funding Account</span><strong>{{ selectedDisbursementGroup?.principalCollectionAccount || 'N/A' }}</strong></div>
             <div class="detail-card"><span>Bank Name</span><strong>{{ selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A' }}</strong></div>
             <div class="detail-card"><span>Account Number</span><strong>{{ selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A' }}</strong></div>
+            <div class="detail-card"><span>Accounting Webhook</span><strong>{{ selectedDisbursementGroup?.accountingWebhookUrl || 'Not configured' }}</strong></div>
           </div>
 
           <div class="detail-card notes-card">
@@ -184,61 +191,56 @@
     </div>
 
     <div class="approval-table-container table-card">
-      <table appSortableTable class="loans-table">
-        <thead>
-          <tr>
-            <th (click)="setSort('loanId')" class="sortable">
-              Application ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
-            </th>
-            <th>Member</th>
-            <th>Group</th>
-            <th (click)="setSort('amount')" class="sortable">
-              Loan Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i>
-            </th>
-            <th (click)="setSort('status')" class="sortable">
-              Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </th>
-            <th (click)="setSort('applicationDate')" class="sortable">
-              Date Submitted <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i>
-            </th>
-            <th>Stage</th>
-            <th>Purpose</th>
-            <th class="actions-col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let loan of paginatedLoans">
-            <td class="loan-id" [title]="loan.loanCode ? loan.loanCode : (loan.loanId ? loan.loanId.toString() : '')">
-              {{ getLoanIdDisplay(loan) }}
-            </td>
-            <td>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</td>
-            <td>{{ getGroupName(loan.groupId || loan.cooperativeGroupId) }}</td>
-            <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
-            <td>
+      <app-table
+        [columns]="[
+          { header: 'Application ID', field: 'loanId', sortable: true },
+          { header: 'Member' },
+          { header: 'Group' },
+          { header: 'Loan Amount', field: 'amount', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Date Submitted', field: 'applicationDate', sortable: true },
+          { header: 'Stage' },
+          { header: 'Purpose' },
+          { header: 'Actions' }
+        ]"
+        [rows]="paginatedLoans"
+        [emptyMessage]="'No loan applications found matching your filters'"
+        tableClass="loans-table">
+        <ng-template appTableBody let-loan>
+          <td class="loan-id" [title]="loan.loanCode ? loan.loanCode : (loan.loanId ? loan.loanId.toString() : '')">
+            {{ getLoanIdDisplay(loan) }}
+          </td>
+          <td>{{ getMemberName(loan.memberId || loan.cooperativeMemberId) }}</td>
+          <td>{{ getGroupName(loan.groupId || loan.cooperativeGroupId) }}</td>
+          <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
+          <td>
+            <div class="status-stack">
               <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
                 {{ getStatusLabel(loan.status) }}
               </span>
-            </td>
-            <td>{{ (loan.requestDate || loan.applicationDate) | date:'mediumDate' }}</td>
-            <td>{{ getStageLabel(loan) }}</td>
-            <td [title]="formatPurposeDisplay(loan.purpose)">{{ formatPurposeDisplay(loan.purpose).length > 44 ? (formatPurposeDisplay(loan.purpose) | slice:0:44) + '...' : formatPurposeDisplay(loan.purpose) }}</td>
-            <td class="actions actions-col">
-              <button class="btn-approve" *ngIf="loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'" (click)="reviewLoan(loan.id.toString())" title="Review" aria-label="Review">
-                <i class="fas fa-check-circle"></i>
-              </button>
-              <button class="btn-history" *ngIf="loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'" (click)="openDisbursementModal(loan.id.toString())" title="Disburse" aria-label="Disburse">
-                <i class="fas fa-paper-plane"></i>
-              </button>
-              <button class="btn-view" (click)="viewLoan(loan.id.toString())" title="View" aria-label="View">
-                <i class="fas fa-eye"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredLoans.length === 0">
-            <td class="no-results no-data" colspan="9">No loan applications found matching your filters</td>
-          </tr>
-        </tbody>
-      </table>
+              <div class="lifecycle-badge-row" *ngIf="getLifecycleBadges(loan).length > 0">
+                <span class="lifecycle-badge" *ngFor="let badge of getLifecycleBadges(loan)">{{ badge }}</span>
+              </div>
+              <div class="audit-note" *ngIf="getLatestAuditNote(loan)">{{ getLatestAuditNote(loan) }}</div>
+              <small class="audit-meta" *ngIf="getLatestAuditMeta(loan)">{{ getLatestAuditMeta(loan) }}</small>
+            </div>
+          </td>
+          <td>{{ (loan.requestDate || loan.applicationDate) | date:'mediumDate' }}</td>
+          <td>{{ getStageLabel(loan) }}</td>
+          <td [title]="formatPurposeDisplay(loan.purpose)">{{ formatPurposeDisplay(loan.purpose).length > 44 ? (formatPurposeDisplay(loan.purpose) | slice:0:44) + '...' : formatPurposeDisplay(loan.purpose) }}</td>
+          <td class="actions actions-col">
+            <button class="btn-approve" *ngIf="loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'" (click)="reviewLoan(loan.id.toString())" title="Review" aria-label="Review">
+              <i class="fas fa-check-circle"></i>
+            </button>
+            <button class="btn-history" *ngIf="loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'" (click)="openDisbursementModal(loan.id.toString())" title="Disburse" aria-label="Disburse">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+            <button class="btn-view" (click)="viewLoan(loan.id.toString())" title="View" aria-label="View">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
 
       <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
         <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>

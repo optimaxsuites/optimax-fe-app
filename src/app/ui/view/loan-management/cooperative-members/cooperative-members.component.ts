@@ -20,7 +20,7 @@ export class CooperativeMembersComponent implements OnInit {
 
   // Filters
   filters = {
-    status: '',
+    status: 'ACTIVE',
     minShares: null as number | null,
     maxShares: null as number | null
   };
@@ -30,6 +30,10 @@ export class CooperativeMembersComponent implements OnInit {
   sortDirection: 'asc' | 'desc' = 'desc';
 
   statusOptions = ['ACTIVE', 'INACTIVE', 'SUSPENDED'];
+
+  get activeMembersCount(): number {
+    return this.members.filter((member) => member.status === 'ACTIVE').length;
+  }
 
   constructor(
     private cooperativeService: CooperativeService,
@@ -137,7 +141,7 @@ export class CooperativeMembersComponent implements OnInit {
 
   resetFilters(): void {
     this.searchTerm = '';
-    this.filters = { status: '', minShares: null, maxShares: null };
+    this.filters = { status: 'ACTIVE', minShares: null, maxShares: null };
     this.sortField = 'joinDate';
     this.sortDirection = 'desc';
     this.applyFilters();
@@ -212,7 +216,7 @@ export class CooperativeMembersComponent implements OnInit {
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/admin/hr/loan', this.currentUuid], {
+    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

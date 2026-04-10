@@ -88,77 +88,43 @@
         <h2><i class="fas fa-table-list"></i> Loan Records</h2>
       </div>
 
-      <table appSortableTable class="loans-table">
-        <thead>
-          <tr>
-            <th (click)="setSort('loanId')" class="sortable">
-              Loan ID 
-              <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
-            </th>
-            <th (click)="setSort('requestDate')" class="sortable">
-              Date 
-              <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
-            </th>
-            <th (click)="setSort('purpose')" class="sortable">
-              Purpose 
-              <i class="fas" [ngClass]="getSortIcon('purpose')"></i>
-            </th>
-            <th (click)="setSort('amount')" class="sortable">
-              Amount 
-              <i class="fas" [ngClass]="getSortIcon('amount')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('interestRate')">
-              Interest
-              <i class="fas" [ngClass]="getSortIcon('interestRate')"></i>
-            </th>
-            <th class="sortable" (click)="setSort('totalRepayable')">
-              Repayable
-              <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i>
-            </th>
-            <th (click)="setSort('totalPaid')" class="sortable">
-              Paid 
-              <i class="fas" [ngClass]="getSortIcon('totalPaid')"></i>
-            </th>
-            <th (click)="setSort('currentBalance')" class="sortable">
-              Balance 
-              <i class="fas" [ngClass]="getSortIcon('currentBalance')"></i>
-            </th>
-            <th (click)="setSort('status')" class="sortable">
-              Status 
-              <i class="fas" [ngClass]="getSortIcon('status')"></i>
-            </th>
-            <th class="actions-col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let loan of paginatedLoans">
-            <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
-            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
-            <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
-            <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
-            <td class="interest">{{ loan.interestRate || 0 }}%</td>
-            <td class="amount">₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
-            <td class="paid">₦{{ getLoanResolvedPaid(loan) | number:'1.2-2' }}</td>
-            <td class="balance">₦{{ getLoanResolvedBalance(loan) | number:'1.2-2' }}</td>
-            <td>
-              <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-                {{ getStatusLabel(loan.status) }}
-              </span>
-            </td>
-            <td class="actions-col">
-              <button class="view-btn" (click)="viewLoanDetails(loan)" title="View" aria-label="View">
-                <i class="fas fa-eye"></i>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredLoans.length === 0">
-            <td colspan="10" class="no-data">
-              <i class="fas fa-inbox"></i>
-              <p>{{ employeeLoans.length === 0 ? 'No loan history found for this employee' : 'No loans match the selected filters' }}</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <app-table
+        [columns]="[
+          { header: 'Loan ID', field: 'loanId', sortable: true },
+          { header: 'Date', field: 'requestDate', sortable: true },
+          { header: 'Purpose', field: 'purpose', sortable: true },
+          { header: 'Amount', field: 'amount', sortable: true },
+          { header: 'Interest', field: 'interestRate', sortable: true },
+          { header: 'Repayable', field: 'totalRepayable', sortable: true },
+          { header: 'Paid', field: 'totalPaid', sortable: true },
+          { header: 'Balance', field: 'currentBalance', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Actions' }
+        ]"
+        [rows]="paginatedLoans"
+        [emptyMessage]="employeeLoans.length === 0 ? 'No loan history found for this employee' : 'No loans match the selected filters'"
+        tableClass="loans-table">
+        <ng-template appTableBody let-loan>
+          <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
+          <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+          <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
+          <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
+          <td class="interest">{{ loan.interestRate || 0 }}%</td>
+          <td class="amount">₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
+          <td class="paid">₦{{ getLoanResolvedPaid(loan) | number:'1.2-2' }}</td>
+          <td class="balance">₦{{ getLoanResolvedBalance(loan) | number:'1.2-2' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
+              {{ getStatusLabel(loan.status) }}
+            </span>
+          </td>
+          <td class="actions-col">
+            <button class="view-btn" (click)="viewLoanDetails(loan)" title="View" aria-label="View">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
 
       <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
         <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>

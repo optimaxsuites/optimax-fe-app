@@ -1,3 +1,4 @@
+import { LoanSupportingDocument } from '../../service/loan/loan.types';
 import { Employee } from './cooperative-member.dto';
 
 export interface CooperativeLoanAuditUser {
@@ -84,6 +85,7 @@ export interface CooperativeLoan {
   gracePeriodRequests?: CooperativeLoanGracePeriodRequest[];
   paymentHistory: PaymentHistory[];
   statusHistory: StatusHistory[];
+  supportingDocuments?: LoanSupportingDocument[];
   loanId?: number;
   memberId?: number;
   groupId?: number;

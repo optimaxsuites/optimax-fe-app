@@ -94,6 +94,19 @@ export class LoanApprovalUiComponent implements OnInit {
     return formatLoanDepartmentDisplay(department);
   }
 
+  getLateFeePercentageDisplay(loan: LoanApplication): string {
+    return `${Number(loan.lateFeePercentage ?? 2).toFixed(2)}%`;
+  }
+
+  getLateFeeGracePeriodDisplay(loan: LoanApplication): string {
+    const graceDays = Math.round(Number(loan.lateFeeGracePeriodDays ?? 15));
+    return `${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getOverduePolicySummary(loan: LoanApplication): string {
+    return `${this.getLateFeePercentageDisplay(loan)} after ${this.getLateFeeGracePeriodDisplay(loan)} grace`;
+  }
+
   getLoanTotalRepayable(loan: LoanApplication): number {
     return resolveLoanTotalRepayableAmount(loan);
   }

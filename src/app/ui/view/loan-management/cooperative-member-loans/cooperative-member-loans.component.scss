@@ -89,6 +89,16 @@
   border-color: #111827;
 }
 
+.status-pill.approved.active,
+.status-pill.ready.active,
+.status-pill.skipped.active,
+.status-pill.overdue.active,
+.status-pill.paused.active,
+.status-pill.rejected.active,
+.status-pill.defaulted.active {
+  color: #fff;
+}
+
 .table-card {
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
@@ -143,6 +153,30 @@
   background-color: rgba(46, 98, 118, 0.1);
   color: #1e4a5a;
   border: 1px solid rgba(46, 98, 118, 0.3);
+}
+
+.status-ready_for_disbursement {
+  background-color: rgba(43, 124, 176, 0.1);
+  color: #245c82;
+  border: 1px solid rgba(43, 124, 176, 0.26);
+}
+
+.status-skipped {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #9a5b05;
+  border: 1px solid rgba(217, 119, 6, 0.24);
+}
+
+.status-overdue {
+  background-color: rgba(220, 38, 38, 0.12);
+  color: #b42318;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+}
+
+.status-paused {
+  background-color: rgba(107, 114, 128, 0.14);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.28);
 }
 
 .status-completed {

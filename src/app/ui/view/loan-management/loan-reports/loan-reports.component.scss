@@ -12,7 +12,7 @@
   text-align: center;
   transition: all 0.2s ease;
   
-  @include loanStatus.advance-loan-status-badges();
+  @include loanStatus.advanceLoanStatusBadges();
 }
 
 .reports-container {
@@ -517,7 +517,7 @@
               text-align: center;
               min-width: 80px;
 
-              @include loanStatus.advance-loan-status-badges(false);
+              @include loanStatus.advanceLoanStatusBadges(false);
             }
 
             .action-buttons {

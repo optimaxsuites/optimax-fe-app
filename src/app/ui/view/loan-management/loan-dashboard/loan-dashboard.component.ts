@@ -119,6 +119,24 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     { id: 'history', label: 'History', className: 'btn-history' }
   ];
 
+  formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {
+    if (!loan) {
+      return '';
+    }
+
+    const rawCode = String(loan.loanCode || loan.id || '').trim();
+    if (!rawCode) {
+      return '';
+    }
+
+    return /^ADVLO-/i.test(rawCode) ? rawCode : `ADVLO-${rawCode}`;
+  }
+
+  getShortAdvanceLoanDisplayId(loan: LoanApplication | undefined | null, maxLength = 14): string {
+    const displayId = this.formatAdvanceLoanDisplayId(loan);
+    return displayId.length > maxLength ? `${displayId.slice(0, maxLength)}...` : displayId;
+  }
+
   get statusSummaryCards(): Array<{
     title: string;
     value: number | string;
@@ -689,6 +707,19 @@ getStatusClass(status: string | undefined): string {
       currency: 'NGN',
       minimumFractionDigits: 2
     }).format(amount);
+  }
+
+  getLateFeePercentageDisplay(loan: LoanApplication): string {
+    return `${Number(loan.lateFeePercentage ?? 2).toFixed(2)}%`;
+  }
+
+  getLateFeeGracePeriodDisplay(loan: LoanApplication): string {
+    const graceDays = Math.round(Number(loan.lateFeeGracePeriodDays ?? 15));
+    return `${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getOverduePolicySummary(loan: LoanApplication): string {
+    return `${this.getLateFeePercentageDisplay(loan)} after ${this.getLateFeeGracePeriodDisplay(loan)} grace`;
   }
 
   handleRecentLoanAction(event: { actionId: string; row: LoanApplication }) {

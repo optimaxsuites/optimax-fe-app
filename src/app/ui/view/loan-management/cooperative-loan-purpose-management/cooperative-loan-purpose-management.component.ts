@@ -5,17 +5,13 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators, AbstractCon
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { MessagesModule } from 'primeng/messages';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { v4 as uuidV4 } from 'uuid';
 import { CooperativeLoanPurposeService } from '../../../service/loan/cooperative-loan/cooperative-loan-purpose.service';
 import { CreatePurposePayload, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
-import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
 
 @Component({
   selector: 'app-cooperative-loan-purpose-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MessagesModule, BackButtonModule],
   templateUrl: './cooperative-loan-purpose-management.component.html',
   styleUrls: ['./cooperative-loan-purpose-management.component.scss']
 })
@@ -26,9 +22,10 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   showPurposeModal = false;
   isEditing = false;
   selectedPurpose: LoanPurposeData | null = null;
-  purposeForm: FormGroup;
+  purposeForm!: FormGroup;
   messages: Message[] = [];
-  searchTerm = '';
+  searchTerm = ''; 
+  currentUuid = '';
 
   private subscriptions = new Subscription();
 
@@ -36,12 +33,14 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
     private fb: FormBuilder,
     private cooperativeLoanPurposeService: CooperativeLoanPurposeService,
     private location: Location,
+    private route: ActivatedRoute,
     private router: Router
   ) {
     this.purposeForm = this.createPurposeForm();
   }
 
   ngOnInit(): void {
+    this.currentUuid = this.route.snapshot.paramMap.get('uuid') || '';
     this.loadPurposes();
   }
 
@@ -340,11 +339,7 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   }
 
   goBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-    this.router.navigate(['/admin/hr/cooperative/dashboard', uuidV4()], {
+    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

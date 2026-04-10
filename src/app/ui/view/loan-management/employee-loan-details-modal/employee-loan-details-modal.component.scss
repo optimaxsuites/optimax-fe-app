@@ -12,7 +12,7 @@
   text-align: center;
   transition: all 0.2s ease;
   
-  @include loanStatus.advance-loan-status-badges();
+  @include loanStatus.advanceLoanStatusBadges();
 }
 
 .employee-loan-details {
@@ -198,7 +198,7 @@
     word-break: break-word;
     text-align: center;
 
-    @include loanStatus.advance-loan-status-badges(false);
+    @include loanStatus.advanceLoanStatusBadges(false);
 
     &.status-default {
       background: rgba(107, 114, 128, 0.12);

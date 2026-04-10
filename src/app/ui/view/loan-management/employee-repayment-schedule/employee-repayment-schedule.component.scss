@@ -37,7 +37,7 @@
       font-size: 0.8rem;
       text-transform: uppercase;
 
-      @include loanStatus.advance-loan-status-badges();
+      @include loanStatus.advanceLoanStatusBadges();
     }
   }
 

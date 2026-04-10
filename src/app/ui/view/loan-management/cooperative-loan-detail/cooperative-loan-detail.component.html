@@ -21,6 +21,12 @@
         </h1>
       </div>
       <div class="header-actions">
+        <button class="changes-btn" *ngIf="canPauseLoan" (click)="openPauseModal()">
+          Pause Loan
+        </button>
+        <button class="record-btn" *ngIf="canRestoreLoan" (click)="openRestoreModal()">
+          Restore Active
+        </button>
         <button class="record-btn" *ngIf="loan.status === 'ACTIVE' && hasOpenRepayments" (click)="openRecordPaymentModal()">
           Record Payment
         </button>
@@ -131,34 +137,44 @@
 
         <h4>Payment History</h4>
         <div class="schedule-table-wrap">
-          <table appSortableTable class="schedule-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let repayment of repaymentSchedule">
-                <td>{{ repayment.dueDate | date:'mediumDate' }}</td>
-                <td>{{ formatCurrency(repayment.amount) }}</td>
-                <td>{{ getmodeofPaymentLabel(repayment.modeofPayment) }}</td>
-                <td>
-                  <span class="repayment-status" [ngClass]="getStatusClass(repayment.status)">
-                    {{ getRepaymentStatusLabel(repayment) }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <app-table
+            [columns]="[
+              { header: 'Date' },
+              { header: 'Amount' },
+              { header: 'Method' },
+              { header: 'Status' }
+            ]"
+            [rows]="repaymentSchedule"
+            tableClass="schedule-table">
+            <ng-template appTableBody let-repayment>
+              <td>{{ repayment.dueDate | date:'mediumDate' }}</td>
+              <td>{{ formatCurrency(repayment.amount) }}</td>
+              <td>{{ getmodeofPaymentLabel(repayment.modeofPayment) }}</td>
+              <td>
+                <span class="repayment-status" [ngClass]="getStatusClass(repayment.status)">
+                  {{ getRepaymentStatusLabel(repayment) }}
+                </span>
+              </td>
+            </ng-template>
+          </app-table>
         </div>
 
         <div class="repayment-actions">
           <button class="changes-btn" (click)="sendReminder()">Send Reminder</button>
           <button class="reject-btn" [disabled]="!canMarkDefaulted" (click)="markDefaulted()">Mark as Defaulted</button>
           <button class="changes-btn" *ngIf="nextGracePeriodInstallment" (click)="openGracePeriodModal()">Request Grace Period</button>
+        </div>
+        <p class="helper-copy" *ngIf="!canMarkDefaulted">A loan becomes defaulted only after 3 overdue installments.</p>
+      </section>
+
+      <section class="info-card" *ngIf="recentPaymentHistory.length > 0">
+        <h3>Recorded Payment Entries</h3>
+        <div class="info-row" *ngFor="let payment of recentPaymentHistory | slice:0:5">
+          <span>
+            {{ payment.paidAt | date:'mediumDate' }}
+            <small>· {{ getPaymentEntryMethodLabel(payment) }}</small>
+          </span>
+          <strong>{{ formatCurrency(payment.totalPayment || payment.amount || 0) }}</strong>
         </div>
       </section>
 
@@ -184,7 +200,12 @@
           <button class="changes-btn" disabled>Waiting For Guarantor Responses</button>
         </div>
 
-        <div class="action-buttons" *ngIf="loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT'">
+        <div class="action-buttons" *ngIf="loan.status === 'APPROVED'">
+          <button class="changes-btn" (click)="openDisbursementWorkspace()">Send To Accounting</button>
+          <button class="changes-btn" (click)="showRequestChangesDialog()">Request Changes</button>
+        </div>
+
+        <div class="action-buttons" *ngIf="loan.status === 'READY_FOR_DISBURSEMENT'">
           <button class="disburse-btn" (click)="disburseLoan()">Mark as Disbursed</button>
           <button class="changes-btn" (click)="showRequestChangesDialog()">Request Changes</button>
         </div>
@@ -213,53 +234,164 @@
         <p>{{ loan.adminRequestNote }}</p>
       </section>
 
-      <section class="timeline-card">
-        <h3>Timeline</h3>
-        <div class="timeline">
-          <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <div class="timeline-date">{{ loan.applicationDate | date:'mediumDate' }}</div>
-              <div class="timeline-title">Application Submitted</div>
+      <section class="info-card" *ngIf="loan.supportingDocuments?.length">
+        <h3>Supporting Documents</h3>
+        <div class="info-row" *ngFor="let document of loan.supportingDocuments">
+          <span>
+            {{ document.name }}
+            <small>· {{ document.type || 'Document' }}</small>
+          </span>
+          <strong>{{ document.uploadedAt | date:'mediumDate' }}</strong>
+        </div>
+      </section>
+
+      <section class="info-card status-tracking-card">
+        <h3>Status Tracking</h3>
+
+        <div class="current-status-section">
+          <label>Current Status:</label>
+          <span class="current-status-badge" [ngClass]="getStatusClass(loan.status)">
+            {{ getStatusLabel(loan.status) }}
+          </span>
+        </div>
+
+        <div class="info-row" *ngIf="lifecycleBadges.length > 0">
+          <span>Workflow Flags</span>
+          <strong>{{ lifecycleBadges.join(' • ') }}</strong>
+        </div>
+
+        <div class="status-history">
+          <h4>Status History</h4>
+          <div class="status-timeline">
+            <div *ngFor="let history of statusTimeline; let i = index" class="timeline-item">
+              <div class="timeline-dot" [style.background-color]="getStatusColor(history.status)"></div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="status-badge" [ngClass]="getStatusClass(history.status)">{{ getStatusLabel(history.status) }}</span>
+                  <span class="timeline-date">{{ formatDate(history.changedAt) }}</span>
+                </div>
+                <div *ngIf="history.changedBy" class="changed-by">
+                  Changed by: {{ formatHistoryActor(history.changedBy) }}
+                </div>
+                <div *ngIf="history.notes" class="timeline-notes">
+                  <span class="notes-label">Comment:</span>
+                  {{ history.notes }}
+                </div>
+              </div>
+              <div class="timeline-line" *ngIf="i < statusTimeline.length - 1"></div>
             </div>
-          </div>
-          <div class="timeline-item" *ngIf="loan.approvedDate">
-            <div class="timeline-dot approved"></div>
-            <div class="timeline-content">
-              <div class="timeline-date">{{ loan.approvedDate | date:'mediumDate' }}</div>
-              <div class="timeline-title">Approved</div>
-            </div>
-          </div>
-          <div class="timeline-item" *ngIf="loan.disbursedDate">
-            <div class="timeline-dot active"></div>
-            <div class="timeline-content">
-              <div class="timeline-date">{{ loan.disbursedDate | date:'mediumDate' }}</div>
-              <div class="timeline-title">Disbursed</div>
-            </div>
-          </div>
-          <div class="timeline-item" *ngIf="loan.completionDate">
-            <div class="timeline-dot completed"></div>
-            <div class="timeline-content">
-              <div class="timeline-date">{{ loan.completionDate | date:'mediumDate' }}</div>
-              <div class="timeline-title">Completed</div>
+            <div *ngIf="statusTimeline.length === 0" class="no-history">
+              No status history available.
             </div>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- Reject Modal -->
-    <app-modal *ngIf="showRejectModal" [header]="'Reject Application'" (close)="cancelReject()">
-      <div class="modal-content">
-        <h3>Reject Application</h3>
-        <p>Please provide a reason for rejection:</p>
-        <textarea [(ngModel)]="rejectionReason" rows="4" placeholder="Enter reason..."></textarea>
-        <div class="modal-actions">
-          <button class="cancel-btn" (click)="cancelReject()">Cancel</button>
-          <button class="confirm-btn" (click)="rejectLoan()" [disabled]="!rejectionReason.trim()">Confirm Rejection</button>
+    <div *ngIf="showCommentModal" class="loan-status-modal-shell" (click)="closeCommentModal()">
+      <div class="loan-status-dialog" (click)="$event.stopPropagation()">
+        <div class="loan-status-dialog__header">
+          <h2>{{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }} Loan Application</h2>
+          <button type="button" class="close-btn" (click)="closeCommentModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="loan-status-dialog__body">
+          <div class="loan-summary">
+            <div class="summary-row">
+              <span>Member:</span>
+              <strong>{{ memberDisplayName }} ({{ member?.memberId || loan.memberId || loan.cooperativeMemberId }})</strong>
+            </div>
+            <div class="summary-row">
+              <span>Loan Amount:</span>
+              <strong class="amount">{{ formatCurrency(loan.amount || 0) }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Purpose:</span>
+              <strong>{{ formatPurposeDisplay(loan.purpose) }}</strong>
+            </div>
+          </div>
+
+          <div class="comment-section">
+            <label for="interestRate" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+              Interest Rate (%)
+              <span class="required">*</span>
+            </label>
+
+            <input
+              *ngIf="selectedAction === 'APPROVED'"
+              id="interestRate"
+              type="number"
+              [formControl]="interestRateControl"
+              min="0"
+              step="0.1"
+              placeholder="Approved interest rate"
+              [class.error]="interestRateControl.invalid && interestRateControl.touched"
+            >
+
+            <div class="error-message" *ngIf="selectedAction === 'APPROVED' && interestRateControl.invalid && interestRateControl.touched">
+              <small *ngIf="interestRateControl.errors?.['required']">Interest rate is required for approval</small>
+              <small *ngIf="interestRateControl.errors?.['min']">Interest rate cannot be negative</small>
+              <small *ngIf="interestRateControl.errors?.['max']">Interest rate cannot exceed 100%</small>
+            </div>
+
+            <label for="repaymentDay" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+              Repayment Day Of Month
+              <span class="required">*</span>
+            </label>
+
+            <input
+              *ngIf="selectedAction === 'APPROVED'"
+              id="repaymentDay"
+              type="number"
+              min="1"
+              max="31"
+              [formControl]="repaymentDayControl"
+              [class.error]="repaymentDayControl.invalid && repaymentDayControl.touched"
+            >
+
+            <div class="preview-row" *ngIf="selectedAction === 'APPROVED'">
+              <span>Repayment Start Date:</span>
+              <strong>{{ getDisplayedRepaymentStartDate() }}</strong>
+            </div>
+
+            <div class="preview-row" *ngIf="selectedAction === 'APPROVED'">
+              <span>Repayment Day:</span>
+              <strong>{{ getDisplayedRepaymentDay() }}</strong>
+            </div>
+
+            <label for="comment" class="comment-label">
+              {{ selectedAction === 'APPROVED' ? 'Approval Comment' : 'Rejection Reason' }}
+              <span class="required">*</span>
+            </label>
+            <textarea
+              id="comment"
+              [formControl]="commentControl"
+              rows="4"
+              [placeholder]="selectedAction === 'APPROVED' ? 'Add approval note...' : 'State why this application is being rejected...'"
+              [class.error]="commentControl.invalid && commentControl.touched"
+            ></textarea>
+
+            <div class="error-message" *ngIf="commentControl.invalid && commentControl.touched">
+              <small>Comment is required.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="loan-status-dialog__footer">
+          <button type="button" class="secondary-btn" (click)="closeCommentModal()">Cancel</button>
+          <button
+            type="button"
+            class="primary-btn"
+            [ngClass]="{ 'danger': selectedAction === 'REJECTED' }"
+            (click)="submitStatusChange()"
+          >
+            {{ selectedAction === 'APPROVED' ? 'Approve Loan' : 'Reject Loan' }}
+          </button>
         </div>
       </div>
-    </app-modal>
+    </div>
 
     <!-- Request Changes Modal -->
     <app-modal *ngIf="showRequestChangesModal" [header]="'Request Changes'" (close)="cancelRequestChanges()">
@@ -297,6 +429,24 @@
         <div class="modal-actions">
           <button class="cancel-btn" (click)="cancelRecordPayment()">Cancel</button>
           <button class="confirm-btn" (click)="recordPayment()" [disabled]="paymentAmount <= 0">Record Payment</button>
+        </div>
+      </div>
+    </app-modal>
+
+    <app-modal *ngIf="showOverrideModal" [header]="overrideAction === 'pause' ? 'Pause Loan' : 'Restore Loan'" (close)="closeOverrideModal()">
+      <div class="modal-content">
+        <h3>{{ overrideAction === 'pause' ? 'Pause Repayment Workflow' : 'Restore Repayment Workflow' }}</h3>
+        <p>
+          {{ overrideAction === 'pause'
+            ? 'Provide the admin reason for moving this loan into PAUSED status.'
+            : 'Provide the admin reason for restoring this loan from PAUSED status.' }}
+        </p>
+        <textarea [(ngModel)]="overrideReason" rows="4" placeholder="Enter override reason..."></textarea>
+        <div class="modal-actions">
+          <button class="cancel-btn" (click)="closeOverrideModal()">Cancel</button>
+          <button class="confirm-btn" (click)="submitOverrideAction()" [disabled]="!overrideReason.trim()">
+            {{ overrideAction === 'pause' ? 'Pause Loan' : 'Restore Loan' }}
+          </button>
         </div>
       </div>
     </app-modal>

@@ -100,97 +100,39 @@
           </div>
 
           <div class="table-wrapper">
-            <table class="approved-loans-table">
-              <thead>
-                <tr>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('loanId')">
-                      <span>Loan ID</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('loanId'),
-                        'fa-sort-up': getApprovedSortDirection('loanId') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('loanId') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('employee')">
-                      <span>Employee</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('employee'),
-                        'fa-sort-up': getApprovedSortDirection('employee') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('employee') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('department')">
-                      <span>Department</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('department'),
-                        'fa-sort-up': getApprovedSortDirection('department') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('department') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('amount')">
-                      <span>Amount</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('amount'),
-                        'fa-sort-up': getApprovedSortDirection('amount') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('amount') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('approvedDate')">
-                      <span>Approved Date</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('approvedDate'),
-                        'fa-sort-up': getApprovedSortDirection('approvedDate') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('approvedDate') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button" (click)="setApprovedSort('status')">
-                      <span>Status</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isApprovedSort('status'),
-                        'fa-sort-up': getApprovedSortDirection('status') === 'asc',
-                        'fa-sort-down': getApprovedSortDirection('status') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let loan of getPaginatedApprovedLoans()"
-                    [class.selected]="selectedDisbursementLoan?.id === loan.id"
-                    (click)="selectLoan(loan)">
-                  <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
-                  <td>{{ loan.fullName }}</td>
-                  <td>{{ loan.department }}</td>
-                  <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                  <td>{{ formatDate(loan.approvedDate || loan.requestDate) }}</td>
-                  <td>
-                    <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
-                  </td>
-                  <td>
-                    <button class="select-btn"
-                            [class.active]="selectedDisbursementLoan?.id === loan.id"
-                            (click)="selectLoan(loan); $event.stopPropagation()">
-                      {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
-                    </button>
-                  </td>
-                </tr>
-                <tr *ngIf="getFilteredApprovedLoans().length === 0">
-                  <td colspan="7" class="no-data">No approved loans match this view.</td>
-                </tr>
-              </tbody>
-            </table>
+            <app-table
+              [columns]="[
+                { header: 'Loan ID' },
+                { header: 'Employee' },
+                { header: 'Department' },
+                { header: 'Amount' },
+                { header: 'Approved Date' },
+                { header: 'Status' },
+                { header: 'Action' }
+              ]"
+              [rows]="getPaginatedApprovedLoans()"
+              [emptyMessage]="'No approved loans match this view.'"
+              [rowClickable]="true"
+              (rowClick)="selectLoan($event)"
+              tableClass="approved-loans-table">
+              <ng-template appTableBody let-loan>
+                <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                <td>{{ loan.fullName }}</td>
+                <td>{{ loan.department }}</td>
+                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                <td>{{ formatDate(loan.approvedDate || loan.requestDate) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
+                </td>
+                <td>
+                  <button class="select-btn"
+                          [class.active]="selectedDisbursementLoan?.id === loan.id"
+                          (click)="selectLoan(loan); $event.stopPropagation()">
+                    {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
+                  </button>
+                </td>
+              </ng-template>
+            </app-table>
           </div>
 
           <div class="queue-footer" *ngIf="getFilteredApprovedLoans().length > 0">
@@ -237,97 +179,39 @@
           </div>
 
           <div class="table-wrapper">
-            <table class="approved-loans-table">
-              <thead>
-                <tr>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('loanId')">
-                      <span>Loan ID</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('loanId'),
-                        'fa-sort-up': getReadySortDirection('loanId') === 'asc',
-                        'fa-sort-down': getReadySortDirection('loanId') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('employee')">
-                      <span>Employee</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('employee'),
-                        'fa-sort-up': getReadySortDirection('employee') === 'asc',
-                        'fa-sort-down': getReadySortDirection('employee') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('department')">
-                      <span>Department</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('department'),
-                        'fa-sort-up': getReadySortDirection('department') === 'asc',
-                        'fa-sort-down': getReadySortDirection('department') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('amount')">
-                      <span>Amount</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('amount'),
-                        'fa-sort-up': getReadySortDirection('amount') === 'asc',
-                        'fa-sort-down': getReadySortDirection('amount') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('readyDate')">
-                      <span>Sent Date</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('readyDate'),
-                        'fa-sort-up': getReadySortDirection('readyDate') === 'asc',
-                        'fa-sort-down': getReadySortDirection('readyDate') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" class="sort-button ready-sort" (click)="setReadySort('status')">
-                      <span>Status</span>
-                      <i class="fas" [ngClass]="{
-                        'fa-sort': !isReadySort('status'),
-                        'fa-sort-up': getReadySortDirection('status') === 'asc',
-                        'fa-sort-down': getReadySortDirection('status') === 'desc'
-                      }"></i>
-                    </button>
-                  </th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let loan of getPaginatedReadyForDisbursementLoans()"
-                    [class.selected]="selectedDisbursementLoan?.id === loan.id"
-                    (click)="selectLoan(loan)">
-                  <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
-                  <td>{{ loan.fullName }}</td>
-                  <td>{{ loan.department }}</td>
-                  <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                  <td>{{ formatDate(getReadyForDisbursementDate(loan)) }}</td>
-                  <td>
-                    <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
-                  </td>
-                  <td>
-                    <button class="select-btn"
-                            [class.active]="selectedDisbursementLoan?.id === loan.id"
-                            (click)="selectLoan(loan); $event.stopPropagation()">
-                      {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
-                    </button>
-                  </td>
-                </tr>
-                <tr *ngIf="getFilteredReadyForDisbursementLoans().length === 0">
-                  <td colspan="7" class="no-data">No ready loans match this view.</td>
-                </tr>
-              </tbody>
-            </table>
+            <app-table
+              [columns]="[
+                { header: 'Loan ID' },
+                { header: 'Employee' },
+                { header: 'Department' },
+                { header: 'Amount' },
+                { header: 'Sent Date' },
+                { header: 'Status' },
+                { header: 'Action' }
+              ]"
+              [rows]="getPaginatedReadyForDisbursementLoans()"
+              [emptyMessage]="'No ready loans match this view.'"
+              [rowClickable]="true"
+              (rowClick)="selectLoan($event)"
+              tableClass="approved-loans-table">
+              <ng-template appTableBody let-loan>
+                <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                <td>{{ loan.fullName }}</td>
+                <td>{{ loan.department }}</td>
+                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                <td>{{ formatDate(getReadyForDisbursementDate(loan)) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
+                </td>
+                <td>
+                  <button class="select-btn"
+                          [class.active]="selectedDisbursementLoan?.id === loan.id"
+                          (click)="selectLoan(loan); $event.stopPropagation()">
+                    {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
+                  </button>
+                </td>
+              </ng-template>
+            </app-table>
           </div>
 
           <div class="queue-footer" *ngIf="getFilteredReadyForDisbursementLoans().length > 0">

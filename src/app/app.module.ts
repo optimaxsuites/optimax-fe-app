@@ -214,6 +214,7 @@ import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loa
 import { LoanPaymentModalComponent } from './ui/view/loan-management/loan-payment-modal/loan-payment-modal.component';
 import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
 import { EmployeePaymentReminderComponent } from './ui/view/loan-management/employee-payment-reminder/employee-payment-reminder.component';
+import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -352,6 +353,7 @@ import { EmployeePaymentReminderComponent } from './ui/view/loan-management/empl
     GracePeriodRequestsComponent,
     LoanGracePeriodRequestsManagementComponent,
     CooperativeGracePeriodRequestsManagementComponent,
+    CooperativeLoanPurposeManagementComponent,
     LoanPaymentModalComponent,
     EmployeePaymentHistoryComponent,
     EmployeePaymentReminderComponent

@@ -13,13 +13,26 @@ import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooper
   styleUrls: ['./cooperative-member-loans.component.scss']
 })
 export class CooperativeMemberLoansComponent implements OnInit {
+  readonly statusOptions: Array<'' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'> = [
+    '',
+    'PENDING',
+    'APPROVED',
+    'READY_FOR_DISBURSEMENT',
+    'ACTIVE',
+    'SKIPPED',
+    'OVERDUE',
+    'PAUSED',
+    'COMPLETED',
+    'DEFAULTED',
+    'REJECTED'
+  ];
   currentUuid = uuidV4();
   currentMemberId = 0;
   member?: CooperativeMember;
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
   isLoading = true;
-  statusFilter: '' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' = '';
+  statusFilter: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED' = '';
 
   constructor(
     private cooperativeService: CooperativeService,
@@ -44,20 +57,43 @@ export class CooperativeMemberLoansComponent implements OnInit {
       next: (members) => {
         this.currentMemberId = this.resolveCurrentMemberId(members);
         this.member = members.find(item => item.id === this.currentMemberId || item.memberId === this.currentMemberId);
-        this.redirectToSharedHistory(this.member?.id ?? this.currentMemberId ?? 1);
+        this.cooperativeService.getLoans().subscribe({
+          next: (loans) => {
+            this.loans = loans
+              .filter((loan) => {
+                const loanMemberId = Number(loan.cooperativeMemberId || loan.memberId || 0);
+                const memberId = Number(this.member?.id || this.member?.memberId || this.currentMemberId || 0);
+                return loanMemberId === memberId;
+              })
+              .sort((left, right) => new Date(right.requestDate || right.applicationDate || '').getTime() - new Date(left.requestDate || left.applicationDate || '').getTime());
+            this.applyFilters();
+            this.isLoading = false;
+          },
+          error: () => {
+            this.loans = [];
+            this.filteredLoans = [];
+            this.isLoading = false;
+          }
+        });
       },
       error: () => {
         this.member = this.cooperativeService.getMemberById(this.currentMemberId || 1);
-        this.redirectToSharedHistory(this.member?.id ?? this.currentMemberId ?? 1);
+        this.cooperativeService.getLoans().subscribe({
+          next: (loans) => {
+            const memberId = Number(this.member?.id || this.member?.memberId || this.currentMemberId || 0);
+            this.loans = loans
+              .filter((loan) => Number(loan.cooperativeMemberId || loan.memberId || 0) === memberId)
+              .sort((left, right) => new Date(right.requestDate || right.applicationDate || '').getTime() - new Date(left.requestDate || left.applicationDate || '').getTime());
+            this.applyFilters();
+            this.isLoading = false;
+          },
+          error: () => {
+            this.loans = [];
+            this.filteredLoans = [];
+            this.isLoading = false;
+          }
+        });
       }
-    });
-  }
-
-  private redirectToSharedHistory(memberId: number): void {
-    this.isLoading = false;
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', memberId, this.currentUuid], {
-      state: { source: 'employee', cooperative: true, uuid: this.currentUuid },
-      replaceUrl: true
     });
   }
 
@@ -77,7 +113,7 @@ export class CooperativeMemberLoansComponent implements OnInit {
       .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
   }
 
-  setStatusFilter(status: '' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED'): void {
+  setStatusFilter(status: '' | 'PENDING' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'COMPLETED' | 'DEFAULTED' | 'REJECTED'): void {
     this.statusFilter = status;
     this.applyFilters();
   }
@@ -106,12 +142,40 @@ export class CooperativeMemberLoansComponent implements OnInit {
     return this.loans.filter(item => item.status === 'ACTIVE').length;
   }
 
+  get approvedCount(): number {
+    return this.loans.filter(item => item.status === 'APPROVED').length;
+  }
+
+  get readyForDisbursementCount(): number {
+    return this.loans.filter(item => item.status === 'READY_FOR_DISBURSEMENT').length;
+  }
+
+  get skippedCount(): number {
+    return this.loans.filter(item => item.status === 'SKIPPED').length;
+  }
+
+  get overdueCount(): number {
+    return this.loans.filter(item => item.status === 'OVERDUE').length;
+  }
+
+  get pausedCount(): number {
+    return this.loans.filter(item => item.status === 'PAUSED').length;
+  }
+
   get completedCount(): number {
     return this.loans.filter(item => item.status === 'COMPLETED').length;
   }
 
   get defaultedCount(): number {
     return this.loans.filter(item => item.status === 'DEFAULTED').length;
+  }
+
+  get rejectedCount(): number {
+    return this.loans.filter(item => item.status === 'REJECTED').length;
+  }
+
+  getStatusLabel(status: string): string {
+    return String(status || '').replaceAll('_', ' ');
   }
 
   get memberDisplayName(): string {

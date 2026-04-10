@@ -222,7 +222,7 @@ export interface CooperativeRepayment {
   reminderSentAt?: string;
   creditReportedAt?: string;
   modeofPayment?: 'BANK_TRANSFER' | 'CASH' | 'PAYROLL_DEDUCTION' | 'MOBILE_MONEY' | 'OTHER';
-  status: 'PENDING' | 'PAID' | 'OVERDUE';
+  status: 'PENDING' | 'PAID' | 'SKIPPED' | 'OVERDUE';
   notes?: string;
 }
 

@@ -104,6 +104,82 @@ export class CooperativeMembershipService {
     }
   }
 
+  private normalizeLookupValue(value: unknown): string {
+    return String(value ?? '').trim().toLowerCase();
+  }
+
+  private matchesExistingMemberRecord(
+    record: Partial<CooperativeMember> & { memberId?: number; id?: number },
+    profile: Pick<CooperativeEmployeeProfile, 'employeeId' | 'fullName' | 'email'>,
+    resolvedEmployeeId: number
+  ): boolean {
+    const candidateIds = new Set(
+      [resolvedEmployeeId, Number(profile.employeeId || 0)]
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .map((value) => String(value))
+    );
+
+    const recordIds = [record.id, record.memberId, record.employeeId]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+
+    if (recordIds.some((value) => candidateIds.has(value))) {
+      return true;
+    }
+
+    const recordEmail = this.normalizeLookupValue(record.email);
+    const profileEmail = this.normalizeLookupValue(profile.email);
+    if (recordEmail && profileEmail && recordEmail === profileEmail) {
+      return true;
+    }
+
+    const recordName = this.normalizeLookupValue(record.fullName);
+    const profileName = this.normalizeLookupValue(profile.fullName);
+    return Boolean(recordName && profileName && recordName === profileName && candidateIds.size > 0);
+  }
+
+  private buildExistingMemberSnapshot(rawMember: any, resolvedEmployeeId: number, fallbackProfile: Pick<CooperativeEmployeeProfile, 'fullName' | 'email'>): CooperativeMember {
+    return {
+      id: Number(rawMember.id || rawMember.memberId || resolvedEmployeeId || 0),
+      employeeId: Number(rawMember.employeeId || resolvedEmployeeId || 0),
+      memberId: Number(rawMember.memberId || rawMember.id || resolvedEmployeeId || 0),
+      fullName: String(rawMember.fullName || rawMember.fullname || fallbackProfile.fullName || 'Cooperative Member'),
+      email: String(rawMember.email || fallbackProfile.email || ''),
+      phone: String(rawMember.phone || ''),
+      joinDate: String(rawMember.joinDate || rawMember.createdAt || ''),
+      status: (rawMember.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
+      shareCapital: Number(rawMember.shareCapital || 0),
+      address: String(rawMember.address || ''),
+      createdAt: String(rawMember.createdAt || new Date().toISOString()),
+      updatedAt: String(rawMember.updatedAt || new Date().toISOString())
+    };
+  }
+
+  private async findExistingRegisteredMember(
+    context: CooperativeMembershipContext,
+    profile: Pick<CooperativeEmployeeProfile, 'employeeId' | 'fullName' | 'email'>,
+    resolvedEmployeeId: number
+  ): Promise<CooperativeMember | undefined> {
+    const localMatch = context.members.find((member) => this.matchesExistingMemberRecord(member, profile, resolvedEmployeeId));
+    if (localMatch) {
+      return localMatch;
+    }
+
+    try {
+      const backendMembers = await firstValueFrom(this.apiService.getAllMembers());
+      const backendMatch = backendMembers.find((member) => this.matchesExistingMemberRecord(member as any, profile, resolvedEmployeeId));
+
+      if (!backendMatch) {
+        return undefined;
+      }
+
+      return this.buildExistingMemberSnapshot(backendMatch, resolvedEmployeeId, profile);
+    } catch (error) {
+      console.warn('Failed to verify existing cooperative member registration against backend:', error);
+      return undefined;
+    }
+  }
+
   checkMembershipEligibility(employee: CooperativeEmployeeProfile): CooperativeMembershipEligibility {
     const policy = this.getTierPolicy(employee.rank);
     // Only block contract/intern or those with active disciplinary issues
@@ -188,15 +264,15 @@ export class CooperativeMembershipService {
       };
     }
 
-    // Check if employee is already a member
-    const existingMember = context.members.find(
-      member => member.employeeId === application.employee.employeeId || member.email === application.employee.email
-    );
-    if (existingMember && existingMember.status === 'ACTIVE') {
+    const employeeId = await this.resolveEmployeeId(application.employee);
+    const existingMember = await this.findExistingRegisteredMember(context, application.employee, employeeId);
+    if (existingMember) {
       return {
         success: false,
         status: 'ALREADY_MEMBER',
-        message: 'You are already an active cooperative member.',
+        message: existingMember.status === 'ACTIVE'
+          ? 'You are already an active cooperative member.'
+          : 'This employee is already registered as a cooperative member and cannot be registered again.',
         eligibility,
         member: existingMember
       };
@@ -204,9 +280,6 @@ export class CooperativeMembershipService {
 
     // Always auto-approve: Directly create member in backend
     try {
-      // Get the correct employee ID dynamically
-      const employeeId = await this.resolveEmployeeId(application.employee);
-      
       // Create member using the API service (returns Observable)
       const createdMember = await firstValueFrom(this.apiService.createMember({
         employeeId: employeeId,
@@ -235,7 +308,7 @@ export class CooperativeMembershipService {
         fullName: fullMember.fullName || application.employee.fullName,
         email: fullMember.email || application.employee.email,
         phone: fullMember.phone || application.employee.phone || '',
-        joinDate: fullMember.joinDate || new Date().toISOString(),
+        joinDate: fullMember.joinDate || fullMember.createdAt || '',
         status: (fullMember.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
         shareCapital: fullMember.shareCapital || eligibility.policy.minShares,
         address: fullMember.address || application.employee.department || '',
@@ -367,6 +440,28 @@ export class CooperativeMembershipService {
         fullName: application.fullName,
         email: ''
       });
+
+      const existingMember = await this.findExistingRegisteredMember(context, {
+        employeeId: application.employeeId,
+        fullName: application.fullName,
+        email: ''
+      }, employeeId);
+
+      if (existingMember) {
+        const index = context.pendingMembershipApplications.findIndex(app => app.id === applicationId);
+        if (index !== -1) {
+          context.pendingMembershipApplications.splice(index, 1);
+        }
+        context.saveToStorage();
+
+        return {
+          success: false,
+          status: 'ALREADY_MEMBER',
+          message: 'This employee is already registered as a cooperative member. The duplicate pending application was cleared.',
+          eligibility: this.getEmptyEligibility(),
+          member: existingMember
+        };
+      }
       
       // Create member using the API service (returns Observable)
       const createdMember = await firstValueFrom(this.apiService.createMember({
@@ -402,7 +497,7 @@ export class CooperativeMembershipService {
         fullName: fullMember.fullName || application.fullName,
         email: fullMember.email || '',
         phone: fullMember.phone || '',
-        joinDate: fullMember.joinDate || new Date().toISOString(),
+        joinDate: fullMember.joinDate || fullMember.createdAt || '',
         status: (fullMember.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
         shareCapital: fullMember.shareCapital || 25000,
         address: fullMember.address || '',
