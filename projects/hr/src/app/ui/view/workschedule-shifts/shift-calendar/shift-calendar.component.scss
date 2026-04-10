@@ -169,20 +169,20 @@ $white: #ffffff;
     color: $text-primary;
   }
 
+}
   .add-btn {
     font-size: 13px;
-    color: $teal;
-    background: none;
+    color: #fff;
+    background-color: #166534 !important;
     border: none;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     padding: 0;
 
     &:hover {
       text-decoration: underline;
     }
   }
-}
 
 .empty-day {
   font-size: 13px;
@@ -412,15 +412,17 @@ $white: #ffffff;
     display: flex;
     align-items: center;
     gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
 
     &.active {
-      background: #4a9e98;
+      background:#2a834f;
       color: white;
-      border-color: #2a7a74;
+      border-color: #166534;
     }
 
     &:hover {
-      background: #e0e0e0;
+      background: #0e5d22;
     }
   }
 }
@@ -471,4 +473,81 @@ $white: #ffffff;
       cursor: not-allowed;
     }
   }
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* DATE INPUT */
+.date-picker {
+  appearance: none;
+  -webkit-appearance: none;
+
+  padding: 10px 12px;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  background: #fff;
+
+  font-size: 14px;
+  color: #333;
+
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+/* HOVER */
+.date-picker:hover {
+  border-color: #409eff;
+}
+
+/* FOCUS */
+.date-picker:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15);
+}
+
+/* CALENDAR ICON (Chrome/Edge) */
+.date-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.date-picker::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* DISABLED STATE */
+.date-picker:disabled {
+  background: #f5f7fa;
+  cursor: not-allowed;
+  color: #aaa;
+}
+
+/* OPTIONAL: Align button nicely */
+.assign-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #22c55e;
+  color: white;
+  border: none;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.assign-btn:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.assign-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
 }

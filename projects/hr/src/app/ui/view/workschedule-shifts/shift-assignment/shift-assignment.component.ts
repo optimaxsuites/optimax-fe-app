@@ -120,6 +120,7 @@ export class ShiftAssignmentComponent implements OnInit {
       ? current.filter(id => id !== empId)
       : [...current, empId];
     this.assignmentForm.patchValue({ employeeIds: updated });
+    this.isEmployeeDropdownOpen = false;
   }
 
   toggleDay(day: string) {
@@ -140,6 +141,8 @@ export class ShiftAssignmentComponent implements OnInit {
     console.log('clicked');
     this.isEmployeeDropdownOpen = !this.isEmployeeDropdownOpen;
   }
+
+
 
   @HostListener('document:click', ['$event'])
   onClickOutside(event: any) {

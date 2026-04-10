@@ -167,6 +167,11 @@ export class ShiftCalendarComponent implements OnInit {
   return d <= t; // includes today
 }
 
+onTableDateChange(event: any) {
+  this.selectedDate = event.target.value;
+  this.currentPage = 1; // reset pagination
+}
+
 get flattenedTableData() {
   const rows: any[] = [];
 

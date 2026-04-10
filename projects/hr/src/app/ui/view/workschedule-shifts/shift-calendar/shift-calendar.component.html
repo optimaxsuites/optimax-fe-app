@@ -14,6 +14,13 @@
       <i class="fa-solid fa-table"></i>
       Table
     </button>
+
+    <button 
+      class="add-btn"         
+      (click)="openAssignment()" 
+      [disabled]="isSelectedDateLocked">
+      + Assign Shift
+    </button>
   </div>
 
   <div *ngIf="viewMode === 'calendar'">
@@ -51,10 +58,6 @@
 
       <div class="day-detail-header">
         <span class="day-label">Shifts for {{ selectedDateLabel }}</span>
-        <button class="add-btn" 
-        (click)="openAssignment()" 
-        [disabled]="isSelectedDateLocked"
-        >+ Assign Shift</button>
       </div>
 
       <!-- NO SHIFTS -->
@@ -109,6 +112,15 @@
 </div>
 
 <div *ngIf="viewMode === 'table'" class="table-view">
+  <div class="table-controls">
+    <input 
+    type="date" 
+    [value]="selectedDate"
+    (change)="onTableDateChange($event)" 
+    class="date-picker"
+  />
+
+  </div>
 
   <div class="day-detail-header">
     <span class="day-label">Shifts for {{ selectedDateLabel }}</span>
