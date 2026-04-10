@@ -3,18 +3,16 @@
   style="height: calc(100vh - 60px);"
 >
   <!-- ===== USER INFO CARD — fixed height, never grows ===== -->
-  <div class="shrink-0 px-6 pt-4 pb-3">
+  <!-- <div class="shrink-0 px-6 pt-4 pb-3">
     <div
       class="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center gap-4 flex-wrap xl:flex-nowrap"
     >
-      <!-- Avatar -->
       <div
         class="w-14 h-14 rounded-full bg-customBlue/15 flex items-center justify-center text-customBlue font-bold text-lg shrink-0 border-2 border-purple-200"
       >
         {{ getUserInitials() }}
       </div>
 
-      <!-- Name / Email / Phone -->
       <div class="min-w-0 shrink-0">
         <h3 class="text-base font-bold text-gray-900 leading-tight">
           {{ userInfo.username || userInfo.fullname || "Not Available" }}
@@ -55,10 +53,8 @@
         </div>
       </div>
 
-      <!-- Divider -->
       <div class="hidden xl:block w-px self-stretch bg-gray-100 mx-1"></div>
 
-      <!-- Primary Role -->
       <div class="shrink-0">
         <p
           class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1"
@@ -77,10 +73,9 @@
         </span>
       </div>
 
-      <!-- Divider -->
+
       <div class="hidden xl:block w-px self-stretch bg-gray-100 mx-1"></div>
 
-      <!-- Department -->
       <div class="shrink-0">
         <p
           class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1"
@@ -94,10 +89,8 @@
         </span>
       </div>
 
-      <!-- Divider -->
       <div class="hidden xl:block w-px self-stretch bg-gray-100 mx-1"></div>
 
-      <!-- Industry -->
       <div class="shrink-0">
         <p
           class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1"
@@ -109,10 +102,8 @@
         </p>
       </div>
 
-      <!-- Spacer -->
       <div class="flex-1 hidden xl:block"></div>
 
-      <!-- Right: Edit + IDs -->
       <div class="text-right shrink-0 space-y-1 ml-auto">
         <button
           class="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition ml-auto mb-1.5"
@@ -154,7 +145,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- ===== COMMUNICATION — takes all remaining height ===== -->
 
