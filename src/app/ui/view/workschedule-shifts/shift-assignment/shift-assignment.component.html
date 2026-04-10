@@ -1,0 +1,148 @@
+<div class="modal-backdrop" (click)="cancel()"></div>
+
+<div class="modal-container">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>New Schedule</h3>
+      <button class="close-btn" (click)="cancel()">✕</button>
+    </div>
+
+    <div class="modal-body">
+    
+    <form [formGroup]="assignmentForm" (ngSubmit)="assignShift()">
+
+      <!-- SHIFT NAME -->
+      <div class="form-group">
+        <label>Shift <span class="required">*</span></label>
+        <select formControlName="shiftId">
+          <option value="">E.g., Morning Shift, Night Duty</option>
+          <option *ngFor="let shift of shifts" [value]="shift.id">
+            {{ shift.name }} ({{ shift.startTime }} – {{ shift.endTime }})
+          </option>
+        </select>
+      </div>
+
+      <!-- PROJECT -->
+      <div class="form-group">
+        <label>Project</label>
+        <select formControlName="project">
+          <option value="">Select a project</option>
+          <option *ngFor="let p of projects" [value]="p">
+            {{ p }}
+          </option>
+        </select>
+      </div>
+
+      <!-- DATE -->
+      <div class="form-group">
+        <label>Start Date <span class="required">*</span></label>
+        <input type="date" formControlName="date" />
+      </div>
+
+      <!-- START / END TIME (read from selected shift, display only) -->
+      <div class="form-row" *ngIf="assignmentForm.value.shiftId">
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="time" [value]="selectedShift?.startTime" disabled />
+        </div>
+        <div class="form-group">
+          <label>End Time</label>
+          <input type="time" [value]="selectedShift?.endTime" disabled />
+        </div>
+      </div>
+
+      <div class="form-group">
+  <label>Assign Employees <span class="required">*</span></label>
+
+  <div class="employee-dropdown">
+
+    <!-- DISPLAY -->
+    <div class="dropdown-display" (click)="toggleEmployeeDropdown($event)">
+      {{ getSelectedEmployeeNames() }}
+    </div>
+
+    <!-- DROPDOWN -->
+    <div 
+      class="dropdown-list" 
+      *ngIf="isEmployeeDropdownOpen"
+      (click)="$event.stopPropagation()"
+    >
+      <label *ngFor="let emp of employees" class="employee-option">
+        <input
+          type="checkbox"
+          [checked]="isEmployeeSelected(emp.id)"
+          (change)="toggleEmployee(emp.id)"
+        />
+        {{ emp.name }}
+      </label>
+    </div> </div> </div>
+
+
+      <!-- RECURRENCE -->
+      <div class="form-group">
+        <label>Recurrence</label>
+        <div class="recurrence-options">
+          <label
+            *ngFor="let opt of recurrenceOptions"
+            class="recurrence-option"
+            [class.active]="assignmentForm.value.recurrence === opt.value"
+          >
+            <input
+              type="radio"
+              formControlName="recurrence"
+              [value]="opt.value"
+            />
+            {{ opt.label }}
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="assignmentForm.value.recurrence === 'custom'" class="custom-recurrence">
+        <div class="form-group">
+          <label>Repeat every</label>
+          <input type="number" formControlName="customInterval" min="1" />
+        </div>
+
+        <div class="form-group">
+          <label>Select Days</label>
+          <div class="day-options">
+            <label *ngFor="let d of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']">
+              <input type="checkbox" (change)="toggleDay(d)" />
+              {{ d }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" formControlName="location" placeholder="E.g., Head Office, Remote, Client Site" />
+      </div>
+
+      <!-- CONFLICTS -->
+      <div class="conflict" *ngFor="let msg of conflictMessage">
+        ⚠ {{ msg }}
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="cancel()">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="assign-btn"
+          [disabled]="assignmentForm.invalid || conflictMessage.length > 0"
+        >
+          Create Schedule
+        </button>
+      </div>
+
+    </form>
+  </div>
+  </div>
+  
+</div>
+
