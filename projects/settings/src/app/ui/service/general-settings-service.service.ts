@@ -1,13 +1,14 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, throwError, Observable, of } from 'rxjs';
+import { environment } from '../sharedComponents/service/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GeneralSettingsService {
 
-  private baseUrl = 'https://be.optimaxsuites.com';
+  private baseUrl = environment.apiBaseUrl;
   
   private userApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info`;
   // private reportApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/settings/report`;

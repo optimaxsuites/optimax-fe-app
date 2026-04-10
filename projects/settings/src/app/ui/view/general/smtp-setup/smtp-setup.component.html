@@ -1,0 +1,94 @@
+<div class="flex gap-4 items-center">
+    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">General</p>
+        <p class="text-customBlue font-semibold text-[15px]">Email Office</p>
+    </div>
+</div>
+<hr>
+
+<form [formGroup]="smtpForm" (ngSubmit)="submit()" class="smtp-form">
+
+  <div class="form-grid">
+    <div class="field-container">
+      <label>Configuration Name</label>
+      <input type="text" placeholder="e.g. Primary Mailer" formControlName="name" />
+      <small class="p-error" *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched">Name is required</small>
+    </div>
+    <div class="field-container">
+      <label>Host</label>
+      <input type="text" placeholder="smtp.example.com" formControlName="host" />
+      <small class="p-error" *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched">Host is required</small>
+    </div>
+    <div class="field-container">
+      <label>Port</label>
+      <input type="number" placeholder="587" formControlName="port" />
+      <small class="p-error" *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched">Port is required</small>
+    </div>
+    <div class="field-container">
+      <label>Protocol</label>
+      <input type="text" placeholder="SMTP" formControlName="protocol" />
+      <small class="p-error" *ngIf="smtpForm.get('protocol')?.invalid && smtpForm.get('protocol')?.touched">Protocol is required</small>
+    </div>
+  </div>
+
+  <div class="form-grid">
+    <div class="field-container">
+      <label>Username</label>
+      <input type="text" formControlName="username" />
+      <small class="p-error" *ngIf="smtpForm.get('username')?.invalid && smtpForm.get('username')?.touched">Username is required</small>
+    </div>
+    <div class="field-container">
+      <label>Password</label>
+      <input type="password" formControlName="password" />
+      <small class="p-error" *ngIf="smtpForm.get('password')?.invalid && smtpForm.get('password')?.touched">Password is required</small>
+    </div>
+    <div class="field-container">
+      <label>From Address</label>
+      <input type="email" placeholder="noreply@domain.com" formControlName="fromAddress" />
+      <small class="p-error" *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched">
+        <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From Address is required</span>
+        <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
+      </small>
+    </div>
+  </div>
+
+  <div class="checkbox-grid">
+    <label class="check-label">
+      <input type="checkbox" formControlName="authEnabled" /> Auth Enabled
+    </label>
+    <label class="check-label">
+      <input type="checkbox" formControlName="startTlsEnabled" /> STARTTLS Enabled
+    </label>
+    <label class="check-label">
+      <input type="checkbox" formControlName="sslEnabled" /> SSL Enabled
+    </label>
+    <label class="check-label">
+      <input type="checkbox" formControlName="active" /> Active Configuration
+    </label>
+  </div>
+
+  <div class="form-grid">
+    <div class="field-container">
+      <label>Connection Timeout (ms)</label>
+      <input type="number" formControlName="connectionTimeoutMs" />
+    </div>
+    <div class="field-container">
+      <label>Timeout (ms)</label>
+      <input type="number" formControlName="timeoutMs" />
+    </div>
+    <div class="field-container">
+      <label>Write Timeout (ms)</label>
+      <input type="number" formControlName="writeTimeoutMs" />
+    </div>
+  </div>
+
+  <button type="submit" [disabled]="loading || smtpForm.invalid" class="submit-btn disabled:cursor-not-allowed disabled:bg-gray-400">
+    {{ loading ? 'Saving...' : 'Save SMTP Configuration' }}
+  </button>
+
+</form>
+
+<!-- <div *ngIf="response" class="response-log">
+  <pre>{{ response | json }}</pre>
+</div> -->

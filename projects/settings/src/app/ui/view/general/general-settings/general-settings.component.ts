@@ -7,6 +7,7 @@ import { ChangePasswordComponent } from '../change-password/change-password.comp
 import { ProfileComponent } from '../profile/profile.component';
 import { BranchesComponent } from '../../pos/branches/branches.component';
 import { ActivatedRoute } from '@angular/router';
+import { SmtpSetupComponent } from '../smtp-setup/smtp-setup.component';
 
 @Component({
   selector: 'app-general-settings',
@@ -71,6 +72,23 @@ export class GeneralSettingsComponent implements OnInit {
         ],
         icon: 'pi pi-receipt',
         component: ChangePasswordComponent,
+      },
+
+      {
+        name: 'Email account setup',
+        subSetting: [
+              'mail',
+              'email address',
+              'SMTP',
+              'customize mail',
+              'mailing center',
+              'delete account',
+              'delete store',
+              'close account',
+              'close store'
+        ],
+        icon: 'pi pi-receipt',
+        component: SmtpSetupComponent,
       },
 
       
