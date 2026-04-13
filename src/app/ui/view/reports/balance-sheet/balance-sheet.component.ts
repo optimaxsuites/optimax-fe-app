@@ -1,27 +1,30 @@
-/**
- * balance-sheet.component.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * REFACTORED to use AccountingService as the single source of truth.
- *
- * CHANGES:
- *  • Removed all hardcoded balance sheet data (RAW_BS constants)
- *  • Removed all internal calculation methods (recalculateTotals, checkBalanceEquation, updateAnalytics)
- *  • All data flows from AccountingService.getBalanceSheet()
- *  • Added subscription to service with proper cleanup
- *  • Added format service for consistent formatting
- *  • Simplified component to only handle UI state and user interactions
- */
-
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-  AccountingService,
-  BalanceSheetData
-} from '../../../../core/services/accounting.service';
 import { AccountingFormatService } from '../../../../core/services/accounting-format.service';
+import { AccountingService } from '../../../../core/services/accounting.service';
+import {
+  AccountBalanceDTO,
+  AccountDTO,
+  AccountingTransactionDTO,
+  BalanceSheetReportDTO,
+  JournalEntryDTO,
+  JournalEntryLineDTO,
+} from '../report.dto';
+
+interface SavedBalanceSheetSnapshotDTO {
+  id: string;
+  periodLabel: string;
+  report: BalanceSheetReportDTO;
+  savedAt: string;
+}
+
+interface ReportComment {
+  user: string;
+  text: string;
+  date: Date;
+}
 
 @Component({
   selector: 'app-balance-sheet',
@@ -29,89 +32,47 @@ import { AccountingFormatService } from '../../../../core/services/accounting-fo
   styleUrls: ['./balance-sheet.component.scss']
 })
 export class BalanceSheetComponent implements OnInit, OnDestroy {
-
-  // ── UI state ──────────────────────────────────────────────────────────────
-  balanceSheetForm: FormGroup;
-  isFullScreen = false;
-  isUpdating = false;
-  lastUpdated: Date = new Date();
-  searchFilter = '';
-  isModalOpen = false;
-  newComment = '';
-  asOfDate: string = this.formatDate(new Date());
-
-  /** Bound to the status badge — CSS class derived in template. */
-  reportStatus: 'Compiling' | 'Under Review' | 'Completed' = 'Compiling';
-
-  // ── Entity / period ───────────────────────────────────────────────────────
-  entityName = 'Acme Corporation Ltd.';
-
-  periods = Array.from({ length: 12 }, (_, i) => ({
-    month: new Date(2025, i, 1).toLocaleString('default', { month: 'long' }),
-    year: 2025
+  readonly years = [2025, 2026];
+  readonly months = Array.from({ length: 12 }, (_, month) => ({
+    value: month,
+    label: new Date(2025, month, 1).toLocaleString('en-US', { month: 'long' }),
   }));
-  selectedPeriod = this.periods[new Date().getMonth()];
-  years = [2023, 2024, 2025, 2026];
+
   selectedYear = 2025;
+  selectedMonth = new Date().getMonth();
 
-  // ── Comments ──────────────────────────────────────────────────────────────
-  userComments = [
-    { user: 'Finance Team', text: 'Q2 shows strong asset growth', date: new Date('2025-05-15') },
-    { user: 'Auditor', text: 'Verify non-current assets valuation', date: new Date('2025-05-20') }
+  report: BalanceSheetReportDTO | null = null;
+  loading = true;
+  errorMessage = '';
+  statusMessage = '';
+
+  accounts: AccountDTO[] = [];
+  transactions: AccountingTransactionDTO[] = [];
+  journalEntries: JournalEntryDTO[] = [];
+  journalLines: JournalEntryLineDTO[] = [];
+
+  userComments: ReportComment[] = [
+    { user: 'Finance Team', text: 'Q2 shows stronger cash coverage after loan restructuring.', date: new Date('2025-05-15') },
+    { user: 'Auditor', text: 'Validate capital expenditure support before external review.', date: new Date('2025-05-20') },
   ];
+  newComment = '';
 
-  // ── Saved reports ─────────────────────────────────────────────────────────
-  savedReports: any[] = [];
+  isSavedReportsOpen = false;
+  searchFilter = '';
+  savedReports: SavedBalanceSheetSnapshotDTO[] = [];
 
-  // ── Data from Service ─────────────────────────────────────────────────────
-  data: BalanceSheetData | null = null;
-
-  // ── YoY deltas (calculated from service data) ─────────────────────────────
-  yoyAssets = 0;
-  yoyLiabilities = 0;
-  yoyEquity = 0;
-
-  // ── Charts ────────────────────────────────────────────────────────────────
-  assetChartData = { series: [] as number[], labels: ['Current Assets', 'Non-Current Assets'] };
-  liabilityTrendData = {
-    series: [] as any[],
-    categories: ['Q1', 'Q2', 'Q3', 'Q4']
-  };
-  tooltipConfig = { y: { formatter: (val: any) => this.fmt.formatCurrency(val) } };
-
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
+  private readonly storageKey = 'reports.balance-sheet.snapshots';
 
   constructor(
-    private accountingService: AccountingService,
+    private readonly accountingService: AccountingService,
     readonly fmt: AccountingFormatService,
-    private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
-  ) {
-    this.balanceSheetForm = this.fb.group({
-      entityName: [this.entityName],
-      asOfDate: [new Date()],
-      selectedYear: [2025]
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
-    this.simulateReportStatusFlow();
-    this.generateHistoricalData();
-
-    // Subscribe to balance sheet data from service
-    this.accountingService.getBalanceSheet()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((data: BalanceSheetData) => {
-        this.data = data;
-        this.entityName = data.entityName;
-        this.asOfDate = this.formatDate(data.asOfDate);
-        this.lastUpdated = new Date();
-
-        // Update derived values
-        this.computeYoY();
-        this.updateCharts();
-        this.cdr.markForCheck();
-      });
+    this.loadReferenceData();
+    this.loadSavedReports();
+    this.loadReport();
   }
 
   ngOnDestroy(): void {
@@ -119,373 +80,201 @@ export class BalanceSheetComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ─── Report status ─────────────────────────────────────────────────────────
-  simulateReportStatusFlow(): void {
-    this.reportStatus = 'Compiling';
-    setTimeout(() => {
-      this.reportStatus = 'Under Review';
-      this.cdr.markForCheck();
-    }, 10000);
-    setTimeout(() => {
-      this.reportStatus = 'Completed';
-      this.cdr.markForCheck();
-    }, 30000);
+  get hasReportData(): boolean {
+    return !!this.report && (this.report.totalAssets > 0 || this.report.totalLiabilities > 0 || this.report.totalEquity > 0);
   }
 
-  get statusClass(): string {
-    return this.reportStatus.toLowerCase().replace(' ', '-');
+  get reportDate(): Date | null {
+    return this.report ? new Date(this.report.reportDate) : null;
   }
 
-  // ─── Balance check helper ─────────────────────────────────────────────────
+  get totalAssets(): number {
+    return this.report?.totalAssets ?? 0;
+  }
+
+  get totalLiabilities(): number {
+    return this.report?.totalLiabilities ?? 0;
+  }
+
+  get totalEquity(): number {
+    return this.report?.totalEquity ?? 0;
+  }
+
+  get equationDifference(): number {
+    return this.totalAssets - (this.totalLiabilities + this.totalEquity);
+  }
+
   get isBalanced(): boolean {
-    return this.data ? Math.abs(this.data.balanceDiscrepancy) < 1 : false;
+    return Math.abs(this.equationDifference) < 0.01;
   }
 
-  get balanceDiscrepancy(): number {
-    return this.data?.balanceDiscrepancy ?? 0;
+  get filteredSavedReports(): SavedBalanceSheetSnapshotDTO[] {
+    const query = this.searchFilter.trim().toLowerCase();
+    if (!query) {
+      return this.savedReports;
+    }
+
+    return this.savedReports.filter((report) =>
+      report.periodLabel.toLowerCase().includes(query) ||
+      report.report.reportContext.includedTransactionIds.some((id: string) => id.toLowerCase().includes(query))
+    );
   }
 
-  // ─── Analytics getters ────────────────────────────────────────────────────
-  get analytics() {
-    return this.data?.analytics ?? {
-      workingCapital: 0,
-      currentRatio: 0,
-      quickRatio: 0,
-      debtToEquity: 0,
-      totalAssets: 0,
-      totalLiabilities: 0,
-      totalEquity: 0
-    };
+  get metadataTransactions(): Array<{
+    id: string;
+    reference: string;
+    sourceModule: string;
+    status: string;
+    date: string;
+    description: string;
+  }> {
+    if (!this.report) {
+      return [];
+    }
+
+    const journalEntryMap = new Map(this.journalEntries.map((entry) => [entry.id, entry]));
+
+    return this.report.reportContext.includedTransactionIds
+      .map((transactionId: string) => this.transactions.find((transaction) => transaction.id === transactionId))
+      .filter((transaction): transaction is AccountingTransactionDTO => !!transaction)
+      .map((transaction: AccountingTransactionDTO) => ({
+        id: transaction.id,
+        reference: transaction.reference,
+        sourceModule: transaction.sourceModule,
+        status: journalEntryMap.get(transaction.journalEntryId)?.status ?? transaction.reviewStatus,
+        date: transaction.transactionDate,
+        description: transaction.description,
+      }));
   }
 
-  // ─── YoY calculation ──────────────────────────────────────────────────────
-  private computeYoY(): void {
-    if (!this.data) return;
+  get groupedMetadata(): Array<{ label: string; value: string }> {
+    if (!this.report) {
+      return [];
+    }
 
-    // For YoY, we would need prior year data from the service
-    // Using current data as placeholder until historical data is available
-    this.yoyAssets = 10.5; // Placeholder
-    this.yoyLiabilities = -4.2; // Placeholder
-    this.yoyEquity = 15.8; // Placeholder
-  }
-
-  // ─── Charts ────────────────────────────────────────────────────────────────
-  private updateCharts(): void {
-    if (!this.data) return;
-
-    // Asset composition chart
-    this.assetChartData.series = [
-      this.data.assets.current.total,
-      this.data.assets.nonCurrent.total
+    const metadata = this.report.reportContext;
+    return [
+      { label: 'Generated At', value: this.fmt.formatDate(metadata.generatedAt, 'full') },
+      { label: 'Generated By', value: metadata.generatedBy },
+      { label: 'Period Start', value: this.fmt.formatDate(metadata.periodStart, 'long') },
+      { label: 'Period End', value: this.fmt.formatDate(metadata.periodEnd, 'long') },
+      { label: 'Source Modules', value: metadata.sourceModules.join(', ') || 'N/A' },
+      { label: 'Included Transactions', value: `${metadata.includedTransactionIds.length}` },
     ];
-
-    // Liability trend chart
-    const base = this.data.liabilities.total;
-    this.liabilityTrendData.series = [{
-      name: 'Total Liabilities',
-      data: [
-        Math.round(base * 0.85),
-        Math.round(base * 0.91),
-        Math.round(base * 0.96),
-        base
-      ]
-    }];
   }
 
-  // ─── Key findings ──────────────────────────────────────────────────────────
-  get keyFindings(): string[] {
-    if (!this.data) return [];
-
-    const findings: string[] = [];
-    const analytics = this.data.analytics;
-    const cr = analytics.currentRatio;
-
-    findings.push(`Total assets: ${this.fmt.formatCurrency(analytics.totalAssets)} (YoY ${this.yoyAssets >= 0 ? '▲' : '▼'}${Math.abs(this.yoyAssets)}%)`);
-    findings.push(`Liability-to-asset ratio: ${((analytics.totalLiabilities / analytics.totalAssets) * 100).toFixed(1)}%`);
-    findings.push(`Debt-to-equity ratio: ${analytics.debtToEquity.toFixed(2)}x`);
-    findings.push(cr >= 2 ? `Current ratio ${cr.toFixed(2)} — healthy liquidity` : `Current ratio ${cr.toFixed(2)} — monitor short-term obligations`);
-    findings.push(`Working capital: ${this.fmt.formatCurrency(analytics.workingCapital)}`);
-
-    return findings;
+  get balanceSummary(): Array<{ label: string; value: number; tone: 'neutral' | 'good' | 'warning' }> {
+    return [
+      { label: 'Total Assets', value: this.totalAssets, tone: 'neutral' },
+      { label: 'Total Liabilities', value: this.totalLiabilities, tone: 'warning' },
+      { label: 'Total Equity', value: this.totalEquity, tone: 'good' },
+      { label: 'Equation Difference', value: this.equationDifference, tone: this.isBalanced ? 'good' : 'warning' },
+    ];
   }
 
-  // ─── Period / year selectors ───────────────────────────────────────────────
-  onPeriodChange(period: any): void {
-    this.selectedPeriod = period;
-    this.asOfDate = this.getLastDayOfMonth(period);
-
-    const monthIndex = this.periods.findIndex(
-      p => p.month === period.month && p.year === period.year
-    );
-    this.accountingService.setPeriod(new Date(period.year, monthIndex, 1));
-
-    this.showToast(`Loaded ${period.month} ${period.year} data`);
+  onPeriodChange(): void {
+    this.loadReport();
   }
 
-  onYearChange(year: number): void {
-    this.selectedYear = year;
-
-    // Rebuild period list for the selected year
-    this.periods = Array.from({ length: 12 }, (_, i) => ({
-      month: new Date(year, i, 1).toLocaleString('default', { month: 'long' }),
-      year
-    }));
-    this.selectedPeriod = this.periods[new Date().getMonth()];
-
-    const monthIndex = new Date().getMonth();
-    this.accountingService.setPeriod(new Date(year, monthIndex, 1));
-
-    this.showToast(`Showing ${year} data`);
-  }
-
-  // ─── Update button ────────────────────────────────────────────────────────
-  updateReport(): void {
-    this.isUpdating = true;
-
-    // Force refresh by re-subscribing with current period
-    const monthIndex = this.periods.findIndex(
-      p => p.month === this.selectedPeriod.month && p.year === this.selectedPeriod.year
-    );
-    this.accountingService.setPeriod(new Date(this.selectedPeriod.year, monthIndex, 1));
-
-    setTimeout(() => {
-      this.isUpdating = false;
-      this.showToast('Data refreshed');
-    }, 1500);
-  }
-
-  // ─── Save / open saved reports ─────────────────────────────────────────────
   saveReport(): void {
-    if (!this.data) return;
-
-    if (!this.isBalanced) {
-      this.showToast('Cannot save — balance equation is broken');
+    if (!this.report || !this.hasReportData) {
       return;
     }
 
-    const report = {
-      ...JSON.parse(JSON.stringify(this.data)),
-      metadata: {
-        period: this.selectedPeriod,
-        savedAt: new Date(),
-        generatedBy: 'System'
-      }
+    const snapshot: SavedBalanceSheetSnapshotDTO = {
+      id: `balance-sheet-${this.selectedYear}-${`${this.selectedMonth + 1}`.padStart(2, '0')}`,
+      periodLabel: this.periodLabel,
+      report: this.report,
+      savedAt: new Date().toISOString(),
     };
 
-    this.savedReports.unshift(report);
-    this.showToast('Report saved successfully');
-
-    if (this.selectedPeriod.month === 'December') {
-      this.showToast('Annual report auto-generated');
-    }
+    this.savedReports = [
+      snapshot,
+      ...this.savedReports.filter((item) => item.id !== snapshot.id),
+    ];
+    sessionStorage.setItem(this.storageKey, JSON.stringify(this.savedReports));
+    this.statusMessage = `Saved balance sheet snapshot for ${this.periodLabel}.`;
   }
 
-  openSavedReport(report: any): void {
-    // In a real implementation, this would load the saved report from storage
-    // For now, we just update the period to match the saved report
-    this.selectedPeriod = report.metadata.period;
-    this.asOfDate = this.formatDate(report.metadata.savedAt);
-
-    const monthIndex = this.periods.findIndex(
-      p => p.month === report.metadata.period.month && p.year === report.metadata.period.year
-    );
-    this.accountingService.setPeriod(new Date(report.metadata.period.year, monthIndex, 1));
-
-    this.isModalOpen = false;
-    this.showToast(`Loaded ${report.metadata.period.month} report`);
+  openSavedReport(snapshot: SavedBalanceSheetSnapshotDTO): void {
+    this.report = snapshot.report;
+    const reportDate = new Date(snapshot.report.reportDate);
+    this.selectedYear = reportDate.getFullYear();
+    this.selectedMonth = reportDate.getMonth();
+    this.isSavedReportsOpen = false;
+    this.statusMessage = `Loaded saved balance sheet for ${snapshot.periodLabel}.`;
   }
 
-  // ─── Export ────────────────────────────────────────────────────────────────
-  downloadTable(): void {
-    if (!this.data) return;
-
-    // JSON export
-    const payload = {
-      ...this.data,
-      asOfDate: this.asOfDate,
-      exportedAt: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `balance-sheet-${this.asOfDate.replace(/[ ,]/g, '-')}.json`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    // CSV export
-    this.exportToCSV();
-  }
-
-  private exportToCSV(): void {
-    if (!this.data) return;
-
-    const d = this.data;
-    const fmt = (n: number) => n.toLocaleString('en-NG');
-
-    let csv = `Balance Sheet — ${this.entityName}\n`;
-    csv += `As of: ${this.asOfDate}\n\n`;
-    csv += 'Section,Item,Amount (₦)\n';
-
-    // Assets - Current
-    csv += `Assets — Current,Cash at Bank,${fmt(d.assets.current.cash)}\n`;
-    csv += `Assets — Current,Cash on Hand,${fmt(d.assets.current.cashOnHand)}\n`;
-    csv += `Assets — Current,Regular Checking Account,${fmt(d.assets.current.regularCheckingAccount)}\n`;
-    csv += `Assets — Current,Payroll Checking Account,${fmt(d.assets.current.payrollCheckingAccount)}\n`;
-    csv += `Assets — Current,Savings Account,${fmt(d.assets.current.savingsAccount)}\n`;
-    csv += `Assets — Current,Accounts Receivable,${fmt(d.assets.current.accountsReceivable)}\n`;
-    csv += `Assets — Current,Inventory,${fmt(d.assets.current.inventory)}\n`;
-    csv += `Assets — Current,Prepaid Expenses,${fmt(d.assets.current.prepaidExpenses)}\n`;
-    csv += `Assets — Current,TOTAL CURRENT ASSETS,${fmt(d.assets.current.total)}\n`;
-
-    // Assets - Non-Current
-    csv += `Assets — Non-Current,Property Plant & Equipment,${fmt(d.assets.nonCurrent.property)}\n`;
-    csv += `Assets — Non-Current,Equipment,${fmt(d.assets.nonCurrent.equipment)}\n`;
-    csv += `Assets — Non-Current,Long-term Investments,${fmt(d.assets.nonCurrent.investments)}\n`;
-    csv += `Assets — Non-Current,Intangible Assets,${fmt(d.assets.nonCurrent.intangibleAssets)}\n`;
-    csv += `Assets — Non-Current,TOTAL NON-CURRENT ASSETS,${fmt(d.assets.nonCurrent.total)}\n`;
-    csv += `,,TOTAL ASSETS,${fmt(d.assets.total)}\n`;
-
-    // Liabilities - Current
-    csv += `Liabilities — Current,Accounts Payable,${fmt(d.liabilities.current.accountsPayable)}\n`;
-    csv += `Liabilities — Current,Short-term Debt,${fmt(d.liabilities.current.shortTermDebt)}\n`;
-    csv += `Liabilities — Current,Accrued Expenses,${fmt(d.liabilities.current.accruedExpenses)}\n`;
-    csv += `Liabilities — Current,VAT Payable (FIRS),${fmt(d.liabilities.current.vatPayable)}\n`;
-    csv += `Liabilities — Current,WHT Payable (FIRS),${fmt(d.liabilities.current.whtPayable)}\n`;
-    csv += `Liabilities — Current,PAYE Tax Payable (State SIRS),${fmt(d.liabilities.current.payeTaxPayable)}\n`;
-    csv += `Liabilities — Current,TOTAL CURRENT LIABILITIES,${fmt(d.liabilities.current.total)}\n`;
-
-    // Liabilities - Non-Current
-    csv += `Liabilities — Non-Current,Long-term Debt,${fmt(d.liabilities.nonCurrent.longTermDebt)}\n`;
-    csv += `Liabilities — Non-Current,Deferred Tax,${fmt(d.liabilities.nonCurrent.deferredTax)}\n`;
-    csv += `Liabilities — Non-Current,Lease Obligations,${fmt(d.liabilities.nonCurrent.leaseObligations)}\n`;
-    csv += `Liabilities — Non-Current,TOTAL NON-CURRENT LIABILITIES,${fmt(d.liabilities.nonCurrent.total)}\n`;
-    csv += `,,TOTAL LIABILITIES,${fmt(d.liabilities.total)}\n`;
-
-    // Equity
-    csv += `Equity,Common Stock,${fmt(d.equity.commonStock)}\n`;
-    csv += `Equity,Retained Earnings,${fmt(d.equity.retainedEarnings)}\n`;
-    csv += `Equity,Other Comprehensive Income,${fmt(d.equity.otherComprehensiveIncome)}\n`;
-    csv += `,,TOTAL EQUITY,${fmt(d.equity.total)}\n`;
-    csv += `,,TOTAL LIABILITIES & EQUITY,${fmt(d.liabilities.total + d.equity.total)}\n`;
-
-    // Balance Check
-    csv += `\nBalance Check,${this.isBalanced ? 'BALANCED' : 'DISCREPANCY: ₦' + this.balanceDiscrepancy}\n`;
-
-    // Analytics
-    csv += `Analytics,Current Ratio,${this.analytics.currentRatio.toFixed(2)}\n`;
-    csv += `Analytics,Quick Ratio,${this.analytics.quickRatio.toFixed(2)}\n`;
-    csv += `Analytics,Debt-to-Equity,${this.analytics.debtToEquity.toFixed(2)}\n`;
-    csv += `Analytics,Working Capital,₦${fmt(this.analytics.workingCapital)}\n`;
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `balance-sheet-${this.asOfDate.replace(/[ ,]/g, '-')}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  shareReport(): void {
-    if (!this.data) return;
-
-    const text = `${this.entityName} Balance Sheet — ${this.asOfDate}\n` +
-      `Total Assets: ${this.fmt.formatCurrency(this.analytics.totalAssets)}\n` +
-      `Total Liabilities: ${this.fmt.formatCurrency(this.analytics.totalLiabilities)}\n` +
-      `Equity: ${this.fmt.formatCurrency(this.analytics.totalEquity)}\n` +
-      `Current Ratio: ${this.analytics.currentRatio.toFixed(2)}`;
-
-    const shareData = {
-      title: `${this.entityName} Balance Sheet`,
-      text,
-      url: window.location.href
-    };
-
-    if (navigator.share) {
-      navigator.share(shareData).catch(e => this.showToast('Sharing failed: ' + e.message));
-    } else {
-      navigator.clipboard.writeText(text).then(
-        () => this.showToast('Report summary copied to clipboard'),
-        () => prompt('Copy this report data:', text)
-      );
-    }
-  }
-
-  // ─── UI ────────────────────────────────────────────────────────────────────
   postComment(): void {
-    if (this.newComment.trim()) {
-      this.userComments.unshift({
+    if (!this.newComment.trim()) {
+      return;
+    }
+
+    this.userComments = [
+      {
         user: 'Current User',
-        text: this.newComment,
-        date: new Date()
+        text: this.newComment.trim(),
+        date: new Date(),
+      },
+      ...this.userComments,
+    ];
+    this.newComment = '';
+  }
+
+  toggleSavedReports(): void {
+    this.isSavedReportsOpen = !this.isSavedReportsOpen;
+  }
+
+  trackByAccount(_: number, item: AccountBalanceDTO): string {
+    return item.accountId;
+  }
+
+  private loadReferenceData(): void {
+    combineLatest([
+      this.accountingService.getReportAccounts(),
+      this.accountingService.getAccountingTransactions(),
+      this.accountingService.getJournalEntries(),
+      this.accountingService.getJournalEntryLines(),
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([accounts, transactions, journalEntries, journalLines]) => {
+        this.accounts = accounts;
+        this.transactions = transactions;
+        this.journalEntries = journalEntries;
+        this.journalLines = journalLines;
       });
-      this.newComment = '';
-      this.showToast('Comment added');
+  }
+
+  private loadSavedReports(): void {
+    try {
+      const stored = sessionStorage.getItem(this.storageKey);
+      this.savedReports = stored ? JSON.parse(stored) : [];
+    } catch {
+      this.savedReports = [];
     }
   }
 
-  closeModal(): void {
-    this.isModalOpen = false;
-  }
+  private loadReport(): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.statusMessage = '';
 
-  toggleFullScreen(): void {
-    this.isFullScreen = !this.isFullScreen;
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
-  }
-
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-  private generateHistoricalData(): void {
-    // Generate some sample saved reports for the modal
-    this.savedReports = this.periods.slice(0, 6).map((period, index) => {
-      return {
-        assets: {
-          current: { total: 295000000 + (index * 5000000) },
-          nonCurrent: { total: 213000000 + (index * 2000000) },
-          total: 508000000 + (index * 7000000)
+    this.accountingService.setPeriod(new Date(this.selectedYear, this.selectedMonth, 1));
+    this.accountingService.getBalanceSheetReport()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (report: BalanceSheetReportDTO) => {
+          this.report = report;
+          this.loading = false;
         },
-        liabilities: {
-          current: { total: 94075000 + (index * 1000000) },
-          nonCurrent: { total: 110000000 + (index * 1500000) },
-          total: 204075000 + (index * 2500000)
+        error: () => {
+          this.errorMessage = 'We could not load the balance sheet for this period.';
+          this.loading = false;
         },
-        equity: {
-          total: 303925000 + (index * 4500000)
-        },
-        metadata: {
-          period,
-          savedAt: new Date(2025, index, 15)
-        }
-      };
-    });
+      });
   }
 
-  get filteredSavedReports(): any[] {
-    if (!this.searchFilter.trim()) return this.savedReports;
-    const q = this.searchFilter.toLowerCase();
-    return this.savedReports.filter(r =>
-      r.metadata.period.month.toLowerCase().includes(q) ||
-      String(r.metadata.period.year).includes(q)
-    );
-  }
-
-  private getLastDayOfMonth(period: { month: string; year: number }): string {
-    const monthIndex = this.periods.findIndex(p => p.month === period.month);
-    const lastDay = new Date(period.year, monthIndex + 1, 0).getDate();
-    return `${period.month} ${lastDay}, ${period.year}`;
-  }
-
-  private showToast(message: string): void {
-    // TODO: inject a ToastService and call toastService.show(message)
-    console.log('[Toast]', message);
-  }
-
-  private formatDate(date: Date): string {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  get periodLabel(): string {
+    return `${this.months[this.selectedMonth]?.label ?? ''} ${this.selectedYear}`;
   }
 }

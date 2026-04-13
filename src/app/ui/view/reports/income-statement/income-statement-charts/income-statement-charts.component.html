@@ -1,6 +1,8 @@
 <div class="charts-container">
-  <!-- Revenue/Expense Trend Chart -->
   <div class="chart-card">
+    <div class="chart-card__header">
+      <h3>Revenue vs Expenses</h3>
+    </div>
     <div *ngIf="revenueChartOptions" class="chart-wrapper">
       <apx-chart
         [series]="revenueChartOptions['series']"
@@ -19,8 +21,10 @@
     </div>
   </div>
 
-  <!-- Expense Distribution Chart -->
   <div class="chart-card">
+    <div class="chart-card__header">
+      <h3>Expense Breakdown</h3>
+    </div>
     <div *ngIf="expenseChartOptions" class="chart-wrapper">
       <apx-chart
         [series]="expenseChartOptions['series']"

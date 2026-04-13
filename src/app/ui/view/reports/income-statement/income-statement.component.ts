@@ -1,30 +1,24 @@
-/**
- * income-statement.component.ts
- * ───────────────
- * REFACTORED to use AccountingService as the single source of truth.
- *
- * CHANGES:
- *  • Removed all hardcoded financial data arrays (revenueData, cogsData, etc.)
- *  • All data flows from AccountingService.getIncomeStatement()
- *  • All calculations removed (now come pre-computed from service)
- *  • Display helpers adapted to work with service data structures
- *  • Filter logic preserved but now operates on service-provided data
- *  • Comments and UI state remain local
- */
-
 import {
-  Component, OnInit, OnDestroy, ViewChild, ElementRef,
-  ChangeDetectionStrategy, ChangeDetectorRef
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-  AccountingService,
-  IncomeStatementData,
-  FinancialLineItem
-} from '../../../../core/services/accounting.service';
 import { AccountingFormatService } from '../../../../core/services/accounting-format.service';
+import { AccountingService } from '../../../../core/services/accounting.service';
+import {
+  ExpenseDistributionDTO,
+  FinancialLineItemDTO,
+  IncomeStatementReportDTO,
+  MonthlyTrendDTO,
+  PeriodComparisonDTO,
+} from '../report.dto';
 
 export interface FilterOptions {
   reportType: 'Actual' | 'Budget' | 'Actual vs Budget' | 'Actual vs Previous Year';
@@ -42,6 +36,70 @@ export interface Comment {
   timestamp: string;
 }
 
+interface FinancialLineItem {
+  name: string;
+  amount: number;
+  prevAmount: number;
+  budget: number;
+  prevYearAmount: number;
+}
+
+interface MonthlyFinancialData {
+  labels: string[];
+  revenue: number[];
+  expenses: number[];
+  profit: number[];
+}
+
+interface ExpenseDistribution {
+  administrative: number;
+  salariesAndWages: number;
+  maintenance: number;
+  logisticsAndDistribution: number;
+  otherOperatingExpenses: number;
+}
+
+interface IncomeStatementData {
+  period: Date;
+  revenue: FinancialLineItem[];
+  cogs: FinancialLineItem[];
+  administrativeExpenses: FinancialLineItem[];
+  salariesWages: FinancialLineItem[];
+  maintenance: FinancialLineItem[];
+  logisticsDistribution: FinancialLineItem[];
+  otherOperatingExpenses: FinancialLineItem[];
+  otherItems: FinancialLineItem[];
+  totals: {
+    revenue: { actual: number; prev: number; budget: number; prevYear: number };
+    cogs: { actual: number; prev: number; budget: number; prevYear: number };
+    grossProfit: { actual: number; prev: number; budget: number; prevYear: number };
+    adminExpenses: { actual: number; prev: number; budget: number; prevYear: number };
+    salariesWages: { actual: number; prev: number; budget: number; prevYear: number };
+    maintenance: { actual: number; prev: number; budget: number; prevYear: number };
+    logistics: { actual: number; prev: number; budget: number; prevYear: number };
+    otherOpEx: { actual: number; prev: number; budget: number; prevYear: number };
+    totalOpEx: { actual: number; prev: number; budget: number; prevYear: number };
+    ebit: { actual: number; prev: number; budget: number; prevYear: number };
+    ebitda: { actual: number; prev: number; budget: number; prevYear: number };
+    otherItems: { actual: number; prev: number; budget: number; prevYear: number };
+    nibt: { actual: number; prev: number; budget: number; prevYear: number };
+    cit: { actual: number; prev: number; budget: number; prevYear: number };
+    educationTax: { actual: number; prev: number; budget: number; prevYear: number };
+    naseniLevy: { actual: number; prev: number; budget: number; prevYear: number };
+    totalTax: { actual: number; prev: number; budget: number; prevYear: number };
+    netIncome: { actual: number; prev: number; budget: number; prevYear: number };
+  };
+  ratios: {
+    revenueGrowthMoM: number;
+    grossProfitGrowth: number;
+    grossProfitMargin: number;
+    ebitdaMargin: number;
+    netProfitMargin: number;
+  };
+  monthlyTrend: MonthlyFinancialData;
+  expenseDistribution: ExpenseDistribution;
+}
+
 @Component({
   selector: 'app-income-statement',
   templateUrl: './income-statement.component.html',
@@ -49,17 +107,14 @@ export interface Comment {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IncomeStatementComponent implements OnInit, OnDestroy {
-
   @ViewChild('statementContent') statementContent!: ElementRef;
 
-  // ── UI state 
   isSaved = false;
   showCommentsModal = false;
   showShareModal = false;
   showArchivesModal = false;
   Math = Math;
 
-  // ── Filters ─
   activeFilters: FilterOptions = {
     reportType: 'Actual',
     entity: 'All Locations',
@@ -69,28 +124,26 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     includeForecasts: false
   };
 
-  // ── Data (populated by subscription) ──────────────────────────────────────
   data: IncomeStatementData | null = null;
 
-  // ── Comments (kept local — not financial data) ───────────────────────────
   comments: Comment[] = [
     { id: 1, author: 'Jane Smith', text: 'Gross profit margin is improving nicely', timestamp: '2025-05-28T14:25:00' },
     { id: 2, author: 'John Doe', text: 'We should look into the increased maintenance costs', timestamp: '2025-05-29T09:10:00' }
   ];
 
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private accountingService: AccountingService,
-    readonly fmt: AccountingFormatService, // exposed to template
-    private cdr: ChangeDetectorRef
+    private readonly accountingService: AccountingService,
+    readonly fmt: AccountingFormatService,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.accountingService.getIncomeStatement()
+    this.accountingService.getIncomeStatementReport()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((data: IncomeStatementData) => {
-        this.data = data;
+      .subscribe((report: IncomeStatementReportDTO) => {
+        this.data = this.toIncomeStatementData(report);
         this.cdr.markForCheck();
       });
   }
@@ -100,7 +153,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ── Period navigation ─────────────────────────────────────────────────────
   previousMonth(): void {
     const current = this.data?.period ?? new Date();
     this.accountingService.setPeriod(
@@ -115,16 +167,11 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     );
   }
 
-  // ── Filter handler ───────────────────────────────────────────────────────
   onFiltersApplied(filters: FilterOptions): void {
     this.activeFilters = { ...filters };
     this.cdr.markForCheck();
   }
 
-  // ── Display helpers (filter-aware) ───────────────────────────────────────
-  /**
-   * Returns the amount to display for a line item based on the active filter.
-   */
   getDisplayAmount(item: FinancialLineItem): number {
     return this.activeFilters.reportType === 'Budget' ? item.budget : item.amount;
   }
@@ -141,54 +188,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   getVariance(item: FinancialLineItem): number | null {
-    const c = this.getComparisonAmount(item);
-    return c !== null ? this.getDisplayAmount(item) - c : null;
+    const comparison = this.getComparisonAmount(item);
+    return comparison !== null ? this.getDisplayAmount(item) - comparison : null;
   }
 
   getVariancePercentage(item: FinancialLineItem): number | null {
-    const c = this.getComparisonAmount(item);
-    return c !== null && c !== 0
-      ? ((this.getDisplayAmount(item) - c) / Math.abs(c)) * 100
+    const comparison = this.getComparisonAmount(item);
+    return comparison !== null && comparison !== 0
+      ? ((this.getDisplayAmount(item) - comparison) / Math.abs(comparison)) * 100
       : null;
   }
 
-  /**
-   * Pick the correct four-way total for the active filter.
-   */
-  getTotal(totals: { actual: number; prev: number; budget: number; prevYear: number }): number {
-    switch (this.activeFilters.reportType) {
-      case 'Budget':
-        return totals.budget;
-      case 'Actual vs Previous Year':
-        return totals.actual; // display actual, compare prevYear
-      default:
-        return totals.actual;
-    }
-  }
-
-  getComparisonTotal(totals: { actual: number; prev: number; budget: number; prevYear: number }): number | null {
-    switch (this.activeFilters.reportType) {
-      case 'Actual vs Budget':
-        return totals.budget;
-      case 'Actual vs Previous Year':
-        return totals.prevYear;
-      default:
-        return null;
-    }
-  }
-
-  getTotalVariance(totals: { actual: number; prev: number; budget: number; prevYear: number }): number | null {
-    const c = this.getComparisonTotal(totals);
-    return c !== null ? this.getTotal(totals) - c : null;
-  }
-
-  getTotalVariancePct(totals: { actual: number; prev: number; budget: number; prevYear: number }): number | null {
-    const c = this.getComparisonTotal(totals);
-    const v = this.getTotal(totals);
-    return c !== null && c !== 0 ? ((v - c) / Math.abs(c)) * 100 : null;
-  }
-
-  // ─── Growth helpers ───────────────────────────────────────────────────────
   get revenueGrowth(): number {
     return this.data?.ratios.revenueGrowthMoM ?? 0;
   }
@@ -198,43 +208,52 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   get cogsGrowth(): number {
-    if (!this.data) return 0;
-    const prev = this.data.totals.cogs.prev;
+    if (!this.data) {
+      return 0;
+    }
+
+    const previous = this.data.totals.cogs.prev;
     const current = this.data.totals.cogs.actual;
-    return prev !== 0 ? ((current - prev) / Math.abs(prev)) * 100 : 0;
+    return previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
   }
 
   get operatingExpensesGrowth(): number {
-    if (!this.data) return 0;
-    const prev = this.data.totals.totalOpEx.prev;
+    if (!this.data) {
+      return 0;
+    }
+
+    const previous = this.data.totals.totalOpEx.prev;
     const current = this.data.totals.totalOpEx.actual;
-    return prev !== 0 ? ((current - prev) / Math.abs(prev)) * 100 : 0;
+    return previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
   }
 
   get revenueVariance(): number {
-    if (!this.data) return 0;
-    return this.data.totals.revenue.actual - this.data.totals.revenue.budget;
+    return this.data ? this.data.totals.revenue.actual - this.data.totals.revenue.budget : 0;
   }
 
   get cogsVariance(): number {
-    if (!this.data) return 0;
-    return this.data.totals.cogs.actual - this.data.totals.cogs.budget;
+    return this.data ? this.data.totals.cogs.actual - this.data.totals.cogs.budget : 0;
   }
 
   get revenueYearOverYearGrowth(): number {
-    if (!this.data) return 0;
-    const prevYear = this.data.totals.revenue.prevYear;
+    if (!this.data) {
+      return 0;
+    }
+
+    const previousYear = this.data.totals.revenue.prevYear;
     const current = this.data.totals.revenue.actual;
-    return prevYear !== 0 ? ((current - prevYear) / Math.abs(prevYear)) * 100 : 0;
+    return previousYear !== 0 ? ((current - previousYear) / Math.abs(previousYear)) * 100 : 0;
   }
 
-  // ─── Margin helpers ───────────────────────────────────────────────────────
   get grossProfitMargin(): number {
     return this.data?.ratios.grossProfitMargin ?? 0;
   }
 
   get operatingMargin(): number {
-    if (!this.data) return 0;
+    if (!this.data || this.data.totals.revenue.actual === 0) {
+      return 0;
+    }
+
     return (this.data.totals.ebit.actual / this.data.totals.revenue.actual) * 100;
   }
 
@@ -247,13 +266,15 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   get effectiveTaxRate(): number {
-    if (!this.data) return 0;
+    if (!this.data) {
+      return 0;
+    }
+
     const nibt = this.data.totals.nibt.actual;
     const totalTax = Math.abs(this.data.totals.totalTax.actual);
     return nibt > 0 ? (totalTax / nibt) * 100 : 0;
   }
 
-  // ─── Data accessors with null safety ──────────────────────────────────────
   get revenueData(): FinancialLineItem[] {
     return this.data?.revenue ?? [];
   }
@@ -486,7 +507,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return this.data?.totals.netIncome.actual ?? 0;
   }
 
-  get monthlyData() {
+  get monthlyData(): MonthlyFinancialData {
     return this.data?.monthlyTrend ?? {
       labels: [],
       revenue: [],
@@ -495,7 +516,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     };
   }
 
-  get expenseDistribution() {
+  get expenseDistribution(): ExpenseDistribution {
     return this.data?.expenseDistribution ?? {
       administrative: 0,
       salariesAndWages: 0,
@@ -505,186 +526,163 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     };
   }
 
-  // ─── Key insights ─────────────────────────────────────────────────────────
-  get insights(): any[] {
-    if (!this.data) return [];
+  get insights(): Array<{ title: string; description: string; trend: 'positive' | 'negative' }> {
+    if (!this.data) {
+      return [];
+    }
 
-    const insights: any[] = [];
-    const revGrowth = this.revenueGrowth;
+    const insights: Array<{ title: string; description: string; trend: 'positive' | 'negative' }> = [];
+    const revenueGrowth = this.revenueGrowth;
 
     insights.push({
-      title: `Revenue ${revGrowth >= 0 ? 'increased' : 'decreased'}`,
-      description: `Revenue ${revGrowth >= 0 ? 'grew' : 'declined'} by ${this.fmt.formatPercentage(Math.abs(revGrowth))} vs prior period`,
-      trend: revGrowth >= 0 ? 'positive' : 'negative'
+      title: `Revenue ${revenueGrowth >= 0 ? 'increased' : 'decreased'}`,
+      description: `Revenue ${revenueGrowth >= 0 ? 'grew' : 'declined'} by ${this.fmt.formatPercentage(Math.abs(revenueGrowth))} vs prior period`,
+      trend: revenueGrowth >= 0 ? 'positive' : 'negative'
     });
 
     if (this.activeFilters.reportType.includes('Budget')) {
-      const revVar = this.revenueVariance;
+      const revenueVariance = this.revenueVariance;
       insights.push({
-        title: `Revenue ${revVar >= 0 ? 'exceeded' : 'missed'} budget`,
-        description: `Revenue is ${this.fmt.formatCurrency(Math.abs(revVar))} ${revVar >= 0 ? 'above' : 'below'} budget`,
-        trend: revVar >= 0 ? 'positive' : 'negative'
+        title: `Revenue ${revenueVariance >= 0 ? 'exceeded' : 'missed'} budget`,
+        description: `Revenue is ${this.fmt.formatCurrency(Math.abs(revenueVariance))} ${revenueVariance >= 0 ? 'above' : 'below'} budget`,
+        trend: revenueVariance >= 0 ? 'positive' : 'negative'
       });
     }
 
     insights.push({
-      title: `Gross margin ${this.grossProfitMargin >= this.data.ratios.grossProfitMargin ? 'improved' : 'declined'}`,
-      description: `Gross margin at ${this.grossProfitMargin.toFixed(1)}% — EBITDA margin ${this.ebitdaMargin.toFixed(1)}%`,
-      trend: this.grossProfitMargin >= this.data.ratios.grossProfitMargin ? 'positive' : 'negative'
+      title: `Gross margin ${this.grossProfitGrowth >= 0 ? 'improved' : 'declined'}`,
+      description: `Gross margin at ${this.grossProfitMargin.toFixed(1)}% - EBITDA margin ${this.ebitdaMargin.toFixed(1)}%`,
+      trend: this.grossProfitGrowth >= 0 ? 'positive' : 'negative'
     });
 
     insights.push({
       title: `Operating expenses ${this.operatingExpensesGrowth <= 0 ? 'decreased' : 'increased'}`,
-      description: `OpEx changed by ${this.fmt.formatPercentage(Math.abs(this.operatingExpensesGrowth))} — Tax rate: ${this.effectiveTaxRate.toFixed(1)}%`,
+      description: `OpEx changed by ${this.fmt.formatPercentage(Math.abs(this.operatingExpensesGrowth))} - Tax rate: ${this.effectiveTaxRate.toFixed(1)}%`,
       trend: this.operatingExpensesGrowth <= 0 ? 'positive' : 'negative'
     });
 
     return insights;
   }
 
-  // ─── Export ─
   async exportToPDF(): Promise<void> {
     console.warn('PDF export: install jsPDF and html2canvas, then uncomment the implementation.');
   }
 
   exportToCSV(): void {
-    if (!this.data) return;
-
-    try {
-      const d = this.data;
-      const rows: string[][] = [];
-
-      // Header
-      rows.push(['Income Statement Export']);
-      rows.push(['Period', d.period.toLocaleDateString()]);
-      rows.push([]);
-
-      // Revenue
-      rows.push(['REVENUE']);
-      d.revenue.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      rows.push(['Total Revenue', this.fmt.formatCurrency(d.totals.revenue.actual)]);
-      rows.push([]);
-
-      // COGS
-      rows.push(['COST OF GOODS SOLD']);
-      d.cogs.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      rows.push(['Total COGS', this.fmt.formatCurrency(d.totals.cogs.actual)]);
-      rows.push([]);
-
-      // Gross Profit
-      rows.push(['Gross Profit', this.fmt.formatCurrency(d.totals.grossProfit.actual)]);
-      rows.push([]);
-
-      // Operating Expenses
-      rows.push(['OPERATING EXPENSES']);
-      d.administrativeExpenses.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      d.salariesWages.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      d.maintenance.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      d.logisticsDistribution.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      d.otherOperatingExpenses.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      rows.push(['Total Operating Expenses', this.fmt.formatCurrency(d.totals.totalOpEx.actual)]);
-      rows.push([]);
-
-      // EBIT
-      rows.push(['EBIT', this.fmt.formatCurrency(d.totals.ebit.actual)]);
-      rows.push(['EBITDA', this.fmt.formatCurrency(d.totals.ebitda.actual)]);
-      rows.push([]);
-
-      // Other Items
-      rows.push(['OTHER INCOME/EXPENSES']);
-      d.otherItems.forEach((item: FinancialLineItem) => {
-        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
-      });
-      rows.push(['Total Other Items', this.fmt.formatCurrency(d.totals.otherItems.actual)]);
-      rows.push([]);
-
-      // NIBT
-      rows.push(['Net Income Before Tax', this.fmt.formatCurrency(d.totals.nibt.actual)]);
-      rows.push([]);
-
-      // Tax
-      rows.push(['TAX EXPENSE']);
-      rows.push(['CIT (30%)', this.fmt.formatCurrency(d.totals.cit.actual)]);
-      rows.push(['Education Tax (2.5%)', this.fmt.formatCurrency(d.totals.educationTax.actual)]);
-      rows.push(['NASENI Levy (0.25%)', this.fmt.formatCurrency(d.totals.naseniLevy.actual)]);
-      rows.push(['Total Tax', this.fmt.formatCurrency(d.totals.totalTax.actual)]);
-      rows.push([]);
-
-      // Net Income
-      rows.push(['Net Income After Tax', this.fmt.formatCurrency(d.totals.netIncome.actual)]);
-      rows.push(['Net Profit Margin', `${d.ratios.netProfitMargin.toFixed(1)}%`]);
-
-      const csv = rows.map(r => r.join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `income-statement-${d.period.toISOString().slice(0, 7)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error('CSV export error:', e);
+    if (!this.data) {
+      return;
     }
+
+    const rows: string[][] = [];
+
+    rows.push(['Income Statement Export']);
+    rows.push(['Period', this.data.period.toLocaleDateString()]);
+    rows.push([]);
+
+    rows.push(['REVENUE']);
+    this.data.revenue.forEach((item: FinancialLineItem) => {
+      rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
+    });
+    rows.push(['Total Revenue', this.fmt.formatCurrency(this.data.totals.revenue.actual)]);
+    rows.push([]);
+
+    rows.push(['COST OF GOODS SOLD']);
+    this.data.cogs.forEach((item: FinancialLineItem) => {
+      rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
+    });
+    rows.push(['Total COGS', this.fmt.formatCurrency(this.data.totals.cogs.actual)]);
+    rows.push([]);
+
+    rows.push(['Gross Profit', this.fmt.formatCurrency(this.data.totals.grossProfit.actual)]);
+    rows.push([]);
+
+    rows.push(['OPERATING EXPENSES']);
+    this.data.administrativeExpenses.forEach((item: FinancialLineItem) => rows.push([item.name, this.fmt.formatCurrency(item.amount)]));
+    this.data.salariesWages.forEach((item: FinancialLineItem) => rows.push([item.name, this.fmt.formatCurrency(item.amount)]));
+    this.data.maintenance.forEach((item: FinancialLineItem) => rows.push([item.name, this.fmt.formatCurrency(item.amount)]));
+    this.data.logisticsDistribution.forEach((item: FinancialLineItem) => rows.push([item.name, this.fmt.formatCurrency(item.amount)]));
+    this.data.otherOperatingExpenses.forEach((item: FinancialLineItem) => rows.push([item.name, this.fmt.formatCurrency(item.amount)]));
+    rows.push(['Total Operating Expenses', this.fmt.formatCurrency(this.data.totals.totalOpEx.actual)]);
+    rows.push([]);
+
+    rows.push(['EBIT', this.fmt.formatCurrency(this.data.totals.ebit.actual)]);
+    rows.push(['EBITDA', this.fmt.formatCurrency(this.data.totals.ebitda.actual)]);
+    rows.push([]);
+
+    rows.push(['OTHER INCOME/EXPENSES']);
+    this.data.otherItems.forEach((item: FinancialLineItem) => {
+      rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
+    });
+    rows.push(['Total Other Items', this.fmt.formatCurrency(this.data.totals.otherItems.actual)]);
+    rows.push([]);
+
+    rows.push(['Net Income Before Tax', this.fmt.formatCurrency(this.data.totals.nibt.actual)]);
+    rows.push([]);
+
+    rows.push(['TAX EXPENSE']);
+    rows.push(['CIT (30%)', this.fmt.formatCurrency(this.data.totals.cit.actual)]);
+    rows.push(['Education Tax (2.5%)', this.fmt.formatCurrency(this.data.totals.educationTax.actual)]);
+    rows.push(['NASENI Levy (0.25%)', this.fmt.formatCurrency(this.data.totals.naseniLevy.actual)]);
+    rows.push(['Total Tax', this.fmt.formatCurrency(this.data.totals.totalTax.actual)]);
+    rows.push([]);
+
+    rows.push(['Net Income After Tax', this.fmt.formatCurrency(this.data.totals.netIncome.actual)]);
+    rows.push(['Net Profit Margin', `${this.data.ratios.netProfitMargin.toFixed(1)}%`]);
+
+    const csv = rows.map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `income-statement-${this.data.period.toISOString().slice(0, 7)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   printPage(): void {
     window.print();
   }
 
-  // ─── Save ───
   saveStatement(): void {
-    if (!this.data) return;
+    if (!this.data) {
+      return;
+    }
+
+    this.isSaved = true;
+    const payload = {
+      period: this.activeFilters.period,
+      reportType: this.activeFilters.reportType,
+      entity: this.activeFilters.entity,
+      dateRange: this.data.period.toISOString(),
+      totalRevenue: this.totalRevenue,
+      totalCOGS: this.totalCOGS,
+      grossProfit: this.grossProfit,
+      grossMargin: this.grossProfitMargin,
+      totalOperatingExpenses: this.totalOperatingExpenses,
+      operatingIncome: this.operatingIncome,
+      ebitda: this.ebitda,
+      netIncomeBeforeTax: this.netIncomeBeforeTax,
+      totalTaxExpense: this.totalTaxExpense,
+      effectiveTaxRate: this.effectiveTaxRate,
+      netIncome: this.netIncome,
+      netMargin: this.netProfitMargin,
+      savedAt: new Date().toISOString()
+    };
 
     try {
-      this.isSaved = true;
-      const data = {
-        period: this.activeFilters.period,
-        reportType: this.activeFilters.reportType,
-        entity: this.activeFilters.entity,
-        dateRange: this.data.period.toISOString(),
-        totalRevenue: this.totalRevenue,
-        totalCOGS: this.totalCOGS,
-        grossProfit: this.grossProfit,
-        grossMargin: this.grossProfitMargin,
-        totalOperatingExpenses: this.totalOperatingExpenses,
-        operatingIncome: this.operatingIncome,
-        ebitda: this.ebitda,
-        netIncomeBeforeTax: this.netIncomeBeforeTax,
-        totalTaxExpense: this.totalTaxExpense,
-        effectiveTaxRate: this.effectiveTaxRate,
-        netIncome: this.netIncome,
-        netMargin: this.netProfitMargin,
-        savedAt: new Date().toISOString()
-      };
-
-      try {
-        sessionStorage.setItem('savedIncomeStatement', JSON.stringify(data));
-      } catch (_) { /* SSR / sandboxed — in-memory only */ }
-
-      console.log('[IncomeStatement] Saved:', data);
-      this.cdr.markForCheck();
-    } catch (e) {
-      console.error('Save error:', e);
+      sessionStorage.setItem('savedIncomeStatement', JSON.stringify(payload));
+    } catch {
+      // Ignore storage issues and keep in-memory state.
     }
+
+    this.cdr.markForCheck();
   }
 
-  // ─── Comments ─────────────────────────────────────────────────────────────
   addComment(text: string): void {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      return;
+    }
+
     this.comments = [...this.comments, {
       id: this.comments.length + 1,
       author: 'Current User',
@@ -694,7 +692,6 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  // ─── Modal toggles ───────────────────────────────────────────────────────
   toggleCommentsModal(): void {
     this.showCommentsModal = !this.showCommentsModal;
   }
@@ -707,11 +704,94 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.showArchivesModal = !this.showArchivesModal;
   }
 
-  // ─── Utility 
   getFormattedDate(): string {
-    if (!this.data) return '';
-    const d = this.data.period;
-    const m = d.toLocaleString('default', { month: 'short' });
-    return `${m}_${d.getFullYear()}`;
+    if (!this.data) {
+      return '';
+    }
+
+    const period = this.data.period;
+    const month = period.toLocaleString('default', { month: 'short' });
+    return `${month}_${period.getFullYear()}`;
+  }
+
+  private toIncomeStatementData(report: IncomeStatementReportDTO): IncomeStatementData {
+    return {
+      period: report.reportPeriod,
+      revenue: this.mapLineItems(report.revenue),
+      cogs: this.mapLineItems(report.cogs),
+      administrativeExpenses: this.mapLineItems(report.administrativeExpenses),
+      salariesWages: this.mapLineItems(report.salariesAndWages),
+      maintenance: this.mapLineItems(report.maintenance),
+      logisticsDistribution: this.mapLineItems(report.logisticsAndDistribution),
+      otherOperatingExpenses: this.mapLineItems(report.otherOperatingExpenses),
+      otherItems: this.mapLineItems(report.otherItems),
+      totals: {
+        revenue: this.mapComparison(report.totals.revenue),
+        cogs: this.mapComparison(report.totals.cogs),
+        grossProfit: this.mapComparison(report.totals.grossProfit),
+        adminExpenses: this.mapComparison(report.totals.adminExpenses),
+        salariesWages: this.mapComparison(report.totals.salariesWages),
+        maintenance: this.mapComparison(report.totals.maintenance),
+        logistics: this.mapComparison(report.totals.logistics),
+        otherOpEx: this.mapComparison(report.totals.otherOpEx),
+        totalOpEx: this.mapComparison(report.totals.totalOpEx),
+        ebit: this.mapComparison(report.totals.ebit),
+        ebitda: this.mapComparison(report.totals.ebitda),
+        otherItems: this.mapComparison(report.totals.otherItems),
+        nibt: this.mapComparison(report.totals.nibt),
+        cit: this.mapComparison(report.totals.cit),
+        educationTax: this.mapComparison(report.totals.educationTax),
+        naseniLevy: this.mapComparison(report.totals.naseniLevy),
+        totalTax: this.mapComparison(report.totals.totalTax),
+        netIncome: this.mapComparison(report.totals.netIncome),
+      },
+      ratios: {
+        revenueGrowthMoM: report.ratios.revenueGrowthMoMPct,
+        grossProfitGrowth: report.ratios.grossProfitGrowthPct,
+        grossProfitMargin: report.ratios.grossProfitMarginPct,
+        ebitdaMargin: report.ratios.ebitdaMarginPct,
+        netProfitMargin: report.ratios.netProfitMarginPct,
+      },
+      monthlyTrend: this.mapMonthlyTrend(report.monthlyTrend),
+      expenseDistribution: this.mapExpenseDistribution(report.expenseDistribution),
+    };
+  }
+
+  private mapLineItems(items: FinancialLineItemDTO[]): FinancialLineItem[] {
+    return items.map((item: FinancialLineItemDTO) => ({
+      name: item.name,
+      amount: item.actualAmount,
+      prevAmount: item.previousAmount,
+      budget: item.budgetAmount,
+      prevYearAmount: item.priorYearAmount,
+    }));
+  }
+
+  private mapComparison(comparison: PeriodComparisonDTO): { actual: number; prev: number; budget: number; prevYear: number } {
+    return {
+      actual: comparison.actualAmount,
+      prev: comparison.previousAmount,
+      budget: comparison.budgetAmount,
+      prevYear: comparison.priorYearAmount,
+    };
+  }
+
+  private mapMonthlyTrend(trend: MonthlyTrendDTO): MonthlyFinancialData {
+    return {
+      labels: trend.periodLabels,
+      revenue: trend.revenueAmounts,
+      expenses: trend.expenseAmounts,
+      profit: trend.profitAmounts,
+    };
+  }
+
+  private mapExpenseDistribution(distribution: ExpenseDistributionDTO): ExpenseDistribution {
+    return {
+      administrative: distribution.administrative,
+      salariesAndWages: distribution.salariesAndWages,
+      maintenance: distribution.maintenance,
+      logisticsAndDistribution: distribution.logisticsAndDistribution,
+      otherOperatingExpenses: distribution.otherOperatingExpenses,
+    };
   }
 }

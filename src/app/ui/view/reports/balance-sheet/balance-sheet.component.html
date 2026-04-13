@@ -1,455 +1,274 @@
-<div class="container">
-
-  <!-- Header -->
-  <div class="header">
-    <h1 class="main-title">Balance Sheet Report</h1>
-    <div class="button-group">
-      <button class="action-btn" (click)="saveReport()" [disabled]="!isBalanced || !data">
-        <i class="fas fa-save"></i> Save
-      </button>
-      <button class="action-btn" (click)="updateReport()" [disabled]="isUpdating || !data">
-        <i class="fas fa-sync" [class.spin]="isUpdating"></i>
-        {{ isUpdating ? 'Updating...' : 'Update' }}
-      </button>
-      <button class="action-btn" (click)="shareReport()" [disabled]="!data">
-        <i class="fas fa-share-alt"></i> Share
-      </button>
+<div class="balance-sheet-page">
+  <section class="hero-card">
+    <div class="hero-copy">
+      <p class="eyebrow">Financial Statement</p>
+      <h1>Balance Sheet</h1>
+      <p class="subtitle">A structured view of assets, liabilities, and equity for the selected reporting month.</p>
     </div>
-  </div>
 
-  <!--  BALANCE EQUATION ALERT  -->
-  <div class="balance-alert" *ngIf="data && !isBalanced">
-    <i class="ri-error-warning-line"></i>
-    <strong>Balance Sheet Equation Broken:</strong> Assets ≠ Liabilities + Equity
-    (Discrepancy: {{ fmt.formatCurrency(balanceDiscrepancy) }})
-    — Please check your data before saving.
-  </div>
-
-  <!-- Loading State -->
-  <div class="loading-state" *ngIf="!data">
-    <i class="ri-loader-4-line spin"></i> Loading balance sheet data...
-  </div>
-
-  <!-- Report Content -->
-  <ng-container *ngIf="data">
-
-    <!-- Report Header Section -->
-    <section class="BSection">
-      <section class="report-header">
-        <div class="header-left">
-          <div class="report-meta">
-            <span><i class="ri-calendar-line"></i> As of: {{ data.asOfDate | date:'longDate' }}</span>
-            <span><i class="ri-building-line"></i> Entity: {{ entityName }}</span>
-          </div>
-
-          <!-- status badge -->
-          <span class="status-badge" [ngClass]="statusClass">
-            <i class="ri-check-line" *ngIf="reportStatus === 'Completed'"></i>
-            <i class="ri-loader-line" *ngIf="reportStatus === 'Compiling'"></i>
-            <i class="ri-eye-line" *ngIf="reportStatus === 'Under Review'"></i>
-            {{ reportStatus }}
-          </span>
-
-          <!-- balanced indicator -->
-          <span class="balance-indicator" [ngClass]="isBalanced ? 'balanced' : 'unbalanced'">
-            <i class="ri-scales-line"></i>
-            {{ isBalanced ? 'Balanced ✓' : 'Unbalanced ✗' }}
-          </span>
-
-          <span class="last-updated">Last Updated: {{ lastUpdated | date:'longDate' }}</span>
-        </div>
-      </section>
-
-      <br>
-
-      <!-- Period Selection -->
-      <div class="period">
-        <select [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
-          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
-        </select>
-        <select [(ngModel)]="selectedPeriod" (change)="onPeriodChange(selectedPeriod)">
-          <option *ngFor="let period of periods" [ngValue]="period">
-            {{ period.month }} {{ period.year }}
-          </option>
-        </select>
+    <div class="hero-actions">
+      <div class="period-selectors">
+        <label>
+          <span>Year</span>
+          <select [(ngModel)]="selectedYear" (change)="onPeriodChange()">
+            <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+          </select>
+        </label>
+        <label>
+          <span>Month</span>
+          <select [(ngModel)]="selectedMonth" (change)="onPeriodChange()">
+            <option *ngFor="let month of months" [value]="month.value">{{ month.label }}</option>
+          </select>
+        </label>
       </div>
 
-      <br>
+      <div class="button-row">
+        <button type="button" class="secondary-btn" (click)="toggleSavedReports()">Saved Reports</button>
+        <button type="button" class="primary-btn" (click)="saveReport()" [disabled]="!hasReportData">Save Monthly Snapshot</button>
+      </div>
+    </div>
+  </section>
 
-      <!-- Metrics Grid -->
-      <div class="metrics-grid">
+  <section class="status-banner success" *ngIf="statusMessage">
+    {{ statusMessage }}
+  </section>
 
-        <div class="metric-card" [ngClass]="yoyAssets >= 0 ? 'positive' : 'negative'">
-          <div class="metric-header">
-            <h3>Total Assets</h3>
-            <i class="ri-arrow-up-line trend-up" *ngIf="yoyAssets >= 0"></i>
-            <i class="ri-arrow-down-line trend-down" *ngIf="yoyAssets < 0"></i>
-          </div>
-          <div class="metric-value">{{ fmt.formatCurrency(data.assets.total) }}</div>
-          <div class="metric-comparison">
-            {{ yoyAssets >= 0 ? '▲' : '▼' }}{{ yoyAssets | number:'1.1-1' }}% (YoY)
-          </div>
+  <section class="status-banner error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </section>
+
+  <section class="loading-card" *ngIf="loading">
+    <div class="loading-copy">
+      <h2>Loading balance sheet</h2>
+      <p>Preparing grouped account balances and report metadata for {{ periodLabel }}.</p>
+    </div>
+  </section>
+
+  <section class="empty-card" *ngIf="!loading && !hasReportData">
+    <h2>No data available for this period</h2>
+    <p>No posted report data exists for {{ periodLabel }}. Try another month or save a balance sheet snapshot first.</p>
+  </section>
+
+  <ng-container *ngIf="!loading && hasReportData && report">
+    <section class="summary-grid">
+      <article class="summary-card" *ngFor="let item of balanceSummary" [class.good]="item.tone === 'good'" [class.warning]="item.tone === 'warning'">
+        <span class="summary-label">{{ item.label }}</span>
+        <strong class="summary-value">{{ fmt.formatCurrency(item.value) }}</strong>
+      </article>
+    </section>
+
+    <section class="statement-card">
+      <div class="statement-header">
+        <div>
+          <p class="eyebrow">Statement View</p>
+          <h2>Statement of Financial Position</h2>
+          <p class="subtitle">As of {{ reportDate | date:'longDate' }}</p>
         </div>
-
-        <div class="metric-card" [ngClass]="yoyLiabilities <= 0 ? 'positive' : 'negative'">
-          <div class="metric-header">
-            <h3>Total Liabilities</h3>
-            <i class="ri-arrow-down-line trend-down" *ngIf="yoyLiabilities <= 0"></i>
-            <i class="ri-arrow-up-line trend-up"   *ngIf="yoyLiabilities > 0"></i>
-          </div>
-          <div class="metric-value">{{ fmt.formatCurrency(data.liabilities.total) }}</div>
-          <div class="metric-comparison">
-            {{ yoyLiabilities <= 0 ? '▼' : '▲' }}{{ (yoyLiabilities | number:'1.1-1') }}% (YoY)
-          </div>
+        <div class="equation-chip" [class.valid]="isBalanced" [class.invalid]="!isBalanced">
+          {{ isBalanced ? 'Balanced' : 'Out of Balance' }}
         </div>
+      </div>
 
-        <div class="metric-card" [ngClass]="yoyEquity >= 0 ? 'positive' : 'negative'">
-          <div class="metric-header">
-            <h3>Shareholder Equity</h3>
-            <i class="ri-arrow-up-line trend-up" *ngIf="yoyEquity >= 0"></i>
-            <i class="ri-arrow-down-line trend-down" *ngIf="yoyEquity < 0"></i>
-          </div>
-          <div class="metric-value">{{ fmt.formatCurrency(data.equity.total) }}</div>
-          <div class="metric-comparison">
-            {{ yoyEquity >= 0 ? '▲' : '▼' }}{{ yoyEquity | number:'1.1-1' }}% (YoY)
-          </div>
+      <div class="statement-grid">
+        <article class="statement-table">
+          <header>
+            <h3>Assets</h3>
+            <span>{{ fmt.formatCurrency(totalAssets) }}</span>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th class="number">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of report.assets; trackBy: trackByAccount">
+                <td>
+                  <div class="account-copy">
+                    <span class="account-name">{{ item.accountName }}</span>
+                    <span class="account-code">{{ item.accountCode }}</span>
+                  </div>
+                </td>
+                <td class="number">{{ fmt.formatCurrency(item.balance) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total Assets</td>
+                <td class="number">{{ fmt.formatCurrency(totalAssets) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </article>
+
+        <article class="statement-table">
+          <header>
+            <h3>Liabilities</h3>
+            <span>{{ fmt.formatCurrency(totalLiabilities) }}</span>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th class="number">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of report.liabilities; trackBy: trackByAccount">
+                <td>
+                  <div class="account-copy">
+                    <span class="account-name">{{ item.accountName }}</span>
+                    <span class="account-code">{{ item.accountCode }}</span>
+                  </div>
+                </td>
+                <td class="number">{{ fmt.formatCurrency(item.balance) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total Liabilities</td>
+                <td class="number">{{ fmt.formatCurrency(totalLiabilities) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </article>
+
+        <article class="statement-table">
+          <header>
+            <h3>Equity</h3>
+            <span>{{ fmt.formatCurrency(totalEquity) }}</span>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th class="number">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of report.equity; trackBy: trackByAccount">
+                <td>
+                  <div class="account-copy">
+                    <span class="account-name">{{ item.accountName }}</span>
+                    <span class="account-code">{{ item.accountCode }}</span>
+                  </div>
+                </td>
+                <td class="number">{{ fmt.formatCurrency(item.balance) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total Equity</td>
+                <td class="number">{{ fmt.formatCurrency(totalEquity) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </article>
+      </div>
+
+      <div class="equation-row">
+        <div>
+          <span class="equation-label">Validation</span>
+          <strong>Assets = Liabilities + Equity</strong>
         </div>
-
-        <div class="metric-card neutral">
-          <div class="metric-header">
-            <h3>Current Ratio</h3>
-            <i class="ri-scales-line"></i>
-          </div>
-          <div class="metric-value">{{ analytics.currentRatio | number:'1.2-2' }}:1</div>
-          <div class="metric-comparison">
-            {{ analytics.currentRatio >= 2 ? '(Healthy)' : '(Monitor)' }}
-            — Quick: {{ analytics.quickRatio | number:'1.2-2' }}:1
-          </div>
+        <div class="equation-values">
+          <span>{{ fmt.formatCurrency(totalAssets) }}</span>
+          <span>{{ fmt.formatCurrency(totalLiabilities + totalEquity) }}</span>
         </div>
-
-        <div class="metric-card neutral">
-          <div class="metric-header">
-            <h3>Debt-to-Equity</h3>
-            <i class="ri-funds-line"></i>
-          </div>
-          <div class="metric-value">{{ analytics.debtToEquity | number:'1.2-2' }}x</div>
-          <div class="metric-comparison">
-            {{ analytics.debtToEquity <= 1 ? '(Low leverage)' : '(Leveraged)' }}
-          </div>
-        </div>
-
-        <div class="metric-card" [ngClass]="analytics.workingCapital >= 0 ? 'positive' : 'negative'">
-          <div class="metric-header">
-            <h3>Working Capital</h3>
-            <i class="ri-money-dollar-circle-line"></i>
-          </div>
-          <div class="metric-value">{{ fmt.formatCurrency(analytics.workingCapital) }}</div>
-          <div class="metric-comparison">Current Assets − Current Liabilities</div>
-        </div>
-
       </div>
     </section>
 
-    <!--  BALANCE SHEET TABLE ─ -->
-    <div class="Bsection">
-      <section class="balance-sheet-section">
-        <div class="section-header">
-          <h2>
-            <i class="ri-scales-line"></i>
-            Balance Sheet (As of {{ selectedPeriod.month }} {{ selectedPeriod.year }})
-          </h2>
-          <div class="section-actions">
-            <button class="action-btn" (click)="toggleFullScreen()">
-              <i class="fas fa-expand" style="color: rgb(16,18,37)"></i>
-            </button>
-            <button class="action-btn" (click)="downloadTable()">
-              <i class="fas fa-download" style="color: rgb(16,27,63)"></i>
-            </button>
+    <app-report-context [context]="report.reportContext"></app-report-context>
+
+    <section class="audit-trail-section">
+      <article class="detail-card">
+        <div class="detail-header">
+          <div>
+            <p class="eyebrow">Audit Trail</p>
+            <h3>Included Transactions</h3>
           </div>
         </div>
 
-        <div class="balance-sheet-container">
+        <div class="mini-table-wrapper">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of metadataTransactions">
+                <td>
+                  <div class="account-copy">
+                    <span class="account-name">{{ item.reference }}</span>
+                    <span class="account-code">{{ item.id }}</span>
+                  </div>
+                </td>
+                <td>{{ item.sourceModule }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.date | date:'mediumDate' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
 
-          <!-- Assets Column -->
-          <div class="balance-column">
-            <div class="balance-title">Assets</div>
-
-            <div class="balance-category">Current Assets</div>
-            <div class="balance-item">
-              <span>Cash at Bank</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.cash) }}</span>
-            </div>
-            <div class="balance-item pl-sub">
-              <span class="sub-item">— Cash on Hand</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.cashOnHand) }}</span>
-            </div>
-            <div class="balance-item pl-sub">
-              <span class="sub-item">— Regular Checking Account</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.regularCheckingAccount) }}</span>
-            </div>
-            <div class="balance-item pl-sub">
-              <span class="sub-item">— Payroll Checking Account</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.payrollCheckingAccount) }}</span>
-            </div>
-            <div class="balance-item pl-sub">
-              <span class="sub-item">— Savings Account</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.savingsAccount) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Accounts Receivable</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.accountsReceivable) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Inventory</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.inventory) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Prepaid Expenses</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.prepaidExpenses) }}</span>
-            </div>
-            <div class="balance-subtotal">
-              <span>Total Current Assets</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.current.total) }}</span>
-            </div>
-
-            <div class="balance-category">Non-Current Assets</div>
-            <div class="balance-item">
-              <span>Property, Plant &amp; Equipment (Net)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.nonCurrent.property) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Equipment</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.nonCurrent.equipment) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Long-term Investments</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.nonCurrent.investments) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Intangible Assets</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.nonCurrent.intangibleAssets) }}</span>
-            </div>
-            <div class="balance-subtotal">
-              <span>Total Non-Current Assets</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.assets.nonCurrent.total) }}</span>
-            </div>
-
-            <div class="balance-total">
-              <span>TOTAL ASSETS</span>
-              <span class="text-right bold">{{ fmt.formatCurrency(data.assets.total) }}</span>
-            </div>
+    <section class="comments-section">
+      <article class="detail-card">
+        <div class="detail-header">
+          <div>
+            <p class="eyebrow">Review Notes</p>
+            <h3>Comments</h3>
           </div>
-
-          <!-- Liabilities & Equity Column -->
-          <div class="balance-column">
-            <div class="balance-title">Liabilities &amp; Equity</div>
-
-            <div class="balance-category">Current Liabilities</div>
-            <div class="balance-item">
-              <span>Accounts Payable</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.accountsPayable) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Short-term Debt</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.shortTermDebt) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Accrued Expenses</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.accruedExpenses) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>VAT Payable (FIRS)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.vatPayable) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>WHT Payable (FIRS)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.whtPayable) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>PAYE Tax Payable (State SIRS)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.payeTaxPayable) }}</span>
-            </div>
-            <div class="balance-subtotal">
-              <span>Total Current Liabilities</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.current.total) }}</span>
-            </div>
-
-            <div class="balance-category">Non-Current Liabilities</div>
-            <div class="balance-item">
-              <span>Long-term Debt</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.nonCurrent.longTermDebt) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Deferred Tax (DTL net of DTA)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.nonCurrent.deferredTax) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Lease Obligations (IFRS 16)</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.nonCurrent.leaseObligations) }}</span>
-            </div>
-            <div class="balance-subtotal">
-              <span>Total Non-Current Liabilities</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.liabilities.nonCurrent.total) }}</span>
-            </div>
-
-            <div class="balance-category">Owner's Equity</div>
-            <div class="balance-item">
-              <span>Common Stock / Share Capital</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.equity.commonStock) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Retained Earnings</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.equity.retainedEarnings) }}</span>
-            </div>
-            <div class="balance-item">
-              <span>Other Comprehensive Income</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.equity.otherComprehensiveIncome) }}</span>
-            </div>
-            <div class="balance-subtotal">
-              <span>Total Equity</span>
-              <span class="text-right">{{ fmt.formatCurrency(data.equity.total) }}</span>
-            </div>
-
-            <div class="balance-total" [ngClass]="isBalanced ? '' : 'balance-error'">
-              <span>TOTAL LIABILITIES &amp; EQUITY</span>
-              <span class="text-right bold">
-                {{ fmt.formatCurrency(data.liabilities.total + data.equity.total) }}
-              </span>
-            </div>
-
-            <!-- Balance check row -->
-            <div class="balance-check" [ngClass]="isBalanced ? 'check-ok' : 'check-fail'">
-              <span>Balance Check (Assets − L&amp;E)</span>
-              <span class="text-right">{{ isBalanced ? '₦0 ✓' : fmt.formatCurrency(balanceDiscrepancy) + ' ✗' }}</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-    </div>
-
-    <!--  PRIOR YEAR COMPARATIVE  -->
-    <div class="Bsection" *ngIf="false">
-      <!-- Placeholder for prior year comparative - would need historical data from service -->
-      <section class="balance-sheet-section comparative-section">
-        <div class="section-header">
-          <h2><i class="ri-history-line"></i> Prior Year Comparative (IAS 1)</h2>
-        </div>
-        <div class="comparative-note">
-          Prior year figures would be shown here when available from the service.
-        </div>
-      </section>
-    </div>
-
-    <!--  CHARTS  -->
-    <div class="Bsection">
-      <section class="charts-grid">
-
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3>Assets Composition</h3>
-            <select class="date-range" [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
-              <option *ngFor="let year of years" [value]="year">{{ year }}</option>
-            </select>
-          </div>
-          <apx-chart
-            [series]="assetChartData.series"
-            [chart]="{ type: 'pie', height: 350 }"
-            [labels]="assetChartData.labels"
-            [colors]="['#4CAF50', '#2196F3']"
-            [legend]="{ position: 'bottom' }"
-            [tooltip]="tooltipConfig">
-          </apx-chart>
         </div>
 
-        <div class="chart-container">
-          <div class="chart-header">
-            <h3>Liabilities Trend</h3>
-            <select class="date-range" [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
-              <option *ngFor="let year of years" [value]="year">{{ year }}</option>
-            </select>
-          </div>
-          <apx-chart
-            [series]="liabilityTrendData.series"
-            [chart]="{ type: 'line', height: 350, toolbar: { show: false } }"
-            [xaxis]="{ categories: liabilityTrendData.categories }"
-            [stroke]="{ curve: 'smooth', width: 3 }"
-            [colors]="['#FF5722']"
-            [tooltip]="tooltipConfig">
-          </apx-chart>
-        </div>
-
-      </section>
-    </div>
-
-    <!-- ── SUMMARY & COMMENTS -->
-    <section class="summary-section">
-      <div class="section-header">
-        <h2><i class="ri-pie-chart-line"></i> Financial Summary</h2>
-        <button class="text-primary" (click)="isModalOpen = true">
-          <i class="ri-history-line"></i> View Saved Reports
-        </button>
-      </div>
-
-      <div class="summary-content">
-        <h3>Key Findings</h3>
-        <ul>
-          <li *ngFor="let finding of keyFindings">{{ finding }}</li>
-        </ul>
-      </div>
-
-      <div class="comment-section">
-        <h3>Team Comments</h3>
-        <div class="comment-list">
-          <div class="comment-item" *ngFor="let comment of userComments">
-            <div class="comment-header">
+        <div class="comments">
+          <div class="comment" *ngFor="let comment of userComments">
+            <div class="comment-head">
               <strong>{{ comment.user }}</strong>
-              <span class="comment-date">{{ comment.date | date:'medium' }}</span>
+              <span>{{ comment.date | date:'medium' }}</span>
             </div>
             <p>{{ comment.text }}</p>
           </div>
         </div>
-        <textarea class="comment-input" [(ngModel)]="newComment" placeholder="Add your comments..."></textarea>
-        <button class="action-btn" (click)="postComment()">
-          <i class="ri-send-plane-line"></i> Post Comment
-        </button>
-      </div>
+
+        <textarea [(ngModel)]="newComment" placeholder="Add a comment for this report review"></textarea>
+        <button type="button" class="secondary-btn" (click)="postComment()">Post Comment</button>
+      </article>
     </section>
-
-    <!-- ── SAVED REPORTS MODAL ─────────────────────────────────────── -->
-    <div class="side-modal" [class.open]="isModalOpen">
-      <div class="modal-backdrop" (click)="closeModal()"></div>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Saved Reports</h3>
-          <button (click)="closeModal()" class="close-button">
-            <i class="ri-close-line"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <input
-            type="text"
-            [(ngModel)]="searchFilter"
-            placeholder="Search saved reports..."
-            class="search-input"
-          />
-          <div class="saved-reports-list">
-            <div
-              *ngFor="let report of filteredSavedReports"
-              class="report-item"
-              (click)="openSavedReport(report)">
-              <h4>{{ report.metadata.period.month }} {{ report.metadata.period.year }} Report</h4>
-              <p>Total Assets: {{ fmt.formatCurrency(report.assets.total) }}</p>
-              <p class="text-sm">Saved: {{ report.metadata.savedAt | date:'medium' }}</p>
-            </div>
-            <div *ngIf="filteredSavedReports.length === 0" class="no-saved">
-              No saved reports found
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </ng-container>
 
+  <aside class="saved-panel" *ngIf="isSavedReportsOpen">
+    <div class="saved-panel__backdrop" (click)="toggleSavedReports()"></div>
+    <div class="saved-panel__content">
+      <div class="saved-panel__header">
+        <div>
+          <p class="eyebrow">Saved Reports</p>
+          <h3>Monthly Balance Sheet Snapshots</h3>
+        </div>
+        <button type="button" class="icon-btn" (click)="toggleSavedReports()">×</button>
+      </div>
+
+      <input [(ngModel)]="searchFilter" placeholder="Search month or transaction id" />
+
+      <div class="saved-list" *ngIf="filteredSavedReports.length; else noSavedReports">
+        <button type="button" class="saved-item" *ngFor="let snapshot of filteredSavedReports" (click)="openSavedReport(snapshot)">
+          <strong>{{ snapshot.periodLabel }}</strong>
+          <span>Saved {{ snapshot.savedAt | date:'medium' }}</span>
+          <span>Total Assets: {{ fmt.formatCurrency(snapshot.report.totalAssets) }}</span>
+        </button>
+      </div>
+
+      <ng-template #noSavedReports>
+        <div class="empty-saved">
+          No monthly balance sheet snapshots have been saved yet.
+        </div>
+      </ng-template>
+    </div>
+  </aside>
 </div>

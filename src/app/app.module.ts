@@ -83,6 +83,8 @@ import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-s
 import { IncomeStatementComponent } from './ui/view/reports/income-statement/income-statement.component';
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
+import { ReportContextComponent } from './ui/view/reports/report-context.component';
+import { TaxTypeFilterPipe } from './ui/view/reports/tax-type-filter.pipe';
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
 import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/transaction-side-modal.component';
@@ -99,6 +101,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ToggleButtonModule } from 'primeng/togglebutton';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-reconciliation.component';
 import { SalesReconciliationComponent } from './ui/view/sales-reconciliation/sales-reconciliation.component';
@@ -113,7 +116,7 @@ import { SmartAccountantAiComponent } from './ui/view/smart-accountant-ai/smart-
 import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ConfirmationService } from 'primeng/api';
-import { PdfViewerModule } from 'ng2-pdf-viewer';
+import { PdfViewerWrapperModule } from './ui/sharedComponent/view/pdf-viewer-wrapper/pdf-viewer-wrapper.module';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 
 @NgModule({
@@ -137,6 +140,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     IncomeStatementComponent,
     TaxSummaryComponent,
     CashFlowComponent,
+    ReportContextComponent,
+    TaxTypeFilterPipe,
     IncomeStatementChartsComponent,
     IncomeStatementFilterComponent,
     BankReconciliationComponent,
@@ -190,6 +195,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     SidebarModule,
     TabViewModule,
     NgSelectModule,
+    ButtonComponent,
+    BackButtonComponent,
     ToolbarModule,
     ConfirmDialogModule,
     SplitButtonModule,
@@ -208,8 +215,6 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     PasswordModule,
     ToastModule,
     ButtonModule,
-    ButtonComponent,
-    BackButtonComponent,
     HttpClientModule,
     CardModule,
     PaginatorModule,
@@ -223,7 +228,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     TooltipModule,
     FileUploadModule,
     ToggleButtonModule,
-    PdfViewerModule,
+    ProgressSpinnerModule,
+    PdfViewerWrapperModule,
     SideModalComponent
   ],
   providers: [
