@@ -27,12 +27,29 @@ export class MyScheduleComponent implements OnInit{
   ngOnInit(): void {
     this.buildCalendar();
 
-    this.scheduleService.schedules$.subscribe(data => {
+    //for real data
+    /*this.scheduleService.schedules$.subscribe(data => {
       this.schedules = data.filter(
         s => s.employeeId === this.currentEmployeeId
       );
-    });
+    }); */
+
+    //Dummy schedules
+    this.schedules = [
+      {
+        id: 'sch-1',
+        employeeId: 'emp-1',
+        shiftId: 'shift-1',
+        date: '2026-04-13',
+        project: 'CivicLens Dashboard'
+      }
+    ];
   }
+
+  onDateChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  this.selectedDate = target.value;
+}
 
   setView(mode: 'calendar' | 'table') {
     this.viewMode = mode;
