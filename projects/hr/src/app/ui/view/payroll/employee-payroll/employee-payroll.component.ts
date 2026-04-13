@@ -196,9 +196,19 @@ overtimeOverrides: Record<number, number> = {
 ];
 
 
-  payrollActions: TableAction[] = [
-    { id: 'view', label: 'View', icon: 'pi pi-eye' }
+ 
+
+
+payrollActions: TableAction[] = [
+  { id: 'view', label: 'View', icon: 'pi pi-eye' },
+  //  { id: 'edit', label: 'Edit', icon: 'pi pi-pencil' }
   ];
+
+
+
+
+
+
 
   payrollRecords: Payroll[] = [ ] 
 
@@ -298,6 +308,13 @@ generatePayrolls(){
             this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
             this.canEditRecord = currentStage?.canEditRecord ?? false;
             this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
+            if (this.canEditRecord) {
+              this.payrollActions.push({
+                id: 'edit',
+                label: 'Edit',
+                icon: 'pi pi-pencil'
+              });
+            }
             this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1].employees : []
             console.log("filtered", this.filteredEmployeePayroll)
             this.years =  Array.from(new Set(this.payrollRecords.map((emp: { year: number }) => emp.year))).sort((a, b) => a - b);
