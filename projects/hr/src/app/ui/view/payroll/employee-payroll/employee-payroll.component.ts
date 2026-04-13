@@ -85,6 +85,9 @@ openSummary = false;
 showDropdown = false;
 selectedEmployees: any[] = [];
 currentEmployeeInView: any = {};
+payrollInView: any = {};
+canSeeApproveButton = false;
+openApproveModal = false
 
   uniqueLevels: any;
   uniquePositions: any;
@@ -217,9 +220,14 @@ employees: any = []
 filteredEmployees: any[] = [];
 employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 triggeredGeneration = false;
+selectedFile: File | null = null;
 
 currentUser: Employee = {} as Employee;
 actionItems: any = []
+  currentUserId: any;
+  canSeeApprovalButton: any;
+  isDocumentRequired: any;
+  canEditRecord: any;
 // payrollRecords: any[] = []
 constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService) {
     this.generateYears();
@@ -252,6 +260,7 @@ ngOnInit(){
     // this.handlePeriodChange()
     //    this.fetchEmployees()
   const userId = sessionStorage.getItem('userid')
+  this.currentUserId = userId ? Number(userId) : null;
   this.employeeService.getEmployeeByUserId(Number(userId)).subscribe({  
     next: data => {this.currentUser = data; console.log(data)},
     error: err => console.log(err)
@@ -277,6 +286,18 @@ generatePayrolls(){
         next: response => {
             this.payrollRecords = response
             console.log("records", response)
+            this.payrollInView = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1] : {}
+            const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
+
+            const assignments = currentStage?.assignment || [];
+
+            const currentUserId = this.currentUserId; 
+            this.canSeeApprovalButton = assignments.some(
+              (a: any) => a.userId?.id === currentUserId
+            );
+            this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
+            this.canEditRecord = currentStage?.canEditRecord ?? false;
+            this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
             this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1].employees : []
             console.log("filtered", this.filteredEmployeePayroll)
             this.years =  Array.from(new Set(this.payrollRecords.map((emp: { year: number }) => emp.year))).sort((a, b) => a - b);
@@ -519,6 +540,10 @@ generatePayrolls(){
         console.error('Failed to load image for employee:', err);
       }
     });
+  }
+
+  confirmApprovePayroll(){
+    this.openApproveModal != this.openApproveModal
   }
 
 
@@ -1112,4 +1137,26 @@ download(format: string) {
       return new Date(year, month - 1, day).toLocaleDateString();
     }
 
+    onFileSelected(event: any) {
+  const file = event.target.files?.[0];
+  this.selectedFile = file ?? null;
+}
+    onApprove() {
+      if (this.isDocumentRequired && !this.selectedFile) {
+        return;
+      }
+
+      const payload = {
+        payrollId: this.payrollInView?.id,
+        document: this.selectedFile
+      };
+
+      // call your API
+      // this.payrollService.approvePayroll(payload).subscribe({
+      //   next: () => {
+      //     this.closeModal();
+      //   },
+      //   error: err => console.log(err)
+      // });
+    }
 }
