@@ -1,0 +1,233 @@
+// employee-interest-acceptance.component.scss
+.interest-acceptance-container {
+  background: white;
+  border-radius: 16px;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e3eef0;
+
+    h2 {
+      margin: 0;
+      color: #2E6276;
+      
+      i {
+        color: #eb9b3f;
+        margin-right: 8px;
+      }
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #8a8a8a;
+      
+      &:hover {
+        color: #2E6276;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .loan-summary {
+    background: #f8feff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #e3eef0;
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e3eef0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      span {
+        color: #6b7a86;
+      }
+
+      strong {
+        color: #2E6276;
+      }
+    }
+  }
+
+  .proposal-card {
+    background: linear-gradient(135deg, #f8feff, #eef7fa);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid #b6d6e2;
+
+    .proposed-rate {
+      margin-bottom: 20px;
+      
+      .rate-label {
+        display: block;
+        font-size: 0.85rem;
+        color: #6b7a86;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+      
+      .rate-value {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #2EB270;
+      }
+    }
+
+    .rate-breakdown {
+      text-align: left;
+      border-top: 1px solid #cce5ec;
+      padding-top: 16px;
+
+      .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        
+        span {
+          color: #6b7a86;
+        }
+        
+        strong {
+          color: #2E6276;
+        }
+        
+        &.total {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid #cce5ec;
+          font-weight: 700;
+          
+          strong {
+            color: #2EB270;
+            font-size: 1.1rem;
+          }
+        }
+      }
+    }
+  }
+
+  .info-box {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: #fef8e7;
+    border-radius: 12px;
+    border-left: 4px solid #eb9b3f;
+    margin-bottom: 20px;
+
+    i {
+      color: #eb9b3f;
+      font-size: 1.2rem;
+    }
+
+    p {
+      margin: 0;
+      color: #6b7a86;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+  }
+
+  .rejection-section {
+    margin-top: 16px;
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2E6276;
+      
+      .required {
+        color: #d9534f;
+      }
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e3eef0;
+      border-radius: 8px;
+      font-family: inherit;
+      resize: vertical;
+      
+      &:focus {
+        outline: none;
+        border-color: #2E6276;
+      }
+    }
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e3eef0;
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .cancel-btn {
+      background: white;
+      border: 1px solid #e3eef0;
+      color: #6b7a86;
+      
+      &:hover:not(:disabled) {
+        background: #f8feff;
+      }
+    }
+
+    .reject-btn {
+      background: white;
+      border: 1px solid #d9534f;
+      color: #d9534f;
+      
+      &:hover:not(:disabled) {
+        background: rgba(217, 83, 79, 0.05);
+      }
+    }
+
+    .accept-btn {
+      background: linear-gradient(135deg, #2E6276, #2EB270);
+      border: none;
+      color: white;
+      
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+      }
+    }
+  }
+}

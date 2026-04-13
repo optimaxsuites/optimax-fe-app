@@ -1,0 +1,404 @@
+<div class="container">
+  <div class="modal-wrapper p-4" #contentToPrint>
+    <div class="header-section">
+      <section class="title-section">
+        <h3 class="form-title">Request For Quotation</h3>
+        <span> [Company Details]</span>
+      </section>
+    </div>
+
+    <div class="info-section">
+      <section class="first-info-section">
+        <div class="first-container">
+          <div class="headerInputDiv">
+            <label for="descriptionInput">RFQ NO:</label>
+
+            <input [(ngModel)]="rfqNo" class="longInput" type="text" />
+          </div>
+
+          <div class="headerInputDiv">
+            <div>
+              <label for="dateIssued" class="tagName">Date Issued</label>
+              <br />
+              <input
+                [(ngModel)]="dateIssued"
+                id="nameInput"
+                class="dateSector"
+                type="date"
+              />
+            </div>
+
+            <div>
+              <label for="expiryDate">Expiry Date</label>
+              <br />
+              <input
+                [(ngModel)]="expiryDate"
+                id="partNumberInput"
+                class="dateSector"
+                type="date"
+              />
+            </div>
+          </div>
+
+          <div class="headerInputDiv">
+            <label for="projectTitle">Project Title:</label>
+
+            <input [(ngModel)]="projectTitle" class="longInput" type="text" />
+          </div>
+
+          <div
+            *ngFor="let field of fields; let i = index"
+            class="editable-label-container"
+          >
+            <div class="editable-label">
+              <p *ngIf="!field.isEditing" (click)="editField(i)" class="label">
+                {{ field.text || "Enter New Field" }}
+              </p>
+              <input
+                *ngIf="field.isEditing"
+                placeholder="Enter New Field"
+                [value]="field.text"
+                (blur)="saveField(i, $event)"
+                (keydown.enter)="saveField(i, $event)"
+                class="form-control-opti p-2"
+                style="font-size: 1.1em; font-weight: 400"
+              />
+            </div>
+
+            <div class="editable-label-input">
+              <input
+                type="text"
+                class="form-control-opti p-2"
+                style="font-size: 1.1em; font-weight: 400"
+              />
+              <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
+            </div>
+          </div>
+
+          <button class="add-btn" (click)="addField()">
+            <i class="fas fa-plus me-2"></i>Add More Field
+          </button>
+        </div>
+        <div class="">
+          <section class="logo-section">
+            <div class="logo-upload-container">
+              <div class="wrapper">
+                <div class="logo-wrapper">
+                  <img
+                    *ngIf="logoUrl"
+                    [src]="logoUrl"
+                    alt="logo"
+                    class="logo"
+                  />
+                </div>
+              </div>
+
+              <div
+                *ngIf="showLogo; else addLogoButtons"
+                class="add-logo-btn-wrapper"
+              >
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                />
+                <button class="btn" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Change Logo
+                </button>
+                <button class="btn" (click)="clearLogo()">
+                  <i class="fa-solid fa-x me-2"></i>Remove Logo
+                </button>
+              </div>
+              <ng-template #addLogoButtons>
+                <div class="add-logo-toggle">
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onLogoSelected($event)"
+                  />
+                  <button class="btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Add Business Logo
+                  </button>
+                </div>
+              </ng-template>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="second-info-section">
+        <div class="right">
+          <div class="top-container">
+            <div class="billing-selection">
+              <form>
+                <p class="billing-title">
+                  Quotation From
+                  <span class="billing-span">[ Company's details ]</span>
+                </p>
+                <mat-form-field class="selectCompany">
+                  <mat-label>Select Company</mat-label>
+                  <mat-select
+                    [(ngModel)]="selectedValue"
+                    (ngModelChange)="updateBusinessInfo()"
+                    name="Company"
+                    placeholder="Select Company"
+                  >
+                    <mat-option
+                      *ngFor="let company of companies"
+                      [value]="company.value"
+                      >{{ company.viewValue }}</mat-option
+                    >
+                    <div class="add-new-details-btn-wrapper">
+                      <button class="btn new-detail-btn mt-2">
+                        Add New Company Details
+                      </button>
+                    </div>
+                  </mat-select>
+                </mat-form-field>
+              </form>
+            </div>
+          </div>
+          <div class="info-bottom-section">
+            <div class="bottom-container">
+              <p><b>Business Details</b></p>
+              <div class="business-info">
+                <div class="d-flex">
+                  <p>Business Name:</p>
+                  <p class="ms-2">{{ businessDetails.name }}</p>
+                </div>
+                <div class="d-flex">
+                  <p>Address:</p>
+                  <p class="ms-2">{{ businessDetails.address }}</p>
+                </div>
+                <div class="d-flex">
+                  <P>Phone Number:</P>
+                  <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
+                </div>
+                <div class="d-flex">
+                  <p>Email Address:</p>
+                  <p class="ms-2">{{ businessDetails.email }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="inputSection">
+      <div class="namePartnoDiv">
+        <div>
+          <label for="nameInput" class="tagName">Name</label>
+          <br />
+          <input
+            id="nameInput"
+            class="inputTag"
+            type="text"
+            [(ngModel)]="name"
+          />
+        </div>
+
+        <div>
+          <label for="partNumberInput">Part Number</label>
+          <br />
+          <input
+            id="partNumberInput"
+            class="inputTag"
+            type="text"
+            [(ngModel)]="partNumber"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label for="descriptionInput">Description</label>
+        <br />
+        <textarea
+          id="#descriptionInput"
+          class="inputTage"
+          rows="10"
+          [(ngModel)]="description"
+        ></textarea>
+      </div>
+
+      <div class="namePartnoDiv">
+        <div>
+          <label for="quantityInput">Quantity</label>
+          <br />
+          <input
+            id="quantityInput"
+            class="inputTag"
+            type="number"
+            [(ngModel)]="quantity"
+          />
+        </div>
+
+        <div>
+          <label for="approvedBudget">Approved Budget</label>
+          <br />
+          <input
+            id="approvedBudget"
+            class="inputTag"
+            type="text"
+            [(ngModel)]="approvedBudget"
+          />
+        </div>
+      </div>
+
+      <div class="namePartnoDiv">
+        <section class="partImage">
+          <span>Item Image</span>
+          <section class="logo-section">
+            <div class="logo-upload-container">
+              <div class="wrapper">
+                <div class="logo-wrapper">
+                  <img
+                    *ngIf="previewImageUrl"
+                    [src]="previewImageUrl"
+                    alt="logo"
+                    class="logo"
+                  />
+                </div>
+              </div>
+              <div
+                *ngIf="showLogo; else addLogoButtons"
+                class="add-logo-btn-wrapper"
+              >
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                />
+                <button class="btn" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Change Logo
+                </button>
+                <button class="btn" (click)="removeLogo()">
+                  <i class="fa-solid fa-x me-2"></i>Remove Logo
+                </button>
+              </div>
+              <ng-template #addLogoButtons>
+                <div class="add-logo-toggle">
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onLogoSelected($event)"
+                  />
+                  <button class="btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Add Image
+                  </button>
+                </div>
+              </ng-template>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      <div class="buttonDiv">
+        <!-- <button class="save-continue" (click)="addItem()">Add Item</button>
+      </div> -->
+        <button
+          class="save-continue"
+          (click)="selectedItemIndex !== null ? updateItem() : addItem()"
+        >
+          {{ selectedItemIndex !== null ? "Update Item" : "Add Item" }}
+        </button>
+      </div>
+    </section>
+
+    <div class="table-wrapper">
+      <div class="top-products-table w3-table">
+        <div class="thead">
+          <div class="top-products-table-row">
+            <div class="table-item">
+              <th class="top-products-table-data col-1">Image</th>
+              <th class="top-products-table-data col-1">Name</th>
+              <th class="top-products-table-data col-5">Description</th>
+              <th class="top-products-table-data col-1">Part Number</th>
+              <th class="top-products-table-data col-1">Quantity</th>
+              <th class="top-products-table-data col-1">Action</th>
+            </div>
+          </div>
+        </div>
+        <div class="tbody">
+          <div class="top-products-table-row" *ngFor="let item of items">
+            <div class="table-item">
+              <td class="top-products-table-data col-1">
+                <img
+                  *ngIf="item.imageUrl"
+                  [src]="item.imageUrl"
+                  alt="item image"
+                  class="imageUploaded"
+                />
+                <!-- <pre>{{ item.imageUrl }}</pre> -->
+              </td>
+              <td class="top-products-table-data col-1">{{ item.name }}</td>
+              <td class="top-products-table-data col-5 descText">
+                {{ item.description }}
+              </td>
+
+              <td class="top-products-table-data col-1">
+                {{ item.partNumber }}
+              </td>
+              <td class="top-products-table-data col-1">{{ item.quantity }}</td>
+              <td class="top-products-table-data col-1">
+                <div class="actionDiv">
+                  <div class="image-container">
+                    <img
+                      (click)="editItem(item)"
+                      class="actionTags"
+                      src="../../../assets/Edit.svg"
+                      alt=""
+                    />
+                    <span class="tooltip">edit</span>
+                  </div>
+                  <div class="image-container">
+                    <img
+                      (click)="deleteItem(item)"
+                      class="actionTags"
+                      src="../../../assets/delete (1).svg"
+                      alt=""
+                    />
+                    <span class="tooltip">delete</span>
+                  </div>
+                </div>
+              </td>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section>
+      <div class="first-container01">
+        <div>
+          <span>RFQ Prepared By</span>
+          <br />
+          <input [(ngModel)]="preparedBy" class="inputPreparedBy" type="text" />
+        </div>
+
+        <div>
+          <span>Position</span>
+          <br />
+          <input [(ngModel)]="position" class="inputPreparedBy" type="text" />
+        </div>
+
+        <div>
+          <span>Organisation Address</span>
+          <br />
+          <input [(ngModel)]="orgAddress" class="inputPreparedBy" type="text" />
+        </div>
+      </div>
+    </section>
+
+    <div class="btn-wrapper">
+      <button class="btn create-client-btn-2">Save As Draft</button>
+      <button (click)="saveAndContinue()" class="btn save-continue">
+        Save & Continue
+      </button>
+    </div>
+  </div>
+</div>

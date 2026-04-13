@@ -1,0 +1,193 @@
+<div class="calendar-container">
+
+  <div class="view-toggle">
+    <button 
+      [class.active]="viewMode === 'calendar'" 
+      (click)="setView('calendar')">
+      <i class="fa-solid fa-calendar"></i>
+      Calendar
+    </button>
+
+    <button 
+      [class.active]="viewMode === 'table'" 
+      (click)="setView('table')">
+      <i class="fa-solid fa-table"></i>
+      Table
+    </button>
+
+    <button 
+      class="add-btn"         
+      (click)="openAssignment()" 
+      [disabled]="isSelectedDateLocked">
+      + Assign Shift
+    </button>
+  </div>
+
+  <div *ngIf="viewMode === 'calendar'">
+  <div class="calendar-card">
+
+    <div class="calendar-header">
+      <button class="nav-btn" (click)="prevMonth()">‹</button>
+      <span class="month-label">{{ monthLabel }}</span>
+      <button class="nav-btn" (click)="nextMonth()">›</button>
+    </div>
+
+    <!-- WEEKDAY HEADERS -->
+    <div class="weekday-grid">
+      <div class="weekday-cell" *ngFor="let day of weekdays">{{ day }}</div>
+    </div>
+
+    <!-- DATE GRID -->
+    <div class="date-grid">
+      <div
+        class="date-cell"
+        *ngFor="let day of calendarDays"
+        [class.other-month]="!day.inMonth"
+        [class.today]="isToday(day.date)"
+        [class.selected]="isSelected(day.date)"
+        [class.has-schedules]="hasSchedules(day.date)"
+        [class.disabled]="isPastOrToday(day.date)"
+        (click)="selectDate(day)"
+      >
+        {{ day.date.getDate() }}
+      </div>
+    </div>
+
+    <!-- DAY DETAIL -->
+    <div class="day-detail">
+
+      <div class="day-detail-header">
+        <span class="day-label">Shifts for {{ selectedDateLabel }}</span>
+      </div>
+
+      <!-- NO SHIFTS -->
+      <div class="empty-day" *ngIf="dayShiftGroups.length === 0">
+        No shifts scheduled for this day.
+      </div>
+
+      <!-- SHIFT GROUPS -->
+      <div class="shift-group" *ngFor="let group of dayShiftGroups">
+
+        <div class="shift-group-header">
+          <div class="shift-title">
+            <span class="shift-color-dot" [style.background]="group.shift.color"></span>
+            <strong>{{ group.shift.name }}</strong>
+          </div>
+
+          <div class="shift-meta">
+            <span class="time">{{ group.shift.startTime }} – {{ group.shift.endTime }}</span>
+            <span class="location" *ngIf="group.schedule.location">
+              · {{ group.schedule.location }}
+            </span>
+            <span
+              class="recurrence-badge"
+              *ngIf="group.schedule.recurrence && group.schedule.recurrence !== 'none'"
+            >
+              {{ group.schedule.recurrence | titlecase }}
+            </span>
+          </div>
+
+          <a class="project-link" *ngIf="group.schedule.project">
+            {{ group.schedule.project }}
+          </a>
+        </div>
+
+        <!-- EMPLOYEES -->
+        <div class="assigned-label">
+          Assigned Employees ({{ group.employees.length }}):
+        </div>
+
+        <div class="employee-row" *ngFor="let emp of group.employees">
+          <div class="emp-info">
+            <span class="emp-name">{{ emp.name }}</span>
+            <span class="emp-time">Expected: {{ group.shift.startTime }} – {{ group.shift.endTime }}</span>
+          </div>
+          <span class="status-badge status--scheduled">Scheduled</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div *ngIf="viewMode === 'table'" class="table-view">
+  <div class="table-controls">
+    <input 
+    type="date" 
+    [value]="selectedDate"
+    (change)="onTableDateChange($event)" 
+    class="date-picker"
+  />
+
+  </div>
+
+  <div class="day-detail-header">
+    <span class="day-label">Shifts for {{ selectedDateLabel }}</span>
+  </div>
+
+  <table class="shift-table" *ngIf="dayShiftGroups.length > 0">
+    <thead>
+      <tr>
+        <th>Shift Name</th>
+        <th>Project</th>
+        <th>Employee</th>
+        <th>Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <!--<tbody>
+      <ng-container *ngFor="let group of dayShiftGroups">
+        <tr *ngFor="let emp of group.employees">
+          <td>{{ group.shift.name }}</td>
+          <td>{{ group.schedule.project || '-' }}</td>
+          <td>{{ emp.name }}</td>
+          <td>{{ group.shift.startTime }} – {{ group.shift.endTime }}</td>
+          <td>
+            <span class="status-badge status--scheduled">
+              Scheduled
+            </span>
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>-->
+    <tbody>
+    <tr *ngFor="let row of paginatedData">
+      <td>{{ row.shiftName }}</td>
+      <td>{{ row.project || '-' }}</td>
+      <td>{{ row.employee }}</td>
+      <td>{{ row.time }}</td>
+      <td>
+        <span class="status-badge status--scheduled">
+          {{ row.status }}
+        </span>
+      </td>
+    </tr>
+  </tbody>
+  </table>
+    <div class="pagination" *ngIf="totalPages > 1">
+    <button (click)="prevPage()" [disabled]="currentPage === 1">
+      ‹ Prev
+    </button>
+
+    <span>Page {{ currentPage }} of {{ totalPages }}</span>
+
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages">
+      Next ›
+    </button>
+  </div>
+
+  <div class="empty-day" *ngIf="dayShiftGroups.length === 0">
+    No shifts scheduled for this day.
+  </div>
+
+</div>
+ 
+  <!-- ASSIGNMENT MODAL -->
+  <app-shift-assignment
+    *ngIf="showAssignment"
+    (closeModal)="closeAssignment()">
+  </app-shift-assignment>
+
+</div>

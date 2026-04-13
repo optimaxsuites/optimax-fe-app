@@ -1,0 +1,41 @@
+/* Target the ng-select container */
+.ng-select.ng-select-single .ng-select-container {
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* Focus state */
+.ng-select.ng-select-focused .ng-select-container {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+/* Dropdown panel */
+.ng-dropdown-panel {
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Options in dropdown */
+.ng-option {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Selected value */
+.ng-value {
+  font-size: 0.875rem;
+}
+
+/* Placeholder */
+.ng-placeholder {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}

@@ -1,0 +1,282 @@
+<div class="financial-statement-page">
+  <section class="hero-panel">
+    <div>
+      <p class="eyebrow">Reports</p>
+      <h1>Financial Statement Workspace</h1>
+      <p class="subtitle">Filter statements by month, quarter, or year and review saved balance sheet snapshots without mixing report types.</p>
+    </div>
+
+    <div class="filter-panel">
+      <label>
+        <span>Period Type</span>
+        <select [(ngModel)]="selectedPeriodType" (change)="onFilterChange()">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Year</span>
+        <select [(ngModel)]="selectedYear" (change)="onFilterChange()">
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="selectedPeriodType === 'quarterly'">
+        <span>Quarter</span>
+        <select [(ngModel)]="selectedQuarter" (change)="onFilterChange()">
+          <option *ngFor="let quarter of quarters" [value]="quarter">{{ quarter }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="selectedPeriodType === 'monthly'">
+        <span>Month</span>
+        <select [(ngModel)]="selectedMonth" (change)="onFilterChange()">
+          <option *ngFor="let month of months" [value]="month.value">{{ month.label }}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="status-panel error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </section>
+
+  <section class="loading-panel" *ngIf="loading">
+    <h2>Loading reports</h2>
+    <p>Preparing the financial statement view for {{ periodLabel }}.</p>
+  </section>
+
+  <ng-container *ngIf="!loading">
+    <section class="report-card-grid">
+      <button
+        type="button"
+        class="report-card"
+        *ngFor="let card of reportCards"
+        [class.active]="focusedReport === card.key"
+        [class.empty]="card.state === 'empty'"
+        (click)="changeFocusedReport(card.key)"
+      >
+        <span class="report-card__title">{{ card.title }}</span>
+        <strong class="report-card__value">{{ card.primaryValue }}</strong>
+        <span class="report-card__subtitle">{{ card.subtitle }}</span>
+      </button>
+    </section>
+
+    <section class="content-panel" *ngIf="focusedReport === 'financial-statement'">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Current Period</p>
+          <h2>Income Statement and Cash Flow</h2>
+          <p class="subtitle">{{ periodLabel }}</p>
+        </div>
+      </div>
+
+      <div class="empty-panel" *ngIf="!hasFinancialStatementData">
+        No data available for this period.
+      </div>
+
+      <ng-container *ngIf="hasFinancialStatementData && incomeStatementReport && cashFlowReport">
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <span>Income</span>
+            <strong>{{ fmt.formatCurrency(totalIncomeAmount) }}</strong>
+          </article>
+          <article class="kpi-card">
+            <span>Expenses</span>
+            <strong>{{ fmt.formatCurrency(totalExpenseAmount) }}</strong>
+          </article>
+          <article class="kpi-card positive">
+            <span>Net Profit</span>
+            <strong>{{ fmt.formatCurrency(netProfitAmount) }}</strong>
+          </article>
+          <article class="kpi-card">
+            <span>Net Cash Flow</span>
+            <strong>{{ fmt.formatCurrency(netCashFlowAmount) }}</strong>
+          </article>
+        </div>
+
+        <div class="table-grid">
+          <article class="table-card">
+            <header>
+              <h3>Income Statement</h3>
+            </header>
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th class="number">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of incomeStatementRows">
+                  <td>{{ item.label }}</td>
+                  <td class="number">{{ fmt.formatCurrency(item.amount) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Net Profit</td>
+                  <td class="number">{{ fmt.formatCurrency(netProfitAmount) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </article>
+
+          <article class="table-card">
+            <header>
+              <h3>Cash Flow Summary</h3>
+            </header>
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th class="number">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of cashFlowRows">
+                  <td>{{ item.description }}</td>
+                  <td class="number">{{ fmt.formatCurrency(item.amount) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Net Cash Flow</td>
+                  <td class="number">{{ fmt.formatCurrency(netCashFlowAmount) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </article>
+        </div>
+      </ng-container>
+    </section>
+
+    <section class="content-panel" *ngIf="focusedReport === 'balance-sheet'">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Saved Reports</p>
+          <h2>Monthly Balance Sheet Snapshots</h2>
+          <p class="subtitle">Only saved monthly snapshots from the Balance Sheet module appear here.</p>
+        </div>
+      </div>
+
+      <div class="empty-panel" *ngIf="selectedPeriodType !== 'monthly'">
+        Switch the period type to monthly to review saved monthly balance sheet snapshots.
+      </div>
+
+      <div class="empty-panel" *ngIf="selectedPeriodType === 'monthly' && !filteredMonthlyBalanceSheets.length">
+        No data available for this period.
+      </div>
+
+      <div class="snapshot-grid" *ngIf="selectedPeriodType === 'monthly' && filteredMonthlyBalanceSheets.length">
+        <article class="snapshot-card" *ngFor="let snapshot of filteredMonthlyBalanceSheets">
+          <div class="snapshot-head">
+            <strong>{{ snapshot.periodLabel }}</strong>
+            <span>{{ snapshot.savedAt | date:'medium' }}</span>
+          </div>
+          <div class="snapshot-metrics">
+            <span>Total Assets</span>
+            <strong>{{ fmt.formatCurrency(snapshot.report.totalAssets) }}</strong>
+          </div>
+          <div class="snapshot-metrics">
+            <span>Total Liabilities</span>
+            <strong>{{ fmt.formatCurrency(snapshot.report.totalLiabilities) }}</strong>
+          </div>
+          <div class="snapshot-metrics">
+            <span>Total Equity</span>
+            <strong>{{ fmt.formatCurrency(snapshot.report.totalEquity) }}</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-panel" *ngIf="focusedReport === 'annual-tax'">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Yearly Aggregation</p>
+          <h2>Annual Tax Report</h2>
+          <p class="subtitle">Grouped by year for {{ selectedYear }}.</p>
+        </div>
+      </div>
+
+      <div class="empty-panel" *ngIf="!annualTaxTotal">
+        No data available for this period.
+      </div>
+
+      <ng-container *ngIf="annualTaxTotal">
+        <div class="kpi-grid">
+          <article class="kpi-card warning">
+            <span>Total Tax Paid</span>
+            <strong>{{ fmt.formatCurrency(annualTaxTotal) }}</strong>
+          </article>
+        </div>
+
+        <article class="table-card">
+          <header>
+            <h3>Monthly Tax Aggregation</h3>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th class="number">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of annualTaxRows">
+                <td>{{ row.monthLabel }}</td>
+                <td class="number">{{ fmt.formatCurrency(row.amount) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Annual Total</td>
+                <td class="number">{{ fmt.formatCurrency(annualTaxTotal) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </article>
+      </ng-container>
+    </section>
+
+    <section class="content-panel" *ngIf="currentMetadata">
+      <div class="panel-header">
+        <!-- <div>
+          <p class="eyebrow">Report Details</p>
+          <h2>Metadata and Source Transactions</h2>
+          <p class="subtitle">DTO-derived context for the currently selected financial statement period.</p>
+        </div> -->
+      </div>
+
+      <app-report-context [context]="currentMetadata"></app-report-context>
+
+      <article class="table-card">
+        <header>
+          <h3>Included Transactions</h3>
+        </header>
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Module</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let transaction of metadataTransactions">
+              <td>{{ transaction.reference }}</td>
+              <td>{{ transaction.sourceModule }}</td>
+              <td>{{ transaction.reviewStatus }}</td>
+              <td>{{ transaction.transactionDate | date:'mediumDate' }}</td>
+              <td>{{ transaction.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+  </ng-container>
+</div>

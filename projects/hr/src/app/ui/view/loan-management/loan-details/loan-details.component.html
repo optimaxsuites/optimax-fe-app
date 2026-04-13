@@ -1,0 +1,549 @@
+<div class="loan-details-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+  <div *ngIf="!isLoading && loan" class="loan-content">
+    <!-- Header -->
+    <div class="loan-header lm-header-card">
+      <app-back-button (click)="goBack()"></app-back-button>
+      <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan Application Details</h1>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="loan-main-content">
+      <!-- Left Column - Loan Info -->
+      <div class="loan-info-section">
+        <!-- Employee Info -->
+        <div class="info-card">
+          <h3>Employee Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Employee Name:</label>
+              <span>{{ loan.fullName }}</span>
+            </div>
+            <div class="info-item">
+              <label>Employee ID:</label>
+              <span>{{ loan.employeeId }}</span>
+            </div>
+            <div class="info-item">
+              <label>Department:</label>
+              <span>{{ loan.department }}</span>
+            </div>
+            <div class="info-item">
+              <label>Date Submitted:</label>
+              <span>{{ formatDate(loan.requestDate) }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Loan Request Details -->
+        <div class="info-card">
+          <h3>Loan Request Details</h3>
+          <div class="timeline-notes" *ngIf="getEmployeeInterestRejectionComment()">
+            <span class="notes-label">Employee rejection comment:</span>
+            {{ getEmployeeInterestRejectionComment() }}
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Loan Amount:</label>
+              <span class="amount">{{ formatCurrency(loan.amount) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Purpose:</label>
+              <span>{{ getPurposeDisplay(loan.purpose) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Repayment Period:</label>
+              <span>{{ loan.repaymentTime }} months</span>
+            </div>
+            <div class="info-item">
+              <label>Monthly Repayment:</label>
+              <span class="amount">{{ formatCurrency(loan.repaymentAmount) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Repayment Start Date:</label>
+              <span>{{ getDisplayedRepaymentStartDate(loan) }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label>Repayment Day:</label>
+              <span>{{ getDisplayedRepaymentDay(loan) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Interest Rate:</label>
+              <span>{{ loan.interestRate }}%</span>
+            </div>
+            <div class="info-item">
+              <label>Total Repayable:</label>
+              <span class="amount">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Current Balance:</label>
+              <span class="amount">{{ formatCurrency(loan.currentBalance) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Total Paid:</label>
+              <span class="amount">{{ formatCurrency(loan.totalPaid) }}</span>
+            </div>
+          </div>
+
+          <div class="documents-section">
+            <label>Supporting Documents:</label>
+            <ul class="documents-list" *ngIf="loan.supportingDocuments && loan.supportingDocuments.length > 0; else noDocuments">
+              <li *ngFor="let document of loan.supportingDocuments" class="document-item">
+                <span class="document-name">{{ document.name }}</span>
+                <span class="document-meta">{{ document.uploadedAt | date:'mediumDate' }}</span>
+              </li>
+            </ul>
+            <ng-template #noDocuments>
+              <p class="documents-empty">No supporting documents uploaded.</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- NEW: Mode of Payment Section -->
+        <div class="info-card payment-mode-card">
+          <h3>Mode of Payment</h3>
+          <div class="payment-mode-details">
+            <div class="payment-mode-badge" [ngClass]="{'monthly': loan.modeOfPayment === 'MONTHLY', 'one-off': loan.modeOfPayment === 'ONE_OFF'}">
+              <span class="payment-mode-icon">
+                <i *ngIf="loan.modeOfPayment === 'MONTHLY'" class="fas fa-calendar-alt"></i>
+                <i *ngIf="loan.modeOfPayment === 'ONE_OFF'" class="fas fa-money-bill-wave"></i>
+              </span>
+              <span class="payment-mode-text">{{ getPaymentModeDisplay(loan.modeOfPayment) }}</span>
+            </div>
+            
+            <div class="payment-mode-info" *ngIf="loan.modeOfPayment === 'MONTHLY'">
+              <div class="info-row">
+                <span class="info-label">Monthly Installment:</span>
+                <span class="info-value">{{ formatCurrency(loan.repaymentAmount) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Number of Payments:</span>
+                <span class="info-value">{{ loan.repaymentTime }} months</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Repayment Start Date:</span>
+                <span class="info-value">{{ getDisplayedRepaymentStartDate(loan) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Due:</span>
+                <span class="info-value">{{ getDisplayedRepaymentDay(loan) }}</span>
+              </div>
+            </div>
+            
+            <div class="payment-mode-info" *ngIf="loan.modeOfPayment === 'ONE_OFF'">
+              <div class="info-row">
+                <span class="info-label">Total Amount Due:</span>
+                <span class="info-value">{{ formatCurrency(loan.amount) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Type:</span>
+                <span class="info-value">Single lump sum</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Due Date:</span>
+                <span class="info-value">Within 30 days of approval</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Status Tracking Section -->
+        <div class="info-card status-tracking-card">
+          <h3>Status Tracking</h3>
+          
+          <!-- Current Status -->
+          <div class="current-status-section">
+            <label>Current Status:</label>
+            <span class="current-status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
+              {{ getStatusLabel(loan.status) }}
+            </span>
+          </div>
+          
+          <!-- Status History -->
+          <div class="status-history">
+            <h4>Status History</h4>
+            <div class="status-timeline">
+              <div *ngFor="let history of statusTimeline; let i = index" class="timeline-item">
+                <div class="timeline-dot" [style.background-color]="getStatusColor(history.status)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="status-badge" [ngClass]="'status-' + history.status.toLowerCase()">{{ getStatusLabel(history.status) }}</span>
+                      <span class="timeline-date">{{ formatDate(history.changedAt) }}</span>
+                  </div>
+                  <div *ngIf="history.changedBy" class="changed-by">
+                    Changed by: {{ history.changedBy }}
+                  </div>
+                  <div *ngIf="history.notes" class="timeline-notes">
+                    <span class="notes-label">Comment:</span>
+                    {{ history.notes }}
+                  </div>
+                </div>
+                <div class="timeline-line" *ngIf="i < statusTimeline.length - 1"></div>
+              </div>
+              <div *ngIf="statusTimeline.length === 0" class="no-history">
+                No status history available.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Column - Actions & Summary -->
+      <div class="loan-actions-section">
+        <!-- Quick Actions -->
+        <div class="action-card">
+          <h3>Quick Actions</h3>
+          <div class="action-buttons-vertical">
+            <button type="button" class="view-history-btn" (click)="viewEmployeeHistory()" title="See History" aria-label="See History">
+              <i class="fas fa-history"></i>
+            </button>
+            <button type="button" *ngIf="loan.status === 'PENDING' || loan.status === 'AWAITING_INTEREST_ACCEPTANCE'" class="approve-btn" (click)="approveLoan()">
+              <i class="fas fa-check-circle"></i> {{ loan.status === 'AWAITING_INTEREST_ACCEPTANCE' ? 'Update Interest Rate' : 'Approve' }}
+            </button>
+            <button type="button" *ngIf="loan.status === 'PENDING' || loan.status === 'AWAITING_INTEREST_ACCEPTANCE'" class="reject-btn" (click)="rejectLoan()">
+              <i class="fas fa-ban"></i> Reject
+            </button>
+            <button type="button" *ngIf="canPauseLoan()" class="pause-btn" (click)="openOverrideModal('PAUSED')">
+              <i class="fas fa-pause-circle"></i> Pause Loan
+            </button>
+            <button type="button" *ngIf="canRestoreActiveLoan()" class="approve-btn" (click)="openOverrideModal('ACTIVE')">
+              <i class="fas fa-rotate-left"></i> Restore Active
+            </button>
+          </div>
+        </div>
+        
+        <!-- Status Summary -->
+        <div class="summary-card">
+          <h3>Lifecycle Summary</h3>
+          <div class="summary-grid">
+            <div class="summary-item" *ngFor="let field of lifecycleStageFields">
+              <span class="label">{{ field.label }}:</span>
+              <span class="value">{{ field.value }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-card" [ngClass]="{ 'disbursed-loan-card': hasBeenDisbursed() }">
+          <h3>{{ hasBeenDisbursed() ? 'Repayment Snapshot' : 'Repayment Progress' }}</h3>
+          <div class="repayment-snapshot-band" *ngIf="hasBeenDisbursed()">
+            <div class="snapshot-chip emphasis">
+              <span>State</span>
+              <strong>{{ getRepaymentStatusTitle() }}</strong>
+            </div>
+            <div class="snapshot-chip">
+              <span>Installments</span>
+              <strong>{{ getPaidInstallmentsCount() }}/{{ getTotalInstallmentsCount() || 0 }}</strong>
+            </div>
+            <div class="snapshot-chip">
+              <span>Outstanding</span>
+              <strong>{{ formatCurrency(getResolvedOutstandingBalance()) }}</strong>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-header">
+              <span>{{ hasBeenDisbursed() ? 'Repayment completion' : 'Amount Paid' }}</span>
+              <span>{{ getProgressPercentage().toFixed(1) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width]="getProgressPercentage() + '%'">
+                <span class="progress-caption" *ngIf="hasBeenDisbursed() && getProgressPercentage() > 18">
+                  {{ getPaidInstallmentsCount() }}/{{ getTotalInstallmentsCount() || 0 }} cleared
+                </span>
+              </div>
+            </div>
+            <p class="progress-note" *ngIf="hasBeenDisbursed()">
+              {{ getRepaymentStatusTitle() }}.
+              <span *ngIf="!hasRepaymentStarted()">No repayment has been recorded yet, so progress remains at 0%.</span>
+            </p>
+            <div class="progress-details">
+              <div class="progress-item">
+                <span class="label">Loan Amount:</span>
+                <span class="value">{{ formatCurrency(loan.amount) }}</span>
+              </div>
+              <div class="progress-item">
+                <span class="label">Amount Paid:</span>
+                <span class="value">{{ formatCurrency(getResolvedAmountPaid()) }}</span>
+              </div>
+              <div class="progress-item" *ngIf="hasBeenDisbursed()">
+                <span class="label">Total Repayable:</span>
+                <span class="value">{{ formatCurrency(getTotalRepayableAmount()) }}</span>
+              </div>
+              <div class="progress-item">
+                <span class="label">Balance:</span>
+                <span class="value">{{ formatCurrency(getResolvedOutstandingBalance()) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Comment Modal for Approval/Rejection -->
+  <div *ngIf="showCommentModal" class="loan-status-modal-shell" (click)="closeCommentModal()">
+    <div class="loan-status-dialog" (click)="$event.stopPropagation()">
+      <div class="loan-status-dialog__header">
+        <h2>{{ selectedAction === 'APPROVED' ? 'Approve' : 'Reject' }} Loan Application</h2>
+        <button type="button" class="close-btn" (click)="closeCommentModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="loan-status-dialog__body">
+        <div class="loan-summary">
+          <div class="summary-row">
+            <span>Employee:</span>
+            <strong>{{ loan?.fullName }} ({{ loan?.employeeId }})</strong>
+          </div>
+          <div class="summary-row">
+            <span>Loan Amount:</span>
+            <strong class="amount">{{ formatCurrency(loan?.amount || 0) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Purpose:</span>
+            <strong>{{ loan?.purpose }}</strong>
+          </div>
+        </div>
+
+        <div class="comment-section">
+          <label for="interestRate" class="comment-label">
+            Interest Rate (%)
+            <span class="required" *ngIf="selectedAction === 'APPROVED'">*</span>
+          </label>
+
+          <div class="interest-rate-hint" *ngIf="selectedAction === 'APPROVED'">
+            Auto-calculated from repayment mode and tenure. Suggested rate: <strong>{{ suggestedInterestRate }}%</strong>
+          </div>
+
+          <input
+            id="interestRate"
+            type="number"
+            [formControl]="interestRateControl"
+            min="0"
+            step="0.1"
+            placeholder="Auto-calculated interest rate"
+            (input)="onInterestRateInput()"
+            [class.error]="interestRateControl.invalid && interestRateControl.touched"
+          >
+
+          <div class="error-message" *ngIf="interestRateControl.invalid && interestRateControl.touched">
+            <small *ngIf="interestRateControl.errors?.['required']">Interest rate is required for approval</small>
+            <small *ngIf="interestRateControl.errors?.['min']">Interest rate cannot be negative</small>
+            <small *ngIf="interestRateControl.errors?.['max']">Interest rate cannot exceed 100%</small>
+          </div>
+
+          <div class="approval-preview" *ngIf="selectedAction === 'APPROVED' && !interestRateControl.invalid">
+            <div class="preview-row">
+              <span>Estimated Installment:</span>
+              <strong>{{ formatCurrency(approvalPreview.repaymentAmount) }}</strong>
+            </div>
+            <div class="preview-row">
+              <span>Total Repayable:</span>
+              <strong>{{ formatCurrency(approvalPreview.totalRepayment) }}</strong>
+            </div>
+            <div class="preview-row interest">
+              <span>Total Interest:</span>
+              <strong>{{ formatCurrency(approvalPreview.totalInterest) }}</strong>
+            </div>
+          </div>
+
+          <div class="preview-row" *ngIf="selectedAction === 'APPROVED'">
+            <span>Employee Repayment Date:</span>
+            <strong>{{ getDisplayedRepaymentStartDate(loan) }}</strong>
+          </div>
+
+          <label for="lateFeePercentage" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+            Late Fee Percentage
+            <span class="required">*</span>
+          </label>
+
+          <input
+            *ngIf="selectedAction === 'APPROVED'"
+            id="lateFeePercentage"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            [formControl]="lateFeePercentageControl"
+            [class.error]="lateFeePercentageControl.invalid && lateFeePercentageControl.touched"
+          >
+
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> Charged once per overdue installment after the grace period. Example: 5 means 5% of the unpaid installment amount.
+          </div>
+
+          <div class="error-message" *ngIf="selectedAction === 'APPROVED' && lateFeePercentageControl.invalid && lateFeePercentageControl.touched">
+            <small *ngIf="lateFeePercentageControl.errors?.['required']">Late fee percentage is required</small>
+            <small *ngIf="lateFeePercentageControl.errors?.['min'] || lateFeePercentageControl.errors?.['max']">Late fee percentage must be between 0 and 100</small>
+          </div>
+
+          <label for="lateFeeGracePeriodDays" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+            Late Fee Grace Period (Days)
+            <span class="required">*</span>
+          </label>
+
+          <input
+            *ngIf="selectedAction === 'APPROVED'"
+            id="lateFeeGracePeriodDays"
+            type="number"
+            min="0"
+            max="365"
+            step="1"
+            [formControl]="lateFeeGracePeriodDaysControl"
+            [class.error]="lateFeeGracePeriodDaysControl.invalid && lateFeeGracePeriodDaysControl.touched"
+          >
+
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> Number of days after the due date before the late fee is applied to an overdue installment.
+          </div>
+
+          <div class="error-message" *ngIf="selectedAction === 'APPROVED' && lateFeeGracePeriodDaysControl.invalid && lateFeeGracePeriodDaysControl.touched">
+            <small *ngIf="lateFeeGracePeriodDaysControl.errors?.['required']">Grace period days is required</small>
+            <small *ngIf="lateFeeGracePeriodDaysControl.errors?.['min'] || lateFeeGracePeriodDaysControl.errors?.['max']">Grace period days must be between 0 and 365</small>
+          </div>
+
+          <label for="repaymentDay" class="comment-label" *ngIf="selectedAction === 'APPROVED'">
+            Repayment Day Of Month
+            <span class="required">*</span>
+          </label>
+
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> {{ getRepaymentDaySuggestion() }}
+          </div>
+
+          <input
+            *ngIf="selectedAction === 'APPROVED'"
+            id="repaymentDay"
+            type="number"
+            min="1"
+            max="31"
+            [formControl]="repaymentDayControl"
+            [class.error]="repaymentDayControl.invalid && repaymentDayControl.touched"
+          >
+
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> The employee-set repayment date stays fixed. Admin can only set the day of repayment, for example 15 for the 15th of each month.
+          </div>
+
+          <div class="error-message" *ngIf="selectedAction === 'APPROVED' && repaymentDayControl.invalid && repaymentDayControl.touched">
+            <small *ngIf="repaymentDayControl.errors?.['required']">Repayment day is required</small>
+            <small *ngIf="repaymentDayControl.errors?.['min'] || repaymentDayControl.errors?.['max']">Repayment day must be between 1 and 31</small>
+          </div>
+
+          <label for="comment" class="comment-label">
+            {{ selectedAction === 'REJECTED' ? 'Reason for Rejection' : 'Additional Comments (Optional)' }}
+            <span class="required" *ngIf="selectedAction === 'REJECTED'">*</span>
+          </label>
+          
+          <textarea
+            id="comment"
+            [formControl]="commentControl"
+            rows="4"
+            placeholder="{{ selectedAction === 'REJECTED' ? 'Please provide a reason for rejecting this application...' : 'Any additional notes or comments (optional)...' }}"
+            [class.error]="commentControl.invalid && commentControl.touched"
+          ></textarea>
+          
+          <div class="error-message" *ngIf="commentControl.invalid && commentControl.touched && selectedAction === 'REJECTED'">
+            <small>Please provide a reason for rejection</small>
+          </div>
+          
+          <div class="comment-hint" *ngIf="selectedAction === 'APPROVED'">
+            <i class="fas fa-info-circle"></i> Comments are optional for approval but recommended for record keeping
+          </div>
+
+          <div class="inline-status-actions">
+            <button type="button" class="cancel-btn" (click)="closeCommentModal()">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="submit-btn"
+              [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
+              (click)="submitStatusChange()"
+              [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && (interestRateControl.invalid || lateFeePercentageControl.invalid || lateFeeGracePeriodDaysControl.invalid || repaymentDayControl.invalid))">
+              <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
+              {{ selectedAction === 'APPROVED' ? 'Approve Loan Application' : 'Reject' }}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="loan-status-dialog__footer">
+        <button type="button" class="cancel-btn" (click)="closeCommentModal()">
+          Cancel
+        </button>
+        <button 
+          type="button"
+          class="submit-btn" 
+          [ngClass]="{'approve': selectedAction === 'APPROVED', 'reject': selectedAction === 'REJECTED'}"
+          (click)="submitStatusChange()"
+          [disabled]="(selectedAction === 'REJECTED' && commentForm.invalid) || (selectedAction === 'APPROVED' && (interestRateControl.invalid || lateFeePercentageControl.invalid || lateFeeGracePeriodDaysControl.invalid || repaymentDayControl.invalid))">
+          <i class="fas" [ngClass]="{'fa-check-circle': selectedAction === 'APPROVED', 'fa-ban': selectedAction === 'REJECTED'}"></i>
+          {{ selectedAction === 'APPROVED' ? 'Approve Loan Application' : 'Reject' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showOverrideModal" class="loan-status-modal-shell" (click)="closeOverrideModal()">
+    <div class="loan-status-dialog" (click)="$event.stopPropagation()">
+      <div class="loan-status-dialog__header">
+        <h2>{{ getOverrideModalTitle() }}</h2>
+        <button type="button" class="close-btn" (click)="closeOverrideModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="loan-status-dialog__body">
+        <div class="loan-summary">
+          <div class="summary-row">
+            <span>Employee:</span>
+            <strong>{{ loan?.fullName }} ({{ loan?.employeeId }})</strong>
+          </div>
+          <div class="summary-row">
+            <span>Current Status:</span>
+            <strong>{{ loan ? getStatusLabel(loan.status) : 'N/A' }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>New Status:</span>
+            <strong>{{ getStatusLabel(overrideTargetStatus) }}</strong>
+          </div>
+        </div>
+
+        <div class="comment-section">
+          <div class="comment-hint">
+            <i class="fas fa-shield-halved"></i> This action is audited and will be written to the loan status history.
+          </div>
+
+          <label for="overrideReason" class="comment-label">
+            Override Reason
+            <span class="required">*</span>
+          </label>
+          <textarea
+            id="overrideReason"
+            [(ngModel)]="overrideReason"
+            rows="4"
+            placeholder="Explain why this status override is required..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="loan-status-dialog__footer">
+        <button type="button" class="cancel-btn" (click)="closeOverrideModal()">
+          Cancel
+        </button>
+        <button type="button" class="submit-btn approve" (click)="submitOverrideStatusChange()" [disabled]="!overrideReason.trim()">
+          <i class="fas" [ngClass]="overrideTargetStatus === 'PAUSED' ? 'fa-pause-circle' : 'fa-rotate-left'"></i>
+          {{ getOverrideSubmitLabel() }}
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div *ngIf="!isLoading && !loan" class="not-found">
+    <h2>Loan Not Found</h2>
+    <p>The requested loan could not be found.</p>
+    <app-back-button (click)="goBack()"></app-back-button>
+  </div>
+</div>

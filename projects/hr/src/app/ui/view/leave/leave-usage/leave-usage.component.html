@@ -1,0 +1,668 @@
+<div class="gap-6 bg-white/90 my-3 rounded-2xl p-4 text-gray-800">
+  <div class="grid grid-cols-1 lg:grid-cols-3">
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Top Stats -->
+      <button
+        (click)="openApplyLeaveModal()"
+        class="flex items-center gap-2 rounded-md bg-customBlue hover:bg-customBlueHover px-4 py-2 mb-2 text-xl font-medium text-white"
+      >
+        <span class="text-lg leading-none">+</span>
+        Apply Leave
+      </button>
+
+      <!-- Loading State for Stats -->
+      <div *ngIf="isLoadingStats" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          *ngFor="let i of [1, 2, 3]"
+          class="bg-white rounded-lg p-6 border animate-pulse"
+        >
+          <div class="flex items-start space-x-3">
+            <div class="w-1 h-16 bg-gray-200 rounded-full"></div>
+            <div class="flex-1">
+              <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div class="h-10 bg-gray-200 rounded w-16"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actual Stats -->
+      <div
+        *ngIf="!isLoadingStats"
+        class="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        <div class="bg-white rounded-lg p-6 border">
+          <div class="flex items-start space-x-3">
+            <div class="w-1 h-16 bg-customBlue rounded-full"></div>
+            <div>
+              <h3 class="text-gray-500 text-sm">Total Allocated</h3>
+              <p class="text-customBlue text-4xl font-bold">
+                {{ getTotalAllocatedDays() }}
+                <span class="text-sm text-gray-500">day(s)</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg p-6 border">
+          <div class="flex items-start space-x-3">
+            <div class="w-1 h-16 bg-customBlue rounded-full"></div>
+            <div>
+              <h3 class="text-gray-500 text-sm">Leaves Used</h3>
+              <p class="text-customBlue text-4xl font-bold">
+                {{ getTotalUsedDays() }}
+                <span class="text-sm text-gray-500">day(s)</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg p-6 border">
+          <div class="flex items-start space-x-3">
+            <div class="w-1 h-16 bg-customBlue rounded-full"></div>
+            <div>
+              <h3 class="text-gray-500 text-sm">Leaves Left</h3>
+              <p class="text-customBlue text-4xl font-bold">
+                {{ getRemainingDays() }}
+                <span class="text-sm text-gray-500">day(s)</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State for Leave Cards -->
+      <div
+        *ngIf="isLoadingStats"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <div
+          *ngFor="let i of [1, 2, 3, 4]"
+          class="rounded-xl border border-gray-200 bg-white p-4 animate-pulse"
+        >
+          <div class="h-4 bg-gray-200 rounded w-20 mb-3"></div>
+          <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
+          <div class="h-2 bg-gray-200 rounded w-full mb-2"></div>
+          <div class="h-4 bg-gray-200 rounded w-24"></div>
+        </div>
+      </div>
+
+      <!-- Leave Cards from API -->
+      <div
+        *ngIf="!isLoadingStats"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <ng-container *ngFor="let leaveTypeCard of getLeaveTypeCards()">
+          <div
+            *ngIf="leaveTypeCard.isActive"
+            class="rounded-xl border border-gray-200 bg-white p-4"
+          >
+            <p class="text-sm uppercase text-gray-500">
+              {{ leaveTypeCard.typeName }}
+            </p>
+
+            <div class="mt-3 flex items-end gap-2">
+              <span class="text-3xl font-semibold">{{
+                leaveTypeCard.remainingDays
+              }}</span>
+              <span class="text-sm text-gray-500"
+                >/ {{ leaveTypeCard.allocatedDays }} days</span
+              >
+            </div>
+
+            <div class="mt-3 h-2 w-full rounded-full bg-gray-200">
+              <div
+                class="h-2 rounded-full bg-teal-500"
+                [style.width.%]="leaveTypeCard.usedPercentage"
+              ></div>
+            </div>
+
+            <p class="mt-2 text-sm text-gray-500">
+              {{ leaveTypeCard.daysUsed }} days used this year
+            </p>
+          </div>
+        </ng-container>
+
+        <!-- Empty State -->
+        <div
+          *ngIf="getLeaveTypeCards().length === 0"
+          class="col-span-full text-center py-8"
+        >
+          <p class="text-gray-500">No leave balances found</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="lg:col-span-1">
+      <div class="bg-white md:pl-8 max-w-3xl">
+        <full-calendar
+          class="h-full"
+          [options]="calendarOptions"
+        ></full-calendar>
+        <!-- Add tip below calendar -->
+        <div class="mt-3 p-3 border border-blue-200 rounded-lg bg-blue-50">
+          <p class="text-sm text-blue-800">
+          Click and drag on the calendar to select leave dates
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="flex w-full py-4 items-center justify-between gap-4 px-3">
+    <div class="flex gap-4 items-center w-1/2 table-item">
+      <div class="w-full">
+        <ng-select
+          [items]="leaveTypes"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by leave type"
+          [(ngModel)]="selectedLeaveType"
+          (ngModelChange)="filterBySelectedLeaveType()"
+        ></ng-select>
+      </div>
+      <div class="w-full">
+        <ng-select
+          [items]="statuses"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by status"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="filterBySelectedStatus()"
+        ></ng-select>
+      </div>
+    </div>
+    <div class="w-[70%] table-item">
+      <input
+        type="text"
+        placeholder="Search"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filterCandidates()"
+        class="editInput w-full h-[36px]"
+      />
+    </div>
+  </div>
+
+  <!-- Table skeleton -->
+  <div *ngIf="isLoadingRequests" class="px-3 pb-4">
+    <!-- Skeleton header -->
+    <div class="grid grid-cols-5 gap-4 mb-3 px-2">
+      <div
+        *ngFor="let i of [1, 2, 3, 4, 5]"
+        class="h-4 bg-gray-200 rounded animate-pulse"
+      ></div>
+    </div>
+    <!-- Skeleton rows -->
+    <div
+      *ngFor="let i of [1, 2, 3, 4, 5]"
+      class="grid grid-cols-5 gap-4 py-3 px-2 border-t border-gray-100"
+    >
+      <div class="h-4 bg-gray-100 rounded animate-pulse"></div>
+      <div class="h-4 bg-gray-100 rounded animate-pulse w-4/5"></div>
+      <div class="h-4 bg-gray-100 rounded animate-pulse w-3/5"></div>
+      <div class="h-4 bg-gray-100 rounded animate-pulse w-2/5"></div>
+      <div class="h-6 bg-gray-100 rounded-full animate-pulse w-20"></div>
+    </div>
+  </div>
+
+  <!-- Actual table -->
+  <app-table
+    *ngIf="!isLoadingRequests"
+    [columns]="requestColumns"
+    [rows]="myRequests"
+    [actions]="requestActions"
+    [paginator]="true"
+    [rowsPerPage]="10"
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
+    [emptyMessage]="'No request made yet'"
+    (actionClick)="handleRequestAction($event)"
+  ></app-table>
+</div>
+
+<app-modal *ngIf="openViewRequest" (close)="openViewRequest = false">
+  <!-- Header -->
+  <div style="position: relative; margin-bottom: 18px">
+    <!-- Close icon -->
+    <span
+      (click)="openViewRequest = false"
+      style="
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-size: 18px;
+        color: #9ca3af;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      "
+      onmouseover="
+        this.style.background = '#f3f4f6';
+        this.style.color = '#374151';
+      "
+      onmouseout="
+        this.style.background = 'transparent';
+        this.style.color = '#9ca3af';
+      "
+    >
+      &times;
+    </span>
+
+    <!-- Title -->
+    <p
+      style="font-size: 14px; font-weight: 500; color: #111827; margin: 0 0 3px"
+    >
+      Leave details
+    </p>
+
+    <!-- Subtitle -->
+    <p style="font-size: 11px; color: #9ca3af; margin: 0">
+      {{ requestInView?.leaveType?.name || "Leave" }}
+      &nbsp;·&nbsp;
+      {{ formatDate(requestInView?.startDate) }} –
+      {{ formatDate(requestInView?.endDate) }}
+    </p>
+  </div>
+
+  <div style="height: 1px; background: #f3f4f6; margin-bottom: 20px"></div>
+
+  <!-- Info grid -->
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px 12px;
+      margin-bottom: 20px;
+    "
+  >
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        From
+      </p>
+      <p style="font-size: 13px; color: #374151; font-weight: 500; margin: 0">
+        {{ formatDate(requestInView?.startDate) }}
+      </p>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        To
+      </p>
+      <p style="font-size: 13px; color: #374151; font-weight: 500; margin: 0">
+        {{ formatDate(requestInView?.endDate) }}
+      </p>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        Duration
+      </p>
+      <p style="font-size: 13px; color: #374151; font-weight: 500; margin: 0">
+        {{ requestInView?.totalDays }} day(s)
+      </p>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        Leave type
+      </p>
+      <p style="font-size: 13px; color: #374151; font-weight: 500; margin: 0">
+        {{ requestInView?.leaveType?.name || "—" }}
+      </p>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        Applied on
+      </p>
+      <p style="font-size: 13px; color: #374151; font-weight: 500; margin: 0">
+        {{ formatDateTime(requestInView?.createdAt) }}
+      </p>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 4px;
+          font-weight: 500;
+        "
+      >
+        Status
+      </p>
+      <span
+        [ngStyle]="{
+          display: 'inline-flex',
+          'align-items': 'center',
+          gap: '5px',
+          'font-size': '12px',
+          'font-weight': '500',
+          padding: '3px 9px',
+          'border-radius': '99px',
+          color:
+            requestInView?.status === 'APPROVED'
+              ? '#166534'
+              : requestInView?.status === 'REJECTED'
+                ? '#991b1b'
+                : '#92400e',
+          background:
+            requestInView?.status === 'APPROVED'
+              ? '#f0fdf4'
+              : requestInView?.status === 'REJECTED'
+                ? '#fef2f2'
+                : '#fffbeb',
+          border:
+            requestInView?.status === 'APPROVED'
+              ? '1px solid #bbf7d0'
+              : requestInView?.status === 'REJECTED'
+                ? '1px solid #fecaca'
+                : '1px solid #fde68a',
+        }"
+      >
+        <span
+          [ngStyle]="{
+            width: '5px',
+            height: '5px',
+            'border-radius': '50%',
+            'flex-shrink': '0',
+            background:
+              requestInView?.status === 'APPROVED'
+                ? '#16a34a'
+                : requestInView?.status === 'REJECTED'
+                  ? '#dc2626'
+                  : '#d97706',
+          }"
+        ></span>
+        {{ requestInView?.status | titlecase }}
+      </span>
+    </div>
+  </div>
+
+  <div style="height: 1px; background: #f3f4f6; margin-bottom: 20px"></div>
+
+  <!-- Reason + Review comment -->
+  <div
+    style="
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    "
+  >
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 8px;
+          font-weight: 500;
+        "
+      >
+        Reason
+      </p>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 11px 14px">
+        <p
+          style="font-size: 13px; margin: 0; line-height: 1.65"
+          [style.color]="requestInView?.leaveReason ? '#6b7280' : '#d1d5db'"
+          [style.font-style]="requestInView?.leaveReason ? 'normal' : 'italic'"
+        >
+          {{ requestInView?.leaveReason || "No reason provided" }}
+        </p>
+      </div>
+    </div>
+    <div>
+      <p
+        style="
+          font-size: 11px;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 0 0 8px;
+          font-weight: 500;
+        "
+      >
+        Review comment
+      </p>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 11px 14px">
+        <p
+          style="font-size: 13px; margin: 0; line-height: 1.65"
+          [style.color]="requestInView?.approvalComment ? '#6b7280' : '#d1d5db'"
+          [style.font-style]="
+            requestInView?.approvalComment ? 'normal' : 'italic'
+          "
+        >
+          {{ requestInView?.approvalComment || "No comment yet" }}
+        </p>
+      </div>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="openApplyLeave" (close)="openApplyLeave = false">
+  <h3 class="text-lg font-semibold mb-4">Apply for Leave</h3>
+
+  <!-- Warning banner when no planned leaves -->
+  <div
+    *ngIf="!hasPlannedLeaves"
+    class="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-4"
+  >
+    <div class="flex items-start gap-3">
+      <i class="pi pi-exclamation-triangle text-red-600 text-2xl"></i>
+      <div>
+        <p class="text-sm font-bold text-red-800">
+          No Approved Planned Leave Periods
+        </p>
+        <p class="text-xs text-red-700 mt-1">
+          You cannot apply for leave without an approved leave plan. Please go
+          to <strong>Leave Planning</strong> to create and submit your plan for
+          approval first.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info banner showing allowed dates -->
+  <div
+    *ngIf="hasPlannedLeaves"
+    class="bg-green-50 border-2 border-green-300 rounded-lg p-3 mb-4"
+  >
+    <p class="text-sm text-green-800 font-medium flex items-center gap-2">
+      <i class="pi pi-check-circle"></i>
+      You can only apply for leave within your approved planned periods
+    </p>
+    <p class="text-xs text-green-700 mt-1 ml-6">
+      <strong>Approved periods:</strong> {{ getFormattedAllowedRanges() }}
+    </p>
+  </div>
+
+  <div class="my-5 justify-between gap-6 flex w-full">
+    <div class="w-[58%] flex flex-col gap-4">
+      <div class="flex w-full items-center gap-4">
+        <div class="flex flex-col w-1/2">
+          <label for="from" class="mb-1 font-medium">From*</label>
+          <input
+            type="date"
+            name="from"
+            id="from"
+            class="editInput"
+            [(ngModel)]="fromDate"
+            [min]="getMinAllowedDate()"
+            [max]="getMaxAllowedDate()"
+            [disabled]="!hasPlannedLeaves"
+            (change)="onFromDateChange()"
+            (keydown)="preventTyping($event)"
+          />
+          <p *ngIf="!hasPlannedLeaves" class="text-xs text-red-600 mt-1">
+            Disabled - Create a leave plan first
+          </p>
+        </div>
+        <div class="flex flex-col w-1/2">
+          <label for="to" class="mb-1 font-medium">To*</label>
+          <input
+            type="date"
+            name="to"
+            id="to"
+            class="editInput"
+            [(ngModel)]="toDate"
+            [min]="fromDate || getMinAllowedDate()"
+            [max]="getMaxAllowedDate()"
+            [disabled]="!hasPlannedLeaves"
+            (keydown)="preventTyping($event)"
+          />
+          <p *ngIf="!hasPlannedLeaves" class="text-xs text-red-600 mt-1">
+            Disabled - Create a leave plan first
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label class="mb-1 font-medium">Comments</label>
+        <textarea
+          name="comment"
+          id="comment"
+          class="w-full rounded-xl outline-none bg-transparent p-3 border border-gray-300"
+          placeholder="Enter comment here"
+          rows="5"
+          [(ngModel)]="comment"
+          [disabled]="!hasPlannedLeaves"
+        ></textarea>
+      </div>
+    </div>
+    <div class="w-[38%] flex gap-4 flex-col">
+      <div>
+        <label class="mb-1 font-medium">Leave Type*</label>
+        <div class="w-full">
+          <ng-select
+            [items]="leaveTypes"
+            bindLabel="name"
+            [multiple]="false"
+            placeholder="Select leave type"
+            [(ngModel)]="selectedLeaveTypeObj"
+            [disabled]="!hasPlannedLeaves"
+            class="custom-ng-select h-full"
+          >
+            <ng-template ng-option-tmp let-item="item">
+              <div class="py-1">
+                <div class="font-medium">{{ item.name }}</div>
+                <div class="text-xs text-gray-500" *ngIf="item.description">
+                  {{ item.description }}
+                </div>
+              </div>
+            </ng-template>
+          </ng-select>
+        </div>
+      </div>
+
+      <div>
+        <p class="font-semibold text-gray-700 outline-none mb-2">Attachment</p>
+
+        <label
+          class="cursor-pointer text-white bg-customBlue py-3 px-4 rounded-xl hover:bg-customBlueHover block text-center"
+          [class.opacity-50]="!hasPlannedLeaves"
+          [class.cursor-not-allowed]="!hasPlannedLeaves"
+          [class.pointer-events-none]="!hasPlannedLeaves"
+          for="attachment"
+        >
+          <i class="pi pi-upload resume me-2 text-2xl"></i>
+          {{ docUploadStatus }}
+        </label>
+        <input
+          name="attachment"
+          id="attachment"
+          class="w-full rounded-xl outline-none bg-transparent p-3 border border-gray-300"
+          type="file"
+          [(ngModel)]="attachment"
+          (change)="onFileSelected($event)"
+          [disabled]="!hasPlannedLeaves"
+          hidden
+        />
+      </div>
+
+      <div class="flex items-center justify">
+        <button
+          class="font-bold bg-customBlue hover:bg-customBlueHover text-white rounded-xl p-3 min-w-full transition-all flex items-center justify-center gap-2"
+          [class.opacity-50]="!hasPlannedLeaves || isSubmitting"
+          [class.cursor-not-allowed]="!hasPlannedLeaves || isSubmitting"
+          [disabled]="!hasPlannedLeaves || isSubmitting"
+          (click)="assignLeave()"
+        >
+          <svg
+            *ngIf="isSubmitting"
+            class="animate-spin h-4 w-4 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            ></path>
+          </svg>
+          <span *ngIf="!hasPlannedLeaves">Apply (Locked)</span>
+          <span *ngIf="hasPlannedLeaves && !isSubmitting">Apply</span>
+          <span *ngIf="hasPlannedLeaves && isSubmitting">Submitting...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</app-modal>
+
+<p-toast position="top-right" key="tl" />

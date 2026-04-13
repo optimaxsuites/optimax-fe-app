@@ -1,0 +1,29 @@
+<div class="membership-applications">
+  <h2>Pending Cooperative Membership Applications</h2>
+  <div *ngIf="actionMessage" class="action-message">{{ actionMessage }}</div>
+  <app-table
+    *ngIf="pendingApplications.length > 0"
+    [columns]="[
+      { header: 'Applicant Name' },
+      { header: 'Employee ID' },
+      { header: 'Requested Tier' },
+      { header: 'Applied On' },
+      { header: 'Actions' }
+    ]"
+    [rows]="pendingApplications"
+    tableClass="pending-table">
+    <ng-template appTableBody let-application>
+      <td>{{ application.fullName }}</td>
+      <td>{{ application.employeeId }}</td>
+      <td>{{ application.requestedTier }}</td>
+      <td>{{ application.requestDate | date:'medium' }}</td>
+      <td>
+        <button class="approve-btn" (click)="approveApplication(application.id)">Approve</button>
+        <button class="reject-btn" (click)="rejectApplication(application.id)">Reject</button>
+      </td>
+    </ng-template>
+  </app-table>
+  <div *ngIf="pendingApplications.length === 0" class="empty-state">
+    No pending membership applications.
+  </div>
+</div>

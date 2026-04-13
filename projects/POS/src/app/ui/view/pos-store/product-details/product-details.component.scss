@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .product-container {
+    flex-direction: column;
+  }
+  
+  .product-image, .product-info {
+    width: 100% !important;
+  }
+}
+
+// Variant button animations
+.variant-btn {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+// Quantity selector styles
+.quantity-selector {
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+// Smooth transitions
+* {
+  transition: all 0.3s ease;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+:host {
+  display: block;
+}
+
+// Custom styles for the product details component
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+// Smooth transitions
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+// Custom scrollbar for thumbnails
+.grid.grid-cols-4.gap-2 {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+.grid.grid-cols-4.gap-2::-webkit-scrollbar {
+  height: 4px;
+}
+
+.grid.grid-cols-4.gap-2::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.grid.grid-cols-4.gap-2::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 2px;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .grid.grid-cols-1.lg\:grid-cols-2 {
+    gap: 1.5rem;
+  }
+  
+  .p-6.md\:p-8 {
+    padding: 1rem;
+  }
+}
+
+// Animation for skeleton loader
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

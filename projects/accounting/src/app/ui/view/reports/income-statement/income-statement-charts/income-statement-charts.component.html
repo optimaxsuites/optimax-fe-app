@@ -1,0 +1,45 @@
+<div class="charts-container">
+  <div class="chart-card">
+    <div class="chart-card__header">
+      <h3>Revenue vs Expenses</h3>
+    </div>
+    <div *ngIf="revenueChartOptions" class="chart-wrapper">
+      <apx-chart
+        [series]="revenueChartOptions['series']"
+        [chart]="revenueChartOptions['chart']"
+        [xaxis]="revenueChartOptions['xaxis']"
+        [yaxis]="revenueChartOptions['yaxis']"
+        [stroke]="revenueChartOptions['stroke']"
+        [tooltip]="revenueChartOptions['tooltip']"
+        [dataLabels]="revenueChartOptions['dataLabels']"
+        [legend]="revenueChartOptions['legend']"
+        [title]="revenueChartOptions['title']"
+        [colors]="revenueChartOptions['colors']"
+        [responsive]="revenueChartOptions['responsive']"
+        [theme]="revenueChartOptions['theme']">
+      </apx-chart>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card__header">
+      <h3>Expense Breakdown</h3>
+    </div>
+    <div *ngIf="expenseChartOptions" class="chart-wrapper">
+      <apx-chart
+        [series]="expenseChartOptions['series']"
+        [chart]="expenseChartOptions['chart']"
+        [labels]="expenseChartOptions['labels']"
+        [plotOptions]="expenseChartOptions['plotOptions']"
+        [fill]="expenseChartOptions['fill']"
+        [legend]="expenseChartOptions['legend']"
+        [title]="expenseChartOptions['title']"
+        [subtitle]="expenseChartOptions['subtitle']"
+        [colors]="expenseChartOptions['colors']"
+        [responsive]="expenseChartOptions['responsive']"
+        [dataLabels]="expenseChartOptions['dataLabels']"
+        [tooltip]="expenseChartOptions['tooltip']">
+      </apx-chart>
+    </div>
+  </div>
+</div>

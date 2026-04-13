@@ -1,0 +1,48 @@
+<div *ngIf="onboardingStatus == 'inProgress'" class="flex justify-center items-center h-[80vh]">
+    <div class="flex flex-col gap-4 justify-center items-center h-full text-customBlue">
+        <i class="fa-solid fa-lock text-5xl"></i>
+        <p class="text-3xl font-bold text-center text-customBlue">Employee has not completed their onboarding process, click <span routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j" class="text-customGreen font-bold cursor-pointer">here</span> to continue the process</p>
+
+    </div>
+</div>
+<div *ngIf="onboardingStatus == 'completed'" class="grid grid-cols-2 gap-5 py-3">
+
+    <div *ngFor="let kin of employeeInView.nextOfKin" class="bg-white shadow-sm rounded-xl">
+        <p class="text-gray-50 font-semibold text-lg text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Next of Kin</p>
+
+        <div class="px-5 py-3">
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Full Name:</span> {{ kin.fullName }}</p>
+        
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Relationship:</span> {{ kin.relationship }}</p>
+            
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">DOB:</span> {{ kin.DOB | date:'yyyy-MM-dd' }}</p>
+            
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Email:</span> {{ kin.email }}</p>
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Phone:</span> {{ kin.phone }}</p>
+            
+            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Address:</span> {{ kin.address }}</p>
+        </div>
+       
+      </div>
+
+
+
+      
+      <div  class="bg-white shadow-sm rounded-xl">
+        <p class="text-gray-50 font-semibold text-lg text-center py-2 bg-customBlue w-52 rounded-tl-xl rounded-br-xl">Emergency Contact(s)</p>
+        <div *ngIf="emergencyContacts.length > 0; else noEmergencyContact" class="grid grid-cols-2">
+            <div *ngFor="let contact of emergencyContacts" class="px-5 py-3">
+                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Full Name:</span> {{ contact.fullName }}</p>
+                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Relationship:</span> {{ contact.relationship }}</p>            
+                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Email:</span> {{ contact.email }}</p>
+                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Phone:</span> {{ contact.phone }}</p>
+                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Address:</span> {{ contact.address }}</p>
+            </div>
+         </div>
+
+        <ng-template #noEmergencyContact>
+            <p class="px-5 py-3 ml-1 font-normal text-customBlue">No emergency contact on file.</p>
+       </ng-template>
+       
+      </div>
+</div>

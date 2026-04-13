@@ -1,0 +1,78 @@
+<div class="join-cooperative-group-modal">
+  <div class="intro-panel">
+    <div>
+      <span class="eyebrow">Group Access</span>
+      <h3>Choose a cooperative group to join</h3>
+      <p>Pick from active groups that are still open to you. Each option shows the contribution cadence and borrowing rules before you apply.</p>
+    </div>
+    <button type="button" class="close-btn" (click)="onClose()" aria-label="Close join group modal">&times;</button>
+  </div>
+
+  <div class="group-list" *ngIf="availableGroups.length > 0; else emptyState">
+    <article class="group-card" *ngFor="let group of availableGroups">
+      <div class="group-card-top">
+        <div class="group-identity">
+          <span class="group-badge">{{ group.name | slice:0:1 }}</span>
+          <div>
+            <h4>{{ group.name }}</h4>
+            <p>{{ group.description }}</p>
+          </div>
+        </div>
+
+        <span class="eligibility-pill" [class.open]="isEligible(group.id.toString())">
+          {{ isEligible(group.id.toString()) ? 'Open for application' : 'Not eligible' }}
+        </span>
+      </div>
+
+      <div class="group-metrics">
+        <div>
+          <span>Monthly contribution</span>
+          <strong>{{ formatCurrency(group.monthlyContributionAmount) }}</strong>
+        </div>
+        <div>
+          <span>Borrowing cap</span>
+          <strong>{{ group.maxBorrowingPercentage }}%</strong>
+        </div>
+        <div>
+          <span>Tenure requirement</span>
+          <strong>{{ group.minMemberTenureMonths }} month(s)</strong>
+        </div>
+        <div>
+          <span>Loan range</span>
+          <strong>{{ formatCurrency(group.minAmount) }} - {{ formatCurrency(group.maxAmount) }}</strong>
+        </div>
+      </div>
+
+      <div class="group-card-footer">
+        <div class="supporting-copy">
+          <span>Duration {{ group.minDuration }}-{{ group.maxDuration }} months</span>
+          <span *ngIf="group.requiresGuarantors">{{ group.minimumGuarantors }} guarantor(s) required</span>
+          <span *ngIf="!group.requiresGuarantors">No guarantor requirement</span>
+        </div>
+
+        <button
+          type="button"
+          class="apply-btn"
+          [disabled]="!isEligible(group.id.toString()) || loadingGroupId === group.id.toString()"
+          (click)="onApply(group.id.toString())">
+          <ng-container *ngIf="loadingGroupId === group.id.toString(); else applyText">
+            <i class="pi pi-spin pi-spinner"></i> Applying...
+          </ng-container>
+          <ng-template #applyText>
+            {{ isEligible(group.id.toString()) ? 'Apply to Join' : 'Unavailable' }}
+          </ng-template>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-users-slash"></i>
+      </div>
+      <h3>No open groups right now</h3>
+      <p>You have already joined or requested the available groups. Check back when new groups are added.</p>
+    </div>
+  </ng-template>
+</div>

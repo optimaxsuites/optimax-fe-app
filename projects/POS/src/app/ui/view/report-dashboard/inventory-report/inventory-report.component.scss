@@ -1,0 +1,10 @@
+
+th {
+  @apply bg-transparent
+}
+.loading-indicator, .no-data {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
+}

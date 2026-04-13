@@ -1,0 +1,98 @@
+<div class="cooperative-grace-period-page">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+  <div class="page-header lm-header-card">
+    <div>
+      <app-back-button (click)="goBack()"></app-back-button>
+      <h1><i class="fas fa-hand-holding-dollar"></i> Cooperative Grace Period Requests</h1>
+      <p>Review contribution, principal, interest, and late fee extension requests for cooperative loans.</p>
+    </div>
+  </div>
+
+  <div class="filters-card">
+    <label>
+      <span>Search</span>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Search loan, reason, or type" />
+    </label>
+
+    <label>
+      <span>Status</span>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+        <option value="">All</option>
+        <option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-card" *ngIf="!isLoading; else loadingState">
+    <app-table
+      [columns]="[
+        { header: 'Loan' },
+        { header: 'Payment Type' },
+        { header: 'Requested Days' },
+        { header: 'Status' },
+        { header: 'Requested On' },
+        { header: 'Reason' },
+        { header: 'Actions' }
+      ]"
+      [rows]="filteredRequests"
+      [emptyMessage]="'No cooperative grace period requests match the current filters.'">
+      <ng-template appTableBody let-request>
+        <td>{{ request.loanId }}</td>
+        <td>{{ formatPaymentType(request.paymentSubtype) }}</td>
+        <td>{{ request.requestedDays }}</td>
+        <td><span class="status-badge" [ngClass]="getStatusClass(request.status)">{{ request.status }}</span></td>
+        <td>{{ request.requestedAt | date:'mediumDate' }}</td>
+        <td>{{ request.reason }}</td>
+        <td class="actions-col">
+          <button class="action-btn approve" *ngIf="request.status === 'PENDING'" (click)="openApprovalModal(request)">Approve</button>
+          <button class="action-btn reject" *ngIf="request.status === 'PENDING'" (click)="openRejectModal(request)">Reject</button>
+          <span *ngIf="request.status !== 'PENDING'">Reviewed</span>
+        </td>
+      </ng-template>
+    </app-table>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading cooperative grace period requests...</p>
+    </div>
+  </ng-template>
+
+  <app-modal *ngIf="showApprovalModal" [header]="'Approve Cooperative Grace Period'" (close)="closeApprovalModal()">
+    <div class="review-modal" *ngIf="selectedRequest as request">
+      <p><strong>Loan:</strong> {{ request.loanId }}</p>
+      <p><strong>Type:</strong> {{ formatPaymentType(request.paymentSubtype) }}</p>
+      <label>
+        <span>Approved Days</span>
+        <input type="number" [(ngModel)]="approvedDays" min="1" />
+      </label>
+      <label>
+        <span>Review Note</span>
+        <textarea rows="4" [(ngModel)]="reviewNote"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" (click)="closeApprovalModal()">Cancel</button>
+        <button type="button" class="primary-btn" (click)="approveRequest()">Approve</button>
+      </div>
+    </div>
+  </app-modal>
+
+  <app-modal *ngIf="showRejectModal" [header]="'Reject Cooperative Grace Period'" (close)="closeRejectModal()">
+    <div class="review-modal" *ngIf="selectedRequest as request">
+      <p><strong>Loan:</strong> {{ request.loanId }}</p>
+      <p><strong>Type:</strong> {{ formatPaymentType(request.paymentSubtype) }}</p>
+      <label>
+        <span>Rejection Reason</span>
+        <textarea rows="4" [(ngModel)]="rejectionReason"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" (click)="closeRejectModal()">Cancel</button>
+        <button type="button" class="reject-btn" (click)="rejectRequest()">Reject</button>
+      </div>
+    </div>
+  </app-modal>
+</div>

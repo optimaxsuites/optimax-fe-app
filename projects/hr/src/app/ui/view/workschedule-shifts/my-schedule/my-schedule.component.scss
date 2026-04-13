@@ -1,0 +1,219 @@
+/* CARD */
+.calendar-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* HEADER */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+}
+
+.month-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* WEEKDAY ROW */
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #3f9d7a; /* green bar */
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* GRID */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+/* CELL */
+.calendar-cell {
+  height: 100px;
+  border: 1px solid #e5e7eb;
+  padding: 6px;
+  position: relative;
+  cursor: pointer;
+  background: #fff;
+}
+
+/* OTHER MONTH */
+.calendar-cell.other-month {
+  background: #f9fafb;
+  color: #aaa;
+}
+
+/* DATE NUMBER */
+.date-number {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* SELECTED */
+.calendar-cell.selected {
+  border: 2px solid #2f7d73;
+}
+
+/* DOT INDICATOR */
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #2f7d73;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+}
+
+/* HOVER */
+.calendar-cell:hover {
+  background: #f5f5f5;
+}
+
+.calendar-container {
+  padding: 20px;
+}
+
+.view-toggle button {
+  margin-right: 10px;
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.date-cell {
+  padding: 10px;
+  background: #f5f5f5;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.date-cell.has-schedule {
+  background: #d6f5e8;
+}
+
+.date-cell.conflict {
+  border: 2px solid red;
+  background: #fff1f0;
+}
+
+.shift-card {
+  padding: 10px;
+  margin-top: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.conflict-warning {
+  background: #fff1f0;
+  color: red;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+/* TABLE VIEW CARD STYLE */
+.table-view {
+  padding: 10px;
+}
+
+/* TOP BAR */
+.top-bar {
+  margin-bottom: 15px;
+
+  label {
+    font-size: 13px;
+    color: #555;
+    margin-right: 8px;
+  }
+
+  input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+}
+
+/* CARD */
+.schedule-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* TITLE */
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+/* TABLE */
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* HEADER */
+.schedule-table thead {
+  background: #f0f2f5;
+
+  th {
+    text-align: left;
+    font-size: 12px;
+    padding: 10px;
+    color: #666;
+    font-weight: 500;
+  }
+}
+
+/* BODY */
+.schedule-table tbody tr {
+  border-top: 1px solid #eee;
+
+  td {
+    padding: 12px 10px;
+    font-size: 13px;
+    color: #333;
+  }
+}
+
+/* STATUS */
+.status.scheduled {
+  color: #d48806;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* EMPTY */
+.empty {
+  padding: 15px;
+  text-align: center;
+  color: #888;
+}

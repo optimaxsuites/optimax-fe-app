@@ -1,0 +1,77 @@
+section {
+  // width: 20rem;
+  padding: 3rem;
+  border: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+mat-mdc-dialog-surface {
+  width: 30rem;
+}
+
+.createVendor{
+  padding: 3rem;
+}
+
+.vendorCategory {
+  margin-bottom: 2rem;
+}
+
+.inputFlex{
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  // justify-content: center;
+}
+
+.smallInput{
+  height: 3.3rem;
+  border-color: #536365;
+  border-radius: 0.5rem;
+
+  // margin-top: 0.7rem;
+
+}
+
+
+
+.inputField, .threeInputField{
+  width: 40rem;
+  // margin-top: 0.7rem;
+  border-color: #536365;  
+  height: 3.5rem;
+  border-radius: 0.5rem;
+}
+
+select, .threeInputField{
+  width: 19rem;
+}
+
+
+
+
+.descText{
+  border-color: 2px solid red;
+}
+
+
+
+.saveButton {
+  color: #25925b;
+  padding: 1rem;
+  border: none;
+  border-radius: 1rem;
+  background-color: transparent;
+  transition: 0.4s ease-in-out;
+}
+
+.saveButton:hover {
+  background-color: #ebebeb;
+}
+
+.btn-wrapper {
+  align-self: flex-end;
+}

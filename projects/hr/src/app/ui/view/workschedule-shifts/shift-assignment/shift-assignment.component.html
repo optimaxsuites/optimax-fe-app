@@ -1,0 +1,227 @@
+<div class="modal-backdrop" (click)="cancel()"></div>
+
+<div class="modal-container">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>New Schedule</h3>
+      <button class="close-btn" (click)="cancel()">✕</button>
+    </div>
+
+    <div class="modal-body">
+    
+    <form [formGroup]="assignmentForm" (ngSubmit)="assignShift()">
+
+      <!-- SHIFT NAME -->
+      <div class="form-group">
+        <label>Shift <span class="required">*</span></label>
+        <select formControlName="shiftId">
+          <option value="">E.g., Morning Shift, Night Duty</option>
+          <option *ngFor="let shift of shifts" [value]="shift.id">
+            {{ shift.name }} ({{ shift.startTime }} – {{ shift.endTime }})
+          </option>
+        </select>
+      </div>
+
+      <!-- PROJECT -->
+      <div class="form-group">
+        <label>Project</label>
+        <select formControlName="project">
+          <option value="">Select a project</option>
+          <option *ngFor="let p of projects" [value]="p">
+            {{ p }}
+          </option>
+        </select>
+      </div>
+
+      <!-- DATE -->
+      <div class="form-group">
+        <label>Start Date <span class="required">*</span></label>
+        <input type="date" formControlName="date" />
+      </div>
+
+      <!-- END DATE -->
+      <div class="form-group">
+        <label>End Date
+          <span class="optional-hint">(optional — assigns shift for every day in range)</span>
+        </label>
+        <div class="end-date-row">
+          <input
+            type="date"
+            formControlName="endDate"
+            [min]="assignmentForm.value.date"
+          />
+          <button
+            type="button"
+            class="clear-end-date"
+            *ngIf="hasEndDate"
+            (click)="assignmentForm.patchValue({ endDate: '' })"
+            title="Clear end date"
+          >
+            ✕ Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- START / END TIME (read from selected shift, display only) -->
+      <div class="form-row" *ngIf="assignmentForm.value.shiftId">
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="time" [value]="selectedShift?.startTime" disabled />
+        </div>
+        <div class="form-group">
+          <label>End Time</label>
+          <input type="time" [value]="selectedShift?.endTime" disabled />
+        </div>
+      </div>
+
+      <!-- ASSIGN EMPLOYEES -->
+      <div class="form-group">
+        <label>Assign Employees <span class="required">*</span></label>
+
+        <!-- Mode Toggle -->
+        <div class="selection-mode-toggle">
+          <button type="button"
+            [class.active]="selectionMode === 'individual'"
+            (click)="setSelectionMode('individual')">
+            <i class="fa-solid fa-user"></i> Individual
+          </button>
+          <button type="button"
+            [class.active]="selectionMode === 'department'"
+            (click)="setSelectionMode('department')">
+            <i class="fa-solid fa-building"></i> By Department
+          </button>
+        </div>
+
+        <!-- Individual Selection -->
+        <div class="employee-selector" *ngIf="selectionMode === 'individual'">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search employees..."
+            (input)="onEmployeeSearch($event)"
+          />
+          <div class="selector-list">
+            <label
+              *ngFor="let emp of filteredEmployees"
+              class="selector-option"
+              [class.selected]="isEmployeeSelected(emp.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isEmployeeSelected(emp.id)"
+                (change)="toggleEmployee(emp.id)"
+              />
+              <span class="option-name">{{ emp.name }}</span>
+              <span class="option-dept">{{ emp.department }}</span>
+            </label>
+            <div class="empty-list" *ngIf="filteredEmployees.length === 0">
+              No employees match your search.
+            </div>
+          </div>
+        </div>
+
+        <!-- Department Selection -->
+        <div class="department-selector" *ngIf="selectionMode === 'department'">
+          <div class="selector-list">
+            <label
+              *ngFor="let dept of departments"
+              class="selector-option dept-option"
+              [class.selected]="isDepartmentSelected(dept.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isDepartmentSelected(dept.id)"
+                (change)="toggleDepartment(dept.id)"
+              />
+              <div class="dept-info">
+                <span class="option-name">{{ dept.name }}</span>
+                <span class="option-dept">{{ dept.employeeIds.length }} employees</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Selected Summary -->
+        <div class="selected-summary" *ngIf="selectedEmployeeIds.length > 0">
+          <i class="fa-solid fa-check-circle"></i>
+          <span>{{ selectedEmployeeIds.length }} employee(s) selected</span>
+          <button type="button" class="clear-btn" (click)="clearEmployees()">
+            Clear all
+          </button>
+        </div>
+
+        <!-- Validation hint -->
+        <div class="field-hint" *ngIf="selectedEmployeeIds.length === 0">
+          Select at least one employee or department.
+        </div>
+      </div>
+
+
+      <!-- RECURRENCE -->
+      <div class="form-group" *ngIf="!hasEndDate">
+        <label>Recurrence</label>
+        <div class="recurrence-options">
+          <label
+            *ngFor="let opt of recurrenceOptions"
+            class="recurrence-option"
+            [class.active]="assignmentForm.value.recurrence === opt.value"
+          >
+            <input
+              type="radio"
+              formControlName="recurrence"
+              [value]="opt.value"
+            />
+            {{ opt.label }}
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="!hasEndDate && assignmentForm.value.recurrence === 'custom'" class="custom-recurrence">
+        <div class="form-group">
+          <label>Repeat every</label>
+          <input type="number" formControlName="customInterval" min="1" />
+        </div>
+
+        <div class="form-group">
+          <label>Select Days</label>
+          <div class="day-options">
+            <label *ngFor="let d of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']">
+              <input type="checkbox" (change)="toggleDay(d)" />
+              {{ d }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" formControlName="location" placeholder="E.g., Head Office, Remote, Client Site" />
+      </div>
+
+      <!-- CONFLICTS -->
+      <div class="conflict" *ngFor="let msg of conflictMessage">
+        ⚠ {{ msg }}
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="cancel()">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="assign-btn"
+          [disabled]="assignmentForm.invalid || conflictMessage.length > 0 || selectedEmployeeIds.length === 0"
+        >
+          Create Schedule
+        </button>
+      </div>
+
+    </form>
+  </div>
+  </div>
+  
+</div>
+

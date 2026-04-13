@@ -1,0 +1,457 @@
+<div class="loan-disbursement-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+  
+  <div *ngIf="!isLoading" class="content">
+    <header class="disbursement-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan Disbursement</h1>
+      </div>
+      <div class="header-actions">
+        <span class="header-pill queue-count">Approved: {{ approvedLoans.length }}</span>
+        <span class="header-pill queue-count">Disbursement Ready: {{ readyForDisbursementLoans.length }}</span>
+        <span class="header-pill queue-total">{{ formatCurrency(getQueuedDisbursementTotal()) }}</span>
+      </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <section class="summary-strip" *ngIf="hasQueueLoans()">
+      <article class="summary-card">
+        <div class="card-icon approved-icon">
+          <i class="fas fa-stamp"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Approved Queue</span>
+          <strong>{{ approvedLoans.length }}</strong>
+          <small>Approved loans awaiting accounting handoff</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <div class="card-icon ready-icon">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Disbursement Ready</span>
+          <strong>{{ readyForDisbursementLoans.length }}</strong>
+          <small>Loans already sent to accounting</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <div class="card-icon amount-icon">
+          <i class="fas fa-wallet"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Total amount</span>
+          <strong>{{ formatCurrency(getQueuedDisbursementTotal()) }}</strong>
+          <small>Total value across both disbursement queues</small>
+        </div>
+      </article>
+      <article class="summary-card" *ngIf="selectedDisbursementLoan">
+        <div class="card-icon selected-icon">
+          <i class="fas fa-file-signature"></i>
+        </div>
+        <div class="card-copy">
+          <span class="summary-label">Selected loan</span>
+          <strong>{{ selectedDisbursementLoan.loanCode || selectedDisbursementLoan.id }}</strong>
+          <small>{{ selectedDisbursementLoan.fullName }}</small>
+        </div>
+      </article>
+    </section>
+
+    <div class="empty-state" *ngIf="!hasQueueLoans()">
+      <i class="fas fa-check-circle"></i>
+      <p>No loans are currently waiting in the disbursement pipeline.</p>
+    </div>
+
+    <div class="layout" *ngIf="hasQueueLoans()">
+      <!-- Left Section: Queue Tables -->
+      <div class="queue-column">
+        <section class="table-card surface-card">
+          <div class="section-head">
+            <span class="heading-icon" aria-hidden="true"><i class="fas fa-list-check"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Approved Queue</span>
+              <h2>Approved Loans Awaiting Handoff</h2>
+            </div>
+            <p>Select a loan here to review it and send the disbursement request to accounting.</p>
+          </div>
+
+          <div class="queue-toolbar">
+            <div class="queue-metrics">
+              <div class="queue-metric-pill">
+                <span class="metric-label">Loans</span>
+                <strong>{{ getFilteredApprovedLoans().length }}</strong>
+              </div>
+              <div class="queue-metric-pill accent-approved">
+                <span class="metric-label">Approved Total</span>
+                <strong>{{ formatCurrency(getFilteredApprovedTotal()) }}</strong>
+              </div>
+            </div>
+
+            <div class="queue-search">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                [ngModel]="approvedSearchTerm"
+                (ngModelChange)="onApprovedSearchChange($event)"
+                placeholder="Search by employee, ID, department, purpose..."
+              >
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <app-table
+              [columns]="[
+                { header: 'Loan ID' },
+                { header: 'Employee' },
+                { header: 'Department' },
+                { header: 'Amount' },
+                { header: 'Approved Date' },
+                { header: 'Status' },
+                { header: 'Action' }
+              ]"
+              [rows]="getPaginatedApprovedLoans()"
+              [emptyMessage]="'No approved loans match this view.'"
+              [rowClickable]="true"
+              (rowClick)="selectLoan($event)"
+              tableClass="approved-loans-table">
+              <ng-template appTableBody let-loan>
+                <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                <td>{{ loan.fullName }}</td>
+                <td>{{ loan.department }}</td>
+                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                <td>{{ formatDate(loan.approvedDate || loan.requestDate) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
+                </td>
+                <td>
+                  <button class="select-btn"
+                          [class.active]="selectedDisbursementLoan?.id === loan.id"
+                          (click)="selectLoan(loan); $event.stopPropagation()">
+                    {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
+                  </button>
+                </td>
+              </ng-template>
+            </app-table>
+          </div>
+
+          <div class="queue-footer" *ngIf="getFilteredApprovedLoans().length > 0">
+            <span class="results-label">{{ getApprovedResultsLabel() }}</span>
+            <div class="pager-controls">
+              <button type="button" class="pager-btn" (click)="goToApprovedPage(approvedPage - 1)" [disabled]="approvedPage === 1">Previous</button>
+              <span class="pager-chip">Page {{ approvedPage }} / {{ getApprovedTotalPages() }}</span>
+              <button type="button" class="pager-btn" (click)="goToApprovedPage(approvedPage + 1)" [disabled]="approvedPage === getApprovedTotalPages()">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table-card surface-card ready-queue-card">
+          <div class="section-head">
+            <span class="heading-icon ready-heading" aria-hidden="true"><i class="fas fa-paper-plane"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Disbursement Ready</span>
+              <h2>Loans Already Sent to Accounting</h2>
+            </div>
+            <p>These loans are already in the accounting queue and only need final disbursement confirmation.</p>
+          </div>
+
+          <div class="queue-toolbar">
+            <div class="queue-metrics">
+              <div class="queue-metric-pill">
+                <span class="metric-label">Loans</span>
+                <strong>{{ getFilteredReadyForDisbursementLoans().length }}</strong>
+              </div>
+              <div class="queue-metric-pill accent-ready">
+                <span class="metric-label">Ready Total</span>
+                <strong>{{ formatCurrency(getFilteredReadyForDisbursementTotal()) }}</strong>
+              </div>
+            </div>
+
+            <div class="queue-search ready-search">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                [ngModel]="readySearchTerm"
+                (ngModelChange)="onReadySearchChange($event)"
+                placeholder="Search handed-off loans..."
+              >
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <app-table
+              [columns]="[
+                { header: 'Loan ID' },
+                { header: 'Employee' },
+                { header: 'Department' },
+                { header: 'Amount' },
+                { header: 'Sent Date' },
+                { header: 'Status' },
+                { header: 'Action' }
+              ]"
+              [rows]="getPaginatedReadyForDisbursementLoans()"
+              [emptyMessage]="'No ready loans match this view.'"
+              [rowClickable]="true"
+              (rowClick)="selectLoan($event)"
+              tableClass="approved-loans-table">
+              <ng-template appTableBody let-loan>
+                <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                <td>{{ loan.fullName }}</td>
+                <td>{{ loan.department }}</td>
+                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                <td>{{ formatDate(getReadyForDisbursementDate(loan)) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
+                </td>
+                <td>
+                  <button class="select-btn"
+                          [class.active]="selectedDisbursementLoan?.id === loan.id"
+                          (click)="selectLoan(loan); $event.stopPropagation()">
+                    {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
+                  </button>
+                </td>
+              </ng-template>
+            </app-table>
+          </div>
+
+          <div class="queue-footer" *ngIf="getFilteredReadyForDisbursementLoans().length > 0">
+            <span class="results-label">{{ getReadyResultsLabel() }}</span>
+            <div class="pager-controls">
+              <button type="button" class="pager-btn" (click)="goToReadyPage(readyPage - 1)" [disabled]="readyPage === 1">Previous</button>
+              <span class="pager-chip ready-chip">Page {{ readyPage }} / {{ getReadyTotalPages() }}</span>
+              <button type="button" class="pager-btn" (click)="goToReadyPage(readyPage + 1)" [disabled]="readyPage === getReadyTotalPages()">Next</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Section: Loan Details & Send to Accounting -->
+      <aside class="action-rail">
+        <!-- Loan Details Card -->
+        <section class="loan-details-card surface-card" *ngIf="selectedDisbursementLoan">
+          <div class="section-head compact">
+            <span class="heading-icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Loan Details</span>
+              <h2>{{ selectedDisbursementLoan.fullName }}</h2>
+            </div>
+            <span class="status-badge" [ngClass]="getQueueStatusClass(selectedDisbursementLoan)">{{ getQueueStatusLabel(selectedDisbursementLoan) }}</span>
+          </div>
+
+          <!-- Loan Information Grid -->
+          <div class="loan-info-grid">
+            <div class="info-group">
+              <label>Loan ID</label>
+              <span class="value">{{ selectedDisbursementLoan.loanCode || selectedDisbursementLoan.id }}</span>
+            </div>
+            <div class="info-group">
+              <label>Employee ID</label>
+              <span class="value">{{ selectedDisbursementLoan.employeeId }}</span>
+            </div>
+            <div class="info-group">
+              <label>Current Status</label>
+              <span class="value">{{ selectedDisbursementLoan.status }}</span>
+            </div>
+            <div class="info-group">
+              <label>Approved Amount</label>
+              <span class="value amount">{{ formatCurrency(getApprovedAmount(selectedDisbursementLoan)) }}</span>
+            </div>
+            <div class="info-group">
+              <label>Interest Rate</label>
+              <span class="value">{{ selectedDisbursementLoan.interestRate || 0 }}%</span>
+            </div>
+            <div class="info-group">
+              <label>Total Repayable</label>
+              <span class="value amount">{{ formatCurrency(getLoanTotalRepayable(selectedDisbursementLoan)) }}</span>
+            </div>
+            <div class="info-group">
+              <label>Repayment Period</label>
+              <span class="value">{{ selectedDisbursementLoan.repaymentTime }} months</span>
+            </div>
+            <div class="info-group">
+              <label>Mode of Payment</label>
+              <span class="value">{{ selectedDisbursementLoan.modeOfPayment === 'MONTHLY' ? 'Monthly Installments' : 'One-off Payment' }}</span>
+            </div>
+            <div class="info-group full-width">
+              <label>Purpose</label>
+              <span class="value">{{ selectedDisbursementLoan.purpose }}</span>
+            </div>
+            <div class="info-group full-width">
+              <label>Admin Comment</label>
+              <span class="value">{{ selectedDisbursementLoan.adminComment || 'No comment' }}</span>
+            </div>
+          </div>
+
+          <!-- Approval Information -->
+          <div class="approval-info">
+            <h4>Approval Information</h4>
+            <div class="info-grid">
+              <div class="info-group">
+                <label>Approved Date</label>
+                <span class="value">{{ formatDate(selectedDisbursementLoan.approvedDate) }}</span>
+              </div>
+              <div class="info-group">
+                <label>Approved By</label>
+                <span class="value">{{ getApprovedByName() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Employee Bank Details -->
+          <div class="bank-details" *ngIf="selectedEmployeeDetails">
+            <h4>Employee Bank Details</h4>
+            <div class="info-grid">
+              <div class="info-group">
+                <label>Bank Name</label>
+                <span class="value">{{ selectedEmployeeDetails?.bankName || 'N/A' }}</span>
+              </div>
+              <div class="info-group">
+                <label>Account Number</label>
+                <span class="value">{{ selectedEmployeeDetails?.accountNumber || 'N/A' }}</span>
+              </div>
+              <div class="info-group full-width">
+                <label>Account Name</label>
+                <span class="value">{{ selectedEmployeeDetails?.firstName }} {{ selectedEmployeeDetails?.lastName }}</span>
+              </div>
+              <div class="info-group full-width">
+                <label>Employee Email</label>
+                <span class="value">{{ selectedEmployeeDetails?.email || selectedEmployeeDetails?.workEmail || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Disbursement Initiation Info (after sending) -->
+          <div class="disbursement-info" *ngIf="disbursementInitiatedAt">
+            <h4>Disbursement Initiation</h4>
+            <div class="info-grid">
+              <div class="info-group">
+                <label>Initiated Date</label>
+                <span class="value">{{ formatDate(disbursementInitiatedAt) }}</span>
+              </div>
+              <div class="info-group">
+                <label>Initiated By</label>
+                <span class="value">{{ disbursementInitiatedBy }}</span>
+              </div>
+              <div class="info-group full-width">
+                <label>Instruction Reference</label>
+                <span class="value reference">{{ disbursementInstructionReference }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Repayment Schedule Preview -->
+          <div class="repayment-preview" *ngIf="selectedDisbursementLoan.repaymentSchedule.length">
+            <div class="preview-head">
+              <i class="fas fa-calendar-alt"></i>
+              <span>Repayment Schedule Preview</span>
+            </div>
+            <div class="schedule-mini">
+              <div class="schedule-item" *ngFor="let installment of selectedDisbursementLoan.repaymentSchedule | slice:0:3">
+                <span class="installment-no">Installment {{ installment.installmentNo }}</span>
+                <span class="due-date">{{ installment.dueDate | date:'mediumDate' }}</span>
+                <span class="amount">{{ formatCurrency(installment.totalAmount) }}</span>
+              </div>
+              <div class="schedule-more" *ngIf="selectedDisbursementLoan.repaymentSchedule.length > 3">
+                + {{ selectedDisbursementLoan.repaymentSchedule.length - 3 }} more installments
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Loading Employee Details -->
+        <section class="loading-card surface-card" *ngIf="selectedDisbursementLoan && isLoadingEmployeeDetails">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading employee details...</p>
+          </div>
+        </section>
+
+        <!-- No Loan Selected Message -->
+        <section class="no-selection-card surface-card" *ngIf="!selectedDisbursementLoan">
+          <div class="empty-selection">
+            <i class="fas fa-hand-pointer"></i>
+            <p>Select a loan from the queue to view details</p>
+          </div>
+        </section>
+
+        <!-- Send to Accounting Card -->
+        <section class="action-card surface-card" *ngIf="selectedDisbursementLoan && selectedDisbursementLoan.status === 'APPROVED' && !disbursementInitiatedAt">
+          <div class="section-head compact">
+            <span class="heading-icon" aria-hidden="true"><i class="fas fa-envelope"></i></span>
+            <div class="section-copy">
+              <span class="eyebrow">Disbursement Request</span>
+              <h2>Send to Accounting</h2>
+            </div>
+          </div>
+
+          <div class="email-form">
+            <div class="form-group">
+              <label>Accounting Email(s)</label>
+              <input type="email" 
+                     [(ngModel)]="accountingEmail" 
+                     placeholder="accounting@company.com"
+                     class="form-input">
+              <small class="field-hint">Separate multiple emails with commas</small>
+            </div>
+
+            <div class="form-group">
+              <label>Additional Notes (Optional)</label>
+              <textarea [(ngModel)]="emailNotes" 
+                        rows="3" 
+                        placeholder="Add any special instructions or notes for the accounting team..."
+                        class="form-textarea"></textarea>
+            </div>
+
+            <div class="disbursement-reference">
+              <label>Disbursement Reference</label>
+              <div class="reference-code">{{ disbursementInstructionReference }}</div>
+              <small class="field-hint">This reference will be sent to the accounting team</small>
+            </div>
+
+            <div class="email-preview">
+              <div class="preview-head">
+                <i class="fas fa-file-alt"></i>
+                <span>Email Preview</span>
+              </div>
+              <div class="preview-body">
+                <p><strong>Subject:</strong> Loan Disbursement Request - {{ selectedDisbursementLoan.loanCode || selectedDisbursementLoan.id }}</p>
+                <p><strong>Reference:</strong> {{ disbursementInstructionReference }}</p>
+                <p><strong>Employee:</strong> {{ selectedDisbursementLoan.fullName }} (ID: {{ selectedDisbursementLoan.employeeId }})</p>
+                <p><strong>Approved Amount:</strong> {{ formatCurrency(getApprovedAmount(selectedDisbursementLoan)) }}</p>
+                <p><strong>Bank:</strong> {{ selectedEmployeeDetails?.bankName || 'N/A' }} - {{ selectedEmployeeDetails?.accountNumber || 'N/A' }}</p>
+                <p><strong>Purpose:</strong> {{ selectedDisbursementLoan.purpose }}</p>
+                <p *ngIf="emailNotes"><strong>Notes:</strong> {{ emailNotes }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button type="button" class="send-btn" (click)="sendToAccounting()" [disabled]="!accountingEmail || isSubmittingDisbursement">
+              <i class="fas fa-paper-plane"></i> Send to Accounting
+            </button>
+          </div>
+        </section>
+
+        <!-- Already Sent Message -->
+        <section class="already-sent-card surface-card" *ngIf="selectedDisbursementLoan && (selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' || disbursementInitiatedAt)">
+          <div class="sent-message">
+            <i class="fas fa-check-circle"></i>
+            <h3>Disbursement Request Sent</h3>
+            <p>This loan has been sent to the accounting team for disbursement.</p>
+            <div class="sent-details">
+              <div><strong>Reference:</strong> {{ disbursementInstructionReference }}</div>
+              <div><strong>Sent to:</strong> {{ accountingEmail }}</div>
+              <div><strong>Sent on:</strong> {{ formatDate(disbursementInitiatedAt) }}</div>
+              <div><strong>Sent by:</strong> {{ disbursementInitiatedBy }}</div>
+            </div>
+            <div class="action-buttons" *ngIf="selectedDisbursementLoan.status !== 'ACTIVE' && selectedDisbursementLoan.status !== 'COMPLETED'">
+              <button type="button" class="send-btn" (click)="markAsDisbursed()" [disabled]="isSubmittingDisbursement">
+                <i class="fas fa-circle-check"></i> Mark as Disbursed
+              </button>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>

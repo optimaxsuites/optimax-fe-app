@@ -1,0 +1,73 @@
+<div class="status-tracking-container" *ngIf="loan">
+  <div class="status-header">
+    <h3>Status Tracking</h3>
+    
+    <!-- Current Status Badge -->
+    <div class="current-status">
+      <span class="status-badge" [ngClass]="'status-' + loan.status.toLowerCase()">
+        {{ getStatusLabel(loan.status) }}
+      </span>
+    </div>
+  </div>
+  
+  <!-- Status Timeline -->
+  <div class="status-timeline">
+    <h4>Status History</h4>
+    <div class="timeline">
+      <div *ngFor="let history of statusHistory; let i = index" class="timeline-item">
+        <div class="timeline-dot" [ngClass]="'status-' + history.status.toLowerCase()"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span class="status-badge" [ngClass]="'status-' + history.status.toLowerCase()">{{ getStatusLabel(history.status) }}</span>
+            <span class="timeline-date">{{ formatDate(history.changedAt) }}</span>
+          </div>
+          <div *ngIf="history.changedBy" class="changed-by">
+            Changed by: {{ history.changedBy }}
+          </div>
+          <div *ngIf="history.notes" class="timeline-notes">
+            {{ history.notes }}
+          </div>
+        </div>
+        <div class="timeline-line" *ngIf="i < statusHistory.length - 1"></div>
+      </div>
+      <div *ngIf="statusHistory.length === 0" class="no-history">
+        No status history available.
+      </div>
+    </div>
+  </div>
+  
+  <!-- Status Summary -->
+  <div class="status-summary">
+    <h4>Status Summary</h4>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="label">Submitted:</span>
+        <span class="value">{{ formatDate(loan.requestDate) }}</span>
+      </div>
+      <div *ngIf="loan.approvedDate" class="summary-item">
+        <span class="label">Approved:</span>
+        <span class="value">{{ formatDate(loan.approvedDate) }}</span>
+      </div>
+      <div *ngIf="loan.disbursedDate" class="summary-item">
+        <span class="label">Disbursed:</span>
+        <span class="value">{{ formatDate(loan.disbursedDate) }}</span>
+      </div>
+      <div *ngIf="loan.completedDate" class="summary-item">
+        <span class="label">Completed:</span>
+        <span class="value">{{ formatDate(loan.completedDate) }}</span>
+      </div>
+      <div *ngIf="loan.nextPaymentDueDate" class="summary-item">
+        <span class="label">Next Payment Due:</span>
+        <span class="value">{{ formatDate(loan.nextPaymentDueDate) }}</span>
+      </div>
+      <div *ngIf="loan.skippedPaymentsCount !== undefined" class="summary-item">
+        <span class="label">Skipped Payments:</span>
+        <span class="value">{{ loan.skippedPaymentsCount || 0 }}</span>
+      </div>
+      <div *ngIf="loan.overduePaymentsCount !== undefined" class="summary-item">
+        <span class="label">Overdue Payments:</span>
+        <span class="value">{{ loan.overduePaymentsCount || 0 }}</span>
+      </div>
+    </div>
+  </div>
+</div>
