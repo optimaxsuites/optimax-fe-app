@@ -279,9 +279,9 @@ export class DisbursementComponent implements OnInit {
     
     // Mock line items based on amount to show varied data
     this.selectedLineItems = [
-      { recipient: 'Elena Hernandez', role: 'Senior Architect', account: '**** 8821', type: 'ACH', amount: trx.amount * 0.45 },
-      { recipient: 'Marcus Chen', role: 'Project Lead', account: '**** 4432', type: 'WIRE', amount: trx.amount * 0.35 },
-      { recipient: 'Sarah Jenkins', role: 'Junior Consultant', account: '**** 9011', type: 'ACH', amount: trx.amount * 0.20 }
+      { recipient: 'Elena Hernandez', role: 'Senior Architect', account: '0123456789', bank: 'Access Bank', type: 'ACH', amount: trx.amount * 0.45 },
+      { recipient: 'Marcus Chen', role: 'Project Lead', account: '3024519921', bank: 'Guaranty Trust Bank', type: 'WIRE', amount: trx.amount * 0.35 },
+      { recipient: 'Sarah Jenkins', role: 'Junior Consultant', account: '0012398471', bank: 'Zenith Bank', type: 'ACH', amount: trx.amount * 0.20 }
     ];
 
     // Reset single-select and destination fields
