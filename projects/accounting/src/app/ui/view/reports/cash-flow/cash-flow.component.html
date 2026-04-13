@@ -1,892 +1,198 @@
-<div #reportContent id="contentToExport" class="min-h-screen bg-gray-50 font-sans text-gray-900">
-
-  <div class="container mx-auto px-4 py-6">
-
-    <!-- Loading State -->
-    <div *ngIf="!data" class="flex items-center justify-center p-12">
-      <div class="text-center">
-        <i class="ri-loader-4-line text-4xl text-green-600 animate-spin"></i>
-        <p class="mt-4 text-gray-600">Loading cash flow data...</p>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <ng-container *ngIf="data">
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-
-          <!-- Title & Meta -->
-          <div>
-            <div class="flex items-center gap-3 mb-3">
-              <div class="p-2 bg-green-100 rounded-xl text-green-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h1 class="text-2xl font-bold tracking-tight text-gray-900">Cash Flow Statement</h1>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 text-sm">
-              <!-- Period Badge -->
-              <span class="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg text-gray-600">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {{ reportPeriodLabel }}
-              </span>
-
-              <!-- FIRS Compliance Badge -->
-              <span [ngClass]="{
-                'bg-green-50 text-green-700 border-green-200': nigerianCompliance.taxCompliant,
-                'bg-yellow-50 text-yellow-700 border-yellow-200': !nigerianCompliance.taxCompliant
-              }" class="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm font-medium">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                {{ nigerianCompliance.taxCompliant ? 'FIRS Compliant' : 'Pending Submission' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Controls -->
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-
-            <!-- Direct / Indirect Toggle -->
-            <div class="bg-gray-100 p-1 rounded-xl flex shadow-inner">
-              <button
-                (click)="toggleViewMode('direct')"
-                [class.bg-white]="viewMode === 'direct'"
-                [class.text-green-700]="viewMode === 'direct'"
-                [class.shadow-sm]="viewMode === 'direct'"
-                [class.text-gray-500]="viewMode !== 'direct'"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Direct Method
-              </button>
-              <button
-                (click)="toggleViewMode('indirect')"
-                [class.bg-white]="viewMode === 'indirect'"
-                [class.text-green-700]="viewMode === 'indirect'"
-                [class.shadow-sm]="viewMode === 'indirect'"
-                [class.text-gray-500]="viewMode !== 'indirect'"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Indirect Method
-              </button>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2">
-              <button (click)="exportToPDF()"
-                class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm font-medium">
-                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                Export
-              </button>
-              <button (click)="shareReport()"
-                class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm text-sm font-medium">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metrics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-        <!-- Net Cash Flow -->
-        <div (click)="openMetricDetails('net')"
-          class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-green-50/40 to-transparent pointer-events-none"></div>
-          <div class="relative">
-            <div class="flex justify-between items-start mb-3">
-              <span class="text-sm font-medium text-gray-600">Net Cash Flow</span>
-              <button (click)="showDefinition($event, 'net')"
-                class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
-            <div class="text-2xl font-bold mb-1 tracking-tight" [ngClass]="fmt.getAmountClass(metrics.netCashFlow)">
-              {{ fmt.formatCurrency(metrics.netCashFlow) }}
-            </div>
-            <div class="flex items-center text-xs" [ngClass]="getComparisonClass(comparisons['netCashFlow'].percentage)">
-              <span class="mr-1">{{ getComparisonArrow(comparisons['netCashFlow'].percentage) }}</span>
-              {{ comparisons['netCashFlow'].percentage }}% vs last period
-            </div>
-            <div class="absolute bottom-2 right-3 text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Click for details →
-            </div>
-          </div>
-        </div>
-
-        <!-- Operating Cash Flow -->
-        <div (click)="openMetricDetails('operating')"
-          class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-emerald-50/40 to-transparent pointer-events-none"></div>
-          <div class="relative">
-            <div class="flex justify-between items-start mb-3">
-              <span class="text-sm font-medium text-gray-600">Operating Cash Flow</span>
-              <button (click)="showDefinition($event, 'operating')"
-                class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
-            <div class="text-2xl font-bold text-green-600 mb-1 tracking-tight">
-              {{ fmt.formatCurrency(metrics.operatingCashFlow) }}
-            </div>
-            <div class="text-xs text-gray-500">
-              Cash Conversion: <span class="text-gray-800 font-semibold">{{ metrics.cashConversionCycle }} days</span>
-            </div>
-            <div class="absolute bottom-2 right-3 text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Click for details →
-            </div>
-          </div>
-        </div>
-
-        <!-- Free Cash Flow -->
-        <div (click)="openMetricDetails('free')"
-          class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-teal-50/40 to-transparent pointer-events-none"></div>
-          <div class="relative">
-            <div class="flex justify-between items-start mb-3">
-              <span class="text-sm font-medium text-gray-600">Free Cash Flow</span>
-              <button (click)="showDefinition($event, 'free')"
-                class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
-            <div class="text-2xl font-bold text-green-600 mb-1 tracking-tight">
-              {{ fmt.formatCurrency(metrics.freeCashFlow) }}
-            </div>
-            <div class="text-xs text-gray-500">
-              FCF Yield: <span class="text-gray-800 font-semibold">{{ metrics.fcfYield }}%</span>
-            </div>
-            <div class="absolute bottom-2 right-3 text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Click for details →
-            </div>
-          </div>
-        </div>
-
-        <!-- Tax Compliance -->
-        <div (click)="openMetricDetails('tax')"
-          class="bg-amber-50 rounded-2xl shadow-sm border border-amber-200 p-5 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden">
-          <div class="relative">
-            <div class="flex justify-between items-start mb-3">
-              <span class="text-sm font-medium text-amber-800">Tax Compliance</span>
-              <span [ngClass]="{
-                'bg-green-100 text-green-700 border-green-200': nigerianCompliance.taxCompliant,
-                'bg-red-100 text-red-700 border-red-200': !nigerianCompliance.taxCompliant
-              }" class="text-xs px-2 py-0.5 rounded-full border font-medium">
-                {{ nigerianCompliance.taxCompliant ? 'Compliant' : 'Non-Compliant' }}
-              </span>
-            </div>
-            <div class="text-2xl font-bold text-gray-900 mb-1 tracking-tight">
-              {{ fmt.formatCurrency(taxBreakdown.total) }}
-            </div>
-            <div class="text-xs text-gray-600">
-              Next Filing: <span class="font-semibold text-amber-700">{{ nigerianCompliance.nextDeadline }}</span>
-            </div>
-            <div class="absolute bottom-2 right-3 text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Click for details →
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Search Filter -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 p-4">
-        <div class="relative">
-          <input (keyup)="applyFilter($event)" type="text"
-            placeholder="Search cash flow activities..."
-            class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition-colors bg-gray-50 placeholder-gray-400">
-          <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-      </div>
-
-      <!-- Indirect Method Reconciliation -->
-      <div *ngIf="viewMode === 'indirect'" class="mb-6">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-          <div class="flex items-center gap-2 mb-1">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h2 class="text-lg font-semibold text-gray-900">Reconciliation to Operating Cash Flow</h2>
-            <span class="text-sm text-gray-400">(Indirect Method)</span>
-          </div>
-          <p class="text-sm text-gray-500 mb-6 ml-7">Bridges Net Income (accrual basis) to actual Operating Cash Flow</p>
-
-          <div class="max-w-2xl mx-auto space-y-4">
-
-            <!-- Net Income -->
-            <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
-              <span class="text-gray-700 font-medium">Net Income</span>
-              <span class="font-semibold text-gray-900">{{ fmt.formatCurrency(reconciliation.netIncome) }}</span>
-            </div>
-
-            <!-- Depreciation & Amortization -->
-            <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
-              <span class="text-gray-700 flex items-center gap-2">
-                <span class="text-green-600 font-bold text-base">+</span>
-                Add: Depreciation &amp; Amortization
-              </span>
-              <span class="font-semibold text-green-600">+{{ fmt.formatCurrency(reconciliation.depreciation + reconciliation.amortization) }}</span>
-            </div>
-
-            <!-- Working Capital Changes -->
-            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
-                Changes in Working Capital
-              </div>
-              <div class="space-y-2">
-                <div *ngFor="let item of workingCapitalChanges"
-                  class="flex justify-between items-center py-1.5"
-                  [ngClass]="{
-                    'text-green-600': getWCEffect(item) === 'source',
-                    'text-red-600': getWCEffect(item) === 'use'
-                  }">
-                  <span class="pl-3 text-sm">
-                    {{ item.account }}
-                    <span class="text-xs ml-1 opacity-70">({{ getWCEffect(item) === 'source' ? 'source of cash' : 'use of cash' }})</span>
-                  </span>
-                  <span class="font-medium text-sm">
-                    {{ getWCEffect(item) === 'source' ? '+' : '' }}{{ fmt.formatCurrency(item.change) }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
-                <span class="text-gray-700 font-medium text-sm">Total Working Capital Change</span>
-                <span class="font-semibold" [ngClass]="fmt.getAmountClass(getWorkingCapitalTotal())">
-                  {{ fmt.formatCurrency(getWorkingCapitalTotal()) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Net Cash from Operating Activities -->
-            <div class="border-t-2 border-gray-200 pt-4">
-              <div class="flex justify-between items-center">
-                <span class="text-lg font-bold text-gray-900">Net Cash from Operating Activities</span>
-                <span class="text-xl font-bold text-green-600">{{ fmt.formatCurrency(reconciliation.calculatedOperatingCash) }}</span>
-              </div>
-            </div>
-
-            <!-- Validation Badge -->
-            <div class="flex justify-center pt-2">
-              <div [ngClass]="{
-                'bg-green-50 text-green-700 border-green-200': validateReconciliation(),
-                'bg-amber-50 text-amber-700 border-amber-200': !validateReconciliation()
-              }" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium">
-                <svg *ngIf="validateReconciliation()" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <svg *ngIf="!validateReconciliation()" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                {{ validateReconciliation() ? 'Reconciliation Valid ✓' : 'Discrepancy Detected ✗ — Check figures' }}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Cash Flow Table -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-
-        <!-- Table Header Bar -->
-        <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <h2 class="text-lg font-semibold text-gray-900">Cash Flow Statement Details</h2>
-            <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200">
-              {{ viewMode === 'direct' ? 'Direct Method' : 'Indirect Method' }}
-            </span>
-          </div>
-          <button (click)="generateFIRSReport()"
-            class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-sm font-medium shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Generate FIRS Report
-          </button>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <!-- Column Headers -->
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/2">
-                  Cash Flow Activities
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">
-                  Amount (₦)
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">
-                  Category
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Trend
-                </th>
-              </tr>
-            </thead>
-
-            <!-- OPERATING ACTIVITIES-->
-            <tbody class="divide-y divide-gray-100 bg-white">
-              <!-- Section Header -->
-              <tr class="bg-green-50 border-y border-green-100">
-                <td colspan="4" class="px-6 py-3">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <strong class="text-gray-800 text-sm">Operating Activities</strong>
-                    </div>
-                    <span class="font-bold text-green-700 text-sm">{{ fmt.formatCurrency(getSectionTotal(operatingActivities)) }}</span>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Operating Rows -->
-              <tr *ngFor="let item of operatingActivities"
-                class="hover:bg-gray-50 transition-colors"
-                [ngClass]="{ 'bg-gray-50 border-t border-gray-200': item.isTotal }">
-
-                <!-- Description -->
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center gap-2" [style.padding-left.px]="item.indentLevel * 20">
-                    <ng-container *ngIf="!item.isTotal">
-                      <svg *ngIf="item.type === 'inflow'" class="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <svg *ngIf="item.type === 'outflow'" class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                      </svg>
-                    </ng-container>
-                    <span [class.font-bold]="isBoldRow(item)" [class.text-gray-900]="true"
-                      class="text-sm leading-snug">
-                      {{ item.description }}
-                    </span>
-                  </div>
-                </td>
-
-                <!-- Amount -->
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span [ngClass]="fmt.getAmountClass(item.amount)"
-                    [class.font-bold]="isBoldRow(item)"
-                    class="text-sm tabular-nums">
-                    {{ fmt.formatCurrency(item.amount) }}
-                  </span>
-                </td>
-
-                <!-- Category Badge -->
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span *ngIf="!item.isTotal" [ngClass]="{
-                    'bg-green-100 text-green-800 border-green-200': item.category === 'operating',
-                    'bg-red-100 text-red-800 border-red-200': item.category === 'tax',
-                    'bg-blue-100 text-blue-800 border-blue-200': item.category === 'investing',
-                    'bg-purple-100 text-purple-800 border-purple-200': item.category === 'financing',
-                    'bg-yellow-100 text-yellow-800 border-yellow-200': item.category === 'forex'
-                  }" class="px-2.5 py-0.5 rounded-full text-xs font-medium border">
-                    {{ titlecase(item.category) }}
-                  </span>
-                  <span *ngIf="item.isTotal"
-                    class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                    Operating
-                  </span>
-                </td>
-
-                <!-- Trend Bar -->
-                <td class="px-6 py-3.5">
-                  <div *ngIf="!item.isTotal" class="w-36 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div [ngClass]="{ 'bg-green-500': item.amount > 0, 'bg-red-400': item.amount < 0 }"
-                      [style.width.%]="getTrendWidth(item.amount)"
-                      class="h-full rounded-full transition-all duration-500 ease-out"></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-
-            <!-- INVESTING ACTIVITIES -->
-            <tbody class="divide-y divide-gray-100 bg-white">
-              <tr class="bg-blue-50 border-y border-blue-100">
-                <td colspan="4" class="px-6 py-3">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                      <strong class="text-gray-800 text-sm">Investing Activities</strong>
-                    </div>
-                    <span class="font-bold text-sm" [ngClass]="fmt.getAmountClass(getSectionTotal(investingActivities))">
-                      {{ fmt.formatCurrency(getSectionTotal(investingActivities)) }}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-
-              <tr *ngFor="let item of investingActivities"
-                class="hover:bg-gray-50 transition-colors"
-                [ngClass]="{ 'bg-gray-50 border-t border-gray-200': item.isTotal }">
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center gap-2" [style.padding-left.px]="item.indentLevel * 20">
-                    <ng-container *ngIf="!item.isTotal">
-                      <svg *ngIf="item.type === 'inflow'" class="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <svg *ngIf="item.type === 'outflow'" class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                      </svg>
-                    </ng-container>
-                    <span [class.font-bold]="isBoldRow(item)" class="text-sm text-gray-900">{{ item.description }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span [ngClass]="fmt.getAmountClass(item.amount)" [class.font-bold]="isBoldRow(item)" class="text-sm tabular-nums">
-                    {{ fmt.formatCurrency(item.amount) }}
-                  </span>
-                </td>
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                    Investing
-                  </span>
-                </td>
-                <td class="px-6 py-3.5">
-                  <div *ngIf="!item.isTotal" class="w-36 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div [ngClass]="{ 'bg-green-500': item.amount > 0, 'bg-red-400': item.amount < 0 }"
-                      [style.width.%]="getTrendWidth(item.amount)"
-                      class="h-full rounded-full transition-all duration-500"></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-
-            <!-- FINANCING ACTIVITIES -->
-            <tbody class="divide-y divide-gray-100 bg-white">
-              <tr class="bg-purple-50 border-y border-purple-100">
-                <td colspan="4" class="px-6 py-3">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                      <strong class="text-gray-800 text-sm">Financing Activities</strong>
-                    </div>
-                    <span class="font-bold text-sm" [ngClass]="fmt.getAmountClass(getSectionTotal(financingActivities))">
-                      {{ fmt.formatCurrency(getSectionTotal(financingActivities)) }}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-
-              <tr *ngFor="let item of financingActivities"
-                class="hover:bg-gray-50 transition-colors"
-                [ngClass]="{ 'bg-gray-50 border-t border-gray-200': item.isTotal }">
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center gap-2" [style.padding-left.px]="item.indentLevel * 20">
-                    <ng-container *ngIf="!item.isTotal">
-                      <svg *ngIf="item.type === 'inflow'" class="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <svg *ngIf="item.type === 'outflow'" class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                      </svg>
-                    </ng-container>
-                    <span [class.font-bold]="isBoldRow(item)" class="text-sm text-gray-900">{{ item.description }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span [ngClass]="fmt.getAmountClass(item.amount)" [class.font-bold]="isBoldRow(item)" class="text-sm tabular-nums">
-                    {{ fmt.formatCurrency(item.amount) }}
-                  </span>
-                </td>
-                <td class="px-6 py-3.5 whitespace-nowrap">
-                  <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                    Financing
-                  </span>
-                </td>
-                <td class="px-6 py-3.5">
-                  <div *ngIf="!item.isTotal" class="w-36 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div [ngClass]="{ 'bg-green-500': item.amount > 0, 'bg-red-400': item.amount < 0 }"
-                      [style.width.%]="getTrendWidth(item.amount)"
-                      class="h-full rounded-full transition-all duration-500"></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-
-            <!-- SUMMARY ROWS -->
-            <tbody class="bg-gray-50">
-              <tr class="border-t-2 border-gray-300">
-                <td class="px-6 py-4 font-bold text-gray-900">Net Increase/Decrease in Cash</td>
-                <td class="px-6 py-4">
-                  <span class="font-bold text-lg" [ngClass]="fmt.getAmountClass(metrics.netCashFlow)">
-                    {{ fmt.formatCurrency(metrics.netCashFlow) }}
-                  </span>
-                </td>
-                <td colspan="2" class="px-6 py-4 text-xs text-gray-500">
-                  Operating + Investing + Financing
-                </td>
-              </tr>
-              <tr class="border-t border-gray-200">
-                <td class="px-6 py-3 text-gray-600">Opening Cash Balance</td>
-                <td class="px-6 py-3 font-medium text-gray-700">{{ fmt.formatCurrency(openingBalance) }}</td>
-                <td colspan="2" class="px-6 py-3 text-xs text-gray-400">Prior period closing balance</td>
-              </tr>
-              <tr class="border-t-2 border-gray-400 border-b-2 border-b-gray-400">
-                <td class="px-6 py-4 font-bold text-gray-900 text-base">Closing Cash Balance</td>
-                <td class="px-6 py-4">
-                  <span class="font-extrabold text-lg text-green-700">{{ fmt.formatCurrency(closingBalance) }}</span>
-                </td>
-                <td colspan="2" class="px-6 py-4 text-xs text-gray-500">
-                  Opening + Net Cash Flow
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Table Footer -->
-        <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-          <div class="flex items-center gap-4">
-            <span class="flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Figures in Nigerian Naira (₦)
-            </span>
-            <span>Period: {{ reportPeriodLabel }}</span>
-            <span class="text-amber-600">IFRS / NGAAP Compliant</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Nigerian Tax Breakdown -->
-      <div class="mb-6">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-          <!-- Section Header -->
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-red-100 rounded-xl text-red-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <div>
-                <h2 class="text-lg font-semibold text-gray-900">Nigerian Tax Breakdown</h2>
-                <p class="text-sm text-gray-500">FIRS Compliance Summary</p>
-              </div>
-            </div>
-            <span [ngClass]="{
-              'bg-green-100 text-green-700 border-green-200': nigerianCompliance.taxCompliant,
-              'bg-red-100 text-red-700 border-red-200': !nigerianCompliance.taxCompliant
-            }" class="px-3 py-1 rounded-full text-sm font-medium border">
-              {{ nigerianCompliance.taxCompliant ? 'FIRS Compliant' : 'Non-Compliant' }}
-            </span>
-          </div>
-
-          <!-- 4 Tax Sub-Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-            <!-- CIT -->
-            <div class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <div class="text-sm font-medium text-gray-600 mb-2">Company Income Tax (CIT)</div>
-              <div class="text-xl font-bold text-gray-900 mb-2">{{ fmt.formatCurrency(taxBreakdown.cit) }}</div>
-              <div class="text-xs text-green-600 flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Paid Q4 2025
-              </div>
-              <div class="mt-2 text-xs text-gray-400">Annual filing — CITA</div>
-            </div>
-
-            <!-- VAT -->
-            <div class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <div class="text-sm font-medium text-gray-600 mb-2">Value Added Tax (VAT)</div>
-              <div class="text-xl font-bold text-gray-900 mb-2">{{ fmt.formatCurrency(taxBreakdown.vat) }}</div>
-              <div class="text-xs text-green-600 flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Monthly Returns Filed
-              </div>
-              <div class="mt-2 text-xs text-gray-400">
-                Net remitted: Output {{ fmt.formatCurrency(outputVAT) }} − Input {{ fmt.formatCurrency(inputVATAmount) }}
-              </div>
-            </div>
-
-            <!-- WHT -->
-            <div class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <div class="text-sm font-medium text-gray-600 mb-2">Withholding Tax (WHT)</div>
-              <div class="text-xl font-bold text-gray-900 mb-2">{{ fmt.formatCurrency(taxBreakdown.wht) }}</div>
-              <div class="text-xs text-green-600 flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Deducted at Source
-              </div>
-              <div class="mt-2 text-xs text-gray-400">5–10% on vendor payments</div>
-            </div>
-
-            <!-- Education Tax -->
-            <div class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <div class="text-sm font-medium text-gray-600 mb-2">Education Tax (TETFund)</div>
-              <div class="text-xl font-bold text-gray-900 mb-2">{{ fmt.formatCurrency(taxBreakdown.educationTax) }}</div>
-              <div class="text-xs text-green-600 flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Annual Payment
-              </div>
-              <div class="mt-2 text-xs text-gray-400">2% of assessable profit</div>
-            </div>
-          </div>
-
-          <!-- NASENI (if applicable) -->
-          <div *ngIf="taxBreakdown.naseniLevy > 0" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-            <strong>NASENI Levy:</strong> {{ fmt.formatCurrency(taxBreakdown.naseniLevy) }}
-            <span class="text-xs ml-2 text-amber-600">(Applies to companies with turnover &gt; ₦100M)</span>
-          </div>
-
-          <!-- Total Row -->
-          <div class="flex justify-between items-center pt-5 border-t border-gray-200">
-            <div>
-              <span class="text-base font-bold text-gray-900">Total Tax Payments</span>
-              <p class="text-xs text-gray-500 mt-0.5">Net amount remitted to FIRS for the period</p>
-            </div>
-            <span class="text-xl font-extrabold text-red-600">{{ fmt.formatCurrency(taxBreakdown.total) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-
-        <!-- Card 1: Period Summary -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-3 mb-5">
-            <div class="p-2 bg-green-100 rounded-xl text-green-700">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-900">Period Summary</h3>
-          </div>
-          <div class="space-y-3">
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Total Cash Inflows</span>
-              <span class="font-semibold text-green-600">{{ fmt.formatCurrency(totalCashInflows) }}</span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Total Cash Outflows</span>
-              <span class="font-semibold text-red-600">{{ fmt.formatCurrency(-totalCashOutflows) }}</span>
-            </div>
-            <div class="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
-              <span class="font-semibold text-gray-800">Net Cash Flow</span>
-              <span class="font-bold" [ngClass]="fmt.getAmountClass(metrics.netCashFlow)">
-                {{ fmt.formatCurrency(metrics.netCashFlow) }}
-              </span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Free Cash Flow</span>
-              <span class="font-semibold text-green-600">{{ fmt.formatCurrency(metrics.freeCashFlow) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Financial Health -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-3 mb-5">
-            <div class="p-2 bg-blue-100 rounded-xl text-blue-700">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-900">Financial Health</h3>
-          </div>
-          <div class="space-y-3">
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Cash Conversion Cycle</span>
-              <span class="font-semibold text-green-600">{{ metrics.cashConversionCycle }} days</span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Operating Cash Flow Ratio</span>
-              <span class="font-semibold text-green-600">{{ metrics.operatingCashFlowRatio }}</span>
-            </div>
-            <div class="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
-              <span class="font-semibold text-gray-800">Cash Coverage Ratio</span>
-              <span class="font-bold text-green-600">{{ metrics.cashCoverageRatio }}x</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 3: Compliance Status -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div class="flex items-center gap-3 mb-5">
-            <div class="p-2 bg-red-100 rounded-xl text-red-700">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-900">Compliance Status</h3>
-          </div>
-          <div class="space-y-3">
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">FIRS Status</span>
-              <span [ngClass]="{
-                'text-green-600': nigerianCompliance.firsCompliant,
-                'text-red-600': !nigerianCompliance.firsCompliant
-              }" class="font-semibold">
-                {{ nigerianCompliance.firsCompliant ? 'Compliant ✓' : 'Non-Compliant ✗' }}
-              </span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Last Submission</span>
-              <span class="font-medium text-gray-700">{{ nigerianCompliance.lastSubmission }}</span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">Next Deadline</span>
-              <span class="font-semibold text-amber-600">{{ nigerianCompliance.nextDeadline }}</span>
-            </div>
-            <div class="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
-              <span class="font-semibold text-gray-800">IFRS / NGAAP</span>
-              <span [ngClass]="{
-                'text-green-600': nigerianCompliance.ifrsNgaapCompliant,
-                'text-red-600': !nigerianCompliance.ifrsNgaapCompliant
-              }" class="font-bold">
-                {{ nigerianCompliance.ifrsNgaapCompliant ? 'Compliant ✓' : 'Review Required' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </ng-container>
-  </div>
-
-  <!-- Modal -->
-  <div *ngIf="activeModal" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-
-    <!-- Backdrop -->
-    <div (click)="closeModal()" class="fixed inset-0 bg-gray-800/60 backdrop-blur-sm transition-opacity"></div>
-
-    <!-- Modal Panel -->
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-
-        <!-- Modal Header -->
-        <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-5">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-white/20 rounded-xl">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-white">{{ selectedMetric?.title }}</h3>
-            </div>
-            <button (click)="closeModal()" class="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="px-6 py-5">
-          <!-- Definition -->
-          <p class="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4 mb-5 border border-gray-100">
-            {{ selectedMetric?.definition }}
-          </p>
-
-          <!-- Formula -->
-          <div class="mb-5">
-            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Formula</div>
-            <code class="block text-sm bg-gray-900 text-green-400 p-3 rounded-xl font-mono">
-              {{ selectedMetric?.formula }}
-            </code>
-          </div>
-
-          <!-- Breakdown Table (only in 'details' mode) -->
-          <div *ngIf="activeModal === 'details'">
-            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Calculation Breakdown</div>
-            <div class="border border-gray-200 rounded-xl overflow-hidden">
-              <div *ngFor="let item of selectedMetric?.breakdown; let last = last"
-                class="flex justify-between items-center px-4 py-3 text-sm"
-                [ngClass]="{
-                  'border-b border-gray-100': !last,
-                  'bg-gray-50 font-bold border-t-2 border-gray-300': item.type === 'equals',
-                  'bg-white': item.type !== 'equals'
-                }">
-                <span class="text-gray-700 flex items-center gap-2">
-                  <span *ngIf="item.type === 'add'" class="w-5 h-5 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center justify-center">+</span>
-                  <span *ngIf="item.type === 'subtract'" class="w-5 h-5 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center justify-center">−</span>
-                  <span *ngIf="item.type === 'equals'" class="w-5 h-5 bg-gray-200 text-gray-700 rounded-full text-xs font-bold flex items-center justify-center">=</span>
-                  {{ item.label }}
-                </span>
-                <span [ngClass]="fmt.getAmountClass(item.value)" [class.font-extrabold]="item.type === 'equals'">
-                  {{ fmt.formatCurrency(item.value) }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 pb-5 flex justify-end">
-          <button (click)="closeModal()"
-            class="px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-sm font-semibold shadow-sm">
-            Close
-          </button>
+<div class="cash-flow-page" #reportContent>
+  <section class="hero-card">
+    <div class="hero-left">
+      <div class="hero-icon">▣</div>
+      <div>
+        <h1>Cash Flow Statement</h1>
+        <div class="hero-meta">
+          <span class="meta-pill">{{ periodLabel }}</span>
+          <span class="meta-pill success">FIRS Compliant</span>
         </div>
       </div>
     </div>
-  </div>
 
+    <div class="hero-actions">
+      <div class="view-toggle">
+        <button type="button" [class.active]="viewMode==='direct'" (click)="viewMode='direct'">Direct Method</button>
+        <button type="button" [class.active]="viewMode==='indirect'" (click)="viewMode='indirect'">Indirect Method</button>
+      </div>
+      <button type="button" class="ghost-btn" (click)="exportToCSV()">Export</button>
+    </div>
+  </section>
+
+  <section class="error-banner" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </section>
+
+  <section class="loading-card" *ngIf="loading">
+    <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+    <p>Loading cash flow for {{ periodLabel }}...</p>
+  </section>
+
+  <ng-container *ngIf="!loading && report && summary">
+    <section class="summary-grid">
+      <article class="summary-card success">
+        <span>Net Cash Flow</span>
+        <strong>{{ fmt.formatCurrency(summary.netCashFlow) }}</strong>
+        <small *ngIf="periodComparisons">{{ periodComparisons.netCashFlow.changePercentage | number:'1.1-1' }}% vs last period</small>
+      </article>
+      <article class="summary-card">
+        <span>Operating Cash Flow</span>
+        <strong>{{ fmt.formatCurrency(summary.operatingCashFlow) }}</strong>
+        <small>Core operations</small>
+      </article>
+      <article class="summary-card">
+        <span>Free Cash Flow</span>
+        <strong>{{ fmt.formatCurrency(summary.freeCashFlow) }}</strong>
+        <small>After capital spending</small>
+      </article>
+      <article class="summary-card">
+        <span>Tax Compliance</span>
+        <strong>{{ fmt.formatCurrency(taxBreakdown?.totalTaxPaid ?? 0) }}</strong>
+        <small>Tax payments this period</small>
+      </article>
+    </section>
+
+    <section class="search-card">
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Search cash flow activities..." />
+    </section>
+
+    <section class="statement-card" *ngIf="viewMode === 'direct'">
+      <header class="section-header">
+        <h2>Cash Flow Statement Details</h2>
+        <span class="method-pill">Direct Method</span>
+      </header>
+
+      <div class="table-wrapper">
+        <table class="cashflow-table">
+          <thead>
+            <tr>
+              <th>Cash Flow Activities</th>
+              <th class="text-right">Amount (₦)</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="group-row">
+              <td>Operating Activities</td>
+              <td class="text-right">{{ fmt.formatCurrency(summary.operatingCashFlow) }}</td>
+              <td><span class="category operating">Operating</span></td>
+            </tr>
+            <tr *ngFor="let item of displayedOperatingActivities">
+              <td [style.padding-left.rem]="1 + item.indentLevel">{{ item.description }}</td>
+              <td class="text-right" [ngClass]="getAmountClass(item)">{{ fmt.formatCurrency(item.amount) }}</td>
+              <td><span class="category operating">{{ item.category | titlecase }}</span></td>
+            </tr>
+
+            <tr class="group-row investing">
+              <td>Investing Activities</td>
+              <td class="text-right">{{ fmt.formatCurrency(summary.investingCashFlow) }}</td>
+              <td><span class="category investing">Investing</span></td>
+            </tr>
+            <tr *ngFor="let item of displayedInvestingActivities">
+              <td [style.padding-left.rem]="1 + item.indentLevel">{{ item.description }}</td>
+              <td class="text-right" [ngClass]="getAmountClass(item)">{{ fmt.formatCurrency(item.amount) }}</td>
+              <td><span class="category investing">{{ item.category | titlecase }}</span></td>
+            </tr>
+
+            <tr class="group-row financing">
+              <td>Financing Activities</td>
+              <td class="text-right">{{ fmt.formatCurrency(summary.financingCashFlow) }}</td>
+              <td><span class="category financing">Financing</span></td>
+            </tr>
+            <tr *ngFor="let item of displayedFinancingActivities">
+              <td [style.padding-left.rem]="1 + item.indentLevel">{{ item.description }}</td>
+              <td class="text-right" [ngClass]="getAmountClass(item)">{{ fmt.formatCurrency(item.amount) }}</td>
+              <td><span class="category financing">{{ item.category | titlecase }}</span></td>
+            </tr>
+
+            <tr class="total-row">
+              <td>Net Cash Flow</td>
+              <td class="text-right">{{ fmt.formatCurrency(summary.netCashFlow) }}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="statement-card" *ngIf="viewMode === 'indirect' && indirectReconciliation">
+      <header class="section-header">
+        <h2>Indirect Reconciliation</h2>
+        <span class="method-pill" [class.valid]="reconciliationIsValid">{{ reconciliationIsValid ? 'Reconciled' : 'Check Required' }}</span>
+      </header>
+
+      <div class="detail-stack">
+        <div class="metric-row"><span>Net Income</span><strong>{{ fmt.formatCurrency(indirectReconciliation.netIncome) }}</strong></div>
+        <div class="metric-row"><span>Add Back Depreciation</span><strong>{{ fmt.formatCurrency(indirectReconciliation.addBackDepreciation) }}</strong></div>
+        <div class="metric-row"><span>Add Back Amortization</span><strong>{{ fmt.formatCurrency(indirectReconciliation.addBackAmortization) }}</strong></div>
+        <div class="metric-row"><span>Working Capital Changes</span><strong>{{ fmt.formatCurrency(indirectReconciliation.changesInWorkingCapital) }}</strong></div>
+        <div class="metric-row metric-row--total"><span>Calculated Operating Cash</span><strong>{{ fmt.formatCurrency(indirectReconciliation.calculatedOperatingCash) }}</strong></div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="cashflow-table">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Code</th>
+              <th class="text-right">Change Amount</th>
+              <th>Effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let wc of workingCapitalChanges">
+              <td>{{ wc.accountName }}</td>
+              <td>{{ wc.accountCode }}</td>
+              <td class="text-right">{{ fmt.formatCurrency(wc.changeAmount) }}</td>
+              <td><span class="category" [class.operating]="wc.effectType==='source'" [class.investing]="wc.effectType==='use'">{{ wc.effectType | titlecase }}</span></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2">Total</td>
+              <td class="text-right">{{ fmt.formatCurrency(workingCapitalTotal) }}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="detail-grid">
+      <article class="info-card" *ngIf="taxBreakdown">
+        <header>
+          <h2>Nigerian Tax Breakdown</h2>
+          <span class="meta-pill success">FIRS Compliant</span>
+        </header>
+        <div class="tax-grid">
+          <div><span>Company Income Tax (CIT)</span><strong>{{ fmt.formatCurrency(taxBreakdown.companiesIncomeTax) }}</strong></div>
+          <div><span>Value Added Tax (VAT)</span><strong>{{ fmt.formatCurrency(taxBreakdown.valueAddedTax) }}</strong></div>
+          <div><span>Withholding Tax (WHT)</span><strong>{{ fmt.formatCurrency(taxBreakdown.withholdingTax) }}</strong></div>
+          <div><span>Education Tax</span><strong>{{ fmt.formatCurrency(taxBreakdown.educationTax) }}</strong></div>
+        </div>
+        <div class="metric-row metric-row--total"><span>Total Tax Payments</span><strong>{{ fmt.formatCurrency(taxBreakdown.totalTaxPaid) }}</strong></div>
+      </article>
+
+      <article class="info-card">
+        <header>
+          <h2>Period Summary</h2>
+        </header>
+        <div class="metric-row"><span>Opening Cash Balance</span><strong>{{ fmt.formatCurrency(summary.openingBalance) }}</strong></div>
+        <div class="metric-row"><span>Closing Cash Balance</span><strong>{{ fmt.formatCurrency(summary.closingBalance) }}</strong></div>
+        <div class="metric-row"><span>Operating Cash Flow</span><strong>{{ fmt.formatCurrency(summary.operatingCashFlow) }}</strong></div>
+        <div class="metric-row metric-row--total"><span>Free Cash Flow</span><strong>{{ fmt.formatCurrency(summary.freeCashFlow) }}</strong></div>
+      </article>
+
+      <article class="info-card">
+        <header>
+          <h2>Compliance Status</h2>
+        </header>
+        <div class="metric-row"><span>FIRS Status</span><strong>Compliant</strong></div>
+        <div class="metric-row"><span>Report Period</span><strong>{{ periodLabel }}</strong></div>
+        <div class="metric-row"><span>IFRS / NGAAP</span><strong>Compliant</strong></div>
+        <div class="metric-row metric-row--total"><span>Net Cash Flow</span><strong>{{ fmt.formatCurrency(summary.netCashFlow) }}</strong></div>
+      </article>
+    </section>
+
+    <app-report-context [context]="report.reportContext"></app-report-context>
+  </ng-container>
 </div>

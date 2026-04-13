@@ -1,43 +1,27 @@
+
 import {
-  Component, OnInit, OnDestroy, ChangeDetectionStrategy,
-  Input, Output, EventEmitter, ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  OnDestroy,
+  OnInit,
 } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-  AccountingService,
-  TaxSummaryData
-} from '../../../../core/services/accounting.service';
+import { AccountingService } from '../../../../core/services/accounting.service';
 import { AccountingFormatService } from '../../../../core/services/accounting-format.service';
+import {
+  FilingRecordDTO,
+  FilingStatus,
+  PayeEmployeeDTO,
+  TaxComplianceCheckDTO,
+  TaxLineItemDTO,
+  TaxSummaryReportDTO,
+  TaxType,
+} from '../../../../core/dtos/report.dto';
 
-// Re-export TaxType enum so templates that reference it still compile
-export enum TaxType { VAT = 'VAT', WHT = 'WHT', CIT = 'CIT' }
-
-// Local interfaces for UI display
-interface TaxLine {
-  id: string;
-  type: TaxType;
-  description: string;
-  baseAmount: number;
-  taxAmount: number;
-  rate: number;
-  direction: 'input' | 'output';
-  glAccount: string;
-  source: string;
-  timestamp: Date;
-  period: string;
-  vendorName?: string;
-}
-
-interface ComplianceStatus {
-  complianceScore: number;
-  filed: boolean;
-  paid: boolean;
-  paymentDue?: number;
-  flaggedIssues?: { severity: 'low' | 'medium' | 'high'; message: string }[];
-}
+export type TaxTab = 'summary' | 'vat' | 'wht' | 'cit' | 'paye' | 'history';
 
 @Component({
   selector: 'app-tax-summary',
@@ -46,55 +30,53 @@ interface ComplianceStatus {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaxSummaryComponent implements OnInit, OnDestroy {
+  // ── Service data ──────────────────────────────────────────────────────────
+  report: TaxSummaryReportDTO | null = null;
+  loading = true;
+  errorMessage = '';
 
-  @Input() period: string = new Date().toISOString().slice(0, 7);
-  @Output() complianceStatusChanged = new EventEmitter<number>();
+  // ── UI state (no financial data here) ────────────────────────────────────
+  activeTab: TaxTab = 'summary';
+  selectedTaxTypeFilter = 'All Types';
+  taxLineSearchQuery = '';
+  expandedLineIds = new Set<string>();
+  showValidationModal = false;
+  showComplianceModal = false;
+  showExportModal = false;
+  today = new Date();
+  selectedTabIndex = 0;
+  taxCompositionChartOptions: Partial<any> | null = null;
+  monthlyTrendChartOptions: Partial<any> | null = null;
 
-  // ── Forms ─────────────────────────────────────────────────────────────────────
-  taxEntryForm!: FormGroup;
-  vatFilterForm!: FormGroup;
-
-  // ── Data from Service ─────────────────────────────────────────────────────
-  data: TaxSummaryData | null = null;
-
-  // ── UI state ─────────────────────────────────────────────────────────────────
-  selectedTaxType: TaxType = TaxType.VAT;
-  selectedReportType: 'summary' | 'vat' | 'wht' = 'summary';
-  showTaxBreakdown = false;
-  currentPeriod: string = this.period;
-
-  expandedTaxLines = new Set<string>();
-
+  // ── Enum references for templates ────────────────────────────────────────
   readonly TaxType = TaxType;
-  readonly NIGERIAN_VAT_RATE = 0.075;
-  readonly CIT_RATE_LARGE = 0.30;
-  readonly EDUCATION_TAX_RATE = 0.025;
-  readonly NASENI_RATE = 0.0025;
-
-  taxTypes = [TaxType.VAT, TaxType.WHT, TaxType.CIT];
-  vatDirections = [
-    { label: 'Sales (Output)', value: 'output' },
-    { label: 'Purchases (Input)', value: 'input' },
-  ];
+  readonly FilingStatus = FilingStatus;
+  readonly taxTypeOptions = ['All Types', 'VAT', 'WHT', 'CIT', 'EDT', 'PAYE'];
 
   private destroy$ = new Subject<void>();
 
   constructor(
-    private accountingService: AccountingService,
+    private readonly accountingService: AccountingService,
     readonly fmt: AccountingFormatService,
-    private fb: FormBuilder,
-    private cdr: ChangeDetectorRef,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.initForms();
-
-    this.accountingService.getTaxSummary()
+    this.accountingService
+      .getTaxSummaryReport()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((data: TaxSummaryData) => {
-        this.data = data;
-        this.complianceStatusChanged.emit(data.complianceScore);
-        this.cdr.markForCheck();
+      .subscribe({
+        next: (report) => {
+          this.report = report;
+          this.buildCharts(report);
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.errorMessage = 'Unable to load tax summary for this period.';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
       });
   }
 
@@ -103,461 +85,360 @@ export class TaxSummaryComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private initForms(): void {
-    this.taxEntryForm = this.fb.group({
-      type: [TaxType.VAT, Validators.required],
-      description: ['', Validators.required],
-      baseAmount: [0, [Validators.required, Validators.min(0)]],
-      direction: ['output', Validators.required],
-    });
-
-    this.vatFilterForm = this.fb.group({
-      direction: ['all'],
-      fromDate: [''],
-      toDate: [''],
-    });
-  }
-
-  // ─── Convenience Getters ─────────────────────────────────────────────────────
-
-  get vatSummary() {
-    return this.data?.vat;
-  }
-
-  get whtSummary() {
-    return this.data?.wht;
-  }
-
-  get citSummary() {
-    return this.data?.cit;
-  }
-
-  get deferredTax() {
-    return this.data?.deferredTax;
-  }
-
-  get inputVATRecoverability() {
-    return this.data?.inputVATRecoverability;
-  }
-
-  get complianceStatus(): ComplianceStatus {
-    return {
-      complianceScore: this.data?.complianceScore ?? 0,
-      filed: true, // Would come from service in real implementation
-      paid: true,  // Would come from service in real implementation
-      paymentDue: this.data?.cit.totalLiability ?? 0,
-      flaggedIssues: this.generateFlaggedIssues(),
-    };
-  }
-
-  // Generate flagged issues based on data
-  private generateFlaggedIssues(): { severity: 'low' | 'medium' | 'high'; message: string }[] {
-    const issues: { severity: 'low' | 'medium' | 'high'; message: string }[] = [];
-
-    if (this.data && this.data.inputVATRecoverability.recoverabilityRate < 0.95) {
-      issues.push({
-        severity: 'medium',
-        message: `Input VAT recoverability rate is ${(this.data.inputVATRecoverability.recoverabilityRate * 100).toFixed(1)}% — review non-recoverable amounts`
-      });
-    }
-
-    if (this.data && this.data.complianceScore < 70) {
-      issues.push({
-        severity: 'high',
-        message: 'Compliance score is below target — review filing and payment status'
-      });
-    }
-
-    return issues;
-  }
-
-  // Generate tax lines from service data
-  get taxLines(): TaxLine[] {
-    if (!this.data) return [];
-
-    const lines: TaxLine[] = [];
-
-    // Add VAT lines
-    if (this.data.vat) {
-      lines.push({
-        id: 'VAT-001',
-        type: TaxType.VAT,
-        description: 'Output VAT on Sales',
-        baseAmount: this.data.vat.totalSales,
-        taxAmount: this.data.vat.outputVAT,
-        rate: 0.075,
-        direction: 'output',
-        glAccount: '2140',
-        source: 'Sales',
-        timestamp: new Date(),
-        period: this.data.period,
-      });
-
-      lines.push({
-        id: 'VAT-002',
-        type: TaxType.VAT,
-        description: 'Input VAT on Purchases',
-        baseAmount: this.data.vat.totalPurchases,
-        taxAmount: this.data.vat.inputVAT,
-        rate: 0.075,
-        direction: 'input',
-        glAccount: '1050',
-        source: 'Procurement',
-        timestamp: new Date(),
-        period: this.data.period,
-      });
-    }
-
-    // Add WHT lines
-    if (this.data.wht) {
-      if (this.data.wht.at5pct > 0) {
-        lines.push({
-          id: 'WHT-5PCT',
-          type: TaxType.WHT,
-          description: 'WHT at 5% on Services',
-          baseAmount: this.data.wht.at5pct / 0.05,
-          taxAmount: this.data.wht.at5pct,
-          rate: 0.05,
-          direction: 'output',
-          glAccount: '2150',
-          source: 'AP Module',
-          timestamp: new Date(),
-          period: this.data.period,
-          vendorName: 'Various Vendors',
-        });
-      }
-
-      if (this.data.wht.at10pct > 0) {
-        lines.push({
-          id: 'WHT-10PCT',
-          type: TaxType.WHT,
-          description: 'WHT at 10% on Contracts',
-          baseAmount: this.data.wht.at10pct / 0.10,
-          taxAmount: this.data.wht.at10pct,
-          rate: 0.10,
-          direction: 'output',
-          glAccount: '2150',
-          source: 'AP Module',
-          timestamp: new Date(),
-          period: this.data.period,
-          vendorName: 'Various Contractors',
-        });
-      }
-    }
-
-    return lines;
-  }
-
-  // ─── Computed Values ─────────────────────────────────────────────────────────
-
-  get netVATPayable(): number {
-    return this.data?.vat.netVATPayable ?? 0;
-  }
-
-  get totalCITLiability(): number {
-    return this.data?.cit.totalLiability ?? 0;
-  }
-
-  get whtTotal(): number {
-    return this.data?.wht.totalWithheld ?? 0;
-  }
-
-  get complianceScore(): number {
-    return this.data?.complianceScore ?? 0;
-  }
-
-  /** True when input VAT recoverability < 100% — show warning banner */
-  get hasNonRecoverableVAT(): boolean {
-    return (this.data?.inputVATRecoverability.recoverabilityRate ?? 1) < 1;
-  }
-
-  get netDeferredTaxPosition(): number {
-    return this.data?.deferredTax.netPosition ?? 0;
-  }
-
-  get totalTaxPayable(): number {
-    return this.netVATPayable + this.whtTotal;
-  }
-
-  get totalTaxRecoverable(): number {
-    return this.data?.vat.inputVAT ?? 0;
-  }
-
-  get netTaxPosition(): number {
-    return this.totalTaxPayable - this.totalTaxRecoverable;
-  }
-
-  get citEstimate() {
-    if (!this.data) return null;
-
-    return {
-      tier: this.data.cit.turnover >= 100_000_000 ? 'Large Company' : 'Medium/Small',
-      citRate: this.data.cit.rate,
-      citAmount: this.data.cit.citCharge,
-      educationTax: this.data.cit.educationTax,
-      naseniLevy: this.data.cit.naseniLevy,
-      nextDueQuarter: '30 September 2025', // Would come from service
-    };
-  }
-
-  get vatReturnData() {
-    if (!this.data) return null;
-
-    const v = this.data.vat;
-    return {
-      totalSales: this.fmt.formatCurrency(v.totalSales),
-      salesVAT: this.fmt.formatCurrency(v.outputVAT),
-      totalPurchases: this.fmt.formatCurrency(v.totalPurchases),
-      purchasesVAT: this.fmt.formatCurrency(v.inputVAT),
-      payable: this.fmt.formatCurrency(v.outputVAT),
-      recoverable: this.fmt.formatCurrency(v.inputVAT),
-      netVATPayable: this.fmt.formatCurrency(v.netVATPayable),
-      amountToFIRS: this.fmt.formatCurrency(v.netVATPayable),
-      hasCreditBalance: false,
-      vatCreditBalance: '₦0',
-    };
-  }
-
-  get whtReportData() {
-    if (!this.data) return null;
-
-    const w = this.data.wht;
-    const breakdownByRate = [];
-
-    if (w.at5pct > 0) {
-      breakdownByRate.push({
-        rate: '5%',
-        rateCode: 'WHT-050',
-        description: 'Services',
-        amount: this.fmt.formatCurrency(w.at5pct),
-        count: 1,
-      });
-    }
-
-    if (w.at10pct > 0) {
-      breakdownByRate.push({
-        rate: '10%',
-        rateCode: 'WHT-100',
-        description: 'Contracts',
-        amount: this.fmt.formatCurrency(w.at10pct),
-        count: 1,
-      });
-    }
-
-    return {
-      totalWHTWithheld: this.fmt.formatCurrency(w.totalWithheld),
-      breakdownByRate,
-    };
-  }
-
-  get deferredTaxPosition() {
-    if (!this.data) return null;
-    return this.data.deferredTax;
-  }
-
-  get deferredTaxLabel(): string {
-    if (!this.data) return '';
-    const pos = this.data.deferredTax.netPosition;
-    if (pos > 0) return `DTA: ${this.fmt.formatCurrency(pos)}`;
-    if (pos < 0) return `DTL: ${this.fmt.formatCurrency(Math.abs(pos))}`;
-    return 'Nil deferred tax';
-  }
-
-  // ─── Filing Calendar ─────────────────────────────────────────────────────────
-  get filingCalendar() {
-    return [
-      { obligation: 'VAT Return', deadline: '21st of following month', frequency: 'Monthly' },
-      { obligation: 'WHT Remittance', deadline: '21st of following month', frequency: 'Monthly' },
-      { obligation: 'CIT Instalment 1 (45%)', deadline: '30 June', frequency: 'Annual' },
-      { obligation: 'CIT Instalment 2 (45%)', deadline: '30 September', frequency: 'Annual' },
-      { obligation: 'CIT Balance (10%)', deadline: '6 months after financial year-end', frequency: 'Annual' },
-      { obligation: 'Education Tax', deadline: 'Same as CIT', frequency: 'Annual' },
-      { obligation: 'PAYE Remittance', deadline: '10th of following month', frequency: 'Monthly' },
-    ];
-  }
- 
-  // ─── Format Shortcuts 
-  formatCurrency(v: number): string {
-    return this.fmt.formatCurrency(v);
-  }
-
-  formatTaxAmount(v: number): string {
-    return this.fmt.formatCurrency(v);
-  }
-
-  formatAccounting(v: number): string {
-    return this.fmt.formatCurrency(v);
-  }
-
-  formatPct(v: number): string {
-    return this.fmt.formatPercentage(v);
-  }
-
-  //  UI Helpers 
-
-  getComplianceScoreClass(score: number): string {
-    if (score >= 90) return 'bg-emerald-100 text-emerald-700';
-    if (score >= 60) return 'bg-amber-100 text-amber-700';
-    return 'bg-red-100 text-red-600';
-  }
-
-  getIssueSeverityClass(severity: 'low' | 'medium' | 'high'): string {
-    const map: Record<'low' | 'medium' | 'high', string> = {
-      low: 'bg-blue-50 text-blue-800',
-      medium: 'bg-amber-50 text-amber-800',
-      high: 'bg-red-50 text-red-700',
-    };
-    return map[severity];
-  }
-
-  getGLAccountLabel(code: string): string {
-    const map: Record<string, string> = {
-      '2140': 'VAT Payable (Liability)',
-      '1050': 'Input VAT Recoverable (Asset)',
-      '2150': 'WHT Payable (Liability)',
-    };
-    return map[code] || code;
-  }
-
-  getTaxClassificationBadge(line: TaxLine): { class: string; text: string } {
-    const isLiability = line.direction === 'output' || line.type === TaxType.WHT;
-    return {
-      class: isLiability ? 'badge-warning' : 'badge-info',
-      text: isLiability ? 'Liability' : 'Asset',
-    };
-  }
-
-  getWHTRateDescription(rateCode: string): string {
-    const map: Record<string, string> = {
-      'WHT-050': 'Services — 5%',
-      'WHT-100': 'Contractors — 10%',
-      'WHT-025': 'Corporate Dividends — 2.5%',
-      'WHT-150': "Non-Resident Directors' — 15%",
-    };
-    return map[rateCode] || rateCode;
-  }
-
-  getPeriodDateRange(period: string): string {
-    if (!period) return '';
-    const [y, m] = period.split('-').map(Number);
-    const start = new Date(y, m - 1, 1);
-    const end = new Date(y, m, 0);
-    return `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
-  }
-
-  getPeriodDisplay(): string {
-    if (!this.currentPeriod) return '';
-    const [y, m] = this.currentPeriod.split('-').map(Number);
-    return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
-
-  // ─── Event Handlers ─────────────────────────────────────────────────────────
-
-  changePeriod(newPeriod: string): void {
-    this.currentPeriod = newPeriod;
-    // In a real implementation, this would call accountingService.setPeriod()
-    const [y, m] = newPeriod.split('-').map(Number);
+  // ── Period navigation ─────────────────────────────────────────────────────
+  changePeriod(isoMonth: string): void {
+    const [y, m] = isoMonth.split('-').map(Number);
     this.accountingService.setPeriod(new Date(y, m - 1, 1));
   }
 
-  changeTaxType(type: TaxType): void {
-    this.selectedTaxType = type;
+  // ── Derived view values (read‑only — all sourced from DTO) ────────────────
+  get periodDisplayLabel(): string {
+    if (!this.report) return '';
+    const [y, m] = this.report.reportingPeriod.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString('en-NG', {
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
-  expandTaxLine(id: string): void {
-    if (this.expandedTaxLines.has(id)) {
-      this.expandedTaxLines.delete(id);
+  get periodDateRange(): string {
+    if (!this.report) return '';
+    const [y, m] = this.report.reportingPeriod.split('-').map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    const f = (d: Date) =>
+      `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    return `${f(start)} – ${f(end)}`;
+  }
+
+  /** Tax lines filtered by the active type filter and search query. */
+  get filteredTaxLines(): TaxLineItemDTO[] {
+    if (!this.report) return [];
+    return this.report.taxLineItems.filter((line) => {
+      const matchesType =
+        this.selectedTaxTypeFilter === 'All Types' ||
+        line.taxType === this.selectedTaxTypeFilter;
+      const matchesQuery =
+        !this.taxLineSearchQuery ||
+        line.description.toLowerCase().includes(this.taxLineSearchQuery.toLowerCase()) ||
+        (line.vendorName ?? '').toLowerCase().includes(this.taxLineSearchQuery.toLowerCase());
+      return matchesType && matchesQuery;
+    });
+  }
+
+  /** PAYE employees from the DTO — used by the PAYE tab table. */
+  get payeEmployees(): PayeEmployeeDTO[] {
+    return this.report?.paye.employees ?? [];
+  }
+
+  /** Total PAYE from the DTO — no summing in the template. */
+  get totalPayeDeducted(): number {
+    return this.report?.paye.totalPayeDeducted ?? 0;
+  }
+
+  get totalGrossSalary(): number {
+    return this.payeEmployees.reduce((sum, employee) => sum + employee.grossSalary, 0);
+  }
+
+  get totalPensionDeduction(): number {
+    return this.payeEmployees.reduce((sum, employee) => sum + employee.pensionDeduction, 0);
+  }
+
+  get totalNhfDeduction(): number {
+    return this.payeEmployees.reduce((sum, employee) => sum + employee.nhfDeduction, 0);
+  }
+
+  get totalTaxableIncome(): number {
+    return this.payeEmployees.reduce((sum, employee) => sum + employee.taxableIncome, 0);
+  }
+
+  get totalNetSalary(): number {
+    return this.payeEmployees.reduce((sum, employee) => sum + employee.netSalary, 0);
+  }
+
+  /** Filing history from the DTO. */
+  get filingHistory(): FilingRecordDTO[] {
+    return this.report?.filingHistory ?? [];
+  }
+
+  /** Compliance checks from the DTO. */
+  get complianceChecks(): TaxComplianceCheckDTO[] {
+    return this.report?.complianceChecks ?? [];
+  }
+
+  get passedComplianceCount(): number {
+    return this.complianceChecks.filter((c) => c.isPassed).length;
+  }
+
+  get totalTaxPosition(): number {
+    if (!this.report) {
+      return 0;
+    }
+
+    return this.report.vat.netVatPayable +
+      this.report.wht.totalWithheld +
+      this.report.cit.totalCitLiability +
+      this.report.paye.totalPayeDeducted;
+  }
+
+  get recentTaxEntries(): TaxLineItemDTO[] {
+    return this.filteredTaxLines.slice(0, 10);
+  }
+
+  get totalTaxTransactions(): number {
+    return this.report?.taxLineItems.length ?? 0;
+  }
+
+  get activeComplianceIssues(): TaxComplianceCheckDTO[] {
+    return this.complianceChecks.filter((check) => !check.isPassed);
+  }
+
+  /** Bar chart height — maps a tax amount onto 112px against 800K ceiling. */
+  getBarHeight(amount: number, ceilAmount = 800_000): number {
+    const BAR_PX = 112;
+    return Math.round(Math.min(amount / ceilAmount, 1) * BAR_PX);
+  }
+
+  // ── Validation helpers ────────────────────────────────────────────────────
+  get vatValidation(): {
+    outputVAT: string;
+    inputVAT: string;
+    netVATPayable: string;
+    netVATPayableCalc: string;
+    isValid: boolean;
+  } {
+    if (!this.report)
+      return {
+        outputVAT: '—',
+        inputVAT: '—',
+        netVATPayable: '—',
+        netVATPayableCalc: '—',
+        isValid: false,
+      };
+    const { vat } = this.report;
+    const calc = vat.outputVAT - vat.inputVAT;
+    return {
+      outputVAT: this.fmt.formatCurrency(vat.outputVAT),
+      inputVAT: this.fmt.formatCurrency(vat.inputVAT),
+      netVATPayable: this.fmt.formatCurrency(vat.netVatPayable),
+      netVATPayableCalc: this.fmt.formatCurrency(calc),
+      isValid: Math.abs(calc - vat.netVatPayable) < 1,
+    };
+  }
+
+  get whtValidation(): {
+    totalWithheld: string;
+    breakdownByRate: { rate: string; description: string; count: number; amount: string }[];
+    isValid: boolean;
+  } {
+    if (!this.report)
+      return { totalWithheld: '—', breakdownByRate: [], isValid: false };
+    const { wht } = this.report;
+    const breakdownSum = wht.rateBreakdown.reduce((s, r) => s + r.totalAmount, 0);
+    return {
+      totalWithheld: this.fmt.formatCurrency(wht.totalWithheld),
+      breakdownByRate: wht.rateBreakdown.map((r) => ({
+        rate: r.rate,
+        description: r.description,
+        count: r.transactionCount,
+        amount: this.fmt.formatCurrency(r.totalAmount),
+      })),
+      isValid: Math.abs(breakdownSum - wht.totalWithheld) < 1,
+    };
+  }
+
+  // ── GL account label helper ───────────────────────────────────────────────
+  getGLAccountLabel(code: string): string {
+    const map: Record<string, string> = {
+      '1050': 'VAT Recoverable (Asset)',
+      '2140': 'VAT Payable (Liability)',
+      '2150': 'WHT Payable (Liability)',
+      '2160': 'Income Tax Payable (Liability)',
+      '2170': 'Education Tax Payable (Liability)',
+      '2180': 'PAYE Payable (Liability)',
+    };
+    return map[code] ?? code;
+  }
+
+  getComplianceScoreClass(score: number): string {
+    if (score >= 90) return 'score-high';
+    if (score >= 60) return 'score-medium';
+    return 'score-low';
+  }
+
+  getFilingStatusClass(status: FilingStatus): string {
+    const map: Record<FilingStatus, string> = {
+      [FilingStatus.FILED]: 'status-filed',
+      [FilingStatus.PENDING]: 'status-pending',
+      [FilingStatus.OVERDUE]: 'status-overdue',
+    };
+    return map[status] ?? 'status-pending';
+  }
+
+  // ── Row expand ────────────────────────────────────────────────────────────
+  toggleLineExpand(id: string): void {
+    if (this.expandedLineIds.has(id)) {
+      this.expandedLineIds.delete(id);
     } else {
-      this.expandedTaxLines.add(id);
+      this.expandedLineIds.add(id);
     }
   }
 
-  validateTaxCalculations(): void {
-    // In a real implementation, this would trigger validation
-    console.log('Tax calculations validated');
-    alert('All tax calculations validated successfully ✓');
+  isLineExpanded(id: string): boolean {
+    return this.expandedLineIds.has(id);
   }
 
-  checkComplianceStatus(): void {
-    // Compliance status is already in the data
-    alert(`Compliance Score: ${this.complianceScore}%\nStatus: ${this.complianceScore >= 70 ? 'Good' : 'Needs Attention'}`);
+  // ── Tab navigation ────────────────────────────────────────────────────────
+  setTab(tab: number | TaxTab): void {
+    if (typeof tab === 'number') {
+      const tabs: TaxTab[] = ['summary', 'vat', 'wht', 'cit', 'paye', 'history'];
+      this.selectedTabIndex = tab;
+      this.activeTab = tabs[tab] ?? 'summary';
+      return;
+    }
+
+    this.activeTab = tab;
+    this.selectedTabIndex = ['summary', 'vat', 'wht', 'cit', 'paye', 'history'].indexOf(tab);
   }
 
-  // ─── Export Methods ─────────────────────────────────────────────────────────
+  // ── Modal open/close ──────────────────────────────────────────────────────
+  openValidationModal(): void {
+    this.showValidationModal = true;
+  }
+  closeValidationModal(): void {
+    this.showValidationModal = false;
+  }
+  openComplianceModal(): void {
+    this.showComplianceModal = true;
+  }
+  closeComplianceModal(): void {
+    this.showComplianceModal = false;
+  }
+  openExportModal(): void {
+    this.showExportModal = true;
+  }
+  closeExportModal(): void {
+    this.showExportModal = false;
+  }
 
+  // ── Export ────────────────────────────────────────────────────────────────
   exportTaxReport(): void {
-    if (!this.data) return;
-
-    const report = {
-      period: this.currentPeriod,
+    if (!this.report) return;
+    const payload = {
+      period: this.report.reportingPeriod,
       generatedAt: new Date().toISOString(),
-      vat: this.data.vat,
-      wht: this.data.wht,
-      cit: this.data.cit,
-      deferredTax: this.data.deferredTax,
-      inputVATRecoverability: this.data.inputVATRecoverability,
-      complianceScore: this.data.complianceScore,
+      vat: this.report.vat,
+      wht: this.report.wht,
+      cit: this.report.cit,
+      complianceScore: this.report.complianceScore,
     };
-
-    this.download('tax-report', report);
+    this.triggerDownload(`tax-report-${this.report.reportingPeriod}`, payload);
+    this.showExportModal = false;
   }
 
-  exportVATReport(): void {
-    if (!this.data) return;
-
-    const report = {
-      reportType: 'VAT Return',
-      period: this.currentPeriod,
-      summary: {
-        outputVAT: this.data.vat.outputVAT,
-        inputVAT: this.data.vat.inputVAT,
-        netVATPayable: this.data.vat.netVATPayable,
-        totalSales: this.data.vat.totalSales,
-        totalPurchases: this.data.vat.totalPurchases,
-      },
-    };
-
-    this.download('vat-report', report);
+  exportPayeSchedule(): void {
+    if (!this.report) return;
+    this.triggerDownload(`paye-schedule-${this.report.reportingPeriod}`, {
+      reportType: 'PAYE Schedule',
+      period: this.report.reportingPeriod,
+      employees: this.report.paye.employees,
+      total: this.report.paye.totalPayeDeducted,
+    });
   }
 
-  exportWHTReport(): void {
-    if (!this.data) return;
-
-    const report = {
-      reportType: 'Withholding Tax Schedule',
-      period: this.currentPeriod,
-      summary: {
-        totalWithheld: this.data.wht.totalWithheld,
-        at5pct: this.data.wht.at5pct,
-        at10pct: this.data.wht.at10pct,
-      },
-    };
-
-    this.download('wht-report', report);
-  }
-
-  private download(filename: string, data: object): void {
+  private triggerDownload(filename: string, data: object): void {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), {
-      href: url,
-      download: `${filename}-${this.currentPeriod}.json`,
-    });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ─── Form Submission ────────────────────────────────────────────────────────
+  private buildCharts(report: TaxSummaryReportDTO): void {
+    this.taxCompositionChartOptions = {
+      series: [
+        report.vat.netVatPayable,
+        report.wht.totalWithheld,
+        report.cit.totalCitLiability,
+        report.paye.totalPayeDeducted,
+        report.cit.educationTaxLevy,
+      ],
+      chart: {
+        type: 'donut',
+        height: 360,
+      },
+      labels: ['VAT', 'WHT', 'CIT', 'PAYE', 'EDT'],
+      colors: ['#1f7a4d', '#f08a12', '#2f6fc2', '#6d47c9', '#e3342f'],
+      legend: {
+        position: 'bottom',
+        fontSize: '13px',
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (value: number) => `${value.toFixed(0)}%`,
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '62%',
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: 'Total',
+                formatter: () => this.fmt.formatCurrency(this.totalTaxPosition),
+              },
+            },
+          },
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (value: number) => this.fmt.formatCurrency(value),
+        },
+      },
+    };
 
-  submitVATEntry(): void {
-    if (!this.taxEntryForm.valid) return;
-    alert('VAT entry submitted (demo mode)');
-    this.taxEntryForm.reset({ type: TaxType.VAT, direction: 'output', baseAmount: 0 });
-  }
-
-  submitWHTEntry(): void {
-    if (!this.taxEntryForm.valid) return;
-    alert('WHT entry submitted (demo mode)');
-    this.taxEntryForm.reset({ type: TaxType.WHT, baseAmount: 0 });
+    this.monthlyTrendChartOptions = {
+      series: [
+        { name: 'VAT', data: report.monthlyTaxTrend.map((entry) => entry.vatAmount) },
+        { name: 'WHT', data: report.monthlyTaxTrend.map((entry) => entry.whtAmount) },
+        { name: 'PAYE', data: report.monthlyTaxTrend.map((entry) => entry.payeAmount) },
+      ],
+      chart: {
+        type: 'bar',
+        height: 360,
+        stacked: false,
+        toolbar: { show: false },
+      },
+      plotOptions: {
+        bar: {
+          borderRadius: 6,
+          columnWidth: '46%',
+        },
+      },
+      xaxis: {
+        categories: report.monthlyTaxTrend.map((entry) => entry.periodLabel),
+      },
+      yaxis: {
+        labels: {
+          formatter: (value: number) => `₦${Math.round(value / 1000)}K`,
+        },
+      },
+      colors: ['#1f7a4d', '#f08a12', '#6d47c9'],
+      legend: {
+        position: 'bottom',
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      tooltip: {
+        y: {
+          formatter: (value: number) => this.fmt.formatCurrency(value),
+        },
+      },
+    };
   }
 }
