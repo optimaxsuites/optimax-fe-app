@@ -1,8 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { v4 as uuidV4 } from 'uuid';
-
 
 @Component({
   selector: 'app-dashboard-dropdown',
@@ -14,10 +12,13 @@ export class DashboardDropdownComponent implements OnInit {
   selectedModule = 'Overview';
 
   modules = [
-    { name: 'Overview', route: '/admin/dashboard/overview/' +uuidV4() },
-    { name: 'POS', route: '/admin/dashboard/POS/' +uuidV4() },
-    { name: 'HR', route: '/admin/dashboard/HR/' +uuidV4() },
-    { name: 'General', route: '/admin/dashboard/'+uuidV4() },
+    { name: 'Overview', route: '/dashboard/overview' },
+    { name: 'POS', route: '/POS/86b1650f-670f-4692-bf4f-332f45c033b9' },
+    { name: 'HR', route: '/HR/86b1650f-670f-4692-bf4f-332f45c033b9' },
+    { name: 'General', route: '/86b1650f-670f-4692-bf4f-332f45c033b9' },
+  //   { name: 'Communication', route: '/dashboard/communication' },
+  // { name: 'OptimaXAI', route: '/dashboard/optimaxai' },
+  // { name: 'Analytics', route: '/dashboard/analytics' },
     // { name: 'Kitchen' },
     // { name: 'Accounting' },
   ];

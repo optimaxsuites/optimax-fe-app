@@ -395,13 +395,39 @@ export class CommunicationComponent implements OnInit, AfterViewChecked, OnDestr
   toggleAddChannel(): void { this.showAddChannel = !this.showAddChannel; }
 
   addChannel(): void {
-    const name = this.newChannelName.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!name || this.channels.find(c => c.id === name)) return;
-    this.channels.push({ id: name, backendId: 0, name, description: `${name} discussions` });
-    this.channelMessages[name] = [];
-    this.newChannelName = ''; this.showAddChannel = false;
-    this.selectChannel(name);
-  }
+  const name = this.newChannelName.trim();
+
+  if (!name) return;
+
+  const payload = {
+    name,
+    description: 'Created from collaboration-chat-ai-ui',
+    channelType: 'PUBLIC' as 'PUBLIC' | 'PRIVATE',
+    createdBy: this.me.userId
+  };
+
+  this.collabService.createChannel(payload).subscribe({
+    next: (res) => {
+      console.log('[Comm] Channel created:', res);
+
+      // Reset UI
+      this.newChannelName = '';
+      this.showAddChannel = false;
+
+      // 🔥 IMPORTANT: reload channels from backend
+      this.loadChannels();
+
+      // Optional: auto-select new channel after small delay
+      setTimeout(() => {
+        const newChannel = this.channels.find(c => c.name === res.name);
+        if (newChannel) this.selectChannel(newChannel.id);
+      }, 300);
+    },
+    error: (err) => {
+      console.error('[Comm] Failed to create channel:', err);
+    }
+  });
+}
 
   togglePinnedPanel(): void { this.showPinnedPanel = !this.showPinnedPanel; if (this.showPinnedPanel) this.activeThreadId = null; }
   closePinnedPanel(): void  { this.showPinnedPanel = false; }

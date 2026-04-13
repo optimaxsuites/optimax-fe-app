@@ -19,11 +19,11 @@ export class AuthInterceptor implements HttpInterceptor {
     ): Observable<HttpEvent<any>> {
         const accessToken = sessionStorage.getItem("Token");
 
-        // if (!accessToken) {
-        //     const loginLink = this.navigationLink.getLink('signinLink')
-        //     this.router.navigate([loginLink]);
-        //     return next.handle(request);
-        // }
+        if (!accessToken) {
+            const loginLink = this.navigationLink.getLink('signinLink')
+            this.router.navigate([loginLink]);
+            return next.handle(request);
+        }
 
 
 

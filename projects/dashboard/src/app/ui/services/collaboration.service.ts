@@ -140,6 +140,23 @@ export class CollaborationService {
     return this.http.get<CollabChannelSnap>(url, { headers: this.headers });
   }
 
+  // Post channels
+/** POST /x/api/v2/ai/collab/chat/channel */
+createChannel(payload: {
+  name: string;
+  description: string;
+  channelType: 'PUBLIC' | 'PRIVATE';
+  createdBy: number;
+}): Observable<CollabChannel> {
+  const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/channel`;
+
+  console.log('[CollabService] createChannel →', url, '| payload:', payload);
+
+  return this.http.post<CollabChannel>(url, payload, {
+    headers: this.headers,
+  });
+}
+
   // ── User directory ────────────────────────────────────
 
   /** POST /x/api/v2/us/ur/get/users/primary/info */
