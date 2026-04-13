@@ -3,7 +3,6 @@
   "compileOnSave": false,
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
-    "baseUrl": "./",
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -15,6 +14,8 @@
     "declaration": false,
     "experimentalDecorators": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
+
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022",
@@ -22,11 +23,7 @@
     "lib": [
       "ES2022",
       "dom"
-    ],
-    "allowSyntheticDefaultImports": true,
-    "paths": {
-    "zone.js": ["./node_modules/zone.js"]
-    }
+    ]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

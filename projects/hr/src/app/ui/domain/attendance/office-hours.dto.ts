@@ -1,9 +1,0 @@
-export interface OfficeHours {
-  openingTime: string; // HH:mm format
-  closingTime: string;
-  absentTime: string;
-  latenessGracePeriod: string;
-  companyLatitude?: number; 
-  companyLongitude?: number; 
-  companyName?: string;   
-}
