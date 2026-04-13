@@ -424,6 +424,7 @@
               <thead>
                 <tr class="border-b border-gray-100 bg-gray-50/50">
                   <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">RECIPIENT</th>
+                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">DESTINATION ACCOUNT</th>
                   <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs text-right">AMOUNT</th>
                 </tr>
               </thead>
@@ -437,6 +438,10 @@
                         <p class="text-xs text-gray-400 font-bold mt-0.5">{{ item.role }}</p>
                       </div>
                     </div>
+                  </td>
+                  <td class="px-6 py-3">
+                    <p class="font-black text-gray-900 text-sm">{{ item.bank || 'Bank Name' }}</p>
+                    <p class="text-xs text-gray-400 font-mono font-bold">{{ item.account || '0000000000' }}</p>
                   </td>
                   <td class="px-6 py-3 font-black text-gray-900 text-right text-lg">₦{{ item.amount | number:'1.2-2' }}</td>
                 </tr>
