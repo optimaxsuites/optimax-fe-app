@@ -28,7 +28,8 @@ export enum TransactionReviewStatus {
   UNREVIEWED = 'UNREVIEWED',
   IN_REVIEW = 'IN_REVIEW',
   APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+  DISBURSED = 'DISBURSED'
 }
 
 export enum JournalEntryStatus {

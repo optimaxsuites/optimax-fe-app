@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DisbursementService } from '../../../services/disbursement.service';
-import { AccountingTransactionDTO } from '../../domain/accounting.dto';
+import { AccountingTransactionDTO, TransactionReviewStatus } from '../../domain/accounting.dto';
 
 interface FundingAccount {
   id: string;
@@ -23,6 +23,18 @@ export class DisbursementComponent implements OnInit {
   allTransactions: AccountingTransactionDTO[] = [];
   filteredTransactions: AccountingTransactionDTO[] = [];
   searchQuery: string = '';
+
+  // ── Filters & Selection ──────────────────────────────────
+  activeCardFilter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED' = 'ALL';
+  selectedSourceModule: string = '';
+  selectedType: string = '';
+  dateRange: string = '';
+  selectedTransactions: Set<number> = new Set<number>();
+  selectAll: boolean = false;
+
+  // ── Sidebar State ────────────────────────────────────────
+  isReviewModalOpen: boolean = false;
+  selectedSidebarTransaction: any = null;
 
   // ── Funding Sources ──────────────────────────────────────
   fundingAccounts: FundingAccount[] = [
@@ -57,6 +69,11 @@ export class DisbursementComponent implements OnInit {
     return this.filteredTransactions.reduce((s, t) => s + t.amount, 0);
   }
 
+  get approvedDisbursements(): number {
+    // allTransactions are populated via getApprovedTransactions()
+    return this.allTransactions.length;
+  }
+
   get disbursementsToday(): number {
     const today = new Date().toDateString();
     return this.allTransactions.filter(t =>
@@ -87,7 +104,58 @@ export class DisbursementComponent implements OnInit {
     return this.selectedFundingAccounts.map(a => a.name).join(', ') || '—';
   }
 
-  constructor(private disbursementService: DisbursementService) { }
+  public chartOptions: any;
+
+  constructor(private disbursementService: DisbursementService) {
+    this.chartOptions = {
+      series: [
+        {
+          name: "Allocated",
+          data: [42, 28, 15, 10, 5]
+        }
+      ],
+      chart: {
+        type: "bar",
+        height: 350,
+        toolbar: { show: false }
+      },
+      plotOptions: {
+        bar: {
+          columnWidth: "40%",
+          borderRadius: 2
+        }
+      },
+      dataLabels: {
+        enabled: false
+      },
+      xaxis: {
+        categories: ["HR", "POS", "Expense", "Hospitality", "Marketplace"],
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        labels: {
+          style: {
+            colors: "#6B7280",
+            fontSize: "12px",
+            fontWeight: 600
+          }
+        }
+      },
+      yaxis: {
+        show: false
+      },
+      grid: {
+        borderColor: "#f1f1f1",
+        strokeDashArray: 0,
+        yaxis: {
+          lines: { show: true }
+        }
+      },
+      fill: {
+        opacity: 1,
+        colors: ['#2EB270'] // Use customGreen here
+      }
+    };
+  }
 
   ngOnInit(): void {
     this.loadTransactions();
@@ -95,37 +163,163 @@ export class DisbursementComponent implements OnInit {
 
   loadTransactions(): void {
     this.disbursementService.getApprovedTransactions().subscribe(trxs => {
-      this.allTransactions = trxs;
-      this.filteredTransactions = [...trxs];
+      const p1: AccountingTransactionDTO = { ...trxs[0], id: 991, transactionReference: 'MOC-111', Status: 'UNREVIEWED', amount: 45000, sourceModule: 'EXPENSE' } as any;
+      const p2: AccountingTransactionDTO = { ...trxs[0], id: 992, transactionReference: 'MOC-112', Status: 'IN_REVIEW', amount: 80000, sourceModule: 'HR' } as any;
+      const p3: AccountingTransactionDTO = { ...trxs[0], id: 993, transactionReference: 'MOC-113', Status: 'REJECTED', amount: 125000, sourceModule: 'MARKETPLACE' } as any;
+      const p4: AccountingTransactionDTO = { ...trxs[0], id: 994, transactionReference: 'MOC-114', Status: 'DISBURSED', amount: 500000, sourceModule: 'HOSPITALITY' } as any;
+      
+      this.allTransactions = [...trxs, p1, p2, p3, p4];
+      this.filteredTransactions = [...this.allTransactions];
     });
   }
 
   filterTransactions(): void {
     const q = this.searchQuery.toLowerCase().trim();
-    if (!q) {
-      this.filteredTransactions = [...this.allTransactions];
-      return;
+    let currentTxs = this.allTransactions;
+
+    // Card filter
+    const todayStr = new Date().toDateString();
+    if (this.activeCardFilter === 'TODAY') {
+      currentTxs = currentTxs.filter(t => new Date(t.transactionDate).toDateString() === todayStr);
+    } else if (this.activeCardFilter === 'PENDING') {
+      // Assuming pending logic corresponds to specific logic, or everything loaded since this is queue
+      currentTxs = currentTxs.filter(t => t.Status !== 'APPROVED' && t.Status !== 'REJECTED');
+    } else if (this.activeCardFilter === 'APPROVED') {
+      // Mocking approved check
+      currentTxs = currentTxs.filter(t => true); 
+    } else if (this.activeCardFilter === 'FAILED') {
+      currentTxs = [];
     }
-    this.filteredTransactions = this.allTransactions.filter(t =>
-      t.createdBy.toLowerCase().includes(q) ||
-      t.transactionReference.toLowerCase().includes(q) ||
-      (t.AccountID as any)?.bankName?.toLowerCase().includes(q) ||
-      t.sourceModule.toLowerCase().includes(q)
-    );
+
+    // Source Module Dropdown
+    if (this.selectedSourceModule && this.selectedSourceModule !== 'All Modules') {
+      currentTxs = currentTxs.filter(t => t.sourceModule.toLowerCase() === this.selectedSourceModule.toLowerCase());
+    }
+
+    // Search query
+    if (q) {
+      currentTxs = currentTxs.filter(t =>
+        t.createdBy.toLowerCase().includes(q) ||
+        t.transactionReference.toLowerCase().includes(q) ||
+        t.sourceModule.toLowerCase().includes(q)
+      );
+    }
+    
+    this.filteredTransactions = [...currentTxs];
+    this.updateSelectAllCheckbox();
+  }
+
+  setCardFilter(filter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED'): void {
+    if (this.activeCardFilter === filter) {
+      this.activeCardFilter = 'ALL';
+    } else {
+      this.activeCardFilter = filter;
+    }
+    this.filterTransactions();
+  }
+
+  // ── Row Selection ────────────────────────────────────────
+  toggleSelection(trxId: number): void {
+    if (this.selectedTransactions.has(trxId)) {
+      this.selectedTransactions.delete(trxId);
+    } else {
+      this.selectedTransactions.add(trxId);
+    }
+    this.updateSelectAllCheckbox();
+  }
+
+  toggleSelectAll(): void {
+    if (this.selectAll) {
+      this.selectedTransactions.clear();
+      this.selectAll = false;
+    } else {
+      this.filteredTransactions.forEach(t => this.selectedTransactions.add(t.id));
+      this.selectAll = true;
+    }
+  }
+
+  updateSelectAllCheckbox(): void {
+    if (this.filteredTransactions.length === 0) {
+      this.selectAll = false;
+    } else {
+      this.selectAll = this.filteredTransactions.every(t => this.selectedTransactions.has(t.id));
+    }
+  }
+
+  get isAnySelected(): boolean {
+    return this.selectedTransactions.size > 0;
+  }
+
+  // ── Sidebar Logic ────────────────────────────────────────
+  openSidebar(trx: AccountingTransactionDTO): void {
+    this.selectedSidebarTransaction = {
+      id: trx.id,
+      date: new Date(trx.transactionDate).toLocaleDateString(),
+      description: trx.description || trx.transactionReference,
+      spent: trx.amount,
+      received: null,
+      assignedTo: trx.createdBy,
+      reviewed: false
+    };
+    this.isReviewModalOpen = true;
+  }
+
+  closeSidebar(): void {
+    this.isReviewModalOpen = false;
+    this.selectedSidebarTransaction = null;
   }
 
   // ── View Actions ─────────────────────────────────────────
-  openExecution(trx: AccountingTransactionDTO): void {
+  isBatchReviewOpen: boolean = false;
+  selectedLineItems: any[] = [];
+  openBatchReview(trx: AccountingTransactionDTO): void {
     this.selectedTransaction = trx;
-    this.currentStep = 1;
     this.internalMemo = `Settlement for ${trx.transactionReference} — ${trx.description?.substring(0, 50)}`;
     this.disbursementDate = new Date().toISOString().split('T')[0];
+    
+    // Mock line items based on amount to show varied data
+    this.selectedLineItems = [
+      { recipient: 'Elena Hernandez', role: 'Senior Architect', account: '**** 8821', type: 'ACH', amount: trx.amount * 0.45 },
+      { recipient: 'Marcus Chen', role: 'Project Lead', account: '**** 4432', type: 'WIRE', amount: trx.amount * 0.35 },
+      { recipient: 'Sarah Jenkins', role: 'Junior Consultant', account: '**** 9011', type: 'ACH', amount: trx.amount * 0.20 }
+    ];
+
     // Reset single-select and destination fields
     this.selectedSourceId = null;
     this.destBank = '';
     this.destAccountNumber = '';
     this.destAccountName = '';
+    this.isBatchReviewOpen = true;
+  }
+
+  closeBatchReview(): void {
+    this.isBatchReviewOpen = false;
+    this.isApproveConfirmOpen = false; // reset
+  }
+
+  isApproveConfirmOpen: boolean = false;
+
+  openApproveConfirm(): void {
+    this.isApproveConfirmOpen = true;
+  }
+
+  closeApproveConfirm(): void {
+    this.isApproveConfirmOpen = false;
+  }
+
+  confirmApproval(): void {
+    if (this.selectedTransaction) {
+      this.selectedTransaction.Status = TransactionReviewStatus.APPROVED;
+      // If we wanted to re-filter, we could call this.filterTransactions() here
+    }
+    this.isApproveConfirmOpen = false;
+  }
+
+  proceedToPayment(): void {
+    if (!this.selectedTransaction) return;
+    this.isBatchReviewOpen = false;
     this.viewMode = 'EXECUTE';
+    this.currentStep = 2; // Jump straight to payment method
   }
 
   backToDashboard(): void {
@@ -169,6 +363,8 @@ export class DisbursementComponent implements OnInit {
       'PROCUREMENT': 'bg-blue-100 text-blue-700',
       'UTILITY':     'bg-yellow-100 text-yellow-700',
       'MAINTENANCE': 'bg-teal-100 text-teal-700',
+      'HOSPITALITY': 'bg-indigo-100 text-indigo-700',
+      'SUPPLY CHAIN':'bg-gray-100 text-gray-700',
     };
     return map[category.toUpperCase()] || 'bg-gray-100 text-gray-600';
   }
