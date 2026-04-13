@@ -6,7 +6,6 @@ import { GeneralTransactionsComponent } from './general-transactions/general-tra
 import { TransferFundsComponent } from './transfer-funds/transfer-funds.component';
 import { SalesReconciliationComponent } from './sales-reconciliation/sales-reconciliation.component';
 import { BankReconciliationComponent } from './bank-reconciliation/bank-reconciliation.component';
-import { SmartAccountantAiComponent } from './smart-accountant-ai/smart-accountant-ai.component';
 import { DisbursementComponent } from './disbursement/disbursement.component';
 
 export interface TabConfig {
@@ -74,11 +73,6 @@ export class AccountingPageComponent {
       //   icon: 'pi pi-briefcase'
       // },
 
-      {
-        name: 'Smart Accountant',
-        component: SmartAccountantAiComponent,
-        icon: 'pi pi-sparkles'
-      },
       {
         name: 'Disbursement',
         component: DisbursementComponent,
