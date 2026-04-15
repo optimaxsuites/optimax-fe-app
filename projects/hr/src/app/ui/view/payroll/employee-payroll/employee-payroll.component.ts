@@ -7,6 +7,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
 import { Employee, Payroll } from '../../../domain/payroll.dto';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { MessageService } from 'primeng/api';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -239,7 +240,7 @@ actionItems: any = []
   isDocumentRequired: any;
   canEditRecord: any;
 // payrollRecords: any[] = []
-constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService) {
+constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService, private messageService: MessageService) {
     this.generateYears();
     this.selectedMonth = this.months[new Date().getMonth()];
     
@@ -297,7 +298,9 @@ generatePayrolls(){
             this.payrollRecords = response
             console.log("records", response)
             this.payrollInView = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1] : {}
+            console.log(this.payrollInView)
             const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
+            console.log(currentStage)
 
             const assignments = currentStage?.assignment || [];
 
@@ -560,7 +563,7 @@ generatePayrolls(){
   }
 
   confirmApprovePayroll(){
-    this.openApproveModal != this.openApproveModal
+    this.openApproveModal = !this.openApproveModal
   }
 
 
@@ -1164,16 +1167,62 @@ download(format: string) {
       }
 
       const payload = {
-        payrollId: this.payrollInView?.id,
-        document: this.selectedFile
+        id: this.payrollInView.payrollApprovalInstance.id,
+        approvalId: this.payrollInView.payrollApprovalInstance.approval.id,
+        currentStageId: this.payrollInView.payrollApprovalInstance.currentStage.id,
+        status: "PENDING",
+        approversAccount: [
+          {
+            "id": 0,
+            "userId": this.currentUser.user,
+            "action": "APPROVED",
+            "comment": "",
+            "createdAt": "2026-04-13T12:50:30.809Z",
+            "completedAt": "2026-04-13T12:50:30.809Z"
+          }
+        ],
+        isCompleted: true,
+        "startedAt": "2026-04-13T12:50:30.809Z",
+        "completedAt": "2026-04-13T12:50:30.809Z",
+        "approvalLookupId": 0,
+        "approvalCode": "string",
+        "moduleName": "string",
+        "serviceName": "string",
+        "resourceName": "string",
+        "operationType": "POST",
+        "referenceType": "string",
+        "referenceId": "string",
+        "targetId": "string",
+        "summary": "string",
+        "payloadJson": "string",
+        "callbackUrl": "string",
+        "callbackMethod": "string",
+        "callbackPayloadJson": "string",
+        "currentStageOrder": 0,
+        "requestedBy": 0,
+        "requestedAt": "2026-04-13T12:50:30.809Z",
+        "actions": [
+          {
+            "id": 0,
+            "approvalInstanceId": this.payrollInView.payrollApprovalInstance.approval.id,
+            "stageId": this.payrollInView.payrollApprovalInstance.currentStage.id,
+            "stageOrder": this.payrollInView.payrollApprovalInstance.currentStage.orderIndex,
+            "actionType": "APPROVED",
+            "actorUserId": this.currentUserId,
+            "actorRoleCode": "string",
+            "comment": "string",
+            "actedAt": "2026-04-13T12:50:30.809Z"
+          }
+        ]
       };
 
-      // call your API
-      // this.payrollService.approvePayroll(payload).subscribe({
-      //   next: () => {
-      //     this.closeModal();
-      //   },
-      //   error: err => console.log(err)
-      // });
+      console.log(payload)
+      this.payrollService.approvePayroll(this.payrollInView.payrollApprovalInstance.id, payload).subscribe({
+        next: () => {
+          this.openApproveModal = false;
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: 'tl' });
+        },
+        error: err => console.log(err)
+      });
     }
 }

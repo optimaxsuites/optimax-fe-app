@@ -26,7 +26,7 @@
           <ng-template pTemplate="right">
             <div class="flex h-20 gap-3 items-center">
               
-              <button (click)="confirmApprovePayroll()" *ngIf="payrollInView.payrollApprovalInstance && canSeeApprovalButton">
+              <button class="bg-customGreen hover:border hover:border-customGreen hover:text-customGreen hover:bg-transparent" (click)="confirmApprovePayroll()" *ngIf="payrollInView.payrollApprovalInstance && canSeeApprovalButton">
                 Approve
               </button>
 
@@ -342,51 +342,51 @@
   </app-modal>
 
   <app-modal *ngIf="openApproveModal"  (close)="confirmApprovePayroll()">
-<div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4">
 
-  <!-- Confirmation text -->
-  <div>
-    <h3 class="text-lg font-semibold">Approve Payroll</h3>
-    <p class="text-sm text-gray-600">
-      Are you sure you want to approve this payroll?.
-    </p>
-  </div>
+      <!-- Confirmation text -->
+      <div>
+        <h3 class="text-lg font-semibold">Approve Payroll</h3>
+        <p class=" text-gray-600">
+          Are you sure you want to approve this payroll?.
+        </p>
+      </div>
 
-  <!-- Document upload (only if required) -->
-  <div *ngIf="isDocumentRequired" class="flex flex-col gap-2">
-    <label class="text-sm font-medium">
-      Attach Supporting Document <span class="text-red-500">*</span>
-    </label>
+      <!-- Document upload (only if required) -->
+      <div *ngIf="isDocumentRequired" class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          Attach Supporting Document <span class="text-red-500">*</span>
+        </label>
 
-    <input
-      type="file"
-      (change)="onFileSelected($event)"
-      required
-      class="border rounded px-3 py-2"
-    />
+        <input
+          type="file"
+          (change)="onFileSelected($event)"
+          required
+          class="border rounded px-3 py-2"
+        />
 
-    <small class="text-xs text-gray-500">
-      A document is required to complete this approval.
-    </small>
-  </div>
+        <small class="text-xs text-gray-500">
+          A document is required to complete this approval.
+        </small>
+      </div>
 
-  <!-- Actions -->
-  <div class="flex justify-end gap-3 mt-4">
-    <button
-      type="button"
-      class="px-4 py-2 border rounded bg-red-500"
-      (click)="confirmApprovePayroll()">
-      Cancel
-    </button>
+      <!-- Actions -->
+      <div class="flex justify-end gap-3 mt-4">
+        <button
+          type="button"
+          class="px-4 py-2 border rounded bg-red-500"
+          (click)="confirmApprovePayroll()">
+          Cancel
+        </button>
 
-    <button
-      type="button"
-      class="px-4 py-2 bg-customGreen text-white rounded disabled:opacity-50"
-      [disabled]="isDocumentRequired && !selectedFile"
-      (click)="onApprove()">
-      Confirm Approval
-    </button>
-  </div>
+        <button
+          type="button"
+          class="px-4 py-2 bg-customGreen text-white rounded disabled:opacity-50"
+          [disabled]="isDocumentRequired && !selectedFile"
+          (click)="onApprove()">
+          Confirm Approval
+        </button>
+      </div>
 
-</div>
+    </div>
   </app-modal>

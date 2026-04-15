@@ -195,6 +195,11 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+  approvePayroll(id: number, payload: any): Observable<any> {
+     return this.http.post(`${this.baseUrl}/x/api/v2/hr/payrollGenerationResponses/${id}/approvalCallback`, payload)
+      .pipe(catchError(this.handleError));
+  }
+
 
 generateCSV(employees: EmployeePayroll[], template: BankExportTemplate): string {
   const rows = employees.map(emp => {
@@ -254,6 +259,8 @@ private resolveField(emp: EmployeePayroll, col: BankExportColumn): string | numb
       return '';
   }
 }
+
+
 
 
    getTemplate(): any{
