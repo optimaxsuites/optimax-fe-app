@@ -44,7 +44,20 @@ export interface CollabAttachment {
   downloadUrl?: string;
 }
 
+export interface CollabAttachmentFull {
+  id: number;
+  channelId: number;
+  messageId: number;
+  uploaderUserId: number;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  downloadUrl: string;
+  uploadedAt: string;
+}
+
 export interface CollabMember {
+  id?: number;
   userId: number;
   channelId: number;
   role: string;
@@ -66,13 +79,61 @@ export interface CollabUserInfo {
   email?: string;
 }
 
+// ── Employee ──────────────────────────────────────────
+export interface EmployeeMedia {
+  id: number;
+  name: string;
+  mediaNo: string;
+}
+
 export interface EmployeeProfile {
   id: number;
   firstName: string;
   lastName: string;
   jobTitle?: string;
-  department?: { name: string };
-  user?: { id: number; fullname: string; userId: number };
+  department?: { id: number; name: string; code: string };
+  employeeMedia?: EmployeeMedia | null;
+  employeeStatus?: string;
+  user?: {
+    id: number;
+    fullname: string;
+    userId: number;
+    email?: string;
+    username?: string;
+  };
+}
+
+// ── AI ────────────────────────────────────────────────
+export interface AiRewriteResponse {
+  body?: string;
+  rewrittenText?: string;
+  content?: string;
+  subject?: string;
+  provider?: string;
+  qualityScore?: number;
+}
+export interface AiSubjectResponse {
+  suggestions?: string[];
+  provider?: string;
+  qualityScore?: number;
+}
+export interface AiSummaryResponse {
+  summary?: string;
+  keyPoints?: string[];
+  decisions?: string[];
+  actionItems?: string[];
+  provider?: string;
+  qualityScore?: number;
+}
+export interface AiEmailComposeResponse {
+  subject?: string;
+  body?: string;
+  provider?: string;
+  qualityScore?: number;
+}
+export interface CollabActionResponse {
+  status: string;
+  payloadJson?: string;
 }
 
 // ─────────────────────────────────────────────────────
@@ -81,96 +142,193 @@ export interface EmployeeProfile {
 @Injectable({ providedIn: 'root' })
 export class CollaborationService {
   private readonly baseUrl = environment.apiBaseUrl;
+  get apiBaseUrl(): string {
+    return this.baseUrl;
+  }
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * The mock HTML sends THREE headers on every request:
-   *   Authorization: Bearer <token>
-   *   X-Tenant-ID:   <tenantId>
-   *   X-User-ID:     <userId>      ← required by backend for user context
-   *
-   * Missing X-User-ID causes:
-   *   500 IllegalArgumentException "Missing authenticated user context header."
-   */
   private get headers(): HttpHeaders {
     const token = sessionStorage.getItem('token') || '';
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
     const userId = sessionStorage.getItem('userid') || '';
-
-    console.log(
-      '[CollabService] Building headers — tenantId:',
-      tenantId,
-      '| userId:',
-      userId,
-      '| hasToken:',
-      !!token,
-    );
-
     return new HttpHeaders({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
       'X-Tenant-ID': tenantId,
-      'X-User-ID': userId, // ← the missing piece
+      'X-User-ID': userId,
     });
+  }
+
+  private get multipartHeaders(): HttpHeaders {
+    const token = sessionStorage.getItem('token') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const userId = sessionStorage.getItem('userid') || '';
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-ID': tenantId,
+      'X-User-ID': userId,
+    });
+  }
+
+  // ── Employees ─────────────────────────────────────────
+
+  /** GET /x/api/v2/hr/employees — returns array or paginated wrapper */
+  getAllEmployees(page = 0, size = 200): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/x/api/v2/hr/employees`, {
+      headers: this.headers,
+    });
+  }
+
+  getEmployeeById(id: number): Observable<EmployeeProfile> {
+    return this.http.get<EmployeeProfile>(
+      `${this.baseUrl}/x/api/v2/hr/employees/${id}`,
+      { headers: this.headers },
+    );
+  }
+
+  getEmployeeByUserId(userId: number): Observable<EmployeeProfile> {
+    return this.http.get<EmployeeProfile>(
+      `${this.baseUrl}/x/api/v2/hr/employees/employee/by/userId/${userId}`,
+      { headers: this.headers },
+    );
+  }
+
+  /**
+   * Fetch profile image as blob → object URL (authenticated).
+   * Non-blocking — caller handles Promise independently.
+   */
+  fetchEmployeeImageBlob(mediaNo: string): Promise<string> {
+    const token = sessionStorage.getItem('token') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    return fetch(`${this.baseUrl}/x/api/v2/hr/employees/images/${mediaNo}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Tenant-ID': tenantId,
+        Accept: 'image/*,*/*',
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => URL.createObjectURL(blob));
   }
 
   // ── Channels ──────────────────────────────────────────
 
-  /** GET /x/api/v2/ai/collab/chat/home/me */
   getHomeChannels(): Observable<{ channels: CollabChannel[] }> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me`;
-    console.log('[CollabService] getHomeChannels →', url);
-    return this.http.get<{ channels: CollabChannel[] }>(url, {
-      headers: this.headers,
-    });
+    return this.http.get<{ channels: CollabChannel[] }>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me`,
+      { headers: this.headers },
+    );
   }
 
-  /** GET /x/api/v2/ai/collab/chat/channel */
   getChannels(): Observable<CollabChannel[]> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/channel`;
-    console.log('[CollabService] getChannels →', url);
-    return this.http.get<CollabChannel[]>(url, { headers: this.headers });
+    return this.http.get<CollabChannel[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel`,
+      { headers: this.headers },
+    );
   }
 
-  /** GET /x/api/v2/ai/collab/chat/home/me/channel/{channelId} */
+  getChannelById(channelId: number): Observable<CollabChannel> {
+    return this.http.get<CollabChannel>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}`,
+      { headers: this.headers },
+    );
+  }
+
   getChannelSnapshot(channelId: number): Observable<CollabChannelSnap> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me/channel/${channelId}?recentMessageLimit=120`;
-    console.log('[CollabService] getChannelSnapshot →', url);
-    return this.http.get<CollabChannelSnap>(url, { headers: this.headers });
+    return this.http.get<CollabChannelSnap>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me/channel/${channelId}?recentMessageLimit=120`,
+      { headers: this.headers },
+    );
   }
 
-  // Post channels
-/** POST /x/api/v2/ai/collab/chat/channel */
-createChannel(payload: {
-  name: string;
-  description: string;
-  channelType: 'PUBLIC' | 'PRIVATE';
-  createdBy: number;
-}): Observable<CollabChannel> {
-  const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/channel`;
+  createChannel(payload: {
+    name: string;
+    description: string;
+    channelType: 'PUBLIC' | 'PRIVATE';
+    createdBy: number;
+  }): Observable<CollabChannel> {
+    return this.http.post<CollabChannel>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel`,
+      payload,
+      { headers: this.headers },
+    );
+  }
 
-  console.log('[CollabService] createChannel →', url, '| payload:', payload);
+  updateChannel(
+    channelId: number,
+    payload: {
+      name: string;
+      description: string;
+      channelType: 'PUBLIC' | 'PRIVATE';
+      createdBy: number;
+    },
+  ): Observable<CollabChannel> {
+    return this.http.put<CollabChannel>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}`,
+      payload,
+      { headers: this.headers },
+    );
+  }
 
-  return this.http.post<CollabChannel>(url, payload, {
-    headers: this.headers,
-  });
-}
+  deleteChannel(channelId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}`,
+      { headers: this.headers },
+    );
+  }
+
+  // ── Channel Members ───────────────────────────────────
+
+  getChannelMembers(channelId: number): Observable<CollabMember[]> {
+    return this.http.get<CollabMember[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/channel/${channelId}`,
+      { headers: this.headers },
+    );
+  }
+
+  addChannelMember(
+    channelId: number,
+    userId: number,
+    role = 'MEMBER',
+  ): Observable<CollabMember> {
+    return this.http.post<CollabMember>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member`,
+      { channelId, userId, role },
+      { headers: this.headers },
+    );
+  }
+
+  removeChannelMember(memberId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/${memberId}`,
+      { headers: this.headers },
+    );
+  }
+
+  leaveChannel(memberId: number): Observable<void> {
+    return this.http.patch<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/${memberId}/leave`,
+      {},
+      { headers: this.headers },
+    );
+  }
 
   // ── User directory ────────────────────────────────────
 
-  /** POST /x/api/v2/us/ur/get/users/primary/info */
   getUsersInfo(userIds: number[]): Observable<CollabUserInfo[]> {
-    const url = `${this.baseUrl}/x/api/v2/us/ur/get/users/primary/info`;
-    console.log('[CollabService] getUsersInfo →', url, '| userIds:', userIds);
-    return this.http.post<CollabUserInfo[]>(url, userIds, {
-      headers: this.headers,
-    });
+    return this.http.post<CollabUserInfo[]>(
+      `${this.baseUrl}/x/api/v2/us/ur/get/users/primary/info`,
+      userIds,
+      { headers: this.headers },
+    );
   }
 
   // ── Messages ─────────────────────────────────────────
 
-  /** POST /x/api/v2/ai/collab/chat/message */
   sendMessage(payload: {
     channelId: number;
     senderUserId: number;
@@ -179,64 +337,221 @@ createChannel(payload: {
     replyToMessageId?: number | null;
     threadRootMessageId?: number | null;
   }): Observable<CollabMessage> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/message`;
-    console.log('[CollabService] sendMessage →', url, '| payload:', payload);
-    return this.http.post<CollabMessage>(url, payload, {
-      headers: this.headers,
+    return this.http.post<CollabMessage>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/message`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  editMessage(
+    messageId: number,
+    payload: {
+      channelId: number;
+      senderUserId: number;
+      content: string;
+      messageType: string;
+      threadRootMessageId?: number | null;
+      replyToMessageId?: number | null;
+    },
+  ): Observable<number> {
+    return this.http.put<number>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/message/${messageId}`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  deleteMessage(messageId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/message/${messageId}`,
+      { headers: this.headers },
+    );
+  }
+
+  // ── Attachments ───────────────────────────────────────
+
+  uploadAttachment(
+    channelId: number,
+    uploaderUserId: number,
+    file: File,
+    messageId?: number | null,
+  ): Observable<CollabAttachmentFull> {
+    let url = `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/upload?channelId=${channelId}&uploaderUserId=${uploaderUserId}`;
+    if (messageId) url += `&messageId=${messageId}`;
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<CollabAttachmentFull>(url, fd, {
+      headers: this.multipartHeaders,
     });
+  }
+
+  getAttachmentsForMessage(
+    messageId: number,
+  ): Observable<CollabAttachmentFull[]> {
+    return this.http.get<CollabAttachmentFull[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/message/${messageId}`,
+      { headers: this.headers },
+    );
+  }
+
+  deleteAttachment(attachmentId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/${attachmentId}`,
+      { headers: this.headers },
+    );
   }
 
   // ── Reactions ─────────────────────────────────────────
 
-  /** POST /x/api/v2/ai/collab/chat/reaction */
   addReaction(payload: {
     messageId: number;
     userId: number;
     reactionCode: string;
   }): Observable<any> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/reaction`;
-    console.log('[CollabService] addReaction →', url, '| payload:', payload);
-    return this.http.post<any>(url, payload, { headers: this.headers });
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/reaction`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  deleteReaction(reactionId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/reaction/${reactionId}`,
+      { headers: this.headers },
+    );
   }
 
   // ── Mark read ─────────────────────────────────────────
 
-  /** POST /x/api/v2/ai/collab/chat/read/mark */
   markRead(channelId: number, lastReadMessageId: number): Observable<any> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/read/mark`;
     const userId = Number(sessionStorage.getItem('userid') || 0);
-    const payload = { channelId, userId, lastReadMessageId };
-    console.log('[CollabService] markRead →', url, '| payload:', payload);
-    return this.http.post<any>(url, payload, { headers: this.headers });
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/read/mark`,
+      { channelId, userId, lastReadMessageId },
+      { headers: this.headers },
+    );
   }
 
   // ── Presence ──────────────────────────────────────────
 
-  /** POST /x/api/v2/ai/collab/chat/presence/upsert */
   setPresenceOnline(channelId: number): Observable<any> {
-    const url = `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/upsert`;
     const userId = Number(sessionStorage.getItem('userid') || 0);
-    console.log(
-      '[CollabService] setPresenceOnline →',
-      url,
-      '| channelId:',
-      channelId,
-      '| userId:',
-      userId,
-    );
     return this.http.post<any>(
-      url,
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/upsert`,
       { channelId, userId, presenceStatus: 'ONLINE', typing: false },
       { headers: this.headers },
     );
   }
 
-  // ── Employee profile ──────────────────────────────────
+  /** PATCH /x/api/v2/ai/collab/chat/presence/typing */
+  setTyping(channelId: number, typing: boolean): Observable<any> {
+    const userId = Number(sessionStorage.getItem('userid') || 0);
+    return this.http.patch<any>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/typing`,
+      { channelId, userId, typing },
+      { headers: this.headers },
+    );
+  }
 
-  /** GET /x/api/v2/hr/employees/employee/by/userId/{id} */
-  getEmployeeByUserId(userId: number): Observable<EmployeeProfile> {
-    const url = `${this.baseUrl}/x/api/v2/hr/employees/employee/by/userId/${userId}`;
-    console.log('[CollabService] getEmployeeByUserId →', url);
-    return this.http.get<EmployeeProfile>(url, { headers: this.headers });
+  /** GET /x/api/v2/ai/collab/chat/presence/channel/{channelId} */
+  getChannelPresence(channelId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/channel/${channelId}`,
+      { headers: this.headers },
+    );
+  }
+
+  /** GET /x/api/v2/ai/collab/chat/presence — all presence records */
+  getAllPresence(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/presence`,
+      { headers: this.headers },
+    );
+  }
+
+  // ── AI features ───────────────────────────────────────
+
+  aiRewrite(content: string): Observable<AiRewriteResponse> {
+    return this.http.post<AiRewriteResponse>(
+      `${this.baseUrl}/x/api/v2/ai/collab/email/rewrite`,
+      {
+        operation: 'REWRITE',
+        purpose: 'Rewrite chat draft',
+        context: content,
+        tone: 'professional',
+        language: 'en',
+        length: 'short',
+      },
+      { headers: this.headers },
+    );
+  }
+
+  aiSuggestSubject(content: string): Observable<AiSubjectResponse> {
+    return this.http.post<AiSubjectResponse>(
+      `${this.baseUrl}/x/api/v2/ai/collab/subject/suggest`,
+      {
+        context: content || 'Generate channel subject',
+        tone: 'professional',
+        audience: 'team',
+        maxSuggestions: 5,
+      },
+      { headers: this.headers },
+    );
+  }
+
+  aiSummarizeDiscussion(
+    subject: string,
+    discussionText: string,
+  ): Observable<AiSummaryResponse> {
+    return this.http.post<AiSummaryResponse>(
+      `${this.baseUrl}/x/api/v2/ai/collab/discussion/summarize`,
+      {
+        subject,
+        discussionText,
+        summaryStyle: 'executive',
+        maxActionItems: 10,
+      },
+      { headers: this.headers },
+    );
+  }
+
+  aiComposeEmail(payload: {
+    purpose: string;
+    audience: string;
+    context: string;
+    tone?: string;
+    length?: string;
+  }): Observable<AiEmailComposeResponse> {
+    return this.http.post<AiEmailComposeResponse>(
+      `${this.baseUrl}/x/api/v2/ai/collab/email/compose`,
+      {
+        operation: 'COMPOSE',
+        purpose: payload.purpose,
+        audience: payload.audience,
+        tone: payload.tone || 'professional',
+        context: payload.context,
+        language: 'en',
+        length: payload.length || 'medium',
+      },
+      { headers: this.headers },
+    );
+  }
+
+  triggerAction(payload: {
+    channelId: number;
+    messageId?: number | null;
+    initiatorUserId: number;
+    targetUserId: number;
+    actionType: string;
+    subject?: string;
+    payloadJson?: string;
+  }): Observable<CollabActionResponse> {
+    return this.http.post<CollabActionResponse>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/action`,
+      payload,
+      { headers: this.headers },
+    );
   }
 }
