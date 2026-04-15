@@ -186,6 +186,38 @@
             </div>
           </div>
         </div>
+
+        <div class="info-card repayment-status-card" *ngIf="skippedRepaymentItems.length > 0">
+          <h3>Skipped Payments</h3>
+          <div class="repayment-status-list">
+            <div class="repayment-status-item" *ngFor="let item of skippedRepaymentItems">
+              <div class="repayment-status-copy">
+                <strong>Installment {{ item.installmentNo }}</strong>
+                <span>{{ item.dueDate | date:'mediumDate' }}</span>
+              </div>
+              <div class="repayment-status-meta">
+                <span>{{ formatCurrency(item.totalAmount) }}</span>
+                <span class="status-badge status-skipped">Skipped</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card repayment-status-card" *ngIf="overdueRepaymentItems.length > 0">
+          <h3>Overdue Payments</h3>
+          <div class="repayment-status-list">
+            <div class="repayment-status-item" *ngFor="let item of overdueRepaymentItems">
+              <div class="repayment-status-copy">
+                <strong>Installment {{ item.installmentNo }}</strong>
+                <span>{{ item.dueDate | date:'mediumDate' }} · {{ getOverdueDays(item) }} day(s) overdue</span>
+              </div>
+              <div class="repayment-status-meta">
+                <span>{{ formatCurrency(item.totalAmount) }}</span>
+                <span class="status-badge status-overdue">Overdue</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Right Column - Actions & Summary -->

@@ -9,6 +9,7 @@ import { LoanApplication, StatusChange } from '../../../service/loan/loan.types'
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import { RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import {
   formatLoanRepaymentDayDisplay,
   getLoanRepaymentStatusTitle,
@@ -51,7 +52,7 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   styleUrls: ['./loan-details.component.scss']
 })
 export class LoanDetailsComponent implements OnInit {
-  employeeId: string = '';
+  loanId: string = '';
   loan: LoanApplication | null = null;
   statusTimeline: StatusChange[] = [];
   isLoading: boolean = true;
@@ -107,7 +108,7 @@ export class LoanDetailsComponent implements OnInit {
     this.navigationSource = window.history.state?.source || 'approval';
 
     this.route.params.subscribe(params => {
-      this.employeeId = params['employeeId'];
+      this.loanId = params['loanId'];
       this.loadLoanDetails();
     });
   }
@@ -135,7 +136,7 @@ export class LoanDetailsComponent implements OnInit {
   loadLoanDetails(): void {
     this.isLoading = true;
 
-    this.loanApplicationService.getApplicationById(this.employeeId).subscribe({
+    this.loanApplicationService.getApplicationById(this.loanId).subscribe({
       next: (loan) => {
         if (loan) {
           this.loan = loan;
@@ -144,23 +145,14 @@ export class LoanDetailsComponent implements OnInit {
           return;
         }
 
-        this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId).subscribe({
-          next: (applications) => {
-            const employeeLoans = applications.sort((a, b) =>
-              new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
-            );
-            this.loan = employeeLoans.length > 0 ? employeeLoans[0] : null;
-            this.updateStatusTimeline();
-            this.isLoading = false;
-          },
-          error: (error) => {
-            console.error('Error loading loan details:', error);
-            this.isLoading = false;
-          }
-        });
+        this.loan = null;
+        this.updateStatusTimeline();
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading loan details:', error);
+        this.loan = null;
+        this.updateStatusTimeline();
         this.isLoading = false;
       }
     });
@@ -575,6 +567,33 @@ export class LoanDetailsComponent implements OnInit {
 
   getTotalInstallmentsCount(): number {
     return (this.loan?.repaymentSchedule || []).length || Number(this.loan?.repaymentTime || 0);
+  }
+
+  get skippedRepaymentItems(): RepaymentScheduleItem[] {
+    return (this.loan?.repaymentSchedule || [])
+      .filter((item) => item.status === 'SKIPPED')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
+  }
+
+  get overdueRepaymentItems(): RepaymentScheduleItem[] {
+    return (this.loan?.repaymentSchedule || [])
+      .filter((item) => item.status === 'OVERDUE')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
+  }
+
+  getOverdueDays(item: RepaymentScheduleItem): number {
+    if (item.status !== 'OVERDUE') {
+      return 0;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(item.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    const diff = today.getTime() - dueDate.getTime();
+    return Math.max(Math.floor(diff / (24 * 60 * 60 * 1000)), 0);
   }
   
   formatCurrency(amount: number): string {

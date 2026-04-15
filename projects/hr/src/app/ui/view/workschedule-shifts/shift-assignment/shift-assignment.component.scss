@@ -360,6 +360,13 @@ h3 {
       gap: 4px;
       font-size: 12px;
       cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    input:checked + span {
+      background: #3da86a;
+      color: #fff;
     }
   }
 }

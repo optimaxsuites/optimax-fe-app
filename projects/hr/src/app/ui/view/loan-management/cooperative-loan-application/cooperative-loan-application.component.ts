@@ -68,6 +68,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     );
 
     return this.resolveBestEmailCandidate(
+      employeeMatch?.workEmail,
       employeeMatch?.email,
       this.getSessionRegistrationEmail(),
       member.email,
@@ -249,6 +250,36 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   getSelectedGroupAccountingEmail(): string {
     return String(this.selectedGroup?.accountingEmail || '').trim();
+  }
+
+  getSelectedGroupLateFeeSummary(): string {
+    if (!this.selectedGroup) {
+      return '';
+    }
+
+    const percentage = Number(this.selectedGroup.lateFeePercentage || 0);
+    const graceDays = Number(this.selectedGroup.lateFeeGraceDays || 0);
+    return `${percentage}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getSelectedGroupSettlementSummary(): string {
+    if (!this.selectedGroup) {
+      return '';
+    }
+
+    const segments = [
+      this.selectedGroup.principalBankName && this.selectedGroup.principalCollectionAccount
+        ? `Principal: ${this.selectedGroup.principalBankName} (${this.selectedGroup.principalCollectionAccount})`
+        : '',
+      this.selectedGroup.interestBankName && this.selectedGroup.interestCollectionAccount
+        ? `Interest: ${this.selectedGroup.interestBankName} (${this.selectedGroup.interestCollectionAccount})`
+        : '',
+      this.selectedGroup.lateFeeBankName && this.selectedGroup.lateFeeCollectionAccount
+        ? `Late fees: ${this.selectedGroup.lateFeeBankName} (${this.selectedGroup.lateFeeCollectionAccount})`
+        : ''
+    ].filter(Boolean);
+
+    return segments.join(' • ');
   }
 
   onDocumentsSelected(event: Event): void {
@@ -926,6 +957,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       modeOfPayment,
       requestDate,
       interestRate: this.selectedGroup?.interestRate,
+      lateFeePercentage: this.selectedGroup?.lateFeePercentage,
+      lateFeeGraceDays: this.selectedGroup?.lateFeeGraceDays,
+      principalBankName: this.selectedGroup?.principalBankName,
+      principalCollectionAccount: this.selectedGroup?.principalCollectionAccount,
+      interestBankName: this.selectedGroup?.interestBankName,
+      interestCollectionAccount: this.selectedGroup?.interestCollectionAccount,
+      lateFeeBankName: this.selectedGroup?.lateFeeBankName,
+      lateFeeCollectionAccount: this.selectedGroup?.lateFeeCollectionAccount,
+      accountingEmail: this.selectedGroup?.accountingEmail,
+      accountingWebhookUrl: this.selectedGroup?.accountingWebhookUrl,
       repaymentAmount: this.repaymentAmount,
       totalRepayable: this.totalRepayment,
       totalRepayment: this.totalRepayment,
@@ -981,7 +1022,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return {
       employeeId: employee.employeeId || employee.id || '',
       fullName: employee.fullName || employee.name || '',
-      email: this.resolveBestEmailCandidate(employee.email, employee.workEmail),
+      email: this.resolveBestEmailCandidate(employee.workEmail, employee.email),
+      workEmail: this.resolveBestEmailCandidate(employee.workEmail),
       monthlySalary: employee.monthlySalary || 0,
       phone: employee.phone || '',
       department: employee.department || '',

@@ -74,7 +74,9 @@
           <td>{{ getStatusLabel(loan.applicationStage || 'READY_FOR_ADMIN_REVIEW') }}</td>
           <td>{{ loan.requestDate | date:'mediumDate' }}</td>
           <td class="actions-col">
-            <button class="view-btn" (click)="viewLoanDetails(loan.id.toString())">View</button>
+            <button class="view-btn" (click)="viewLoanDetails(loan.id.toString())" title="View loan details" aria-label="View loan details">
+              <i class="fas fa-eye"></i>
+            </button>
           </td>
         </ng-template>
       </app-table>

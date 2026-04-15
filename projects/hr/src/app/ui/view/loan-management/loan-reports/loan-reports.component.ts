@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import * as XLSX from 'xlsx';
 //import { saveAs } from 'file-saver';
 import { formatDate } from '@angular/common';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
@@ -14,6 +17,17 @@ import {
   resolveLoanInterestAmount,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
+
+interface LoanReportRow {
+  loan: LoanApplication;
+  displayPurpose: string;
+  displayPurposeShort: string;
+  departmentDisplay: string;
+  interestAmount: number;
+  totalRepayable: number;
+  statusClass: string;
+  statusLabel: string;
+}
 
 @Component({
   selector: 'app-loan-reports',
@@ -26,6 +40,8 @@ export class LoanReportsComponent implements OnInit {
   isLoading = false;
   allLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
+  filteredLoanRows: LoanReportRow[] = [];
+  filteredTotalAmount = 0;
   
   // Filters
   filters = {
@@ -64,6 +80,8 @@ export class LoanReportsComponent implements OnInit {
     activeCount: 0,
     completedCount: 0
   };
+  private readonly textFilterChanges = new Subject<void>();
+  private readonly subscriptions = new Subscription();
 
   constructor(
     private location: Location,
@@ -72,7 +90,18 @@ export class LoanReportsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.subscriptions.add(
+      this.textFilterChanges.pipe(debounceTime(250)).subscribe(() => this.applyFilters())
+    );
     this.loadLoans();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  onTextFilterChange(): void {
+    this.textFilterChanges.next();
   }
 
   formatPurposeDisplay(purpose?: string | null): string {
@@ -92,6 +121,7 @@ export class LoanReportsComponent implements OnInit {
   }
 
   loadLoans(): void {
+    const loadProfiler = startLoanLoadProfiler('advance-loan-reports');
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
@@ -103,10 +133,12 @@ export class LoanReportsComponent implements OnInit {
         this.extractDepartments();
         this.calculateSummaryStats();
         this.applyFilters();
+        loadProfiler.success({ loans: this.allLoans.length, filtered: this.filteredLoans.length });
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading loans:', error);
+        loadProfiler.error({ message: 'Failed to load advance loan reports' });
         this.isLoading = false;
       }
     });
@@ -190,8 +222,25 @@ export class LoanReportsComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortData(results);
+    this.filteredLoanRows = this.filteredLoans.map((loan) => this.buildLoanReportRow(loan));
+    this.filteredTotalAmount = this.filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
     this.calculateSummaryStats();
     this.resetPagination();
+  }
+
+  private buildLoanReportRow(loan: LoanApplication): LoanReportRow {
+    const displayPurpose = this.formatPurposeDisplay(loan.purpose);
+
+    return {
+      loan,
+      displayPurpose,
+      displayPurposeShort: displayPurpose.length > 30 ? `${displayPurpose.slice(0, 30)}...` : displayPurpose,
+      departmentDisplay: this.formatDepartmentDisplay(loan.department),
+      interestAmount: this.getLoanInterestAmount(loan),
+      totalRepayable: this.getLoanTotalRepayable(loan),
+      statusClass: this.getStatusClass(loan.status),
+      statusLabel: this.getStatusLabel(loan.status)
+    };
   }
 
   resetFilters(): void {
@@ -492,12 +541,12 @@ export class LoanReportsComponent implements OnInit {
  }
 
  getFilteredTotal(): number {
-  return this.filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
+  return this.filteredTotalAmount;
 }
 
-  get paginatedLoans(): LoanApplication[] {
+  get paginatedLoans(): LoanReportRow[] {
     const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+    return this.filteredLoanRows.slice(startIndex, startIndex + this.pageSize);
   }
 
   get totalPages(): number {

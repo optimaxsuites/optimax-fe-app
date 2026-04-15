@@ -1,4 +1,4 @@
-<div class="loan-dashboard-container">
+<div class="loan-dashboard-container loan-management-surface">
     <app-modal *ngIf="showLoanDetailsModal" class="admin-loan-preview-modal" [header]="'Loan Details'" (close)="closeLoanDetailsModal()">
         <div class="loan-details-modal" *ngIf="selectedLoan as loan">
             <div class="modal-summary-band">
@@ -332,37 +332,39 @@
                             { header: 'Date', field: 'requestDate', sortable: true },
                             { header: 'Actions' }
                         ]"
-                        [rows]="filteredLoans"
+                        [rows]="dashboardLoanRows"
+                        [paginator]="dashboardLoanRows.length > dashboardTableRowsPerPage"
+                        [rowsPerPage]="dashboardTableRowsPerPage"
                         tableClass="loan-table">
-                        <ng-template appTableBody let-loan>
-                            <td class="loan-id" [title]="formatAdvanceLoanDisplayId(loan)">{{ getShortAdvanceLoanDisplayId(loan) }}</td>
-                            <td class="employee-id">{{ loan.employeeId }}</td>
+                        <ng-template appTableBody let-row>
+                            <td class="loan-id" [title]="formatAdvanceLoanDisplayId(row.loan)">{{ row.displayId }}</td>
+                            <td class="employee-id">{{ row.employeeId }}</td>
                             <td>
                                 <div class="employee-info">
-                                    <span class="name">{{ loan.fullName }}</span>
+                                    <span class="name">{{ row.fullName }}</span>
                                 </div>
                             </td>
-                            <td>{{ formatDepartmentDisplay(loan.department) }}</td>
-                            <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
+                            <td>{{ row.departmentDisplay }}</td>
+                            <td class="amount">₦{{ row.loan.amount | number:'1.2-2' }}</td>
                             <td>
-                                <div class="policy-summary">{{ getOverduePolicySummary(loan) }}</div>
+                                <div class="policy-summary">{{ row.overduePolicySummary }}</div>
                             </td>
                             <td>
-                                <span [ngClass]="getStatusClass(loan.status)" class="status-badge">
-                                    {{ getStatusDisplay(loan.status) }}
+                                <span [ngClass]="row.statusClass" class="status-badge">
+                                    {{ row.statusLabel }}
                                 </span>
                             </td>
-                            <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+                            <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
                             <td class="actions-col">
                                 <div class="action-buttons">
                                     <button class="btn-view"
-                                            (click)="viewLoanDetails(loan.id)"
+                                            (click)="viewLoanDetails(row.loan.id)"
                                             title="View"
                                             aria-label="View">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button class="btn-history"
-                                            (click)="seeLoanHistory(loan.employeeId)"
+                                            (click)="seeLoanHistory(row.loan.employeeId)"
                                             title="See History"
                                             aria-label="See History">
                                         <i class="fas fa-history"></i>

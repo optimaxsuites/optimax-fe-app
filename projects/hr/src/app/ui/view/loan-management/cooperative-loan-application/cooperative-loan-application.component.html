@@ -114,6 +114,14 @@
                 <a [attr.href]="buildMailLink(getSelectedGroupAccountingEmail())">{{ getSelectedGroupAccountingEmail() }}</a>
               </span>
             </div>
+            <div class="group-detail">
+              <span class="detail-label">Late Fee Policy</span>
+              <span class="detail-value">{{ getSelectedGroupLateFeeSummary() }}</span>
+            </div>
+            <div class="group-detail" *ngIf="getSelectedGroupSettlementSummary()">
+              <span class="detail-label">Settlement Rails</span>
+              <span class="detail-value">{{ getSelectedGroupSettlementSummary() }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -349,11 +357,11 @@
                   <div>Years Known: {{ contact.yearsKnown }}</div>
                 </div>
                 <div class="guarantor-actions">
-                  <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)">
-                    <i class="fas fa-check"></i> Approve
+                  <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)" title="Approve guarantor" aria-label="Approve guarantor">
+                    <i class="fas fa-check"></i>
                   </button>
-                  <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)">
-                    <i class="fas fa-times"></i> Reject
+                  <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)" title="Reject guarantor" aria-label="Reject guarantor">
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
               </div>
@@ -495,9 +503,13 @@
         </div>
 
         <div class="confirmation-actions">
-          <button type="button" class="cancel-button" (click)="showConfirmation = false">Back</button>
+          <button type="button" class="cancel-button" (click)="showConfirmation = false">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back</span>
+          </button>
           <button type="button" class="submit-button" (click)="confirmSubmit()" [disabled]="isSubmitting">
-            {{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}
+            <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+            <span>{{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}</span>
           </button>
         </div>
       </div>

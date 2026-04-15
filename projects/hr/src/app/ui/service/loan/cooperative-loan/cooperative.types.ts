@@ -246,6 +246,7 @@ export interface CooperativeEmployeeProfile {
   employeeId: number;
   fullName: string;
   email: string;
+  workEmail?: string;
   monthlySalary?: number;
   phone?: string;
   department?: string;

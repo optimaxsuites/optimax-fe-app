@@ -1,3 +1,9 @@
+// Ensures a loan code is always prefixed with COPLO-
+export function formatCooperativeLoanCode(raw: string | number | undefined | null): string {
+  const code = String(raw || '').trim();
+  if (!code) return '';
+  return code.startsWith('COPLO-') ? code : `COPLO-${code}`;
+}
 import { LoanApplication, LoanAuditUser, PaymentRecord } from './loan.types';
 
 const loanActorCacheKey = 'advance-loan-actor-name-cache';

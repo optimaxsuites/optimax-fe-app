@@ -2,6 +2,14 @@ import { Injectable } from '@angular/core';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeNotification, CooperativeRepayment } from './cooperative.types';
 
+export interface CooperativeRecordedRepayment {
+  repayment: CooperativeRepayment;
+  principalApplied: number;
+  interestApplied: number;
+  lateFeeApplied: number;
+  remainingBalance: number;
+}
+
 export interface CooperativeRepaymentContext {
   loans: CooperativeLoan[];
   repayments: CooperativeRepayment[];
@@ -36,8 +44,13 @@ export class CooperativeRepaymentService {
   recordRepayment(
     context: CooperativeRepaymentContext,
     loanId: string | number,
-    payload: { amount: number; modeofPayment: CooperativeRepayment['modeofPayment']; paidDate?: string }
-  ): CooperativeRepayment | undefined {
+    payload: {
+      amount: number;
+      modeofPayment: CooperativeRepayment['modeofPayment'];
+      paidDate?: string;
+      paymentType?: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+    }
+  ): CooperativeRecordedRepayment | undefined {
     const normalizedLoanId = String(loanId);
     const loan = context.loans.find(item => String(item.id) === normalizedLoanId);
     if (!loan || loan.status !== 'ACTIVE') {
@@ -61,15 +74,28 @@ export class CooperativeRepaymentService {
       return undefined;
     }
 
-    if (paidAmount < nextDue.amount) {
-      return undefined;
-    }
-
     const paymentTimestamp = payload.paidDate || new Date().toISOString();
     const modeofPayment = payload.modeofPayment || 'BANK_TRANSFER';
+    const paymentType = payload.paymentType;
     let remainingPayment = paidAmount;
     let principalPaidTotal = 0;
     let interestPaidTotal = 0;
+    let lateFeePaidTotal = 0;
+
+    const scheduledInterest = Number(nextDue.interestComponent || 0);
+    const scheduledLateFee = Number(nextDue.lateFeeAmount || 0);
+    const scheduledPrincipal = Number(
+      nextDue.principalComponent || Math.max(Number(nextDue.amount || 0) - scheduledInterest - scheduledLateFee, 0)
+    );
+
+    if (paymentType) {
+      const maximumApplicableAmount = this.getOutstandingAmountForPaymentType(nextDue, paymentType);
+      if (maximumApplicableAmount <= 0 || paidAmount > maximumApplicableAmount) {
+        return undefined;
+      }
+    } else if (paidAmount < nextDue.amount) {
+      return undefined;
+    }
 
     const recordedRepayment: CooperativeRepayment = {
       ...nextDue,
@@ -79,63 +105,93 @@ export class CooperativeRepaymentService {
       receiptNumber: this.generateReceiptNumber(this.getLoanCode(loan))
     };
 
-    for (let index = 0; index < openRepayments.length && remainingPayment > 0; index++) {
-      const installment = openRepayments[index];
-      const installmentAmount = Number(installment.amount || 0);
-      const scheduledInterest = Number(installment.interestComponent || 0);
-      const scheduledLateFee = Number(installment.lateFeeAmount || 0);
-      const scheduledPrincipal = Number(
-        installment.principalComponent || Math.max(installmentAmount - scheduledInterest - scheduledLateFee, 0)
-      );
-
-      if (remainingPayment >= installmentAmount) {
-        remainingPayment = this.roundCurrency(remainingPayment - installmentAmount);
-        installment.paidDate = paymentTimestamp;
-        installment.modeofPayment = modeofPayment;
-        installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
-        installment.status = 'PAID';
-
-        principalPaidTotal += scheduledPrincipal;
-        interestPaidTotal += scheduledInterest;
-        continue;
+    if (paymentType) {
+      if (paymentType === 'PRINCIPAL_REPAYMENT') {
+        principalPaidTotal = this.roundCurrency(Math.min(paidAmount, scheduledPrincipal));
+        nextDue.principalComponent = this.roundCurrency(Math.max(scheduledPrincipal - principalPaidTotal, 0));
       }
 
-      const appliedAmount = this.roundCurrency(remainingPayment);
-      const principalReduction = Math.min(appliedAmount, Math.max(scheduledPrincipal, 0));
-      const remainingAfterPrincipal = Math.max(appliedAmount - principalReduction, 0);
-      const interestReduction = Math.min(remainingAfterPrincipal, Math.max(scheduledInterest, 0));
-      const lateFeeReduction = Math.min(
-        Math.max(remainingAfterPrincipal - interestReduction, 0),
-        Math.max(scheduledLateFee, 0)
-      );
-
-      installment.principalComponent = this.roundCurrency(Math.max(scheduledPrincipal - principalReduction, 0));
-      installment.interestComponent = this.roundCurrency(Math.max(scheduledInterest - interestReduction, 0));
-      installment.lateFeeAmount = this.roundCurrency(Math.max(scheduledLateFee - lateFeeReduction, 0));
-      installment.amount = this.roundCurrency(Math.max(installmentAmount - appliedAmount, 0));
-      if (installment.amount === 0) {
-        installment.paidDate = paymentTimestamp;
-        installment.modeofPayment = modeofPayment;
-        installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
-        installment.status = 'PAID';
+      if (paymentType === 'INTEREST_REPAYMENT') {
+        interestPaidTotal = this.roundCurrency(Math.min(paidAmount, scheduledInterest));
+        nextDue.interestComponent = this.roundCurrency(Math.max(scheduledInterest - interestPaidTotal, 0));
       }
-      principalPaidTotal += principalReduction;
-      interestPaidTotal += interestReduction;
-      remainingPayment = 0;
+
+      if (paymentType === 'LATE_FEE') {
+        lateFeePaidTotal = this.roundCurrency(Math.min(paidAmount, scheduledLateFee));
+        nextDue.lateFeeAmount = this.roundCurrency(Math.max(scheduledLateFee - lateFeePaidTotal, 0));
+      }
+
+      nextDue.amount = this.roundCurrency(Math.max(Number(nextDue.amount || 0) - paidAmount, 0));
+      if (nextDue.amount === 0) {
+        nextDue.paidDate = paymentTimestamp;
+        nextDue.modeofPayment = modeofPayment;
+        nextDue.receiptNumber = recordedRepayment.receiptNumber;
+        nextDue.status = 'PAID';
+      }
+    }
+
+    if (!paymentType) {
+      for (let index = 0; index < openRepayments.length && remainingPayment > 0; index++) {
+        const installment = openRepayments[index];
+        const installmentAmount = Number(installment.amount || 0);
+        const installmentInterest = Number(installment.interestComponent || 0);
+        const installmentLateFee = Number(installment.lateFeeAmount || 0);
+        const installmentPrincipal = Number(
+          installment.principalComponent || Math.max(installmentAmount - installmentInterest - installmentLateFee, 0)
+        );
+
+        if (remainingPayment >= installmentAmount) {
+          remainingPayment = this.roundCurrency(remainingPayment - installmentAmount);
+          installment.paidDate = paymentTimestamp;
+          installment.modeofPayment = modeofPayment;
+          installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
+          installment.status = 'PAID';
+
+          principalPaidTotal += installmentPrincipal;
+          interestPaidTotal += installmentInterest;
+          lateFeePaidTotal += installmentLateFee;
+          continue;
+        }
+
+        const appliedAmount = this.roundCurrency(remainingPayment);
+        const principalReduction = Math.min(appliedAmount, Math.max(installmentPrincipal, 0));
+        const remainingAfterPrincipal = Math.max(appliedAmount - principalReduction, 0);
+        const interestReduction = Math.min(remainingAfterPrincipal, Math.max(installmentInterest, 0));
+        const lateFeeReduction = Math.min(
+          Math.max(remainingAfterPrincipal - interestReduction, 0),
+          Math.max(installmentLateFee, 0)
+        );
+
+        installment.principalComponent = this.roundCurrency(Math.max(installmentPrincipal - principalReduction, 0));
+        installment.interestComponent = this.roundCurrency(Math.max(installmentInterest - interestReduction, 0));
+        installment.lateFeeAmount = this.roundCurrency(Math.max(installmentLateFee - lateFeeReduction, 0));
+        installment.amount = this.roundCurrency(Math.max(installmentAmount - appliedAmount, 0));
+        if (installment.amount === 0) {
+          installment.paidDate = paymentTimestamp;
+          installment.modeofPayment = modeofPayment;
+          installment.receiptNumber = this.generateReceiptNumber(this.getLoanCode(loan));
+          installment.status = 'PAID';
+        }
+        principalPaidTotal += principalReduction;
+        interestPaidTotal += interestReduction;
+        lateFeePaidTotal += lateFeeReduction;
+        remainingPayment = 0;
+      }
     }
 
     loan.totalPrincipalPaid = this.roundCurrency(Number(loan.totalPrincipalPaid || 0) + principalPaidTotal);
     loan.totalInterestPaid = this.roundCurrency(Number(loan.totalInterestPaid || 0) + interestPaidTotal);
-    loan.outstandingPrincipal = this.roundCurrency(
-      Math.max(Number(loan.outstandingPrincipal ?? loan.amount ?? 0) - principalPaidTotal, 0)
-    );
+    loan.totalLateFeesPaid = this.roundCurrency(Number(loan.totalLateFeesPaid || 0) + lateFeePaidTotal);
     loan.updatedAt = paymentTimestamp;
+    this.recalculateLoanBalances(context, loan);
 
     const remainingOpen = context.repayments.some(item => String(item.loanId) === normalizedLoanId && item.status !== 'PAID');
     if (!remainingOpen) {
       loan.status = 'COMPLETED';
       loan.completionDate = new Date().toISOString();
       loan.outstandingPrincipal = 0;
+      loan.outstandingInterest = 0;
+      loan.outstandingBalance = 0;
       loan.updatedAt = new Date().toISOString();
 
       context.createMemberStatusNotification(
@@ -146,7 +202,13 @@ export class CooperativeRepaymentService {
     }
 
     context.saveToStorage();
-    return recordedRepayment;
+    return {
+      repayment: recordedRepayment,
+      principalApplied: this.roundCurrency(principalPaidTotal),
+      interestApplied: this.roundCurrency(interestPaidTotal),
+      lateFeeApplied: this.roundCurrency(lateFeePaidTotal),
+      remainingBalance: Number(loan.outstandingBalance || 0)
+    };
   }
 
   getOverdueRepaymentsByLoanId(context: CooperativeRepaymentContext, loanId: string | number): CooperativeRepayment[] {
@@ -426,6 +488,11 @@ export class CooperativeRepaymentService {
           const lateFee = this.roundCurrency(item.amount * context.lateFeeRate);
           item.lateFeeAmount = lateFee;
           item.amount = this.roundCurrency(item.amount + lateFee);
+          const relatedLoan = context.loans.find((loan) => String(loan.id) === String(item.loanId));
+          if (relatedLoan) {
+            relatedLoan.totalLateFeesAccrued = this.roundCurrency(Number(relatedLoan.totalLateFeesAccrued || 0) + lateFee);
+            this.recalculateLoanBalances(context, relatedLoan);
+          }
           updated = true;
         }
 
@@ -456,6 +523,33 @@ export class CooperativeRepaymentService {
     dueDate.setMonth(dueDate.getMonth() + installment);
     dueDate.setDate(repaymentDueDay);
     return dueDate;
+  }
+
+  private getOutstandingAmountForPaymentType(
+    repayment: CooperativeRepayment,
+    paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE'
+  ): number {
+    if (paymentType === 'PRINCIPAL_REPAYMENT') {
+      return this.roundCurrency(Number(repayment.principalComponent || 0));
+    }
+
+    if (paymentType === 'INTEREST_REPAYMENT') {
+      return this.roundCurrency(Number(repayment.interestComponent || 0));
+    }
+
+    return this.roundCurrency(Number(repayment.lateFeeAmount || 0));
+  }
+
+  private recalculateLoanBalances(context: CooperativeRepaymentContext, loan: CooperativeLoan): void {
+    const loanRepayments = context.repayments.filter(item => String(item.loanId) === String(loan.id) && item.status !== 'PAID');
+    loan.outstandingPrincipal = this.roundCurrency(loanRepayments.reduce((sum, item) => sum + Number(item.principalComponent || 0), 0));
+    loan.outstandingInterest = this.roundCurrency(loanRepayments.reduce((sum, item) => sum + Number(item.interestComponent || 0), 0));
+    loan.outstandingBalance = this.roundCurrency(loanRepayments.reduce((sum, item) => sum + Number(item.amount || 0), 0));
+    loan.totalPaid = this.roundCurrency(
+      Number(loan.totalPrincipalPaid || 0)
+      + Number(loan.totalInterestPaid || 0)
+      + Number(loan.totalLateFeesPaid || 0)
+    );
   }
 
   private roundCurrency(value: number): number {

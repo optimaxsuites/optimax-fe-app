@@ -8,19 +8,29 @@
   </div>
   
   <div class="modal-body">
+    <div class="form-group" *ngIf="showLoanSelector">
+      <label>Select Active Loan <span class="required">*</span></label>
+      <select class="form-select" [ngModel]="selectedLoanId" (ngModelChange)="onLoanSelectionChange($event)" [ngModelOptions]="{standalone: true}">
+        <option *ngFor="let option of availableLoans" [value]="option.id">
+          {{ getLoanOptionLabel(option) }}
+        </option>
+      </select>
+      <div class="field-hint">Choose the active loan you want to repay from the command center.</div>
+    </div>
+
     <!-- Payment Summary -->
     <div class="payment-summary">
       <div class="summary-row">
         <span>Loan ID:</span>
-        <strong>{{ loan?.loanCode || loan?.id }}</strong>
+        <strong>{{ currentLoan?.loanCode || currentLoan?.id }}</strong>
       </div>
-      <div class="summary-row" *ngIf="installment">
+      <div class="summary-row" *ngIf="currentInstallment">
         <span>Installment:</span>
-        <strong>Installment {{ installment.installmentNo }}</strong>
+        <strong>Installment {{ currentInstallment.installmentNo }}</strong>
       </div>
       <div class="summary-row">
         <span>Due Date:</span>
-        <strong>{{ (installment?.dueDate || loan?.repaymentStartDate) | date:'mediumDate' }}</strong>
+        <strong>{{ (currentInstallment?.dueDate || currentLoan?.repaymentStartDate) | date:'mediumDate' }}</strong>
       </div>
       <div class="summary-row total">
         <span>{{ paymentAmountLabel }}:</span>

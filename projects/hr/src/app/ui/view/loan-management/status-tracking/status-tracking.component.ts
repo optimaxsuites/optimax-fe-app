@@ -1,5 +1,11 @@
 import { Component, Input } from '@angular/core';
-import { StatusChange } from '../../../service/loan/loan.types';
+
+type StatusTrackingEntry = {
+  status: string;
+  changedAt: string;
+  changedBy?: unknown;
+  notes?: string;
+};
 
 @Component({
   selector: 'app-status-tracking',
@@ -8,7 +14,7 @@ import { StatusChange } from '../../../service/loan/loan.types';
 })
 export class StatusTrackingComponent {
   @Input() loan: any;
-  @Input() statusHistory: StatusChange[] = [];
+  @Input() statusHistory: StatusTrackingEntry[] = [];
   @Input() canChangeStatus: boolean = false;
   
   statusOptions = [
@@ -44,5 +50,15 @@ export class StatusTrackingComponent {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatActor(actor: unknown): string {
+    if (actor && typeof actor === 'object') {
+      const value = actor as { fullname?: string; username?: string; email?: string };
+      return String(value.fullname || value.username || value.email || 'System').trim();
+    }
+
+    const text = String(actor || '').trim();
+    return text || 'System';
   }
 }

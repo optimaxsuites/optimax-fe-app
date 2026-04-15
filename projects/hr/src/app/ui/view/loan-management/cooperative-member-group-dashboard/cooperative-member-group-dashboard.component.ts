@@ -49,6 +49,13 @@ interface GroupMemberRosterRow {
   joinedAt: string;
 }
 
+interface GroupRecentJoinerRow {
+  memberId: number;
+  fullName: string;
+  email: string;
+  joinedAt: string;
+}
+
 interface GroupMonthlyContributionSnapshotRow {
   memberId: number;
   memberName: string;
@@ -120,7 +127,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
   contributionRows: GroupContributionRow[] = [];
   groupMemberRosterRows: GroupMemberRosterRow[] = [];
   selectedContributionMonth = '';
-  recentJoiners: CooperativeMember[] = [];
+  recentJoiners: GroupRecentJoinerRow[] = [];
   contributionHistory: ContributionHistoryPoint[] = [];
   activityFeed: GroupActivityItem[] = [];
   private membersSubscription?: Subscription;
@@ -141,11 +148,11 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
     { header: 'Actions' }
   ];
 
-  readonly recentJoinerColumns: TableColumn<CooperativeMember>[] = [
+  readonly recentJoinerColumns: TableColumn<GroupRecentJoinerRow>[] = [
     { header: 'Member', field: 'fullName' },
     { header: 'Member ID', field: 'memberId' },
     { header: 'Email', field: 'email' },
-    { header: 'Joined', formatter: row => row.joinDate ? new Date(row.joinDate).toLocaleDateString('en-US') : '—' }
+    { header: 'Joined', formatter: row => row.joinedAt ? new Date(row.joinedAt).toLocaleDateString('en-US') : '—' }
   ];
 
   readonly contributionPaymentMethodOptions: Array<{ value: CooperativeContributionPaymentMethod; label: string }> = [
@@ -259,16 +266,25 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
     return !!this.currentMembership && this.currentMembership.status === 'ACTIVE';
   }
 
+  get resolvedCurrentGroup(): CooperativeLoanGroup | undefined {
+    const groupId = Number(this.currentGroupId || this.group?.id || 0);
+    if (!Number.isFinite(groupId) || groupId <= 0) {
+      return this.group;
+    }
+
+    return this.mergeGroupRecords(this.group, this.cooperativeService.getGroupById(groupId));
+  }
+
   get currentGroupAccountingEmail(): string {
-    return String(this.group?.accountingEmail || '').trim();
+    return String(this.resolvedCurrentGroup?.accountingEmail || '').trim();
   }
 
   get currentGroupContributionBankName(): string {
-    return String(this.group?.contributionsBankName || '').trim();
+    return String(this.resolvedCurrentGroup?.contributionsBankName || '').trim();
   }
 
   get currentGroupContributionAccount(): string {
-    return String(this.group?.contributionsAccount || '').trim();
+    return String(this.resolvedCurrentGroup?.contributionsAccount || '').trim();
   }
 
   get contributionMonthOptions(): Array<{ value: string; label: string }> {
@@ -354,8 +370,14 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
         members: this.cooperativeService.getMembers(),
         memberships: this.cooperativeService.loadGroupMemberships(),
         contributions: this.cooperativeService.loadContributionEntries(),
-        loans: this.cooperativeService.getLoans()
-      }).subscribe(({ loans }) => {
+        loans: this.cooperativeService.getLoans(),
+        groups: this.cooperativeService.refreshGroups()
+      }).subscribe(({ loans, groups }) => {
+        const hydratedGroup = groups.find((item) => Number(item.id) === Number(this.currentGroupId));
+        if (hydratedGroup) {
+          this.group = this.mergeGroupRecords(this.group, hydratedGroup);
+        }
+
         this.groupMemberships = this.cooperativeService.getGroupMemberships()
           .filter(item => String(item.groupId) === this.currentGroupId && item.status === 'ACTIVE')
           .sort((a, b) => new Date(b.joinedAt || b.requestedAt || '').getTime() - new Date(a.joinedAt || a.requestedAt || '').getTime());
@@ -371,9 +393,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
         this.currentMembership = this.groupMemberships.find(item => item.memberId === this.currentMember?.id);
         this.refreshCurrentMemberFromBackend();
 
-        this.recentJoiners = [...this.groupMembers]
-          .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-          .slice(0, 5);
+        this.recentJoiners = this.buildRecentJoinerRows();
 
         this.contributionRows = this.groupMemberships.map(membership => {
           const member = this.cooperativeService.getMemberById(membership.memberId);
@@ -597,21 +617,23 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
           paymentMethod
         }).subscribe((request) => {
           this.isSubmittingContribution = false;
-
           if (!request) {
             this.contributionError = 'The contribution confirmation request could not be created. Check the month and try again.';
             return;
           }
-
           this.closeContributionModal();
           this.loadDashboard();
           this.actionMessageTone = 'success';
           this.actionMessage = `Contribution confirmation request sent for ${this.getContributionMonthLabel(contributionMonth)}.`;
         });
       },
-      error: () => {
+      error: (err) => {
         this.isSubmittingContribution = false;
-        this.contributionError = 'The accounting confirmation email could not be sent. Please try again.';
+        let detail = 'The accounting confirmation email could not be sent. Please try again.';
+        if (err && err.status === 403) {
+          detail = 'Email notification failed due to authorization error. Please contact your administrator.';
+        }
+        this.contributionError = detail;
       }
     });
   }
@@ -762,9 +784,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
     });
     this.groupMemberRosterRows = this.buildGroupMemberRosterRows();
 
-    this.recentJoiners = [...this.groupMembers]
-      .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-      .slice(0, 5);
+    this.recentJoiners = this.buildRecentJoinerRows();
 
     this.borrowerRows = this.groupLoans
       .filter(loan => loan.status !== 'REJECTED' && loan.status !== 'PENDING')
@@ -815,6 +835,79 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
     }).sort((left, right) => left.memberName.localeCompare(right.memberName));
   }
 
+  private buildRecentJoinerRows(): GroupRecentJoinerRow[] {
+    return this.groupMemberships
+      .map((membership) => {
+        const member = this.cooperativeService.getMemberById(membership.memberId);
+        const joinedAt = membership.joinedAt || membership.requestedAt || member?.joinDate || '';
+
+        return {
+          memberId: Number(member?.memberId || membership.memberId || 0),
+          fullName: this.getMemberDisplayName(membership.memberId),
+          email: String(member?.email || '').trim(),
+          joinedAt
+        };
+      })
+      .sort((left, right) => new Date(right.joinedAt || 0).getTime() - new Date(left.joinedAt || 0).getTime())
+      .slice(0, 5);
+  }
+
+  private mergeGroupRecords(
+    primary?: CooperativeLoanGroup | null,
+    secondary?: CooperativeLoanGroup | null
+  ): CooperativeLoanGroup | undefined {
+    if (!primary && !secondary) {
+      return undefined;
+    }
+
+    if (!primary) {
+      return secondary || undefined;
+    }
+
+    if (!secondary) {
+      return primary;
+    }
+
+    const preferString = (first?: string, second?: string): string => {
+      const primaryValue = String(first || '').trim();
+      if (primaryValue) {
+        return primaryValue;
+      }
+      return String(second || '').trim();
+    };
+
+    const preferNumber = (first?: number, second?: number): number => {
+      if (Number.isFinite(Number(first))) {
+        return Number(first);
+      }
+      return Number(second || 0);
+    };
+
+    return {
+      ...secondary,
+      ...primary,
+      code: preferString(primary.code, secondary.code),
+      name: preferString(primary.name, secondary.name),
+      description: preferString(primary.description, secondary.description),
+      contributionsBankName: preferString(primary.contributionsBankName, secondary.contributionsBankName),
+      contributionsAccount: preferString(primary.contributionsAccount, secondary.contributionsAccount),
+      principalBankName: preferString(primary.principalBankName, secondary.principalBankName),
+      principalCollectionAccount: preferString(primary.principalCollectionAccount, secondary.principalCollectionAccount),
+      interestBankName: preferString(primary.interestBankName, secondary.interestBankName),
+      interestCollectionAccount: preferString(primary.interestCollectionAccount, secondary.interestCollectionAccount),
+      lateFeeBankName: preferString(primary.lateFeeBankName, secondary.lateFeeBankName),
+      lateFeeCollectionAccount: preferString(primary.lateFeeCollectionAccount, secondary.lateFeeCollectionAccount),
+      accountingEmail: preferString(primary.accountingEmail, secondary.accountingEmail),
+      accountingWebhookUrl: preferString(primary.accountingWebhookUrl, secondary.accountingWebhookUrl),
+      monthlyContributionAmount: preferNumber(primary.monthlyContributionAmount, secondary.monthlyContributionAmount),
+      interestRate: preferNumber(primary.interestRate, secondary.interestRate),
+      minDuration: preferNumber(primary.minDuration, secondary.minDuration),
+      maxDuration: preferNumber(primary.maxDuration, secondary.maxDuration),
+      lateFeePercentage: preferNumber(primary.lateFeePercentage, secondary.lateFeePercentage),
+      lateFeeGraceDays: preferNumber(primary.lateFeeGraceDays, secondary.lateFeeGraceDays)
+    };
+  }
+
   clearMemberDirectoryQuery(): void {
     this.memberDirectoryQuery = '';
   }
@@ -847,12 +940,28 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   openMemberLoanHistory(memberId: string): void {
     this.router.navigate(['/admin/hr/loan-management/employee-loan-history', memberId, this.currentUuid], {
-      state: { source: 'employee', cooperative: true, uuid: this.currentUuid }
+      state: {
+        source: 'employee',
+        cooperative: true,
+        uuid: this.currentUuid,
+        groupId: Number(this.currentGroupId || 0) || undefined,
+        returnSource: 'group-dashboard'
+      }
     });
   }
 
   goBack(): void {
-    this.backNavigationService.goBack(['/member/cooperative/dashboard', this.currentUuid]);
+    this.router.navigate(['/member/cooperative/dashboard', this.currentUuid], {
+      replaceUrl: true,
+      state: {
+        memberId: Number(this.currentMember?.id || this.currentMemberId || 0) || undefined,
+        source: 'group-dashboard'
+      }
+    }).then((navigated) => {
+      if (navigated) {
+        window.dispatchEvent(new Event('resize'));
+      }
+    });
   }
 
   formatCurrency(amount: number): string {

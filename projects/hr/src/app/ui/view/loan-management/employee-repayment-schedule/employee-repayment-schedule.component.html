@@ -1,4 +1,4 @@
-<div class="employee-repayment-schedule">
+<div class="employee-repayment-schedule loan-management-surface">
   <!-- Loan Header -->
   <div class="loan-header">
     <div class="loan-title">
@@ -266,7 +266,7 @@
 
 <!-- Payment Modal -->
 <div class="modal-overlay" *ngIf="showPaymentModal" (click)="closePaymentModal()">
-  <div class="payment-modal-container" (click)="$event.stopPropagation()">
+  <div class="payment-modal-container" *ngIf="paymentMode === 'advance'; else cooperativePaymentModal" (click)="$event.stopPropagation()">
     <app-payment-modal
       [loan]="loan"
       [installment]="selectedInstallment"
@@ -275,6 +275,18 @@
     </app-payment-modal>
   </div>
 </div>
+
+<ng-template #cooperativePaymentModal>
+  <div (click)="$event.stopPropagation()">
+    <app-cooperative-payment-modal
+      [loan]="cooperativeLoan"
+      [group]="cooperativeGroup"
+      [installment]="selectedCooperativeInstallment"
+      (close)="closePaymentModal()"
+      (paymentSuccess)="onPaymentSuccess()">
+    </app-cooperative-payment-modal>
+  </div>
+</ng-template>
 
 <!-- Grace Period Request Modal -->
 <div class="modal-overlay" *ngIf="showGracePeriodModal" (click)="closeGracePeriodModal()">

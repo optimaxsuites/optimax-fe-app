@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, HostListener, Input } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
@@ -67,6 +67,7 @@ export class ShiftAssignmentComponent implements OnInit {
     { id: 'dept-3', name: 'Operations',  employeeIds: ['emp-5', 'emp-6'] },
   ];
 
+  @Input() preselectedDate!: string;
   @Output() closeModal = new EventEmitter<void>();
 
   constructor(
@@ -81,12 +82,19 @@ export class ShiftAssignmentComponent implements OnInit {
     shiftId: ['', Validators.required],
     date: ['', Validators.required],
     endDate: [''],
-    project: [''],
+    project: ['', Validators.required],
+    description: ['', Validators.required],
     location: [''],
     recurrence: ['none'],
     customDays: [[]], //for example, Mon, Wed
     customInterval: [1] //every X days
   });
+
+  if (this.preselectedDate) {
+    this.assignmentForm.patchValue({
+      date: this.preselectedDate
+    });
+  }
 
   // 2. Shifts
   this.shiftserviceService.shifts$.subscribe(shifts => {
@@ -135,6 +143,19 @@ export class ShiftAssignmentComponent implements OnInit {
       }
       });
     });
+
+    this.assignmentForm.get('endDate')?.valueChanges.subscribe(end => {
+      const start = this.assignmentForm.value.date;
+      if (end && start && end < start) {
+        this.assignmentForm.patchValue({ endDate: '' });
+      }
+    });
+  }
+
+  get minDate(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return this.formatDateLocal(tomorrow);
   }
 
   //getter to check if end date is set
@@ -220,9 +241,16 @@ export class ShiftAssignmentComponent implements OnInit {
  // ── Submit ────────────────────────────────────────────────────────────────
 
   assignShift() {
+    //custome recurrence validation
+    if (this.assignmentForm.value.recurrence === 'custom' &&
+      (!this.assignmentForm.value.customDays || this.assignmentForm.value.customDays.length === 0)
+    ) {
+      alert('Please select at least one day for custom recurrence.');
+      return;
+    }
     if (this.assignmentForm.invalid || !this.selectedEmployeeIds.length || this.conflictMessage.length) return;
 
-    const { shiftId, date, endDate, project, location, recurrence } = this.assignmentForm.value;
+    const { shiftId, date, endDate, project, location, recurrence, description } = this.assignmentForm.value;
     const datesToAssign = this.resolveDates(date, recurrence);
     const serviceConflicts: string[] = []; 
 
@@ -236,7 +264,8 @@ export class ShiftAssignmentComponent implements OnInit {
           status: 'scheduled',
           project,
           location,
-          recurrence
+          recurrence,
+          description
         });
         // Catch any conflict the service detected that the pre-flight missed
         if (!result.success && result.message) {
@@ -285,7 +314,8 @@ export class ShiftAssignmentComponent implements OnInit {
     }
 
      // Otherwise fall through to existing recurrence logic
-    const dates: string[] = [startDate];
+    //const dates: string[] = [startDate];
+    const dates: string[] = [];
     const start = new Date(startDate);
 
     if (recurrence === 'none') return dates;
@@ -307,13 +337,41 @@ export class ShiftAssignmentComponent implements OnInit {
     }
 
     if (recurrence === 'custom') {
+      const selectedDays: string[] = this.assignmentForm.value.customDays || [];
+      if (!selectedDays.length) return dates;
+
+      const dayMap: any = {
+        Sun: 0, Mon: 1, Tue: 2, Wed: 3,
+        Thu: 4, Fri: 5, Sat: 6
+      };
+
+      const start = new Date(startDate);
+
+      // Generate for next 30 days
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+
+        const dayName = Object.keys(dayMap).find(
+          key => dayMap[key] === d.getDay()
+        );
+
+        if (selectedDays.includes(dayName!)) {
+          dates.push(this.formatDateLocal(d));
+        }
+      }
+
+      return dates;
+    }
+
+    /*if (recurrence === 'custom') {
       const interval = this.assignmentForm.value.customInterval || 1;
       for (let i = 1; i <= 10; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i * interval);
         dates.push(this.formatDateLocal(d));
       }
-    }
+    }*/
 
     return dates;
   }

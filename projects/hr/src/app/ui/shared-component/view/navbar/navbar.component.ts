@@ -1,18 +1,20 @@
-import { Component, Output, EventEmitter, Input } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, Output, EventEmitter, Input, OnDestroy } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
 import { AuthenticationService } from '../../service/auth-service/authentication.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss'],
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   @Input() sidebarHidden!: boolean;
 
   userInfoRegData: any = {};
   userRegData: any = {};
+  private navigationSubscription?: Subscription;
 
   constructor(
     private router: Router,
@@ -35,11 +37,19 @@ export class NavbarComponent {
       return;
     }
 
-    this.userInfoRegData = this.readUserRegData();
-    this.userRegData = this.userInfoRegData && Array.isArray(this.userInfoRegData) && this.userInfoRegData.length > 0 ? this.userInfoRegData[0] : this.userInfoRegData;
+    this.refreshUserData();
+    this.navigationSubscription = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.refreshUserData();
+      }
+    });
 
     // console.log("testing client types", this.userInfoRegData);
 }
+
+  ngOnDestroy(): void {
+    this.navigationSubscription?.unsubscribe();
+  }
   
 
 
@@ -73,6 +83,13 @@ export class NavbarComponent {
     } catch {
       return [];
     }
+  }
+
+  private refreshUserData(): void {
+    this.userInfoRegData = this.readUserRegData();
+    this.userRegData = this.userInfoRegData && Array.isArray(this.userInfoRegData) && this.userInfoRegData.length > 0
+      ? this.userInfoRegData[0]
+      : this.userInfoRegData;
   }
 
 

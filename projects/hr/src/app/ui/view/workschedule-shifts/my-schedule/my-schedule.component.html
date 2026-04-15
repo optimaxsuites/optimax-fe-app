@@ -23,7 +23,7 @@
 
     <!-- WEEKDAYS -->
     <div class="weekday-row">
-      <div *ngFor="let d of ['Sun','Mon','Tues','Wed','Thur','Fri','Sat']">
+      <div class="weekday-cell" *ngFor="let d of ['Sun','Mon','Tues','Wed','Thur','Fri','Sat']">
         {{ d }}
       </div>
     </div>
@@ -47,40 +47,19 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- CALENDAR VIEW -->
-  <!--<div *ngIf="viewMode === 'calendar'">
-
-    <div class="calendar-header">
-      <button (click)="prevMonth()">‹</button>
-      <span>{{ monthLabel }}</span>
-      <button (click)="nextMonth()">›</button>
-    </div>
-
-    <div class="date-grid">
-      <div
-        class="date-cell"
-        *ngFor="let day of calendarDays"
-        [class.has-schedule]="hasSchedule(day.date)"
-        [class.conflict]="hasConflict(formatDateLocal(day.date))"
-        (click)="selectDate(day)"
-      >
-        {{ day.date.getDate() }}
-      </div>
-    </div>
-
-    <!-- DAY DETAILS -->
+        <!-- DAY DETAILS -->
     <div class="day-detail">
 
-      <h4>{{ selectedDateLabel }}</h4>
-
-      <div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
-        ⚠ You have overlapping shifts
+      <div class="day-detail-header">
+        <span class="day-label">{{ selectedDateLabel }}</span>
       </div>
 
-      <div *ngIf="shiftsForSelectedDate.length === 0">
-        No shifts
+      <div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
+        ⚠ You have overlapping shifts!
+      </div>
+
+      <div *ngIf="shiftsForSelectedDate.length === 0" class="empty-card">
+        No shifts scheduled for this day...
       </div>
 
       <div *ngFor="let item of shiftsForSelectedDate" class="shift-card">
@@ -91,7 +70,9 @@
 
     </div>
 
-  </div>-->
+  </div>
+
+  </div>
 
   <!-- TABLE VIEW -->
    <div *ngIf="viewMode === 'table'" class="table-view">

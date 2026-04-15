@@ -50,6 +50,8 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   isLoading = false;
   isDetailLoading = false;
   interestAgreement: AdvanceInterestAgreement | null = null;
+  feedbackMessage = '';
+  feedbackTone: 'success' | 'error' | 'info' = 'info';
 
   constructor(
     private loanApplicationService: LoanApplicationService,
@@ -110,6 +112,7 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     this.showInterestModal = true;
     this.showRejectionReason = false;
     this.rejectionReason = '';
+    this.clearFeedback();
   }
 
   closeInterestModal(): void {
@@ -176,13 +179,13 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
       next: () => {
         this.isLoading = false;
         this.closeInterestModal();
+        this.setFeedback('success', `Interest rate of ${acceptedRate}% accepted successfully. Loan is now approved.`);
         this.refresh.emit();
-        alert(`Interest rate of ${acceptedRate}% accepted successfully. Loan is now APPROVED.`);
       },
       error: (error) => {
         this.isLoading = false;
         console.error('Error accepting interest rate:', error);
-        alert('Failed to accept interest rate. Please try again.');
+        this.setFeedback('error', 'Failed to accept the interest rate. Please try again.');
       }
     });
   }
@@ -192,11 +195,12 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
     
     if (!this.showRejectionReason) {
       this.showRejectionReason = true;
+      this.clearFeedback();
       return;
     }
     
     if (!this.rejectionReason.trim()) {
-      alert('Please provide a reason for rejecting the interest rate.');
+      this.setFeedback('error', 'Please provide a reason for rejecting the interest rate.');
       return;
     }
     
@@ -206,15 +210,25 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
       next: () => {
         this.isLoading = false;
         this.closeInterestModal();
+        this.setFeedback('success', 'Interest rate feedback sent. The loan remains awaiting interest acceptance while admin reviews and updates the proposal.');
         this.refresh.emit();
-        alert('Interest rate feedback sent. The loan remains awaiting interest acceptance while admin reviews and updates the proposal.');
       },
       error: (error) => {
         this.isLoading = false;
         console.error('Error rejecting interest rate:', error);
-        alert('Failed to send your rejection feedback. Please try again.');
+        this.setFeedback('error', 'Failed to send your rejection feedback. Please try again.');
       }
     });
+  }
+
+  private setFeedback(tone: 'success' | 'error' | 'info', message: string): void {
+    this.feedbackTone = tone;
+    this.feedbackMessage = message;
+  }
+
+  private clearFeedback(): void {
+    this.feedbackTone = 'info';
+    this.feedbackMessage = '';
   }
 
   onMakePayment(event: { loan: LoanApplication; installment: RepaymentScheduleItem }): void {

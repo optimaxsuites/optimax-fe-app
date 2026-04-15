@@ -1,5 +1,7 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
+import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { CooperativeLoanGroup, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import {
   formatLoanPurposeDisplay,
   getLoanRepaymentStatusTitle,
@@ -18,6 +20,10 @@ import {
 })
 export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   @Input() loan!: LoanApplication;
+  @Input() paymentMode: 'advance' | 'cooperative' = 'advance';
+  @Input() cooperativeLoan: CooperativeLoan | null = null;
+  @Input() cooperativeGroup: CooperativeLoanGroup | null = null;
+  @Output() repaymentUpdated = new EventEmitter<void>();
   
   // Summary stats
   totalPaid: number = 0;
@@ -36,6 +42,7 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   showPaymentModal = false;
   showGracePeriodModal = false;
   selectedInstallment: RepaymentScheduleItem | null = null;
+  selectedCooperativeInstallment: CooperativeRepayment | null = null;
   
   ngOnInit() {
     this.calculateStats();
@@ -102,6 +109,9 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
       this.selectedInstallment = this.loan?.repaymentSchedule
         .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
     }
+    this.selectedCooperativeInstallment = this.paymentMode === 'cooperative'
+      ? this.mapToCooperativeInstallment(this.selectedInstallment)
+      : null;
     this.showPaymentModal = true;
   }
   
@@ -109,6 +119,7 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   closePaymentModal(): void {
     this.showPaymentModal = false;
     this.selectedInstallment = null;
+    this.selectedCooperativeInstallment = null;
   }
   
   // Open grace period modal
@@ -136,12 +147,8 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
   // Handle successful payment
   onPaymentSuccess(): void {
     this.closePaymentModal();
-    // Refresh the loan data
     this.calculateStats();
-    // Emit event to parent to refresh the loan
-    if (this.loan?.id) {
-      // You can add an @Output() refresh event here
-    }
+    this.repaymentUpdated.emit();
   }
   
   // Handle successful grace period request
@@ -238,5 +245,25 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     const dueDate = new Date(item.dueDate);
     const today = new Date();
     return dueDate < today;
+  }
+
+  private mapToCooperativeInstallment(installment: RepaymentScheduleItem | null): CooperativeRepayment | null {
+    if (!installment || !this.cooperativeLoan) {
+      return null;
+    }
+
+    return {
+      id: Number(installment.id || installment.installmentNo || 0),
+      loanId: Number(this.cooperativeLoan.id || 0),
+      amount: Number(installment.totalAmount || 0),
+      dueDate: installment.dueDate,
+      principalComponent: Number(installment.principalAmount || 0),
+      interestComponent: Number(installment.interestAmount || 0),
+      lateFeeAmount: Number(installment.lateFeeAmount || 0),
+      modeofPayment: (installment.paymentMethod as CooperativeRepayment['modeofPayment']) || 'BANK_TRANSFER',
+      status: installment.status,
+      receiptNumber: installment.receiptNumber,
+      notes: installment.notes
+    };
   }
 }

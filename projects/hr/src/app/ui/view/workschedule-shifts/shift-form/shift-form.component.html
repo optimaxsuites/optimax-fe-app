@@ -49,15 +49,25 @@
         </div>
 
         <!-- BREAK TIME -->
-        <div class="form-group">
+        <!--<div class="form-group">
           <label>Break Time (minutes)</label>
           <input type="number" formControlName="breakTime" placeholder="60"/>
-        </div>
+        </div>-->
 
         <!-- COLOR -->
         <div class="form-group">
           <label>Shift Color</label>
-          <input type="color" formControlName="color"/>
+         <!-- <input type="color" formControlName="color"/> -->
+          <div class="color-picker">
+            <div
+              *ngFor="let c of colorOptions"
+              class="color-block"
+              [style.background]="c"
+              [class.selected]="shiftForm.value.color === c"
+              (click)="selectColor(c)"
+            ><span class="tick" *ngIf="shiftForm.value.color === c">✔</span>
+          </div>            
+          </div>
         </div>
 
       </div>

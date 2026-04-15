@@ -22,7 +22,7 @@
             <span class="timeline-date">{{ formatDate(history.changedAt) }}</span>
           </div>
           <div *ngIf="history.changedBy" class="changed-by">
-            Changed by: {{ history.changedBy }}
+            Changed by: {{ formatActor(history.changedBy) }}
           </div>
           <div *ngIf="history.notes" class="timeline-notes">
             {{ history.notes }}

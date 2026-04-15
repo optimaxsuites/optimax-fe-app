@@ -1,13 +1,16 @@
-import { CommonModule, Location, formatDate } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { CommonModule, formatDate } from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Subject, Subscription, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 
 type LoanReportSummary = {
   totalLoans: number;
@@ -27,14 +30,22 @@ type LoanActivityItem = {
   notes: string;
 };
 
+interface CooperativeLoanReportRow {
+  loan: CooperativeLoan;
+  memberName: string;
+  groupName: string;
+  currentBalance: number;
+  statusClass: string;
+}
+
 @Component({
   selector: 'app-cooperative-loan-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonModule],
   templateUrl: './cooperative-loan-reports.component.html',
   styleUrls: ['./cooperative-loan-reports.component.scss']
 })
-export class CooperativeLoanReportsComponent implements OnInit {
+export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
   readonly pageSize = 20;
   currentUuid = '';
   currentPage = 1;
@@ -42,6 +53,7 @@ export class CooperativeLoanReportsComponent implements OnInit {
 
   loans: CooperativeLoan[] = [];
   filteredLoans: CooperativeLoan[] = [];
+  filteredLoanRows: CooperativeLoanReportRow[] = [];
   members: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
   recentActivity: LoanActivityItem[] = [];
@@ -79,9 +91,12 @@ export class CooperativeLoanReportsComponent implements OnInit {
     defaultedCount: 0,
     pausedCount: 0
   };
+  private readonly memberNameLookup = new Map<number, string>();
+  private readonly groupNameLookup = new Map<number, string>();
+  private readonly searchChanges = new Subject<string>();
+  private readonly subscriptions = new Subscription();
 
   constructor(
-    private location: Location,
     private route: ActivatedRoute,
     private router: Router,
     private cooperativeService: CooperativeService
@@ -89,10 +104,23 @@ export class CooperativeLoanReportsComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUuid = this.route.snapshot.paramMap.get('uuid') || '';
+    this.subscriptions.add(
+      this.searchChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.applyFilters())
+    );
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  onSearchChange(value: string): void {
+    this.filters.search = value;
+    this.searchChanges.next(value);
+  }
+
   loadData(): void {
+    const loadProfiler = startLoanLoadProfiler('cooperative-loan-reports');
     this.isLoading = true;
     forkJoin({
       loans: this.cooperativeService.getLoans(),
@@ -103,14 +131,33 @@ export class CooperativeLoanReportsComponent implements OnInit {
         this.loans = loans;
         this.members = members;
         this.groups = groups;
+        this.rebuildLookups();
         this.applyFilters();
         this.recentActivity = this.buildRecentActivity(loans);
         this.alerts = this.buildAlerts(loans);
+        loadProfiler.success({ loans: this.loans.length, filtered: this.filteredLoans.length });
         this.isLoading = false;
       },
       error: () => {
+        loadProfiler.error({ message: 'Failed to load cooperative loan reports' });
         this.isLoading = false;
       }
+    });
+  }
+
+  private rebuildLookups(): void {
+    this.memberNameLookup.clear();
+    this.groupNameLookup.clear();
+
+    this.members.forEach((member) => {
+      const displayName = member.fullName || `Member #${member.id || member.memberId || 'N/A'}`;
+      [member.id, member.memberId, member.employeeId]
+        .filter((value): value is number => typeof value === 'number' && !isNaN(value))
+        .forEach((key) => this.memberNameLookup.set(key, displayName));
+    });
+
+    this.groups.forEach((group) => {
+      this.groupNameLookup.set(group.id, group.name || 'Ungrouped');
     });
   }
 
@@ -150,8 +197,19 @@ export class CooperativeLoanReportsComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortLoans(results);
+    this.filteredLoanRows = this.filteredLoans.map((loan) => this.buildLoanReportRow(loan));
     this.currentPage = 1;
     this.calculateSummary();
+  }
+
+  private buildLoanReportRow(loan: CooperativeLoan): CooperativeLoanReportRow {
+    return {
+      loan,
+      memberName: this.getMemberName(loan),
+      groupName: this.getGroupName(loan),
+      currentBalance: this.getCurrentBalance(loan),
+      statusClass: this.getStatusClass(loan.status)
+    };
   }
 
   resetFilters(): void {
@@ -176,9 +234,9 @@ export class CooperativeLoanReportsComponent implements OnInit {
     this.applyFilters();
   }
 
-  get paginatedLoans(): CooperativeLoan[] {
+  get paginatedLoans(): CooperativeLoanReportRow[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLoans.slice(start, start + this.pageSize);
+    return this.filteredLoanRows.slice(start, start + this.pageSize);
   }
 
   get totalPages(): number {
@@ -195,13 +253,12 @@ export class CooperativeLoanReportsComponent implements OnInit {
 
   getMemberName(loan: CooperativeLoan): string {
     const memberId = Number(loan.memberId || loan.cooperativeMemberId || 0);
-    const member = this.members.find((item) => item.id === memberId || item.memberId === memberId || item.employeeId === memberId);
-    return member?.fullName || `Member #${memberId || 'N/A'}`;
+    return this.memberNameLookup.get(memberId) || `Member #${memberId || 'N/A'}`;
   }
 
   getGroupName(loan: CooperativeLoan): string {
     const groupId = Number(loan.groupId || loan.cooperativeGroupId || 0);
-    return this.groups.find((item) => item.id === groupId)?.name || 'Ungrouped';
+    return this.groupNameLookup.get(groupId) || 'Ungrouped';
   }
 
   getCurrentBalance(loan: CooperativeLoan): number {
@@ -306,7 +363,9 @@ export class CooperativeLoanReportsComponent implements OnInit {
   }
 
   goBack(): void {
-    this.location.back();
+    this.router.navigate(['/admin/hr/loan', this.currentUuid || 'uu'], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   private sortLoans(loans: CooperativeLoan[]): CooperativeLoan[] {

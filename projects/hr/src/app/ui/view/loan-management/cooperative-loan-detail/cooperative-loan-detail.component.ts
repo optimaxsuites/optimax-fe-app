@@ -6,8 +6,9 @@ import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan, PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
-import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { formatLoanPurposeDisplay, formatLoanRepaymentDayDisplay } from '../../../service/loan/loan-display.util';
+import { CooperativeMember, CooperativeLoanGroup, CooperativeRepayment, CooperativeLoanGuarantor, CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
+import { formatLoanPurposeDisplay, formatLoanRepaymentDayDisplay, normalizeLoanRepaymentStartDate, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 
 type CooperativeLoanAuditEntryView = {
   status: string;
@@ -15,27 +16,6 @@ type CooperativeLoanAuditEntryView = {
   changedBy: string;
   notes: string;
 };
-
-type CooperativeLoanLifecycleStage = {
-  status: string;
-  label: string;
-  color: string;
-  notes: string;
-  fieldLabel: string;
-};
-
-const COOPERATIVE_LOAN_LIFECYCLE_STAGES: CooperativeLoanLifecycleStage[] = [
-  { status: 'PENDING', label: 'Pending', color: '#ffc107', notes: 'Loan application submitted', fieldLabel: 'Applied On' },
-  { status: 'APPROVED', label: 'Approved', color: '#4f7cff', notes: 'Loan approved', fieldLabel: 'Approved On' },
-  { status: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', color: '#0284c7', notes: 'Loan is ready for disbursement', fieldLabel: 'Ready for Disbursement On' },
-  { status: 'ACTIVE', label: 'Active', color: '#17a2b8', notes: 'Loan disbursed', fieldLabel: 'Disbursed On' },
-  { status: 'SKIPPED', label: 'Skipped', color: '#8b5cf6', notes: 'Grace period approved for the current installment', fieldLabel: 'Grace Period Approved On' },
-  { status: 'OVERDUE', label: 'Overdue', color: '#ef4444', notes: 'Repayment is overdue', fieldLabel: 'Overdue Since' },
-  { status: 'DEFAULTED', label: 'Defaulted', color: '#7f1d1d', notes: 'Loan defaulted after repeated overdue installments', fieldLabel: 'Defaulted On' },
-  { status: 'PAUSED', label: 'Paused', color: '#475569', notes: 'Repayment temporarily paused by admin', fieldLabel: 'Paused On' },
-  { status: 'COMPLETED', label: 'Completed', color: '#6c757d', notes: 'Loan completed', fieldLabel: 'Completed On' },
-  { status: 'REJECTED', label: 'Rejected', color: '#dc3545', notes: 'Loan rejected', fieldLabel: 'Rejected On' }
-];
 
 @Component({
   selector: 'app-cooperative-loan-detail',
@@ -48,14 +28,14 @@ export class CooperativeLoanDetailComponent implements OnInit {
   statusTimeline: CooperativeLoanAuditEntryView[] = [];
   member?: CooperativeMember;
   group?: CooperativeLoanGroup;
+  currentMembership?: CooperativeGroupMembership;
   repaymentSchedule: CooperativeRepayment[] = [];
   guarantors: CooperativeLoanGuarantor[] = [];
   isLoading = true;
   commentForm: FormGroup;
   showCommentModal = false;
   selectedAction: 'APPROVED' | 'REJECTED' | '' = '';
-  
-  showRejectModal = false;
+
   showRequestChangesModal = false;
   showRecordPaymentModal = false;
   showGracePeriodModal = false;
@@ -67,24 +47,26 @@ export class CooperativeLoanDetailComponent implements OnInit {
   paymentAmount = 0;
   modeofPayment: CooperativeRepayment['modeofPayment'] = 'BANK_TRANSFER';
   messages: Message[] = [];
-
-  get lifecycleStageFields(): Array<{ label: string; value: string }> {
-    return COOPERATIVE_LOAN_LIFECYCLE_STAGES.map((stage) => ({
-      label: stage.fieldLabel,
-      value: this.formatDate(this.getLifecycleStageDate(stage.status))
-    }));
-  }
+  suggestedInterestRate = 0;
+  approvalPreview = {
+    repaymentAmount: 0,
+    totalRepayment: 0,
+    totalInterest: 0
+  };
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private cooperativeService: CooperativeService,
     private backNavigationService: BackNavigationService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private loanApprovalService: LoanApprovalService
   ) {
     this.commentForm = this.fb.group({
-      comment: ['', Validators.required],
+      comment: [''],
       interestRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      lateFeePercentage: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      lateFeeGracePeriodDays: [0, [Validators.required, Validators.min(0), Validators.max(365)]],
       repaymentDay: [15, [Validators.required, Validators.min(1), Validators.max(31)]]
     });
   }
@@ -106,6 +88,19 @@ export class CooperativeLoanDetailComponent implements OnInit {
         this.member = memberId !== undefined ? this.cooperativeService.getMemberById(memberId) : undefined;
         const groupId = loan.cooperativeGroupId ?? loan.groupId;
         this.group = groupId !== undefined ? this.cooperativeService.getGroupById(groupId) : undefined;
+        if (groupId !== undefined) {
+          this.cooperativeService.loadGroupById(Number(groupId)).subscribe((group) => {
+            if (group) {
+              this.group = group;
+            }
+          });
+        }
+        this.currentMembership = this.resolveCurrentMembership(memberId, groupId, loan.membershipId);
+        if (memberId) {
+          this.cooperativeService.loadGroupMembershipsByMember(Number(memberId)).subscribe((memberships) => {
+            this.currentMembership = this.resolveMembershipFromCollection(memberships, Number(groupId || 0), loan.membershipId);
+          });
+        }
         this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(loan.id);
         this.guarantors = this.normalizeGuarantors(loan.guarantors);
         this.seedPaymentDefaults();
@@ -144,6 +139,11 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   handleGracePeriodSubmitted(): void {
     this.showGracePeriodModal = false;
+    this.loadLoan(this.loan.id);
+  }
+
+  handleRecordPaymentSuccess(): void {
+    this.showRecordPaymentModal = false;
     this.loadLoan(this.loan.id);
   }
 
@@ -323,7 +323,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
         }
 
         this.loan = updated;
-        this.showRejectModal = false;
         this.rejectionReason = '';
         this.messages = [{
           severity: 'success',
@@ -349,6 +348,14 @@ export class CooperativeLoanDetailComponent implements OnInit {
     return this.commentForm.get('interestRate') as FormControl;
   }
 
+  get lateFeePercentageControl(): FormControl {
+    return this.commentForm.get('lateFeePercentage') as FormControl;
+  }
+
+  get lateFeeGracePeriodDaysControl(): FormControl {
+    return this.commentForm.get('lateFeeGracePeriodDays') as FormControl;
+  }
+
   get repaymentDayControl(): FormControl {
     return this.commentForm.get('repaymentDay') as FormControl;
   }
@@ -357,19 +364,32 @@ export class CooperativeLoanDetailComponent implements OnInit {
     this.selectedAction = action;
     this.commentForm.reset({
       comment: '',
-      interestRate: Number(this.loan?.interestRate || this.group?.interestRate || 0),
-      repaymentDay: Number(this.loan?.repaymentDay || 15)
+      interestRate: this.effectiveInterestRate,
+      lateFeePercentage: this.effectiveLateFeePercentage,
+      lateFeeGracePeriodDays: this.effectiveLateFeeGraceDays,
+      repaymentDay: this.effectiveRepaymentDay
     });
+    this.suggestedInterestRate = this.effectiveInterestRate;
 
     if (action === 'APPROVED') {
-      this.interestRateControl.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
-      this.repaymentDayControl.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
-    } else {
+      this.commentControl.clearValidators();
       this.interestRateControl.clearValidators();
+      this.lateFeePercentageControl.clearValidators();
+      this.lateFeeGracePeriodDaysControl.clearValidators();
+      this.repaymentDayControl.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
+      this.updateApprovalPreview(this.effectiveInterestRate);
+    } else {
+      this.commentControl.setValidators([Validators.required]);
+      this.interestRateControl.clearValidators();
+      this.lateFeePercentageControl.clearValidators();
+      this.lateFeeGracePeriodDaysControl.clearValidators();
       this.repaymentDayControl.clearValidators();
     }
 
+    this.commentControl.updateValueAndValidity();
     this.interestRateControl.updateValueAndValidity();
+    this.lateFeePercentageControl.updateValueAndValidity();
+    this.lateFeeGracePeriodDaysControl.updateValueAndValidity();
     this.repaymentDayControl.updateValueAndValidity();
     this.showCommentModal = true;
   }
@@ -378,6 +398,20 @@ export class CooperativeLoanDetailComponent implements OnInit {
     this.showCommentModal = false;
     this.selectedAction = '';
     this.commentForm.reset();
+    this.suggestedInterestRate = 0;
+    this.approvalPreview = {
+      repaymentAmount: 0,
+      totalRepayment: 0,
+      totalInterest: 0
+    };
+  }
+
+  onInterestRateInput(): void {
+    if (this.selectedAction !== 'APPROVED') {
+      return;
+    }
+
+    this.updateApprovalPreview(this.effectiveInterestRate);
   }
 
   submitStatusChange(): void {
@@ -390,8 +424,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
       return;
     }
 
-    if (this.selectedAction === 'APPROVED' && (this.interestRateControl.invalid || this.repaymentDayControl.invalid)) {
-      this.interestRateControl.markAsTouched();
+    if (this.selectedAction === 'APPROVED' && this.repaymentDayControl.invalid) {
       this.repaymentDayControl.markAsTouched();
       return;
     }
@@ -400,17 +433,44 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
     if (this.selectedAction === 'APPROVED') {
       this.cooperativeService.approveLoanWithTerms(this.loan.id, {
-        interestRate: Number(this.commentForm.value.interestRate || this.loan.interestRate || this.group?.interestRate || 0),
-        repaymentDay: Number(this.commentForm.value.repaymentDay || this.loan.repaymentDay || 15),
-        repaymentStartDate: this.loan.repaymentStartDate,
+        interestRate: this.effectiveInterestRate,
+        lateFeePercentage: this.effectiveLateFeePercentage,
+        lateFeeGraceDays: this.effectiveLateFeeGraceDays,
+        repaymentDay: Number(this.commentForm.value.repaymentDay || this.effectiveRepaymentDay),
+        repaymentStartDate: this.effectiveRepaymentStartDate,
         adminComment: comment || 'Loan approved and funds reserved for disbursement.'
       }).subscribe((updated) => {
         if (!updated) {
-          this.messages = [{
-            severity: 'warn',
-            summary: 'Approval Failed',
-            detail: 'Only pending loans can be approved.'
-          }];
+          this.cooperativeService.loadLoanById(this.loan.id).subscribe((freshLoan) => {
+            if (freshLoan) {
+              this.loan = freshLoan;
+              this.guarantors = this.normalizeGuarantors(freshLoan.guarantors);
+              this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+              this.updateStatusTimeline();
+
+              if (freshLoan.status === 'APPROVED') {
+                this.closeCommentModal();
+                this.messages = [{
+                  severity: 'success',
+                  summary: 'Already Approved',
+                  detail: 'This loan was already approved. The page has been refreshed with the latest backend status.'
+                }];
+              } else {
+                this.messages = [{
+                  severity: 'warn',
+                  summary: 'Approval Failed',
+                  detail: 'Only pending loans can be approved.'
+                }];
+              }
+              return;
+            }
+
+            this.messages = [{
+              severity: 'warn',
+              summary: 'Approval Failed',
+              detail: 'Only pending loans can be approved.'
+            }];
+          });
           return;
         }
 
@@ -430,11 +490,30 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
     this.cooperativeService.rejectLoan(this.loan.id, comment).subscribe((updated) => {
       if (!updated) {
-        this.messages = [{
-          severity: 'warn',
-          summary: 'Rejection Failed',
-          detail: 'Unable to reject loan at this time.'
-        }];
+        this.cooperativeService.loadLoanById(this.loan.id).subscribe((freshLoan) => {
+          if (freshLoan) {
+            this.loan = freshLoan;
+            this.guarantors = this.normalizeGuarantors(freshLoan.guarantors);
+            this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+            this.updateStatusTimeline();
+
+            if (freshLoan.status === 'REJECTED') {
+              this.closeCommentModal();
+              this.messages = [{
+                severity: 'success',
+                summary: 'Already Rejected',
+                detail: 'This loan was already rejected. The page has been refreshed with the latest backend status.'
+              }];
+              return;
+            }
+          }
+
+          this.messages = [{
+            severity: 'warn',
+            summary: 'Rejection Failed',
+            detail: 'Unable to reject loan at this time.'
+          }];
+        });
         return;
       }
 
@@ -450,7 +529,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   cancelReject(): void {
-    this.showRejectModal = false;
     this.rejectionReason = '';
   }
 
@@ -462,11 +540,28 @@ export class CooperativeLoanDetailComponent implements OnInit {
       const afterAvailable = Math.max(afterStats.totalFund - afterStats.loanPortfolio, 0);
 
       if (!updated) {
-        this.messages = [{
-          severity: 'warn',
-          summary: 'Disbursement Failed',
-          detail: 'Only cooperative loans already sent to accounting can be marked as disbursed.'
-        }];
+        this.cooperativeService.loadLoanById(this.loan.id).subscribe((freshLoan) => {
+          if (freshLoan) {
+            this.loan = freshLoan;
+            this.repaymentSchedule = this.cooperativeService.getRepaymentsByLoanId(this.loan.id);
+            this.updateStatusTimeline();
+
+            if (freshLoan.status === 'ACTIVE') {
+              this.messages = [{
+                severity: 'success',
+                summary: 'Already Disbursed',
+                detail: 'This loan is already ACTIVE. The page has been refreshed with the latest backend status.'
+              }];
+              return;
+            }
+          }
+
+          this.messages = [{
+            severity: 'warn',
+            summary: 'Disbursement Failed',
+            detail: 'Only cooperative loans already sent to accounting can be marked as disbursed.'
+          }];
+        });
         return;
       }
 
@@ -618,7 +713,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -639,19 +734,112 @@ export class CooperativeLoanDetailComponent implements OnInit {
   }
 
   getStatusColor(status: string): string {
-    return COOPERATIVE_LOAN_LIFECYCLE_STAGES.find((item) => item.status === status)?.color || '#6c757d';
+    switch (status) {
+      case 'PENDING':
+        return '#ffc107';
+      case 'APPROVED':
+        return '#4f7cff';
+      case 'READY_FOR_DISBURSEMENT':
+        return '#0284c7';
+      case 'ACTIVE':
+        return '#17a2b8';
+      case 'SKIPPED':
+        return '#8b5cf6';
+      case 'OVERDUE':
+        return '#ef4444';
+      case 'DEFAULTED':
+        return '#7f1d1d';
+      case 'PAUSED':
+        return '#475569';
+      case 'REJECTED':
+        return '#dc3545';
+      case 'COMPLETED':
+        return '#6c757d';
+      default:
+        return '#6c757d';
+    }
   }
 
   getStatusLabel(status: string): string {
-    return COOPERATIVE_LOAN_LIFECYCLE_STAGES.find((item) => item.status === status)?.label || String(status || '').replace(/_/g, ' ');
+    switch (String(status || '').toUpperCase()) {
+      case 'PENDING':
+        return 'Pending';
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+        return 'Awaiting Interest Acceptance';
+      case 'APPROVED':
+        return 'Approved';
+      case 'READY_FOR_DISBURSEMENT':
+        return 'Ready For Disbursement';
+      case 'ACTIVE':
+        return 'Active';
+      case 'SKIPPED':
+        return 'Skipped';
+      case 'OVERDUE':
+        return 'Overdue';
+      case 'DEFAULTED':
+        return 'Defaulted';
+      case 'PAUSED':
+        return 'Paused';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'COMPLETED':
+        return 'Completed';
+      default:
+        return String(status || '').replace(/_/g, ' ');
+    }
   }
 
   getDisplayedRepaymentStartDate(): string {
-    return this.loan?.repaymentStartDate ? this.formatDate(this.loan.repaymentStartDate) : 'N/A';
+    return this.effectiveRepaymentStartDate ? this.formatDate(this.effectiveRepaymentStartDate) : 'N/A';
   }
 
   getDisplayedRepaymentDay(): string {
-    return formatLoanRepaymentDayDisplay(this.loan?.repaymentDay);
+    return formatLoanRepaymentDayDisplay(this.effectiveRepaymentDay);
+  }
+
+  get groupCode(): string {
+    return String(this.group?.code || 'N/A').trim() || 'N/A';
+  }
+
+  get groupMembershipId(): string {
+    return String(this.loan?.membershipId || this.currentMembership?.membershipId || this.currentMembership?.id || 'N/A');
+  }
+
+  get employeeId(): string {
+    return String(this.member?.employeeId || 'N/A');
+  }
+
+  get effectiveInterestRate(): number {
+    return Number(this.loan?.interestRate || this.group?.interestRate || 0);
+  }
+
+  get effectiveLateFeePercentage(): number {
+    return Number(this.loan?.lateFeePercentage || this.group?.lateFeePercentage || 0);
+  }
+
+  get effectiveLateFeeGraceDays(): number {
+    return Number(this.loan?.lateFeeGraceDays || this.group?.lateFeeGraceDays || 0);
+  }
+
+  get effectiveRepaymentStartDate(): string {
+    return String(this.loan?.repaymentStartDate || this.loan?.approvedDate || this.loan?.requestDate || this.loan?.applicationDate || '').trim();
+  }
+
+  get effectiveRepaymentDay(): number {
+    const explicitRepaymentDay = Number(this.loan?.repaymentDay || 0);
+    if (explicitRepaymentDay > 0) {
+      return explicitRepaymentDay;
+    }
+
+    const repaymentStartDate = normalizeLoanRepaymentStartDate(this.effectiveRepaymentStartDate);
+    if (repaymentStartDate) {
+      const parsedDate = new Date(repaymentStartDate);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return parsedDate.getDate();
+      }
+    }
+
+    return Number(this.currentMembership?.expectedContributionDay || 15);
   }
 
   get memberDisplayName(): string {
@@ -703,6 +891,53 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   formatPurposeDisplay(purpose?: string | null): string {
     return formatLoanPurposeDisplay(purpose);
+  }
+
+  getPaymentModeDisplay(mode?: string): string {
+    return String(mode || 'MONTHLY').toUpperCase() === 'ONE_OFF' ? 'One-Off Payment' : 'Monthly Installment';
+  }
+
+  getRepaymentDaySuggestion(): string {
+    const repaymentStartDate = normalizeLoanRepaymentStartDate(this.effectiveRepaymentStartDate);
+    if (!repaymentStartDate) {
+      return 'Suggestion: use the same day of month as the member selected for their repayment start date.';
+    }
+
+    const date = new Date(repaymentStartDate);
+    const suggestedDay = date.getDate();
+    const monthYear = date.toLocaleDateString('en-NG', {
+      month: 'long',
+      year: 'numeric'
+    });
+    const firstInstallmentDate = date.toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const selectedDay = Number(this.commentForm.value.repaymentDay || suggestedDay);
+
+    return `Repayments should stay on the ${suggestedDay}${this.getDayOrdinal(suggestedDay)} of each month based on the selected start date. The first installment remains ${firstInstallmentDate}.`;
+  }
+
+  getDayOrdinal(day: number): string {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  viewMemberHistory(): void {
+    const memberId = String(this.loan?.memberId || this.loan?.cooperativeMemberId || this.member?.id || '');
+    if (!memberId) {
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', memberId, this.currentUuid], {
+      state: { source: 'admin', cooperative: true, uuid: this.currentUuid }
+    });
   }
 
   getRepaymentStatusLabel(item: CooperativeRepayment): string {
@@ -776,26 +1011,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
   }
 
-  get previousLoansCount(): number {
-    if (!this.member) {
-      return 0;
-    }
-
-    return this.cooperativeService
-      .getLoansByMember(this.member.id)
-      .filter(item => item.id !== this.loan.id).length;
-  }
-
-  get completedPreviousLoansCount(): number {
-    if (!this.member) {
-      return 0;
-    }
-
-    return this.cooperativeService
-      .getLoansByMember(this.member.id)
-      .filter(item => item.id !== this.loan.id && item.status === 'COMPLETED').length;
-  }
-
   get approvedGuarantorsCount(): number {
     return this.guarantors.filter(item => item.status === 'APPROVED').length;
   }
@@ -806,62 +1021,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
   get guarantorCoverageAmount(): number {
     return this.guarantors.reduce((sum, item) => sum + Number(item.guaranteedAmount || 0), 0);
-  }
-
-  get loanToShareRatio(): number {
-    const shares = Number(this.member?.shareCapital || 0);
-    if (!shares) {
-      return 0;
-    }
-
-    return Number(((this.loan.amount / shares) * 100).toFixed(1));
-  }
-
-  get repaymentCapacityLabel(): string {
-    const shares = Number(this.member?.shareCapital || 0);
-    if (!shares) {
-      return 'UNKNOWN';
-    }
-
-    const ratio = (this.loan.repaymentAmount > 0 ? shares / this.loan.repaymentAmount : 0);
-    if (ratio >= 3) {
-      return 'GOOD';
-    }
-
-    if (ratio >= 2) {
-      return 'MODERATE';
-    }
-
-    return 'LOW';
-  }
-
-  get creditHistoryLabel(): string {
-    return this.overdueRepaymentsCount > 0 ? 'HAS DELINQUENCY' : 'NO DEFAULT HISTORY';
-  }
-
-  get lifecycleAuditTrail(): CooperativeLoanAuditEntryView[] {
-    const historyEntries = [...(this.loan?.statusHistory || [])]
-      .map((entry) => this.mapStatusHistoryEntry(entry))
-      .filter((entry): entry is CooperativeLoanAuditEntryView => !!entry);
-
-    const fallbackEntries = [
-      this.buildFallbackAuditEntry('PENDING', this.loan?.applicationDate || this.loan?.requestDate, this.memberDisplayName || 'Member', 'Loan application submitted'),
-      this.buildFallbackAuditEntry('APPROVED', this.loan?.approvedDate, this.formatHistoryActor(this.loan?.approvedBy), 'Loan approved'),
-      this.buildFallbackAuditEntry('READY_FOR_DISBURSEMENT', this.loan?.disbursementInitiatedAt, this.formatHistoryActor(this.loan?.disbursementInitiatedBy), 'Loan sent to accounting for disbursement'),
-      this.buildFallbackAuditEntry('ACTIVE', this.loan?.disbursedDate, this.formatHistoryActor(this.loan?.disbursementConfirmedBy), 'Loan disbursed and activated'),
-      this.buildFallbackAuditEntry('COMPLETED', this.loan?.completionDate, 'System', 'Loan completed'),
-      this.buildFallbackAuditEntry('REJECTED', this.loan?.rejectedDate, this.formatHistoryActor(this.loan?.rejectedBy), this.loan?.rejectionReason || 'Loan rejected')
-    ].filter((entry): entry is CooperativeLoanAuditEntryView => !!entry);
-
-    const mergedEntries = [...historyEntries];
-    fallbackEntries.forEach((entry) => {
-      const alreadyExists = mergedEntries.some((item) => item.status === entry.status && item.changedAt === entry.changedAt);
-      if (!alreadyExists) {
-        mergedEntries.push(entry);
-      }
-    });
-
-    return mergedEntries.sort((left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime());
   }
 
   private updateStatusTimeline(): void {
@@ -919,66 +1078,6 @@ export class CooperativeLoanDetailComponent implements OnInit {
     };
   }
 
-  getLifecycleStageDate(status: string): string {
-    switch (status) {
-      case 'PENDING':
-        return this.loan?.requestDate || this.loan?.applicationDate || '';
-      case 'APPROVED':
-        return this.loan?.approvedDate || '';
-      case 'READY_FOR_DISBURSEMENT':
-        return this.loan?.disbursementInitiatedAt || '';
-      case 'ACTIVE':
-        return this.loan?.disbursedDate || '';
-      case 'COMPLETED':
-        return this.loan?.completionDate || this.loan?.completedDate || '';
-      case 'REJECTED':
-        return this.loan?.rejectedDate || '';
-      case 'DEFAULTED':
-        return this.loan?.defaultedDate || '';
-      case 'PAUSED':
-      case 'OVERDUE':
-      case 'SKIPPED':
-      default:
-        return this.statusTimeline.filter((item) => item.status === status).sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.changedAt || '';
-    }
-  }
-
-  get latestAuditEntry(): CooperativeLoanAuditEntryView | null {
-    return [...this.lifecycleAuditTrail].sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0] || null;
-  }
-
-  get lifecycleBadges(): string[] {
-    const badges: string[] = [];
-
-    if (this.loan?.applicationStage === 'PENDING_GUARANTOR_APPROVAL') {
-      badges.push('Guarantor Queue');
-    }
-
-    if (this.loan?.applicationStage === 'INFO_REQUESTED') {
-      badges.push('Info Requested');
-    }
-
-    switch (this.loan?.status) {
-      case 'READY_FOR_DISBURSEMENT':
-        badges.push('Accounting Queue');
-        break;
-      case 'SKIPPED':
-        badges.push('Grace Shift');
-        break;
-      case 'OVERDUE':
-        badges.push(`${this.overdueRepaymentsCount || this.loan?.overduePaymentsCount || 1} Overdue`);
-        break;
-      case 'PAUSED':
-        badges.push('Admin Hold');
-        break;
-      case 'DEFAULTED':
-        badges.push('Escalated');
-        break;
-    }
-
-    return badges.slice(0, 3);
-  }
-
   get recentPaymentHistory(): PaymentHistory[] {
     return [...(this.loan?.paymentHistory || [])].sort((left, right) =>
       new Date(right.paidAt || right.recordedAt || 0).getTime() - new Date(left.paidAt || left.recordedAt || 0).getTime()
@@ -1000,6 +1099,41 @@ export class CooperativeLoanDetailComponent implements OnInit {
 
     this.paymentAmount = nextUnpaid?.amount || this.loan?.repaymentAmount || 0;
     this.modeofPayment = 'BANK_TRANSFER';
+  }
+
+  private updateApprovalPreview(interestRate: number): void {
+    this.approvalPreview = this.loanApprovalService.calculateRepaymentBreakdown(
+      Number(this.loan?.amount || 0),
+      Number(this.loan?.repaymentTime || this.loan?.duration || 0),
+      Number.isFinite(interestRate) ? interestRate : 0,
+      String(this.loan?.modeOfPayment || 'MONTHLY') as 'MONTHLY' | 'ONE_OFF'
+    );
+  }
+
+  private resolveCurrentMembership(memberId?: number, groupId?: number, membershipId?: number): CooperativeGroupMembership | undefined {
+    if (!memberId) {
+      return undefined;
+    }
+
+    return this.resolveMembershipFromCollection(
+      this.cooperativeService.getGroupMembershipsByMember(Number(memberId)),
+      Number(groupId || 0),
+      membershipId
+    );
+  }
+
+  private resolveMembershipFromCollection(
+    memberships: CooperativeGroupMembership[],
+    groupId: number,
+    membershipId?: number
+  ): CooperativeGroupMembership | undefined {
+    return memberships.find((membership) => {
+      if (membershipId && (membership.id === membershipId || membership.membershipId === membershipId)) {
+        return true;
+      }
+
+      return Number(membership.groupId || 0) === groupId;
+    });
   }
 
   private normalizeGuarantors(guarantors: CooperativeLoan['guarantors'] | undefined): CooperativeLoanGuarantor[] {
@@ -1026,30 +1160,7 @@ export class CooperativeLoanDetailComponent implements OnInit {
     };
   }
 
-  private buildFallbackAuditEntry(status: string, changedAt: string | undefined, changedBy: string, notes: string): CooperativeLoanAuditEntryView | null {
-    if (!changedAt) {
-      return null;
-    }
-
-    return {
-      status,
-      changedAt,
-      changedBy: changedBy || 'System',
-      notes
-    };
-  }
-
   formatHistoryActor(value: unknown): string {
-    if (value && typeof value === 'object') {
-      const actor = value as { fullname?: string; username?: string; email?: string };
-      return String(actor.fullname || actor.username || actor.email || 'System').trim();
-    }
-
-    const numericValue = Number(value || 0);
-    if (numericValue > 0) {
-      return `Admin #${numericValue}`;
-    }
-
-    return 'System';
+    return resolveLoanActorName(value as any);
   }
 }

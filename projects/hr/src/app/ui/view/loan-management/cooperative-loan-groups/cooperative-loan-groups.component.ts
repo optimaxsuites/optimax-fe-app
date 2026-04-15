@@ -19,7 +19,6 @@ import {
   CooperativeLoanGroup,
   CooperativeMember
 } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { environment } from '../../../shared-component/environments/environment';
 
 interface GroupMetrics {
@@ -30,12 +29,29 @@ interface GroupMetrics {
 
 interface GroupTableRow {
   id: number;
+  code: string;
   name: string;
+  description: string;
   memberCount: number;
   totalContribution: number;
   monthlyContributionAmount: number;
+  withdrawCap: number;
+  contributionsBankName?: string;
+  contributionsAccount?: string;
+  principalBankName?: string;
+  principalCollectionAccount?: string;
+  interestBankName?: string;
+  interestCollectionAccount?: string;
+  lateFeeBankName?: string;
+  lateFeeCollectionAccount?: string;
   interestRate: number;
   patronageRate: number;
+  requiresGuarantors: boolean;
+  minimumGuarantors: number;
+  accountingEmail: string;
+  lateFeePercentage: number;
+  lateFeeGraceDays: number;
+  hasAccountingConfiguration: boolean;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -57,6 +73,14 @@ interface SalaryLookupResponse {
   monthlySalary?: number;
   salary?: number;
 }
+
+type GroupFormValueSource = Omit<Partial<CooperativeLoanGroup>, 'memberLimit'> & {
+  code?: string;
+  name?: string;
+  description?: string;
+  memberLimit?: number | null;
+  status?: 'ACTIVE' | 'INACTIVE';
+};
 
 @Component({
   selector: 'app-cooperative-loan-groups',
@@ -95,48 +119,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     { value: 'SIX_TO_TWELVE_MONTHS', label: '6 to 12 months' },
     { value: 'ONE_TO_THREE_YEARS', label: '1 to 3 years' },
     { value: 'OVER_THREE_YEARS', label: 'Over 3 years' }
-  ];
-
-  groupSummaryColumns: TableColumn<GroupTableRow>[] = [
-    { header: 'Group', field: 'name', sortable: true },
-    { header: 'Members', field: 'memberCount', sortable: true, align: 'center' },
-    {
-      header: 'Total Contributions',
-      sortable: true,
-      sortField: 'totalContribution',
-      formatter: (row: GroupTableRow) => this.formatCurrency(row.totalContribution)
-    },
-    {
-      header: 'Monthly Contribution',
-      sortable: true,
-      sortField: 'monthlyContributionAmount',
-      formatter: (row: GroupTableRow) => this.formatCurrency(row.monthlyContributionAmount)
-    },
-    {
-      header: 'Interest',
-      sortable: true,
-      sortField: 'interestRate',
-      formatter: (row: GroupTableRow) => `${row.interestRate}%`
-    },
-    {
-      header: 'Patronage',
-      sortable: true,
-      sortField: 'patronageRate',
-      formatter: (row: GroupTableRow) => `${row.patronageRate}%`
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      sortable: true
-    }
-  ];
-
-  groupSummaryActions: TableAction<GroupTableRow>[] = [
-    { id: 'invite', label: 'Invite New Members', className: 'invite-btn' },
-    { id: 'view', label: 'View', className: 'view-btn' },
-    { id: 'edit', label: 'Edit', className: 'edit-btn' },
-    { id: 'deactivate', label: 'Deactivate', className: 'toggle-btn', visible: (row: GroupTableRow) => row.status === 'ACTIVE' },
-    { id: 'activate', label: 'Activate', className: 'toggle-btn', visible: (row: GroupTableRow) => row.status === 'INACTIVE' }
   ];
 
   constructor(
@@ -244,9 +226,8 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       code: ['', Validators.required],
       name: ['', Validators.required],
       description: ['', Validators.required],
-      minEligibleSalary: [0, [Validators.required, Validators.min(0)]],
       monthlyContributionAmount: [1000, [Validators.required, Validators.min(1)]],
-      maxBorrowingPercentage: [100, [Validators.required, Validators.min(1)]],
+      withdrawCap: [0, [Validators.required, Validators.min(0)]],
       interestRate: [0, [Validators.required, Validators.min(0)]],
       memberLimit: [null, Validators.min(1)],
       contributionsBankName: ['', Validators.required],
@@ -261,8 +242,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       lateFeeGraceDays: [0, [Validators.required, Validators.min(0)]],
       accountingEmail: ['', [Validators.required, Validators.email]],
       accountingWebhookUrl: [''],
-      minDuration: [1, [Validators.required, Validators.min(1)]],
-      maxDuration: [12, [Validators.required, Validators.min(1)]],
       requiresGuarantors: [false],
       minimumGuarantors: [0],
       patronageEligible: [true],
@@ -340,12 +319,29 @@ export class CooperativeLoanGroupsComponent implements OnInit {
 
     this.groupSummaryRows = this.groups.map(group => ({
       id: group.id,
+      code: String(group.code || '').trim(),
       name: group.name,
+      description: String(group.description || '').trim(),
       memberCount: this.getGroupMetrics(group.id).memberCount,
       totalContribution: this.getGroupMetrics(group.id).totalContribution,
       monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
+      withdrawCap: Number(group.withdrawCap || group.maxBorrowingPercentage || 0),
+      contributionsBankName: String(group.contributionsBankName || '').trim(),
+      contributionsAccount: String(group.contributionsAccount || '').trim(),
+      principalBankName: String(group.principalBankName || '').trim(),
+      principalCollectionAccount: String(group.principalCollectionAccount || '').trim(),
+      interestBankName: String(group.interestBankName || '').trim(),
+      interestCollectionAccount: String(group.interestCollectionAccount || '').trim(),
+      lateFeeBankName: String(group.lateFeeBankName || '').trim(),
+      lateFeeCollectionAccount: String(group.lateFeeCollectionAccount || '').trim(),
       interestRate: Number(group.interestRate || 0),
       patronageRate: Number(group.patronageRate || 0),
+      requiresGuarantors: Boolean(group.requiresGuarantors),
+      minimumGuarantors: Number(group.minimumGuarantors || 0),
+      accountingEmail: String(group.accountingEmail || '').trim(),
+      lateFeePercentage: Number(group.lateFeePercentage || 0),
+      lateFeeGraceDays: Number(group.lateFeeGraceDays || 0),
+      hasAccountingConfiguration: this.hasAccountingConfiguration(group),
       status: group.status
     }));
   }
@@ -354,43 +350,81 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     return this.groupMetricsById[groupId] || { memberCount: 0, totalContribution: 0, members: [] };
   }
 
-  handleGroupSummaryAction(event: { actionId: string; row: GroupTableRow }): void {
-    const targetGroup = this.groups.find(item => item.id === event.row.id);
-    if (!targetGroup) {
-      return;
-    }
+  get activeGroupCount(): number {
+    return this.groups.filter(group => group.status === 'ACTIVE').length;
+  }
 
-    if (event.actionId === 'invite') {
-      this.openInviteMembersModal(targetGroup);
-      return;
-    }
+  get inactiveGroupCount(): number {
+    return this.groups.filter(group => group.status !== 'ACTIVE').length;
+  }
 
-    if (event.actionId === 'view') {
-      this.viewGroupDetails(targetGroup);
-      return;
-    }
+  get totalMembersAcrossGroups(): number {
+    return this.groupSummaryRows.reduce((sum, row) => sum + row.memberCount, 0);
+  }
 
-    if (event.actionId === 'edit') {
-      this.openEditForm(targetGroup);
-      return;
-    }
+  get totalContributionsAcrossGroups(): number {
+    return this.groupSummaryRows.reduce((sum, row) => sum + row.totalContribution, 0);
+  }
 
-    if (event.actionId === 'activate' || event.actionId === 'deactivate') {
-      this.toggleGroupStatus(targetGroup);
-    }
+  get configuredAccountingGroupCount(): number {
+    return this.groupSummaryRows.filter(row => row.hasAccountingConfiguration).length;
+  }
+
+  hasAccountingConfiguration(group: CooperativeLoanGroup | GroupTableRow): boolean {
+    return [
+      group.contributionsBankName,
+      group.contributionsAccount,
+      group.principalBankName,
+      group.principalCollectionAccount,
+      group.interestBankName,
+      group.interestCollectionAccount,
+      group.lateFeeBankName,
+      group.lateFeeCollectionAccount,
+      group.accountingEmail
+    ].every(value => String(value || '').trim().length > 0);
+  }
+
+  getLateFeeSummary(group: CooperativeLoanGroup | GroupTableRow): string {
+    const fee = Number(group.lateFeePercentage || 0);
+    const graceDays = Number(group.lateFeeGraceDays || 0);
+    return `${fee}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getBorrowCapPercentage(group: CooperativeLoanGroup | GroupTableRow): number {
+    return Number(group.withdrawCap || (group as CooperativeLoanGroup).maxBorrowingPercentage || 0);
+  }
+
+  getBorrowCapSummary(group: CooperativeLoanGroup | GroupTableRow): string {
+    return `${this.getBorrowCapPercentage(group)}% of total group contributions`;
+  }
+
+  getSettlementAccountSummary(group: CooperativeLoanGroup | GroupTableRow): string {
+    const accountCount = [
+      group.contributionsAccount,
+      group.principalCollectionAccount,
+      group.interestCollectionAccount,
+      group.lateFeeCollectionAccount
+    ].filter(value => String(value || '').trim().length > 0).length;
+
+    return `${accountCount}/4 settlement accounts configured`;
+  }
+
+  getGroupById(groupId: number): CooperativeLoanGroup | undefined {
+    return this.groups.find(group => group.id === groupId);
   }
 
   openAddForm(): void {
     this.editingGroupId = null;
     this.showGroupForm = true;
     this.clearFormMessage();
-    this.groupForm.reset({
+    this.groupForm.reset(this.toGroupFormValue({
       code: '',
       name: '',
       description: '',
-      minEligibleSalary: 0,
       monthlyContributionAmount: 1000,
-      maxBorrowingPercentage: 100,
+      minAmount: 0,
+      maxAmount: 0,
+      maxBorrowingPercentage: 0,
       interestRate: 0,
       memberLimit: null,
       contributionsBankName: '',
@@ -405,87 +439,145 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       lateFeeGraceDays: 0,
       accountingEmail: '',
       accountingWebhookUrl: '',
-      minDuration: 1,
-      maxDuration: 12,
+      requiresShares: false,
       requiresGuarantors: false,
       minimumGuarantors: 0,
       patronageEligible: true,
       patronageRate: 0,
+      quickDisbursement: false,
+      withdrawCap: 0,
       status: 'ACTIVE'
-    });
+    }));
   }
 
   openEditForm(group: CooperativeLoanGroup): void {
     this.editingGroupId = group.id;
     this.showGroupForm = true;
     this.clearFormMessage();
-    this.groupForm.patchValue(group);
+    this.groupForm.reset(this.toGroupFormValue(group));
   }
 
   saveGroup(): void {
-  if (this.groupForm.invalid) {
-    this.groupForm.markAllAsTouched();
-    return;
-  }
-
-  const formValue = this.groupForm.value;
-  if (Number(formValue.minDuration) > Number(formValue.maxDuration)) {
-    this.groupForm.get('maxDuration')?.setErrors({ range: true });
-    return;
-  }
-
-  const payload = {
-    ...formValue,
-    code: String(formValue.code || '').trim(),
-    minEligibleSalary: Number(formValue.minEligibleSalary),
-    monthlyContributionAmount: Number(formValue.monthlyContributionAmount),
-    maxBorrowingPercentage: Number(formValue.maxBorrowingPercentage),
-    minAmount: 0,
-    maxAmount: 0,
-    withdrawCap: 0,
-    interestRate: Number(formValue.interestRate),
-    memberLimit: formValue.memberLimit ? Number(formValue.memberLimit) : undefined,
-    contributionsBankName: String(formValue.contributionsBankName || '').trim(),
-    contributionsAccount: String(formValue.contributionsAccount || '').trim(),
-    principalBankName: String(formValue.principalBankName || '').trim(),
-    principalCollectionAccount: String(formValue.principalCollectionAccount || '').trim(),
-    interestBankName: String(formValue.interestBankName || '').trim(),
-    interestCollectionAccount: String(formValue.interestCollectionAccount || '').trim(),
-    lateFeePercentage: Number(formValue.lateFeePercentage),
-    lateFeeBankName: String(formValue.lateFeeBankName || '').trim(),
-    lateFeeCollectionAccount: String(formValue.lateFeeCollectionAccount || '').trim(),
-    lateFeeGraceDays: Number(formValue.lateFeeGraceDays),
-    accountingEmail: String(formValue.accountingEmail || '').trim(),
-    accountingWebhookUrl: String(formValue.accountingWebhookUrl || '').trim() || undefined,
-    minDuration: Number(formValue.minDuration),
-    maxDuration: Number(formValue.maxDuration),
-    requiresShares: false,
-    requiresGuarantors: Boolean(formValue.requiresGuarantors),
-    minimumGuarantors: formValue.requiresGuarantors ? Number(formValue.minimumGuarantors || 0) : 0,
-    patronageRate: Number(formValue.patronageRate)
-  } as Omit<CooperativeLoanGroup, 'id'>;
-
-  const request = this.editingGroupId
-    ? this.cooperativeService.updateGroup({ id: this.editingGroupId, ...payload })
-    : this.cooperativeService.createGroup(payload); // Use createGroup instead of addGroup
-
-  request.subscribe({
-    next: () => {
-      this.loadGroups(); // This will refresh groups from backend
-      this.showMessage('Group saved successfully.', 'success');
-      this.cancelForm(1500);
-    },
-    error: (error) => {
-      console.error('Error saving group:', error);
-      this.showMessage('Failed to save group. Review the fields and try again.', 'error');
+    if (this.groupForm.invalid) {
+      this.groupForm.markAllAsTouched();
+      return;
     }
-  });
-}
+
+    const formValue = this.groupForm.getRawValue();
+    const existingGroup = this.editingGroupId
+      ? this.groups.find((group) => group.id === this.editingGroupId)
+      : undefined;
+
+    const payload = this.buildGroupPayload(formValue, existingGroup);
+    const request = this.editingGroupId
+      ? this.cooperativeService.updateGroup({ ...payload, id: this.editingGroupId })
+      : this.cooperativeService.createGroup(payload);
+
+    request.subscribe({
+      next: () => {
+        this.cooperativeService.refreshGroups().subscribe({
+          next: (groups) => {
+            this.groups = groups;
+            this.rebuildGroupMetrics();
+            this.showMessage('Group saved successfully.', 'success');
+            this.cancelForm(1500);
+          },
+          error: () => {
+            this.showMessage('Group saved, but the refreshed group list could not be loaded immediately.', 'error');
+            this.cancelForm(1500);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error saving group:', error);
+        this.showMessage('Failed to save group. Review the fields and try again.', 'error');
+      }
+    });
+  }
+
+  private buildGroupPayload(
+    formValue: Record<string, unknown>,
+    existingGroup?: CooperativeLoanGroup
+  ): Omit<CooperativeLoanGroup, 'id'> {
+    const requiresGuarantors = Boolean(formValue['requiresGuarantors']);
+    const patronageEligible = Boolean(formValue['patronageEligible']);
+    const borrowCapPercentage = Number(formValue['withdrawCap'] || 0);
+    const minimumGuarantors = requiresGuarantors
+      ? Math.max(1, Number(formValue['minimumGuarantors'] || 0))
+      : 0;
+
+    return {
+      code: String(formValue['code'] || '').trim(),
+      name: String(formValue['name'] || '').trim(),
+      description: String(formValue['description'] || '').trim(),
+      minEligibleSalary: Number(existingGroup?.minEligibleSalary || 0),
+      monthlyContributionAmount: Number(formValue['monthlyContributionAmount'] || 0),
+      maxBorrowingPercentage: borrowCapPercentage,
+      minAmount: Number(existingGroup?.minAmount || 0),
+      maxAmount: Number(existingGroup?.maxAmount || 0),
+      interestRate: Number(formValue['interestRate'] || 0),
+      minDuration: Number(existingGroup?.minDuration || 0),
+      maxDuration: Number(existingGroup?.maxDuration || 0),
+      minMemberTenureMonths: Number(existingGroup?.minMemberTenureMonths || 0),
+      requiresShares: Boolean(existingGroup?.requiresShares),
+      requiresGuarantors,
+      minimumGuarantors,
+      quickDisbursement: Boolean(existingGroup?.quickDisbursement),
+      patronageEligible,
+      patronageRate: patronageEligible ? Number(formValue['patronageRate'] || 0) : 0,
+      patronageAmount: Number(existingGroup?.patronageAmount || 0),
+      memberLimit: formValue['memberLimit'] ? Number(formValue['memberLimit']) : undefined,
+      withdrawCap: borrowCapPercentage,
+      currentBalance: Number(existingGroup?.currentBalance || 0),
+      contributionsBankName: String(formValue['contributionsBankName'] || '').trim(),
+      contributionsAccount: String(formValue['contributionsAccount'] || '').trim(),
+      principalBankName: String(formValue['principalBankName'] || '').trim(),
+      principalCollectionAccount: String(formValue['principalCollectionAccount'] || '').trim(),
+      interestBankName: String(formValue['interestBankName'] || '').trim(),
+      interestCollectionAccount: String(formValue['interestCollectionAccount'] || '').trim(),
+      lateFeePercentage: Number(formValue['lateFeePercentage'] || 0),
+      lateFeeGraceDays: Number(formValue['lateFeeGraceDays'] || 0),
+      lateFeeBankName: String(formValue['lateFeeBankName'] || '').trim(),
+      lateFeeCollectionAccount: String(formValue['lateFeeCollectionAccount'] || '').trim(),
+      accountingEmail: String(formValue['accountingEmail'] || '').trim(),
+      accountingWebhookUrl: String(formValue['accountingWebhookUrl'] || '').trim() || undefined,
+      status: (formValue['status'] as 'ACTIVE' | 'INACTIVE') || 'ACTIVE'
+    };
+  }
 
 private showMessage(message: string, type: 'success' | 'error'): void {
   this.formMessage = message;
   this.formMessageSeverity = type;
 }
+
+  toGroupFormValue(group: GroupFormValueSource): Record<string, unknown> {
+    return {
+      code: String(group.code || '').trim(),
+      name: String(group.name || '').trim(),
+      description: String(group.description || '').trim(),
+      monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
+      withdrawCap: Number(group.withdrawCap || group.maxBorrowingPercentage || 0),
+      interestRate: Number(group.interestRate || 0),
+      memberLimit: group.memberLimit ?? null,
+      contributionsBankName: String(group.contributionsBankName || '').trim(),
+      contributionsAccount: String(group.contributionsAccount || '').trim(),
+      principalBankName: String(group.principalBankName || '').trim(),
+      principalCollectionAccount: String(group.principalCollectionAccount || '').trim(),
+      interestBankName: String(group.interestBankName || '').trim(),
+      interestCollectionAccount: String(group.interestCollectionAccount || '').trim(),
+      lateFeePercentage: Number(group.lateFeePercentage || 0),
+      lateFeeBankName: String(group.lateFeeBankName || '').trim(),
+      lateFeeCollectionAccount: String(group.lateFeeCollectionAccount || '').trim(),
+      lateFeeGraceDays: Number(group.lateFeeGraceDays || 0),
+      accountingEmail: String(group.accountingEmail || '').trim(),
+      accountingWebhookUrl: String(group.accountingWebhookUrl || '').trim(),
+      requiresGuarantors: Boolean(group.requiresGuarantors),
+      minimumGuarantors: Number(group.minimumGuarantors || 0),
+      patronageEligible: group.patronageEligible !== false,
+      patronageRate: Number(group.patronageRate || 0),
+      status: group.status || 'ACTIVE'
+    };
+  }
 
   clearFormMessage(): void {
     this.formMessage = '';
@@ -550,6 +642,8 @@ private showMessage(message: string, type: 'success' | 'error'): void {
           return 'Late fee account is required.';
         case 'accountingEmail':
           return 'Accounting email is required.';
+        case 'minimumGuarantors':
+          return 'Minimum guarantors is required when guarantors are enabled.';
         default:
           return 'This field is required.';
       }
@@ -574,6 +668,9 @@ private showMessage(message: string, type: 'success' | 'error'): void {
     if (control.errors['min']) {
       if (controlName === 'memberLimit') {
         return 'Member limit must be at least 1.';
+      }
+      if (controlName === 'minimumGuarantors') {
+        return 'At least 1 guarantor is required when this rule is enabled.';
       }
       return 'Value must be greater than or equal to 0.';
     }
@@ -888,7 +985,7 @@ private showMessage(message: string, type: 'success' | 'error'): void {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

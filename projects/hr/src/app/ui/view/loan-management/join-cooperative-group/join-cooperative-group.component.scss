@@ -154,6 +154,35 @@
   }
 }
 
+.group-policy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.policy-card {
+  border: 1px solid #e3eef0;
+  border-radius: 14px;
+  padding: 12px;
+  background: #ffffff;
+  display: grid;
+  gap: 6px;
+
+  .policy-label {
+    color: #718087;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+  }
+
+  strong {
+    color: #17303b;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+}
+
 .group-card-footer {
   display: flex;
   justify-content: space-between;
@@ -241,6 +270,10 @@
 
   .group-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .group-policy-grid {
+    grid-template-columns: 1fr;
   }
 
   .apply-btn {

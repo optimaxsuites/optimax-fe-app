@@ -1,3 +1,4 @@
+// loan.service.ts
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
@@ -100,56 +101,88 @@ export class LoanService {
   }
 
   createAdvanceLoan(payload: any): Observable<AdvanceLoan> {
-  let requestBody = Array.isArray(payload) ? payload[0] : payload;
-  
-  const formattedPayload = {
-    employeeId: Number(requestBody.employeeId),
-    monthlySalary: Number(requestBody.monthlySalary || 0),
-    amount: Number(requestBody.amount),
-    purpose: String(requestBody.purpose || '').trim(),
-    purposeCode: String(requestBody.purposeCode || '').trim() || null,
-    repaymentAmount: Number(requestBody.repaymentAmount),
-    repaymentTime: Number(requestBody.repaymentTime),
-    repaymentPeriodMonths: Number(requestBody.repaymentPeriodMonths || requestBody.repaymentTime || 0),
-    repaymentStartDate: this.toBackendDateTime(normalizeLoanRepaymentStartDate(requestBody.repaymentStartDate)),
-    repaymentDay: Number(requestBody.repaymentDay || 0) || null,
-    modeOfPayment: requestBody.modeOfPayment || 'MONTHLY',
-    requestDate: requestBody.requestDate || new Date().toISOString(),
-    status: 'PENDING'
-  };
-  
-  console.log('Sending payload:', formattedPayload);
-  
-  return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
-    headers: { 
-      'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    }
-  }).pipe(
-    map(response => this.safeParseResponse(response)),
-    tap((response: AdvanceLoan) => {
-      console.log('Loan created:', response.id, 'Status:', response.status);
-    }),
-    catchError((error) => {
-      // If it's a connection error but the POST actually succeeded, we might still get a response
-      if (error.status === 0 || error.message?.includes('Connection refused')) {
-        console.warn('Connection issue, but loan may have been created');
-        return throwError(() => error);
+    let requestBody = Array.isArray(payload) ? payload[0] : payload;
+    
+    const formattedPayload = {
+      employeeId: Number(requestBody.employeeId),
+      monthlySalary: Number(requestBody.monthlySalary || 0),
+      amount: Number(requestBody.amount),
+      purpose: String(requestBody.purpose || '').trim(),
+      purposeCode: String(requestBody.purposeCode || '').trim() || null,
+      repaymentAmount: Number(requestBody.repaymentAmount),
+      repaymentTime: Number(requestBody.repaymentTime),
+      repaymentPeriodMonths: Number(requestBody.repaymentPeriodMonths || requestBody.repaymentTime || 0),
+      repaymentStartDate: this.toBackendDateTime(normalizeLoanRepaymentStartDate(requestBody.repaymentStartDate)),
+      repaymentDay: Number(requestBody.repaymentDay || 0) || null,
+      modeOfPayment: requestBody.modeOfPayment || 'MONTHLY',
+      requestDate: requestBody.requestDate || new Date().toISOString(),
+      status: 'PENDING'
+    };
+    
+    console.log('Sending payload:', formattedPayload);
+    
+    return this.http.post<AdvanceLoan>(this.standardLoanUrl, formattedPayload, {
+      headers: { 
+        'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
       }
+    }).pipe(
+      map(response => this.safeParseResponse(response)),
+      tap((response: AdvanceLoan) => {
+        console.log('Loan created:', response.id, 'Status:', response.status);
+      }),
+      catchError((error) => {
+        if (error.status === 0 || error.message?.includes('Connection refused')) {
+          console.warn('Connection issue, but loan may have been created');
+          return throwError(() => error);
+        }
 
-      // The application service has a recovery path for create requests that persist successfully
-      // but still come back with a broken 500 response. Let that layer decide whether the submit
-      // can be recovered instead of logging a hard API failure here first.
-      if (error instanceof HttpErrorResponse && error.status === 500) {
-        return throwError(() => error);
-      }
+        if (error instanceof HttpErrorResponse && error.status === 500) {
+          return throwError(() => error);
+        }
 
-      return this.handleError(error);
-    })
-  );
-}
+        return this.handleError(error);
+      })
+    );
+  }
+
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
     const requestBody = Array.isArray(payload) ? payload[0] : payload;
+    
+    // ✅ FIX: Ensure all status values are uppercase before sending to backend
+    if (requestBody.statusHistory && Array.isArray(requestBody.statusHistory)) {
+      requestBody.statusHistory = requestBody.statusHistory.map((entry: any) => {
+        const allowedStatuses = [
+          'PENDING', 'AWAITING_INTEREST_ACCEPTANCE', 'APPROVED', 
+          'READY_FOR_DISBURSEMENT', 'REJECTED', 'ACTIVE', 'SKIPPED', 
+          'OVERDUE', 'DEFAULTED', 'COMPLETED', 'PAUSED'
+        ];
+        
+        let status = entry.status ? String(entry.status).toUpperCase() : entry.status;
+        if (!allowedStatuses.includes(status)) {
+          console.warn(`Invalid status value detected: ${entry.status}, defaulting to PENDING`);
+          status = 'PENDING';
+        }
+        
+        let statusBeforeOverride = entry.statusBeforeOverride 
+          ? String(entry.statusBeforeOverride).toUpperCase() 
+          : entry.statusBeforeOverride;
+        if (statusBeforeOverride && !allowedStatuses.includes(statusBeforeOverride)) {
+          statusBeforeOverride = 'PENDING';
+        }
+        
+        return {
+          ...entry,
+          status,
+          statusBeforeOverride
+        };
+      });
+    }
+    
+    // ✅ Also ensure root status is uppercase
+    if (requestBody.status) {
+      requestBody.status = String(requestBody.status).toUpperCase();
+    }
     
     if (isDevMode()) {
       console.log('Update request payload:', requestBody);
@@ -773,7 +806,7 @@ export class LoanService {
           reason: String(request.reason || ''),
           status: String(request.status || 'PENDING'),
           reviewedAt: this.toBackendDateTime(request.reviewedAt || ''),
-          reviewedBy: this.resolveBackendUser(request.reviewedBy),
+          reviewedBy: this.extractUserId(request.reviewedBy) || undefined,
           reviewNote: request.reviewNote || '',
           rejectionReason: request.rejectionReason || '',
           approvedGraceDays: Number(request.approvedGraceDays || 0),
@@ -869,6 +902,20 @@ export class LoanService {
         : this.extractUserId(sourceLoan.approvedBy)
     );
 
+    const resolvedApprovedById = this.extractUserId(resolvedApprovedBy) || undefined;
+    const resolvedDisbursementInitiatedById = this.extractUserId(application.disbursementInitiatedBy || sourceLoan.disbursementInitiatedBy) || undefined;
+    const resolvedDisbursementConfirmedById = this.extractUserId(application.disbursementConfirmedBy || sourceLoan.disbursementConfirmedBy) || undefined;
+    const resolvedDisbursedById = this.extractUserId(
+      application.status === 'ACTIVE'
+        ? this.extractUserId(application.disbursedBy) || actingUserId
+        : this.extractUserId(sourceLoan.disbursedBy)
+    ) || undefined;
+    const resolvedRejectedById = this.extractUserId(
+      application.status === 'REJECTED'
+        ? this.extractUserId(application.rejectedBy) || actingUserId
+        : this.extractUserId(sourceLoan.rejectedBy)
+    ) || undefined;
+
     return this.compactPayload({
       id: Number(sourceLoan.id),
       loanCode: sourceLoan.loanCode || application.loanCode || String(application.id),
@@ -884,7 +931,6 @@ export class LoanService {
       repaymentDay: Number.isFinite(normalizedRepaymentDay) && normalizedRepaymentDay > 0 ? normalizedRepaymentDay : null,
       modeOfPayment: application.modeOfPayment,
       interestRate: Number(application.interestRate || sourceLoan.interestRate || 0),
-      interestAgreement: application.interestAgreement || sourceLoan.interestAgreement || null,
       totalRepayable: Number(
         resolveLoanTotalRepayableAmount({
           repaymentSchedule: application.repaymentSchedule,
@@ -897,32 +943,24 @@ export class LoanService {
       ),
       requestDate: this.toBackendDateTime(this.resolveOriginalRequestDate(application, sourceLoan)),
       approvedDate: resolvedApprovedDate,
-      approvedBy: resolvedApprovedBy,
+      approvedBy: typeof application.approvedBy === 'object' ? application.approvedBy?.id : application.approvedBy,
       disbursementInitiatedAt: this.toBackendDateTime(application.disbursementInitiatedAt || sourceLoan.disbursementInitiatedAt || ''),
-      disbursementInitiatedBy: this.resolveBackendUser(application.disbursementInitiatedBy || sourceLoan.disbursementInitiatedBy),
+      disbursementInitiatedBy: typeof application.disbursementInitiatedBy === 'object' ? application.disbursementInitiatedBy?.id : application.disbursementInitiatedBy,
       disbursementInstructionReference: application.disbursementInstructionReference || sourceLoan.disbursementInstructionReference || '',
       disbursementConfirmedAt: this.toBackendDateTime(application.disbursementConfirmedAt || sourceLoan.disbursementConfirmedAt || ''),
-      disbursementConfirmedBy: this.resolveBackendUser(application.disbursementConfirmedBy || sourceLoan.disbursementConfirmedBy),
+      disbursementConfirmedBy: typeof application.disbursementConfirmedBy === 'object' ? application.disbursementConfirmedBy?.id : application.disbursementConfirmedBy,
       disbursementReference: application.disbursementReference || sourceLoan.disbursementReference || '',
       disbursedAmount: Number(application.disbursedAmount || sourceLoan.disbursedAmount || application.approvedAmount || sourceLoan.approvedAmount || 0),
       disbursedDate: this.toBackendDateTime(application.disbursedDate || sourceLoan.disbursedDate || ''),
-      disbursedBy: this.resolveBackendUser(
-        application.status === 'ACTIVE'
-          ? this.extractUserId(application.disbursedBy) || actingUserId
-          : this.extractUserId(sourceLoan.disbursedBy)
-      ),
+      disbursedBy: typeof application.disbursedBy === 'object' ? application.disbursedBy?.id : application.disbursedBy,
       completedDate: this.toBackendDateTime(
         application.status === 'COMPLETED' ? application.completedDate || sourceLoan.completedDate || '' : sourceLoan.completedDate || ''
       ),
       rejectedDate: this.toBackendDateTime(
         application.status === 'REJECTED' ? application.rejectedDate || sourceLoan.rejectedDate || '' : sourceLoan.rejectedDate || ''
       ),
-      rejectedBy: this.resolveBackendUser(
-        application.status === 'REJECTED'
-          ? this.extractUserId(application.rejectedBy) || actingUserId
-          : this.extractUserId(sourceLoan.rejectedBy)
-      ),
-      status: application.status,
+      rejectedBy: typeof application.rejectedBy === 'object' ? application.rejectedBy?.id : application.rejectedBy,
+      status: typeof application.status === 'string' ? application.status.toUpperCase() : application.status,
       adminComment: application.adminComment || sourceLoan.adminComment || this.getLatestStatusNote(application),
       currentBalance: application.currentBalance,
       totalPaid: application.totalPaid,
@@ -944,10 +982,75 @@ export class LoanService {
       gracePeriodRequests: resolvedGracePeriodRequests,
       repaymentSchedule: resolvedRepaymentSchedule,
       paymentHistory: resolvedPaymentHistory,
-      statusHistory: resolvedStatusHistory,
+      statusHistory: (resolvedStatusHistory || [])
+        .map((item: any) => {
+          const allowedStatuses = [
+            'PENDING',
+            'AWAITING_INTEREST_ACCEPTANCE',
+            'APPROVED',
+            'READY_FOR_DISBURSEMENT',
+            'REJECTED',
+            'ACTIVE',
+            'SKIPPED',
+            'OVERDUE',
+            'DEFAULTED',
+            'COMPLETED',
+            'PAUSED'
+          ];
+          let status = typeof item.status === 'string' ? item.status.toUpperCase() : item.status;
+          if (!allowedStatuses.includes(status)) {
+            status = 'PENDING';
+          }
+          let statusBeforeOverride = typeof item.statusBeforeOverride === 'string' ? item.statusBeforeOverride.toUpperCase() : item.statusBeforeOverride;
+          if (statusBeforeOverride && !allowedStatuses.includes(statusBeforeOverride)) {
+            statusBeforeOverride = 'PENDING';
+          }
+          let notes = typeof item.notes === 'string' ? item.notes.trim().replace(/[.]+$/, '') : item.notes;
+          return {
+            ...item,
+            status,
+            statusBeforeOverride,
+            notes,
+            changedBy: typeof item.changedBy === 'object' ? item.changedBy?.id : item.changedBy,
+            overrideBy: typeof item.overrideBy === 'object' ? item.overrideBy?.id : item.overrideBy
+          };
+        })
+        .filter((item: any) => {
+          const allowedStatuses = [
+            'PENDING',
+            'AWAITING_INTEREST_ACCEPTANCE',
+            'APPROVED',
+            'READY_FOR_DISBURSEMENT',
+            'REJECTED',
+            'ACTIVE',
+            'SKIPPED',
+            'OVERDUE',
+            'DEFAULTED',
+            'COMPLETED',
+            'PAUSED'
+          ];
+          return allowedStatuses.includes(item.status);
+        }),
       lateFeePercentage: Number(application.lateFeePercentage || sourceLoan.lateFeePercentage || 0),
       lateFeeGracePeriodDays: Number(application.lateFeeGracePeriodDays || sourceLoan.lateFeeGracePeriodDays || 0)
     });
+  }
+
+  private resolveInterestAgreement(application: any, sourceLoan: any) {
+    if (application.interestAgreement) return application.interestAgreement;
+    if (sourceLoan.interestAgreement) return sourceLoan.interestAgreement;
+    return {
+      id: 0,
+      loanId: Number(sourceLoan.id || application.id || 0),
+      employeeId: Number(sourceLoan.employee?.id || application.employeeId || 0),
+      proposedInterestRate: Number(application.interestRate || sourceLoan.interestRate || 0),
+      agreedInterestRate: Number(application.interestRate || sourceLoan.interestRate || 0),
+      status: 'PENDING',
+      agreedAt: null,
+      agreementMethod: 'EMAIL_LINK',
+      ipAddress: null,
+      notes: null
+    };
   }
 
   private extractUserId(user: any): number {
@@ -1232,25 +1335,25 @@ export class LoanService {
     return String(paymentMode || '').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
   }
 
-private toLoanStatus(status?: string): LoanApplication['status'] {
-  const normalizedStatus = String(status || '').toUpperCase();
-  switch (normalizedStatus) {
-    case 'APPROVED':
-    case 'REJECTED':
-    case 'READY_FOR_DISBURSEMENT':
-    case 'READY-FOR-DISBURSEMENT':
-    case 'ACTIVE':
-    case 'COMPLETED':
-    case 'AWAITING_INTEREST_ACCEPTANCE':
-    case 'SKIPPED':
-    case 'OVERDUE':
-    case 'DEFAULTED':
-    case 'PAUSED':
-      return normalizedStatus === 'READY-FOR-DISBURSEMENT' ? 'READY_FOR_DISBURSEMENT' : normalizedStatus;
-    default:
-      return 'PENDING';
+  private toLoanStatus(status?: string): LoanApplication['status'] {
+    const normalizedStatus = String(status || '').toUpperCase();
+    switch (normalizedStatus) {
+      case 'APPROVED':
+      case 'REJECTED':
+      case 'READY_FOR_DISBURSEMENT':
+      case 'READY-FOR-DISBURSEMENT':
+      case 'ACTIVE':
+      case 'COMPLETED':
+      case 'AWAITING_INTEREST_ACCEPTANCE':
+      case 'SKIPPED':
+      case 'OVERDUE':
+      case 'DEFAULTED':
+      case 'PAUSED':
+        return normalizedStatus === 'READY-FOR-DISBURSEMENT' ? 'READY_FOR_DISBURSEMENT' : normalizedStatus;
+      default:
+        return 'PENDING';
+    }
   }
-}
 
   private toRepaymentStatus(status?: string): RepaymentScheduleItem['status'] {
     const normalizedStatus = String(status || '').toUpperCase();

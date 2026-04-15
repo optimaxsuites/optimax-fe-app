@@ -16,9 +16,14 @@ export class BackNavigationService {
 
     if (navigationId > 1) {
       this.location.back();
+      window.setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
       return;
     }
 
-    this.router.navigate(fallbackCommands, fallbackExtras);
+    this.router.navigate(fallbackCommands, fallbackExtras).then((navigated) => {
+      if (navigated) {
+        window.dispatchEvent(new Event('resize'));
+      }
+    });
   }
 }

@@ -107,6 +107,8 @@ export interface CooperativeLoanApiResponse {
   approvedAmount?: number;
   repaymentAmount?: number;
   repaymentTime?: number;
+  lateFeePercentage?: number;
+  lateFeeGraceDays?: number;
   repaymentStartDate?: string;
   repaymentDay?: number;
   modeOfPayment?: string;
@@ -149,6 +151,14 @@ export interface CooperativeLoanApiResponse {
   overduePaymentsCount?: number;
   memberBankName?: string;
   memberAccountNumber?: string;
+  principalBankName?: string;
+  principalCollectionAccount?: string;
+  interestBankName?: string;
+  interestCollectionAccount?: string;
+  lateFeeBankName?: string;
+  lateFeeCollectionAccount?: string;
+  accountingEmail?: string;
+  accountingWebhookUrl?: string;
   gracePeriodRequests?: unknown[];
   paymentHistory?: unknown[];
   statusHistory?: unknown[];
@@ -267,7 +277,7 @@ export interface CooperativeGroupMembershipHistoryApiPayload {
   groupId: number;
   status: string;
   changedAt: string;
-  changedBy?: CooperativeLoanApiAuditUser;
+  changedBy?: number;
   notes?: string;
 }
 

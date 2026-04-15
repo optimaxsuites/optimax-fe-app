@@ -2,11 +2,13 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, PaymentRecord, RepaymentScheduleItem, StatusChange } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
@@ -39,6 +41,17 @@ interface LoanRecentActivity {
   occurredAt: string;
 }
 
+interface DashboardLoanRow {
+  loan: LoanApplication;
+  displayId: string;
+  employeeId: string | number;
+  fullName: string;
+  departmentDisplay: string;
+  overduePolicySummary: string;
+  statusClass: string;
+  statusLabel: string;
+}
+
 type LoanLifecycleStage = {
   status: LoanApplication['status'];
   fieldLabel: string;
@@ -64,6 +77,7 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
   readonly recentLoanLimit = 10;
+  readonly dashboardTableRowsPerPage = 10;
   isLoading = false;
   selectedDashboard: 'advance' | 'cooperative' = 'advance';
   searchTerm: string = '';
@@ -85,6 +99,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   };
 
   recentLoans: LoanApplication[] = [];
+  dashboardLoanRows: DashboardLoanRow[] = [];
   allLoans: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
   totalFilteredLoans = 0;
@@ -118,6 +133,14 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     { id: 'view', label: 'View Details', className: 'btn-view' },
     { id: 'history', label: 'History', className: 'btn-history' }
   ];
+
+  get adminDisplayName(): string {
+    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
+    const username = String(sessionStorage.getItem('username') || '').trim();
+    const fallbackName = fullName || username || 'Admin';
+
+    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+  }
 
   formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {
     if (!loan) {
@@ -241,6 +264,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   
   private loanSubscription!: Subscription;
   private readonly routeSubscription = new Subscription();
+  private readonly employeeLookup = new Map<string, any>();
 
   constructor(
     private location: Location,
@@ -258,7 +282,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       })
     );
     this.loadDashboardData();
-    this.setupLoanSubscription();
   }
 
   ngOnDestroy(): void {
@@ -311,43 +334,27 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData(): void {
+    const loadProfiler = startLoanLoadProfiler('advance-admin-dashboard');
     this.isLoading = true;
-    this.loanApplicationService.getAllApplications().subscribe({
-      next: (applications) => {
-        // Filter out test data
-        const filteredLoans = applications.filter(loan => 
-          !(loan.fullName ?? '').includes('John Doe') && 
-          !(loan.fullName ?? '').includes('Jane Doe')
-        );
-        // Fetch employee details for each loan
-        const employeeIds = filteredLoans.map(loan => loan.employeeId);
-        Promise.all(employeeIds.map(id => this.employeeService.getEmployeeById(Number(id)).toPromise()))
-          .then(employeeDetails => {
-            this.allLoans = filteredLoans.map((loan, idx) => ({
-              ...loan,
-              fullName: employeeDetails[idx]?.fullName || loan.fullName,
-              department: formatLoanDepartmentDisplay(employeeDetails[idx]?.department || loan.department)
-            }));
-            this.updateDashboardStats();
-            this.applyFilter();
-            this.updateAlerts();
-            this.updateRecentActivities();
-            this.isLoading = false;
-          })
-          .catch(() => {
-            this.allLoans = filteredLoans.map((loan) => ({
-              ...loan,
-              department: formatLoanDepartmentDisplay(loan.department)
-            }));
-            this.updateDashboardStats();
-            this.applyFilter();
-            this.updateAlerts();
-            this.updateRecentActivities();
-            this.isLoading = false;
-          });
+    forkJoin({
+      applications: this.loanApplicationService.getAllApplications(),
+      employees: this.employeeService.getAllEmployee().pipe(catchError(() => of([])))
+    }).subscribe({
+      next: ({ applications, employees }) => {
+        this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
+        this.refreshDashboardState(applications);
+        if (!this.loanSubscription) {
+          this.setupLoanSubscription();
+        }
+        loadProfiler.success({ loans: this.allLoans.length, filtered: this.filteredLoans.length });
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading dashboard data:', error);
+        if (!this.loanSubscription) {
+          this.setupLoanSubscription();
+        }
+        loadProfiler.error({ message: 'Failed to load advance dashboard data' });
         this.isLoading = false;
       }
     });
@@ -356,20 +363,48 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   setupLoanSubscription(): void {
     this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
-        // Filter out test data
-        this.allLoans = applications.filter(loan => 
-          !(loan.fullName ?? '').includes('John Doe') && 
-          !(loan.fullName ?? '').includes('Jane Doe')
-        );
-        this.syncSelectedLoan();
-        this.updateDashboardStats();
-        this.applyFilter();
-        this.updateAlerts();
-        this.updateRecentActivities();
+        this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe((employees) => {
+          this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
+          this.refreshDashboardState(applications);
+        });
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
       }
+    });
+  }
+
+  private refreshDashboardState(applications: LoanApplication[]): void {
+    this.allLoans = this.enrichLoansWithEmployeeData(
+      applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
+    );
+    this.syncSelectedLoan();
+    this.updateDashboardStats();
+    this.applyFilter();
+    this.updateAlerts();
+    this.updateRecentActivities();
+  }
+
+  private rebuildEmployeeLookup(employees: any[]): void {
+    this.employeeLookup.clear();
+
+    employees.forEach((employee) => {
+      [employee?.id, employee?.userId, employee?.employeeId, employee?.employeeCode, employee?.staffId]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .forEach((key) => this.employeeLookup.set(key, employee));
+    });
+  }
+
+  private enrichLoansWithEmployeeData(loans: LoanApplication[]): LoanApplication[] {
+    return loans.map((loan) => {
+      const employee = this.employeeLookup.get(String(loan.employeeId ?? '').trim());
+
+      return {
+        ...loan,
+        fullName: employee?.fullName || loan.fullName,
+        department: formatLoanDepartmentDisplay(employee?.department || loan.department)
+      };
     });
   }
 
@@ -426,8 +461,22 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       .slice(0, this.recentLoanLimit);
 
     this.filteredLoans = this.sortLoans(latestLoans);
+    this.dashboardLoanRows = this.filteredLoans.map((loan) => this.buildDashboardLoanRow(loan));
       
     this.recentLoans = this.filteredLoans;
+  }
+
+  private buildDashboardLoanRow(loan: LoanApplication): DashboardLoanRow {
+    return {
+      loan,
+      displayId: this.getShortAdvanceLoanDisplayId(loan),
+      employeeId: loan.employeeId || 'N/A',
+      fullName: loan.fullName || 'N/A',
+      departmentDisplay: this.formatDepartmentDisplay(loan.department),
+      overduePolicySummary: this.getOverduePolicySummary(loan),
+      statusClass: this.getStatusClass(loan.status),
+      statusLabel: this.getStatusDisplay(loan.status)
+    };
   }
 
   updateAlerts(): void {

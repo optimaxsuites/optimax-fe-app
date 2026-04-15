@@ -61,9 +61,9 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   ];
 
   readonly applicationActions: TableAction<GroupJoinHistoryRow>[] = [
-    { id: 'view', label: 'View', className: 'view-btn', icon: 'pi pi-eye' },
-    { id: 'approve', label: 'Approve', className: 'approve-btn', visible: (row) => row.status === 'PENDING' },
-    { id: 'reject', label: 'Reject', className: 'reject-btn', visible: (row) => row.status === 'PENDING' }
+    { id: 'view', label: '', ariaLabel: 'View group join request', className: 'view-btn', icon: 'pi pi-eye' },
+    { id: 'approve', label: '', ariaLabel: 'Approve group join request', className: 'approve-btn', icon: 'pi pi-check', visible: (row) => row.status === 'PENDING' },
+    { id: 'reject', label: '', ariaLabel: 'Reject group join request', className: 'reject-btn', icon: 'pi pi-times', visible: (row) => row.status === 'PENDING' }
   ];
 
   constructor(
@@ -172,7 +172,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

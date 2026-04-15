@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
-import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
@@ -32,15 +31,20 @@ export class CooperativeMemberDetailComponent implements OnInit {
     joinedAt: string;
   }> = [];
   isLoading = true;
+  private returnSource = '';
+  private returnGroupId?: number;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService,
-    private backNavigationService: BackNavigationService
+    private cooperativeService: CooperativeService
   ) {}
 
   ngOnInit(): void {
+    this.returnSource = this.route.snapshot.queryParamMap.get('source') || '';
+    const groupId = Number(this.route.snapshot.queryParamMap.get('groupId') || 0);
+    this.returnGroupId = Number.isFinite(groupId) && groupId > 0 ? groupId : undefined;
+
     this.route.params.subscribe(params => {
       const id = params['id'];
       this.currentUuid = params['uuid'] || this.currentUuid;
@@ -95,7 +99,27 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    if (this.returnSource === 'group-dashboard') {
+      const targetCommands = this.returnGroupId
+        ? ['/member/cooperative/groups', this.returnGroupId, this.currentUuid]
+        : ['/member/cooperative/dashboard', this.currentUuid];
+
+      this.router.navigate(targetCommands, {
+        replaceUrl: true,
+        state: {
+          memberId: Number(this.member?.id || 0) || undefined,
+          source: 'group-dashboard',
+          groupId: this.returnGroupId
+        }
+      }).then((navigated) => {
+        if (navigated) {
+          window.dispatchEvent(new Event('resize'));
+        }
+      });
+      return;
+    }
+
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

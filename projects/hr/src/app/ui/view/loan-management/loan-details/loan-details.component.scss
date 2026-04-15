@@ -356,6 +356,48 @@
     }
   }
 
+  .repayment-status-card {
+    .repayment-status-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .repayment-status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 14px;
+      border: 1px solid #e3eef0;
+      border-radius: 12px;
+      background: #f8feff;
+    }
+
+    .repayment-status-copy {
+      display: grid;
+      gap: 4px;
+
+      strong {
+        color: #214858;
+        font-size: 0.95rem;
+      }
+
+      span {
+        color: #6b7a86;
+        font-size: 0.85rem;
+      }
+    }
+
+    .repayment-status-meta {
+      display: grid;
+      justify-items: end;
+      gap: 8px;
+      text-align: right;
+      font-weight: 700;
+      color: #2f3b45;
+    }
+  }
+
   .loan-actions-section {
     position: sticky;
     top: 20px;
@@ -1427,19 +1469,17 @@
   }
 
   .summary-row,
-  .preview-row {
+  .preview-row,
+  .repayment-status-item {
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
   }
 
-  .loan-summary,
-  .approval-preview {
-    grid-template-columns: 1fr;
-  }
-
   .summary-row strong,
-  .preview-row strong {
+  .preview-row strong,
+  .document-meta,
+  .repayment-status-meta {
     text-align: left;
   }
 
