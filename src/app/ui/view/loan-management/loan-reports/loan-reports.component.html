@@ -1,4 +1,4 @@
-<div class="reports-container">
+<div class="reports-container loan-management-surface">
   <div *ngIf="isLoading" class="loading-state">
     <mat-spinner diameter="44"></mat-spinner>
     <p>Loading loan reports...</p>
@@ -68,15 +68,15 @@
       <div class="filters-grid">
         <div class="filter-group">
           <label>Loan ID</label>
-          <input type="text" [(ngModel)]="filters.loanId" (ngModelChange)="applyFilters()" placeholder="Search by Loan ID">
+          <input type="text" [(ngModel)]="filters.loanId" (ngModelChange)="onTextFilterChange()" placeholder="Search by Loan ID">
         </div>
         <div class="filter-group">
           <label>Employee Name</label>
-          <input type="text" [(ngModel)]="filters.employeeName" (ngModelChange)="applyFilters()" placeholder="Search by name">
+          <input type="text" [(ngModel)]="filters.employeeName" (ngModelChange)="onTextFilterChange()" placeholder="Search by name">
         </div>
         <div class="filter-group">
           <label>Employee ID</label>
-          <input type="text" [(ngModel)]="filters.employeeId" (ngModelChange)="applyFilters()" placeholder="EMP-001">
+          <input type="text" [(ngModel)]="filters.employeeId" (ngModelChange)="onTextFilterChange()" placeholder="EMP-001">
         </div>
         <div class="filter-group">
           <label>Department</label>
@@ -111,7 +111,7 @@
     <!-- Results Info -->
     <div class="results-info">
       <span>Showing {{ paginationStart }}-{{ paginationEnd }} of {{ filteredLoans.length }} filtered loans</span>
-      <span class="total-amount">Total: ₦{{ getFilteredTotal() | number:'1.2-2' }}</span>
+      <span class="total-amount">Total: ₦{{ filteredTotalAmount | number:'1.2-2' }}</span>
     </div>
 
     <!-- Reports Table -->
@@ -136,31 +136,31 @@
         [rows]="paginatedLoans"
         [emptyMessage]="'No loans match your filters'"
         tableClass="reports-table">
-        <ng-template appTableBody let-loan>
-          <td class="loan-id" [title]="loan.loanCode">{{ (loan.loanCode || '').length > 11 ? ((loan.loanCode || '') | slice:0:11) + '...' : loan.loanCode }}</td>
+        <ng-template appTableBody let-row>
+          <td class="loan-id" [title]="row.loan.loanCode">{{ (row.loan.loanCode || '').length > 11 ? ((row.loan.loanCode || '') | slice:0:11) + '...' : row.loan.loanCode }}</td>
           <td>
             <div class="employee-info">
-              <span class="name">{{ loan.fullName }}</span>
+              <span class="name">{{ row.loan.fullName }}</span>
             </div>
           </td>
-          <td>{{ loan.employeeId }}</td>
-          <td>{{ formatDepartmentDisplay(loan.department) }}</td>
-          <td class="purpose" [title]="formatPurposeDisplay(loan.purpose)">{{ formatPurposeDisplay(loan.purpose) | slice:0:30 }}{{ formatPurposeDisplay(loan.purpose).length > 30 ? '...' : '' }}</td>
-          <td class="amount">₦{{ loan.amount | number:'1.2-2' }}</td>
-          <td>{{ loan.interestRate || 0 }}%</td>
-          <td class="amount">₦{{ getLoanInterestAmount(loan) | number:'1.2-2' }}</td>
-          <td>₦{{ getLoanTotalRepayable(loan) | number:'1.2-2' }}</td>
-          <td class="paid">₦{{ (loan.totalPaid || 0) | number:'1.2-2' }}</td>
-          <td class="balance">₦{{ (loan.currentBalance || 0) | number:'1.2-2' }}</td>
+          <td>{{ row.loan.employeeId }}</td>
+          <td>{{ row.departmentDisplay }}</td>
+          <td class="purpose" [title]="row.displayPurpose">{{ row.displayPurposeShort }}</td>
+          <td class="amount">₦{{ row.loan.amount | number:'1.2-2' }}</td>
+          <td>{{ row.loan.interestRate || 0 }}%</td>
+          <td class="amount">₦{{ row.interestAmount | number:'1.2-2' }}</td>
+          <td>₦{{ row.totalRepayable | number:'1.2-2' }}</td>
+          <td class="paid">₦{{ (row.loan.totalPaid || 0) | number:'1.2-2' }}</td>
+          <td class="balance">₦{{ (row.loan.currentBalance || 0) | number:'1.2-2' }}</td>
           <td>
-            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-              {{ getStatusLabel(loan.status) }}
+            <span class="status-badge" [ngClass]="row.statusClass">
+              {{ row.statusLabel }}
             </span>
           </td>
-          <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+          <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
           <td class="actions-col">
             <div class="action-buttons">
-              <button class="btn-view" (click)="viewLoanDetails(loan.id)" title="View Details">
+              <button class="btn-view" (click)="viewLoanDetails(row.loan.id)" title="View Details">
                 <i class="fas fa-eye"></i>
               </button>
             </div>

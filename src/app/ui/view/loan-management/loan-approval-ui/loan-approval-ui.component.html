@@ -13,8 +13,8 @@
       <div class="search-box">
         <input type="text"
                placeholder="Search by employee name or ID..."
-               (keyup)="onSearch($event)"
-               [(ngModel)]="searchTerm">
+           [(ngModel)]="searchTerm"
+           (ngModelChange)="onSearchTermChange($event)">
       </div>
     </header>
 
@@ -131,27 +131,27 @@
         [rows]="paginatedLoans"
         [emptyMessage]="'No loan applications found matching your filters'"
         tableClass="loans-table">
-        <ng-template appTableBody let-loan>
-          <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
-          <td>{{ loan.fullName || 'N/A' }}</td>
-          <td>{{ loan.employeeId || 'N/A' }}</td>
-          <td>{{ formatDepartmentDisplay(loan.department) }}</td>
-          <td class="amount-cell">{{ formatCurrency(loan.amount) }}</td>
-          <td>{{ formatPurposeDisplay(loan.purpose) }}</td>
-          <td>{{ loan.interestRate || 0 }}%</td>
-          <td>{{ getOverduePolicySummary(loan) }}</td>
-          <td class="amount-cell">{{ formatCurrency(getLoanTotalRepayable(loan)) }}</td>
+        <ng-template appTableBody let-row>
+          <td class="loan-id">{{ row.loanCode }}</td>
+          <td>{{ row.fullName }}</td>
+          <td>{{ row.employeeId }}</td>
+          <td>{{ row.departmentDisplay }}</td>
+          <td class="amount-cell">{{ formatCurrency(row.loan.amount) }}</td>
+          <td>{{ row.purposeDisplay }}</td>
+          <td>{{ row.loan.interestRate || 0 }}%</td>
+          <td>{{ row.overduePolicySummary }}</td>
+          <td class="amount-cell">{{ formatCurrency(row.totalRepayable) }}</td>
           <td>
-            <span class="status-badge" [ngClass]="getStatusClass(loan.status)">
-              {{ getStatusLabel(loan.status) }}
+            <span class="status-badge" [ngClass]="row.statusClass">
+              {{ row.statusLabel }}
             </span>
           </td>
-          <td>{{ loan.requestDate | date:'mediumDate' }}</td>
+          <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
           <td class="actions actions-col">
-            <button class="btn-view" type="button" (click)="openLoanDetails(loan)" title="View" aria-label="View">
+            <button class="btn-view" type="button" (click)="openLoanDetails(row.loan)" title="View" aria-label="View">
               <i class="fas fa-eye"></i>
             </button>
-            <button class="btn-history" type="button" (click)="seeLoanHistory(loan.employeeId)" title="See History" aria-label="See History">
+            <button class="btn-history" type="button" (click)="seeLoanHistory(row.loan.employeeId)" title="See History" aria-label="See History">
               <i class="fas fa-history"></i>
             </button>
           </td>

@@ -14,12 +14,8 @@ export class RepaymentDayHelperService {
   }
 
   suggestRepaymentDay(startDate: Date): number {
-    // Suggest the day of the month from the start date, or 15th if start date is after 28th
-    const day = startDate.getDate();
-    if (day > 28) {
-      return 28;
-    }
-    return day;
+    // Keep repayment day aligned to the selected start date's day-of-month.
+    return startDate.getDate();
   }
 
   validateRepaymentDay(day: number, year: number, month: number): boolean {

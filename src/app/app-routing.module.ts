@@ -162,11 +162,11 @@ const routes: Routes = [
   //   component: LoanDetailsComponent
   //  },
   {
-    path: 'loan-management/loan-details/:employeeId/:uuid',
+    path: 'loan-management/loan-details/:loanId/:uuid',
     component: LoanDetailsComponent,
   },
   {
-    path: 'admin/hr/loan-management/loan-details/:employeeId/:uuid',
+    path: 'admin/hr/loan-management/loan-details/:loanId/:uuid',
     component: LoanDetailsComponent,
   },
   {

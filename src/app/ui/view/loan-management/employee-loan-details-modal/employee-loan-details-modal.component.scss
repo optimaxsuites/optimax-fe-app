@@ -20,6 +20,50 @@
   display: grid;
   gap: 14px;
 
+  .feedback-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #d7e4ea;
+    background: #f6fbfd;
+    color: #355462;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    &.success {
+      border-color: #bfe3d1;
+      background: #edf9f2;
+      color: #1f6b47;
+    }
+
+    &.error {
+      border-color: #f0c9c9;
+      background: #fff3f3;
+      color: #9f2d2d;
+    }
+
+    &.info {
+      border-color: #d7e4ea;
+      background: #f6fbfd;
+      color: #355462;
+    }
+
+    &.inline-banner {
+      margin-bottom: 14px;
+    }
+
+    i {
+      margin-top: 2px;
+      font-size: 0.95rem;
+    }
+
+    span {
+      line-height: 1.45;
+    }
+  }
+
   .detail-loading-banner {
     display: inline-flex;
     align-items: center;

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { MailNotificationService } from '../mailNotification.service';
@@ -78,7 +79,7 @@ export class LoanStatusNotificationService {
         return this.mailNotificationService.sendMail(mailBody).pipe(
           map(() => null),
           catchError((error) => {
-            console.error('[LoanStatusEmail] Send failed', {
+            this.logMailFailure('[LoanStatusEmail]', {
               loanId: application.id,
               employeeId: application.employeeId,
               recipientEmail,
@@ -228,7 +229,7 @@ export class LoanStatusNotificationService {
     return this.mailNotificationService.sendMail(mailBody).pipe(
       map(() => null),
       catchError((error) => {
-        console.error('[CooperativeLoanStatusEmail] Send failed', {
+        this.logMailFailure('[CooperativeLoanStatusEmail]', {
           loanId: loan.id,
           recipientEmail,
           error
@@ -236,6 +237,30 @@ export class LoanStatusNotificationService {
         return of(null);
       })
     );
+  }
+
+  private logMailFailure(
+    scope: string,
+    payload: {
+      loanId?: unknown;
+      employeeId?: unknown;
+      recipientEmail?: string;
+      error: unknown;
+    }
+  ): void {
+    const error = payload.error as HttpErrorResponse | undefined;
+    const normalizedLoanId = Number(payload.loanId);
+    const normalizedEmployeeId = Number(payload.employeeId);
+
+    console.warn(`${scope} Email skipped after webhook failure`, {
+      loanId: Number.isFinite(normalizedLoanId) && normalizedLoanId > 0 ? normalizedLoanId : null,
+      employeeId: Number.isFinite(normalizedEmployeeId) && normalizedEmployeeId > 0 ? normalizedEmployeeId : null,
+      recipientEmail: payload.recipientEmail || null,
+      status: error?.status ?? null,
+      message: typeof error?.error === 'string'
+        ? error.error
+        : error?.message || 'Mail request failed'
+    });
   }
 
   private buildSubject(application: LoanApplication, previousStatus?: LoanStatus | null): string {

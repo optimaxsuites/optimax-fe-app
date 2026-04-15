@@ -7,17 +7,25 @@ import { CooperativeContributionEntry, CooperativeGroupMembership, CooperativeLo
 
 export interface CooperativeGroupApiContributionHistory {
   id?: number;
-  member?: string;
+  memberId?: number;
   amount?: number;
   date?: string;
 }
 
 export interface CooperativeGroupApiResponse {
   id: number;
+  groupId?: number;
   code?: string;
   name?: string;
+  minEligibleSalary?: number;
   monthlyAmount?: number;
+  maxBorrowingPercentage?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  minDuration?: number;
+  maxDuration?: number;
   minMemberTenureMonths?: number;
+  requiresShares?: boolean;
   requiresGuarantors?: boolean;
   minimumGuarantors?: number;
   memberIds?: number[];
@@ -29,6 +37,7 @@ export interface CooperativeGroupApiResponse {
   loanHistory?: any[];
   status?: string;
   description?: string;
+  patronageEligible?: boolean;
   patronageRate?: number;
   patronageAmount?: number;
   contributionsBankName?: string;
@@ -47,10 +56,18 @@ export interface CooperativeGroupApiResponse {
 
 export interface CooperativeGroupApiPayload {
   id?: number;
+  groupId?: number;
   code?: string;
   name: string;
+  minEligibleSalary?: number;
   monthlyAmount: number;
+  maxBorrowingPercentage?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  minDuration?: number;
+  maxDuration?: number;
   minMemberTenureMonths?: number;
+  requiresShares?: boolean;
   requiresGuarantors?: boolean;
   minimumGuarantors?: number;
   memberIds?: number[];
@@ -62,6 +79,7 @@ export interface CooperativeGroupApiPayload {
   loanHistory?: any[];
   status?: string;
   description?: string;
+  patronageEligible?: boolean;
   patronageRate?: number;
   patronageAmount?: number;
   contributionsBankName: string;

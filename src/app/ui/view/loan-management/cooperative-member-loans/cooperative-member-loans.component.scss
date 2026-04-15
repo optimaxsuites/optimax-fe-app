@@ -192,9 +192,18 @@
 }
 
 .view-btn {
+  width: 2.3rem;
+  height: 2.3rem;
   border: 1px solid #d1d5db;
   background: #fff;
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.65rem;
+  border-radius: 0.75rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+}
+
+.actions-col {
+  width: 4.5rem;
 }

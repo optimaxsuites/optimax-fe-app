@@ -1,4 +1,4 @@
-<div class="group-dashboard-container">
+<div class="group-dashboard-container loan-management-surface">
   <div *ngIf="isLoading" class="loading-state">
     <div class="spinner"></div>
     <p>Loading group dashboard...</p>
@@ -30,8 +30,11 @@
           Post Contribution
         </button>
         <div class="member-chip" *ngIf="currentMember as member">
-          <span class="avatar">{{ getInitials(currentMemberDisplayName) }}</span>
-          <div>
+          <div class="member-chip-avatar-shell">
+            <span class="avatar">{{ getInitials(currentMemberDisplayName) }}</span>
+          </div>
+          <div class="member-chip-copy">
+            <span class="member-chip-label">Current member</span>
             <strong>{{ currentMemberDisplayName }}</strong>
             <span>{{ member.memberId }}</span>
           </div>
@@ -48,17 +51,17 @@
         <p>Track your contribution level and borrowing headroom inside this group.</p>
       </div>
       <div class="spotlight-stats">
-        <div>
-          <span>Monthly Contribution</span>
-          <strong>{{ formatCurrency(currentMembership.monthlyContributionAmount) }}</strong>
+        <div class="spotlight-metric">
+          <span class="spotlight-metric-label">Monthly Contribution</span>
+          <strong class="spotlight-metric-value">{{ formatCurrency(currentMembership.monthlyContributionAmount) }}</strong>
         </div>
-        <div>
-          <span>Total Contribution</span>
-          <strong>{{ formatCurrency(currentMembership.totalContribution) }}</strong>
+        <div class="spotlight-metric">
+          <span class="spotlight-metric-label">Total Contribution</span>
+          <strong class="spotlight-metric-value">{{ formatCurrency(currentMembership.totalContribution) }}</strong>
         </div>
-        <div>
-          <span>Joined</span>
-          <strong>{{ (currentMembership.joinedAt || currentMembership.requestedAt) | date:'mediumDate' }}</strong>
+        <div class="spotlight-metric">
+          <span class="spotlight-metric-label">Date Joined</span>
+          <strong class="spotlight-metric-value">{{ (currentMembership.joinedAt || currentMembership.requestedAt) | date:'mediumDate' }}</strong>
         </div>
       </div>
     </div>
@@ -92,29 +95,47 @@
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-label">Total Members</span>
-        <strong class="stat-value">{{ totalMembers }}</strong>
+      <div class="stat-card tone-total">
+        <div class="stat-icon members-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Members</span>
+          <strong class="stat-value">{{ totalMembers }}</strong>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Monthly Contribution Pool</span>
-        <strong class="stat-value">{{ formatCurrency(monthlyContributionPool) }}</strong>
+      <div class="stat-card tone-active">
+        <div class="stat-icon contribution-icon"><i class="fas fa-piggy-bank"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Monthly Contribution Pool</span>
+          <strong class="stat-value">{{ formatCurrency(monthlyContributionPool) }}</strong>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Total Contributions</span>
-        <strong class="stat-value">{{ formatCurrency(totalContributionPool) }}</strong>
+      <div class="stat-card tone-approved">
+        <div class="stat-icon contribution-total-icon"><i class="fas fa-university"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Contributions</span>
+          <strong class="stat-value">{{ formatCurrency(totalContributionPool) }}</strong>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Active Borrowers</span>
-        <strong class="stat-value">{{ activeBorrowersCount }}</strong>
+      <div class="stat-card tone-pending">
+        <div class="stat-icon borrowers-icon"><i class="fas fa-hand-holding-usd"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Active Borrowers</span>
+          <strong class="stat-value">{{ activeBorrowersCount }}</strong>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Completed Borrowers</span>
-        <strong class="stat-value">{{ completedBorrowersCount }}</strong>
+      <div class="stat-card tone-approved">
+        <div class="stat-icon completed-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Completed Borrowers</span>
+          <strong class="stat-value">{{ completedBorrowersCount }}</strong>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Average Repayment Progress</span>
-        <strong class="stat-value">{{ averageRepaymentProgress }}%</strong>
+      <div class="stat-card tone-total">
+        <div class="stat-icon progress-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Average Repayment Progress</span>
+          <strong class="stat-value">{{ averageRepaymentProgress }}%</strong>
+        </div>
       </div>
     </div>
 
@@ -188,7 +209,7 @@
           <h2>Contribution History By Month</h2>
           <label class="month-selector">
             <span>Month</span>
-            <select [(ngModel)]="selectedContributionMonth">
+            <select class="surface-select" [(ngModel)]="selectedContributionMonth">
               <option *ngFor="let option of contributionMonthOptions" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </label>
@@ -413,49 +434,62 @@
         Your standard monthly amount is {{ formatCurrency(currentMembership.monthlyContributionAmount) }}.
       </p>
 
-      <div class="payment-destination-card" *ngIf="group as currentGroup">
-        <div class="destination-row">
-          <span>Accounting Email</span>
-          <strong>{{ currentGroupAccountingEmail || 'Not configured' }}</strong>
+      <div class="contribution-modal-body">
+        <div class="payment-destination-card" *ngIf="group as currentGroup">
+          <div class="destination-card-head">
+            <span class="eyebrow">Payment destination</span>
+            <h3>Send this month&apos;s contribution to the configured cooperative account.</h3>
+          </div>
+          <div class="destination-grid">
+            <div class="destination-row">
+              <span>Accounting Email</span>
+              <strong>{{ currentGroupAccountingEmail || 'Not configured' }}</strong>
+            </div>
+            <div class="destination-row">
+              <span>Contributions Bank</span>
+              <strong>{{ currentGroupContributionBankName || 'Not configured' }}</strong>
+            </div>
+            <div class="destination-row">
+              <span>Contributions Account</span>
+              <strong>{{ currentGroupContributionAccount || 'Not configured' }}</strong>
+            </div>
         </div>
-        <div class="destination-row">
-          <span>Contributions Bank</span>
-          <strong>{{ currentGroupContributionBankName || 'Not configured' }}</strong>
         </div>
-        <div class="destination-row">
-          <span>Contributions Account</span>
-          <strong>{{ currentGroupContributionAccount || 'Not configured' }}</strong>
+
+        <div class="contribution-form-grid">
+          <label class="field-group field-card">
+            <span>Contribution Month</span>
+            <input
+              type="month"
+              [(ngModel)]="contributionForm.contributionMonth"
+              name="contributionMonth"
+              [max]="getDefaultContributionMonth()">
+            <small>Choose the month this payment should be credited to.</small>
+          </label>
+
+          <label class="field-group field-card emphasis-card">
+            <span>Amount</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="contributionForm.amount"
+              name="contributionAmount"
+              placeholder="0.00">
+            <small>Enter the exact amount you transferred or paid.</small>
+          </label>
+
+          <label class="field-group field-card full-width">
+            <span>Payment Method</span>
+            <select
+              class="surface-select"
+              [(ngModel)]="contributionForm.paymentMethod"
+              name="contributionPaymentMethod">
+              <option *ngFor="let option of contributionPaymentMethodOptions" [ngValue]="option.value">{{ option.label }}</option>
+            </select>
+            <small>Select how the contribution was paid so accounting can confirm it quickly.</small>
+          </label>
         </div>
-      </div>
-
-      <label class="field-group">
-        <span>Contribution Month</span>
-        <input
-          type="month"
-          [(ngModel)]="contributionForm.contributionMonth"
-          name="contributionMonth"
-          [max]="getDefaultContributionMonth()">
-      </label>
-
-      <label class="field-group">
-        <span>Amount</span>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          [(ngModel)]="contributionForm.amount"
-          name="contributionAmount"
-          placeholder="0.00">
-      </label>
-
-      <label class="field-group">
-        <span>Payment Method</span>
-        <select
-          [(ngModel)]="contributionForm.paymentMethod"
-          name="contributionPaymentMethod">
-          <option *ngFor="let option of contributionPaymentMethodOptions" [ngValue]="option.value">{{ option.label }}</option>
-        </select>
-      </label>
 
       <p class="modal-error" *ngIf="hasExistingContributionForSelectedMonth && !contributionError">
         A contribution for this month already exists.
@@ -464,6 +498,7 @@
         Accounting confirmation is already pending for this month.
       </p>
       <p class="modal-error" *ngIf="contributionError">{{ contributionError }}</p>
+      </div>
 
       <div class="modal-actions">
         <button type="button" class="secondary-button" (click)="closeContributionModal()">Cancel</button>

@@ -48,7 +48,10 @@ export class LoanApprovalService {
           gracePeriodRequests: [...(application.gracePeriodRequests || [])]
         };
 
-        const status = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
+        // Get status as string and ensure it's uppercase, then cast to LoanStatus
+        const rawStatus = typeof statusOrUpdate === 'string' ? statusOrUpdate : statusOrUpdate.status;
+        const status = rawStatus.toUpperCase() as LoanStatus;
+        
         const notes = typeof statusOrUpdate === 'string' ? undefined : statusOrUpdate.notes;
         const actingUserId = this.getCurrentUserId();
         const changedAt = typeof statusOrUpdate === 'string'
@@ -104,14 +107,18 @@ export class LoanApprovalService {
           persistLoanRepaymentDay(workingApplication, repaymentDay);
         }
 
+        const resolvedStatusBeforeOverride = statusBeforeOverride 
+          ? statusBeforeOverride.toUpperCase() as LoanStatus 
+          : previousStatus;
+        
         const nextStatusHistoryEntry: StatusChange = {
-          status,
+          status: status,
           changedAt,
           changedBy: actingUserId,
           notes: notes || workingApplication.adminComment || '',
           overrideOpen: typeof overrideOpen === 'boolean' ? overrideOpen : undefined,
           overrideReason: overrideReason || undefined,
-          statusBeforeOverride: statusBeforeOverride || previousStatus,
+          statusBeforeOverride: resolvedStatusBeforeOverride,
           interestRate: interestRate !== undefined && Number.isFinite(interestRate)
             ? Number(interestRate.toFixed(2))
             : undefined
@@ -300,7 +307,7 @@ export class LoanApprovalService {
     console.log('Approving loan - setting status to AWAITING_INTEREST_ACCEPTANCE');
     
     return this.updateApplicationStatus(loanId, {
-      status: 'AWAITING_INTEREST_ACCEPTANCE',
+      status: 'AWAITING_INTEREST_ACCEPTANCE' as LoanStatus,
       notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`,
       changedAt: new Date().toISOString(),
       interestRate: interestRate,
@@ -347,7 +354,7 @@ export class LoanApprovalService {
 
   rejectLoan(loanId: string | number, notes: string): Observable<LoanApplication> {
     return this.updateApplicationStatus(loanId, {
-      status: 'REJECTED',
+      status: 'REJECTED' as LoanStatus,
       notes: notes || 'Loan rejected',
       changedAt: new Date().toISOString()
     });
@@ -357,7 +364,7 @@ export class LoanApprovalService {
     console.log('Employee accepting interest rate - setting status to APPROVED');
     
     return this.updateApplicationStatus(loanId, {
-      status: 'APPROVED',
+      status: 'APPROVED' as LoanStatus,
       notes: `Employee accepted interest rate of ${acceptedRate}%`,
       changedAt: new Date().toISOString(),
       interestRate: acceptedRate
@@ -399,7 +406,7 @@ export class LoanApprovalService {
     console.log('Employee rejecting interest rate - keeping status as AWAITING_INTEREST_ACCEPTANCE for admin revision');
     
     return this.updateApplicationStatus(loanId, {
-      status: 'AWAITING_INTEREST_ACCEPTANCE',
+      status: 'AWAITING_INTEREST_ACCEPTANCE' as LoanStatus,
       notes: `Employee rejected proposed interest rate. Reason: ${reason}. Admin review required before resubmission.`,
       changedAt: new Date().toISOString()
     }).pipe(

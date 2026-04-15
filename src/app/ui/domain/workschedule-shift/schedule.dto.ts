@@ -7,4 +7,5 @@ export interface ScheduleDTO {
   project?: string;
   location?: string;
   recurrence?: 'none' | 'daily' | 'weekly' | 'custom';
+  description?: string;
 }

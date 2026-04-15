@@ -1,13 +1,16 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Subject, Subscription, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeMember, CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
 import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 
 type ApprovalMessage = {
   severity: 'success' | 'error';
@@ -15,14 +18,30 @@ type ApprovalMessage = {
   detail: string;
 };
 
+interface CooperativeApprovalRow {
+  loan: CooperativeLoan;
+  loanCode: string;
+  memberName: string;
+  groupName: string;
+  amount: number;
+  purposeDisplay: string;
+  groupInterestRate: string;
+  groupLateFeeDisplay: string;
+  totalRepayable: number;
+  stageLabel: string;
+  statusClass: string;
+  statusLabel: string;
+  appliedOn: string;
+}
+
 @Component({
   selector: 'app-cooperative-loan-approval-ui',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonModule],
   templateUrl: './cooperative-loan-approval-ui.component.html',
   styleUrls: ['./cooperative-loan-approval-ui.component.scss']
 })
-export class CooperativeLoanApprovalUiComponent implements OnInit {
+export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   readonly pageSize = 20;
   currentUuid = '';
   currentPage = 1;
@@ -44,9 +63,12 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
   members: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
   filteredLoans: CooperativeLoan[] = [];
+  filteredLoanRows: CooperativeApprovalRow[] = [];
   isLoading = true;
   isSubmitting = false;
   messages: ApprovalMessage[] = [];
+  private readonly memberLookup = new Map<number, CooperativeMember>();
+  private readonly groupLookup = new Map<number, CooperativeLoanGroup>();
 
   // Approval modal
   showApprovalModal = false;
@@ -61,6 +83,8 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
   showRejectModal = false;
   selectedLoanForRejection: CooperativeLoan | null = null;
   rejectionReason = '';
+  private readonly searchTermChanges = new Subject<string>();
+  private readonly subscriptions = new Subscription();
 
   constructor(
     private location: Location,
@@ -72,31 +96,53 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUuid = this.route.snapshot.paramMap.get('uuid') || '';
+    this.subscriptions.add(
+      this.searchTermChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.applyFilters())
+    );
     this.setDefaultRepaymentStartDate();
     this.loadData();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   // ── Data loading ──────────────────────────────────────────────
 
   loadData(): void {
+    const loadProfiler = startLoanLoadProfiler('cooperative-loan-approval');
     this.isLoading = true;
     forkJoin({
       groups: this.cooperativeService.loadGroups(),
       members: this.cooperativeService.getMembers(),
-      loans: this.cooperativeService.getLoans()
+      loans: this.cooperativeService.refreshLoans()
     }).subscribe({
       next: ({ groups, members, loans }) => {
         this.groups = groups;
         this.members = members;
         this.loans = loans;
+        this.rebuildLookups();
         this.applyFilters();
+        loadProfiler.success({ loans: this.loans.length, filtered: this.filteredLoans.length });
         this.isLoading = false;
       },
       error: () => {
         this.isLoading = false;
+        loadProfiler.error({ message: 'Failed to load cooperative loan approval data' });
         this.showError('Failed to load loan applications. Please try again.');
       }
     });
+  }
+
+  private rebuildLookups(): void {
+    this.memberLookup.clear();
+    this.groupLookup.clear();
+    this.members.forEach((member) => {
+      [member.id, member.memberId, member.employeeId]
+        .filter((value): value is number => typeof value === 'number' && !isNaN(value))
+        .forEach((key) => this.memberLookup.set(key, member));
+    });
+    this.groups.forEach((group) => this.groupLookup.set(group.id, group));
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -110,12 +156,12 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
 
   getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
     const mid = loan.cooperativeMemberId || loan.memberId || 0;
-    return this.members.find(m => m.id === mid || m.memberId === mid || m.employeeId === mid);
+    return this.memberLookup.get(mid);
   }
 
   getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
     const gid = loan.cooperativeGroupId || loan.groupId || 0;
-    return this.groups.find(g => g.id === gid);
+    return this.groupLookup.get(gid);
   }
 
   getMemberName(loan: CooperativeLoan): string {
@@ -302,12 +348,31 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortData(result);
+    this.filteredLoanRows = this.filteredLoans.map((loan) => this.buildApprovalRow(loan));
     this.resetPagination();
   }
 
-  onSearch(event: Event): void {
-    this.searchTerm = (event.target as HTMLInputElement).value;
-    this.applyFilters();
+  private buildApprovalRow(loan: CooperativeLoan): CooperativeApprovalRow {
+    return {
+      loan,
+      loanCode: this.getLoanCode(loan),
+      memberName: this.getMemberName(loan),
+      groupName: this.getGroupName(loan),
+      amount: Number(loan.amount || 0),
+      purposeDisplay: this.formatPurposeDisplay(loan.purpose),
+      groupInterestRate: this.getGroupInterestRate(loan),
+      groupLateFeeDisplay: this.getGroupLateFeeDisplay(loan),
+      totalRepayable: this.getTotalRepayable(loan),
+      stageLabel: this.getStageLabel(loan.applicationStage),
+      statusClass: this.getStatusClass(loan.status),
+      statusLabel: this.getStatusLabel(loan.status),
+      appliedOn: loan.applicationDate || loan.requestDate || ''
+    };
+  }
+
+  onSearchTermChange(value: string): void {
+    this.searchTerm = value;
+    this.searchTermChanges.next(value);
   }
 
   resetFilters(): void {
@@ -389,9 +454,9 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
     return Math.min(this.currentPage * this.pageSize, this.filteredLoans.length);
   }
 
-  get paginatedLoans(): CooperativeLoan[] {
+  get paginatedLoans(): CooperativeApprovalRow[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLoans.slice(start, start + this.pageSize);
+    return this.filteredLoanRows.slice(start, start + this.pageSize);
   }
 
   changePage(page: number): void {
@@ -407,13 +472,9 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
   // ── Navigation ────────────────────────────────────────────────
 
   goBack(): void {
-    if (this.currentUuid) {
-      this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
-        queryParams: { dashboard: 'cooperative' }
-      });
-      return;
-    }
-    this.location.back();
+    this.router.navigate(['/admin/hr/loan', this.currentUuid || 'uu'], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   viewLoanDetail(loan: CooperativeLoan): void {
@@ -429,8 +490,8 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
     this.selectedLoanForApproval = loan;
     this.approvalAdminComment = '';
     this.setDefaultRepaymentStartDate();
-    this.approvalRepaymentDay = Number(loan.repaymentDay || 15);
     this.approvalRepaymentStartDate = loan.repaymentStartDate || this.approvalRepaymentStartDate;
+    this.approvalRepaymentDay = Number(loan.repaymentDay || 0);
     this.onRepaymentStartDateChange(this.approvalRepaymentStartDate);
     this.showApprovalModal = true;
   }
@@ -463,14 +524,42 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
 
     this.cooperativeService.approveLoanWithTerms(loanId, options).subscribe({
       next: (updated) => {
-        this.isSubmitting = false;
         if (updated) {
+          this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
           if (idx !== -1) this.loans[idx] = updated;
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} approved successfully.`);
+          this.closeApprovalModal();
+          return;
         }
-        this.closeApprovalModal();
+
+        this.cooperativeService.loadLoanById(loanId).subscribe({
+          next: (freshLoan) => {
+            this.isSubmitting = false;
+            if (freshLoan) {
+              const idx = this.loans.findIndex(l => l.id === loanId);
+              if (idx !== -1) {
+                this.loans[idx] = freshLoan;
+              }
+              this.applyFilters();
+
+              if (freshLoan.status === 'APPROVED') {
+                this.showSuccess(`Loan ${this.getLoanCode(freshLoan)} is already approved. The list has been refreshed.`);
+              } else {
+                this.showError('Only pending loans can be approved.');
+              }
+            } else {
+              this.showError('Only pending loans can be approved.');
+            }
+            this.closeApprovalModal();
+          },
+          error: () => {
+            this.isSubmitting = false;
+            this.showError('Only pending loans can be approved.');
+            this.closeApprovalModal();
+          }
+        });
       },
       error: () => {
         this.isSubmitting = false;
@@ -505,14 +594,42 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
 
     this.cooperativeService.rejectLoan(loanId, reason).subscribe({
       next: (updated) => {
-        this.isSubmitting = false;
         if (updated) {
+          this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
           if (idx !== -1) this.loans[idx] = updated;
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} rejected.`);
+          this.closeRejectModal();
+          return;
         }
-        this.closeRejectModal();
+
+        this.cooperativeService.loadLoanById(loanId).subscribe({
+          next: (freshLoan) => {
+            this.isSubmitting = false;
+            if (freshLoan) {
+              const idx = this.loans.findIndex(l => l.id === loanId);
+              if (idx !== -1) {
+                this.loans[idx] = freshLoan;
+              }
+              this.applyFilters();
+
+              if (freshLoan.status === 'REJECTED') {
+                this.showSuccess(`Loan ${this.getLoanCode(freshLoan)} is already rejected. The list has been refreshed.`);
+              } else {
+                this.showError('Failed to reject loan.');
+              }
+            } else {
+              this.showError('Failed to reject loan.');
+            }
+            this.closeRejectModal();
+          },
+          error: () => {
+            this.isSubmitting = false;
+            this.showError('Failed to reject loan.');
+            this.closeRejectModal();
+          }
+        });
       },
       error: () => {
         this.isSubmitting = false;
@@ -534,9 +651,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
     this.availableRepaymentDays = this.repaymentDayHelper.getValidRepaymentDays(year, month);
 
     const suggestedDay = this.repaymentDayHelper.suggestRepaymentDay(date);
-    if (!this.approvalRepaymentDay || !this.availableRepaymentDays.includes(this.approvalRepaymentDay)) {
-      this.approvalRepaymentDay = suggestedDay;
-    }
+    this.approvalRepaymentDay = suggestedDay;
 
     this.repaymentDayWarning = this.getRepaymentDayWarning();
   }
@@ -569,7 +684,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit {
       year: 'numeric'
     });
 
-    return `Suggestion: use ${suggestedDay}${this.getDayOrdinal(suggestedDay)} so repayments stay aligned from ${monthYear}.`;
+    return `Repayments will follow the ${suggestedDay}${this.getDayOrdinal(suggestedDay)} of each month based on the selected start date in ${monthYear}.`;
   }
 
   getDayOrdinal(day: number): string {

@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
@@ -14,12 +17,25 @@ import {
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
 
+interface LoanApprovalRow {
+  loan: LoanApplication;
+  loanCode: string | number;
+  fullName: string;
+  employeeId: string | number;
+  departmentDisplay: string;
+  purposeDisplay: string;
+  overduePolicySummary: string;
+  totalRepayable: number;
+  statusClass: string;
+  statusLabel: string;
+}
+
 @Component({
   selector: 'app-loan-approval-ui',
   templateUrl: './loan-approval-ui.component.html',
   styleUrls: ['./loan-approval-ui.component.scss']
 })
-export class LoanApprovalUiComponent implements OnInit {
+export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   readonly pageSize = 20;
   currentPage = 1;
   searchTerm: string = '';
@@ -38,6 +54,7 @@ export class LoanApprovalUiComponent implements OnInit {
 
   loanApplications: LoanApplication[] = [];
   filteredLoans: LoanApplication[] = [];
+  filteredLoanRows: LoanApprovalRow[] = [];
   isLoading = true;
   messages: Message[] = [];
 
@@ -57,6 +74,8 @@ export class LoanApprovalUiComponent implements OnInit {
   showRejectModal = false;
   selectedLoanForRejection: LoanApplication | null = null;
   rejectionReason: string = '';
+  private readonly searchTermChanges = new Subject<string>();
+  private readonly subscriptions = new Subscription();
 
   constructor(
     private location: Location,
@@ -67,8 +86,15 @@ export class LoanApprovalUiComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.subscriptions.add(
+      this.searchTermChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.applyFilters())
+    );
     this.loadApplications();
     this.setDefaultRepaymentStartDate();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   setDefaultRepaymentStartDate(): void {
@@ -116,6 +142,7 @@ export class LoanApprovalUiComponent implements OnInit {
   }
 
   loadApplications(): void {
+    const loadProfiler = startLoanLoadProfiler('advance-loan-approval');
     this.isLoading = true;
     this.loanApplicationService.getAllApplications().subscribe({
       next: (applications) => {
@@ -124,10 +151,12 @@ export class LoanApprovalUiComponent implements OnInit {
           department: this.formatDepartmentDisplay(loan.department)
         }));
         this.applyFilters();
+        loadProfiler.success({ loans: this.loanApplications.length, filtered: this.filteredLoans.length });
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading applications:', error);
+        loadProfiler.error({ message: 'Failed to load advance loan approval data' });
         this.isLoading = false;
       }
     });
@@ -185,12 +214,28 @@ export class LoanApprovalUiComponent implements OnInit {
     }
 
     this.filteredLoans = this.sortData(results);
+    this.filteredLoanRows = this.filteredLoans.map((loan) => this.buildLoanApprovalRow(loan));
     this.resetPagination();
   }
 
-  onSearch(event: any) {
-    this.searchTerm = event.target.value;
-    this.applyFilters();
+  private buildLoanApprovalRow(loan: LoanApplication): LoanApprovalRow {
+    return {
+      loan,
+      loanCode: loan.loanCode || loan.id,
+      fullName: loan.fullName || 'N/A',
+      employeeId: loan.employeeId || 'N/A',
+      departmentDisplay: this.formatDepartmentDisplay(loan.department),
+      purposeDisplay: this.formatPurposeDisplay(loan.purpose),
+      overduePolicySummary: this.getOverduePolicySummary(loan),
+      totalRepayable: this.getLoanTotalRepayable(loan),
+      statusClass: this.getStatusClass(loan.status),
+      statusLabel: this.getStatusLabel(loan.status)
+    };
+  }
+
+  onSearchTermChange(value: string) {
+    this.searchTerm = value;
+    this.searchTermChanges.next(value);
   }
 
   resetFilters() {
@@ -373,9 +418,9 @@ export class LoanApprovalUiComponent implements OnInit {
     );
   }
 
-  get paginatedLoans(): LoanApplication[] {
+  get paginatedLoans(): LoanApprovalRow[] {
     const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLoans.slice(startIndex, startIndex + this.pageSize);
+    return this.filteredLoanRows.slice(startIndex, startIndex + this.pageSize);
   }
 
   get totalPages(): number {

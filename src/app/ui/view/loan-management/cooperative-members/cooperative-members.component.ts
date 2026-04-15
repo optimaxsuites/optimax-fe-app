@@ -216,7 +216,7 @@ export class CooperativeMembersComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

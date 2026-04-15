@@ -1,10 +1,37 @@
-<div class="group-join-history-container">
-  <app-modal *ngIf="showReviewModal" [header]="reviewAction === 'approve' ? 'Approve Join Request' : 'Reject Join Request'" (close)="closeReviewModal()">
-    <div class="review-modal" *ngIf="selectedApplication as application">
-      <div class="review-summary">
-        <p><strong>Member:</strong> {{ application.memberName }} ({{ application.memberCode }})</p>
-        <p><strong>Group:</strong> {{ application.groupName }}</p>
-        <p><strong>Requested:</strong> {{ application.requestedAt | date:'medium' }}</p>
+<div class="group-join-history-container loan-management-surface">
+  <app-modal *ngIf="showReviewModal" (close)="closeReviewModal()">
+    <div class="review-modal" [ngClass]="reviewAction === 'approve' ? 'approve-mode' : 'reject-mode'" *ngIf="selectedApplication as application">
+      <div class="review-hero">
+        <div class="review-icon-shell">
+          <i class="fas" [ngClass]="reviewAction === 'approve' ? 'fa-user-check' : 'fa-user-times'"></i>
+        </div>
+        <div>
+          <span class="review-kicker">Group Join Review</span>
+          <h2>{{ reviewAction === 'approve' ? 'Approve Member Into Group' : 'Reject Group Join Request' }}</h2>
+          <p class="review-intro">
+            {{ reviewAction === 'approve'
+              ? 'Confirm this member should be admitted to the selected cooperative group. Add a short note if there is an onboarding instruction.'
+              : 'Record a clear rejection reason so the member understands what needs to change before reapplying.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="review-snapshot-grid">
+        <article class="snapshot-card">
+          <span class="label">Member</span>
+          <strong>{{ application.memberName }}</strong>
+          <small>{{ application.memberCode }}</small>
+        </article>
+        <article class="snapshot-card">
+          <span class="label">Group</span>
+          <strong>{{ application.groupName }}</strong>
+          <small>Join request</small>
+        </article>
+        <article class="snapshot-card">
+          <span class="label">Requested On</span>
+          <strong>{{ application.requestedAt | date:'mediumDate' }}</strong>
+          <small>{{ application.requestedAt | date:'shortTime' }}</small>
+        </article>
       </div>
 
       <label class="review-field">
@@ -12,11 +39,17 @@
         <textarea rows="4" [(ngModel)]="reviewNote" [placeholder]="reviewAction === 'approve' ? 'Optional note for the member' : 'Explain why this request was rejected'"></textarea>
       </label>
 
+      <div class="review-guidance">
+        <span><i class="fas fa-shield-alt"></i> This decision is stored in the group join history.</span>
+        <span><i class="fas fa-comment-dots"></i> {{ reviewAction === 'approve' ? 'A short note helps the member understand next steps.' : 'A rejection reason is required for a clean audit trail.' }}</span>
+      </div>
+
       <p class="review-error" *ngIf="reviewError">{{ reviewError }}</p>
 
       <div class="review-actions">
         <button type="button" class="secondary-btn" (click)="closeReviewModal()">Cancel</button>
         <button type="button" class="primary-btn" (click)="submitReview()">
+          <i class="fas" [ngClass]="reviewAction === 'approve' ? 'fa-user-check' : 'fa-user-times'"></i>
           {{ reviewAction === 'approve' ? 'Approve Request' : 'Reject Request' }}
         </button>
       </div>
@@ -32,21 +65,33 @@
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-label">Total Requests</span>
-      <strong class="stat-value">{{ applications.length }}</strong>
+    <div class="stat-card tone-total">
+      <div class="stat-icon total-requests-icon"><i class="fas fa-inbox"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Requests</span>
+        <strong class="stat-value">{{ applications.length }}</strong>
+      </div>
     </div>
-    <div class="stat-card pending">
-      <span class="stat-label">Pending</span>
-      <strong class="stat-value">{{ pendingCount }}</strong>
+    <div class="stat-card pending tone-pending">
+      <div class="stat-icon pending-requests-icon"><i class="fas fa-hourglass-half"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Pending</span>
+        <strong class="stat-value">{{ pendingCount }}</strong>
+      </div>
     </div>
-    <div class="stat-card active">
-      <span class="stat-label">Approved</span>
-      <strong class="stat-value">{{ approvedCount }}</strong>
+    <div class="stat-card active tone-approved">
+      <div class="stat-icon approved-requests-icon"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedCount }}</strong>
+      </div>
     </div>
-    <div class="stat-card rejected">
-      <span class="stat-label">Rejected</span>
-      <strong class="stat-value">{{ rejectedCount }}</strong>
+    <div class="stat-card rejected tone-rejected">
+      <div class="stat-icon rejected-requests-icon"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedCount }}</strong>
+      </div>
     </div>
   </div>
 

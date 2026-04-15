@@ -1343,6 +1343,7 @@
       cursor: pointer;
       transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
       outline: none;
+      text-decoration: none;
 
       &:hover,
       &:focus-visible {
@@ -1384,17 +1385,22 @@
         display: flex;
         flex-direction: column;
         gap: 3px;
+        text-decoration: none;
 
         strong {
           color: #224957;
           font-size: 0.9rem;
           line-height: 1.2;
+          text-decoration: none;
+          border-bottom: none;
         }
 
         small {
           color: #6b7b86;
           font-size: 0.75rem;
           line-height: 1.3;
+          text-decoration: none;
+          border-bottom: none;
         }
       }
     }

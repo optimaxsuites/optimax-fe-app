@@ -3,61 +3,149 @@
 // ==========================================
 @use '../loan-status-badges' as loanStatus;
 
-// ==========================================
-// Membership confirmation modal styles
-// ==========================================
-.membership-confirm-modal {
-    &.professional {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px 0 rgba(46,178,112,0.10), 0 2px 8px 0 rgba(46,98,118,0.08);
-      padding: 40px 32px 32px 32px;
-      min-width: 320px;
-      max-width: 400px;
-      margin: 0 auto;
-      .icon-success.professional {
-        margin-bottom: 18px;
-        svg {
-          display: block;
-          margin: 0 auto;
-        }
-      }
-      h2 {
-        color: #1a3d2b;
-        margin: 18px 0 10px 0;
-        font-size: 1.5rem;
-        font-weight: 800;
-        letter-spacing: 0.2px;
-      }
-      .success-message {
-        color: #2E6276;
-        font-size: 1.08rem;
-        margin-bottom: 28px;
-        line-height: 1.5;
-      }
-      .btn-primary {
-        min-width: 140px;
-        padding: 13px 0;
-        font-size: 1.13rem;
-        font-weight: 700;
-        border-radius: 8px;
-        background: linear-gradient(90deg, #2EB270 0%, #24995e 100%);
-        color: #fff;
-        border: none;
-        box-shadow: 0 2px 8px 0 rgba(46,178,112,0.08);
-        transition: background 0.2s, box-shadow 0.2s;
-        &:hover, &:focus {
-          background: linear-gradient(90deg, #24995e 0%, #2EB270 100%);
-          box-shadow: 0 4px 16px 0 rgba(46,178,112,0.13);
-        }
-      }
-    }
+.confirmation-modal {
+  background:
+    radial-gradient(circle at top right, rgba(214, 168, 63, 0.16), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7fcfd 100%);
+  border: 1px solid #d9e8eb;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(30, 64, 78, 0.14);
+  padding: 28px;
+  width: min(100%, 560px);
+  display: grid;
+  gap: 18px;
 
-  @keyframes popIn {
-    0% { transform: scale(0.7); opacity: 0; }
-    80% { transform: scale(1.08); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
+  &.confirmation-modal-membership {
+    border-top: 6px solid #2eb270;
   }
+
+  &.confirmation-modal-join {
+    border-top: 6px solid #2e6276;
+  }
+}
+
+.confirmation-hero {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.confirmation-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+
+  &.success {
+    background: linear-gradient(135deg, #2e6276, #3e88a9);
+  }
+
+  &.welcome {
+    background: linear-gradient(135deg, #2eb270, #24995e);
+  }
+}
+
+.confirmation-kicker {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #7a6a3a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.confirmation-modal h2 {
+  margin: 0 0 8px;
+  color: #17303b;
+  font-size: 1.7rem;
+  line-height: 1.05;
+}
+
+.confirmation-copy {
+  margin: 0;
+  color: #51656f;
+  line-height: 1.6;
+}
+
+.confirmation-message-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #dbe7eb;
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.88);
+
+  .message-label {
+    color: #718087;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: #18323c;
+    line-height: 1.5;
+  }
+}
+
+.confirmation-checklist {
+  display: grid;
+  gap: 10px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #35505c;
+    font-weight: 600;
+  }
+
+  i {
+    color: #2eb270;
+  }
+
+  &.emphasis span {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #edf8f1;
+  }
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.confirmation-actions .btn-primary,
+.confirmation-actions .btn-secondary {
+  min-width: 156px;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+}
+
+.confirmation-actions .btn-primary {
+  background: linear-gradient(135deg, #2eb270, #24995e);
+  color: #fff;
+  box-shadow: 0 14px 24px rgba(46, 178, 112, 0.22);
+}
+
+.confirmation-actions .btn-secondary {
+  background: #edf5f7;
+  color: #2e6276;
+  border: 1px solid #d9e5e8;
 }
 
 .member-dashboard-container {
@@ -422,6 +510,10 @@
         gap: 10px;
       }
 
+      .activity-list {
+        gap: 12px;
+      }
+
       .update-item {
         border: 1px solid #e3eef0;
         border-radius: 10px;
@@ -463,6 +555,79 @@
             }
           }
         }
+      }
+
+      .activity-item {
+        width: 100%;
+        border: 1px solid #dce9ec;
+        background: #f8feff;
+        border-radius: 14px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 10px;
+        text-align: left;
+        cursor: default;
+
+        &.has-link {
+          cursor: pointer;
+
+          &:hover {
+            background: #eef7fa;
+            border-color: #b6d6e2;
+          }
+        }
+      }
+
+      .activity-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #2E6276;
+        color: #fff;
+      }
+
+      .activity-body {
+        min-width: 0;
+
+        p {
+          margin: 6px 0;
+          color: #495057;
+          line-height: 1.45;
+          font-size: 0.85rem;
+        }
+
+        > span {
+          color: #7b8f99;
+          font-size: 0.82rem;
+        }
+      }
+
+      .activity-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+
+        strong {
+          color: #203945;
+          font-size: 0.96rem;
+        }
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
       }
     }
   }
@@ -825,6 +990,42 @@
     .detail-list {
       display: grid;
       gap: 10px;
+    }
+
+    .document-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .document-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #e3edf1;
+      border-radius: 12px;
+      background: #f8fbfc;
+
+      strong,
+      span,
+      small {
+        display: block;
+      }
+
+      strong {
+        color: #203945;
+        margin-bottom: 4px;
+      }
+
+      span,
+      small {
+        color: #6b818d;
+        font-size: 0.82rem;
+      }
+
+      small {
+        text-align: right;
+      }
     }
 
     .detail-row {
@@ -1383,6 +1584,93 @@
             font-size: 0.9rem;
           }
         }
+      }
+    }
+
+    .activity-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e3eef0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+      .activity-feed {
+        display: grid;
+        gap: 12px;
+      }
+
+      .activity-item {
+        width: 100%;
+        border: 1px solid #dce9ec;
+        background: #f8feff;
+        border-radius: 14px;
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 12px;
+        text-align: left;
+        cursor: default;
+
+        &.has-link {
+          cursor: pointer;
+
+          &:hover {
+            background: #eef7fa;
+            border-color: #b6d6e2;
+          }
+        }
+      }
+
+      .activity-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #2E6276;
+        color: #fff;
+      }
+
+      .activity-body {
+        min-width: 0;
+
+        p {
+          margin: 6px 0;
+          color: #495057;
+          line-height: 1.45;
+        }
+
+        > span {
+          color: #7b8f99;
+          font-size: 0.82rem;
+        }
+      }
+
+      .activity-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+
+        strong {
+          color: #203945;
+          font-size: 0.96rem;
+        }
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+
+        @include loanStatus.advanceLoanStatusBadges();
       }
     }
   }

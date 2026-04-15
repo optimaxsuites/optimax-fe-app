@@ -17,9 +17,13 @@
       <td>{{ application.employeeId }}</td>
       <td>{{ application.requestedTier }}</td>
       <td>{{ application.requestDate | date:'medium' }}</td>
-      <td>
-        <button class="approve-btn" (click)="approveApplication(application.id)">Approve</button>
-        <button class="reject-btn" (click)="rejectApplication(application.id)">Reject</button>
+      <td class="actions-col">
+        <button class="approve-btn" (click)="approveApplication(application.id)" title="Approve application" aria-label="Approve application">
+          <i class="fas fa-check"></i>
+        </button>
+        <button class="reject-btn" (click)="rejectApplication(application.id)" title="Reject application" aria-label="Reject application">
+          <i class="fas fa-times"></i>
+        </button>
       </td>
     </ng-template>
   </app-table>

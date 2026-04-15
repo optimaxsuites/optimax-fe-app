@@ -12,15 +12,12 @@
   </div>
 
   <div *ngIf="!isLoading" class="content-shell">
-    <header class="page-header">
+    <header class="page-header lm-header-card">
       <div class="header-left">
-        <button class="back-button" type="button" (click)="goBack()">
-          <i class="fas fa-arrow-left"></i>
-          <span>Back</span>
-        </button>
+        <app-back-button (click)="goBack()"></app-back-button>
         <div>
           <p class="eyebrow">Two-stage disbursement workflow</p>
-          <h1>Cooperative Loan Disbursement Queue</h1>
+          <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Cooperative Loan Disbursement Queue</h1>
         </div>
       </div>
       <div class="header-stats">
@@ -115,7 +112,6 @@
         <div class="detail-grid secondary-grid">
           <div class="detail-card"><span>Accounting Email</span><input type="email" [(ngModel)]="accountingEmail" placeholder="Accounting email"></div>
           <div class="detail-card"><span>Instruction Reference</span><input type="text" [(ngModel)]="disbursementInstructionReference" placeholder="Instruction reference"></div>
-          <div class="detail-card"><span>Disbursement Reference</span><input type="text" [(ngModel)]="disbursementReference" placeholder="Disbursement reference"></div>
           <div class="detail-card"><span>Payment Method</span>
             <select [(ngModel)]="paymentMethod">
               <option value="BANK_TRANSFER">Bank Transfer</option>
@@ -124,9 +120,14 @@
               <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
             </select>
           </div>
-          <div class="detail-card"><span>Funding Bank</span><strong>{{ selectedGroup?.principalBankName || 'N/A' }}</strong></div>
-          <div class="detail-card"><span>Funding Account</span><strong>{{ selectedGroup?.principalCollectionAccount || 'N/A' }}</strong></div>
-          <div class="detail-card"><span>Accounting Webhook</span><strong>{{ selectedGroup?.accountingWebhookUrl || 'Not configured' }}</strong></div>
+          <div class="detail-card"><span>Funding Bank</span><strong>{{ loan.principalBankName || selectedGroup?.principalBankName || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Funding Account</span><strong>{{ loan.principalCollectionAccount || selectedGroup?.principalCollectionAccount || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Interest Collection Bank</span><strong>{{ loan.interestBankName || selectedGroup?.interestBankName || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Interest Collection Account</span><strong>{{ loan.interestCollectionAccount || selectedGroup?.interestCollectionAccount || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Late Fee Bank</span><strong>{{ loan.lateFeeBankName || selectedGroup?.lateFeeBankName || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Late Fee Account</span><strong>{{ loan.lateFeeCollectionAccount || selectedGroup?.lateFeeCollectionAccount || 'N/A' }}</strong></div>
+          <div class="detail-card"><span>Late Fee Policy</span><strong>{{ loan.lateFeePercentage || selectedGroup?.lateFeePercentage || 0 }}% after {{ loan.lateFeeGraceDays || selectedGroup?.lateFeeGraceDays || 0 }} day(s)</strong></div>
+          <div class="detail-card"><span>Accounting Webhook</span><strong>{{ loan.accountingWebhookUrl || selectedGroup?.accountingWebhookUrl || 'Not configured' }}</strong></div>
           <div class="detail-card"><span>Borrower Bank</span><strong>{{ selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A' }}</strong></div>
           <div class="detail-card"><span>Borrower Account</span><strong>{{ selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A' }}</strong></div>
           <div class="detail-card"><span>Sent To Accounting</span><strong>{{ disbursementInitiatedAt ? (disbursementInitiatedAt | date:'medium') : 'Not yet sent' }}</strong></div>

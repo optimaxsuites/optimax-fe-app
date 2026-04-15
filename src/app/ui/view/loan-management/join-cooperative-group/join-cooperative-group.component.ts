@@ -28,6 +28,50 @@ export class JoinCooperativeGroupComponent {
     return this.eligibleGroupIds.includes(groupId);
   }
 
+  getBorrowCapPercentage(group: CooperativeLoanGroup): number {
+    return Number(group.withdrawCap || group.maxBorrowingPercentage || 0);
+  }
+
+  getBorrowCapSummary(group: CooperativeLoanGroup): string {
+    return `${this.getBorrowCapPercentage(group)}% of total group contributions`;
+  }
+
+  getLateFeeSummary(group: CooperativeLoanGroup): string {
+    const percentage = Number(group.lateFeePercentage || 0);
+    const graceDays = Number(group.lateFeeGraceDays || 0);
+    return `${percentage}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getMemberLimitSummary(group: CooperativeLoanGroup): string {
+    const memberLimit = Number(group.memberLimit || 0);
+    return memberLimit > 0 ? `${memberLimit} members max` : 'No member cap';
+  }
+
+  getGuarantorSummary(group: CooperativeLoanGroup): string {
+    if (!group.requiresGuarantors) {
+      return 'No guarantor requirement';
+    }
+
+    const minimumGuarantors = Number(group.minimumGuarantors || 0);
+    return `${minimumGuarantors || 1} guarantor${minimumGuarantors === 1 ? '' : 's'} required`;
+  }
+
+  getAccountingSummary(group: CooperativeLoanGroup): string {
+    const hasAccountingEmail = String(group.accountingEmail || '').trim().length > 0;
+    const hasContributionRail = String(group.contributionsBankName || '').trim().length > 0
+      && String(group.contributionsAccount || '').trim().length > 0;
+
+    if (hasAccountingEmail && hasContributionRail) {
+      return 'Accounting and collection rail configured';
+    }
+
+    if (hasAccountingEmail) {
+      return 'Accounting contact configured';
+    }
+
+    return 'Accounting details will be shared after approval';
+  }
+
   onApply(groupId: string) {
     if (this.loadingGroupId) return;
     this.loadingGroupId = groupId;

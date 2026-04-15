@@ -24,10 +24,10 @@ import type {
   CooperativeLoanGuarantorApiPayload
 } from './cooperative-loan-api.service';
 import type { CooperativeNotificationContext } from './cooperative-notification.service';
-import type { CooperativeRepaymentContext } from './cooperative-repayment.service';
+import type { CooperativeRecordedRepayment, CooperativeRepaymentContext } from './cooperative-repayment.service';
 
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, of, Subject, throwError } from 'rxjs';
 import { map, catchError, switchMap, finalize, shareReplay } from 'rxjs/operators';
 import {
   CooperativeMember,
@@ -52,7 +52,7 @@ import {
   CreateCooperativeDisbursementPayload,
   CooperativeDisbursementConfirmation
 } from './cooperative-disbursement-confirmation.service';
-import { CooperativeGroupService, CooperativeGroupContext } from './cooperative-group.service';
+import { CooperativeGroupService, CooperativeGroupContext, CooperativeGroupApiPayload } from './cooperative-group.service';
 import { CooperativePaymentRecordService } from './cooperative-payment-record.service';
 import { CooperativeRepaymentService } from './cooperative-repayment.service';
 import { LoanStatusNotificationService } from '../loan-status-notification.service';
@@ -62,6 +62,7 @@ import { LoanSupportingDocument } from '../loan.types';
 @Injectable({ providedIn: 'root' })
 export class CooperativeService {
   private readonly collectionCacheTtlMs = 30_000;
+  private readonly persistedGroupOverridesStorageKey = 'cooperative-group-field-overrides';
 
   private saveToStorage(): void {
     // Cooperative state is intentionally not persisted locally.
@@ -106,6 +107,7 @@ export class CooperativeService {
   private statsSnapshot?: CooperativeStats;
   private memberApiRecords: Record<string, CooperativeLoanApiMemberRef> = {};
   private groupApiRecords: Record<string, CooperativeGroupApiResponse> = {};
+  private persistedGroupOverrides: Record<string, Partial<CooperativeLoanGroup>> = this.loadPersistedGroupOverrides();
   private groupMembershipApiRecords: Record<string, CooperativeGroupMembershipApiResponse> = {};
   private contributionApiRecords: Record<string, CooperativeContributionHistoryApiResponse> = {};
   private memberNameLookupInFlight = new Set<number>();
@@ -632,7 +634,7 @@ export class CooperativeService {
 
     console.log('[CooperativeService] Loading groups from backend');
     this.groupsRequest$ = this.cooperativeGroupService.getAllCooperativeGroups().pipe(
-      map((rawGroups) => {
+      switchMap((rawGroups) => {
         console.log('[CooperativeService] Raw groups from API:', rawGroups);
         if (rawGroups && (rawGroups as any).error) {
           console.error('[CooperativeService] API returned error for groups:', (rawGroups as any).error);
@@ -642,16 +644,59 @@ export class CooperativeService {
         if (!rawGroups || rawGroups.length === 0) {
           console.warn('[CooperativeService] No groups found in backend.');
           this.syncGroupCache([], []);
-          return [];
+          return of([]);
         }
         this.usingRealApiData = true;
-        const groups = rawGroups.map((group) => this.mapApiGroupToGroup(group));
-        this.syncGroupCache(groups, rawGroups);
-        console.log('[CooperativeService] Processed groups:', groups);
-        return groups;
+        return this.hydrateGroupsWithDetails(rawGroups).pipe(
+          map((hydratedGroups) => {
+            const groups = hydratedGroups.map((group) => this.mapApiGroupToGroup(group));
+            this.syncGroupCache(groups, hydratedGroups);
+            console.log('[CooperativeService] Processed groups:', groups);
+            return groups;
+          })
+        );
       }),
       catchError((error) => {
         console.error('[CooperativeService] Failed to load cooperative groups:', error);
+        this.usingRealApiData = false;
+        return throwError(() => error);
+      }),
+      finalize(() => {
+        this.groupsRequest$ = undefined;
+      }),
+      shareReplay(1)
+    );
+
+    return this.groupsRequest$;
+  }
+
+  public refreshGroups(): Observable<CooperativeLoanGroup[]> {
+    console.log('[CooperativeService] Refreshing groups from backend');
+
+    this.groupsRequest$ = this.cooperativeGroupService.getAllCooperativeGroups().pipe(
+      switchMap((rawGroups) => {
+        console.log('[CooperativeService] Raw groups from API (refresh):', rawGroups);
+        if (rawGroups && (rawGroups as any).error) {
+          console.error('[CooperativeService] API returned error for groups refresh:', (rawGroups as any).error);
+          this.usingRealApiData = false;
+          throw new Error('Cooperative groups refresh returned an invalid response.');
+        }
+        if (!rawGroups || rawGroups.length === 0) {
+          console.warn('[CooperativeService] No groups found in backend during refresh.');
+          this.syncGroupCache([], []);
+          return of([]);
+        }
+        this.usingRealApiData = true;
+        return this.hydrateGroupsWithDetails(rawGroups).pipe(
+          map((hydratedGroups) => {
+            const groups = hydratedGroups.map((group) => this.mapApiGroupToGroup(group));
+            this.syncGroupCache(groups, hydratedGroups);
+            return groups;
+          })
+        );
+      }),
+      catchError((error) => {
+        console.error('[CooperativeService] Failed to refresh cooperative groups:', error);
         this.usingRealApiData = false;
         return throwError(() => error);
       }),
@@ -671,7 +716,7 @@ export class CooperativeService {
     return this.cooperativeGroupService.getCooperativeGroupById(id).pipe(
       map((rawGroup) => {
         const group = this.mapApiGroupToGroup(rawGroup);
-        this.upsertGroupInCache(group, true, rawGroup);
+        this.upsertGroupInCache(group, true, rawGroup, false);
         return group;
       }),
       catchError((error) => {
@@ -683,41 +728,13 @@ export class CooperativeService {
 
   public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<CooperativeLoanGroup> {
     console.log('[CooperativeService] Creating group via API:', group);
-    const payload = {
-      code: group.code || undefined,
-      name: group.name,
-      description: group.description || '',
-      monthlyAmount: group.monthlyContributionAmount,
-      withdrawCap: Number(group.withdrawCap || group.maxAmount || 0),
-      interestRate: group.interestRate,
-      status: 'ACTIVE',
-      memberLimit: group.memberLimit || undefined,
-      currentBalance: 0,
-      contributionHistory: [],
-      loanHistory: [],
-      patronageRate: group.patronageRate || 0,
-      patronageAmount: 0,
-      minMemberTenureMonths: Number(group.minMemberTenureMonths || 0),
-      requiresGuarantors: Boolean(group.requiresGuarantors),
-      minimumGuarantors: Number(group.minimumGuarantors || 0),
-      contributionsBankName: group.contributionsBankName,
-      contributionsAccount: group.contributionsAccount,
-      principalBankName: group.principalBankName,
-      principalCollectionAccount: group.principalCollectionAccount,
-      interestBankName: group.interestBankName,
-      interestCollectionAccount: group.interestCollectionAccount,
-      lateFeePercentage: group.lateFeePercentage,
-      lateFeeGraceDays: group.lateFeeGraceDays,
-      lateFeeBankName: group.lateFeeBankName,
-      lateFeeCollectionAccount: group.lateFeeCollectionAccount,
-      accountingEmail: group.accountingEmail,
-      accountingWebhookUrl: group.accountingWebhookUrl || undefined
-    };
+    const payload = this.buildGroupApiPayload(group);
     console.log('[CooperativeService] Sending payload:', payload);
     return this.cooperativeGroupService.createCooperativeGroup(payload).pipe(
       map((rawGroup) => {
         console.log('[CooperativeService] Group created successfully:', rawGroup);
-        const newGroup = this.mapApiGroupToGroup(rawGroup);
+        const newGroup = this.mergeGroupLocalFields(this.mapApiGroupToGroup(rawGroup), group);
+        this.persistGroupOverride(newGroup);
         this.upsertGroupInCache(newGroup, true, rawGroup);
         this.publishState();
         return newGroup;
@@ -731,41 +748,12 @@ export class CooperativeService {
 
   public updateGroup(group: CooperativeLoanGroup): Observable<CooperativeLoanGroup> {
     console.log('[CooperativeService] Updating group via API:', group);
-    const payload = {
-      id: group.id,
-      code: group.code || undefined,
-      name: group.name,
-      description: group.description || '',
-      monthlyAmount: group.monthlyContributionAmount,
-      withdrawCap: Number(group.withdrawCap || group.maxAmount || 0),
-      interestRate: group.interestRate,
-      status: group.status,
-      memberLimit: group.memberLimit || undefined,
-      currentBalance: 0,
-      contributionHistory: [],
-      loanHistory: [],
-      patronageRate: group.patronageRate || 0,
-      patronageAmount: 0,
-      minMemberTenureMonths: Number(group.minMemberTenureMonths || 0),
-      requiresGuarantors: Boolean(group.requiresGuarantors),
-      minimumGuarantors: Number(group.minimumGuarantors || 0),
-      contributionsBankName: group.contributionsBankName,
-      contributionsAccount: group.contributionsAccount,
-      principalBankName: group.principalBankName,
-      principalCollectionAccount: group.principalCollectionAccount,
-      interestBankName: group.interestBankName,
-      interestCollectionAccount: group.interestCollectionAccount,
-      lateFeePercentage: group.lateFeePercentage,
-      lateFeeGraceDays: group.lateFeeGraceDays,
-      lateFeeBankName: group.lateFeeBankName,
-      lateFeeCollectionAccount: group.lateFeeCollectionAccount,
-      accountingEmail: group.accountingEmail,
-      accountingWebhookUrl: group.accountingWebhookUrl || undefined
-    };
+    const payload = this.buildGroupApiPayload(group);
     return this.cooperativeGroupService.updateCooperativeGroup(group.id, payload).pipe(
       map((rawGroup) => {
         console.log('[CooperativeService] Group updated successfully:', rawGroup);
-        const updatedGroup = this.mapApiGroupToGroup(rawGroup);
+        const updatedGroup = this.mergeGroupLocalFields(this.mapApiGroupToGroup(rawGroup), group);
+        this.persistGroupOverride(updatedGroup);
         this.upsertGroupInCache(updatedGroup, true, rawGroup);
         this.publishState();
         return updatedGroup;
@@ -939,6 +927,11 @@ export class CooperativeService {
     };
 
     return tryLoad(0);
+  }
+
+  public refreshGroupMembershipsForMember(member: CooperativeMember): Observable<CooperativeGroupMembership[]> {
+    this.groupMembershipsLoadedAt = 0;
+    return this.loadGroupMembershipsForMember(member);
   }
 
   public getGroupMemberships(): CooperativeGroupMembership[] {
@@ -1326,6 +1319,14 @@ export class CooperativeService {
       return this.loansRequest$;
     }
 
+    return this.fetchLoans();
+  }
+
+  public refreshLoans(): Observable<CooperativeLoan[]> {
+    return this.fetchLoans();
+  }
+
+  private fetchLoans(): Observable<CooperativeLoan[]> {
     this.loansRequest$ = this.cooperativeLoanApiService.getAllLoans().pipe(
       map((rawLoans) => {
         if (rawLoans && (rawLoans as any).error) {
@@ -1361,7 +1362,7 @@ export class CooperativeService {
 
   public addLoan(loan: Omit<CooperativeLoan, 'id' | 'loanId' | 'createdAt' | 'updatedAt'>): Observable<CooperativeLoan> {
     return this.cooperativeLoanApiService.createLoan(this.buildCreateLoanPayload(loan)).pipe(
-      map((rawLoan) => this.mapApiLoanToLoan(rawLoan)),
+      map((rawLoan) => this.mapApiLoanToLoan(rawLoan, loan)),
       catchError((error) => {
         console.error('Failed to create cooperative loan', error);
         throw error;
@@ -1372,7 +1373,7 @@ export class CooperativeService {
   public updateLoan(loan: CooperativeLoan): Observable<CooperativeLoan> {
     return this.cooperativeLoanApiService.updateLoan(Number(loan.id), this.buildUpdateLoanPayload(loan)).pipe(
       map((rawLoan) => {
-        const updatedLoan = this.mapApiLoanToLoan(rawLoan);
+        const updatedLoan = this.mapApiLoanToLoan(rawLoan, loan);
         this.upsertLoanInCache(updatedLoan);
         return updatedLoan;
       }),
@@ -1423,6 +1424,8 @@ export class CooperativeService {
         const previousStage = loan.applicationStage;
         loan.status = 'APPROVED';
         loan.approvedDate = new Date().toISOString();
+        loan.approvedBy = this.getCurrentAuditUserId();
+        loan.approvedAmount = loan.approvedAmount ?? loan.amount;
         (loan as any).fundsReserved = true;
         loan.updatedAt = new Date().toISOString();
         this.appendLoanStatusHistory(loan, 'APPROVED', 'Loan approved and funds reserved for disbursement.');
@@ -1433,19 +1436,23 @@ export class CooperativeService {
 
   public approveLoanWithTerms(
     id: number,
-    options: { repaymentDay?: number; repaymentStartDate?: string; adminComment?: string; interestRate?: number }
+    options: { repaymentDay?: number; repaymentStartDate?: string; adminComment?: string; interestRate?: number; lateFeePercentage?: number; lateFeeGraceDays?: number }
   ): Observable<CooperativeLoan | undefined> {
     return this.loadLoanById(id).pipe(
       switchMap((loan) => {
-        if (!loan || loan.status !== 'PENDING') {
+        if (!loan || !['PENDING', 'AWAITING_INTEREST_ACCEPTANCE'].includes(loan.status)) {
           return of(undefined);
         }
         const previousStatus = loan.status;
         const previousStage = loan.applicationStage;
         loan.status = 'APPROVED';
         loan.approvedDate = new Date().toISOString();
+        loan.approvedBy = this.getCurrentAuditUserId();
+        loan.approvedAmount = loan.approvedAmount ?? loan.amount;
         (loan as any).fundsReserved = true;
         if (options.interestRate != null)    loan.interestRate      = options.interestRate;
+        if (options.lateFeePercentage != null) loan.lateFeePercentage = options.lateFeePercentage;
+        if (options.lateFeeGraceDays != null) loan.lateFeeGraceDays = options.lateFeeGraceDays;
         if (options.repaymentDay)      loan.repaymentDay      = options.repaymentDay;
         if (options.repaymentStartDate) loan.repaymentStartDate = options.repaymentStartDate;
         if (options.adminComment)       loan.adminComment       = options.adminComment;
@@ -1850,7 +1857,18 @@ export class CooperativeService {
       .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
   }
 
-  public recordRepayment(loanId: number, payload: { amount: number; modeofPayment: CooperativeRepayment['modeofPayment']; paidDate?: string }): Observable<CooperativeRepayment | undefined> {
+  public recordRepayment(
+    loanId: number,
+    payload: {
+      amount: number;
+      modeofPayment: CooperativeRepayment['modeofPayment'];
+      paidDate?: string;
+      paymentType?: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
+      paymentReference?: string;
+      paidFromAccount?: string;
+      paidIntoAccount?: string;
+    }
+  ): Observable<CooperativeRepayment | undefined> {
     return this.loadLoanById(loanId).pipe(
       switchMap((loan) => {
         if (!loan || !['ACTIVE', 'OVERDUE', 'SKIPPED'].includes(loan.status || '')) {
@@ -1863,43 +1881,48 @@ export class CooperativeService {
         const installmentNumber = targetRepayment ? this.getRepaymentInstallmentNumber(loanId, targetRepayment.id) : 0;
         const paidAt = payload.paidDate || new Date().toISOString();
 
-        const repayment = this.cooperativeRepaymentService.recordRepayment(this.getRepaymentContext(), loanId, {
+        const repaymentResult = this.cooperativeRepaymentService.recordRepayment(this.getRepaymentContext(), loanId, {
           amount: payload.amount,
           modeofPayment: payload.modeofPayment,
-          paidDate: paidAt
+          paidDate: paidAt,
+          paymentType: payload.paymentType
         });
 
-        if (!repayment) {
+        if (!repaymentResult) {
           return of(undefined);
         }
 
         const updatedLoan = this.loans.find((item) => item.id === loanId) || loan;
-        const paymentReference = repayment.receiptNumber || `COOP-PAY-${loanId}-${Date.now()}`;
+        const paymentReference = payload.paymentReference || repaymentResult.repayment.receiptNumber || `COOP-PAY-${loanId}-${Date.now()}`;
         const memberId = Number(updatedLoan.memberId || updatedLoan.cooperativeMemberId || 0);
         const membershipId = Number(updatedLoan.membershipId || 0) || undefined;
         const groupId = Number(updatedLoan.groupId || updatedLoan.cooperativeGroupId || 0) || undefined;
-        const interestApplied = Number(targetRepayment?.interestComponent || 0);
-        const lateFeeApplied = Number(targetRepayment?.lateFeeAmount || 0);
-        const principalApplied = Math.max(Number(payload.amount || 0) - interestApplied - lateFeeApplied, 0);
+        const group = this.getGroupById(groupId || 0);
+        const paymentType = payload.paymentType
+          || (repaymentResult.lateFeeApplied > 0 && repaymentResult.principalApplied === 0 && repaymentResult.interestApplied === 0
+            ? 'LATE_FEE'
+            : 'PRINCIPAL_REPAYMENT');
+        const paidIntoAccount = payload.paidIntoAccount || this.resolveGroupPaymentAccount(group, paymentType).accountNumber;
 
         return this.cooperativePaymentRecordService.createPaymentRecord({
           loanId,
           memberId,
           membershipId,
           groupId,
-          paymentType: lateFeeApplied > 0 && principalApplied === 0 && interestApplied === 0 ? 'LATE_FEE' : 'PRINCIPAL_REPAYMENT',
+          paymentType,
           installmentNumber,
           amount: Number(payload.amount || 0),
-          principalApplied,
-          interestApplied,
-          lateFeeApplied,
-          remainingBalance: Number(updatedLoan.outstandingBalance || updatedLoan.outstandingPrincipal || 0),
+          principalApplied: repaymentResult.principalApplied,
+          interestApplied: repaymentResult.interestApplied,
+          lateFeeApplied: repaymentResult.lateFeeApplied,
+          remainingBalance: repaymentResult.remainingBalance,
           paymentMethod: payload.modeofPayment || 'BANK_TRANSFER',
           paymentReference,
-          paidIntoAccount: this.getGroupById(groupId || 0)?.principalCollectionAccount || '',
+          paidIntoAccount,
+          paidFromAccount: String(payload.paidFromAccount || '').trim() || undefined,
           paidAt,
-          notes: `Repayment recorded via ${payload.modeofPayment || 'BANK_TRANSFER'}`,
-          receiptNumber: repayment.receiptNumber
+          notes: `Repayment recorded via ${payload.modeofPayment || 'BANK_TRANSFER'} for ${paymentType.replace(/_/g, ' ').toLowerCase()}`,
+          receiptNumber: repaymentResult.repayment.receiptNumber
         }).pipe(
           switchMap((paymentRecord) => {
             updatedLoan.paymentHistory = [
@@ -1941,12 +1964,40 @@ export class CooperativeService {
             updatedLoan.updatedAt = new Date().toISOString();
 
             return this.saveLoanWorkflowUpdate(updatedLoan, previousStatus, previousStage).pipe(
-              map(() => repayment)
+              map(() => repaymentResult.repayment)
             );
           })
         );
       })
     );
+  }
+
+  private resolveGroupPaymentAccount(
+    group: CooperativeLoanGroup | undefined,
+    paymentType: 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE'
+  ): { bankName: string; accountNumber: string } {
+    if (!group) {
+      return { bankName: '', accountNumber: '' };
+    }
+
+    switch (paymentType) {
+      case 'INTEREST_REPAYMENT':
+        return {
+          bankName: String(group.interestBankName || '').trim(),
+          accountNumber: String(group.interestCollectionAccount || '').trim()
+        };
+      case 'LATE_FEE':
+        return {
+          bankName: String(group.lateFeeBankName || '').trim(),
+          accountNumber: String(group.lateFeeCollectionAccount || '').trim()
+        };
+      case 'PRINCIPAL_REPAYMENT':
+      default:
+        return {
+          bankName: String(group.principalBankName || '').trim(),
+          accountNumber: String(group.principalCollectionAccount || '').trim()
+        };
+    }
   }
 
   public applyPatronageToMemberLoan(memberId: number, amount: number): Observable<{ appliedAmount: number; loanId?: number }> {
@@ -2134,7 +2185,43 @@ export class CooperativeService {
   }
 
   private extractDateValue(value: unknown): string {
-    return typeof value === 'string' ? value : '';
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return '';
+      }
+
+      if (/^\d{4},\d{1,2},\d{1,2}(,\d{1,2}){0,4}$/.test(trimmed)) {
+        return this.formatDateArray(trimmed.split(',').map((part) => Number(part.trim())));
+      }
+
+      return trimmed;
+    }
+
+    if (Array.isArray(value)) {
+      return this.formatDateArray(value.map((part) => Number(part)));
+    }
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString();
+    }
+
+    return '';
+  }
+
+  private formatDateArray(parts: number[]): string {
+    if (parts.length < 3 || parts.some((part) => !Number.isFinite(part))) {
+      return '';
+    }
+
+    const [year, month, day, hour = 0, minute = 0, second = 0, nanos = 0] = parts;
+    const millisecond = Math.floor(nanos / 1000000);
+
+    if (parts.length <= 3) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    return new Date(year, month - 1, day, hour, minute, second, millisecond).toISOString();
   }
 
   private getPreferredMemberName(member?: Partial<CooperativeMember> | null): string {
@@ -2189,53 +2276,249 @@ export class CooperativeService {
   }
 
   private mapApiGroupToGroup(rawGroup: CooperativeGroupApiResponse): CooperativeLoanGroup {
-    console.log('[CooperativeService] mapApiGroupToGroup input:', rawGroup);
+    const existingGroup = this.groups.find((group) => Number(group.id) === Number(rawGroup.id))
+      || this.persistedGroupOverrides[String(rawGroup.id)];
+    const groupLike = rawGroup as any;
     const status = (rawGroup.status === 'INACTIVE') ? 'INACTIVE' : 'ACTIVE';
     const mappedGroup: CooperativeLoanGroup = {
       id: Number(rawGroup.id),
       code: String(rawGroup.code || ''),
       name: String(rawGroup.name || rawGroup.code || `Group ${rawGroup.id}`),
       description: String(rawGroup.description || ''),
-      minEligibleSalary: 0,
-      monthlyContributionAmount: Number(rawGroup.monthlyAmount || 0),
-      maxBorrowingPercentage: 100,
-      minAmount: 0,
-      maxAmount: Number(rawGroup.withdrawCap || 0),
+      minEligibleSalary: this.resolveGroupNumber(groupLike.minEligibleSalary, existingGroup?.minEligibleSalary, 0),
+      monthlyContributionAmount: this.resolveGroupNumber(groupLike.monthlyAmount ?? groupLike.monthlyContributionAmount, existingGroup?.monthlyContributionAmount, 0),
+      maxBorrowingPercentage: this.resolveGroupNumber(groupLike.maxBorrowingPercentage, existingGroup?.maxBorrowingPercentage, 100),
+      minAmount: this.resolveGroupNumber(groupLike.minAmount, existingGroup?.minAmount, 0),
+      maxAmount: this.resolveGroupNumber(groupLike.maxAmount, existingGroup?.maxAmount, Number(rawGroup.withdrawCap || 0)),
       interestRate: Number(rawGroup.interestRate || 0),
-      minDuration: 1,
-      maxDuration: 12,
+      minDuration: this.resolveGroupNumber(groupLike.minDuration, existingGroup?.minDuration, 1),
+      maxDuration: this.resolveGroupNumber(groupLike.maxDuration, existingGroup?.maxDuration, 12),
       minMemberTenureMonths: Number(rawGroup.minMemberTenureMonths || 0),
-      requiresShares: false,
-      requiresGuarantors: Boolean(rawGroup.requiresGuarantors),
-      minimumGuarantors: Number(rawGroup.minimumGuarantors || 0),
-      quickDisbursement: false,
-      patronageEligible: Number(rawGroup.patronageRate || 0) > 0,
+      requiresShares: this.resolveGroupBoolean(groupLike.requiresShares, existingGroup?.requiresShares, false),
+      requiresGuarantors: this.resolveGroupBoolean(existingGroup?.requiresGuarantors, rawGroup.requiresGuarantors, false),
+      minimumGuarantors: this.resolveOptionalGroupNumber(existingGroup?.minimumGuarantors, rawGroup.minimumGuarantors),
+      quickDisbursement: this.resolveGroupBoolean(groupLike.quickDisbursement, existingGroup?.quickDisbursement, false),
+      patronageEligible: this.resolveGroupBoolean(groupLike.patronageEligible, existingGroup?.patronageEligible, Number(rawGroup.patronageRate || 0) > 0),
       patronageRate: Number(rawGroup.patronageRate || 0),
       patronageAmount: Number(rawGroup.patronageAmount || 0),
-      memberLimit: Number(rawGroup.memberLimit || 0),
+      memberLimit: this.resolveOptionalGroupNumber(rawGroup.memberLimit, existingGroup?.memberLimit),
       withdrawCap: Number(rawGroup.withdrawCap || 0),
       currentBalance: Number(rawGroup.currentBalance || 0),
-      contributionsBankName: String((rawGroup as any).contributionsBankName || ''),
-      contributionsAccount: String((rawGroup as any).contributionsAccount || ''),
-      principalBankName: String((rawGroup as any).principalBankName || ''),
-      principalCollectionAccount: String((rawGroup as any).principalCollectionAccount || ''),
-      interestBankName: String((rawGroup as any).interestBankName || ''),
-      interestCollectionAccount: String((rawGroup as any).interestCollectionAccount || ''),
-      lateFeePercentage: Number((rawGroup as any).lateFeePercentage || 0),
-      lateFeeGraceDays: Number((rawGroup as any).lateFeeGraceDays || 0),
-      lateFeeBankName: String((rawGroup as any).lateFeeBankName || ''),
-      lateFeeCollectionAccount: String((rawGroup as any).lateFeeCollectionAccount || ''),
-      accountingEmail: String((rawGroup as any).accountingEmail || ''),
-      accountingWebhookUrl: String((rawGroup as any).accountingWebhookUrl || ''),
+      contributionsBankName: this.resolveGroupString(groupLike.contributionsBankName, groupLike.contributionBankName, existingGroup?.contributionsBankName),
+      contributionsAccount: this.resolveGroupString(groupLike.contributionsAccount, groupLike.contributionAccount, existingGroup?.contributionsAccount),
+      principalBankName: this.resolveGroupString(groupLike.principalBankName, existingGroup?.principalBankName),
+      principalCollectionAccount: this.resolveGroupString(groupLike.principalCollectionAccount, groupLike.principalAccount, existingGroup?.principalCollectionAccount),
+      interestBankName: this.resolveGroupString(groupLike.interestBankName, existingGroup?.interestBankName),
+      interestCollectionAccount: this.resolveGroupString(groupLike.interestCollectionAccount, groupLike.interestAccount, existingGroup?.interestCollectionAccount),
+      lateFeePercentage: this.resolveOptionalGroupNumber(groupLike.lateFeePercentage, existingGroup?.lateFeePercentage),
+      lateFeeGraceDays: this.resolveOptionalGroupNumber(groupLike.lateFeeGraceDays ?? groupLike.lateFeeGracePeriodDays, existingGroup?.lateFeeGraceDays),
+      lateFeeBankName: this.resolveGroupString(groupLike.lateFeeBankName, existingGroup?.lateFeeBankName),
+      lateFeeCollectionAccount: this.resolveGroupString(groupLike.lateFeeCollectionAccount, groupLike.lateFeeAccount, existingGroup?.lateFeeCollectionAccount),
+      accountingEmail: this.resolveGroupString(groupLike.accountingEmail, groupLike.accountEmail, existingGroup?.accountingEmail),
+      accountingWebhookUrl: this.resolveGroupString(groupLike.accountingWebhookUrl, groupLike.webhookUrl, existingGroup?.accountingWebhookUrl),
       status: status
     };
-    console.log('[CooperativeService] mapApiGroupToGroup output:', mappedGroup);
     return mappedGroup;
   }
 
-  private mapApiLoanToLoan(rawLoan: CooperativeLoanApiResponse): CooperativeLoan {
-    const memberId = this.extractNumericId(rawLoan.cooperativeMemberId);
-    const groupId = this.extractNumericId(rawLoan.cooperativeGroupId);
+  private buildGroupApiPayload(
+    group: Omit<CooperativeLoanGroup, 'id'> | CooperativeLoanGroup
+  ): CooperativeGroupApiPayload {
+    const groupId = 'id' in group ? Number(group.id || 0) : 0;
+    const memberIds = [...new Set(
+      this.groupMemberships
+        .filter((membership) => Number(membership.groupId || 0) === groupId)
+        .map((membership) => Number(membership.memberId || 0))
+        .filter((memberId) => Number.isFinite(memberId) && memberId > 0)
+    )];
+    const contributionHistory = this.contributionEntries
+      .filter((entry) => Number(entry.groupId || 0) === groupId)
+      .map((entry) => ({
+        id: Number(entry.id || 0) || undefined,
+        memberId: Number(entry.memberId || 0) || undefined,
+        amount: Number(entry.amount || 0),
+        date: String(entry.contributedAt || '')
+      }));
+
+    return {
+      id: groupId || 0,
+      groupId: groupId || 0,
+      code: group.code || undefined,
+      name: group.name,
+      minEligibleSalary: Number(group.minEligibleSalary || 0),
+      monthlyAmount: Number(group.monthlyContributionAmount || 0),
+      maxBorrowingPercentage: Number(group.maxBorrowingPercentage || 0),
+      minAmount: Number(group.minAmount || 0),
+      maxAmount: Number(group.maxAmount || group.withdrawCap || 0),
+      minDuration: Number(group.minDuration || 0),
+      maxDuration: Number(group.maxDuration || 0),
+      memberIds,
+      memberLimit: group.memberLimit ?? 0,
+      withdrawCap: Number(group.withdrawCap || group.maxAmount || 0),
+      interestRate: Number(group.interestRate || 0),
+      currentBalance: Number(group.currentBalance || 0),
+      contributionHistory,
+      loanHistory: [],
+      status: group.status || 'ACTIVE',
+      description: group.description || '',
+      patronageRate: Number(group.patronageRate || 0),
+      patronageAmount: Number(group.patronageAmount || 0),
+      requiresGuarantors: Boolean(group.requiresGuarantors),
+      minimumGuarantors: Number(group.minimumGuarantors || 0),
+      minMemberTenureMonths: Number(group.minMemberTenureMonths || 0),
+      contributionsBankName: String(group.contributionsBankName || '').trim(),
+      contributionsAccount: String(group.contributionsAccount || '').trim(),
+      principalBankName: String(group.principalBankName || '').trim(),
+      principalCollectionAccount: String(group.principalCollectionAccount || '').trim(),
+      interestBankName: String(group.interestBankName || '').trim(),
+      interestCollectionAccount: String(group.interestCollectionAccount || '').trim(),
+      lateFeePercentage: Number(group.lateFeePercentage || 0),
+      lateFeeGraceDays: Number(group.lateFeeGraceDays || 0),
+      lateFeeBankName: String(group.lateFeeBankName || '').trim(),
+      lateFeeCollectionAccount: String(group.lateFeeCollectionAccount || '').trim(),
+      accountingEmail: String(group.accountingEmail || '').trim() || undefined,
+      accountingWebhookUrl: String(group.accountingWebhookUrl || '').trim() || undefined
+    };
+  }
+
+  private mergeGroupLocalFields(group: CooperativeLoanGroup, existingGroup?: Partial<CooperativeLoanGroup>): CooperativeLoanGroup {
+    return {
+      ...group,
+      code: group.code || existingGroup?.code || '',
+      description: group.description || existingGroup?.description || '',
+      minEligibleSalary: this.resolveGroupNumber(group.minEligibleSalary, existingGroup?.minEligibleSalary, 0),
+      maxBorrowingPercentage: this.resolveGroupNumber(group.maxBorrowingPercentage, existingGroup?.maxBorrowingPercentage, 100),
+      minAmount: this.resolveGroupNumber(group.minAmount, existingGroup?.minAmount, 0),
+      maxAmount: this.resolveGroupNumber(group.maxAmount, existingGroup?.maxAmount, group.withdrawCap || 0),
+      minDuration: this.resolveGroupNumber(group.minDuration, existingGroup?.minDuration, 1),
+      maxDuration: this.resolveGroupNumber(group.maxDuration, existingGroup?.maxDuration, 12),
+      requiresShares: this.resolveGroupBoolean(group.requiresShares, existingGroup?.requiresShares, false),
+      requiresGuarantors: this.resolveGroupBoolean(group.requiresGuarantors, existingGroup?.requiresGuarantors, false),
+      minimumGuarantors: this.resolveOptionalGroupNumber(group.minimumGuarantors, existingGroup?.minimumGuarantors),
+      quickDisbursement: this.resolveGroupBoolean(group.quickDisbursement, existingGroup?.quickDisbursement, false),
+      patronageEligible: this.resolveGroupBoolean(group.patronageEligible, existingGroup?.patronageEligible, Number(group.patronageRate || 0) > 0),
+      patronageRate: this.resolveGroupNumber(group.patronageRate, existingGroup?.patronageRate, 0),
+      patronageAmount: this.resolveOptionalGroupNumber(group.patronageAmount, existingGroup?.patronageAmount),
+      memberLimit: this.resolveOptionalGroupNumber(group.memberLimit, existingGroup?.memberLimit),
+      contributionsBankName: this.resolveGroupString(group.contributionsBankName, existingGroup?.contributionsBankName),
+      contributionsAccount: this.resolveGroupString(group.contributionsAccount, existingGroup?.contributionsAccount),
+      principalBankName: this.resolveGroupString(group.principalBankName, existingGroup?.principalBankName),
+      principalCollectionAccount: this.resolveGroupString(group.principalCollectionAccount, existingGroup?.principalCollectionAccount),
+      interestBankName: this.resolveGroupString(group.interestBankName, existingGroup?.interestBankName),
+      interestCollectionAccount: this.resolveGroupString(group.interestCollectionAccount, existingGroup?.interestCollectionAccount),
+      lateFeePercentage: this.resolveOptionalGroupNumber(group.lateFeePercentage, existingGroup?.lateFeePercentage),
+      lateFeeGraceDays: this.resolveOptionalGroupNumber(group.lateFeeGraceDays, existingGroup?.lateFeeGraceDays),
+      lateFeeBankName: this.resolveGroupString(group.lateFeeBankName, existingGroup?.lateFeeBankName),
+      lateFeeCollectionAccount: this.resolveGroupString(group.lateFeeCollectionAccount, existingGroup?.lateFeeCollectionAccount),
+      accountingEmail: this.resolveGroupString(group.accountingEmail, existingGroup?.accountingEmail),
+      accountingWebhookUrl: this.resolveGroupString(group.accountingWebhookUrl, existingGroup?.accountingWebhookUrl)
+    };
+  }
+
+  private resolveGroupNumber(value: unknown, fallback: unknown, defaultValue = 0): number {
+    const candidates = [value, fallback, defaultValue];
+    for (const candidate of candidates) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return defaultValue;
+  }
+
+  private resolveOptionalGroupNumber(value: unknown, fallback?: unknown): number | undefined {
+    for (const candidate of [value, fallback]) {
+      if (candidate === null || candidate === undefined || candidate === '') {
+        continue;
+      }
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return undefined;
+  }
+
+  private resolveGroupBoolean(value: unknown, fallback: unknown, defaultValue = false): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') {
+        return true;
+      }
+      if (normalized === 'false') {
+        return false;
+      }
+    }
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+    if (typeof fallback === 'boolean') {
+      return fallback;
+    }
+    if (typeof fallback === 'string') {
+      const normalized = fallback.trim().toLowerCase();
+      if (normalized === 'true') {
+        return true;
+      }
+      if (normalized === 'false') {
+        return false;
+      }
+    }
+    if (typeof fallback === 'number') {
+      return fallback !== 0;
+    }
+    return defaultValue;
+  }
+
+  private resolveGroupString(...values: unknown[]): string {
+    for (const value of values) {
+      const normalizedValue = String(value || '').trim();
+      if (normalizedValue) {
+        return normalizedValue;
+      }
+    }
+    return '';
+  }
+
+  private loadPersistedGroupOverrides(): Record<string, Partial<CooperativeLoanGroup>> {
+    try {
+      const rawValue = localStorage.getItem(this.persistedGroupOverridesStorageKey)
+        || sessionStorage.getItem(this.persistedGroupOverridesStorageKey)
+        || '';
+      const parsed = rawValue ? JSON.parse(rawValue) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private persistGroupOverride(group: Partial<CooperativeLoanGroup> & { id: number }): void {
+    const groupId = String(group.id || '').trim();
+    if (!groupId) {
+      return;
+    }
+
+    this.persistedGroupOverrides[groupId] = {
+      ...this.persistedGroupOverrides[groupId],
+      ...group
+    };
+
+    try {
+      const serialized = JSON.stringify(this.persistedGroupOverrides);
+      localStorage.setItem(this.persistedGroupOverridesStorageKey, serialized);
+      sessionStorage.setItem(this.persistedGroupOverridesStorageKey, serialized);
+    } catch {
+      // Ignore storage write failures; cache merging still works for the current session.
+    }
+  }
+
+  private mapApiLoanToLoan(rawLoan: CooperativeLoanApiResponse, sourceLoan?: Partial<CooperativeLoan>): CooperativeLoan {
+    const mappedLoanId = this.resolveLoanNumber(rawLoan.id, sourceLoan?.id);
+    const memberId = this.resolveLoanNumber(this.extractNumericId(rawLoan.cooperativeMemberId), sourceLoan?.cooperativeMemberId, sourceLoan?.memberId);
+    const groupId = this.resolveLoanNumber(this.extractNumericId(rawLoan.cooperativeGroupId), sourceLoan?.cooperativeGroupId, sourceLoan?.groupId);
     const guarantors = Array.isArray(rawLoan.guarantors)
       ? rawLoan.guarantors
       : rawLoan.guarantors
@@ -2245,41 +2528,48 @@ export class CooperativeService {
     const statusHistory = Array.isArray(rawLoan.statusHistory) ? rawLoan.statusHistory : [];
     const supportingDocuments = Array.isArray(rawLoan.supportingDocuments) ? rawLoan.supportingDocuments : [];
 
-    return {
-      id: Number(rawLoan.id),
-      loanCode: String(rawLoan.loanCode || `COPLO-${rawLoan.id}`),
-      cooperativeMemberId: memberId,
-      cooperativeGroupId: groupId,
-      membershipId: Number(rawLoan.membershipId || 0) || undefined,
+    const existingLoan = this.loans.find((item) => String(item.id) === String(mappedLoanId || rawLoan.id));
+
+    return this.mergeLoanFinancialSnapshot({
+      id: mappedLoanId || 0,
+      loanCode: this.resolveLoanString(rawLoan.loanCode, sourceLoan?.loanCode, existingLoan?.loanCode, `COPLO-${mappedLoanId || rawLoan.id || ''}`),
+      cooperativeMemberId: memberId || 0,
+      cooperativeGroupId: groupId || 0,
+      membershipId: Number(
+        rawLoan.membershipId ??
+        sourceLoan?.membershipId ??
+        existingLoan?.membershipId ??
+        0
+      ) || undefined,
       amount: Number(rawLoan.amount || 0),
       purpose: String(rawLoan.purpose || ''),
-      approvedAmount: Number(rawLoan.approvedAmount || 0) || undefined,
+      approvedAmount: this.resolveLoanNumber(rawLoan.approvedAmount, sourceLoan?.approvedAmount, existingLoan?.approvedAmount),
       repaymentAmount: Number(rawLoan.repaymentAmount || 0),
       repaymentTime: Number(rawLoan.repaymentTime || 0),
-      repaymentStartDate: this.extractDateValue(rawLoan.repaymentStartDate) || undefined,
-      repaymentDay: Number(rawLoan.repaymentDay || 0) || undefined,
+      repaymentStartDate: this.resolveLoanDate(rawLoan.repaymentStartDate, sourceLoan?.repaymentStartDate, existingLoan?.repaymentStartDate),
+      repaymentDay: this.resolveLoanNumber(rawLoan.repaymentDay, sourceLoan?.repaymentDay, existingLoan?.repaymentDay),
       modeOfPayment: String(rawLoan.modeOfPayment || 'MONTHLY'),
-      requestDate: rawLoan.requestDate || '',
-      approvedDate: rawLoan.approvedDate || '',
-      approvedBy: rawLoan.approvedBy,
-      disbursedDate: rawLoan.disbursedDate || '',
-      disbursementInitiatedAt: this.extractDateValue(rawLoan.disbursementInitiatedAt) || undefined,
-      disbursementInitiatedBy: rawLoan.disbursementInitiatedBy,
+      requestDate: this.extractDateValue(rawLoan.requestDate) || '',
+      approvedDate: this.resolveLoanDate(rawLoan.approvedDate, sourceLoan?.approvedDate, existingLoan?.approvedDate) || '',
+      approvedBy: rawLoan.approvedBy ?? sourceLoan?.approvedBy ?? existingLoan?.approvedBy,
+      disbursedDate: this.resolveLoanDate(rawLoan.disbursedDate, sourceLoan?.disbursedDate, existingLoan?.disbursedDate) || '',
+      disbursementInitiatedAt: this.resolveLoanDate(rawLoan.disbursementInitiatedAt, sourceLoan?.disbursementInitiatedAt, existingLoan?.disbursementInitiatedAt),
+      disbursementInitiatedBy: rawLoan.disbursementInitiatedBy ?? sourceLoan?.disbursementInitiatedBy ?? existingLoan?.disbursementInitiatedBy,
       disbursementInstructionLoanReference: String(rawLoan.disbursementInstructionLoanReference || ''),
-      disbursementConfirmedAt: this.extractDateValue(rawLoan.disbursementConfirmedAt) || undefined,
+      disbursementConfirmedAt: this.resolveLoanDate(rawLoan.disbursementConfirmedAt, sourceLoan?.disbursementConfirmedAt, existingLoan?.disbursementConfirmedAt),
       disbursementConfirmedBy: rawLoan.disbursementConfirmedBy,
       disbursementReference: String(rawLoan.disbursementReference || ''),
-      disbursedAmount: Number(rawLoan.disbursedAmount || 0) || undefined,
-      completedDate: rawLoan.completedDate || '',
-      rejectedDate: rawLoan.rejectedDate || '',
-      rejectedBy: rawLoan.rejectedBy,
-      status: String(rawLoan.status || 'PENDING'),
-      adminComment: String(rawLoan.adminComment || ''),
-      applicationStage: rawLoan.applicationStage || 'PENDING_GUARANTOR_APPROVAL',
+      disbursedAmount: this.resolveLoanNumber(rawLoan.disbursedAmount, sourceLoan?.disbursedAmount, existingLoan?.disbursedAmount),
+      completedDate: this.resolveLoanDate(rawLoan.completedDate, sourceLoan?.completedDate, existingLoan?.completedDate) || '',
+      rejectedDate: this.resolveLoanDate(rawLoan.rejectedDate, sourceLoan?.rejectedDate, existingLoan?.rejectedDate) || '',
+      rejectedBy: rawLoan.rejectedBy ?? sourceLoan?.rejectedBy ?? existingLoan?.rejectedBy,
+      status: this.resolveLoanString(rawLoan.status, sourceLoan?.status, existingLoan?.status, 'PENDING'),
+      adminComment: this.resolveLoanString(rawLoan.adminComment, sourceLoan?.adminComment, existingLoan?.adminComment),
+      applicationStage: this.resolveLoanString(rawLoan.applicationStage, sourceLoan?.applicationStage, existingLoan?.applicationStage, 'PENDING_GUARANTOR_APPROVAL'),
       guarantorsId: Number(rawLoan.guarantorsId || 0) || undefined,
       guarantors: guarantors.map((guarantor: any) => ({
         id: Number(guarantor.id || 0) || undefined,
-        loanId: Number(guarantor.loanId || rawLoan.id || 0) || undefined,
+        loanId: Number(guarantor.loanId || mappedLoanId || rawLoan.id || 0) || undefined,
         guarantorMemberId: Number(guarantor.guarantorMemberId || guarantor.memberId || 0) || undefined,
         memberId: Number(guarantor.guarantorMemberId || guarantor.memberId || 0),
         guaranteedAmount: Number(guarantor.guaranteedAmount || 0),
@@ -2293,6 +2583,8 @@ export class CooperativeService {
       guarantorApproval: Boolean(rawLoan.guarantorApproval),
       guarantorApprovalStatus: String(rawLoan.guarantorApprovalStatus || ''),
       interestRate: Number(rawLoan.interestRate || 0) || undefined,
+      lateFeePercentage: Number(rawLoan.lateFeePercentage || 0) || undefined,
+      lateFeeGraceDays: Number(rawLoan.lateFeeGraceDays || 0) || undefined,
       totalRepayable: Number(rawLoan.totalRepayable || 0) || undefined,
       totalPaid: Number(rawLoan.totalPaid || 0),
       totalPrincipalPaid: Number(rawLoan.totalPrincipalPaid || 0),
@@ -2305,10 +2597,18 @@ export class CooperativeService {
       lastPaymentReceived: this.extractDateValue(rawLoan.lastPaymentReceived) || undefined,
       lastPaymentAmount: Number(rawLoan.lastPaymentAmount || 0) || undefined,
       nextPaymentDueDate: this.extractDateValue(rawLoan.nextPaymentDueDate) || undefined,
-      skippedPaymentsCount: Number(rawLoan.skippedPaymentsCount || 0) || undefined,
-      overduePaymentsCount: Number(rawLoan.overduePaymentsCount || 0) || undefined,
+      skippedPaymentsCount: this.resolveLoanNumber(rawLoan.skippedPaymentsCount, sourceLoan?.skippedPaymentsCount, existingLoan?.skippedPaymentsCount),
+      overduePaymentsCount: this.resolveLoanNumber(rawLoan.overduePaymentsCount, sourceLoan?.overduePaymentsCount, existingLoan?.overduePaymentsCount),
       memberBankName: String(rawLoan.memberBankName || ''),
       memberAccountNumber: String(rawLoan.memberAccountNumber || ''),
+      principalBankName: String(rawLoan.principalBankName || '').trim() || undefined,
+      principalCollectionAccount: String(rawLoan.principalCollectionAccount || '').trim() || undefined,
+      interestBankName: String(rawLoan.interestBankName || '').trim() || undefined,
+      interestCollectionAccount: String(rawLoan.interestCollectionAccount || '').trim() || undefined,
+      lateFeeBankName: String(rawLoan.lateFeeBankName || '').trim() || undefined,
+      lateFeeCollectionAccount: String(rawLoan.lateFeeCollectionAccount || '').trim() || undefined,
+      accountingEmail: String(rawLoan.accountingEmail || '').trim() || undefined,
+      accountingWebhookUrl: String(rawLoan.accountingWebhookUrl || '').trim() || undefined,
       gracePeriodRequests: (Array.isArray(rawLoan.gracePeriodRequests) ? rawLoan.gracePeriodRequests : []).map((request: any) => ({
         id: Number(request.id || 0),
         loanId: Number(request.loanId || rawLoan.id || 0),
@@ -2383,8 +2683,8 @@ export class CooperativeService {
       groupId: groupId,
       duration: Number(rawLoan.repaymentTime || 0),
       totalRepayment: Number(rawLoan.totalRepayable || rawLoan.totalRepayment || 0),
-      applicationDate: rawLoan.requestDate || '',
-      completionDate: rawLoan.completedDate || '',
+      applicationDate: this.extractDateValue(rawLoan.requestDate) || '',
+      completionDate: this.extractDateValue(rawLoan.completedDate) || '',
       createdAt: this.extractDateValue(rawLoan.createdAt) || undefined,
       updatedAt: this.extractDateValue(rawLoan.updatedAt) || undefined,
       adminRequestNote: String(rawLoan.adminRequestNote || ''),
@@ -2393,7 +2693,80 @@ export class CooperativeService {
       defaultedDate: this.extractDateValue(rawLoan.defaultedDate) || undefined,
       fundsReserved: Boolean(rawLoan.fundsReserved),
       legacyGuarantor: !Array.isArray(rawLoan.guarantors) && rawLoan.guarantors ? rawLoan.guarantors as any : undefined
+    }, sourceLoan);
+  }
+
+  private mergeLoanFinancialSnapshot(loan: CooperativeLoan, sourceLoan?: Partial<CooperativeLoan>): CooperativeLoan {
+    const existingLoan = this.loans.find((item) => String(item.id) === String(loan.id));
+    const group = this.getGroupById(Number(loan.cooperativeGroupId || loan.groupId || 0));
+
+    return {
+      ...loan,
+      principalBankName: this.resolveLoanSnapshotString(loan.principalBankName, sourceLoan?.principalBankName, existingLoan?.principalBankName, group?.principalBankName),
+      principalCollectionAccount: this.resolveLoanSnapshotString(loan.principalCollectionAccount, sourceLoan?.principalCollectionAccount, existingLoan?.principalCollectionAccount, group?.principalCollectionAccount),
+      interestBankName: this.resolveLoanSnapshotString(loan.interestBankName, sourceLoan?.interestBankName, existingLoan?.interestBankName, group?.interestBankName),
+      interestCollectionAccount: this.resolveLoanSnapshotString(loan.interestCollectionAccount, sourceLoan?.interestCollectionAccount, existingLoan?.interestCollectionAccount, group?.interestCollectionAccount),
+      lateFeeBankName: this.resolveLoanSnapshotString(loan.lateFeeBankName, sourceLoan?.lateFeeBankName, existingLoan?.lateFeeBankName, group?.lateFeeBankName),
+      lateFeeCollectionAccount: this.resolveLoanSnapshotString(loan.lateFeeCollectionAccount, sourceLoan?.lateFeeCollectionAccount, existingLoan?.lateFeeCollectionAccount, group?.lateFeeCollectionAccount),
+      accountingEmail: this.resolveLoanSnapshotString(loan.accountingEmail, sourceLoan?.accountingEmail, existingLoan?.accountingEmail, group?.accountingEmail),
+      accountingWebhookUrl: this.resolveLoanSnapshotString(loan.accountingWebhookUrl, sourceLoan?.accountingWebhookUrl, existingLoan?.accountingWebhookUrl, group?.accountingWebhookUrl)
     };
+  }
+
+  private resolveLoanNumber(...values: unknown[]): number | undefined {
+    for (const value of values) {
+      if (value === null || value === undefined || value === '') {
+        continue;
+      }
+
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return undefined;
+  }
+
+  private resolveLoanDate(...values: unknown[]): string | undefined {
+    for (const value of values) {
+      const normalizedValue = this.extractDateValue(value);
+      if (normalizedValue) {
+        return normalizedValue;
+      }
+    }
+
+    return undefined;
+  }
+
+  private resolveLoanString(...values: unknown[]): string {
+    let fallback = '';
+
+    values.forEach((value, index) => {
+      if (index === values.length - 1 && typeof value === 'string') {
+        fallback = value;
+      }
+    });
+
+    for (const value of values) {
+      const normalizedValue = String(value || '').trim();
+      if (normalizedValue) {
+        return normalizedValue;
+      }
+    }
+
+    return fallback;
+  }
+
+  private resolveLoanSnapshotString(...values: Array<string | undefined>): string | undefined {
+    for (const value of values) {
+      const normalized = String(value || '').trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return undefined;
   }
 
   private buildCreateLoanPayload(loan: Omit<CooperativeLoan, 'id' | 'loanId' | 'createdAt' | 'updatedAt'>): CooperativeLoanApiCreatePayload {
@@ -2402,120 +2775,121 @@ export class CooperativeService {
     const repaymentTime = Number(loan.repaymentTime || loan.duration || 0);
     const modeOfPayment = String(loan.modeOfPayment || 'MONTHLY').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
     const requestDate = String(loan.requestDate || loan.applicationDate || new Date().toISOString()).trim() || new Date().toISOString();
+    const requiresGuarantors = Boolean(loan.guarantors?.length || loan.applicationStage === 'PENDING_GUARANTOR_APPROVAL');
+    const principalBankName = String(loan.principalBankName || '').trim() || undefined;
+    const principalCollectionAccount = String(loan.principalCollectionAccount || '').trim() || undefined;
+    const interestBankName = String(loan.interestBankName || '').trim() || undefined;
+    const interestCollectionAccount = String(loan.interestCollectionAccount || '').trim() || undefined;
+    const lateFeeBankName = String(loan.lateFeeBankName || '').trim() || undefined;
+    const lateFeeCollectionAccount = String(loan.lateFeeCollectionAccount || '').trim() || undefined;
+    const accountingEmail = String(loan.accountingEmail || '').trim() || undefined;
+    const accountingWebhookUrl = String(loan.accountingWebhookUrl || '').trim() || undefined;
 
     return {
-      id: 0,
-      loanCode: loan.loanCode,
+      loanCode: loan.loanCode || undefined,
       cooperativeMemberId,
       cooperativeGroupId,
+      membershipId: loan.membershipId,
       amount: loan.amount,
       purpose: loan.purpose,
-      approvedAmount: loan.approvedAmount,
       repaymentAmount: loan.repaymentAmount,
       repaymentTime,
-      repaymentStartDate: loan.repaymentStartDate,
+      repaymentStartDate: this.toBackendDateTime(loan.repaymentStartDate),
       repaymentDay: loan.repaymentDay,
       modeOfPayment,
-      requestDate,
-      approvedDate: loan.approvedDate,
-      approvedBy: loan.approvedBy,
-      disbursedDate: loan.disbursedDate,
-      disbursementInitiatedAt: loan.disbursementInitiatedAt,
-      disbursementInitiatedBy: loan.disbursementInitiatedBy,
-      disbursementInstructionLoanReference: loan.disbursementInstructionLoanReference,
-      disbursementConfirmedAt: loan.disbursementConfirmedAt,
-      disbursementConfirmedBy: loan.disbursementConfirmedBy,
-      disbursementReference: loan.disbursementReference,
-      disbursedAmount: loan.disbursedAmount,
-      completedDate: loan.completedDate,
-      rejectedDate: loan.rejectedDate,
-      rejectedBy: loan.rejectedBy,
-      status: loan.status,
-      adminComment: loan.adminComment,
-      applicationStage: loan.applicationStage,
-      guarantorsId: loan.guarantorsId,
-      guarantorApproval: loan.guarantorApproval,
-      guarantorApprovalStatus: loan.guarantorApprovalStatus,
+      requestDate: this.toBackendDateTime(requestDate),
+      status: this.normalizeCooperativeLoanStatusValue(loan.status, 'PENDING'),
+      adminComment: String(loan.adminComment || '').trim() || undefined,
+      applicationStage: requiresGuarantors ? 'PENDING_GUARANTOR_APPROVAL' : 'READY_FOR_ADMIN_REVIEW',
+      guarantorApproval: requiresGuarantors ? Boolean(loan.guarantorApproval) : undefined,
+      guarantorApprovalStatus: requiresGuarantors ? 'PENDING' : undefined,
       guarantors: (loan.guarantors || []).map((guarantor) => ({
-        id: guarantor.id,
-        loanId: guarantor.loanId,
+        id: guarantor.id || undefined,
         guarantorMemberId: guarantor.guarantorMemberId || guarantor.memberId,
         guaranteedAmount: guarantor.guaranteedAmount,
-        status: guarantor.status,
-        requestedAt: guarantor.requestedAt,
-        respondedAt: guarantor.respondedAt,
-        responseNote: guarantor.responseNote || guarantor.note
+        status: String(guarantor.status || 'PENDING'),
+        requestedAt: this.toBackendDateTime(guarantor.requestedAt),
+        responseNote: String(guarantor.responseNote || guarantor.note || '').trim() || undefined
       })),
       interestRate: loan.interestRate,
+      lateFeePercentage: loan.lateFeePercentage,
+      lateFeeGraceDays: loan.lateFeeGraceDays,
       totalRepayable: loan.totalRepayable || loan.totalRepayment,
-      totalPaid: loan.totalPaid,
-      totalPrincipalPaid: loan.totalPrincipalPaid,
-      totalInterestPaid: loan.totalInterestPaid,
-      totalLateFeesAccrued: loan.totalLateFeesAccrued,
-      totalLateFeesPaid: loan.totalLateFeesPaid,
-      outstandingPrincipal: loan.outstandingPrincipal,
-      outstandingInterest: loan.outstandingInterest,
-      outstandingBalance: loan.outstandingBalance,
-      lastPaymentReceived: loan.lastPaymentReceived,
-      lastPaymentAmount: loan.lastPaymentAmount,
-      nextPaymentDueDate: loan.nextPaymentDueDate,
-      skippedPaymentsCount: loan.skippedPaymentsCount,
-      overduePaymentsCount: loan.overduePaymentsCount,
-      memberBankName: loan.memberBankName,
-      memberAccountNumber: loan.memberAccountNumber,
-      gracePeriodRequests: loan.gracePeriodRequests,
-      paymentHistory: loan.paymentHistory as any,
-      statusHistory: loan.statusHistory as any,
-      supportingDocuments: loan.supportingDocuments as any
+      memberBankName: String(loan.memberBankName || '').trim() || undefined,
+      memberAccountNumber: String(loan.memberAccountNumber || '').trim() || undefined,
+      principalBankName,
+      principalCollectionAccount,
+      interestBankName,
+      interestCollectionAccount,
+      lateFeeBankName,
+      lateFeeCollectionAccount,
+      accountingEmail,
+      accountingWebhookUrl,
+      supportingDocuments: (loan.supportingDocuments || []).length ? loan.supportingDocuments as any : undefined
     };
   }
 
   private buildUpdateLoanPayload(loan: CooperativeLoan): CooperativeLoanApiUpdatePayload {
+    const cooperativeMemberId = Number(loan.cooperativeMemberId || loan.memberId || 0);
+    const cooperativeGroupId = Number(loan.cooperativeGroupId || loan.groupId || 0);
+    const hasGuarantors = Array.isArray(loan.guarantors) && loan.guarantors.length > 0;
+    const guarantorApprovalStatus = String(loan.guarantorApprovalStatus || '').trim().toUpperCase() || undefined;
+    const disbursementInstructionLoanReference = String(loan.disbursementInstructionLoanReference || '').trim() || undefined;
+    const disbursementReference = String(loan.disbursementReference || '').trim() || undefined;
+    const memberBankName = String(loan.memberBankName || '').trim() || undefined;
+    const memberAccountNumber = String(loan.memberAccountNumber || '').trim() || undefined;
+    const principalBankName = String(loan.principalBankName || '').trim() || undefined;
+    const principalCollectionAccount = String(loan.principalCollectionAccount || '').trim() || undefined;
+    const interestBankName = String(loan.interestBankName || '').trim() || undefined;
+    const interestCollectionAccount = String(loan.interestCollectionAccount || '').trim() || undefined;
+    const lateFeeBankName = String(loan.lateFeeBankName || '').trim() || undefined;
+    const lateFeeCollectionAccount = String(loan.lateFeeCollectionAccount || '').trim() || undefined;
+    const accountingEmail = String(loan.accountingEmail || '').trim() || undefined;
+    const accountingWebhookUrl = String(loan.accountingWebhookUrl || '').trim() || undefined;
+
     return {
       id: loan.id,
       loanCode: loan.loanCode,
-      cooperativeMemberId: loan.cooperativeMemberId,
-      cooperativeGroupId: loan.cooperativeGroupId,
+      cooperativeMemberId,
+      cooperativeGroupId,
       membershipId: loan.membershipId,
       amount: loan.amount,
       purpose: loan.purpose,
-      approvedAmount: loan.approvedAmount,
+      approvedAmount: loan.approvedAmount ?? (loan.status === 'APPROVED' ? loan.amount : undefined),
       repaymentAmount: loan.repaymentAmount,
       repaymentTime: loan.repaymentTime,
-      repaymentStartDate: loan.repaymentStartDate,
+      repaymentStartDate: this.toBackendDateTime(loan.repaymentStartDate),
       repaymentDay: loan.repaymentDay,
       modeOfPayment: loan.modeOfPayment,
-      requestDate: loan.requestDate,
-      approvedDate: loan.approvedDate,
-      approvedBy: loan.approvedBy,
-      disbursedDate: loan.disbursedDate,
-      disbursementInitiatedAt: loan.disbursementInitiatedAt,
-      disbursementInitiatedBy: loan.disbursementInitiatedBy,
-      disbursementInstructionLoanReference: loan.disbursementInstructionLoanReference,
-      disbursementConfirmedAt: loan.disbursementConfirmedAt,
-      disbursementConfirmedBy: loan.disbursementConfirmedBy,
-      disbursementReference: loan.disbursementReference,
+      requestDate: this.toBackendDateTime(loan.requestDate),
+      approvedDate: this.toBackendDateTime(loan.approvedDate),
+      disbursedDate: this.toBackendDateTime(loan.disbursedDate),
+      disbursementInitiatedAt: this.toBackendDateTime(loan.disbursementInitiatedAt),
+      disbursementInstructionLoanReference,
+      disbursementConfirmedAt: this.toBackendDateTime(loan.disbursementConfirmedAt),
+      disbursementReference,
       disbursedAmount: loan.disbursedAmount,
-      completedDate: loan.completedDate,
-      rejectedDate: loan.rejectedDate,
-      rejectedBy: loan.rejectedBy,
-      status: loan.status,
-      adminComment: loan.adminComment,
-      applicationStage: loan.applicationStage,
+      completedDate: this.toBackendDateTime(loan.completedDate),
+      rejectedDate: this.toBackendDateTime(loan.rejectedDate),
+      status: this.normalizeCooperativeLoanStatusValue(loan.status, 'PENDING'),
+      adminComment: String(loan.adminComment || '').trim() || undefined,
+      applicationStage: String(loan.applicationStage || '').trim() || undefined,
       guarantorsId: loan.guarantorsId,
-      guarantorApproval: loan.guarantorApproval,
-      guarantorApprovalStatus: loan.guarantorApprovalStatus,
-      guarantors: (loan.guarantors || []).map((guarantor) => ({
+      guarantorApproval: hasGuarantors ? loan.guarantorApproval : undefined,
+      guarantorApprovalStatus: hasGuarantors ? guarantorApprovalStatus : undefined,
+      guarantors: hasGuarantors ? (loan.guarantors || []).map((guarantor) => ({
         id: guarantor.id,
         loanId: guarantor.loanId || loan.id,
         guarantorMemberId: guarantor.guarantorMemberId || guarantor.memberId,
         guaranteedAmount: guarantor.guaranteedAmount,
         status: guarantor.status,
-        requestedAt: guarantor.requestedAt,
-        respondedAt: guarantor.respondedAt || guarantor.decidedAt,
-        responseNote: guarantor.responseNote || guarantor.note
-      })),
+        requestedAt: this.toBackendDateTime(guarantor.requestedAt),
+        respondedAt: this.toBackendDateTime(guarantor.respondedAt || guarantor.decidedAt),
+        responseNote: String(guarantor.responseNote || guarantor.note || '').trim() || undefined
+      })) : undefined,
       interestRate: loan.interestRate,
+      lateFeePercentage: loan.lateFeePercentage,
+      lateFeeGraceDays: loan.lateFeeGraceDays,
       totalRepayable: loan.totalRepayable || loan.totalRepayment,
       totalPaid: loan.totalPaid,
       totalPrincipalPaid: loan.totalPrincipalPaid,
@@ -2525,18 +2899,172 @@ export class CooperativeService {
       outstandingPrincipal: loan.outstandingPrincipal,
       outstandingInterest: loan.outstandingInterest,
       outstandingBalance: loan.outstandingBalance,
-      lastPaymentReceived: loan.lastPaymentReceived,
+      lastPaymentReceived: this.toBackendDateTime(loan.lastPaymentReceived),
       lastPaymentAmount: loan.lastPaymentAmount,
-      nextPaymentDueDate: loan.nextPaymentDueDate,
+      nextPaymentDueDate: this.toBackendDateTime(loan.nextPaymentDueDate),
       skippedPaymentsCount: loan.skippedPaymentsCount,
       overduePaymentsCount: loan.overduePaymentsCount,
-      memberBankName: loan.memberBankName,
-      memberAccountNumber: loan.memberAccountNumber,
-      gracePeriodRequests: loan.gracePeriodRequests,
-      paymentHistory: loan.paymentHistory,
-      statusHistory: loan.statusHistory,
-      supportingDocuments: loan.supportingDocuments
+      memberBankName,
+      memberAccountNumber,
+      principalBankName,
+      principalCollectionAccount,
+      interestBankName,
+      interestCollectionAccount,
+      lateFeeBankName,
+      lateFeeCollectionAccount,
+      accountingEmail,
+      accountingWebhookUrl,
+      gracePeriodRequests: (loan.gracePeriodRequests || []).length ? (loan.gracePeriodRequests || []).map((request) => ({
+        id: Number(request.id || 0) || undefined,
+        loanId: Number(request.loanId || loan.id || 0),
+        memberId: Number(request.memberId || cooperativeMemberId || 0),
+        installmentNumber: Number(request.installmentNumber || 0),
+        paymentSubtype: String(request.paymentSubtype || ''),
+        amountPaid: Number(request.amountPaid || 0),
+        remainingBalance: Number(request.remainingBalance || 0),
+        requestedAt: this.toBackendDateTime(request.requestedAt),
+        requestedDays: Number(request.requestedDays || 0),
+        reason: String(request.reason || ''),
+        status: String(request.status || 'PENDING'),
+        reviewedAt: this.toBackendDateTime(request.reviewedAt),
+        reviewedBy: this.extractAuditUserId(request.reviewedBy),
+        reviewNote: String(request.reviewNote || ''),
+        rejectionReason: String(request.rejectionReason || ''),
+        approvedGraceDays: Number(request.approvedGraceDays || 0) || undefined,
+        newDueDate: this.toBackendDateTime(request.newDueDate),
+        paymentCompletedAt: this.toBackendDateTime(request.paymentCompletedAt)
+      })) : undefined,
+      paymentHistory: (loan.paymentHistory || []).length ? (loan.paymentHistory || []).map((payment) => ({
+        id: Number(payment.id || 0) || undefined,
+        paymentType: String(payment.paymentType || ''),
+        membershipId: Number(payment.membershipId || loan.membershipId || 0) || undefined,
+        loanId: Number(payment.loanId || loan.id || 0),
+        groupId: Number(payment.groupId || cooperativeGroupId || 0) || undefined,
+        installmentNumber: Number(payment.installmentNumber || 0) || undefined,
+        installmentNo: Number(payment.installmentNo || 0),
+        paidAt: this.toBackendDateTime(payment.paidAt),
+        amount: Number(payment.amount || 0),
+        principalApplied: Number(payment.principalApplied || 0) || undefined,
+        principalAmount: Number(payment.principalAmount || 0) || undefined,
+        interestApplied: Number(payment.interestApplied || 0) || undefined,
+        interest: Number(payment.interest || 0),
+        lateFeeApplied: Number(payment.lateFeeApplied || 0) || undefined,
+        lateFeeAmount: Number(payment.lateFeeAmount || 0),
+        remainingBalance: Number(payment.remainingBalance || 0),
+        paymentMethod: String(payment.paymentMethod || payment.modeofPayment || ''),
+        paymentReference: String(payment.paymentReference || ''),
+        referenceNumber: String(payment.referenceNumber || ''),
+        paidIntoAccount: String(payment.paidIntoAccount || ''),
+        paidFromAccount: String(payment.paidFromAccount || ''),
+        recordedBy: Number(payment.recordedBy || 0) || undefined,
+        recordedAt: this.toBackendDateTime(payment.recordedAt),
+        recordStatus: String(payment.recordStatus || ''),
+        status: String(payment.status || 'PENDING'),
+        totalPayment: Number(payment.totalPayment || payment.amount || 0),
+        notes: String(payment.notes || ''),
+        receiptNumber: String(payment.receiptNumber || '')
+      })) : undefined,
+      supportingDocuments: (loan.supportingDocuments || []).length ? loan.supportingDocuments : undefined
     };
+  }
+
+  private toBackendDateTime(value: unknown): string | undefined {
+    const rawValue = this.extractDateValue(value) || String(value || '').trim();
+    if (!rawValue) {
+      return undefined;
+    }
+
+    if (/^\d{4},\d{1,2},\d{1,2}(,\d{1,2}){0,4}$/.test(rawValue)) {
+      const normalized = this.formatDateArray(rawValue.split(',').map((part) => Number(part.trim())));
+      return normalized || undefined;
+    }
+
+    return /^\d{4}-\d{2}-\d{2}$/.test(rawValue) ? `${rawValue}T00:00:00` : rawValue;
+  }
+
+  private extractAuditUserId(value: unknown): number | undefined {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    }
+
+    if (value && typeof value === 'object') {
+      const parsed = Number((value as { id?: unknown; userId?: unknown }).id || (value as { id?: unknown; userId?: unknown }).userId || 0);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    }
+
+    return undefined;
+  }
+
+  private normalizeCooperativeLoanStatusValue(value: unknown, fallback?: string): string | undefined {
+    const normalized = String(value || fallback || '').trim().toUpperCase();
+    if (!normalized) {
+      return undefined;
+    }
+
+    const allowedStatuses = new Set([
+      'PENDING',
+      'AWAITING_INTEREST_ACCEPTANCE',
+      'APPROVED',
+      'READY_FOR_DISBURSEMENT',
+      'REJECTED',
+      'ACTIVE',
+      'COMPLETED',
+      'SKIPPED',
+      'OVERDUE',
+      'DEFAULTED',
+      'PAUSED'
+    ]);
+
+    return allowedStatuses.has(normalized) ? normalized : undefined;
+  }
+
+  private toAuditUserPayload(value: unknown): CooperativeLoanApiAuditUser | undefined {
+    const id = this.extractAuditUserId(value);
+    if (!id) {
+      return undefined;
+    }
+
+    if (value && typeof value === 'object') {
+      const actor = value as Partial<CooperativeLoanApiAuditUser>;
+      return {
+        id,
+        fullname: String(actor.fullname || this.getCurrentAuditUser()?.fullname || `User ${id}`),
+        userId: Number(actor.userId || id),
+        email: String(actor.email || ''),
+        phoneNumber: String(actor.phoneNumber || ''),
+        username: String(actor.username || ''),
+        clientType: String(actor.clientType || ''),
+        gender: String(actor.gender || ''),
+        accountId: String(actor.accountId || ''),
+        address: String(actor.address || ''),
+        city: String(actor.city || ''),
+        state: String(actor.state || ''),
+        country: String(actor.country || '')
+      };
+    }
+
+    return this.getCurrentAuditUserId() === id
+      ? this.getCurrentAuditUser()
+      : {
+          id,
+          fullname: `User ${id}`,
+          userId: id,
+          email: '',
+          phoneNumber: '',
+          username: '',
+          clientType: '',
+          gender: '',
+          accountId: '',
+          address: '',
+          city: '',
+          state: '',
+          country: ''
+        };
   }
 
   private getCurrentAuditUserId(): number | undefined {
@@ -2658,7 +3186,7 @@ export class CooperativeService {
         groupId: history.groupId,
         status: history.status,
         changedAt: history.changedAt,
-        changedBy: this.getCurrentAuditUser(),
+        changedBy: this.getCurrentAuditUserId(),
         notes: history.notes
       }))
     };
@@ -2682,16 +3210,7 @@ export class CooperativeService {
       totalContributed: membership.totalContribution,
       lastContributionAmount: membership.lastContributionAmount,
       lastContributionDate: membership.lastContributionDate,
-      expectedContributionDay: membership.expectedContributionDay,
-      membershipHistory: (membership.membershipHistory || []).map((history) => ({
-        id: history.id,
-        membershipId: history.membershipId,
-        groupId: history.groupId,
-        status: history.status,
-        changedAt: history.changedAt,
-        changedBy: history.changedBy,
-        notes: history.notes
-      }))
+      expectedContributionDay: membership.expectedContributionDay
     };
   }
 
@@ -2700,8 +3219,8 @@ export class CooperativeService {
     status: CooperativeGroupMembership['status'],
     notes?: string
   ): Observable<unknown> {
-    const auditUser = this.getCurrentAuditUser();
-    if (!auditUser) {
+    const auditUserId = this.getCurrentAuditUserId();
+    if (!auditUserId) {
       return of(undefined);
     }
 
@@ -2710,7 +3229,7 @@ export class CooperativeService {
       groupId: membership.groupId,
       status,
       changedAt: new Date().toISOString(),
-      changedBy: auditUser,
+      changedBy: auditUserId,
       notes: notes || undefined
     };
 
@@ -3073,7 +3592,7 @@ export class CooperativeService {
   }
 
   private mergeGroupCache(groups: CooperativeLoanGroup[], rawGroups: CooperativeGroupApiResponse[] = []): void {
-    groups.forEach((group, index) => this.upsertGroupInCache(group, false, rawGroups[index]));
+    groups.forEach((group, index) => this.upsertGroupInCache(group, false, rawGroups[index], false));
     this.refreshGroupMembershipAmountsFromGroups();
     this.publishState();
   }
@@ -3091,7 +3610,44 @@ export class CooperativeService {
     this.publishState();
   }
 
-  private upsertGroupInCache(group: CooperativeLoanGroup, publish = true, rawGroup?: CooperativeGroupApiResponse): void {
+  private hydrateGroupsWithDetails(
+    rawGroups: CooperativeGroupApiResponse[]
+  ): Observable<CooperativeGroupApiResponse[]> {
+    return forkJoin(
+      rawGroups.map((rawGroup) => {
+        if (!this.groupNeedsDetailHydration(rawGroup)) {
+          return of(rawGroup);
+        }
+
+        return this.cooperativeGroupService.getCooperativeGroupById(Number(rawGroup.id)).pipe(
+          map((detailGroup) => ({ ...rawGroup, ...detailGroup })),
+          catchError(() => of(rawGroup))
+        );
+      })
+    );
+  }
+
+  private groupNeedsDetailHydration(rawGroup: CooperativeGroupApiResponse): boolean {
+    return [
+      rawGroup.contributionsBankName,
+      rawGroup.contributionsAccount,
+      rawGroup.principalBankName,
+      rawGroup.principalCollectionAccount,
+      rawGroup.interestBankName,
+      rawGroup.interestCollectionAccount,
+      rawGroup.lateFeeBankName,
+      rawGroup.lateFeeCollectionAccount,
+      rawGroup.accountingEmail,
+      rawGroup.accountingWebhookUrl
+    ].some((value) => value == null || String(value).trim() === '');
+  }
+
+  private upsertGroupInCache(
+    group: CooperativeLoanGroup,
+    publish = true,
+    rawGroup?: CooperativeGroupApiResponse,
+    markCollectionFresh = true
+  ): void {
     const existingIndex = this.groups.findIndex((item) => String(item.id) === String(group.id));
     if (existingIndex === -1) {
       this.groups = [group, ...this.groups];
@@ -3101,7 +3657,9 @@ export class CooperativeService {
     if (rawGroup) {
       this.groupApiRecords[String(rawGroup.id)] = rawGroup;
     }
-    this.markGroupsCacheFresh();
+    if (markCollectionFresh) {
+      this.markGroupsCacheFresh();
+    }
     this.refreshGroupMembershipAmountsFromGroups();
     if (publish) {
       this.publishState();
@@ -3283,7 +3841,7 @@ export class CooperativeService {
     return {
       ...member,
       fullName: this.getPreferredMemberName({ fullName }) || this.getPreferredMemberName(member) || member.fullName,
-      email: String(employee?.email || employee?.workEmail || member.email || '').trim(),
+      email: String(employee?.workEmail || employee?.email || member.email || '').trim(),
       phone: String(employee?.phone || member.phone || '').trim(),
       address: String(employee?.address || member.address || '').trim(),
       employeeId: Number(member.employeeId || employee?.id || employee?.employeeId || 0) || member.employeeId,

@@ -4,6 +4,15 @@
     <span>Loading the latest loan details...</span>
   </div>
 
+  <div class="feedback-banner" *ngIf="feedbackMessage" [ngClass]="feedbackTone">
+    <i class="fas" [ngClass]="{
+      'fa-circle-check': feedbackTone === 'success',
+      'fa-circle-exclamation': feedbackTone === 'error',
+      'fa-circle-info': feedbackTone === 'info'
+    }"></i>
+    <span>{{ feedbackMessage }}</span>
+  </div>
+
   <!-- Interest Rate Acceptance Banner -->
   <div class="interest-action-banner" *ngIf="canReviewInterestProposal">
     <div class="banner-content">
@@ -372,6 +381,15 @@
     </div>
     
     <div class="modal-body">
+      <div class="feedback-banner inline-banner" *ngIf="feedbackMessage" [ngClass]="feedbackTone">
+        <i class="fas" [ngClass]="{
+          'fa-circle-check': feedbackTone === 'success',
+          'fa-circle-exclamation': feedbackTone === 'error',
+          'fa-circle-info': feedbackTone === 'info'
+        }"></i>
+        <span>{{ feedbackMessage }}</span>
+      </div>
+
       <div class="proposal-card">
         <div class="proposed-rate">
           <span class="rate-label">Proposed Interest Rate</span>
@@ -427,11 +445,11 @@
     </div>
     
     <div class="modal-footer">
-      <button class="cancel-btn" (click)="closeInterestModal()">Cancel</button>
-      <button class="reject-btn" (click)="rejectInterestRate()">
+      <button class="cancel-btn" (click)="closeInterestModal()" [disabled]="isLoading">Cancel</button>
+      <button class="reject-btn" (click)="rejectInterestRate()" [disabled]="isLoading">
         <i class="fas fa-ban"></i> {{ showRejectionReason ? 'Submit Rejection' : 'Reject' }}
       </button>
-      <button class="accept-btn" (click)="acceptInterestRate()">
+      <button class="accept-btn" (click)="acceptInterestRate()" [disabled]="isLoading">
         <i class="fas fa-check-circle"></i> Accept Interest Rate
       </button>
     </div>

@@ -1,5 +1,5 @@
 // payment-modal.component.ts
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
@@ -17,15 +17,18 @@ export interface BankAccountDetails {
   templateUrl: './loan-payment-modal.component.html',
   styleUrls: ['./loan-payment-modal.component.scss']
 })
-export class LoanPaymentModalComponent implements OnInit {
+export class LoanPaymentModalComponent implements OnInit, OnChanges {
   @Input() loan: LoanApplication | null = null;
   @Input() installment: RepaymentScheduleItem | null = null;
+  @Input() loans: LoanApplication[] = [];
+  @Input() allowLoanSelection = false;
   @Output() close = new EventEmitter<void>();
   @Output() paymentSuccess = new EventEmitter<void>();
 
   paymentForm: FormGroup;
   isLoading = false;
   messages: Message[] = [];
+  selectedLoanId = '';
   
   paymentTypes = [
     { value: 'PRINCIPAL_REPAYMENT', label: 'Principal Payment', icon: 'fas fa-money-bill-wave', description: 'Pay towards the principal amount' },
@@ -48,7 +51,15 @@ export class LoanPaymentModalComponent implements OnInit {
     this.paymentForm = this.createForm();
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.initializeSelection();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['loan'] || changes['installment'] || changes['loans'] || changes['allowLoanSelection']) {
+      this.initializeSelection();
+    }
+  }
 
   createForm(): FormGroup {
     return this.fb.group({
@@ -61,12 +72,40 @@ export class LoanPaymentModalComponent implements OnInit {
     });
   }
 
-  get dueAmount(): number {
-    if (this.installment) {
-      return this.installment.totalAmount;
+  get availableLoans(): LoanApplication[] {
+    if (this.loans.length > 0) {
+      return this.loans;
     }
-    if (this.loan) {
-      return this.loan.repaymentAmount;
+
+    return this.loan ? [this.loan] : [];
+  }
+
+  get currentLoan(): LoanApplication | null {
+    if (this.availableLoans.length === 0) {
+      return this.loan;
+    }
+
+    return this.availableLoans.find((item) => String(item.id) === this.selectedLoanId) || this.availableLoans[0] || null;
+  }
+
+  get currentInstallment(): RepaymentScheduleItem | null {
+    if (this.installment && this.loan && this.currentLoan?.id === this.loan.id) {
+      return this.installment;
+    }
+
+    return this.resolveInstallmentForLoan(this.currentLoan);
+  }
+
+  get showLoanSelector(): boolean {
+    return this.allowLoanSelection && !this.installment && this.availableLoans.length > 1;
+  }
+
+  get dueAmount(): number {
+    if (this.currentInstallment) {
+      return this.currentInstallment.totalAmount;
+    }
+    if (this.currentLoan) {
+      return this.currentLoan.repaymentAmount;
     }
     return 0;
   }
@@ -76,23 +115,23 @@ export class LoanPaymentModalComponent implements OnInit {
   }
 
   get baseInstallmentAmount(): number {
-    if (!this.installment) {
-      return this.loan?.repaymentAmount || 0;
+    if (!this.currentInstallment) {
+      return this.currentLoan?.repaymentAmount || 0;
     }
 
-    return Number((Number(this.installment.principalAmount || 0) + Number(this.installment.interestAmount || 0)).toFixed(2));
+    return Number((Number(this.currentInstallment.principalAmount || 0) + Number(this.currentInstallment.interestAmount || 0)).toFixed(2));
   }
 
   get lateFeePercentage(): number {
-    return Number(this.loan?.lateFeePercentage ?? 2);
+    return Number(this.currentLoan?.lateFeePercentage ?? 2);
   }
 
   get lateFeeGracePeriodDays(): number {
-    return Math.round(Number(this.loan?.lateFeeGracePeriodDays ?? 15));
+    return Math.round(Number(this.currentLoan?.lateFeeGracePeriodDays ?? 15));
   }
 
   get lateFeeAmountDue(): number {
-    return Number(this.installment?.lateFeeAmount || 0);
+    return Number(this.currentInstallment?.lateFeeAmount || 0);
   }
 
   get selectedAmountDue(): number {
@@ -121,18 +160,19 @@ export class LoanPaymentModalComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.paymentForm.invalid || !this.loan) {
+    if (this.paymentForm.invalid || !this.currentLoan) {
       this.paymentForm.markAllAsTouched();
       return;
     }
 
     this.isLoading = true;
     const formValue = this.paymentForm.value;
+    const currentInstallment = this.currentInstallment;
 
     const payload: CreatePaymentRecordPayload = {
-      loanId: this.loan.id,
+      loanId: this.currentLoan.id,
       paymentType: formValue.paymentType,
-      installmentNumber: this.installment?.installmentNo || 0,
+      installmentNumber: currentInstallment?.installmentNo || 0,
       amount: this.selectedAmountDue,
       paymentMethod: formValue.paymentMethod,
       paymentReference: formValue.paymentReference,
@@ -175,5 +215,40 @@ export class LoanPaymentModalComponent implements OnInit {
 
   cancel(): void {
     this.close.emit();
+  }
+
+  onLoanSelectionChange(loanId: string): void {
+    this.selectedLoanId = loanId;
+  }
+
+  getLoanOptionLabel(loan: LoanApplication): string {
+    const code = String(loan.loanCode || loan.id || '').trim();
+    const nextInstallment = this.resolveInstallmentForLoan(loan);
+    const nextAmount = Number(nextInstallment?.totalAmount || loan.repaymentAmount || 0);
+    return `${code} - ${this.formatCurrency(nextAmount)} due`;
+  }
+
+  private initializeSelection(): void {
+    const currentLoanId = String(this.loan?.id || '').trim();
+    const availableLoanIds = new Set(this.availableLoans.map((item) => String(item.id)));
+
+    if (currentLoanId && availableLoanIds.has(currentLoanId)) {
+      this.selectedLoanId = currentLoanId;
+      return;
+    }
+
+    if (!availableLoanIds.has(this.selectedLoanId)) {
+      this.selectedLoanId = this.availableLoans[0] ? String(this.availableLoans[0].id) : '';
+    }
+  }
+
+  private resolveInstallmentForLoan(loan: LoanApplication | null): RepaymentScheduleItem | null {
+    if (!loan) {
+      return null;
+    }
+
+    return [...(loan.repaymentSchedule || [])]
+      .filter((item) => item.status === 'PENDING' || item.status === 'OVERDUE')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0] || null;
   }
 }

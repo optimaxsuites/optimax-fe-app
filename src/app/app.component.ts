@@ -1,4 +1,5 @@
 import { Component, HostListener } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
 import { TabConfig } from './ui/shared-component/service/interface/data';
 import { RecruitmentListComponent } from './ui/view/recruitment/recruitment-list/recruitment-list.component';
 import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.component';
@@ -15,16 +16,27 @@ import { environment } from './ui/shared-component/service/environments/environm
 export class AppHrComponent {
   messageService: any;
   navigationLink: any;
-  router: any;
   sidebarHidden: boolean = true;
   constructor(
     private authenticationService: AuthenticationService,
     private metadataService: MetadataService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
+    this.checkScreenWidth();
     this.userLoginAction();
     this.exposeGlobalHelpers();  // Added by Eseto expose helper functions for console testing
+
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.checkScreenWidth();
+        window.requestAnimationFrame(() => {
+          this.checkScreenWidth();
+          window.dispatchEvent(new Event('resize'));
+        });
+      }
+    });
 
   // if (this.authenticationService.isAuthenticated()) {
   //   this.metadataService.fetchMetaData(true);
@@ -112,6 +124,15 @@ return rawToken;
 
   toggleSidebar() {
     this.sidebarHidden = !this.sidebarHidden; // Toggle sidebar visibility
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.checkScreenWidth();
+  }
+
+  private checkScreenWidth(): void {
+    this.sidebarHidden = window.innerWidth <= 992;
   }
 
   // ========== Added by Ese for testing cooperative features - Console only ==========

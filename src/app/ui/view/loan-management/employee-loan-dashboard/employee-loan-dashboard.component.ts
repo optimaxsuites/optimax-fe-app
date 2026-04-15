@@ -7,8 +7,8 @@ import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
-import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import {
   compareLoanSortValues,
   formatLoanPurposeDisplay,
@@ -16,6 +16,19 @@ import {
   formatLoanRepaymentMonthYear,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
+
+interface EmployeeLoanHistoryRow {
+  loan: LoanApplication;
+  displayId: string;
+  purposeDisplay: string;
+  amountDisplay: string;
+  repaymentMonthYear: string;
+  repaymentDay: string;
+  overduePolicySummary: string;
+  totalRepayableDisplay: string;
+  statusClass: string;
+  statusLabel: string;
+}
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -49,25 +62,16 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   };
   
   allLoans: LoanApplication[] = [];
+  recentLoanRows: EmployeeLoanHistoryRow[] = [];
   private loanSubscription!: Subscription;
   selectedLoanForSchedule: LoanApplication | null = null;
   selectedLoanForDetails: LoanApplication | null = null;
+  selectedPaymentLoan: LoanApplication | null = null;
+  selectedPaymentInstallment: RepaymentScheduleItem | null = null;
+  allowPaymentLoanSelection = false;
   showLoanDetailsModal: boolean = false;
   messages: Message[] = [];
   payableLoans: LoanApplication[] = [];
-  selectedPaymentLoanId = '';
-  autoMonthlyAmount = 0;
-  selectedmodeofPayment = '';
-  paymentReference = '';
-  paymentNarration = '';
-  bankName = '';
-  accountName = '';
-  accountNumber = '';
-  cardHolderName = '';
-  cardLast4 = '';
-  cashReceiverName = '';
-  payrollCycle = '';
-  paymentFormError = '';
   applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> = [];
   historySortField: string = 'requestDate';
   historySortDirection: 'asc' | 'desc' = 'desc';
@@ -95,7 +99,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private loanApplicationService: LoanApplicationService,
-    private loanRepaymentService: LoanRepaymentService,
     private employeeService: EmployeeService
   ) {}
 
@@ -108,10 +111,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     if (this.loanSubscription) {
       this.loanSubscription.unsubscribe();
     }
-  }
-
-  get sortedRecentLoans(): LoanApplication[] {
-    return this.sortHistoryLoans(this.allLoans).slice(0, 5);
   }
 
   get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> {
@@ -209,6 +208,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       this.historySortField = field;
       this.historySortDirection = field === 'requestDate' ? 'desc' : 'asc';
     }
+
+    this.refreshRecentLoanRows();
   }
 
   getHistorySortIcon(field: string): string {
@@ -229,6 +230,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.refreshPayableLoans();
         this.calculateLoanCounts();
         this.refreshApplicationUpdates();
+        this.refreshRecentLoanRows();
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
@@ -273,6 +275,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadLoanData(): void {
+    const loadProfiler = startLoanLoadProfiler('employee-loan-dashboard');
     this.isLoading = true;
     this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
       next: (applications) => {
@@ -281,13 +284,31 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.refreshPayableLoans();
         this.calculateLoanCounts();
         this.refreshApplicationUpdates();
+        this.refreshRecentLoanRows();
+        loadProfiler.success({ loans: this.allLoans.length, payable: this.payableLoans.length });
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading loan data:', error);
+        loadProfiler.error({ message: 'Failed to load employee loan dashboard' });
         this.isLoading = false;
       }
     });
+  }
+
+  private refreshRecentLoanRows(): void {
+    this.recentLoanRows = this.sortHistoryLoans(this.allLoans).slice(0, 5).map((loan) => ({
+      loan,
+      displayId: this.getShortAdvanceLoanDisplayId(loan),
+      purposeDisplay: this.formatPurposeDisplay(loan.purpose),
+      amountDisplay: this.formatCurrency(loan.amount),
+      repaymentMonthYear: this.formatRepaymentMonthYear(loan.repaymentStartDate),
+      repaymentDay: this.formatRepaymentDay(loan.repaymentDay),
+      overduePolicySummary: this.getOverduePolicySummary(loan),
+      totalRepayableDisplay: this.formatCurrency(this.getLoanTotalRepayable(loan)),
+      statusClass: this.getStatusClass(loan.status),
+      statusLabel: this.getStatusDisplay(loan.status)
+    }));
   }
 
   private isCurrentEmployeeLoan(loan: LoanApplication): boolean {
@@ -484,7 +505,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   openPaymentFormModal(): void {
-    this.resetPaymentForm();
     this.refreshPayableLoans();
 
     if (!this.payableLoans.length) {
@@ -496,63 +516,27 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const preferredLoan = this.getPreferredPayableLoan();
+    if (!preferredLoan) {
+      return;
+    }
+
+    this.selectedPaymentLoan = preferredLoan;
+    this.selectedPaymentInstallment = this.getNextOpenInstallmentForLoan(preferredLoan);
+    this.allowPaymentLoanSelection = true;
     this.showPaymentForm = true;
   }
 
   closePaymentFormModal(): void {
     this.showPaymentForm = false;
-    this.resetPaymentForm();
+    this.selectedPaymentLoan = null;
+    this.selectedPaymentInstallment = null;
+    this.allowPaymentLoanSelection = false;
   }
 
-  onPaymentLoanSelect(loanId: string): void {
-    this.selectedPaymentLoanId = loanId;
-    this.autoMonthlyAmount = this.getDueAmountForLoan(loanId);
-    this.paymentFormError = '';
-  }
-
-  submitPayment(): void {
-    this.paymentFormError = '';
-
-    if (!this.selectedPaymentLoanId) {
-      this.paymentFormError = 'Please select a loan ID to pay.';
-      return;
-    }
-
-    if (!this.selectedmodeofPayment) {
-      this.paymentFormError = 'Please select a payment method.';
-      return;
-    }
-
-    if (this.autoMonthlyAmount <= 0) {
-      this.paymentFormError = 'No payable installment found for the selected loan.';
-      return;
-    }
-
-    if (!this.validateMethodSpecificDetails()) {
-      return;
-    }
-
-    this.loanRepaymentService.recordPayment(Number(this.selectedPaymentLoanId), {
-      totalAmount: this.autoMonthlyAmount,
-      paymentMethod: this.selectedmodeofPayment,
-      paidAt: new Date().toISOString(),
-      referenceNumber: this.paymentReference || undefined,
-      notes: this.paymentNarration || undefined,
-      receivedBy: this.cashReceiverName || undefined
-    }).subscribe({
-      next: () => {
-        this.messages = [{
-          severity: 'success',
-          summary: 'Payment Recorded',
-          detail: `Payment of ${this.formatCurrency(this.autoMonthlyAmount)} was recorded successfully.`
-        }];
-        this.closePaymentFormModal();
-        this.loadLoanData();
-      },
-      error: () => {
-        this.paymentFormError = 'Unable to process payment right now. Please try again.';
-      }
-    });
+  handlePaymentSuccess(): void {
+    this.closePaymentFormModal();
+    this.loadLoanData();
   }
 
   closeLoanFormModal(): void {
@@ -741,14 +725,33 @@ getStatusDisplay(status: string): string {
   }
 
   makePaymentFromReminder(loan: LoanApplication, installment: RepaymentScheduleItem): void {
-  this.selectedLoanForSchedule = loan;
-  // Open payment modal for this specific installment
-  // You can emit an event or open the modal directly
-}
+    this.selectedPaymentLoan = loan;
+    this.selectedPaymentInstallment = installment;
+    this.allowPaymentLoanSelection = false;
+    this.showPaymentForm = true;
+  }
+
   private refreshPayableLoans(): void {
     this.payableLoans = this.allLoans.filter(loan =>
       (loan.status === 'ACTIVE' || loan.status === 'SKIPPED' || loan.status === 'OVERDUE') && loan.currentBalance > 0
     );
+  }
+
+  private getPreferredPayableLoan(): LoanApplication | null {
+    return [...this.payableLoans]
+      .sort((left, right) => {
+        const leftInstallment = this.getNextOpenInstallmentForLoan(left);
+        const rightInstallment = this.getNextOpenInstallmentForLoan(right);
+        const leftDue = new Date(leftInstallment?.dueDate || left.requestDate || 0).getTime();
+        const rightDue = new Date(rightInstallment?.dueDate || right.requestDate || 0).getTime();
+        return leftDue - rightDue;
+      })[0] || null;
+  }
+
+  private getNextOpenInstallmentForLoan(loan: LoanApplication): RepaymentScheduleItem | null {
+    return [...(loan.repaymentSchedule || [])]
+      .filter((item) => item.status === 'PENDING' || item.status === 'OVERDUE')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0] || null;
   }
 
   hasRepaymentActionLock(): boolean {
@@ -804,74 +807,6 @@ getStatusDisplay(status: string): string {
     nextLoans[loanIndex] = updatedLoan;
     this.allLoans = this.sortLoansByRecent(nextLoans);
     this.syncSelectedLoanDetails();
-  }
-
-  private getDueAmountForLoan(loanId: string): number {
-    const loan = this.allLoans.find(item => String(item.id) === loanId);
-    if (!loan) {
-      return 0;
-    }
-
-    const pendingInstallment = [...(loan.repaymentSchedule || [])]
-      .filter((item: RepaymentScheduleItem) => item.status === 'PENDING' || item.status === 'OVERDUE')
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
-
-    if (pendingInstallment?.totalAmount) {
-      return Number(pendingInstallment.totalAmount.toFixed(2));
-    }
-
-    if (loan.repaymentAmount > 0) {
-      return Number(loan.repaymentAmount.toFixed(2));
-    }
-
-    return 0;
-  }
-
-  private validateMethodSpecificDetails(): boolean {
-    switch (this.selectedmodeofPayment) {
-      case 'BANK_TRANSFER':
-        if (!this.bankName || !this.accountName || !this.accountNumber) {
-          this.paymentFormError = 'Enter bank name, account name and account number.';
-          return false;
-        }
-        return true;
-      case 'CARD':
-        if (!this.cardHolderName || !this.cardLast4) {
-          this.paymentFormError = 'Enter card holder name and last 4 digits.';
-          return false;
-        }
-        return true;
-      case 'CASH':
-        if (!this.cashReceiverName) {
-          this.paymentFormError = 'Enter cash receiver name.';
-          return false;
-        }
-        return true;
-      case 'PAYROLL_DEDUCTION':
-        if (!this.payrollCycle) {
-          this.paymentFormError = 'Select payroll deduction cycle.';
-          return false;
-        }
-        return true;
-      default:
-        return true;
-    }
-  }
-
-  private resetPaymentForm(): void {
-    this.selectedPaymentLoanId = '';
-    this.autoMonthlyAmount = 0;
-    this.selectedmodeofPayment = '';
-    this.paymentReference = '';
-    this.paymentNarration = '';
-    this.bankName = '';
-    this.accountName = '';
-    this.accountNumber = '';
-    this.cardHolderName = '';
-    this.cardLast4 = '';
-    this.cashReceiverName = '';
-    this.payrollCycle = '';
-    this.paymentFormError = '';
   }
 
   private refreshApplicationUpdates(): void {

@@ -2,8 +2,8 @@
   <div class="intro-panel">
     <div>
       <span class="eyebrow">Group Access</span>
-      <h3>Choose a cooperative group to join</h3>
-      <p>Pick from active groups that are still open to you. Each option shows the contribution cadence and borrowing rules before you apply.</p>
+      <h3>Choose a cooperative group with full visibility</h3>
+      <p>Review the active contribution rules, withdrawal cap, pricing, guarantor policy, and late-fee terms for each group before you submit your request.</p>
     </div>
     <button type="button" class="close-btn" (click)="onClose()" aria-label="Close join group modal">&times;</button>
   </div>
@@ -30,24 +30,47 @@
           <strong>{{ formatCurrency(group.monthlyContributionAmount) }}</strong>
         </div>
         <div>
-          <span>Borrowing cap</span>
-          <strong>{{ group.maxBorrowingPercentage }}%</strong>
+          <span>Withdrawal cap</span>
+          <strong>{{ getBorrowCapPercentage(group) }}%</strong>
         </div>
         <div>
-          <span>Tenure requirement</span>
-          <strong>{{ group.minMemberTenureMonths }} month(s)</strong>
+          <span>Interest rate</span>
+          <strong>{{ group.interestRate }}%</strong>
         </div>
         <div>
-          <span>Loan range</span>
-          <strong>{{ formatCurrency(group.minAmount) }} - {{ formatCurrency(group.maxAmount) }}</strong>
+          <span>Member limit</span>
+          <strong>{{ getMemberLimitSummary(group) }}</strong>
+        </div>
+      </div>
+
+      <div class="group-policy-grid">
+        <div class="policy-card">
+          <span class="policy-label">Guarantor rule</span>
+          <strong>{{ getGuarantorSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Late fee policy</span>
+          <strong>{{ getLateFeeSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Borrowing rule</span>
+          <strong>{{ getBorrowCapSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Patronage</span>
+          <strong>{{ group.patronageEligible ? (group.patronageRate + '% patronage eligible') : 'Not enabled' }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Accounting</span>
+          <strong>{{ getAccountingSummary(group) }}</strong>
         </div>
       </div>
 
       <div class="group-card-footer">
         <div class="supporting-copy">
-          <span>Duration {{ group.minDuration }}-{{ group.maxDuration }} months</span>
-          <span *ngIf="group.requiresGuarantors">{{ group.minimumGuarantors }} guarantor(s) required</span>
-          <span *ngIf="!group.requiresGuarantors">No guarantor requirement</span>
+          <span>{{ group.code || 'No group code' }}</span>
+          <span>{{ getGuarantorSummary(group) }}</span>
+          <span>{{ group.accountingEmail || 'Accounting email shared after approval' }}</span>
         </div>
 
         <button

@@ -9,7 +9,7 @@ import { BackNavigationService } from '../../../shared-component/service/navigat
 import { CooperativeLoan } from '../../../../ui/domain/loan/cooperative-loan.dto';
 import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoanGroup } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { compareLoanSortValues, formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
+import { compareLoanSortValues, formatLoanPurposeDisplay, resolveLoanActorName } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 
@@ -363,7 +363,6 @@ export class CooperativeLoansComponent implements OnInit {
               this.isSubmittingDisbursement = false;
               return;
             }
-
             this.disbursementInitiatedAt = updatedLoan.disbursementInitiatedAt || '';
             this.disbursementInitiatedBy = this.getAuditUserLabel(updatedLoan.disbursementInitiatedBy) || this.getCurrentUserDisplayName();
             this.disbursementInstructionReference = updatedLoan.disbursementInstructionLoanReference || instructionReference;
@@ -382,8 +381,13 @@ export class CooperativeLoansComponent implements OnInit {
           }
         });
       },
-      error: () => {
-        this.messages = [{ severity: 'error', summary: 'Email Failed', detail: `Unable to send the disbursement email to ${accountingEmail}.` }];
+      error: (err) => {
+        // Suppress noisy logs, show user-friendly message
+        let detail = `Unable to send the disbursement email to ${accountingEmail}.`;
+        if (err && err.status === 403) {
+          detail = 'Email notification failed due to authorization error. Please contact your administrator.';
+        }
+        this.messages = [{ severity: 'error', summary: 'Email Failed', detail }];
         this.isSubmittingDisbursement = false;
       }
     });
@@ -396,7 +400,7 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
@@ -888,17 +892,7 @@ export class CooperativeLoansComponent implements OnInit {
   }
 
   private formatHistoryActor(value: unknown): string {
-    if (value && typeof value === 'object') {
-      const actor = value as { fullname?: string; username?: string; email?: string };
-      return String(actor.fullname || actor.username || actor.email || 'System').trim();
-    }
-
-    const numericValue = Number(value || 0);
-    if (numericValue > 0) {
-      return `Admin #${numericValue}`;
-    }
-
-    return 'System';
+    return resolveLoanActorName(value as any);
   }
 
   private resetPagination(): void {

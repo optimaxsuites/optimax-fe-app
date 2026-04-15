@@ -82,6 +82,14 @@ export interface CooperativeLoan {
   overduePaymentsCount?: number;
   memberBankName?: string;
   memberAccountNumber?: string;
+  principalBankName?: string;
+  principalCollectionAccount?: string;
+  interestBankName?: string;
+  interestCollectionAccount?: string;
+  lateFeeBankName?: string;
+  lateFeeCollectionAccount?: string;
+  accountingEmail?: string;
+  accountingWebhookUrl?: string;
   gracePeriodRequests?: CooperativeLoanGracePeriodRequest[];
   paymentHistory: PaymentHistory[];
   statusHistory: StatusHistory[];
@@ -91,6 +99,8 @@ export interface CooperativeLoan {
   groupId?: number;
   duration?: number;
   interestRate?: number;
+  lateFeePercentage?: number;
+  lateFeeGraceDays?: number;
   totalRepayment?: number;
   applicationDate?: string;
   completionDate?: string;

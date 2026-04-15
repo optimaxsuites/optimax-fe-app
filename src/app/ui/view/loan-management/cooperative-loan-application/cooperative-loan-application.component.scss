@@ -736,23 +736,33 @@
 
       .guarantor-actions {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         justify-content: flex-end;
 
         button {
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 0.8rem;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          border-radius: 10px;
+          font-size: 0.85rem;
           font-weight: 600;
           cursor: pointer;
-          border: none;
+          border: 1px solid transparent;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          justify-content: center;
+          transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+          &:hover,
+          &:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(30, 73, 90, 0.16);
+          }
 
           &.approve-btn {
             background: #2EB270;
             color: white;
+            border-color: rgba(46, 178, 112, 0.24);
 
             &:hover {
               background: #259c5e;
@@ -762,6 +772,7 @@
           &.reject-btn {
             background: #d9534f;
             color: white;
+            border-color: rgba(217, 83, 79, 0.24);
 
             &:hover {
               background: #c9302c;
@@ -1066,6 +1077,63 @@
     justify-content: flex-end;
     gap: 12px;
     padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(220, 233, 236, 0.9);
+
+    .cancel-button,
+    .submit-button {
+      min-height: 52px;
+      padding: 0 20px;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+
+      i {
+        font-size: 0.95rem;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.72;
+        box-shadow: none;
+        transform: none;
+      }
+    }
+
+    .cancel-button {
+      border: 1px solid #d6e4e9;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f8fa 100%);
+      color: #284a57;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+
+      &:hover:not(:disabled),
+      &:focus-visible {
+        border-color: #b8d0d9;
+        background: linear-gradient(180deg, #ffffff 0%, #edf5f8 100%);
+        transform: translateY(-1px);
+      }
+    }
+
+    .submit-button {
+      border: 1px solid transparent;
+      background: linear-gradient(135deg, #1f5366 0%, #2e6276 52%, #2eb270 100%);
+      color: #ffffff;
+      box-shadow: 0 14px 28px rgba(32, 74, 90, 0.22);
+
+      &:hover:not(:disabled),
+      &:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 34px rgba(32, 74, 90, 0.26);
+        background: linear-gradient(135deg, #194555 0%, #255b70 52%, #29a764 100%);
+      }
+    }
   }
 
   @keyframes spin {
@@ -1141,6 +1209,15 @@
 
     .confirmation-dialog {
       padding: 18px;
+    }
+
+    .confirmation-actions {
+      flex-direction: column-reverse;
+
+      .cancel-button,
+      .submit-button {
+        width: 100%;
+      }
     }
   }
 }

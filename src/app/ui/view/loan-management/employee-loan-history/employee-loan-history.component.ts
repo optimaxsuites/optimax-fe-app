@@ -36,6 +36,7 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   historyMode: 'advance' | 'cooperative' = 'advance';
   currentUuid: string = uuidV4();
   cooperativeMember: CooperativeMember | null = null;
+  private returnGroupId?: number;
   private cooperativeLoanByCode = new Map<string, CooperativeLoan>();
   selectedLoanForDetails: LoanApplication | null = null;
   showLoanDetailsModal: boolean = false;
@@ -72,6 +73,8 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     this.historyMode = window.history.state?.cooperative ? 'cooperative' : 'advance';
     this.currentUuid = window.history.state?.uuid || this.currentUuid;
     this.employeeName = window.history.state?.employeeName || this.employeeName;
+    const groupId = Number(window.history.state?.groupId || 0);
+    this.returnGroupId = Number.isFinite(groupId) && groupId > 0 ? groupId : undefined;
 
     this.route.params.subscribe(params => {
       this.employeeId = params['employeeId'];
@@ -344,7 +347,22 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   
   goBack(): void {
     if (this.historyMode === 'cooperative' && this.viewSource === 'employee') {
-      this.backNavigationService.goBack(['/member/cooperative/dashboard', this.currentUuid]);
+      const targetCommands = this.returnGroupId
+        ? ['/member/cooperative/groups', this.returnGroupId, this.currentUuid]
+        : ['/member/cooperative/dashboard', this.currentUuid];
+
+      this.router.navigate(targetCommands, {
+        replaceUrl: true,
+        state: {
+          memberId: Number(this.cooperativeMember?.id || this.employeeId || 0) || undefined,
+          source: 'group-dashboard',
+          groupId: this.returnGroupId
+        }
+      }).then((navigated) => {
+        if (navigated) {
+          window.dispatchEvent(new Event('resize'));
+        }
+      });
       return;
     }
 

@@ -47,8 +47,12 @@
         <td>{{ request.requestedAt | date:'mediumDate' }}</td>
         <td>{{ request.reason }}</td>
         <td class="actions-col">
-          <button class="action-btn approve" *ngIf="request.status === 'PENDING'" (click)="openApprovalModal(request)">Approve</button>
-          <button class="action-btn reject" *ngIf="request.status === 'PENDING'" (click)="openRejectModal(request)">Reject</button>
+          <button class="action-btn approve" *ngIf="request.status === 'PENDING'" (click)="openApprovalModal(request)" title="Approve request" aria-label="Approve request">
+            <i class="fas fa-check"></i>
+          </button>
+          <button class="action-btn reject" *ngIf="request.status === 'PENDING'" (click)="openRejectModal(request)" title="Reject request" aria-label="Reject request">
+            <i class="fas fa-ban"></i>
+          </button>
           <span *ngIf="request.status !== 'PENDING'">Reviewed</span>
         </td>
       </ng-template>

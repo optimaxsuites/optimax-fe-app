@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
@@ -18,9 +18,20 @@ export class ShiftFormComponent implements OnInit {
 
   isEditMode = false;
 
+  colorOptions = [
+      '#3da86a',
+      '#4f8cff',
+      '#ffb020',
+      '#ff5c5c',
+      '#8e44ad',
+      '#2c3e50',
+      '#00bcd4'
+  ];
+
   constructor(
     private fb: FormBuilder,
-    private shiftserviceService: ShiftserviceService
+    private shiftserviceService: ShiftserviceService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -35,13 +46,19 @@ export class ShiftFormComponent implements OnInit {
       endTime: ['', Validators.required],
       breakTime: [0],
       description: ['', Validators.required],
-      color: ['#3da86a']
+    
+      //color: ['#3da86a']
     });
 
     if (this.shift) {
       this.shiftForm.patchValue(this.shift);
     }
 
+  }
+
+  selectColor(color: string) {
+    this.shiftForm.patchValue({ color });
+    this.cdr.detectChanges(); //forces UI to update
   }
 
   saveShift() {

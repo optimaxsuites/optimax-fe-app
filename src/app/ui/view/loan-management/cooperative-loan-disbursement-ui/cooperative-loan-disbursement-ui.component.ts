@@ -9,6 +9,7 @@ import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/c
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { BackButtonModule } from '../../../shared-component/view/back-button/back-button.module';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -19,7 +20,7 @@ type QueueMessage = {
 @Component({
   selector: 'app-cooperative-loan-disbursement-ui',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BackButtonModule],
   templateUrl: './cooperative-loan-disbursement-ui.component.html',
   styleUrls: ['./cooperative-loan-disbursement-ui.component.scss']
 })
@@ -47,7 +48,6 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   disbursementInstructionReference = '';
   disbursementInitiatedAt = '';
   disbursementInitiatedBy = '';
-  disbursementReference = '';
   disbursementAmount = 0;
   paymentMethod: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION' = 'BANK_TRANSFER';
   checklistIdentityVerified = false;
@@ -66,7 +66,11 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUuid = this.route.snapshot.paramMap.get('uuid') || '';
-    this.loadData();
+    // Ensure group memberships are loaded before loading loans
+    this.cooperativeService.loadGroupMemberships().subscribe({
+      next: () => this.loadData(),
+      error: () => this.loadData() // fallback to loading data even if memberships fail
+    });
   }
 
   loadData(): void {
@@ -74,7 +78,7 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     forkJoin({
       groups: this.cooperativeService.loadGroups(),
       members: this.cooperativeService.getMembers(),
-      loans: this.cooperativeService.getLoans()
+      loans: this.cooperativeService.refreshLoans()
     }).subscribe({
       next: ({ groups, members, loans }) => {
         this.groups = groups;
@@ -167,9 +171,8 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     this.disbursementAmount = Number(loan.amount || 0);
     this.paymentMethod = 'BANK_TRANSFER';
     this.emailNotes = '';
-    this.accountingEmail = this.getGroupForLoan(loan)?.accountingEmail || '';
+    this.accountingEmail = String(loan.accountingEmail || this.getGroupForLoan(loan)?.accountingEmail || '').trim();
     this.disbursementInstructionReference = loan.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
-    this.disbursementReference = loan.disbursementReference || (loan.status === 'READY_FOR_DISBURSEMENT' ? `PENDING-${this.disbursementInstructionReference}` : '');
     this.disbursementInitiatedAt = loan.disbursementInitiatedAt || '';
     this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
     this.checklistIdentityVerified = false;
@@ -213,16 +216,21 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
         this.cooperativeService.sendLoanToAccountingForDisbursement(loan.id, {
           accountingEmail,
           disbursementInstructionReference: instructionReference,
-          disbursementReference: this.disbursementReference || `PENDING-${instructionReference}`,
           paymentMethod: this.paymentMethod,
           notes: this.emailNotes.trim() || undefined
         }).subscribe({
           next: (updatedLoan) => {
-            this.isSubmitting = false;
             if (!updatedLoan) {
-              this.showMessage('warn', 'Workflow Skipped', 'Only approved cooperative loans can be sent to accounting.');
+              this.refreshSelectedLoanState(loan.id, {
+                matchedStatus: 'READY_FOR_DISBURSEMENT',
+                successSummary: 'Already Sent',
+                successDetail: (freshLoan) => `Loan ${freshLoan.loanCode || freshLoan.id} is already READY_FOR_DISBURSEMENT. The queue has been refreshed.`,
+                fallbackSummary: 'Workflow Skipped',
+                fallbackDetail: 'Only approved cooperative loans can be sent to accounting.'
+              });
               return;
             }
+            this.isSubmitting = false;
             this.upsertLoan(updatedLoan);
             this.selectLoan(updatedLoan);
             this.showMessage('success', 'Sent to Accounting', `Loan ${updatedLoan.loanCode || updatedLoan.id} has been moved to READY_FOR_DISBURSEMENT.`);
@@ -233,9 +241,13 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
           }
         });
       },
-      error: () => {
+      error: (err) => {
         this.isSubmitting = false;
-        this.showMessage('error', 'Email Failed', `Unable to send the disbursement instruction to ${accountingEmail}.`);
+        let detail = `Unable to send the disbursement instruction to ${accountingEmail}.`;
+        if (err && err.status === 403) {
+          detail = 'Email notification failed due to authorization error. Please contact your administrator.';
+        }
+        this.showMessage('error', 'Email Failed', detail);
       }
     });
   }
@@ -247,21 +259,23 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    const disbursementReference = String(this.disbursementReference || loan.disbursementReference || '').trim()
-      || `COOP-DISB-${loan.id}-${Date.now()}`;
-
     this.cooperativeService.disburseLoan(loan.id, {
       disbursedAmount: this.disbursementAmount,
-      disbursementReference,
       paymentMethod: this.paymentMethod,
       notes: this.emailNotes.trim() || 'Loan disbursement confirmed from cooperative queue.'
     }).subscribe({
       next: (updatedLoan) => {
-        this.isSubmitting = false;
         if (!updatedLoan) {
-          this.showMessage('warn', 'Disbursement Failed', 'Only READY_FOR_DISBURSEMENT loans can be marked as disbursed.');
+          this.refreshSelectedLoanState(loan.id, {
+            matchedStatus: 'ACTIVE',
+            successSummary: 'Already Disbursed',
+            successDetail: (freshLoan) => `Loan ${freshLoan.loanCode || freshLoan.id} is already ACTIVE. The queue has been refreshed.`,
+            fallbackSummary: 'Disbursement Failed',
+            fallbackDetail: 'Only READY_FOR_DISBURSEMENT loans can be marked as disbursed.'
+          });
           return;
         }
+        this.isSubmitting = false;
         this.upsertLoan(updatedLoan);
         this.selectLoan(updatedLoan);
         this.showMessage('success', 'Loan Disbursed', `Loan ${updatedLoan.loanCode || updatedLoan.id} has been moved to ACTIVE.`);
@@ -284,13 +298,9 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   goBack(): void {
-    if (this.currentUuid) {
-      this.router.navigate(['/admin/hr/cooperative/dashboard', this.currentUuid], {
-        queryParams: { dashboard: 'cooperative' }
-      });
-      return;
-    }
-    this.location.back();
+    this.router.navigate(['/admin/hr/loan', this.currentUuid || 'uu'], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 
   goToApprovedPage(page: number): void {
@@ -323,7 +333,14 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
   getMembershipId(loan: CooperativeLoan): number | string {
-    return loan.membershipId || '—';
+    if (loan.membershipId) {
+      return loan.membershipId;
+    }
+    const membership = this.cooperativeService.getGroupMembership(
+      loan.cooperativeMemberId,
+      loan.cooperativeGroupId
+    );
+    return membership?.id || '—';
   }
 
   formatCurrency(amount: number): string {
@@ -414,7 +431,6 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
             <li><strong>Borrower Bank:</strong> ${bankName}</li>
             <li><strong>Borrower Account Number:</strong> ${accountNumber}</li>
             <li><strong>Disbursement Instruction Reference:</strong> ${instructionReference}</li>
-            <li><strong>Disbursement Reference:</strong> ${this.disbursementReference || `PENDING-${instructionReference}`}</li>
           </ul>
           ${this.emailNotes.trim() ? `<p><strong>Additional Notes:</strong> ${this.emailNotes.trim()}</p>` : ''}
           <p>Regards,<br/><strong>HR Management</strong></p>
@@ -435,6 +451,38 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
       return;
     }
     this.loans = this.loans.map((loan) => loan.id === updatedLoan.id ? updatedLoan : loan);
+  }
+
+  private refreshSelectedLoanState(
+    loanId: number,
+    options: {
+      matchedStatus: string;
+      successSummary: string;
+      successDetail: (loan: CooperativeLoan) => string;
+      fallbackSummary: string;
+      fallbackDetail: string;
+    }
+  ): void {
+    this.cooperativeService.loadLoanById(loanId).subscribe({
+      next: (freshLoan) => {
+        this.isSubmitting = false;
+        if (freshLoan) {
+          this.upsertLoan(freshLoan);
+          this.selectLoan(freshLoan);
+
+          if (freshLoan.status === options.matchedStatus) {
+            this.showMessage('success', options.successSummary, options.successDetail(freshLoan));
+            return;
+          }
+        }
+
+        this.showMessage('warn', options.fallbackSummary, options.fallbackDetail);
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.showMessage('warn', options.fallbackSummary, options.fallbackDetail);
+      }
+    });
   }
 
   private showMessage(severity: QueueMessage['severity'], summary: string, detail: string): void {
