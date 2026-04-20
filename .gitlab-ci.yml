@@ -1,10 +1,10 @@
 stages:
     - update_subtrees
 
-# update_subtrees:
-#     stage: update_subtrees
-#     script:
-#         - echo "updating subtrees"
+update_subtrees:
+    stage: update_subtrees
+    script:
+        - echo "updating subtrees"
 #         - git config user.name "queensheba"
 #         - git config user.email "q.oluwadare@centrifugegroup.com"
 #         # - git subtree pull --prefix=projects/hr https://oauth2:${LOGIN_TOKEN}@gitlab.com/Simeon0001/erp-hr.git master --squash
