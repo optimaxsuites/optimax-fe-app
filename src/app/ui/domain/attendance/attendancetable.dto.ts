@@ -23,6 +23,7 @@ export interface AttendanceTableRecord {
     adminId: string;
     adminName: string;
   }
+  apiRecordId?: number; //stores the backend record ID
   // --- NEW: snapshot of the schedule that was active when this record was created ---
   appliedScheduleType?: 'office-hours' | 'shift';
   appliedScheduleId?: string;

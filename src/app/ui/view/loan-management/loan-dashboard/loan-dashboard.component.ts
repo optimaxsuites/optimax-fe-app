@@ -76,7 +76,7 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   styleUrls: ['./loan-dashboard.component.scss']
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
-  readonly recentLoanLimit = 10;
+  readonly recentLoanLimit = 5;
   readonly dashboardTableRowsPerPage = 10;
   isLoading = false;
   selectedDashboard: 'advance' | 'cooperative' = 'advance';
@@ -677,14 +677,12 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusDisplay(status: LoanApplication['status'] | undefined): string {
-    switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'AWAITING INTEREST ACCEPTANCE';
-      case 'READY_FOR_DISBURSEMENT':
-        return 'READY FOR DISBURSEMENT';
-      default:
-        return String(status || '').replace(/_/g, ' ');
-    }
+    // Generic Title Case for any status
+    if (!status) return '';
+    return String(status)
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
   }
 
   getDisplayedSubsetLabel(): string {

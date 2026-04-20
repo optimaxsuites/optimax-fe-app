@@ -1,10 +1,9 @@
-// loan-purpose-management.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, FormControl, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { LoanPurposeService, LoanPurposeData, CreatePurposePayload } from '../../../service/loan/loan-purpose.service';
-import { Router } from '@angular/router';
+import { LoanPurposeService, CreatePurposePayload, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { Location } from '@angular/common';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -24,13 +23,19 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
   messages: Message[] = [];
   searchTerm = '';
   
+  // Delete modal properties
+  showDeleteModal = false;
+  purposeToDelete: LoanPurposeData | null = null;
+  isDeleting = false;
+  
   private subscriptions = new Subscription();
 
   constructor(
     private fb: FormBuilder,
     private loanPurposeService: LoanPurposeService,
-    private location: Location,
-    private router: Router
+    private route: ActivatedRoute,
+    private router: Router,
+    private location: Location
   ) {
     this.purposeForm = this.createPurposeForm();
   }
@@ -95,9 +100,6 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
 
   get nameControl(): AbstractControl | null { return this.purposeForm.get('name'); }
   get codeControl(): AbstractControl | null { return this.purposeForm.get('code'); }
-  get minLoanAmountControl(): AbstractControl | null { return this.purposeForm.get('minLoanAmount'); }
-  get maxLoanAmountControl(): AbstractControl | null { return this.purposeForm.get('maxLoanAmount'); }
-  get defaultInterestRateControl(): AbstractControl | null { return this.purposeForm.get('defaultInterestRate'); }
   get requiresDocumentationControl(): AbstractControl | null { return this.purposeForm.get('requiresDocumentation'); }
 
   getDescriptionDisplay(description: string | undefined): string {
@@ -269,6 +271,7 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
           this.showMessage('success', 'Success', 'Loan purpose updated successfully');
           this.closeModal();
           this.loadPurposes();
+          this.isLoading = false;
         },
         error: (err: Error) => {
           console.error('Error updating purpose:', err);
@@ -288,6 +291,7 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
                 this.showMessage('success', 'Success', 'Loan purpose created successfully');
                 this.closeModal();
                 this.loadPurposes();
+                this.isLoading = false;
               },
               error: (err: Error) => {
                 console.error('Error creating purpose:', err);
@@ -303,6 +307,7 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
               this.showMessage('success', 'Success', 'Loan purpose created successfully');
               this.closeModal();
               this.loadPurposes();
+              this.isLoading = false;
             },
             error: (err: Error) => {
               console.error('Error creating purpose:', err);
@@ -315,16 +320,35 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  togglePurposeStatus(purpose: LoanPurposeData): void {
-    const newStatus = !purpose.isActive;
-    this.loanPurposeService.togglePurposeStatus(purpose.id!, newStatus).subscribe({
+  // Delete functionality
+  confirmDelete(purpose: LoanPurposeData): void {
+    this.purposeToDelete = purpose;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.purposeToDelete = null;
+  }
+
+  deletePurpose(): void {
+    if (!this.purposeToDelete?.id) {
+      this.showMessage('error', 'Error', 'Invalid purpose ID');
+      this.closeDeleteModal();
+      return;
+    }
+
+    this.isDeleting = true;
+    this.loanPurposeService.deletePurpose(this.purposeToDelete.id).subscribe({
       next: () => {
-        this.showMessage('success', 'Success', `Purpose ${newStatus ? 'activated' : 'deactivated'} successfully`);
-        this.loadPurposes();
+        this.showMessage('success', 'Success', `Purpose "${this.purposeToDelete?.name}" deleted successfully`);
+        this.closeDeleteModal();
+        this.loadPurposes(); // Reload the list
       },
       error: (err: Error) => {
-        console.error('Error toggling purpose status:', err);
-        this.showMessage('error', 'Error', 'Failed to update purpose status');
+        console.error('Error deleting purpose:', err);
+        this.showMessage('error', 'Error', err.message || 'Failed to delete loan purpose');
+        this.isDeleting = false;
       }
     });
   }

@@ -1,10 +1,6 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Message } from 'primeng/api';
-import { MessagesModule } from 'primeng/messages';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CooperativeLoanPurposeService } from '../../../service/loan/cooperative-loan/cooperative-loan-purpose.service';
@@ -26,13 +22,16 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   messages: Message[] = [];
   searchTerm = ''; 
   currentUuid = '';
+  
+  showDeleteModal = false;
+  purposeToDelete: LoanPurposeData | null = null;
+  isDeleting = false;
 
   private subscriptions = new Subscription();
 
   constructor(
     private fb: FormBuilder,
     private cooperativeLoanPurposeService: CooperativeLoanPurposeService,
-    private location: Location,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -134,17 +133,17 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
     this.subscriptions.add(
       this.cooperativeLoanPurposeService.getAllPurposes(false).subscribe({
         next: (purposes: LoanPurposeData[]) => {
-          this.purposes = purposes;
+          console.log('Loaded purposes from API after refresh:', purposes);
+          console.log('Active purposes:', purposes.filter(p => p.isActive));
+          console.log('Inactive purposes:', purposes.filter(p => !p.isActive));
+          console.log('Count:', purposes.length);
+          
+          this.purposes = [...purposes];
           this.applyFilter();
           this.isLoading = false;
-
-          if (purposes.length === 0) {
-            this.showMessage('info', 'No Data', 'No cooperative loan purposes found. Click "New Purpose" to create one.');
-          }
         },
         error: (error: Error) => {
           console.error('Error loading cooperative purposes:', error);
-          this.showMessage('error', 'Error', error.message || 'Failed to load cooperative loan purposes');
           this.purposes = [];
           this.filteredPurposes = [];
           this.isLoading = false;
@@ -265,10 +264,11 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
       }
 
       this.cooperativeLoanPurposeService.updatePurpose(this.selectedPurpose.id, payload).subscribe({
-        next: () => {
+        next: (updatedPurpose: LoanPurposeData) => {
           this.showMessage('success', 'Success', 'Cooperative loan purpose updated successfully');
           this.closeModal();
           this.loadPurposes();
+          this.isLoading = false;
         },
         error: (error: Error) => {
           console.error('Error updating cooperative purpose:', error);
@@ -288,10 +288,12 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
         }
 
         this.cooperativeLoanPurposeService.createPurpose(payload).subscribe({
-          next: () => {
+          next: (newPurpose: LoanPurposeData) => {
             this.showMessage('success', 'Success', 'Cooperative loan purpose created successfully');
             this.closeModal();
-            this.loadPurposes();
+            this.purposes = [...this.purposes, newPurpose];
+            this.applyFilter();
+            this.isLoading = false;
           },
           error: (error: Error) => {
             console.error('Error creating cooperative purpose:', error);
@@ -302,10 +304,12 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
       },
       error: () => {
         this.cooperativeLoanPurposeService.createPurpose(payload).subscribe({
-          next: () => {
+          next: (newPurpose: LoanPurposeData) => {
             this.showMessage('success', 'Success', 'Cooperative loan purpose created successfully');
             this.closeModal();
-            this.loadPurposes();
+            this.purposes = [...this.purposes, newPurpose];
+            this.applyFilter();
+            this.isLoading = false;
           },
           error: (error: Error) => {
             console.error('Error creating cooperative purpose:', error);
@@ -317,16 +321,96 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
     });
   }
 
+  // CORRECT togglePurposeStatus method for the COMPONENT
   togglePurposeStatus(purpose: LoanPurposeData): void {
     const newStatus = !purpose.isActive;
-    this.cooperativeLoanPurposeService.togglePurposeStatus(purpose.id!, newStatus).subscribe({
+    const purposeId = purpose.id;
+    
+    if (!purposeId) {
+      this.showMessage('error', 'Error', 'Cannot update status: Purpose ID not found');
+      return;
+    }
+    
+    // Save original data for rollback
+    const originalPurpose = { ...purpose };
+    
+    // Optimistic update - update UI immediately
+    const indexInPurposes = this.purposes.findIndex(p => p.id === purposeId);
+    const indexInFiltered = this.filteredPurposes.findIndex(p => p.id === purposeId);
+    
+    if (indexInPurposes !== -1) {
+      this.purposes[indexInPurposes] = { 
+        ...this.purposes[indexInPurposes],
+        isActive: newStatus
+      };
+    }
+    
+    if (indexInFiltered !== -1) {
+      this.filteredPurposes[indexInFiltered] = { 
+        ...this.filteredPurposes[indexInFiltered],
+        isActive: newStatus
+      };
+    }
+    
+    // Trigger change detection
+    this.purposes = [...this.purposes];
+    this.filteredPurposes = [...this.filteredPurposes];
+    
+    this.isLoading = true;
+    
+    // Call the service
+    this.cooperativeLoanPurposeService.togglePurposeStatus(purposeId, newStatus).subscribe({
       next: () => {
         this.showMessage('success', 'Success', `Purpose ${newStatus ? 'activated' : 'deactivated'} successfully`);
-        this.loadPurposes();
+        this.isLoading = false;
       },
       error: (error: Error) => {
         console.error('Error toggling cooperative purpose status:', error);
-        this.showMessage('error', 'Error', 'Failed to update cooperative purpose status');
+        // Revert on error
+        if (indexInPurposes !== -1) {
+          this.purposes[indexInPurposes] = { ...originalPurpose };
+        }
+        if (indexInFiltered !== -1) {
+          this.filteredPurposes[indexInFiltered] = { ...originalPurpose };
+        }
+        this.purposes = [...this.purposes];
+        this.filteredPurposes = [...this.filteredPurposes];
+        this.showMessage('error', 'Error', error.message || 'Failed to update cooperative purpose status');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  confirmDelete(purpose: LoanPurposeData): void {
+    this.purposeToDelete = purpose;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.purposeToDelete = null;
+    this.isDeleting = false;
+  }
+
+  deletePurpose(): void {
+    if (!this.purposeToDelete?.id) {
+      this.showMessage('error', 'Error', 'Cannot delete: Purpose ID not found');
+      this.closeDeleteModal();
+      return;
+    }
+
+    this.isDeleting = true;
+    this.cooperativeLoanPurposeService.deletePurpose(this.purposeToDelete.id).subscribe({
+      next: () => {
+        this.showMessage('success', 'Success', `Purpose "${this.purposeToDelete?.name}" deleted successfully`);
+        this.purposes = this.purposes.filter(p => p.id !== this.purposeToDelete?.id);
+        this.filteredPurposes = this.filteredPurposes.filter(p => p.id !== this.purposeToDelete?.id);
+        this.closeDeleteModal();
+      },
+      error: (error: Error) => {
+        console.error('Error deleting purpose:', error);
+        this.showMessage('error', 'Error', error.message || 'Failed to delete cooperative loan purpose');
+        this.isDeleting = false;
       }
     });
   }

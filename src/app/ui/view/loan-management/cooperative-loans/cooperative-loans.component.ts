@@ -26,6 +26,18 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loans.component.scss']
 })
 export class CooperativeLoansComponent implements OnInit {
+
+    formatMemberId(memberId: number | string | undefined): string {
+      const idNum = Number(memberId);
+      if (!idNum || isNaN(idNum)) return '';
+      return `COP-${idNum.toString().padStart(3, '0')}`;
+    }
+
+    formatMembershipId(membershipId: number | string | undefined, groupCode?: string, memberId?: number | string): string {
+      if (!membershipId || !groupCode || !memberId) return '';
+      const alphaPart = groupCode.split('-')[0];
+      return `${alphaPart}-${memberId}-${membershipId}`;
+    }
   private readonly advanceStatusFilters = ['PENDING', 'APPROVED', 'READY_FOR_DISBURSEMENT', 'ACTIVE', 'SKIPPED', 'OVERDUE', 'PAUSED', 'COMPLETED', 'DEFAULTED', 'REJECTED'] as const;
   private isAdvanceStatusFilter(status: string | null): status is (typeof this.advanceStatusFilters)[number] {
     return !!status && this.advanceStatusFilters.includes(status as (typeof this.advanceStatusFilters)[number]);
@@ -45,6 +57,8 @@ export class CooperativeLoansComponent implements OnInit {
   members: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
   isLoading = true;
+  memberIdFilter: string | null = null;
+  memberNameForTitle: string = '';
   isLoadingEmployeeDetails = false;
   isSubmittingDisbursement = false;
   disbursementViewMode = false;
@@ -122,10 +136,21 @@ export class CooperativeLoansComponent implements OnInit {
       if (stage === 'READY_FOR_ADMIN_REVIEW' || stage === 'PENDING_GUARANTOR_APPROVAL' || stage === 'INFO_REQUESTED') {
         this.stageFilter = stage;
       }
+      // Handle memberId filter
+      this.memberIdFilter = params.get('memberId');
+      this.updateMemberNameForTitle();
       this.applyFilters();
     });
 
     this.loadLoans();
+  }
+
+  private updateMemberNameForTitle(): void {
+    if (this.memberIdFilter && this.members.length > 0) {
+      this.memberNameForTitle = this.getMemberName(this.memberIdFilter);
+    } else {
+      this.memberNameForTitle = '';
+    }
   }
 
   loadLoans(): void {
@@ -138,6 +163,7 @@ export class CooperativeLoansComponent implements OnInit {
       this.groups = groups;
       this.members = members;
       this.loans = loans;
+      this.updateMemberNameForTitle();
       this.applyFilters();
       this.isLoading = false;
 
@@ -152,6 +178,11 @@ export class CooperativeLoansComponent implements OnInit {
 
   applyFilters(): void {
     let results = [...this.loans];
+
+    // Filter by memberId if present
+    if (this.memberIdFilter) {
+      results = results.filter(loan => String(loan.memberId || loan.cooperativeMemberId) === String(this.memberIdFilter));
+    }
 
     const search = this.searchTerm.trim().toLowerCase();
     if (search) {
@@ -188,11 +219,17 @@ export class CooperativeLoansComponent implements OnInit {
   sortData(data: CooperativeLoan[]): CooperativeLoan[] {
     return data.sort((a, b) => {
       let valueA: any, valueB: any;
-
+      const extractNum = (val: any) => {
+        const str = String(val || '');
+        const match = str.match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      };
       switch(this.sortField) {
+        case 'loanCode':
         case 'loanId':
-          valueA = a.loanCode || a.loanId || '';
-          valueB = b.loanCode || b.loanId || '';
+        case 'id':
+          valueA = extractNum(a.loanCode || a.loanId || a.id);
+          valueB = extractNum(b.loanCode || b.loanId || b.id);
           break;
         case 'amount':
           valueA = a.amount;
@@ -209,7 +246,9 @@ export class CooperativeLoansComponent implements OnInit {
         default:
           return 0;
       }
-
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return this.sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+      }
       const comparison = compareLoanSortValues(valueA, valueB);
       return this.sortDirection === 'asc' ? comparison : -comparison;
     });

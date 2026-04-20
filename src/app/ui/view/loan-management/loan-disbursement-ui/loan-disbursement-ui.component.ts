@@ -149,17 +149,17 @@ export class LoanDisbursementUiComponent implements OnInit {
     if (!this.selectedDisbursementLoan || !this.accountingEmail || this.isSubmittingDisbursement) {
       return;
     }
-    
+
     // Record disbursement initiation
     this.disbursementInitiatedAt = new Date().toISOString();
     this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
-    
+
     // Get approved amount
     const approvedAmount = this.getApprovedAmount(this.selectedDisbursementLoan);
     const totalRepayable = resolveLoanTotalRepayableAmount(this.selectedDisbursementLoan);
-    
+
     this.isSubmittingDisbursement = true;
-    
+
     // Step 1: Create disbursement confirmation record in API
     const payload: CreateDisbursementPayload = {
       loanId: this.selectedDisbursementLoan.id,
@@ -169,24 +169,55 @@ export class LoanDisbursementUiComponent implements OnInit {
       paymentMethod: this.paymentMethod,
       notes: this.emailNotes
     };
-    
+
     this.disbursementConfirmationService.createConfirmation(payload).subscribe({
       next: (confirmation) => {
-        console.log('Disbursement confirmation created:', confirmation);
-        
-        // Step 2: Send email to accounting
-        const mailBody = this.buildAccountingMailBody(approvedAmount, totalRepayable);
-        this.sendAccountingMail(mailBody).subscribe({
+        // Step 2: Send accounting event to /x/api/v2/accounting/events
+        const accountingPayload = {
+          id: 0,
+          sourceModule: 'HR',
+          eventType: 'LOAN_DISBURSEMENT',
+          amount: totalRepayable,
+          currency: 'NGN',
+          reference: this.disbursementInstructionReference,
+          description: this.emailNotes || '',
+          transactionDate: this.disbursementInitiatedAt,
+          metadata: {
+            loanId: this.selectedDisbursementLoan!.id,
+            employeeName: this.selectedDisbursementLoan!.fullName,
+            employeeId: this.selectedDisbursementLoan!.employeeId,
+            employeeEmail: this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || '',
+            department: this.selectedDisbursementLoan!.department,
+            approvedAmount: approvedAmount,
+            interest: this.selectedDisbursementLoan!.interestRate,
+            repaymentPeriod: this.selectedDisbursementLoan!.repaymentTime,
+            modeOfPayment: this.selectedDisbursementLoan!.modeOfPayment,
+            purpose: this.selectedDisbursementLoan!.purpose,
+            approvedDate: this.selectedDisbursementLoan!.approvedDate,
+            approvedBy: this.getApprovedByName(),
+            bankName: this.selectedEmployeeDetails?.bankName,
+            accountName: `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || this.selectedDisbursementLoan!.fullName,
+            paymentMethod: this.paymentMethod,
+            initiatedBy: this.disbursementInitiatedBy,
+            initiatedAt: this.disbursementInitiatedAt
+          }
+        };
+
+        const apiBaseUrl = environment.apiBaseUrl || '';
+        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+        this.http.post(url, accountingPayload, { headers }).subscribe({
           next: () => {
-            // Step 3: Update loan status to READY_FOR_DISBURSEMENT
+            // Step 3: Only now update loan status to READY_FOR_DISBURSEMENT
             this.moveLoanToReadyForDisbursement();
           },
           error: (error) => {
-            console.error('Error sending disbursement request email:', error);
+            console.error('Error sending accounting event:', error);
             this.messages = [{
               severity: 'error',
-              summary: 'Email Failed',
-              detail: `The disbursement email could not be sent to ${this.accountingEmail}.`
+              summary: 'Accounting Event Failed',
+              detail: 'Failed to send event to accounting. Loan status was not updated.'
             }];
             this.isSubmittingDisbursement = false;
           }
@@ -287,8 +318,8 @@ export class LoanDisbursementUiComponent implements OnInit {
             this.replaceQueueLoan(updatedLoan);
             this.messages = [{
               severity: 'success',
-              summary: 'Loan Disbursed',
-              detail: `Loan ${updatedLoan.loanCode || updatedLoan.id} has been marked as disbursed.`
+              summary: 'Loan Activated',
+              detail: `Loan ${updatedLoan.loanCode || updatedLoan.id} has been set to ACTIVE. Repayment schedule is now available.`
             }];
             this.isSubmittingDisbursement = false;
             this.loadApprovedLoans();
@@ -510,7 +541,12 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   getQueueStatusLabel(loan: LoanApplication): string {
-    return loan.status === 'READY_FOR_DISBURSEMENT' ? 'READY FOR DISBURSEMENT' : 'APPROVED';
+    // Generic Title Case for any status
+    if (!loan.status) return '';
+    return String(loan.status)
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
   }
 
   getQueueStatusClass(loan: LoanApplication): string {

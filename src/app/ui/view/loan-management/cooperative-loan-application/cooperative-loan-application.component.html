@@ -2,83 +2,213 @@
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
   <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="cooperative-loan-form">
-    <div class="application-header lm-header-card" *ngIf="!isModal">
-      <div class="header-copy">
-        <h1><i class="fas fa-hand-holding-dollar"></i> Cooperative Loan Application</h1>
-        <p class="confidential">Complete the request with the required details for cooperative loan processing.</p>
-        <div class="header-meta" *ngIf="selectedMember">
-          <span class="meta-chip" *ngIf="selectedMember.fullName"><i class="fas fa-user"></i> {{ selectedMember.fullName }}</span>
-          <span class="meta-chip" *ngIf="selectedMember.memberId"><i class="fas fa-id-card"></i> Member ID: {{ selectedMember.memberId }}</span>
-          <span class="meta-chip" *ngIf="getSelectedMemberEmail()"><i class="fas fa-envelope"></i> {{ getSelectedMemberEmail() }}</span>
-          <span class="meta-chip" *ngIf="selectedMemberSalary > 0"><i class="fas fa-wallet"></i> Salary: {{ formatCurrency(selectedMemberSalary) }}</span>
+    <!-- Elegant Warning Banner -->
+    <div class="warning-banner">
+      <div class="warning-icon">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <div class="warning-content">
+        <strong>Important Notice</strong>
+        <p>You are not permitted to request a new loan if total active loans exceed one-third (1/3) of your monthly salary. Submitting false information may result in disciplinary action.</p>
+      </div>
+    </div>
+
+    <!-- Header for standalone mode -->
+    <div class="application-header" *ngIf="!isModal">
+      <div class="header-left">
+        <div class="header-icon">
+          <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="header-text">
+          <h1>Cooperative Loan Application</h1>
+          <p>Complete the request with accurate details for cooperative loan processing</p>
+        </div>
+      </div>
+      <div class="employee-badge" *ngIf="selectedMember">
+        <span *ngIf="selectedMember.fullName"><i class="fas fa-user-circle"></i> {{ selectedMember.fullName }}</span>
+        <span *ngIf="selectedMember.memberId"><i class="fas fa-id-card"></i> ID: {{ selectedMember.memberId }}</span>
+        <span *ngIf="getSelectedMemberEmail()"><i class="fas fa-envelope"></i> {{ getSelectedMemberEmail() }}</span>
+        <span *ngIf="selectedMemberSalary > 0"><i class="fas fa-wallet"></i> {{ formatCurrency(selectedMemberSalary) }}</span>
+      </div>
+    </div>
+
+    <!-- Header for modal mode - Left aligned -->
+    <div class="modal-header" *ngIf="isModal">
+      <div class="modal-header-left">
+        <i class="fas fa-hand-holding-dollar"></i>
+        <div>
+          <h2>New Cooperative Loan Request</h2>
+          <p>Fill in the details below to submit your cooperative loan request</p>
         </div>
       </div>
     </div>
 
-    <div class="compact-intro" *ngIf="isModal">
-      <h1><i class="fas fa-hand-holding-dollar"></i> New Cooperative Loan Request</h1>
-      <p>Fill in the details below to submit your cooperative loan request.</p>
-    </div>
-
+    <!-- Success Message -->
     <div class="submit-success" *ngIf="submitSuccessMessage">
       <i class="fas fa-check-circle"></i>
       <span>{{ submitSuccessMessage }}</span>
     </div>
 
-    <div class="form-layout">
-      <!-- Applicant Section -->
-      <div class="form-section wide">
-        <h2><i class="fas fa-user-check"></i> 1. Applicant Information</h2>
-        <p class="section-copy">Review your member details and select the loan group you wish to apply to.</p>
+    <!-- Two Column Layout -->
+    <div class="form-grid">
+      <!-- Left Column -->
+      <div class="form-column">
+        <!-- Applicant Information Card - Dark Gradient Style (like Financial Summary) -->
+        <div class="form-card applicant-summary-card">
+          <div class="card-header">
+            <div class="card-header-icon light">
+              <i class="fas fa-user-check"></i>
+            </div>
+            <h3>Applicant Information</h3>
+          </div>
 
-        <div class="fixed-member-box" *ngIf="selectedMember">
-          <div class="member-details-grid">
-            <div class="member-detail">
-              <span class="detail-label">Full Name</span>
-              <span class="detail-value">{{ selectedMember.fullName }}</span>
+          <!-- Member Details - Dark theme -->
+          <div class="member-info-dark" *ngIf="selectedMember">
+            <div class="member-details-grid-dark">
+              <div class="member-detail-dark">
+                <span class="detail-label-dark">Full Name</span>
+                <span class="detail-value-dark">{{ selectedMember.fullName }}</span>
+              </div>
+              <div class="member-detail-dark">
+                <span class="detail-label-dark">Member ID</span>
+                <span class="detail-value-dark">{{ selectedMember.memberId }}</span>
+              </div>
+              <div class="member-detail-dark">
+                <span class="detail-label-dark">Email</span>
+                <span class="detail-value-dark">{{ getSelectedMemberEmail() }}</span>
+              </div>
+              <div class="member-detail-dark">
+                <span class="detail-label-dark">Monthly Salary</span>
+                <span class="detail-value-dark salary-highlight">{{ formatCurrency(selectedMemberSalary) }}</span>
+              </div>
+              <div class="member-detail-dark">
+                <span class="detail-label-dark">Membership Tenure</span>
+                <span class="detail-value-dark">{{ getMemberTenureMonths(selectedMember.id ? selectedMember.id.toString() : '') }} month(s)</span>
+              </div>
             </div>
-            <div class="member-detail">
-              <span class="detail-label">Member ID</span>
-              <span class="detail-value">{{ selectedMember.memberId }}</span>
-            </div>
-            <div class="member-detail">
-              <span class="detail-label">Email</span>
-              <span class="detail-value">{{ getSelectedMemberEmail() }}</span>
-            </div>
-            <div class="member-detail">
-              <span class="detail-label">Monthly Salary</span>
-              <span class="detail-value">{{ formatCurrency(selectedMemberSalary) }}</span>
-            </div>
-            <div class="member-detail">
-              <span class="detail-label">Membership Tenure</span>
-              <span class="detail-value">{{ getMemberTenureMonths(selectedMember.id ? selectedMember.id.toString() : '') }} month(s)</span>
+          </div>
+
+          <div class="eligibility-note-dark" *ngIf="!selectedMember">
+            <i class="fas fa-info-circle"></i>
+            <span>Select a member to view the loan groups they belong to.</span>
+          </div>
+
+          <div class="form-group-dark">
+            <label>Select Loan Group <span class="required-dark">*</span></label>
+            <select formControlName="groupId" [disabled]="!selectedMember || qualifiedGroups.length === 0" class="form-control-dark">
+              <option value="" disabled selected>-- Select a group --</option>
+              <option *ngFor="let group of qualifiedGroups" [value]="group.id">
+                {{ group.name }}
+              </option>
+            </select>
+            <div class="eligibility-note-dark warning" *ngIf="selectedMember && qualifiedGroups.length === 0">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>This member does not have an active membership in any loan group yet.</span>
             </div>
           </div>
         </div>
 
-        <div class="eligibility-note blocked" *ngIf="!selectedMember">
-          <i class="fas fa-info-circle"></i> Select a member to view the loan groups they belong to.
-        </div>
+        <!-- Loan Details Card -->
+        <div class="form-card">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <h3>Loan Details</h3>
+          </div>
 
-        <div class="form-group">
-          <label>Select Loan Group <span class="required">*</span></label>
-          <select formControlName="groupId" [disabled]="!selectedMember || qualifiedGroups.length === 0" class="form-select">
-            <option value="">-- Select a group --</option>
-            <option *ngFor="let group of qualifiedGroups" [value]="group.id">
-              {{ group.name }}
-            </option>
-          </select>
-          <div class="eligibility-note blocked" *ngIf="selectedMember && qualifiedGroups.length === 0">
-            <i class="fas fa-exclamation-triangle"></i> This member does not have an active membership in any loan group yet.
+          <div class="form-row">
+            <div class="form-group">
+              <label>Loan Amount <span class="required">*</span></label>
+              <div class="input-with-symbol">
+                <span class="input-symbol">₦</span>
+                <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" min="1000">
+              </div>
+              <div class="field-hint" *ngIf="selectedGroup">
+                Max borrowable: {{ formatCurrency(maxBorrowableAmount) }}
+              </div>
+              <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
+                <span *ngIf="applicationForm.get('amount')?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Loan amount is required</span>
+                <span *ngIf="applicationForm.get('amount')?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum amount is {{ formatCurrency(1000) }}</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Repayment Period <span class="required">*</span></label>
+              <div class="input-with-suffix">
+                <input type="number" formControlName="repaymentTime" class="form-control" placeholder="1-60" min="1">
+                <span class="input-suffix">months</span>
+              </div>
+              <div class="field-hint" *ngIf="selectedGroup">
+                Range: {{ selectedGroup.minDuration }} - {{ selectedGroup.maxDuration }} months
+              </div>
+              <div class="error" *ngIf="applicationForm.get('repaymentTime')?.invalid && applicationForm.get('repaymentTime')?.touched">
+                <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Repayment period is required</span>
+                <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['min'] || applicationForm.get('repaymentTime')?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Enter {{ selectedGroup?.minDuration }}-{{ selectedGroup?.maxDuration }} months</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Repayment Mode <span class="required">*</span></label>
+              <div class="mode-toggle">
+                <button type="button" class="mode-option" [class.active]="applicationForm.get('modeOfPayment')?.value === 'MONTHLY'" (click)="applicationForm.get('modeOfPayment')?.setValue('MONTHLY')">
+                  <i class="fas fa-calendar-alt"></i>
+                  <span>Monthly</span>
+                  <small>Spread over time</small>
+                </button>
+                <button type="button" class="mode-option" [class.active]="applicationForm.get('modeOfPayment')?.value === 'ONE_OFF'" (click)="applicationForm.get('modeOfPayment')?.setValue('ONE_OFF')">
+                  <i class="fas fa-wallet"></i>
+                  <span>One-off</span>
+                  <small>Single payment</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Request Date <span class="required">*</span></label>
+              <input type="datetime-local" formControlName="requestDate" class="form-control">
+              <div class="error" *ngIf="applicationForm.get('requestDate')?.invalid && applicationForm.get('requestDate')?.touched">
+                <i class="fas fa-exclamation-circle"></i> Request date is required
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Loan Purpose <span class="required">*</span></label>
+            <select formControlName="purpose" class="form-control" (change)="onPurposeChange()">
+              <option value="" disabled selected>-- Select loan purpose --</option>
+              <option *ngFor="let purpose of availablePurposes" [value]="purpose.name">{{ purpose.name }}</option>
+            </select>
+            <div class="eligibility-note blocked" *ngIf="!hasAvailablePurposes">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>No active cooperative loan purposes are currently configured.</span>
+            </div>
+            <div class="field-hint" *ngIf="selectedPurposeDefinition">
+              <i class="fas fa-info-circle"></i> {{ selectedPurposeDefinition.description || selectedPurposeDefinition.code }}
+            </div>
+            <div class="error" *ngIf="applicationForm.get('purpose')?.invalid && applicationForm.get('purpose')?.touched">
+              <i class="fas fa-exclamation-circle"></i> Loan purpose is required
+            </div>
           </div>
         </div>
 
-        <div class="group-info" *ngIf="selectedGroup">
+        <!-- Group Information Card -->
+        <div class="form-card group-info-card" *ngIf="selectedGroup && !isLoadingGroupDetails">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3>Group Information</h3>
+          </div>
+          
           <div class="group-header">
             <strong>{{ selectedGroup.name }}</strong>
             <span class="status-badge active">Active</span>
           </div>
           <p class="group-description">{{ selectedGroup.description }}</p>
+          
           <div class="group-details-grid">
             <div class="group-detail">
               <span class="detail-label">Duration Range</span>
@@ -105,349 +235,212 @@
               <span class="detail-value">{{ guarantorRequirementLabel || 'None' }}</span>
             </div>
             <div class="group-detail">
-              <span class="detail-label">Max Borrowable Now</span>
-              <span class="detail-value highlight">{{ formatCurrency(maxBorrowableAmount || 0) }}</span>
-            </div>
-            <div class="group-detail" *ngIf="getSelectedGroupAccountingEmail()">
-              <span class="detail-label">Accounting Email</span>
-              <span class="detail-value email-row">
-                <a [attr.href]="buildMailLink(getSelectedGroupAccountingEmail())">{{ getSelectedGroupAccountingEmail() }}</a>
-              </span>
-            </div>
-            <div class="group-detail">
               <span class="detail-label">Late Fee Policy</span>
               <span class="detail-value">{{ getSelectedGroupLateFeeSummary() }}</span>
             </div>
-            <div class="group-detail" *ngIf="getSelectedGroupSettlementSummary()">
-              <span class="detail-label">Settlement Rails</span>
-              <span class="detail-value">{{ getSelectedGroupSettlementSummary() }}</span>
-            </div>
           </div>
         </div>
       </div>
 
-      <!-- Loan Details Section -->
-      <div class="form-section wide">
-        <h2><i class="fas fa-file-invoice-dollar"></i> 2. Loan Details</h2>
-        <p class="section-copy">Provide the core details of your loan request below.</p>
+      <!-- Right Column -->
+      <div class="form-column">
+        <!-- Repayment Preview Card -->
+        <div class="form-card preview-card">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Repayment Preview</h3>
+          </div>
 
-        <div class="details-grid">
-          <div class="form-group">
-            <label>Loan Amount (₦) <span class="required">*</span></label>
-            <input type="number" formControlName="amount" class="form-input" placeholder="e.g., 100000" min="1000">
-            <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
-              <span *ngIf="applicationForm.get('amount')?.errors?.['required']">Loan amount is required</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['min']">Minimum amount is {{ formatCurrency(1000) }}</span>
-              <span *ngIf="applicationForm.get('amount')?.errors?.['shareLimit']">For share-backed loans, amount cannot exceed member share capital.</span>
+          <div class="preview-amount" *ngIf="repaymentAmount > 0">
+            <div class="preview-card-item">
+              <span class="preview-label">{{ applicationForm.get('modeOfPayment')?.value === 'ONE_OFF' ? 'One-off Payment' : 'Monthly Payment' }}</span>
+              <span class="preview-value">{{ formatCurrency(repaymentAmount) }}</span>
+            </div>
+            <div class="preview-card-item">
+              <span class="preview-label">Total Interest</span>
+              <span class="preview-value interest">{{ formatCurrency(totalInterest) }}</span>
+            </div>
+            <div class="preview-card-item total">
+              <span class="preview-label">Total Repayment</span>
+              <span class="preview-value">{{ formatCurrency(totalRepayment) }}</span>
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Repayment Time (Months) <span class="required">*</span></label>
-            <input type="number" formControlName="repaymentTime" class="form-input" placeholder="e.g., 12" min="1">
-            <div class="field-hint" *ngIf="selectedGroup">
-              Range: {{ selectedGroup.minDuration }} - {{ selectedGroup.maxDuration }} months
-            </div>
-            <div class="error" *ngIf="applicationForm.get('repaymentTime')?.invalid && applicationForm.get('repaymentTime')?.touched">
-              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['required']">Repayment time is required</span>
-              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['min']">Minimum {{ selectedGroup?.minDuration }} months</span>
-              <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['max']">Maximum {{ selectedGroup?.maxDuration }} months</span>
-            </div>
+          <div class="preview-placeholder" *ngIf="repaymentAmount === 0">
+            <i class="fas fa-calculator"></i>
+            <p>Enter loan details to see preview</p>
           </div>
 
-          <div class="form-group">
-            <label>Mode Of Payment <span class="required">*</span></label>
-            <select formControlName="modeOfPayment" class="form-select">
-              <option value="MONTHLY">MONTHLY</option>
-              <option value="ONE_OFF">ONE_OFF</option>
-            </select>
-            <div class="field-hint">Choose whether this loan will be repaid monthly or in a single payment.</div>
-          </div>
-
-          <div class="form-group">
-            <label>Request Date <span class="required">*</span></label>
-            <input type="datetime-local" formControlName="requestDate" class="form-input">
-            <div class="field-hint">This will be sent to the backend as the loan request timestamp.</div>
-            <div class="error" *ngIf="applicationForm.get('requestDate')?.invalid && applicationForm.get('requestDate')?.touched">
-              Request date is required
+          <div class="patronage-info" *ngIf="selectedGroup && selectedGroup.patronageEligible">
+            <div class="patronage-badge eligible">
+              <i class="fas fa-check-circle"></i>
+              Patronage Eligible
             </div>
-          </div>
-
-          <div class="form-group purpose-group">
-            <label>Loan Purpose <span class="required">*</span></label>
-            <select formControlName="purpose" class="form-select">
-              <option value="">-- Select loan purpose --</option>
-              <option *ngFor="let purpose of availablePurposes" [value]="purpose.name">{{ purpose.name }}</option>
-            </select>
-            <div class="eligibility-note blocked" *ngIf="!hasAvailablePurposes">
-              <i class="fas fa-exclamation-triangle"></i> No active cooperative loan purposes are currently configured.
-            </div>
-            <div class="field-hint" *ngIf="selectedPurposeDefinition">
-              {{ selectedPurposeDefinition.description || selectedPurposeDefinition.code }}
-            </div>
-            <div class="error" *ngIf="applicationForm.get('purpose')?.invalid && applicationForm.get('purpose')?.touched">
-              Loan purpose is required
-            </div>
-            <div class="error" *ngIf="applicationForm.get('purpose')?.touched && hasAvailablePurposes && !selectedPurposeDefinition && applicationForm.get('purpose')?.value">
-              Select a valid cooperative loan purpose.
+            <div class="patronage-refund">
+              <strong>Estimated Annual Refund:</strong> {{ formatCurrency(estimatedAnnualPatronageRefund || 0) }}/year ({{ selectedGroup.patronageRate }}%)
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Repayment Preview Section -->
-      <div class="form-section" *ngIf="repaymentAmount > 0">
-        <h2><i class="fas fa-chart-line"></i> 3. Repayment Preview</h2>
-        <p class="section-copy">This updates automatically based on your loan amount and duration.</p>
-        
-        <div class="repayment-preview">
-          <div class="preview-card">
-            <span class="preview-label">{{ applicationForm.get('modeOfPayment')?.value === 'ONE_OFF' ? 'One-off Payment' : 'Monthly Payment' }}</span>
-            <span class="preview-value">{{ formatCurrency(repaymentAmount) }}</span>
-          </div>
-          <div class="preview-card">
-            <span class="preview-label">Total Interest</span>
-            <span class="preview-value">{{ formatCurrency(totalInterest) }}</span>
-          </div>
-          <div class="preview-card total">
-            <span class="preview-label">Total Repayment</span>
-            <span class="preview-value">{{ formatCurrency(totalRepayment) }}</span>
-          </div>
-        </div>
-
-        <div class="patronage-info" *ngIf="selectedGroup">
-          <div class="patronage-badge" [class.eligible]="selectedGroup.patronageEligible">
-            <i class="fas" [class.fa-check-circle]="selectedGroup.patronageEligible" [class.fa-times-circle]="!selectedGroup.patronageEligible"></i>
-            Patronage Eligibility: {{ selectedGroup.patronageEligible ? 'YES' : 'NO' }}
-          </div>
-          <div class="patronage-refund" *ngIf="selectedGroup.patronageEligible">
-            <strong>Estimated Annual Refund:</strong> {{ formatCurrency(estimatedAnnualPatronageRefund || 0) }}/year ({{ selectedGroup.patronageRate }}%)
-          </div>
-        </div>
-
-        <div class="schedule-preview" *ngIf="previewRepaymentSchedule.length > 0">
-          <div class="preview-subhead">
-            <div>
-              <span class="eyebrow">Estimated Schedule</span>
-              <h3>{{ applicationForm.get('modeOfPayment')?.value === 'ONE_OFF' ? 'Single repayment timeline' : 'Projected installment schedule' }}</h3>
+        <!-- Guarantors Card (conditional) -->
+        <div class="form-card" *ngIf="selectedGroup?.requiresGuarantors">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-users"></i>
             </div>
+            <h3>Guarantors</h3>
           </div>
+          
+          <p class="section-copy">Add at least {{ requiredGuarantorCount || 0 }} guarantor(s). Each guarantor will receive a pending approval request.</p>
 
-          <div class="schedule-table-wrap">
-            <app-table
-              [columns]="[
-                { header: '#' },
-                { header: 'Due Date' },
-                { header: 'Principal' },
-                { header: 'Interest' },
-                { header: 'Total' },
-                { header: 'Remaining' }
-              ]"
-              [rows]="previewRepaymentSchedule"
-              tableClass="schedule-preview-table">
-              <ng-template appTableBody let-item>
-                <td>{{ item.installmentNo }}</td>
-                <td>{{ item.dueDate | date:'mediumDate' }}</td>
-                <td>{{ formatCurrency(item.principalAmount) }}</td>
-                <td>{{ formatCurrency(item.interestAmount) }}</td>
-                <td>{{ formatCurrency(item.totalAmount) }}</td>
-                <td>{{ formatCurrency(item.remainingBalance) }}</td>
-              </ng-template>
-            </app-table>
-          </div>
-        </div>
-
-        <div class="workflow-preview" *ngIf="workflowTimelinePreview.length > 0">
-          <div class="preview-subhead">
-            <div>
-              <span class="eyebrow">Workflow Timeline</span>
-              <h3>What happens after submission</h3>
-            </div>
-          </div>
-
-          <div class="workflow-steps">
-            <div class="workflow-step" *ngFor="let step of workflowTimelinePreview" [ngClass]="step.tone">
-              <span class="step-dot"></span>
-              <div>
-                <strong>{{ step.title }}</strong>
-                <p>{{ step.description }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-section wide">
-        <h2><i class="fas fa-paperclip"></i> 4. Supporting Documents</h2>
-        <p class="section-copy">Attach evidence that supports the selected purpose and helps the admin review faster.</p>
-
-        <div class="document-requirements" *ngIf="selectedPurposeDefinition">
-          <div class="requirement-banner" [class.required]="requiresSupportingDocuments">
-            <i class="fas" [class.fa-circle-check]="!requiresSupportingDocuments" [class.fa-file-circle-check]="requiresSupportingDocuments"></i>
-            <div>
-              <strong>{{ requiresSupportingDocuments ? 'Documents required for this purpose' : 'Documents optional for this purpose' }}</strong>
-              <p>
-                {{ requiresSupportingDocuments
-                  ? 'Upload at least one supporting file before submitting this request.'
-                  : 'You can still upload files to speed up verification and approval.' }}
-              </p>
-            </div>
-          </div>
-
-          <div class="required-doc-tags" *ngIf="requiredDocumentationTypes.length > 0">
-            <span class="doc-tag" *ngFor="let docType of requiredDocumentationTypes">{{ docType }}</span>
-          </div>
-        </div>
-
-        <div class="document-upload-box">
-          <input
-            type="file"
-            id="cooperativeSupportingDocuments"
-            class="form-input doc-upload-input"
-            multiple
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            (change)="onDocumentsSelected($event)">
-          <p class="field-hint">Upload files like invoices, medical records, approvals, quotations, payslips, or any required policy evidence.</p>
-          <div class="error" *ngIf="hasDocumentRequirementGap">
-            Upload at least one supporting document for this purpose before submitting.
-          </div>
-
-          <ul class="uploaded-documents" *ngIf="supportingDocuments.length > 0">
-            <li *ngFor="let document of supportingDocuments; let i = index" class="document-item">
-              <div>
-                <strong>{{ document.name }}</strong>
-                <small>{{ document.type || 'Document' }} · {{ getDocumentSizeLabel(document.size) }}</small>
-              </div>
-              <button type="button" class="remove-document" (click)="removeDocument(i)">Remove</button>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Guarantors Section -->
-      <div class="form-section wide" *ngIf="selectedGroup?.requiresGuarantors">
-        <h2><i class="fas fa-users"></i> 5. Guarantors</h2>
-        <p class="section-copy">Add at least {{ requiredGuarantorCount || 0 }} guarantor(s). Each guarantor will receive a pending approval request.</p>
-
-        <div formArrayName="guarantors" class="guarantor-list">
-          <div class="guarantor-item" *ngFor="let guarantor of guarantorsArray.controls; let i = index" [formGroupName]="i">
-            <div class="guarantor-fields">
-              <select formControlName="memberId" class="form-select">
-                <option value="">Select guarantor</option>
-                <option *ngFor="let candidate of guarantorCandidates" [value]="candidate.id">
-                  {{ candidate.fullName }} ({{ candidate.memberId }})
-                </option>
-              </select>
-              <input type="number" formControlName="guaranteedAmount" class="form-input" placeholder="Guaranteed amount" min="1" />
-              <span class="pending-chip">Pending</span>
-              <button type="button" class="remove-mini" (click)="removeGuarantor(i)" [disabled]="guarantorsArray.length <= (requiredGuarantorCount || 0)">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </div>
-            
-            <div class="guarantor-contact-info" *ngIf="guarantor.get('memberId')?.value && guarantorContacts[guarantor.get('memberId')?.value]">
-              <div *ngFor="let contact of guarantorContacts[guarantor.get('memberId')?.value]" class="contact-details">
-                <div class="contact-grid">
-                  <div><strong>{{ contact.fullName }}</strong></div>
-                  <div>Email: {{ contact.email }}</div>
-                  <div>Phone: {{ contact.phone }}</div>
-                  <div>Address: {{ contact.address }}</div>
-                  <div>Relationship: {{ contact.relationshipId }}</div>
-                  <div>ID Number: {{ contact.idNumber }}</div>
-                  <div>Years Known: {{ contact.yearsKnown }}</div>
+          <div formArrayName="guarantors" class="guarantor-list">
+            <div class="guarantor-item" *ngFor="let guarantor of guarantorsArray.controls; let i = index" [formGroupName]="i">
+              <div class="guarantor-fields">
+                <select formControlName="memberId" class="form-control">
+                  <option value="" disabled>Select guarantor</option>
+                  <option *ngFor="let candidate of guarantorCandidates" [value]="candidate.id">
+                    {{ candidate.fullName }} ({{ candidate.memberId }})
+                  </option>
+                </select>
+                <div class="input-with-symbol">
+                  <span class="input-symbol">₦</span>
+                  <input type="number" formControlName="guaranteedAmount" class="form-control with-symbol" placeholder="Amount">
                 </div>
-                <div class="guarantor-actions">
-                  <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)" title="Approve guarantor" aria-label="Approve guarantor">
-                    <i class="fas fa-check"></i>
-                  </button>
-                  <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)" title="Reject guarantor" aria-label="Reject guarantor">
-                    <i class="fas fa-times"></i>
-                  </button>
+                <span class="pending-chip">Pending</span>
+                <button type="button" class="remove-mini" (click)="removeGuarantor(i)" [disabled]="guarantorsArray.length <= (requiredGuarantorCount || 0)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+              
+              <div class="guarantor-contact-info" *ngIf="guarantor.get('memberId')?.value && guarantorContacts[guarantor.get('memberId')?.value]">
+                <div *ngFor="let contact of guarantorContacts[guarantor.get('memberId')?.value]" class="contact-details">
+                  <div class="contact-grid">
+                    <div><strong>{{ contact.fullName }}</strong></div>
+                    <div>Email: {{ contact.email }}</div>
+                    <div>Phone: {{ contact.phone }}</div>
+                    <div>Years Known: {{ contact.yearsKnown }}</div>
+                  </div>
+                  <div class="guarantor-actions">
+                    <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)">
+                      <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)">
+                      <i class="fas fa-times"></i> Reject
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <button type="button" class="add-mini" (click)="addGuarantor()">
+            <i class="fas fa-plus"></i> Add Guarantor
+          </button>
+          
+          <div class="guarantor-summary">
+            <div class="total-guaranteed">
+              <strong>Total Guaranteed:</strong> {{ formatCurrency(totalGuaranteedAmount || 0) }}
+            </div>
+            <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['minimumGuarantors']">
+              <i class="fas fa-exclamation-circle"></i> Minimum guarantors not met.
+            </div>
+            <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['duplicateGuarantor']">
+              <i class="fas fa-exclamation-circle"></i> Duplicate guarantors are not allowed.
+            </div>
+            <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['selfGuarantee']">
+              <i class="fas fa-exclamation-circle"></i> Borrowing member cannot be selected as guarantor.
+            </div>
+            <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['insufficientCoverage']">
+              <i class="fas fa-exclamation-circle"></i> Guaranteed total must cover the loan amount.
+            </div>
+          </div>
         </div>
 
-        <button type="button" class="add-mini" (click)="addGuarantor()">
-          <i class="fas fa-plus"></i> Add Guarantor
-        </button>
-        
-        <div class="guarantor-summary">
-          <div class="total-guaranteed">
-            <strong>Total Guaranteed:</strong> {{ formatCurrency(totalGuaranteedAmount || 0) }}
+        <!-- Terms & Agreement Card -->
+        <div class="form-card terms-card">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-shield-check"></i>
+            </div>
+            <h3>Terms & Agreement</h3>
           </div>
-          <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['minimumGuarantors']">
-            <i class="fas fa-exclamation-circle"></i> Minimum guarantors not met.
-          </div>
-          <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['duplicateGuarantor']">
-            <i class="fas fa-exclamation-circle"></i> Duplicate guarantors are not allowed.
-          </div>
-          <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['selfGuarantee']">
-            <i class="fas fa-exclamation-circle"></i> Borrowing member cannot be selected as guarantor.
-          </div>
-          <div class="error" *ngIf="applicationForm.get('guarantors')?.errors?.['insufficientCoverage']">
-            <i class="fas fa-exclamation-circle"></i> Guaranteed total must cover the loan amount.
-          </div>
-        </div>
-      </div>
 
-      <!-- Acknowledgement Section -->
-      <div class="form-section wide acknowledgement-section">
-        <h2><i class="fas fa-shield-check"></i> 6. Acknowledgement</h2>
-        <p class="section-copy">Review the declarations below before you submit the application.</p>
-        
-        <div class="acknowledgement-box">
-          <p class="acknowledgement-intro">I understand and agree that:</p>
-          <ul class="terms-list">
-            <li>This application will be submitted for admin review and processed under cooperative policy terms.</li>
-            <li>Interest rates will be applied as per the selected group's policy.</li>
-            <li>Late payments may incur additional charges as per cooperative bylaws.</li>
-            <li>Approval is conditional upon meeting all eligibility requirements.</li>
-            <li *ngIf="selectedGroup?.requiresGuarantors">Guarantor approval is required before final admin review.</li>
-            <li *ngIf="selectedGroup?.minimumGuarantors">A minimum of {{ selectedGroup?.minimumGuarantors }} guarantor(s) must stay valid for this request.</li>
-          </ul>
-          
-          <div class="checkbox-group">
-            <input type="checkbox" id="terms" formControlName="acceptTerms" class="form-checkbox">
-            <label for="terms">I confirm all information is correct. <span class="required">*</span></label>
+          <div class="terms-list">
+            <div class="term-item">
+              <div class="term-icon"><i class="fas fa-check-circle"></i></div>
+              <div class="term-text">This application will be submitted for admin review and processed under cooperative policy terms.</div>
+            </div>
+            <div class="term-item">
+              <div class="term-icon"><i class="fas fa-percent"></i></div>
+              <div class="term-text">Interest rates will be applied as per the selected group's policy.</div>
+            </div>
+            <div class="term-item">
+              <div class="term-icon"><i class="fas fa-clock"></i></div>
+              <div class="term-text">Late payments may incur additional charges as per cooperative bylaws.</div>
+            </div>
+            <div class="term-item">
+              <div class="term-icon"><i class="fas fa-search"></i></div>
+              <div class="term-text">Approval is conditional upon meeting all eligibility requirements.</div>
+            </div>
+            <div class="term-item" *ngIf="selectedGroup?.requiresGuarantors">
+              <div class="term-icon"><i class="fas fa-users"></i></div>
+              <div class="term-text">Guarantor approval is required before final admin review.</div>
+            </div>
           </div>
-          
-          <div class="checkbox-group">
-            <input type="checkbox" id="acknowledgement" formControlName="acceptAcknowledgement" class="form-checkbox">
-            <label for="acknowledgement">
-              I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable. <span class="required">*</span>
+
+          <div class="agreement">
+            <label class="checkbox">
+              <input type="checkbox" formControlName="acceptTerms">
+              <span>I confirm all information is correct. <span class="required">*</span></span>
             </label>
-          </div>
-          
-          <div class="error" *ngIf="applicationForm.get('acceptTerms')?.invalid && applicationForm.get('acceptTerms')?.touched">
-            You must confirm the information is correct
-          </div>
-          <div class="error" *ngIf="applicationForm.get('acceptAcknowledgement')?.invalid && applicationForm.get('acceptAcknowledgement')?.touched">
-            You must accept the terms and conditions
+            <label class="checkbox">
+              <input type="checkbox" formControlName="acceptAcknowledgement">
+              <span>I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable. <span class="required">*</span></span>
+            </label>
+            <div class="error" *ngIf="applicationForm.get('acceptTerms')?.invalid && applicationForm.get('acceptTerms')?.touched">
+              <i class="fas fa-exclamation-circle"></i> You must confirm the information is correct
+            </div>
+            <div class="error" *ngIf="applicationForm.get('acceptAcknowledgement')?.invalid && applicationForm.get('acceptAcknowledgement')?.touched">
+              <i class="fas fa-exclamation-circle"></i> You must accept the terms and conditions
+            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Form Actions -->
     <div class="form-actions" *ngIf="!showConfirmation">
-      <button type="button" class="cancel-button" (click)="goBack()" [disabled]="isSubmitting">Cancel</button>
-      <button type="submit" class="submit-button" [disabled]="!applicationForm.valid || isSubmitting">
-        <span *ngIf="!isSubmitting">Submit Application</span>
-        <span *ngIf="isSubmitting" class="loading">Processing...</span>
+      <button type="button" class="btn-secondary" (click)="goBack()" [disabled]="isSubmitting">
+        <i class="fas fa-times"></i>
+        <span>Cancel</span>
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="!applicationForm.valid || isSubmitting">
+        <span *ngIf="!isSubmitting">
+          <i class="fas fa-paper-plane"></i>
+          <span>Submit Application</span>
+        </span>
+        <span *ngIf="isSubmitting" class="loading-spinner">
+          <i class="fas fa-spinner fa-pulse"></i>
+          <span>Processing...</span>
+        </span>
       </button>
     </div>
 
-    <!-- Confirmation Step -->
+    <!-- Confirmation Dialog -->
     <div class="confirmation-overlay" *ngIf="showConfirmation" (click)="showConfirmation = false">
       <div class="confirmation-dialog" (click)="$event.stopPropagation()">
         <div class="confirmation-header">
-          <div>
-            <span class="confirmation-eyebrow">Review Application</span>
-            <h2>Confirm Loan Application</h2>
-            <p>Check the borrowing terms below before the request is sent for processing.</p>
+          <div class="confirmation-header-left">
+            <i class="fas fa-clipboard-list"></i>
+            <div>
+              <span class="confirmation-eyebrow">Review Application</span>
+              <h2>Confirm Loan Application</h2>
+              <p>Check the borrowing terms below before the request is sent for processing</p>
+            </div>
           </div>
-          <button type="button" class="confirmation-close" (click)="showConfirmation = false" aria-label="Close confirmation dialog">
+          <button type="button" class="confirmation-close" (click)="showConfirmation = false">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -472,12 +465,6 @@
           </div>
 
           <div class="confirmation-card">
-            <span class="label">Supporting Documents</span>
-            <strong>{{ supportingDocuments.length }}</strong>
-            <small>{{ requiresSupportingDocuments ? 'Required by selected purpose' : 'Optional evidence attached' }}</small>
-          </div>
-
-          <div class="confirmation-card">
             <span class="label">Monthly Repayment</span>
             <strong>{{ formatCurrency(confirmationDetails.repaymentAmount || 0) }}</strong>
             <small>Total repayment {{ formatCurrency(confirmationDetails.totalRepayment || 0) }}</small>
@@ -494,21 +481,15 @@
             <strong>{{ selectedGroup.requiresGuarantors ? 'Guarantor-backed review flow' : 'Standard cooperative policy' }}</strong>
             <small>{{ guarantorRequirementLabel || 'None' }}</small>
           </div>
-
-          <div class="confirmation-card" *ngIf="getSelectedGroupAccountingEmail()">
-            <span class="label">Accounting Contact</span>
-            <strong>{{ getSelectedGroupAccountingEmail() }}</strong>
-            <small>Used when approved requests move to disbursement routing</small>
-          </div>
         </div>
 
         <div class="confirmation-actions">
-          <button type="button" class="cancel-button" (click)="showConfirmation = false">
+          <button type="button" class="btn-secondary" (click)="showConfirmation = false">
             <i class="fas fa-arrow-left"></i>
             <span>Back</span>
           </button>
-          <button type="button" class="submit-button" (click)="confirmSubmit()" [disabled]="isSubmitting">
-            <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+          <button type="button" class="btn-primary" (click)="confirmSubmit()" [disabled]="isSubmitting">
+            <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-pulse' : 'fa-paper-plane'"></i>
             <span>{{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}</span>
           </button>
         </div>

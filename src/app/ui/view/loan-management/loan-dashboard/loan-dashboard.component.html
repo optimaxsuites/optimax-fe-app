@@ -102,10 +102,7 @@
                             <span class="row-label">Outstanding</span>
                             <span class="row-value money warning">{{ formatCurrency(getPreviewResolvedOutstandingBalance(loan)) }}</span>
                         </div>
-                        <div class="detail-row">
-                            <span class="row-label">Late Fees</span>
-                            <span class="row-value money">{{ formatCurrency(getLateFeesTotal(loan)) }}</span>
-                        </div>
+                        <!-- Removed Late Fees row -->
                     </div>
                 </div>
                 <div class="detail-group">
@@ -121,10 +118,7 @@
                             <span class="row-label">Overdue Installments</span>
                             <span class="row-value strong">{{ getOverdueInstallmentsCount(loan) }}</span>
                         </div>
-                        <div class="detail-row">
-                            <span class="row-label">Grace Reminders</span>
-                            <span class="row-value strong">{{ getReminderSentCount(loan) }}</span>
-                        </div>
+                        <!-- Removed Grace Reminders row -->
                         <div class="detail-row">
                             <span class="row-label">Credit Flags</span>
                             <span class="row-value strong">{{ getCreditReportedCount(loan) }}</span>
@@ -205,7 +199,6 @@
                         { header: 'Month' },
                         { header: 'Due Date' },
                         { header: 'Due Amount' },
-                        { header: 'Late Fee' },
                         { header: 'Lifecycle' },
                         { header: 'Credit Report' }
                     ]"
@@ -215,7 +208,6 @@
                         <td>{{ item.installmentNo }}</td>
                         <td>{{ item.dueDate | date:'mediumDate' }}</td>
                         <td>{{ formatCurrency(item.totalAmount) }}</td>
-                        <td>{{ formatCurrency(item.lateFeeAmount || 0) }}</td>
                         <td>{{ getInstallmentLifecycleLabel(item) }}</td>
                         <td>{{ item.creditReportedAt ? 'Reported' : 'Not Reported' }}</td>
                     </ng-template>
@@ -327,7 +319,6 @@
                             { header: 'Employee Name', field: 'employeeName', sortable: true },
                             { header: 'Department', field: 'department', sortable: true },
                             { header: 'Amount', field: 'amount', sortable: true },
-                            { header: 'Late Fee / Grace' },
                             { header: 'Status', field: 'status', sortable: true },
                             { header: 'Date', field: 'requestDate', sortable: true },
                             { header: 'Actions' }
@@ -346,9 +337,6 @@
                             </td>
                             <td>{{ row.departmentDisplay }}</td>
                             <td class="amount">₦{{ row.loan.amount | number:'1.2-2' }}</td>
-                            <td>
-                                <div class="policy-summary">{{ row.overduePolicySummary }}</div>
-                            </td>
                             <td>
                                 <span [ngClass]="row.statusClass" class="status-badge">
                                     {{ row.statusLabel }}
@@ -424,17 +412,15 @@
 
                     <div
                         class="command-pill"
-                        [class.is-disabled]="approvedLoansCount === 0"
-                        [attr.aria-disabled]="approvedLoansCount === 0"
                         role="button"
                         tabindex="0"
-                        (click)="approvedLoansCount > 0 && openDisbursementCenter()"
-                        (keydown.enter)="approvedLoansCount > 0 && openDisbursementCenter()"
-                        (keydown.space)="approvedLoansCount > 0 && openDisbursementCenter()">
+                        (click)="openDisbursementCenter()"
+                        (keydown.enter)="openDisbursementCenter()"
+                        (keydown.space)="openDisbursementCenter()">
                         <span class="command-icon"><i class="pi pi-wallet"></i></span>
                         <span class="command-copy">
                             <strong>Disburse Loans</strong>
-                            <small>{{ approvedLoansCount === 0 ? 'No approved loans ready' : 'Release approved loan funds' }}</small>
+                            <small>Release approved loan funds</small>
                         </span>
                     </div>
 

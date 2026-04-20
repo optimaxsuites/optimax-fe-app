@@ -32,24 +32,10 @@
     <!-- Simple Stats Row (Compact) -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon summary-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="stat-icon active-icon"><i class="pi pi-check-circle"></i></div>
         <div class="stat-content">
-          <span class="stat-label">Total Loans</span>
-          <span class="stat-value">{{ employeeLoans.length }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon borrowed-icon"><i class="fas fa-wallet"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Total Borrowed</span>
-          <span class="stat-value">₦{{ getTotalBorrowed() | number:'1.2-2' }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon outstanding-icon"><i class="fas fa-scale-balanced"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Outstanding</span>
-          <span class="stat-value">₦{{ getTotalBalance() | number:'1.2-2' }}</span>
+          <span class="stat-label">Active Loans</span>
+          <span class="stat-value">{{ activeLoansCount }}</span>
         </div>
       </div>
     </div>

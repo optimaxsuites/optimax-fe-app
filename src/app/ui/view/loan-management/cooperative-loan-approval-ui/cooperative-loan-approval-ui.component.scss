@@ -1,34 +1,18 @@
 @use '../loan-status-badges' as loanStatus;
 
-// ── Status badges ──────────────────────────────────────────────
 .status-badge {
-  display: inline-block;
-  padding: 5px 13px;
-  border-radius: 30px;
-  font-size: 0.73rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  min-width: 90px;
-  text-align: center;
-
-  @include loanStatus.advanceLoanStatusBadges();
-}
-
-.stage-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  background: rgba(46, 98, 118, 0.1);
-  color: #2e5f73;
-  white-space: nowrap;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  
+  @include loanStatus.advanceLoanStatusBadges();
+  text-transform: none !important;
 }
 
-.no-stage { color: #b0c4cb; }
-
-// ── Page container ─────────────────────────────────────────────
 .coop-approval-container {
   padding: 24px;
   min-height: 100vh;
@@ -80,13 +64,13 @@
     }
   }
 
-  // ── Header ───────────────────────────────────────────────────
+  // Header
   .approval-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    padding: 20px 24px;
+    padding: 20px 28px;
     background: white;
     border-radius: 20px;
     border: 1px solid rgba(46, 98, 118, 0.12);
@@ -98,32 +82,16 @@
       gap: 16px;
     }
 
-    .back-button {
-      border: 1px solid #d7e7ec;
-      background: #f8fcfd;
-      color: #2e6276;
-      border-radius: 999px;
-      padding: 9px 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-weight: 600;
-
-      &:hover {
-        background: #eef7fa;
-      }
-    }
-
     h1 {
       margin: 0;
       color: #1a4b5c;
-      font-size: 1.55rem;
+      font-size: 1.6rem;
       font-weight: 700;
 
       .title-icon {
-        color: #2E6276;
+        color: #2EB270;
         margin-right: 10px;
+        font-size: 1.7rem;
       }
     }
 
@@ -139,27 +107,44 @@
     }
   }
 
-  // ── Stats ────────────────────────────────────────────────────
-  .stats-overview { margin-bottom: 24px; }
-
-  .stats-grid.primary-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
+  // Stats Cards
+  .stats-overview { 
+    margin-bottom: 24px;
   }
 
+  // Grid system for stats cards
+  .stats-grid {
+    display: grid;
+    gap: 16px;
+    
+    &.primary-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin-bottom: 24px;
+    }
+    
+    &.secondary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+  }
+
+  // Big cards (Pending, Approved, Active, Rejected, Completed)
   .stat-card {
     background: white;
     border-radius: 16px;
-    padding: 14px;
+    padding: 16px 20px;
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
     cursor: pointer;
     border: 1px solid #e3eef0;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
-    &:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(46, 98, 118, 0.1); }
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
+    }
 
     &.active-filter {
       border: 2px solid #2E6276;
@@ -167,21 +152,23 @@
     }
 
     .stat-icon {
-      width: 42px;
-      height: 42px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      background: linear-gradient(135deg, #7bb3c4, #5a9bb0);
+      box-shadow: 0 4px 10px rgba(46, 98, 118, 0.2);
 
-      i { color: white; font-size: 1rem; }
+      i {
+        color: white;
+        font-size: 1.3rem;
+      }
     }
 
     .stat-content {
-      display: grid;
-      gap: 3px;
-      min-width: 0;
+      flex: 1;
 
       .stat-label {
         display: block;
@@ -190,107 +177,211 @@
         color: #8aadba;
         letter-spacing: 0.08em;
         font-weight: 700;
+        margin-bottom: 4px;
       }
-      .stat-value { font-size: 1.1rem; font-weight: 700; color: #1a4b5c; }
-      .stat-note  { color: #6f8792; font-size: 0.73rem; line-height: 1.35; }
+
+      .stat-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1a4b5c;
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+
+      .stat-note {
+        display: block;
+        font-size: 0.7rem;
+        color: #8aadba;
+      }
     }
 
-    &.tone-pending  .stat-icon { background: linear-gradient(135deg, #b87c00, #eb9b3f); }
+    // Icon colors for big cards
+    &.tone-pending .stat-icon { background: linear-gradient(135deg, #b87c00, #eb9b3f); }
     &.tone-approved .stat-icon { background: linear-gradient(135deg, #2563eb, #60a5fa); }
-    &.tone-active   .stat-icon { background: linear-gradient(135deg, #167b56, #2eb270); }
+    &.tone-active .stat-icon { background: linear-gradient(135deg, #167b56, #2eb270); }
     &.tone-rejected .stat-icon { background: linear-gradient(135deg, #b91c1c, #f87171); }
-    &.tone-total    .stat-icon { background: linear-gradient(135deg, #2E6276, #4291b1); }
+    &.tone-total .stat-icon { background: linear-gradient(135deg, #2E6276, #4291b1); }
   }
 
-  // ── Filters ──────────────────────────────────────────────────
+  // Small cards (Skipped, Overdue, Paused, Defaulted) - Stretched version
+  .stat-card.small {
+    background: white;
+    border-radius: 40px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    cursor: pointer;
+    border: 1px solid #e3eef0;
+    transition: all 0.2s ease;
+    width: 100%;
+    min-width: 0; // Prevents overflow
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 98, 118, 0.08);
+    }
+
+    &.active-filter {
+      border: 2px solid #2E6276;
+      background: #f8feff;
+    }
+
+    .stat-content {
+      flex: 1;
+      text-align: left;
+
+      .stat-label {
+        display: block;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #8aadba;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .stat-note {
+        display: block;
+        font-size: 0.7rem;
+        color: #8aadba;
+        margin-top: 2px;
+      }
+    }
+
+    // The circle with the number on the right
+    .stat-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(46, 178, 112, 0.12);
+      color: #1e7e4a;
+      font-weight: 700;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    
+    &:hover .stat-circle {
+      background: rgba(46, 178, 112, 0.2);
+      transform: scale(1.05);
+    }
+  }
+
+  // Filters
   .loan-filters {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     flex-wrap: wrap;
     background: white;
-    padding: 18px 20px;
+    padding: 20px;
     border-radius: 16px;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
     border: 1px solid #e3eef0;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
     .filter-group {
       flex: 1;
-      min-width: 140px;
+      min-width: 150px;
 
       label {
         display: block;
-        font-size: 0.73rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
         color: #8aadba;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
         font-weight: 700;
       }
 
       input, select {
         width: 100%;
-        padding: 9px 11px;
+        padding: 10px 12px;
         border: 1px solid #e3eef0;
         border-radius: 10px;
-        font-size: 0.88rem;
-        outline: none;
+        font-size: 0.9rem;
+        background: white;
+        transition: all 0.2s;
 
-        &:focus { border-color: #2E6276; }
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+          box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+        }
       }
     }
 
     .refresh-btn, .reset-btn {
-      padding: 0 22px;
+      padding: 0 24px;
       border-radius: 40px;
       font-weight: 600;
       cursor: pointer;
       align-self: flex-end;
-      height: 38px;
+      height: 42px;
     }
 
     .refresh-btn {
       background: linear-gradient(135deg, #2E6276, #4291b1);
       color: white;
       border: none;
+      transition: all 0.2s;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+      }
     }
 
     .reset-btn {
       background: white;
       border: 1px solid #e3eef0;
       color: #2E6276;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #edf6f8;
+        border-color: #2E6276;
+      }
     }
   }
 
   .results-count {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     color: #8aadba;
-    font-size: 0.84rem;
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 
-  // ── Table ────────────────────────────────────────────────────
+  // Table
   .approval-table-container {
     background: white;
     border-radius: 20px;
     border: 1px solid #e3eef0;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.06);
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
     .coop-approval-table {
       width: 100%;
       border-collapse: collapse;
 
       th, td {
-        padding: 13px 14px;
+        padding: 14px 16px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
-        font-size: 0.87rem;
+        font-size: 0.9rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.78rem;
+        font-size: 0.8rem;
         text-transform: uppercase;
+        letter-spacing: 0.08em;
 
         .sort-btn {
           border: none;
@@ -298,7 +389,6 @@
           color: inherit;
           font: inherit;
           text-transform: inherit;
-          letter-spacing: inherit;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
@@ -307,90 +397,224 @@
         }
       }
 
-      .loan-id-cell  { font-family: monospace; font-size: 0.82rem; color: #2e5f73; }
-      .group-cell    { font-weight: 600; color: #2e6276; }
-      .amount-cell   { font-weight: 600; color: #2EB270; }
+      tbody tr {
+        transition: background 0.2s;
+        &:hover {
+          background: #f8fcfd;
+        }
+      }
 
+      .loan-id-cell {
+        font-family: monospace;
+        font-weight: 600;
+        color: #2E6276;
+      }
+
+      .member-name-cell {
+        font-weight: 600;
+        color: #1a4b5c;
+      }
+
+      .group-cell {
+        font-weight: 600;
+        color: #2E6276;
+      }
+
+      .amount-cell {
+        font-weight: 600;
+        color: #2EB270;
+      }
+
+      .purpose-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      // Action Icons - NO BORDERS, just icons
       .actions-col {
         display: flex;
-        gap: 8px;
+        gap: 12px;
         align-items: center;
 
-        button {
-          width: 32px;
-          height: 32px;
+        .action-icon {
+          width: 34px;
+          height: 34px;
           border-radius: 8px;
           border: none;
-          background: transparent;
+          background: transparent !important;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
           justify-content: center;
 
-          i { font-size: 0.95rem; }
-
-          &.btn-view    { color: #2E6276; }
-          &.btn-approve { color: #2EB270; }
-          &.btn-reject  { color: #dc3545; }
-
-          &:hover {
-            background: rgba(46, 98, 118, 0.08);
-            transform: scale(1.05);
+          i {
+            font-size: 1rem;
           }
 
-          &.btn-approve:hover { background: rgba(46, 178, 112, 0.1); }
-          &.btn-reject:hover  { background: rgba(220, 53, 69, 0.1); }
+          &.view-icon {
+            color: #2E6276;
+            background: transparent !important;
+            
+            &:hover {
+              color: #1a4b5c;
+              transform: scale(1.1);
+              background: transparent !important;
+            }
+          }
+
+          &.approve-icon {
+            color: #2EB270;
+            background: transparent !important;
+            
+            &:hover {
+              color: #1e7e4a;
+              transform: scale(1.1);
+              background: transparent !important;
+            }
+          }
+
+          &.reject-icon {
+            color: #dc2626;
+            background: transparent !important;
+            
+            &:hover {
+              color: #b91c1c;
+              transform: scale(1.1);
+              background: transparent !important;
+            }
+          }
+
+          &:hover {
+            transform: scale(1.1);
+            background: transparent !important;
+            box-shadow: none !important;
+          }
         }
       }
     }
 
     .empty-state {
-      padding: 44px 20px;
+      padding: 48px 20px;
       text-align: center;
-      color: #6c8791;
+      color: #8aadba;
     }
 
     .pagination-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 12px;
-      padding: 14px 20px;
+      padding: 16px 20px;
       border-top: 1px solid #eef3f6;
       background: #fbfdfe;
 
-      .pagination-meta { color: #6c8791; font-size: 0.87rem; font-weight: 600; }
-
-      .pagination-actions { display: flex; gap: 10px; }
-
       .pagination-btn {
-        border: 1px solid #d7e7ec;
-        background: white;
-        color: #2e6276;
-        border-radius: 999px;
-        padding: 7px 14px;
+        padding: 8px 18px;
+        border: none;
+        border-radius: 40px;
         font-weight: 600;
         cursor: pointer;
+        background: white;
+        border: 1px solid #d7e7ec;
+        color: #2E6276;
+        transition: all 0.2s;
 
-        &:disabled { cursor: not-allowed; opacity: 0.45; }
-        &:not(:disabled):hover { background: #f0f7fa; }
+        &:hover:not(:disabled) {
+          background: #edf6f8;
+          border-color: #2E6276;
+        }
+
+        &:disabled {
+          color: #b6bfc7;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+      }
+
+      .pagination-info {
+        font-size: 0.9rem;
+        color: #6f8792;
+        font-weight: 500;
+        margin: 0 8px;
       }
     }
   }
 }
 
-@keyframes approval-spin {
-  to {
-    transform: rotate(360deg);
+// Responsive adjustments
+@media (max-width: 1200px) {
+  .coop-approval-container {
+    .stats-grid {
+      &.primary-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+      
+      &.secondary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
   }
 }
 
-// ── Modal shared styles ───────────────────────────────────────
+@media (max-width: 900px) {
+  .coop-approval-container {
+    .stats-grid {
+      &.primary-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      
+      &.secondary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    .stat-card.small {
+      padding: 10px 18px;
+      
+      .stat-circle {
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .coop-approval-container {
+    .stats-grid {
+      &.primary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      &.secondary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .stat-card.small {
+      padding: 10px 16px;
+      
+      .stat-circle {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  .terms-grid { grid-template-columns: 1fr; }
+}
+
+// Modal Styles
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 30, 40, 0.55);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,14 +624,12 @@
 
 .modal-container {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   width: 100%;
-  max-width: 600px;
+  max-width: 620px;
   max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(10, 30, 40, 0.25);
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
 }
 
 .modal-header {
@@ -416,45 +638,41 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #eef3f6;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 1;
-  border-radius: 20px 20px 0 0;
+  background: linear-gradient(135deg, #f8fcfd, #ffffff);
 
   h2 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #1a4b5c;
     display: flex;
     align-items: center;
     gap: 10px;
 
-    i { color: #2E6276; }
+    i {
+      color: #2E6276;
+    }
   }
 
   .close-btn {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     border: none;
     background: #f0f7fa;
     color: #2e6276;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: all 0.2s;
 
-    &:hover { background: #e3eef0; }
+    &:hover {
+      background: #e3eef0;
+      transform: rotate(90deg);
+    }
   }
 }
 
 .modal-body {
-  padding: 20px 24px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
+  padding: 24px;
 }
 
 .modal-footer {
@@ -463,11 +681,9 @@
   gap: 12px;
   padding: 18px 24px;
   border-top: 1px solid #eef3f6;
-  background: #fbfdfe;
-  border-radius: 0 0 20px 20px;
+  background: #fafdfe;
 }
 
-// ── Loan summary block ────────────────────────────────────────
 .loan-summary {
   background: #f8fcfd;
   border: 1px solid #e3eef0;
@@ -485,12 +701,21 @@
   gap: 12px;
   font-size: 0.9rem;
 
-  span  { color: #8aadba; min-width: 120px; }
-  strong { color: #1a4b5c; font-weight: 600; }
-  strong.amount { color: #2EB270; }
+  span { 
+    color: #8aadba; 
+    min-width: 120px; 
+  }
+  
+  strong { 
+    color: #1a4b5c; 
+    font-weight: 600; 
+    
+    &.amount { 
+      color: #2EB270; 
+    }
+  }
 }
 
-// ── Group terms read-only block ───────────────────────────────
 .group-terms-block {
   margin-bottom: 22px;
   padding: 16px;
@@ -514,7 +739,6 @@
     margin: 0 0 14px;
     font-size: 0.8rem;
     color: #8aadba;
-    line-height: 1.5;
   }
 }
 
@@ -538,7 +762,6 @@
     text-transform: uppercase;
     color: #8aadba;
     font-weight: 700;
-    letter-spacing: 0.05em;
   }
 
   .term-value {
@@ -550,7 +773,6 @@
   }
 }
 
-// ── Approval form ─────────────────────────────────────────────
 .approval-form {
   .block-title {
     margin: 0 0 14px;
@@ -560,8 +782,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-
-    i { color: #2E6276; }
   }
 }
 
@@ -606,7 +826,6 @@
 
 .rejection-reason-group { margin-top: 4px; }
 
-// ── Footer buttons ────────────────────────────────────────────
 .cancel-btn {
   padding: 10px 22px;
   border-radius: 40px;
@@ -652,21 +871,8 @@
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
-// ── Responsive ────────────────────────────────────────────────
-@media (max-width: 900px) {
-  .coop-approval-container {
-    padding: 14px;
-
-    .stats-grid.primary-grid { grid-template-columns: repeat(3, 1fr); }
+@keyframes approval-spin {
+  to {
+    transform: rotate(360deg);
   }
-
-  .terms-grid { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 600px) {
-  .coop-approval-container .stats-grid.primary-grid { grid-template-columns: repeat(2, 1fr); }
-
-  .modal-container { border-radius: 14px; }
-
-  .summary-row { flex-direction: column; gap: 2px; }
 }

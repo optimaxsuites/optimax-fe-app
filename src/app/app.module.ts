@@ -70,6 +70,7 @@ import { CareerJobPostingComponent } from './ui/shared-component/view/career-job
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
+import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
@@ -175,7 +176,7 @@ import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/c
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
-// import { QueryComponent } from './ui/view/query/query.component';
+import { CooperativeMemberLoanHistoryComponent } from './ui/view/loan-management/cooperative-member-loan-history/cooperative-member-loan-history.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
 import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
@@ -211,11 +212,17 @@ import { QueryComponent } from './ui/view/payrol-extras/query/query.component';
 import { GracePeriodRequestsComponent } from './ui/view/loan-management/grace-period-requests/grace-period-requests.component';
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
 import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
+import { CooperativeGracePeriodRequestFormComponent } from './ui/view/loan-management/cooperative-grace-period-request-form/cooperative-grace-period-request-form.component';
+import { CooperativeGracePeriodRequestFormModule } from './ui/view/loan-management/cooperative-grace-period-request-form/cooperative-grace-period-request-form.module';
 import { LoanPaymentModalComponent } from './ui/view/loan-management/loan-payment-modal/loan-payment-modal.component';
 import { EmployeePaymentHistoryComponent } from './ui/view/loan-management/employee-payment-history/employee-payment-history.component';
 import { EmployeePaymentReminderComponent } from './ui/view/loan-management/employee-payment-reminder/employee-payment-reminder.component';
 import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
 import { CooperativePaymentModalComponent } from './ui/view/loan-management/cooperative-payment-modal/cooperative-payment-modal.component';
+import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
+
+import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management/cooperative-repayment-schedule/cooperative-repayment-schedule.component';
+
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -355,16 +362,21 @@ import { CooperativePaymentModalComponent } from './ui/view/loan-management/coop
     LoanGracePeriodRequestsManagementComponent,
     CooperativeGracePeriodRequestsManagementComponent,
     CooperativeLoanPurposeManagementComponent,
+    CooperativeRepaymentScheduleComponent,
     CooperativePaymentModalComponent,
     LoanPaymentModalComponent,
     EmployeePaymentHistoryComponent,
-    EmployeePaymentReminderComponent
+    EmployeePaymentReminderComponent,
+    CooperativeLoanReportsComponent,
+    CooperativeLoanDisbursementUiComponent,
+    CooperativeMemberLoanHistoryComponent,
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
+    FormsModule,
     TableModule,
     RouterModule,
     RippleModule,
@@ -414,7 +426,8 @@ import { CooperativePaymentModalComponent } from './ui/view/loan-management/coop
     BackButtonModule,
     LargeSideModalComponent,
     FooterComponent,
-    MenuModule
+    MenuModule,
+    CooperativeGracePeriodRequestFormModule,
   ],
   providers: [
     {

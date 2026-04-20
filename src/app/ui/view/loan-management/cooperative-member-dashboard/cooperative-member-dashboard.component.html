@@ -1,32 +1,33 @@
-  <app-modal *ngIf="showJoinGroupConfirmationModal" (close)="closeJoinGroupConfirmationModal()">
-    <div class="confirmation-modal confirmation-modal-join">
-      <div class="confirmation-hero">
-        <div class="confirmation-icon success">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        <div>
-          <span class="confirmation-kicker">Group Request Sent</span>
-          <h2>Application submitted successfully</h2>
-          <p class="confirmation-copy">Your request is now in the admin review queue. You will be notified once a decision is made.</p>
-        </div>
+<app-modal *ngIf="showJoinGroupConfirmationModal" (close)="closeJoinGroupConfirmationModal()">
+  <div class="confirmation-modal confirmation-modal-join">
+    <div class="confirmation-hero">
+      <div class="confirmation-icon success">
+        <i class="fas fa-paper-plane"></i>
       </div>
-
-      <div class="confirmation-message-card">
-        <span class="message-label">What was submitted</span>
-        <strong>{{ joinGroupConfirmationMessage }}</strong>
-      </div>
-
-      <div class="confirmation-checklist">
-        <span><i class="fas fa-check-circle"></i> Your current group preview informed the request</span>
-        <span><i class="fas fa-check-circle"></i> Admin approval is required before you can contribute or borrow</span>
-      </div>
-
-      <div class="confirmation-actions">
-        <button class="btn-secondary" (click)="closeJoinGroupConfirmationModal()">Close</button>
-        <button class="btn-primary" (click)="closeJoinGroupConfirmationModal()">Back to Dashboard</button>
+      <div>
+        <span class="confirmation-kicker">Group Request Sent</span>
+        <h2>Application submitted successfully</h2>
+        <p class="confirmation-copy">Your request is now in the admin review queue. You will be notified once a decision is made.</p>
       </div>
     </div>
-  </app-modal>
+
+    <div class="confirmation-message-card">
+      <span class="message-label">What was submitted</span>
+      <strong>{{ joinGroupConfirmationMessage }}</strong>
+    </div>
+
+    <div class="confirmation-checklist">
+      <span><i class="fas fa-check-circle"></i> Your current group preview informed the request</span>
+      <span><i class="fas fa-check-circle"></i> Admin approval is required before you can contribute or borrow</span>
+    </div>
+
+    <div class="confirmation-actions">
+      <button class="btn-secondary" (click)="closeJoinGroupConfirmationModal()">Close</button>
+      <button class="btn-primary" (click)="closeJoinGroupConfirmationModal()">Back to Dashboard</button>
+    </div>
+  </div>
+</app-modal>
+
 <div class="member-dashboard-container loan-management-surface">
 
   <app-modal *ngIf="showMembershipConfirmationModal" (close)="closeMembershipConfirmationModal()">
@@ -93,7 +94,7 @@
               <p class="subtitle">A focused snapshot of your request, financial position, and repayment activity.</p>
             </div>
             <div class="header-actions">
-              <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+              <span class="status-pill" [ngClass]="getStatusClass(loan.status)">{{ getStatusDisplay(loan.status) }}</span>
               <button class="close-btn" type="button" (click)="closeLoanDetailsModal()" aria-label="Close loan details">
                 <i class="fas fa-times"></i>
               </button>
@@ -229,11 +230,11 @@
           <div class="detail-list">
             <div class="detail-row status-row">
               <span class="row-label">Current Status</span>
-              <span class="status-pill inline-pill" [ngClass]="getStatusClass(loan.status)">{{ loan.status }}</span>
+              <span class="status-pill inline-pill" [ngClass]="getStatusClass(loan.status)">{{ getStatusDisplay(loan.status) }}</span>
             </div>
             <div class="detail-row">
               <span class="row-label">Mode of Payment</span>
-              <span class="row-value">{{ loan.modeOfPayment || 'MONTHLY' }}</span>
+              <span class="row-value">{{ toTitleCase(loan.modeOfPayment) || 'Monthly' }}</span>
             </div>
             <div class="detail-row">
               <span class="row-label">Next Payment Due</span>
@@ -262,7 +263,7 @@
           <div class="detail-list">
             <div class="detail-row status-row">
               <span class="row-label">Disbursement Status</span>
-              <span class="status-pill inline-pill" [ngClass]="getLoanDisbursementStatusClass(loan)">{{ getLoanDisbursementStatusText(loan) }}</span>
+              <span class="status-pill inline-pill" [ngClass]="getLoanDisbursementStatusClass(loan)">{{ getStatusDisplay(getLoanDisbursementStatusText(loan)) }}</span>
             </div>
             <div class="detail-row" *ngIf="loan.disbursementInitiatedAt">
               <span class="row-label">Initiated On</span>
@@ -380,7 +381,7 @@
           <div class="detail-list" *ngIf="selectedLoanTimeline.length > 0; else noSelectedLoanTimeline">
             <div class="detail-row" *ngFor="let entry of selectedLoanTimeline">
               <span class="row-label">
-                <span class="status-pill inline-pill" [ngClass]="getStatusClass(entry.status)">{{ entry.status }}</span>
+                <span class="status-pill inline-pill" [ngClass]="getStatusClass(entry.status)">{{ getStatusDisplay(entry.status) }}</span>
                 <small>· {{ getTimelineActor(entry) }}</small>
               </span>
               <span class="row-value">{{ entry.changedAt | date:'medium' }}</span>
@@ -472,7 +473,7 @@
       <div class="welcome-header lm-header-card">
         <div>
           <h1><i class="fas fa-hand-holding-dollar"></i> Welcome back, {{ displayMemberName }}!</h1>
-          <p class="member-id">Member since: {{ currentMemberSinceDate ? (currentMemberSinceDate | date:'MMM yyyy') : 'N/A' }} | Tenure: {{ currentMemberTenureMonths }} month(s) | Member ID: {{ member.memberId || member.id || 'N/A' }}</p>
+          <p class="member-id">Member since: {{ currentMemberSinceDate ? (currentMemberSinceDate | date:'MMM yyyy') : 'N/A' }} | Tenure: {{ currentMemberTenureMonths }} month(s) | Member ID: {{ formatMemberId(member.memberId || member.id || 'N/A') }}</p>
         </div>
         <div class="user-avatar">{{ getInitials(displayMemberName) }}</div>
       </div>
@@ -532,6 +533,8 @@
             <h2><i class="fas fa-compass"></i> Command Center</h2>
           </div>
 
+          <!-- Extension Request Dropdown removed as requested -->
+
           <button class="quick-action-btn" (click)="applyForLoan()">
             <span class="action-icon"><i class="fas fa-plus"></i></span>
             <span class="action-copy">
@@ -564,6 +567,14 @@
             <span class="action-copy">
               <strong>Make Payment</strong>
               <small>Pay into an active balance</small>
+            </span>
+          </button>
+
+          <button class="quick-action-btn" (click)="openGracePeriodRequest()">
+            <span class="action-icon"><i class="fas fa-hourglass-half"></i></span>
+            <span class="action-copy">
+              <strong>Request for Extension</strong>
+              <small>Request a grace period</small>
             </span>
           </button>
 
@@ -604,15 +615,15 @@
                     <i [class]="getActivityIconClass(item.type)"></i>
                   </div>
                   <div class="activity-body">
-                    <div class="activity-head">
-                      <strong>{{ item.title }}</strong>
-                      <span
-                        *ngIf="item.status"
-                        class="status-badge"
-                        [ngClass]="getStatusClass(item.status)">
-                        {{ item.status.replaceAll('_', ' ') }}
-                      </span>
-                    </div>
+                  <div class="activity-head">
+                    <strong>{{ item.title }}</strong>
+                    <span
+                      *ngIf="item.status"
+                      class="status-badge"
+                      [ngClass]="getStatusClass(item.status)">
+                      {{ getStatusDisplay(item.status) }}
+                    </span>
+                  </div>
                     <p>{{ item.description }}</p>
                     <span>{{ item.date | date:'medium' }}</span>
                   </div>
@@ -636,6 +647,7 @@
 
             <div class="active-loan-card" *ngIf="primaryActiveLoan as loan">
               <h3>Active Loan: {{ loan.loanId }}</h3>
+                  Status: <span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ getStatusDisplay(loan.status) }}</span>
               <p>
                 Amount: <strong>{{ formatCurrency(loan.amount) }}</strong>
                 <span class="separator">|</span>
@@ -669,7 +681,7 @@
                   <td>{{ row.groupName }}</td>
                   <td class="amount">{{ row.amount }}</td>
                   <td>
-                    <span class="status-badge" [ngClass]="row.statusClass">{{ row.statusLabel }}</span>
+                    <span class="status-badge" [ngClass]="getStatusClass(row.statusLabel)">{{ getStatusDisplay(row.statusLabel) }}</span>
                   </td>
                   <td>{{ row.outstandingAmount }}</td>
                   <td class="actions-col">
@@ -686,7 +698,7 @@
               </app-table>
             </div>
 
-            <div class="repayment-history-block" *ngIf="selectedRepaymentHistoryLoan as historyLoan">
+            <div class="repayment-history-block" *ngIf="primaryActiveLoan as historyLoan">
               <div class="history-head">
                 <h3><i class="fas fa-calendar-alt"></i> Repayment Schedule & History - {{ formatCooperativeLoanCode(historyLoan.loanCode || historyLoan.loanId || historyLoan.id) }}</h3>
                 <button class="icon-btn" (click)="closeRepaymentHistory()" title="Close">
@@ -736,3 +748,14 @@
     </div>
   </div>
 </div>
+
+<!-- Grace Period Request Modal -->
+<app-modal *ngIf="showGracePeriodModal" [header]="'Request Grace Period'" (close)="closeGracePeriodModal()">
+  <app-cooperative-grace-period-request-form
+    [cooperativeLoan]="selectedRepaymentHistoryLoan"
+    [cooperativeInstallment]="null"
+    [member]="member"
+    (close)="closeGracePeriodModal()"
+    (requestSubmitted)="closeGracePeriodModal()">
+  </app-cooperative-grace-period-request-form>
+</app-modal>

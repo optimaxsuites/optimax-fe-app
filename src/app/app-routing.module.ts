@@ -30,6 +30,7 @@ import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooper
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
+import { CooperativeMemberLoanHistoryComponent } from './ui/view/loan-management/cooperative-member-loan-history/cooperative-member-loan-history.component';
 // import { QueryComponent } from './ui/view/query/query.component';
 import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
 import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
@@ -170,8 +171,16 @@ const routes: Routes = [
     component: LoanDetailsComponent,
   },
   {
+    path: 'loan-management/cooperative-member-loan-history/:memberId/:uuid',
+    component: CooperativeMemberLoanHistoryComponent,
+  },
+  {
     path: 'loan-management/employee-loan-history/:employeeId/:uuid',
     component: EmployeeLoanHistoryComponent,
+  },
+  {
+    path: 'admin/hr/loan-management/cooperative-member-loan-history/:memberId/:uuid',
+    component: CooperativeMemberLoanHistoryComponent,
   },
   {
     path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',

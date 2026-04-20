@@ -445,8 +445,8 @@
               <div><strong>Sent by:</strong> {{ disbursementInitiatedBy }}</div>
             </div>
             <div class="action-buttons" *ngIf="selectedDisbursementLoan.status !== 'ACTIVE' && selectedDisbursementLoan.status !== 'COMPLETED'">
-              <button type="button" class="send-btn" (click)="markAsDisbursed()" [disabled]="isSubmittingDisbursement">
-                <i class="fas fa-circle-check"></i> Mark as Disbursed
+              <button type="button" class="primary-btn" (click)="markAsDisbursed()" [disabled]="isSubmittingDisbursement">
+                <i class="fas fa-circle-check"></i> Set Loan to Active
               </button>
             </div>
           </div>

@@ -1,19 +1,16 @@
 /* You can add global styles to this file, and also import other style files */
 
-
-
 @import "assets/theme/theme.scss";
+@import "./app/ui/view/loan-management/_loan-status-badges.scss";
 @import "../node_modules/primeng/resources/themes/saga-green/theme.css";
 @import "../node_modules/primeng/resources/primeng.css";
 @import "../node_modules/primeng/resources/primeng.min.css";
 @import "../node_modules/primeicons/primeicons.css";
 
-
 @import "@ng-select/ng-select/themes/default.theme.css";
 
 @import "../node_modules/quill/dist/quill.core.css";
 @import "../node_modules/quill/dist/quill.snow.css";
-
 
 html{
   font-size: 10px;
@@ -87,28 +84,24 @@ html{
   border: 1px solid rgba(46, 178, 112, 0.3) !important;
 }
 
-
 .card{
-border: 1px solid rgb(224, 224, 224);
-border-radius: 5px;}
-
-
+  border: 1px solid rgb(224, 224, 224);
+  border-radius: 5px;
+}
 
 * {
-  // padding: 0;
-  // margin: 0;
   list-style: none;
   outline: none;
   text-decoration: none;
   font-family: "Roboto Slab", serif;
-  
 }
+
 html{
   height: 100%;
   font-size: 10px;
 }
+
 body {
-  // margin: 0;
   font-family: "Roboto Slab", serif;
 }
 
@@ -119,6 +112,7 @@ h1,h2,h3,h4,h5,h6{
 @media screen and (min-width: 1200px){
   
 }
+
 fieldset {
   border: 2px solid #4A4A4A;
   border-radius: 8px;       
@@ -126,18 +120,17 @@ fieldset {
   margin-bottom: 1rem;       
 }
 
-
 .p-toast{
   font-size: 1em;
 }
+
 .p-dialog{
   font-size: 1em;
 }
+
 .p-panel{
   font-size: 1.1em;
 }
-
-
 
 .p-divider{
   margin: 0;
@@ -165,24 +158,20 @@ fieldset {
   margin-bottom: 1rem;
   padding: 0;
 }
+
 .custom-header > a {
   color: #224957; 
   font-weight: bold;
   text-decoration: none ;
 }
+
 .custom-header > a[aria-selected="true"] {
   background-color: rgb(37 146 91 / 0.6);
   color: white;
   border-radius: 1rem;
 }
-input[type="checkbox"]{
-  @apply accent-customBlue
 
-}
-input[type="radio"]{
-  @apply accent-customBlue
 
-}
 
 :root {
   --table-bg: #ffffff;
@@ -207,7 +196,7 @@ input[type="radio"]{
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   border-bottom: 1px solid var(--table-border);
 }
 
@@ -218,6 +207,7 @@ input[type="radio"]{
 .p-datatable .p-datatable-tbody > tr:hover > td {
   background: var(--table-row-hover);
 }
+
 /* Loan Management table design parity with app-table */
 app-loan-approval-ui,
 app-cooperative-members,
@@ -518,7 +508,7 @@ app-repayment-schedule-view .status-badge {
   display: inline-block;
   border-radius: 20px;
   font-weight: 600;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
 }
 
 app-loan-dashboard .status-badge.status-pending,
@@ -692,4 +682,145 @@ app-cooperative-member-loans .status-badge.status-defaulted {
   app-cooperative-loan-application .lm-header-card h1 {
     font-size: 1.6rem !important;
   }
+}
+
+// ==========================================
+// REMOVE ALL FOCUS RINGS & NOTIFICATION LINES
+// Added to fix notification lines on admin buttons
+// ==========================================
+
+// Remove PrimeNG focus rings completely
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active,
+.p-focus,
+.p-component:focus,
+.p-component:focus-visible,
+.p-inputtext:focus,
+.p-dropdown:focus,
+.p-multiselect:focus,
+.p-calendar:focus,
+.p-checkbox:focus,
+.p-radiobutton:focus,
+button:focus,
+button:focus-visible,
+a:focus,
+a:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  box-shadow: 0 0 0 0 rgba(0,0,0,0) !important;
+  /* ring and ring-width removed: not valid CSS */
+}
+
+// Specifically target PrimeNG button focus rings
+.p-button:focus {
+  box-shadow: none !important;
+  outline: 0 none !important;
+  outline-offset: 0 !important;
+}
+
+// Remove the PrimeNG focus trap indicator
+.p-focusable:focus,
+.p-focusable:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Remove any focus ring from card and panel components
+.p-card:focus,
+.p-card:focus-visible,
+.p-panel:focus,
+.p-panel:focus-visible,
+.p-dialog:focus,
+.p-dialog:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Target command-pill specifically
+.command-pill,
+.command-pill:focus,
+.command-pill:focus-visible,
+.command-pill:active {
+  outline: none !important;
+  box-shadow: none !important;
+  /* ring: none !important; removed: not valid CSS */
+}
+
+// Remove focus rings from all buttons in dashboard containers
+.dashboard-container button:focus,
+.dashboard-container button:focus-visible,
+.dashboard-container [role="button"]:focus,
+.dashboard-container [role="button"]:focus-visible,
+.loan-management-surface button:focus,
+.loan-management-surface button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Override PrimeNG's default focus ring for all components
+.p-component *:focus,
+.p-component *:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Remove the blue ring that appears on click/tap
+* {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+// Firefox specific removal
+button::-moz-focus-inner,
+[type="button"]::-moz-focus-inner,
+[type="reset"]::-moz-focus-inner,
+[type="submit"]::-moz-focus-inner {
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+// Chrome/Safari specific
+:focus {
+  outline: -webkit-focus-ring-color auto 0 !important;
+  outline: none !important;
+}
+
+// Disable focus ring when using mouse (but keep for keyboard if needed)
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Remove any possible pseudo-element lines
+button::before,
+button::after,
+a::before,
+a::after,
+[role="button"]::before,
+[role="button"]::after {
+  display: none !important;
+  content: none !important;
+}
+
+// Target all action buttons
+.icon-btn:focus,
+.icon-btn:focus-visible,
+.table-action:focus,
+.table-action:focus-visible,
+.view-all:focus,
+.view-all:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Ensure modal buttons don't have focus rings
+.modal-actions button:focus,
+.modal-actions button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }

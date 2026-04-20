@@ -1,3 +1,5 @@
+// ...existing code...
+// ...existing code...
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -17,6 +19,7 @@ import {
   CooperativeRepayment
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
+import { formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 
 interface GroupBorrowerRow {
   memberId: number;
@@ -87,6 +90,38 @@ interface GroupActivityItem {
   styleUrls: ['./cooperative-member-group-dashboard.component.scss']
 })
 export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestroy {
+
+  // Format loan code for display (with COPLO- prefix)
+  public formatLoanCode(code: string | number | undefined | null): string {
+    return formatCooperativeLoanCode(code);
+  }
+
+  // Convert status to Title Case
+  public toTitleCase(status: string): string {
+    if (!status) return '';
+    return status.toLowerCase().replace(/(^|\s|_)[a-z]/g, (match) => match.toUpperCase()).replace(/_/g, ' ');
+  }
+
+  showGracePeriodModal = false;
+  selectedLoan: CooperativeLoan | null = null;
+
+  openCooperativeGraceRequest(): void {
+    // Find the current member's loan (if any)
+    if (this.currentMember) {
+      // Find the first loan for the current member in this group
+      this.selectedLoan = this.groupLoans.find(
+        loan => loan.cooperativeMemberId === this.currentMember!.memberId && loan.cooperativeGroupId === this.group?.id
+      ) || null;
+    } else {
+      this.selectedLoan = null;
+    }
+    this.showGracePeriodModal = true;
+  }
+
+  closeGracePeriodModal(): void {
+    this.showGracePeriodModal = false;
+    this.selectedLoan = null;
+  }
   private readonly invalidDisplayNamePattern = /^(unknown member|member\s*(undefined|\d+)|\d+)$/i;
   currentUuid = uuidV4();
   /**
@@ -125,6 +160,11 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
   pendingContributionRequests: CooperativePendingContributionRequest[] = [];
   borrowerRows: GroupBorrowerRow[] = [];
   contributionRows: GroupContributionRow[] = [];
+
+  // Helper to normalize status label for display
+  getStatusLabel(status: string): string {
+    return status === 'READY_FOR_DISBURSEMENT' ? 'READY FOR DISBURSEMENT' : status;
+  }
   groupMemberRosterRows: GroupMemberRosterRow[] = [];
   selectedContributionMonth = '';
   recentJoiners: GroupRecentJoinerRow[] = [];
@@ -134,7 +174,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   readonly contributionColumns: TableColumn<GroupContributionRow>[] = [
     { header: 'Member', field: 'memberName' },
-    { header: 'Code', field: 'memberCode' },
+    { header: 'Code', formatter: row => this.formatMemberId(row.memberCode) },
     { header: 'Monthly', formatter: row => this.formatCurrency(row.monthlyContribution) },
     { header: 'Total', formatter: row => this.formatCurrency(row.totalContribution) },
     { header: 'Joined', formatter: row => row.joinedAt ? new Date(row.joinedAt).toLocaleDateString('en-US') : '—' }
@@ -150,7 +190,7 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   readonly recentJoinerColumns: TableColumn<GroupRecentJoinerRow>[] = [
     { header: 'Member', field: 'fullName' },
-    { header: 'Member ID', field: 'memberId' },
+    { header: 'Member ID', formatter: row => this.formatMemberId(row.memberId) },
     { header: 'Email', field: 'email' },
     { header: 'Joined', formatter: row => row.joinedAt ? new Date(row.joinedAt).toLocaleDateString('en-US') : '—' }
   ];
@@ -353,6 +393,26 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
       && request.status === 'PENDING_CONFIRMATION'
     );
   }
+
+
+  // Add these properties with your other properties (around line 89)
+isRepaymentBoardExpanded = true; // For retractable repayment board
+
+// Add this method with your other methods (around line 115)
+toggleRepaymentBoard(): void {
+  this.isRepaymentBoardExpanded = !this.isRepaymentBoardExpanded;
+}
+
+// Add these helper methods for the repayment schedule
+getLoanByBorrowerRow(borrower: GroupBorrowerRow): CooperativeLoan | null {
+  return this.groupLoans.find(loan => 
+    String(loan.loanCode || loan.loanId || loan.id) === borrower.loanId
+  ) || null;
+}
+
+getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
+  return this.cooperativeService.getMemberById(borrower.memberId) || null;
+}
 
   loadDashboard(): void {
     this.isLoading = true;
@@ -1028,5 +1088,21 @@ export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestr
 
   private normalizeDirectoryQuery(value: string | number | null | undefined): string {
     return String(value ?? '').trim().toLowerCase();
+  }
+
+  public formatMemberId(memberId: number | string | undefined): string {
+    const idNum = Number(memberId);
+    if (!idNum || isNaN(idNum)) return 'N/A';
+    return `COP-${idNum.toString().padStart(3, '0')}`;
+  }
+
+  public formatMembershipId(
+    membershipId: number | string | undefined,
+    groupCode?: string,
+    memberCode?: number | string
+  ): string {
+    if (!membershipId || !groupCode || !memberCode) return '';
+    const alphaPart = groupCode.split('-')[0];
+    return `${alphaPart}-${memberCode}-${membershipId}`;
   }
 }

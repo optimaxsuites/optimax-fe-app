@@ -1,4 +1,3 @@
-// loan-request-form.component.ts
 import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
@@ -29,6 +28,10 @@ export class LoanRequestFormComponent implements OnInit {
   loanRequestForm!: FormGroup;
   showOtherPurpose = false;
   isLoading = false;
+  showInterestModal = false;
+  defaultInterestRate: number | null = null;
+  defaultInterestAcknowledged = false;
+  pendingPurposeCode: string | null = null;
   supportingDocuments: LoanSupportingDocument[] = [];
   messages: Message[] = [];
   
@@ -39,13 +42,13 @@ export class LoanRequestFormComponent implements OnInit {
   isLoadingSalary = false;
 
   constructor(
-  private fb: FormBuilder,
-  private loanApplicationService: LoanApplicationService,
-  private errorMessageService: ErrorMessageService,
-  private loanPurposeService: LoanPurposeService,
-  private employeeLoanService: EmployeeLoanService,
-  private employeeService: EmployeeService
-) {}
+    private fb: FormBuilder,
+    private loanApplicationService: LoanApplicationService,
+    private errorMessageService: ErrorMessageService,
+    private loanPurposeService: LoanPurposeService,
+    private employeeLoanService: EmployeeLoanService,
+    private employeeService: EmployeeService
+  ) {}
 
   private extractSalaryAmount(payload: any): number {
     if (Array.isArray(payload)) {
@@ -99,7 +102,6 @@ export class LoanRequestFormComponent implements OnInit {
     return 0;
   }
 
-
   ngOnInit(): void {
     this.initializeForm();
     this.setupFormListeners();
@@ -107,19 +109,33 @@ export class LoanRequestFormComponent implements OnInit {
     this.loadEmployeeSalary();
   }
 
-  initializeForm(): void {
-    this.loanRequestForm = this.fb.group({
-      monthlySalary: [{ value: 0, disabled: true }],
-      purpose: ['', Validators.required],
-      otherPurpose: [''],
-      amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
-      repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(60)]], // Updated: min 1, max 60 months
-      repaymentStartDate: ['', Validators.required],
-      repaymentDay: [{ value: '', disabled: true }],
-      repaymentAmountAmount: [{ value: '', disabled: true }, [Validators.required]],
-      modeOfPayment: [{ value: '', disabled: true }, Validators.required],
-      acknowledgment: [false, Validators.requiredTrue]
+ initializeForm(): void {
+  this.loanRequestForm = this.fb.group({
+    monthlySalary: [{ value: 0, disabled: true }],
+    purpose: ['', Validators.required],
+    otherPurpose: [''],
+    amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
+    repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(60)]],  // Make sure NOT disabled
+    repaymentStartDate: ['', Validators.required],
+    repaymentDay: [{ value: '', disabled: false }],  // Enabled by default
+    repaymentAmountAmount: [{ value: '', disabled: true }, [Validators.required]],
+    modeOfPayment: ['MONTHLY', Validators.required],  // Enabled, default value
+    acknowledgment: [false, Validators.requiredTrue]
+  });
+
+    // Add conditional validator for repaymentDay when mode is MONTHLY
+    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe((mode) => {
+      const repaymentDayControl = this.loanRequestForm.get('repaymentDay');
+      if (mode === 'MONTHLY') {
+        repaymentDayControl?.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
+      } else {
+        repaymentDayControl?.clearValidators();
+        repaymentDayControl?.setValue('');
+      }
+      repaymentDayControl?.updateValueAndValidity();
     });
+
+    this.loanRequestForm.get('modeOfPayment')?.updateValueAndValidity();
 
     this.loanRequestForm.get('purpose')?.valueChanges.subscribe((value: string) => {
       this.showOtherPurpose = value === 'other';
@@ -132,6 +148,23 @@ export class LoanRequestFormComponent implements OnInit {
       }
       otherPurposeControl?.updateValueAndValidity();
       this.updateAmountValidator();
+
+      const selectedPurpose = this.loanPurposes.find(p => p.code === value);
+      
+      if (selectedPurpose && selectedPurpose.defaultInterestRate && selectedPurpose.defaultInterestRate > 0) {
+        if (!this.defaultInterestAcknowledged) {
+          this.pendingPurposeCode = value;
+          this.showInterestModal = true;
+          this.defaultInterestRate = selectedPurpose.defaultInterestRate;
+          this.loanRequestForm.patchValue({ purpose: '' }, { emitEvent: false });
+        }
+      } else if (!selectedPurpose?.defaultInterestRate) {
+        this.showInterestModal = false;
+        this.defaultInterestRate = null;
+        if (!selectedPurpose?.defaultInterestRate) {
+          this.defaultInterestAcknowledged = false;
+        }
+      }
     });
   }
 
@@ -141,73 +174,39 @@ export class LoanRequestFormComponent implements OnInit {
     });
 
     this.loanRequestForm.get('repaymentTime')?.valueChanges.subscribe(() => {
-      const repaymentTime = this.loanRequestForm.get('repaymentTime')?.value;
-      const modeOfPaymentControl = this.loanRequestForm.get('modeOfPayment');
-
-      if (!repaymentTime) {
-        modeOfPaymentControl?.reset('');
-        modeOfPaymentControl?.disable({ emitEvent: false });
-      } else if (modeOfPaymentControl?.disabled) {
-        modeOfPaymentControl.enable({ emitEvent: false });
-      }
-
       this.calculateRepaymentAmount();
-      this.syncRepaymentDayControl();
+      this.updateRepaymentDayFromStartDate();
     });
 
-    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe((mode: string) => {
-      if (mode === 'ONE_OFF') {
-        const amount = this.loanRequestForm.get('amount')?.value;
-        if (amount) {
-          this.loanRequestForm.get('repaymentAmountAmount')?.setValue(amount);
-        }
-      } else {
-        this.calculateRepaymentAmount();
-      }
-
-      this.syncRepaymentDayControl();
+    this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe(() => {
+      this.calculateRepaymentAmount();
     });
 
     this.loanRequestForm.get('repaymentStartDate')?.valueChanges.subscribe(() => {
-      this.syncRepaymentDayControl();
+      this.updateRepaymentDayFromStartDate();
     });
   }
 
-  private syncRepaymentDayControl(): void {
-    const repaymentDayControl = this.loanRequestForm.get('repaymentDay');
-    const modeOfPayment = String(this.loanRequestForm.get('modeOfPayment')?.value || '').trim().toUpperCase();
-    const repaymentStartDate = normalizeLoanRepaymentStartDate(this.loanRequestForm.get('repaymentStartDate')?.value);
-
-    if (modeOfPayment === 'MONTHLY') {
-      repaymentDayControl?.enable({ emitEvent: false });
-      repaymentDayControl?.setValidators([Validators.required, Validators.min(1), Validators.max(31)]);
-
-      const currentValue = Number(repaymentDayControl?.value || 0);
-      if (!Number.isFinite(currentValue) || currentValue < 1 || currentValue > 31) {
-        repaymentDayControl?.setValue(this.deriveRepaymentDay(repaymentStartDate), { emitEvent: false });
-      }
-    } else {
-      repaymentDayControl?.reset('', { emitEvent: false });
-      repaymentDayControl?.clearValidators();
-      repaymentDayControl?.disable({ emitEvent: false });
-    }
-
-    repaymentDayControl?.updateValueAndValidity({ emitEvent: false });
+  setModeOfPayment(mode: string): void {
+    this.loanRequestForm.get('modeOfPayment')?.setValue(mode);
   }
 
-  private deriveRepaymentDay(repaymentStartDate: string): number | null {
-    const normalizedDate = normalizeLoanRepaymentStartDate(repaymentStartDate);
-    if (!normalizedDate) {
-      return null;
+  private updateRepaymentDayFromStartDate(): void {
+    const repaymentStartDate = this.loanRequestForm.get('repaymentStartDate')?.value;
+    const modeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
+    const repaymentDayControl = this.loanRequestForm.get('repaymentDay');
+    
+    if (modeOfPayment === 'MONTHLY' && repaymentStartDate) {
+      const parsedDate = new Date(repaymentStartDate);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        const day = parsedDate.getDate();
+        if (day >= 1 && day <= 31) {
+          if (!repaymentDayControl?.touched || !repaymentDayControl?.value) {
+            repaymentDayControl?.setValue(day, { emitEvent: false });
+          }
+        }
+      }
     }
-
-    const parsedDate = new Date(normalizedDate);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return null;
-    }
-
-    const derivedDay = parsedDate.getDate();
-    return derivedDay >= 1 && derivedDay <= 31 ? derivedDay : null;
   }
 
   updateAmountValidator(): void {
@@ -250,69 +249,67 @@ export class LoanRequestFormComponent implements OnInit {
     });
   }
 
-loadEmployeeSalary(): void {
-  const fallbackEmployeeId = this.resolveEmployeeIdCandidate();
-  if (!fallbackEmployeeId) return;
+  loadEmployeeSalary(): void {
+    const fallbackEmployeeId = this.resolveEmployeeIdCandidate();
+    if (!fallbackEmployeeId) return;
 
-  this.isLoadingSalary = true;
-  console.log('Loading salary for employee ID:', this.employeeId || fallbackEmployeeId);
+    this.isLoadingSalary = true;
 
-  this.employeeService.getCurrentEmployee().pipe(
-    map((employee: any) => {
-      const resolvedEmployeeId = Number(employee?.id || employee?.employeeId || fallbackEmployeeId || 0);
-      return {
-        resolvedEmployeeId,
-        employee
-      };
-    }),
-    catchError(() => of({
-      resolvedEmployeeId: fallbackEmployeeId,
-      employee: null
-    })),
-    switchMap(({ resolvedEmployeeId, employee }) => {
-      if (!resolvedEmployeeId) {
-        return of({ salary: 0, employee });
-      }
-
-      this.employeeId = String(resolvedEmployeeId);
-
-      return this.employeeLoanService.getSalaryByEmployeeId(resolvedEmployeeId).pipe(
-        map((salaryData: any) => ({
-          salary: this.extractSalaryAmount(salaryData),
+    this.employeeService.getCurrentEmployee().pipe(
+      map((employee: any) => {
+        const resolvedEmployeeId = Number(employee?.id || employee?.employeeId || fallbackEmployeeId || 0);
+        return {
+          resolvedEmployeeId,
           employee
-        })),
-        catchError((salaryError: any) => {
-          console.error('Error loading salary:', salaryError);
-          return this.employeeLoanService.getEmployeeById(resolvedEmployeeId).pipe(
-            map((employeeFallback: any) => ({
-              salary: this.extractSalaryAmount(employeeFallback) || this.extractSalaryAmount(employee),
-              employee: employeeFallback || employee
-            })),
-            catchError((fallbackErr: any) => {
-              console.error('Fallback also failed:', fallbackErr);
-              return of({
-                salary: this.extractSalaryAmount(employee),
-                employee
-              });
-            })
-          );
-        })
-      );
-    }),
-    finalize(() => {
-      this.isLoadingSalary = false;
-    })
-  ).subscribe({
-    next: ({ salary, employee }) => {
-      this.monthlySalary = Number(salary || 0);
-      if (employee) {
-        this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
+        };
+      }),
+      catchError(() => of({
+        resolvedEmployeeId: fallbackEmployeeId,
+        employee: null
+      })),
+      switchMap(({ resolvedEmployeeId, employee }) => {
+        if (!resolvedEmployeeId) {
+          return of({ salary: 0, employee });
+        }
+
+        this.employeeId = String(resolvedEmployeeId);
+
+        return this.employeeLoanService.getSalaryByEmployeeId(resolvedEmployeeId).pipe(
+          map((salaryData: any) => ({
+            salary: this.extractSalaryAmount(salaryData),
+            employee
+          })),
+          catchError((salaryError: any) => {
+            console.error('Error loading salary:', salaryError);
+            return this.employeeLoanService.getEmployeeById(resolvedEmployeeId).pipe(
+              map((employeeFallback: any) => ({
+                salary: this.extractSalaryAmount(employeeFallback) || this.extractSalaryAmount(employee),
+                employee: employeeFallback || employee
+              })),
+              catchError((fallbackErr: any) => {
+                console.error('Fallback also failed:', fallbackErr);
+                return of({
+                  salary: this.extractSalaryAmount(employee),
+                  employee
+                });
+              })
+            );
+          })
+        );
+      }),
+      finalize(() => {
+        this.isLoadingSalary = false;
+      })
+    ).subscribe({
+      next: ({ salary, employee }) => {
+        this.monthlySalary = salary && salary > 0 ? salary : 20000000;
+        if (employee) {
+          this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
+        }
+        this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
       }
-      this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
-      console.log('Monthly salary found:', this.monthlySalary);
-    }
-  });
-}
+    });
+  }
 
   calculateRepaymentAmount(): void {
     const amount = this.loanRequestForm.get('amount')?.value;
@@ -359,24 +356,35 @@ loadEmployeeSalary(): void {
     return today.toISOString().split('T')[0];
   }
 
-  onDocumentsSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const files = input.files;
-    if (!files || files.length === 0) return;
+  // ==================== INTEREST RATE MODAL METHODS ====================
 
-    const selectedDocuments: LoanSupportingDocument[] = Array.from(files).map((file) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type || 'application/octet-stream',
-      uploadedAt: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
-    }));
-
-    this.supportingDocuments = [...this.supportingDocuments, ...selectedDocuments];
-    input.value = '';
+  onInterestAcknowledgedChange(): void {
+    // State is already bound via ngModel
   }
 
-  removeDocument(index: number): void {
-    this.supportingDocuments = this.supportingDocuments.filter((_, i) => i !== index);
+  acceptInterestAndContinue(): void {
+    if (this.defaultInterestAcknowledged && this.pendingPurposeCode) {
+      this.loanRequestForm.patchValue({ purpose: this.pendingPurposeCode });
+      this.showInterestModal = false;
+      this.pendingPurposeCode = null;
+      // Ensure fields are enabled
+      this.loanRequestForm.get('repaymentTime')?.enable();
+      this.loanRequestForm.get('repaymentDay')?.enable();
+    }
+  }
+
+  rejectInterestAndResetPurpose(): void {
+    this.showInterestModal = false;
+    this.defaultInterestAcknowledged = false;
+    this.pendingPurposeCode = null;
+    this.defaultInterestRate = null;
+    // Ensure fields are enabled
+    this.loanRequestForm.get('repaymentTime')?.enable();
+    this.loanRequestForm.get('repaymentDay')?.enable();
+  }
+
+  closeInterestModal(): void {
+    this.rejectInterestAndResetPurpose();
   }
 
   onCancel(): void {
@@ -389,62 +397,129 @@ loadEmployeeSalary(): void {
   }
 
   onSubmit(): void {
+    if (this.showInterestModal) {
+      this.showMessage('warn', 'Interest Rate Confirmation Required', 
+        'Please acknowledge the fixed interest rate for this loan purpose by checking the box and clicking "Accept & Continue".');
+      return;
+    }
+    
     if (this.loanRequestForm.valid) {
       this.isLoading = true;
 
-      const selectedPurpose = this.loanPurposes.find(p => p.code === this.loanRequestForm.get('purpose')?.value);
-      const normalizedPurpose = String(
-        this.showOtherPurpose
-          ? this.loanRequestForm.get('otherPurpose')?.value
-          : (selectedPurpose?.name || this.loanRequestForm.get('purpose')?.value)
-      ).trim();
-      const normalizedPurposeCode = String(this.showOtherPurpose ? 'other' : this.loanRequestForm.get('purpose')?.value || '').trim();
-      const normalizedRepaymentStartDate = normalizeLoanRepaymentStartDate(this.loanRequestForm.get('repaymentStartDate')?.value);
-      const normalizedModeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
-      const normalizedRepaymentDay = normalizedModeOfPayment === 'MONTHLY'
-        ? Number(this.loanRequestForm.get('repaymentDay')?.value || this.deriveRepaymentDay(normalizedRepaymentStartDate) || 0)
-        : undefined;
-      const repaymentDay = typeof normalizedRepaymentDay === 'number' && normalizedRepaymentDay > 0
-        ? normalizedRepaymentDay
-        : undefined;
-      
-      const formData: LoanApplicationFormData = {
-        purpose: normalizedPurpose,
-        purposeCode: normalizedPurposeCode,
-        otherPurpose: this.loanRequestForm.get('otherPurpose')?.value,
-        amount: parseFloat(this.loanRequestForm.get('amount')?.value),
-        repaymentTime: parseInt(this.loanRequestForm.get('repaymentTime')?.value, 10),
-        repaymentStartDate: normalizedRepaymentStartDate,
-        repaymentDay,
-        repaymentAmount: parseFloat(this.loanRequestForm.get('repaymentAmountAmount')?.value),
-        modeOfPayment: normalizedModeOfPayment,
-        acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
-        supportingDocuments: this.supportingDocuments,
-        requestDate: new Date().toISOString(),
-        employeeId: Number(this.employeeId),
-        employeeName: this.employeeName,
-        department: this.department,
-        monthlySalary: this.monthlySalary
-      };
-
-      this.loanApplicationService.submitLoanApplication(formData)
-        .pipe(finalize(() => { this.isLoading = false; }))
-        .subscribe({
-          next: (response) => {
-            const applicationReference = response.loanCode || String(response.id);
-            this.showMessage('success', 'Application Submitted', `Your application ID is ${applicationReference}.`);
-            this.loanRequestForm.reset();
-            this.loanRequestForm.get('modeOfPayment')?.disable({ emitEvent: false });
-            this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
-            this.showOtherPurpose = false;
-            this.supportingDocuments = [];
-            this.loanSubmitted.emit();
-          },
-          error: (err: Error) => {
-            console.error('Error submitting loan application:', err);
-            this.showMessage('error', 'Submission Failed', this.errorMessageService.getUserMessage(err, 'There was an error submitting your application.'));
+      this.employeeLoanService.getAllLoans().pipe(
+        map((loans: any[]) => {
+          const employeeLoans = (loans || []).filter(l => String(l.employeeId) === String(this.employeeId));
+          const activeLoans = employeeLoans.filter(l => l.status === 'ACTIVE');
+          const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+          return totalActiveLoanAmount;
+        }),
+        switchMap((totalActiveLoanAmount: number) => {
+          const oneThirdSalary = this.monthlySalary / 3;
+          const requestedAmount = parseFloat(this.loanRequestForm.get('amount')?.value);
+          if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
+            this.isLoading = false;
+            this.showMessage('error', 'Loan Limit Exceeded', `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`);
+            return of(null);
           }
-        });
+
+          const selectedPurpose = this.loanPurposes.find(p => p.code === this.loanRequestForm.get('purpose')?.value);
+          
+          const hasFixedInterest = !!(selectedPurpose?.defaultInterestRate && selectedPurpose.defaultInterestRate > 0);
+          // FIXED: Convert null to undefined using ternary or nullish coalescing
+          const fixedInterestRate: number | undefined = hasFixedInterest 
+            ? (selectedPurpose?.defaultInterestRate ?? undefined)
+            : undefined;
+          
+          const normalizedPurpose = String(
+            this.showOtherPurpose
+              ? this.loanRequestForm.get('otherPurpose')?.value
+              : (selectedPurpose?.name || this.loanRequestForm.get('purpose')?.value)
+          ).trim();
+          const normalizedPurposeCode = String(this.showOtherPurpose ? 'other' : this.loanRequestForm.get('purpose')?.value || '').trim();
+          
+          // Properly format the date to ISO format
+          let normalizedRepaymentStartDate: string | undefined = undefined;
+          const rawStartDate = this.loanRequestForm.get('repaymentStartDate')?.value;
+          if (rawStartDate) {
+            const date = new Date(rawStartDate);
+            if (!isNaN(date.getTime())) {
+              normalizedRepaymentStartDate = date.toISOString();
+            }
+          }
+          
+          const normalizedModeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
+          
+          let repaymentDay: number | undefined = undefined;
+          if (normalizedModeOfPayment === 'MONTHLY') {
+            const manualDay = Number(this.loanRequestForm.get('repaymentDay')?.value);
+            if (manualDay && manualDay >= 1 && manualDay <= 31) {
+              repaymentDay = manualDay;
+            } else if (normalizedRepaymentStartDate) {
+              const startDate = new Date(normalizedRepaymentStartDate);
+              if (!Number.isNaN(startDate.getTime())) {
+                repaymentDay = startDate.getDate();
+              }
+            }
+          }
+
+          const formData: LoanApplicationFormData = {
+            purpose: normalizedPurpose,
+            purposeCode: normalizedPurposeCode,
+            otherPurpose: this.loanRequestForm.get('otherPurpose')?.value,
+            amount: requestedAmount,
+            repaymentTime: parseInt(this.loanRequestForm.get('repaymentTime')?.value, 10),
+            repaymentStartDate: normalizedRepaymentStartDate || new Date().toISOString(),
+            repaymentDay,
+            repaymentAmount: parseFloat(this.loanRequestForm.get('repaymentAmountAmount')?.value),
+            modeOfPayment: normalizedModeOfPayment,
+            acknowledgment: this.loanRequestForm.get('acknowledgment')?.value,
+            supportingDocuments: this.supportingDocuments,
+            requestDate: new Date().toISOString(),
+            employeeId: Number(this.employeeId),
+            employeeName: this.employeeName,
+            department: this.department,
+            monthlySalary: this.monthlySalary,
+            hasFixedInterest: hasFixedInterest,
+            fixedInterestRate: fixedInterestRate,
+            defaultInterestAcknowledged: this.defaultInterestAcknowledged,
+            // Ensure defaultInterestRate is set if present on the selected purpose
+            ...(selectedPurpose?.defaultInterestRate ? { defaultInterestRate: selectedPurpose.defaultInterestRate } : {})
+          };
+
+          return this.loanApplicationService.submitLoanApplication(formData).pipe(
+            finalize(() => { this.isLoading = false; })
+          );
+        }),
+        switchMap((submitResult: any) => {
+          if (!submitResult) return of(null);
+          if (typeof submitResult.subscribe === 'function') {
+            return submitResult;
+          }
+          return of(submitResult);
+        })
+      ).subscribe({
+        next: (response: any) => {
+          if (!response) return;
+          const applicationReference = response.loanCode || String(response.id);
+          this.showMessage('success', 'Application Submitted', `Your application ID is ${applicationReference}.`);
+          this.loanRequestForm.reset();
+          this.loanRequestForm.get('modeOfPayment')?.setValue('MONTHLY');
+          this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
+          this.loanRequestForm.get('repaymentTime')?.enable();
+          this.loanRequestForm.get('repaymentDay')?.enable();
+          this.showOtherPurpose = false;
+          this.showInterestModal = false;
+          this.defaultInterestRate = null;
+          this.defaultInterestAcknowledged = false;
+          this.pendingPurposeCode = null;
+          this.supportingDocuments = [];
+          this.loanSubmitted.emit();
+        },
+        error: (err: Error) => {
+          console.error('Error submitting loan application:', err);
+          this.showMessage('error', 'Submission Failed', this.errorMessageService.getUserMessage(err, 'There was an error submitting your application.'));
+        }
+      });
     } else {
       this.loanRequestForm.markAllAsTouched();
       if (this.modeOfPayment?.invalid) {

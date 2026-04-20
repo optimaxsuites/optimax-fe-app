@@ -1,3 +1,4 @@
+// ...imports remain unchanged...
 import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,10 +18,10 @@ import {
   CooperativeGroupMembership
 } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { EmployeeService } from '../../../service/employee.service';
+import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
-import { CooperativeMembershipApplicationsComponent } from '../cooperative-membership-applications/cooperative-membership-applications.component';
 import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
 
 interface DashboardActivity {
@@ -58,6 +59,11 @@ interface CooperativeDashboardLoanRow {
   status: string;
   statusClass: string;
   requestDate: string;
+  membershipId: string | number | null;
+  groupMembershipId: string | number | null;
+  formattedMemberId: string;
+  formattedCooperativeMemberId: string;
+  formattedMembershipId: string;
 }
 
 interface GroupJoinApplicationRow {
@@ -73,33 +79,192 @@ interface GroupJoinApplicationRow {
   rejectionReason?: string;
 }
 
-// --- Membership Applications Modal Logic ---
-
 @Component({
   selector: 'app-cooperative-dashboard',
   templateUrl: './cooperative-dashboard.component.html',
-  styleUrls: ['./cooperative-dashboard.component.scss'],
-  // Add the new component to the view providers if needed
+  styleUrls: ['./cooperative-dashboard.component.scss']
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
+        // Helper to format membership ID (matches dashboard logic)
+        // Format membership ID as [group code letters]-[memberId]-[membershipId]
+        private formatMembershipId(membershipIdRaw: string, groupCode: string, memberIdNum: string | number): string {
+          // Only use the leading alphabetical part of the group code
+          const groupCodeLetters = (groupCode.match(/^[A-Za-z]+/) || [''])[0];
+          return groupCodeLetters && memberIdNum && membershipIdRaw ? `${groupCodeLetters}-${memberIdNum}-${membershipIdRaw}` : '';
+        }
+
+        // Helper to build recent loan row (matches usage in loadDashboard)
+        private buildRecentLoanRow(loan: CooperativeLoan): CooperativeDashboardLoanRow {
+          const group = this.getGroupForLoan(loan);
+          const groupCode = group?.code || '';
+          const member = this.getMemberForLoan(loan);
+          const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
+          const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
+          const membership = this.memberships.find((m: CooperativeGroupMembership) => String(m.memberId) === String(memberIdNum) && String(m.groupId) === String(groupIdNum));
+          const membershipIdRaw = membership?.membershipId || '';
+          // Format Member ID as COP-XXX (zero-padded)
+          const formattedCooperativeMemberId = memberIdNum ? `COP-${String(memberIdNum).padStart(3, '0')}` : '';
+          // Format Membership ID as [group code letters]-[memberId]-[membershipId]
+          const formattedMembershipId = membershipIdRaw && groupCode && memberIdNum ? this.formatMembershipId(String(membershipIdRaw), groupCode, String(memberIdNum)) : '';
+          const groupMembershipId = membership?.id || null;
+          return {
+            loan,
+            displayId: this.getLoanDisplayId(loan),
+            groupName: this.getLoanGroupName(loan),
+            amount: Number(loan.amount || 0),
+            status: loan.status || '',
+            statusClass: loan?.status ? 'status-' + loan.status.toLowerCase() : '',
+            requestDate: loan.requestDate || loan.applicationDate || '',
+            membershipId: loan.membershipId || null,
+            groupMembershipId,
+            formattedMemberId: String(loan.memberId || ''),
+            formattedCooperativeMemberId,
+            formattedMembershipId
+          };
+        }
+
+        // Helper to rebuild lookups (matches usage in loadDashboard)
+        private rebuildLookups(members: CooperativeMember[], groups: CooperativeLoanGroup[]): void {
+          this.memberNameLookup.clear();
+          this.groupNameLookup.clear();
+          this.groupCodeLookup.clear();
+          this.memberLookup.clear();
+          this.groupLookup.clear();
+          members.forEach((member) => {
+            this.memberNameLookup.set(member.id, member.fullName);
+            [member.id, member.memberId]
+              .filter((value): value is number => typeof value === 'number' && !isNaN(value))
+              .forEach((key) => this.memberLookup.set(key, member));
+          });
+          groups.forEach((group) => {
+            this.groupNameLookup.set(group.id, group.name);
+            this.groupCodeLookup.set(group.id, group.code || '');
+            this.groupLookup.set(group.id, group);
+          });
+        }
+      private memberLookup = new Map<number, CooperativeMember>();
+      private groupLookup = new Map<number, CooperativeLoanGroup>();
+
+      private rebuildLookupsForDashboard(members: CooperativeMember[], groups: CooperativeLoanGroup[]): void {
+        this.memberLookup.clear();
+        this.groupLookup.clear();
+        members.forEach((member) => {
+          [member.id, member.memberId]
+            .filter((value): value is number => typeof value === 'number' && !isNaN(value))
+            .forEach((key) => this.memberLookup.set(key, member));
+        });
+        groups.forEach((group) => this.groupLookup.set(group.id, group));
+      }
+
+      private getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
+        const possibleIds = [loan.cooperativeMemberId, loan.memberId].filter(Boolean);
+        for (const id of possibleIds) {
+          const member = this.memberLookup.get(Number(id));
+          if (member) return member;
+        }
+        return undefined;
+      }
+
+      private getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
+        const gid = loan.cooperativeGroupId || loan.groupId || 0;
+        return this.groupLookup.get(gid);
+      }
+
+      public getFormattedMembershipId(loan: CooperativeLoan): string {
+	const member = this.getMemberForLoan(loan);
+	const group = this.getGroupForLoan(loan);
+	const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
+	const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
+	const membership = this.memberships.find((m: CooperativeGroupMembership) => String(m.memberId) === String(memberIdNum) && String(m.groupId) === String(groupIdNum));
+	const membershipIdRaw = membership?.membershipId || '';
+	const groupCode = group?.code;
+  return membershipIdRaw && groupCode && memberIdNum ? this.formatMembershipId(String(membershipIdRaw), groupCode, String(memberIdNum)) : '';
+  }
+
+  public memberships: CooperativeGroupMembership[] = [];
+
+  public selectedLevel: string = '';
+
+  /**
+   * Returns unique level values from inviteCandidates for the filter dropdown
+   */
+  get inviteCandidateLevels(): string[] {
+    const levels = new Set<string>();
+    for (const row of this.inviteCandidates) {
+      if (row.employee.level) {
+        levels.add(row.employee.level);
+      }
+    }
+    return Array.from(levels);
+  }
+
+  /**
+   * Returns invite candidates filtered by the selected level (if any)
+   */
+  get filteredInviteCandidates(): InviteCandidateRow[] {
+    if (!this.selectedLevel) return this.inviteCandidates;
+    return this.inviteCandidates.filter(row => row.employee.level === this.selectedLevel);
+  }
+
+  onLevelFilterChange(level: string) {
+    this.selectedLevel = level;
+  }
+
+  // Format status label for display (e.g., READY_FOR_DISBURSEMENT -> Ready for Disbursement)
+  formatStatusLabel(status: string | undefined): string {
+    if (!status) return '';
+    
+    const statusMap: Record<string, string> = {
+      'PENDING': 'Pending',
+      'APPROVED': 'Approved',
+      'READY_FOR_DISBURSEMENT': 'Ready for Disbursement',
+      'ACTIVE': 'Active',
+      'OVERDUE': 'Overdue',
+      'SKIPPED': 'Skipped',
+      'PAUSED': 'Paused',
+      'DEFAULTED': 'Defaulted',
+      'COMPLETED': 'Completed',
+      'REJECTED': 'Rejected'
+    };
+    
+    return statusMap[status] || status.toLowerCase().replace(/_/g, ' ');
+  }
+
+  // Format stage label for display
+  formatStageLabel(stage: string | undefined): string {
+    if (!stage) return '';
+    
+    const stageMap: Record<string, string> = {
+      'READY_FOR_ADMIN_REVIEW': 'Ready for Review',
+      'UNDER_ADMIN_REVIEW': 'Under Review',
+      'PENDING_GUARANTOR_APPROVAL': 'Pending Guarantor Approval',
+      'INFO_REQUESTED': 'Info Requested'
+    };
+    
+    return stageMap[stage] || stage.toLowerCase().replace(/_/g, ' ');
+  }
+
   // Expose as a public method for template use
   public formatCooperativeLoanCode(raw: string | number | undefined | null): string {
     return _formatCooperativeLoanCode(raw);
   }
-      // Membership Applications Modal Logic
-      pendingMembershipApplications: any[] = [];
-      showMembershipApplicationsModal = false;
-      showMembershipApplicationViewModal = false;
-      selectedMembershipApplication: any = null;
-    /**
-     * Returns a safe display string for a loan's ID/code, truncated if needed.
-     */
-    getLoanDisplayId(loan: CooperativeLoan | undefined | null): string {
-      if (!loan) return '';
-      const id = loan.loanCode ?? loan.loanId ?? '';
-      const str = id?.toString() ?? '';
-      return str.length > 11 ? str.slice(0, 11) + '...' : str;
-    }
+  
+  // Membership Applications Modal Logic
+  pendingMembershipApplications: any[] = [];
+  showMembershipApplicationsModal = false;
+  showMembershipApplicationViewModal = false;
+  selectedMembershipApplication: any = null;
+  
+  /**
+   * Returns a safe display string for a loan's ID/code, truncated if needed.
+   */
+  getLoanDisplayId(loan: CooperativeLoan | undefined | null): string {
+    if (!loan) return '';
+    const id = loan.loanCode ?? loan.loanId ?? '';
+    const str = id?.toString() ?? '';
+    return str.length > 11 ? str.slice(0, 11) + '...' : str;
+  }
+  
   currentUuid = uuidV4();
   selectedDashboard: 'advance' | 'cooperative' = 'cooperative';
   isDashboardMenuOpen = false;
@@ -138,7 +303,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   private allLoans: CooperativeLoan[] = [];
   private allMembers: CooperativeMember[] = [];
-  private readonly memberNameLookup = new Map<number, string>();
+  public readonly memberNameLookup = new Map<number, string>();
   private readonly groupNameLookup = new Map<number, string>();
   private readonly groupCodeLookup = new Map<number, string>();
   private readonly subscriptions = new Subscription();
@@ -169,6 +334,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     private cooperativeService: CooperativeService,
     private cooperativeGroupService: CooperativeGroupService,
     private employeeService: EmployeeService,
+    private employeeLoanService: EmployeeLoanService,
     private backNavigationService: BackNavigationService,
     private router: Router,
     private route: ActivatedRoute,
@@ -176,6 +342,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('[CooperativeDashboard] ngOnInit running');
+    // Preload group data to warm up cache for all loan-management UIs
+    this.cooperativeService.loadGroups().subscribe();
+
     const routeUuid = this.route.snapshot.paramMap.get('uuid');
     if (routeUuid) {
       this.currentUuid = routeUuid;
@@ -187,7 +357,22 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     this.stats = this.cooperativeService.getStats();
     this.loadDashboard();
+
+    // Fetch levels for dynamic filter
+    this.employeeLoanService.getAllLevels().subscribe({
+      next: (levels) => {
+        this.levels = Array.isArray(levels) ? levels : [];
+        console.log('Levels loaded for filter:', this.levels);
+      },
+      error: (err) => {
+        this.levels = [];
+        console.error('[CooperativeDashboard] Error loading levels:', err);
+      }
+    });
   }
+  
+  // Levels for dynamic filter
+  levels: any[] = [];
 
   formatPurposeDisplay(purpose?: string | null): string {
     return formatLoanPurposeDisplay(purpose);
@@ -250,83 +435,104 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       memberships: this.cooperativeService.loadGroupMemberships(),
       contributions: this.cooperativeService.loadContributionEntries()
     }).subscribe({
-      next: ({ groups, loans, members }: { groups: CooperativeLoanGroup[]; loans: CooperativeLoan[]; members: CooperativeMember[]; memberships: any; contributions: any }) => {
-      // Groups
-      // (groups are loaded for side effects, no assignment needed here)
+      next: ({ groups, loans, members, memberships }: { groups: CooperativeLoanGroup[]; loans: CooperativeLoan[]; members: CooperativeMember[]; memberships: CooperativeGroupMembership[]; contributions: any }) => {
+        // Loans
+        this.allLoans = [...loans];
+        // Helper to extract numeric part of loan ID
+        const getNumericLoanId = (loan: CooperativeLoan): number => {
+          const idStr = (loan.loanCode ?? loan.loanId ?? loan.id ?? '').toString();
+          // Extract trailing digits (e.g., 'COP-123' -> 123)
+          const match = idStr.match(/(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        this.recentLoans = [...loans]
+          .sort((a: CooperativeLoan, b: CooperativeLoan) => getNumericLoanId(b) - getNumericLoanId(a))
+          .slice(0, 5);
+        this.pendingApprovals = loans
+          .filter((loan: CooperativeLoan) => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
+          .sort((a: CooperativeLoan, b: CooperativeLoan) => getNumericLoanId(b) - getNumericLoanId(a))
+          .slice(0, 5);
+        this.patronageEstimate = this.estimatePatronage();
+        this.refreshPatronageYearOptions();
 
-      // Loans
-      this.allLoans = [...loans];
-      this.recentLoans = [...loans]
-        .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
-        .slice(0, 5);
-      this.pendingApprovals = loans
-        .filter((loan: CooperativeLoan) => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
-        .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
-        .slice(0, 5);
-      this.patronageEstimate = this.estimatePatronage();
-      this.refreshPatronageYearOptions();
+        // Members
+        this.allMembers = [...members];
+        this.rebuildLookups(members, groups || []);
+        this.recentMembers = [...members]
+          .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+          .slice(0, 5);
+        this.memberships = memberships || [];
+        console.log('[CooperativeDashboard] memberships loaded:', this.memberships);
+        this.recentLoanRows = this.recentLoans.map((loan) => this.buildRecentLoanRow(loan));
 
-      // Members
-      this.allMembers = [...members];
-      this.rebuildLookups(members, groups || []);
-      this.recentMembers = [...members]
-        .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
-        .slice(0, 5);
-      this.recentLoanRows = this.recentLoans.map((loan) => this.buildRecentLoanRow(loan));
-
-      // Dependent refreshes
-      this.stats = this.cooperativeService.getStats();
-      this.loadRecentGroupJoinApplications();
-      this.refreshDashboardSignals();
-      this.refreshInviteCandidates();
-      loadProfiler.success({ loans: this.allLoans.length, members: this.allMembers.length });
-      this.isLoading = false;
-      },
-      error: () => {
-        this.allLoans = [];
-        this.allMembers = [];
-        this.recentLoans = [];
-        this.pendingApprovals = [];
-        this.recentMembers = [];
-        this.employeeDirectory = [];
+        // Dependent refreshes
         this.stats = this.cooperativeService.getStats();
         this.loadRecentGroupJoinApplications();
         this.refreshDashboardSignals();
         this.refreshInviteCandidates();
-        loadProfiler.error({ message: 'Failed to load cooperative dashboard data' });
+        loadProfiler.success({ loans: this.allLoans.length, members: this.allMembers.length });
         this.isLoading = false;
+      },
+      error: () => {
+        forkJoin({
+          groups: this.cooperativeService.loadGroups(),
+          loans: this.cooperativeService.getLoans(),
+          members: this.cooperativeService.getMembers(),
+          memberships: this.cooperativeService.loadGroupMemberships(),
+          contributions: this.cooperativeService.loadContributionEntries()
+        }).subscribe({
+          next: ({ groups, loans, members, memberships }: { groups: CooperativeLoanGroup[]; loans: CooperativeLoan[]; members: CooperativeMember[]; memberships: CooperativeGroupMembership[]; contributions: any }) => {
+            // Loans
+            this.allLoans = [...loans];
+            this.recentLoans = [...loans]
+              .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
+              .slice(0, 5);
+            this.pendingApprovals = loans
+              .filter((loan: CooperativeLoan) => loan.status === 'PENDING' && loan.applicationStage === 'READY_FOR_ADMIN_REVIEW')
+              .sort((a: CooperativeLoan, b: CooperativeLoan) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime())
+              .slice(0, 5);
+            this.patronageEstimate = this.estimatePatronage();
+            this.refreshPatronageYearOptions();
+
+            // Members
+            this.allMembers = [...members];
+            this.rebuildLookups(members, groups || []);
+            this.rebuildLookupsForDashboard(members, groups || []);
+            this.recentMembers = [...members]
+              .sort((a: CooperativeMember, b: CooperativeMember) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+              .slice(0, 5);
+            this.memberships = memberships || [];
+            this.recentLoanRows = this.recentLoans.map((loan) => {
+              const row = this.buildRecentLoanRow(loan);
+              row.formattedMembershipId = this.getFormattedMembershipId(loan);
+              return row;
+            });
+
+            // Dependent refreshes
+            this.stats = this.cooperativeService.getStats();
+            this.loadRecentGroupJoinApplications();
+            this.refreshDashboardSignals();
+            this.refreshInviteCandidates();
+            loadProfiler.success({ loans: this.allLoans.length, members: this.allMembers.length });
+            this.isLoading = false;
+          },
+          error: () => {
+            this.allLoans = [];
+            this.allMembers = [];
+            this.recentLoans = [];
+            this.pendingApprovals = [];
+            this.recentMembers = [];
+            this.employeeDirectory = [];
+            this.stats = this.cooperativeService.getStats();
+            this.loadRecentGroupJoinApplications();
+            this.refreshDashboardSignals();
+            this.refreshInviteCandidates();
+            loadProfiler.error({ message: 'Failed to load cooperative dashboard data' });
+            this.isLoading = false;
+          }
+        });
       }
     });
-  }
-
-  private rebuildLookups(members: CooperativeMember[], groups: CooperativeLoanGroup[]): void {
-    this.memberNameLookup.clear();
-    this.groupNameLookup.clear();
-    this.groupCodeLookup.clear();
-
-    members.forEach((member) => {
-      const displayName = member.fullName || `Member #${member.id || member.memberId || 'N/A'}`;
-      [member.id, member.memberId, member.employeeId]
-        .filter((value): value is number => typeof value === 'number' && !isNaN(value))
-        .forEach((key) => this.memberNameLookup.set(key, displayName));
-    });
-
-    groups.forEach((group) => {
-      this.groupNameLookup.set(group.id, group.name || 'Ungrouped');
-      this.groupCodeLookup.set(group.id, group.code || 'N/A');
-    });
-  }
-
-  private buildRecentLoanRow(loan: CooperativeLoan): CooperativeDashboardLoanRow {
-    return {
-      loan,
-      displayId: this.getLoanDisplayId(loan),
-      groupName: this.getLoanGroupName(loan),
-      amount: Number(loan.amount || 0),
-      status: loan.status || '',
-      statusClass: loan?.status ? 'status-' + loan.status.toLowerCase() : '',
-      requestDate: loan.requestDate || loan.applicationDate || ''
-    };
   }
 
   get inviteCandidatesCount(): number {
@@ -514,13 +720,27 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // openGroupJoinReviewModal(action: 'approve' | 'reject', application: GroupJoinApplicationRow): void {
+  //   this.groupJoinReviewAction = action;
+  //   this.selectedGroupJoinApplication = application;
+  //   this.groupJoinReviewNote = '';
+  //   this.groupJoinReviewError = '';
+  //   this.showGroupJoinReviewModal = false;
+  // }
+
   openGroupJoinReviewModal(action: 'approve' | 'reject', application: GroupJoinApplicationRow): void {
+  // Close any existing modal first
+  this.showGroupJoinReviewModal = false;
+  
+  // Small delay to ensure modal is closed
+  setTimeout(() => {
     this.groupJoinReviewAction = action;
     this.selectedGroupJoinApplication = application;
     this.groupJoinReviewNote = '';
     this.groupJoinReviewError = '';
     this.showGroupJoinReviewModal = true;
-  }
+  }, 50);
+}
 
   closeGroupJoinReviewModal(): void {
     this.showGroupJoinReviewModal = false;
@@ -631,9 +851,16 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  openCooperativeLoanHistory(loan: CooperativeLoan): void {
+  openCooperativeLoanHistory(loanOrMemberId: CooperativeLoan | number): void {
     this.closeLoanSummaryModal();
-    this.router.navigate(['/admin/hr/loan-management/employee-loan-history', this.getLoanMemberId(loan), this.currentUuid], {
+    let memberId: number | undefined;
+    if (typeof loanOrMemberId === 'number') {
+      memberId = loanOrMemberId;
+    } else if (loanOrMemberId && typeof loanOrMemberId === 'object') {
+      memberId = this.getLoanMemberId(loanOrMemberId);
+    }
+    if (!memberId) return;
+    this.router.navigate(['/admin/hr/loan-management/cooperative-member-loan-history', memberId, this.currentUuid], {
       state: { source: 'admin', cooperative: true, uuid: this.currentUuid }
     });
   }
@@ -704,7 +931,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getPreviewStatusClass(status?: string): string {
-    return `status-${String(status || 'pending').toLowerCase()}`;
+    if (!status) return 'status-default';
+    return `status-${String(status).toLowerCase()}`;
   }
 
   getPreviewAmountPaid(loan: CooperativeLoan): number {
@@ -1066,14 +1294,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getMemberName(memberId: number | undefined): string {
+    // Only use cooperativeMemberId for lookup
     if (typeof memberId === 'number' && this.memberNameLookup.has(memberId)) {
       return this.memberNameLookup.get(memberId) || 'Unknown Member';
     }
-    return this.cooperativeService.getMemberDisplayName(memberId);
+    return 'Unknown Member';
   }
 
   private getLoanMemberId(loan: CooperativeLoan): number {
-    return loan.memberId || loan.cooperativeMemberId || 0;
+    return loan.cooperativeMemberId || loan.memberId || 0;
   }
 
   private getLoanGroupId(loan: CooperativeLoan): number {
@@ -1101,7 +1330,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.cooperativeGroupContext.members = [...this.allMembers];
     this.cooperativeGroupContext.groups = [...this.cooperativeService.getGroups()];
     this.cooperativeGroupContext.groupMemberships = [...this.cooperativeService.getGroupMemberships()];
-    // If contributions are needed, sync here as well
 
     const memberMap = new Map(this.cooperativeGroupContext.members.map(member => [member.id, member]));
     const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeGroupContext.groups.map((group: CooperativeLoanGroup) => [group.id, group]));
@@ -1137,7 +1365,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
         eligibility: this.cooperativeService.checkMembershipEligibility(employee)
       }))
       .filter(item =>
-        item.employee.rank === 'JUNIOR' &&
         item.eligibility.canBeInvited &&
         !memberEmails.has(item.employee.email.toLowerCase())
       );
@@ -1168,6 +1395,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
+    console.log('Raw employee object:', employee);
     const firstName = String(employee?.firstName || '').trim();
     const lastName = String(employee?.lastName || '').trim();
     const fallbackName = String(employee?.fullName || '').trim();
@@ -1200,7 +1428,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       email,
       phone: String(employee?.phone || '').trim(),
       department: departmentName,
-      rank: this.mapRank(levelName),
+      level: levelName,
       employmentType: this.mapEmploymentType(employmentTypeName),
       employmentStartDate: employmentStartDate || new Date().toISOString(),
       onProbation: Boolean(employee?.onProbation),
@@ -1208,24 +1436,6 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       hasActiveDisciplinaryIssue: Boolean(employee?.hasActiveDisciplinaryIssue || employee?.disciplinaryCaseOpen),
       managerId: String(employee?.supervisor?.id || employee?.supervisor || employee?.managerId || '').trim() || undefined
     };
-  }
-
-  private mapRank(value: string): CooperativeEmployeeProfile['rank'] {
-    const normalized = value.toLowerCase();
-
-    if (normalized.includes('executive') || normalized.includes('exec') || normalized.includes('director')) {
-      return 'EXEC';
-    }
-
-    if (normalized.includes('senior') || normalized.includes('manager') || normalized.includes('lead') || normalized.includes('head')) {
-      return 'SENIOR';
-    }
-
-    if (normalized.includes('mid') || normalized.includes('associate') || normalized.includes('level 2') || normalized.includes('level 3')) {
-      return 'MID';
-    }
-
-    return 'JUNIOR';
   }
 
   private mapEmploymentType(value: string): CooperativeEmployeeProfile['employmentType'] {

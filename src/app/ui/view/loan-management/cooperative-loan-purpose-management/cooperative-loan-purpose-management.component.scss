@@ -66,18 +66,6 @@
         background: linear-gradient(135deg, #255b6e, #3a7f9e);
       }
     }
-
-    .btn-back {
-      background: white;
-      color: #2E6276;
-      border: 1px solid rgba(46, 98, 118, 0.15);
-      box-shadow: none;
-
-      &:hover {
-        background: #f6fbfc;
-        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.12);
-      }
-    }
   }
 
   .search-section {
@@ -154,192 +142,12 @@
     }
   }
 
-  .optional {
-    color: #8aadba;
-    font-size: 0.7rem;
-    font-weight: normal;
-    margin-left: 6px;
-  }
-
   .table-container {
     background: white;
     border-radius: 20px;
     border: 1px solid #e2edf2;
     overflow: hidden;
     box-shadow: 0 8px 24px rgba(46, 98, 118, 0.06);
-
-    .purposes-table {
-      width: 100%;
-      border-collapse: collapse;
-
-      th,
-      td {
-        padding: 16px 18px;
-        text-align: left;
-        border-bottom: 1px solid #eef3f6;
-      }
-
-      th {
-        background: #f8fcfd;
-        color: #1a4b5c;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      tr {
-        transition: background 0.2s ease;
-
-        &:hover {
-          background: #fafdfe;
-        }
-      }
-
-      .code-cell {
-        font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-        font-weight: 700;
-        color: #2E6276;
-        background: #f0f7fa;
-        border-radius: 8px;
-        display: inline-block;
-        padding: 4px 12px;
-        font-size: 0.85rem;
-      }
-
-      .name-cell {
-        font-weight: 600;
-        color: #1a4b5c;
-      }
-
-      .description-cell {
-        color: #6b8a97;
-        max-width: 250px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .amount-cell {
-        font-weight: 600;
-        color: #2EB270;
-      }
-
-      .interest-cell {
-        font-weight: 700;
-        color: #eb9b3f;
-      }
-
-      .status-cell {
-        .status-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 5px 14px;
-          border-radius: 40px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-
-          &.active {
-            background: rgba(46, 178, 112, 0.12);
-            color: #1e7e4a;
-            border: 1px solid rgba(46, 178, 112, 0.25);
-
-            i {
-              color: #2EB270;
-              font-size: 0.7rem;
-            }
-          }
-
-          &.inactive {
-            background: rgba(108, 117, 125, 0.1);
-            color: #6c757d;
-            border: 1px solid rgba(108, 117, 125, 0.2);
-
-            i {
-              color: #8a8a8a;
-              font-size: 0.7rem;
-            }
-          }
-        }
-      }
-
-      .actions-cell {
-        display: flex;
-        gap: 8px;
-
-        button {
-          width: 34px;
-          height: 34px;
-          border-radius: 10px;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-
-          i {
-            font-size: 1rem;
-          }
-
-          &.btn-edit {
-            color: #2E6276;
-
-            &:hover {
-              background: rgba(46, 98, 118, 0.1);
-              transform: scale(1.05);
-            }
-          }
-
-          &.btn-toggle {
-            color: #eb9b3f;
-
-            &:hover {
-              background: rgba(235, 155, 63, 0.1);
-              transform: scale(1.05);
-            }
-          }
-        }
-      }
-
-      .no-data {
-        text-align: center;
-        padding: 60px 20px;
-
-        i {
-          font-size: 3.5rem;
-          color: #cde3ea;
-          margin-bottom: 16px;
-          display: block;
-        }
-
-        p {
-          color: #8aadba;
-          margin-bottom: 20px;
-          font-size: 1rem;
-        }
-
-        .btn-create-small {
-          background: linear-gradient(135deg, #2E6276, #4291b1);
-          color: white;
-          border: none;
-          padding: 10px 24px;
-          border-radius: 40px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
-          }
-        }
-      }
-    }
   }
 
   .loading-state {
@@ -368,6 +176,41 @@
     }
   }
 
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+
+    i {
+      font-size: 3.5rem;
+      color: #cde3ea;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    p {
+      color: #8aadba;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+
+    .btn-create-small {
+      background: linear-gradient(135deg, #2E6276, #4291b1);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+      }
+    }
+  }
+
+  // Modal Styles
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -466,11 +309,6 @@
             outline: none;
             border-color: #2E6276;
             box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.1);
-          }
-
-          &.error {
-            border-color: #dc3545;
-            background: #fff8f8;
           }
 
           &:disabled,
@@ -655,6 +493,225 @@
       }
     }
   }
+
+  // Delete Modal Specific Styles
+  .delete-modal {
+    max-width: 480px;
+
+    .delete-warning {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: #fef2f2;
+      border-radius: 16px;
+      border-left: 4px solid #dc2626;
+
+      i {
+        font-size: 2rem;
+        color: #dc2626;
+      }
+
+      h4 {
+        margin: 0 0 8px;
+        color: #991b1b;
+        font-size: 1.1rem;
+      }
+
+      p {
+        margin: 0;
+        color: #7f1d1d;
+        font-size: 0.9rem;
+      }
+
+      .warning-text {
+        margin-top: 12px;
+        color: #dc2626;
+        font-weight: 500;
+      }
+    }
+
+    .modal-footer {
+      .delete-confirm-btn {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        i {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// ::ng-deep styles to penetrate app-table component
+// ============================================
+::ng-deep {
+  .purposes-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 16px 18px;
+      text-align: left;
+      border-bottom: 1px solid #eef3f6;
+    }
+
+    th {
+      background: #f8fcfd;
+      color: #1a4b5c;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tr {
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #fafdfe;
+      }
+    }
+
+    .code-cell {
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      font-weight: 700;
+      color: #2E6276;
+      background: #f0f7fa;
+      border-radius: 8px;
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+    }
+
+    .name-cell {
+      font-weight: 600;
+      color: #1a4b5c;
+    }
+
+    .description-cell {
+      color: #6b8a97;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .amount-cell {
+      font-weight: 600;
+      color: #2EB270;
+    }
+
+    .interest-cell {
+      font-weight: 700;
+      color: #eb9b3f;
+    }
+
+    // Status Badge Styles
+    .status-cell {
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 14px;
+        border-radius: 40px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &.active {
+          background: rgba(46, 178, 112, 0.12);
+          color: #1e7e4a;
+          border: 1px solid rgba(46, 178, 112, 0.25);
+
+          i {
+            color: #2EB270;
+            font-size: 0.7rem;
+          }
+        }
+
+        &.inactive {
+          background: rgba(108, 117, 125, 0.1);
+          color: #6c757d;
+          border: 1px solid rgba(108, 117, 125, 0.2);
+
+          i {
+            color: #8a8a8a;
+            font-size: 0.7rem;
+          }
+        }
+      }
+    }
+
+    // Action Buttons Styles
+    .actions-cell {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          font-size: 1rem;
+        }
+
+        &.edit-btn {
+          color: #2E6276;
+          background: rgba(46, 98, 118, 0.08);
+
+          &:hover {
+            background: rgba(46, 98, 118, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+
+        &.toggle-btn {
+          color: #eb9b3f;
+          background: rgba(235, 155, 63, 0.08);
+
+          &:hover {
+            background: rgba(235, 155, 63, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+
+        &.delete-btn {
+          color: #dc2626;
+          background: rgba(220, 38, 38, 0.08);
+
+          &:hover {
+            background: rgba(220, 38, 38, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+  }
 }
 
 @keyframes fadeIn {
@@ -700,9 +757,18 @@
     .table-container {
       overflow-x: auto;
     }
+  }
 
+  ::ng-deep {
     .purposes-table {
       min-width: 700px;
+    }
+
+    .actions-cell {
+      .action-btn {
+        width: 32px;
+        height: 32px;
+      }
     }
   }
 }

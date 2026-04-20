@@ -45,18 +45,39 @@ import { SUPPRESS_ERROR_TOAST } from '../../shared-component/service/error-messa
 })
 export class LoanService {
 
+  // In-memory cache for advance loans
+  private advanceLoansCache: AdvanceLoan[] | null = null;
+  private advanceLoansCacheTimestamp: number = 0;
+  private readonly cacheTTL = 2 * 60 * 1000; // 2 minutes
+
+  /**
+   * Clears the in-memory cache for advance loans.
+   */
+  clearAdvanceLoansCache(): void {
+    this.advanceLoansCache = null;
+    this.advanceLoansCacheTimestamp = 0;
+  }
+
   private readonly standardLoanUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/advanceLoans';
   private readonly repaymentStartDateSignatureCacheKey = 'advance-loan-repayment-start-date-signature-cache';
 
   constructor(private http: HttpClient) {}
 
-  getAllAdvanceLoans(): Observable<AdvanceLoan[]> {
+  /**
+   * Loads all advance loans, using in-memory cache if available and fresh.
+   * Pass forceRefresh=true to bypass cache.
+   */
+  getAllAdvanceLoans(forceRefresh = false): Observable<AdvanceLoan[]> {
+    const now = Date.now();
+    if (!forceRefresh && this.advanceLoansCache && (now - this.advanceLoansCacheTimestamp < this.cacheTTL)) {
+      return of(this.advanceLoansCache);
+    }
+
     const tenantId = 'optimax';
     const token = sessionStorage.getItem('token');
-    
     const fetchPage = (page: number): Observable<AdvanceLoan[]> => {
       return this.http.get<any>(`${this.standardLoanUrl}?page=${page}`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'X-Tenant-ID': tenantId
         },
@@ -66,7 +87,6 @@ export class LoanService {
         map(response => this.safeParseResponse(response)),
         switchMap(data => {
           if (Array.isArray(data)) {
-            console.log(`Page ${page}: ${data.length} loans`);
             if (data.length === 10) {
               return fetchPage(page + 1).pipe(
                 map(nextPageLoans => [...data, ...nextPageLoans])
@@ -78,10 +98,12 @@ export class LoanService {
         })
       );
     };
-    
+
     return fetchPage(1).pipe(
       tap(loans => {
-        console.log(`Total loans loaded: ${loans.length}`);
+        this.advanceLoansCache = loans;
+        this.advanceLoansCacheTimestamp = Date.now();
+        console.log(`[CACHE] Advance loans loaded and cached: ${loans.length}`);
       }),
       catchError((error) => {
         console.error('Failed to load loans from API:', error.status);
@@ -208,10 +230,12 @@ export class LoanService {
     );
   }
 
-  listLoanApplications(): Observable<LoanApplication[]> {
-    return this.getAllAdvanceLoans().pipe(
+  /**
+   * Returns all loan applications, using cache unless forceRefresh is true.
+   */
+  listLoanApplications(forceRefresh = false): Observable<LoanApplication[]> {
+    return this.getAllAdvanceLoans(forceRefresh).pipe(
       map((loans) => {
-        console.log('Converting loans to applications:', loans.length);
         return loans.map((loan) => this.toLoanApplication(loan));
       }),
       catchError((error) => {

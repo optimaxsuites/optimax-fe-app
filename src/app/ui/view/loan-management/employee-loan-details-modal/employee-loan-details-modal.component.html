@@ -234,14 +234,6 @@
           <span class="row-label">Payment Mode</span>
           <span class="row-value">{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</span>
         </div>
-        <div class="detail-row">
-          <span class="row-label">Late Fee Percentage</span>
-          <span class="row-value strong">{{ getDisplayedLateFeePercentage() }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="row-label">Late Fee Grace Period</span>
-          <span class="row-value">{{ getDisplayedLateFeeGracePeriodDays() }}</span>
-        </div>
       </div>
     </div>
 
@@ -407,7 +399,7 @@
           </div>
           <div class="summary-row">
             <span>Repayment Mode:</span>
-            <strong>{{ loan.modeOfPayment === 'MONTHLY' ? 'Monthly Installments' : 'One-off Payment' }}</strong>
+            <strong>{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</strong>
           </div>
         </div>
 

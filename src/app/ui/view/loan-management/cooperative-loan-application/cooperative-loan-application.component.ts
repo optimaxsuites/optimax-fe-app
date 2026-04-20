@@ -1,4 +1,3 @@
-// Restore missing methods after cleanup
 import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -22,78 +21,212 @@ import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/
   styleUrls: ['./cooperative-loan-application.component.scss']
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
-  // Add messages property for p-messages component
+    isLoadingGroupDetails = false;
   messages: Message[] = [];
   supportingDocuments: LoanSupportingDocument[] = [];
 
-  private isValidEmailCandidate(email: unknown): email is string {
-    return typeof email === 'string'
-      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  }
+  // Form properties
+  applicationForm!: FormGroup;
+  members: CooperativeMember[] = [];
+  eligibleMembers: CooperativeMember[] = [];
+  groups: CooperativeLoanGroup[] = [];
+  qualifiedGroups: CooperativeLoanGroup[] = [];
+  availablePurposes: CooperativeLoanPurposeApiResponse[] = [];
+  selectedGroup?: CooperativeLoanGroup;
+  selectedGroupMembership?: CooperativeGroupMembership;
+  selectedMember?: CooperativeMember;
+  employeeDirectory: CooperativeEmployeeProfile[] = [];
+  selectedMemberEligibility?: CooperativeMembershipEligibility;
+  selectedMemberSalary = 0;
 
-  private resolveBestEmailCandidate(...candidates: unknown[]): string {
-    for (const candidate of candidates) {
-      if (this.isValidEmailCandidate(candidate)) {
-        return candidate.trim();
-      }
-    }
+  // Calculated values
+  repaymentAmount = 0;
+  totalRepayment = 0;
+  totalInterest = 0;
+  showConfirmation = false;
+  confirmationDetails: {
+    amount?: number;
+    duration?: number;
+    repaymentAmount?: number;
+    totalRepayment?: number;
+    totalInterest?: number;
+    purpose?: string;
+    groupName?: string;
+    memberName?: string;
+  } = {};
+  prefillMemberParam: string | null = null;
+  submitError = '';
+  submitSuccessMessage = '';
+  isSubmitting = false;
 
-    return '';
-  }
+  estimatedAnnualPatronageRefund: number = 0;
+  guarantorCandidates: CooperativeMember[] = [];
 
-  private getSessionRegistrationEmail(): string {
-    const userRegDataRaw = sessionStorage.getItem('userRegData');
-    if (!userRegDataRaw) {
-      return '';
-    }
-
-    try {
-      const userRegData = JSON.parse(userRegDataRaw);
-      return this.resolveBestEmailCandidate(userRegData?.email);
-    } catch {
-      return '';
-    }
-  }
-
-  private resolveMemberEmail(member: CooperativeMember | undefined): string {
-    if (!member) {
-      return '';
-    }
-
-    const employeeMatch = this.employeeDirectory.find((employee) =>
-      String(employee.employeeId) === String(member.employeeId)
-      || String(employee.employeeId) === String(member.id)
-      || String(employee.employeeId) === String(member.memberId)
-      || (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
-    );
-
-    return this.resolveBestEmailCandidate(
-      employeeMatch?.workEmail,
-      employeeMatch?.email,
-      this.getSessionRegistrationEmail(),
-      member.email,
-      sessionStorage.getItem('email') || ''
-    );
-  }
-
-  /**
-   * Returns the most accurate email for the selected member by checking:
-   * 1. Employee directory (by employeeId/memberId/fullName)
-   * 2. userRegData from sessionStorage
-   * 3. selectedMember.email as fallback
-   */
-  getSelectedMemberEmail(): string {
-    return this.resolveMemberEmail(this.selectedMember);
-  }
+  // Stepper
+  stepIndex: number = 0;
   
-  // --- UI/Template helpers ---
+  // Application tracking
+  applicationStatus: string = '';
+  applicationNotifications: { title: string; message: string; date: string }[] = [];
+  currentUuid = uuidV4();
+  
+  // Inputs/Outputs
+  @Input() isModal = false;
+  @Input() isSelfService = false;
+  @Input() prefillMemberId: string | null = null;
+  @Output() formCancelled = new EventEmitter<void>();
+  @Output() applicationSubmitted = new EventEmitter<void>();
 
-  getMemberTenureMonths(memberId: string): number {
-    const member = this.members.find(m => String(m.id) === String(memberId) || String(m.memberId) === String(memberId));
-    if (!member || !member.joinDate) return 0;
-    const joinDate = new Date(member.joinDate);
-    const now = new Date();
-    return (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
+  guarantorContacts: { [memberId: string]: GuarantorDto[] } = {};
+
+  constructor(
+    private fb: FormBuilder,
+    private route: ActivatedRoute,
+    private router: Router,
+    private cooperativeService: CooperativeService,
+    private employeeService: EmployeeService,
+    private employeeLoanService: EmployeeLoanService,
+    private guarantorService: GuarantorService
+  ) {}
+
+  ngOnInit(): void {
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
+
+    if (this.prefillMemberId) {
+      this.prefillMemberParam = this.prefillMemberId;
+    }
+
+    this.stepIndex = 0;
+
+    this.route.queryParamMap.subscribe(params => {
+      this.prefillMemberParam = params.get('memberId') || this.prefillMemberId;
+      this.tryApplyPrefillMember();
+    });
+
+    this.initForm();
+    this.setupPurposeChangeListener();
+    this.loadEmployeeDirectoryWithMemberCheck();
+  }
+
+  // ==================== SETUP METHODS ====================
+  
+  setupPurposeChangeListener(): void {
+    this.applicationForm.get('purpose')?.valueChanges.subscribe(() => {
+      // Reset supporting documents when purpose changes
+      this.supportingDocuments = [];
+      
+      // Clear any purpose-related validation errors
+      const purposeControl = this.applicationForm.get('purpose');
+      if (purposeControl?.errors) {
+        const errors = { ...purposeControl.errors };
+        delete errors['purposeRequired'];
+        purposeControl.setErrors(Object.keys(errors).length ? errors : null);
+      }
+      
+      // Re-validate the form
+      this.applicationForm.updateValueAndValidity();
+    });
+  }
+
+  initForm(): void {
+    this.applicationForm = this.fb.group({
+      memberId: ['', Validators.required],
+      groupId: ['', Validators.required],
+      amount: ['', [Validators.required, Validators.min(1000)]],
+      purpose: ['', Validators.required],
+      repaymentTime: ['', [Validators.required, Validators.min(1)]],
+      modeOfPayment: ['MONTHLY', Validators.required],
+      requestDate: [this.toDateTimeLocal(new Date()), Validators.required],
+      guarantors: this.fb.array([]),
+      acceptTerms: [false, Validators.requiredTrue],
+      acceptAcknowledgement: [false, Validators.requiredTrue]
+    });
+
+    // Watch for changes
+    this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
+      this.onGroupSelect(groupId);
+    });
+
+    this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
+      this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
+      if (this.selectedMember) {
+        this.selectedMember = {
+          ...this.selectedMember,
+          email: this.resolveMemberEmail(this.selectedMember)
+        };
+      }
+      this.resolveSelectedMemberEligibility();
+      this.refreshQualifiedGroups();
+      this.validateGuarantors();
+    });
+
+    this.applicationForm.get('amount')?.valueChanges.subscribe(() => {
+      this.calculateRepayment();
+      this.validateGuarantors();
+    });
+
+    this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+      this.calculateRepayment();
+    });
+
+    this.guarantorsArray.valueChanges.subscribe(() => {
+      this.validateGuarantors();
+    });
+  }
+
+  // ==================== GETTERS ====================
+
+  public toTitleCase(value: string | undefined | null): string {
+  if (!value) return '';
+  const normalized = String(value).replace(/_/g, ' ').toLowerCase();
+  return normalized.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+  get guarantorsArray(): FormArray {
+    return this.applicationForm.get('guarantors') as FormArray;
+  }
+
+  get selectedPurposeDefinition(): CooperativeLoanPurposeApiResponse | undefined {
+    const currentPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
+    if (!currentPurpose) {
+      return undefined;
+    }
+    
+    // Find by name or id
+    return this.availablePurposes.find((purpose) => {
+      const purposeName = String(purpose.name || '').trim();
+      const purposeId = String(purpose.id || '');
+      return purposeName === currentPurpose || purposeId === currentPurpose;
+    });
+  }
+
+  get hasAvailablePurposes(): boolean {
+    return this.availablePurposes.length > 0;
+  }
+
+  get requiresSupportingDocuments(): boolean {
+    return Boolean(this.selectedPurposeDefinition?.requiresDocumentation);
+  }
+
+  get requiredDocumentationTypes(): string[] {
+    return this.selectedPurposeDefinition?.documentationTypes || [];
+  }
+
+  get hasDocumentRequirementGap(): boolean {
+    return this.requiresSupportingDocuments && this.supportingDocuments.length === 0;
+  }
+
+  get requiredGuarantorCount(): number {
+    return Number(this.selectedGroup?.minimumGuarantors || 0);
+  }
+
+  get totalGuaranteedAmount(): number {
+    return this.guarantorsArray.controls.reduce((sum, control) => {
+      return sum + Number(control.get('guaranteedAmount')?.value || 0);
+    }, 0);
   }
 
   get guarantorRequirementLabel(): string {
@@ -110,53 +243,12 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return this.cooperativeService.getMaxBorrowableAmountForGroup(this.selectedMember.id, this.selectedGroup.id);
   }
 
-  goBack(): void {
-    if (this.isModal) {
-      this.formCancelled.emit();
-    } else {
-      this.router.navigate(['/']);
-    }
+  get canSubmitByLevel(): boolean {
+    return true;
   }
-  
-  // Stepper state for multi-step form
-  stepIndex: number = 0;
 
   get controlNames(): string[] {
     return Object.keys(this.applicationForm?.controls || {});
-  }
-  
-  // Stepper navigation methods
-  nextStep(): void {
-    // Maximum step is 4 (0-based index for 5 steps)
-    if (this.stepIndex < 4) {
-      this.stepIndex++;
-    }
-  }
-
-  prevStep(): void {
-    if (this.stepIndex > 0) {
-      this.stepIndex--;
-    }
-  }
-  
-  // Expose Object to the template for Object.keys usage
-  Object = Object;
-  
-  errorKeys(errors: any): string[] {
-    if (!errors) return [];
-    return Object.keys(errors);
-  }
-
-  get requiresSupportingDocuments(): boolean {
-    return Boolean(this.selectedPurposeDefinition?.requiresDocumentation);
-  }
-
-  get requiredDocumentationTypes(): string[] {
-    return this.selectedPurposeDefinition?.documentationTypes || [];
-  }
-
-  get hasDocumentRequirementGap(): boolean {
-    return this.requiresSupportingDocuments && this.supportingDocuments.length === 0;
   }
 
   get previewRepaymentSchedule(): RepaymentScheduleItem[] {
@@ -207,6 +299,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
+
   get workflowTimelinePreview(): Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> {
     const steps: Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> = [{
       title: 'Application Submitted',
@@ -243,238 +336,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return steps;
   }
 
-  buildMailLink(email?: string): string | null {
-    const text = String(email || '').trim();
-    return text ? `mailto:${text}` : null;
-  }
-
-  getSelectedGroupAccountingEmail(): string {
-    return String(this.selectedGroup?.accountingEmail || '').trim();
-  }
-
-  getSelectedGroupLateFeeSummary(): string {
-    if (!this.selectedGroup) {
-      return '';
-    }
-
-    const percentage = Number(this.selectedGroup.lateFeePercentage || 0);
-    const graceDays = Number(this.selectedGroup.lateFeeGraceDays || 0);
-    return `${percentage}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
-  }
-
-  getSelectedGroupSettlementSummary(): string {
-    if (!this.selectedGroup) {
-      return '';
-    }
-
-    const segments = [
-      this.selectedGroup.principalBankName && this.selectedGroup.principalCollectionAccount
-        ? `Principal: ${this.selectedGroup.principalBankName} (${this.selectedGroup.principalCollectionAccount})`
-        : '',
-      this.selectedGroup.interestBankName && this.selectedGroup.interestCollectionAccount
-        ? `Interest: ${this.selectedGroup.interestBankName} (${this.selectedGroup.interestCollectionAccount})`
-        : '',
-      this.selectedGroup.lateFeeBankName && this.selectedGroup.lateFeeCollectionAccount
-        ? `Late fees: ${this.selectedGroup.lateFeeBankName} (${this.selectedGroup.lateFeeCollectionAccount})`
-        : ''
-    ].filter(Boolean);
-
-    return segments.join(' • ');
-  }
-
-  onDocumentsSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const files = input.files;
-    if (!files?.length) {
-      return;
-    }
-
-    const selectedDocuments: LoanSupportingDocument[] = Array.from(files).map((file) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type || 'application/octet-stream',
-      uploadedAt: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
-    }));
-
-    this.supportingDocuments = [...this.supportingDocuments, ...selectedDocuments];
-    input.value = '';
-  }
-
-  removeDocument(index: number): void {
-    this.supportingDocuments = this.supportingDocuments.filter((_, currentIndex) => currentIndex !== index);
-  }
-
-  getDocumentSizeLabel(size: number): string {
-    if (!Number.isFinite(size) || size <= 0) {
-      return 'Unknown size';
-    }
-    if (size < 1024) {
-      return `${size} B`;
-    }
-    if (size < 1024 * 1024) {
-      return `${(size / 1024).toFixed(1)} KB`;
-    }
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  
-  // Utility to format currency
-  formatCurrency(value: number | undefined): string {
-    if (typeof value !== 'number' || isNaN(value)) return '₦0';
-    return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 });
-  }
-
-  private toDateTimeLocal(value: Date | string): string {
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    const hours = `${date.getHours()}`.padStart(2, '0');
-    const minutes = `${date.getMinutes()}`.padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-
-  private normalizeRequestDate(value: string): string {
-    const trimmedValue = String(value || '').trim();
-    if (!trimmedValue) {
-      return new Date().toISOString();
-    }
-
-    const parsedDate = new Date(trimmedValue);
-    return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
-  }
-
-  private extractSalaryAmount(payload: any): number {
-    return Number(
-      payload?.baseSalary
-      || payload?.monthlySalary
-      || payload?.salary
-      || payload?.grossSalary
-      || 0
-    );
-  }
-
-  // Property to check rank eligibility (stub, update as needed)
-  get canSubmitByRank(): boolean {
-    // Add actual rank eligibility logic if needed
-    return true;
-  }
-
-  addNotification(title: string, message: string) {
-    this.applicationNotifications.unshift({
-      title,
-      message,
-      date: new Date().toLocaleString()
-    });
-  }
-  
-  approveGuarantor(guarantorId: number, memberId: string) {
-    // Update status and notify
-    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
-    if (control) {
-      control.patchValue({ status: 'APPROVED' });
-      this.addNotification('Guarantor Approved', `Guarantor ${memberId} approved the request.`);
-    }
-  }
-  
-  rejectGuarantor(guarantorId: number, memberId: string) {
-    // Update status and notify
-    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
-    if (control) {
-      control.patchValue({ status: 'REJECTED' });
-      this.addNotification('Guarantor Rejected', `Guarantor ${memberId} rejected the request.`);
-    }
-  }
-  
-  guarantorContacts: { [memberId: string]: GuarantorDto[] } = {};
-  applicationStatus: string = '';
-  applicationNotifications: { title: string; message: string; date: string }[] = [];
-  currentUuid = uuidV4();
-  @Input() isModal = false;
-  @Input() isSelfService = false;
-  @Input() prefillMemberId: string | null = null;
-  @Output() formCancelled = new EventEmitter<void>();
-  @Output() applicationSubmitted = new EventEmitter<void>();
-
-  applicationForm!: FormGroup;
-  members: CooperativeMember[] = [];
-  eligibleMembers: CooperativeMember[] = [];
-  groups: CooperativeLoanGroup[] = [];
-  qualifiedGroups: CooperativeLoanGroup[] = [];
-  availablePurposes: CooperativeLoanPurposeApiResponse[] = [];
-  selectedGroup?: CooperativeLoanGroup;
-  selectedGroupMembership?: CooperativeGroupMembership;
-  selectedMember?: CooperativeMember;
-  employeeDirectory: CooperativeEmployeeProfile[] = [];
-  selectedMemberEligibility?: CooperativeMembershipEligibility;
-  selectedMemberSalary = 0;
-
-  // Calculated values
-  repaymentAmount = 0;
-  totalRepayment = 0;
-  totalInterest = 0;
-  showConfirmation = false;
-  confirmationDetails: {
-    amount?: number;
-    duration?: number;
-    repaymentAmount?: number;
-    totalRepayment?: number;
-    totalInterest?: number;
-    purpose?: string;
-    groupName?: string;
-    memberName?: string;
-  } = {};
-  prefillMemberParam: string | null = null;
-  submitError = '';
-  submitSuccessMessage = '';
-  isSubmitting = false;
-
-  // Removed purposeType and showOtherPurpose for free-text purpose
-  estimatedAnnualPatronageRefund: number = 0;
-  guarantorCandidates: CooperativeMember[] = [];
-
-  // Removed onPurposeTypeChange
-
-  get guarantorsArray(): FormArray {
-    return this.applicationForm.get('guarantors') as FormArray;
-  }
-
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router,
-    private cooperativeService: CooperativeService,
-    private employeeService: EmployeeService,
-    private employeeLoanService: EmployeeLoanService,
-    private guarantorService: GuarantorService
-  ) {}
-
-  ngOnInit(): void {
-    const routeUuid = this.route.snapshot.paramMap.get('uuid');
-    if (routeUuid) {
-      this.currentUuid = routeUuid;
-    }
-
-    if (this.prefillMemberId) {
-      this.prefillMemberParam = this.prefillMemberId;
-    }
-
-    // Reset stepper on init
-    this.stepIndex = 0;
-
-    this.route.queryParamMap.subscribe(params => {
-      this.prefillMemberParam = params.get('memberId') || this.prefillMemberId;
-      this.tryApplyPrefillMember();
-    });
-
-    // Load employee directory first, then ensure member, then load data
-    this.loadEmployeeDirectoryWithMemberCheck();
-    this.initForm();
-  }
+  // ==================== LOAD METHODS ====================
 
   private loadEmployeeDirectoryWithMemberCheck(): void {
     this.employeeService.getAllEmployee().subscribe({
@@ -484,22 +346,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           .map((employee: any) => this.mapEmployeeToProfile(employee))
           .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
 
-        // Try to get current employee from session or first in directory
-        let currentEmployee: CooperativeEmployeeProfile | undefined;
-        const userRegDataRaw = sessionStorage.getItem('userRegData');
-        const userRegData = userRegDataRaw ? JSON.parse(userRegDataRaw) : null;
-        const sessionUserId = String(sessionStorage.getItem('userid') || '').trim();
-        if (sessionUserId) {
-          currentEmployee = this.employeeDirectory.find(e => String(e.employeeId) === String(sessionUserId));
-        }
-        if (!currentEmployee && userRegData?.email) {
-          currentEmployee = this.employeeDirectory.find(e => e.email.toLowerCase() === String(userRegData.email).toLowerCase());
-        }
-        if (!currentEmployee) {
-          currentEmployee = this.employeeDirectory[0];
-        }
-
-        // Removed ensureMemberForEmployee (does not exist)
         this.loadData();
       },
       error: () => {
@@ -530,25 +376,161 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
-  loadEmployeeDirectory(): void {
-    this.employeeService.getAllEmployee().subscribe({
-      next: (data) => {
-        const employees = Array.isArray(data)
-          ? data : []
-          
-        this.employeeDirectory = employees
-          .map((employee: any) => this.mapEmployeeToProfile(employee))
-          .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
+  // ==================== HELPER METHODS ====================
 
-        this.refreshEligibleMembers();
-        this.resolveSelectedMemberEligibility();
-      },
-      error: () => {
-        this.employeeDirectory = [];
-        this.refreshEligibleMembers();
-        this.resolveSelectedMemberEligibility();
+  private isValidEmailCandidate(email: unknown): email is string {
+    return typeof email === 'string'
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
+
+  private resolveBestEmailCandidate(...candidates: unknown[]): string {
+    for (const candidate of candidates) {
+      if (this.isValidEmailCandidate(candidate)) {
+        return candidate.trim();
       }
-    });
+    }
+    return '';
+  }
+
+  private getSessionRegistrationEmail(): string {
+    const userRegDataRaw = sessionStorage.getItem('userRegData');
+    if (!userRegDataRaw) {
+      return '';
+    }
+
+    try {
+      const userRegData = JSON.parse(userRegDataRaw);
+      return this.resolveBestEmailCandidate(userRegData?.email);
+    } catch {
+      return '';
+    }
+  }
+
+  private resolveMemberEmail(member: CooperativeMember | undefined): string {
+    if (!member) {
+      return '';
+    }
+
+    const employeeMatch = this.employeeDirectory.find((employee) =>
+      String(employee.employeeId) === String(member.employeeId)
+      || String(employee.employeeId) === String(member.id)
+      || String(employee.employeeId) === String(member.memberId)
+      || (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
+    );
+
+    return this.resolveBestEmailCandidate(
+      employeeMatch?.workEmail,
+      employeeMatch?.email,
+      this.getSessionRegistrationEmail(),
+      member.email,
+      sessionStorage.getItem('email') || ''
+    );
+  }
+
+  getSelectedMemberEmail(): string {
+    return this.resolveMemberEmail(this.selectedMember);
+  }
+
+  getMemberTenureMonths(memberId: string): number {
+    const member = this.members.find(m => String(m.id) === String(memberId) || String(m.memberId) === String(memberId));
+    if (!member || !member.joinDate) return 0;
+    const joinDate = new Date(member.joinDate);
+    const now = new Date();
+    return (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
+  }
+
+  private toDateTimeLocal(value: Date | string): string {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  private normalizeRequestDate(value: string): string {
+    const trimmedValue = String(value || '').trim();
+    if (!trimmedValue) {
+      return new Date().toISOString();
+    }
+
+    const parsedDate = new Date(trimmedValue);
+    return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+  }
+
+  mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
+    if (!employee) return null;
+    return {
+      employeeId: employee.employeeId || employee.id || '',
+      fullName: employee.fullName || employee.name || '',
+      email: this.resolveBestEmailCandidate(employee.workEmail, employee.email),
+      workEmail: this.resolveBestEmailCandidate(employee.workEmail),
+      monthlySalary: employee.monthlySalary || 0,
+      phone: employee.phone || '',
+      department: employee.department || '',
+      level: employee.level,
+      employmentType: employee.employmentType,
+      employmentStartDate: employee.employmentStartDate,
+    };
+  }
+
+  refreshEligibleMembers(): void {
+    this.eligibleMembers = this.members
+      .filter((member: CooperativeMember) => member.status === 'ACTIVE')
+      .map((member: CooperativeMember) => {
+        const emp = this.employeeDirectory.find(e =>
+          String(e.employeeId) === String(member.employeeId) ||
+          String(e.employeeId) === String(member.id) ||
+          String(e.employeeId) === String(member.memberId) ||
+          (e.fullName && member.fullName && e.fullName.toLowerCase() === member.fullName.toLowerCase())
+        );
+        if (emp) {
+          return {
+            ...member,
+            fullName: emp.fullName || member.fullName,
+            email: this.resolveBestEmailCandidate(emp.email, member.email)
+          };
+        }
+        return member;
+      });
+  }
+
+  resolveSelectedMemberEligibility(): void {
+    if (!this.selectedMember) {
+      this.selectedMemberEligibility = undefined;
+      return;
+    }
+    const empProfile = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
+    if (empProfile) {
+      this.selectedMemberEligibility = this.cooperativeService.checkMembershipEligibility(empProfile);
+    } else {
+      this.selectedMemberEligibility = undefined;
+    }
+  }
+
+  resolveSelectedMemberSalary(): void {
+    // Use fallback salary if salary is 0 or falsy
+    if (!this.selectedMember) {
+      this.selectedMemberSalary = 20000000;
+      return;
+    }
+    // Try to get salary from member or employee profile
+    let salary = 0;
+    if (typeof this.selectedMember.monthlySalary === 'number') {
+      salary = this.selectedMember.monthlySalary;
+    } else if (this.selectedMember.employeeId) {
+      const empProfile = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
+      if (empProfile && typeof empProfile.monthlySalary === 'number') {
+        salary = empProfile.monthlySalary;
+      }
+    }
+    this.selectedMemberSalary = salary && salary > 0 ? salary : 20000000;
   }
 
   tryApplyPrefillMember(): void {
@@ -562,138 +544,57 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
     if (matchedMember) {
       this.applicationForm.patchValue({ memberId: matchedMember.id });
-      return;
     }
   }
 
-  initForm(): void {
-    this.applicationForm = this.fb.group({
-      memberId: ['', Validators.required],
-      groupId: ['', Validators.required],
-      amount: ['', [Validators.required, Validators.min(1000)]],
-      purpose: ['', Validators.required],
-      repaymentTime: ['', [Validators.required, Validators.min(1)]],
-      modeOfPayment: ['MONTHLY', Validators.required],
-      requestDate: [this.toDateTimeLocal(new Date()), Validators.required],
-      guarantors: this.fb.array([]),
-      acceptTerms: [false, Validators.requiredTrue],
-      acceptAcknowledgement: [false, Validators.requiredTrue]
-    });
-
-    // Watch for changes
-    this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
-      this.onGroupSelect(groupId);
-    });
-
-    this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
-      this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
-      if (this.selectedMember) {
-        this.selectedMember = {
-          ...this.selectedMember,
-          email: this.resolveMemberEmail(this.selectedMember)
-        };
-      }
-      this.resolveSelectedMemberEligibility();
-      this.refreshQualifiedGroups();
-      this.validateGuarantors();
-    });
-
-    this.applicationForm.get('amount')?.valueChanges.subscribe(() => {
-      this.calculateRepayment();
-      this.validateGuarantors();
-    });
-
-    this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
-      this.calculateRepayment();
-    });
-
-    this.guarantorsArray.valueChanges.subscribe(() => {
-      this.validateGuarantors();
-    });
-  }
-
-  get selectedPurposeDefinition(): CooperativeLoanPurposeApiResponse | undefined {
-    const currentPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
-    if (!currentPurpose) {
-      return undefined;
-    }
-
-    return this.availablePurposes.find((purpose) => String(purpose.name || '').trim() === currentPurpose);
-  }
-
-  get hasAvailablePurposes(): boolean {
-    return this.availablePurposes.length > 0;
-  }
+  // ==================== GROUP SELECTION ====================
 
   onGroupSelect(groupId: string): void {
-    this.selectedGroup = this.qualifiedGroups.find(p => String(p.id) === String(groupId));
-    this.selectedGroupMembership = this.selectedMember && this.selectedGroup
-      ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
-      : undefined;
+    this.isLoadingGroupDetails = true;
+    const groupIdNum = Number(groupId);
+    this.cooperativeService.loadGroupById(groupIdNum).subscribe({
+      next: (group) => {
+        console.log('[onGroupSelect] Loaded group:', group);
+        this.selectedGroup = group;
+        // Debug log: print the full selectedGroup object for field inspection
+        console.log('[onGroupSelect] selectedGroup (after mapping):', this.selectedGroup);
+        this.selectedGroupMembership = this.selectedMember && this.selectedGroup
+          ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
+          : undefined;
 
-    if (this.selectedGroup) {
-      // Set validators
-      this.applicationForm.get('amount')?.setValidators([
-        Validators.required,
-        Validators.min(1000)
-      ]);
-      this.applicationForm.get('repaymentTime')?.setValidators([
-        Validators.required,
-        Validators.min(this.selectedGroup.minDuration),
-        Validators.max(this.selectedGroup.maxDuration)
-      ]);
-      
-      this.applicationForm.get('amount')?.updateValueAndValidity();
-      this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
-
-      this.syncGuarantorControls();
-      this.validateGuarantors();
-      this.calculateRepayment();
-    }
-  }
-
-  addGuarantor(): void {
-    if (!this.selectedGroup?.requiresGuarantors) {
-      return;
-    }
-
-    // Fetch contact info for new guarantor
-    const lastGuarantor = this.guarantorsArray.at(this.guarantorsArray.length - 1);
-    const memberId = lastGuarantor?.get('memberId')?.value;
-    if (memberId) {
-      this.guarantorService.getGuarantorByEmployeeId(memberId).subscribe(data => {
-        this.guarantorContacts[memberId] = data;
-      });
-    }
-    this.guarantorsArray.push(this.createGuarantorGroup());
-    this.validateGuarantors();
-  }
-
-  removeGuarantor(index: number): void {
-    if (!this.selectedGroup?.requiresGuarantors) {
-      return;
-    }
-
-    // Remove contact info
-    const memberId = this.guarantorsArray.at(index)?.get('memberId')?.value;
-    if (memberId && this.guarantorContacts[memberId]) {
-      delete this.guarantorContacts[memberId];
-    }
-    this.guarantorsArray.removeAt(index);
-    this.validateGuarantors();
-  }
-
-  get requiredGuarantorCount(): number {
-    return Number(this.selectedGroup?.minimumGuarantors || 0);
-  }
-
-  get totalGuaranteedAmount(): number {
-    return this.guarantorsArray.controls.reduce((sum, control) => {
-      return sum + Number(control.get('guaranteedAmount')?.value || 0);
-    }, 0);
+        if (this.selectedGroup) {
+          this.applicationForm.get('amount')?.setValidators([
+            Validators.required,
+            Validators.min(1000)
+          ]);
+          this.applicationForm.get('repaymentTime')?.setValidators([
+            Validators.required,
+            Validators.min(this.selectedGroup.minDuration),
+            Validators.max(this.selectedGroup.maxDuration)
+          ]);
+          this.applicationForm.get('amount')?.updateValueAndValidity();
+          this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
+          this.syncGuarantorControls();
+          this.validateGuarantors();
+          this.calculateRepayment();
+        } else {
+          console.warn('[onGroupSelect] No group found for ID:', groupIdNum);
+        }
+        this.isLoadingGroupDetails = false;
+      },
+      error: (err) => {
+        console.error('[onGroupSelect] Error loading group:', err);
+        this.selectedGroup = undefined;
+        this.selectedGroupMembership = undefined;
+        this.isLoadingGroupDetails = false;
+      }
+    });
   }
 
   private refreshQualifiedGroups(): void {
+    const previousSelectedGroupId = this.applicationForm?.get('groupId')?.value;
+    const previousPurpose = this.applicationForm?.get('purpose')?.value;
+    
     if (!this.selectedMember) {
       this.qualifiedGroups = [];
       this.selectedGroup = undefined;
@@ -717,15 +618,28 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       .filter(group => activeMembershipGroupIds.has(String(group.id)))
       .sort((left, right) => left.name.localeCompare(right.name));
 
+    // Restore previously selected group if still valid
     const selectedGroupId = this.applicationForm?.get('groupId')?.value;
-    if (selectedGroupId && !this.qualifiedGroups.some(group => group.id === selectedGroupId)) {
+    if (selectedGroupId && !this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
       this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
       this.selectedGroup = undefined;
       this.selectedGroupMembership = undefined;
+    } else if (selectedGroupId && this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
+      this.selectedGroup = this.qualifiedGroups.find(group => String(group.id) === String(selectedGroupId));
+      this.selectedGroupMembership = this.selectedMember && this.selectedGroup
+        ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
+        : undefined;
+    }
+    
+    // Restore purpose if it still exists in availablePurposes
+    if (previousPurpose && this.availablePurposes.some(p => String(p.name) === String(previousPurpose))) {
+      this.applicationForm.patchValue({ purpose: previousPurpose }, { emitEvent: false });
     }
 
     this.syncGuarantorControls();
   }
+
+  // ==================== GUARANTOR METHODS ====================
 
   private syncGuarantorControls(): void {
     if (!this.selectedGroup?.requiresGuarantors) {
@@ -746,6 +660,39 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       memberId: ['', Validators.required],
       guaranteedAmount: [0, [Validators.required, Validators.min(1)]]
     });
+  }
+
+  addGuarantor(): void {
+    if (!this.selectedGroup?.requiresGuarantors) {
+      return;
+    }
+
+    const lastGuarantor = this.guarantorsArray.at(this.guarantorsArray.length - 1);
+    const memberId = lastGuarantor?.get('memberId')?.value;
+    if (memberId) {
+      this.guarantorService.getGuarantorByEmployeeId(memberId).subscribe(data => {
+        this.guarantorContacts[memberId] = data;
+      });
+    }
+    this.guarantorsArray.push(this.createGuarantorGroup());
+    this.validateGuarantors();
+  }
+
+  removeGuarantor(index: number): void {
+    if (!this.selectedGroup?.requiresGuarantors) {
+      return;
+    }
+
+    const memberId = this.guarantorsArray.at(index)?.get('memberId')?.value;
+    if (memberId && this.guarantorContacts[memberId]) {
+      delete this.guarantorContacts[memberId];
+    }
+    this.guarantorsArray.removeAt(index);
+    this.validateGuarantors();
+  }
+
+  getGuarantorContacts(memberId: string): any[] {
+    return this.guarantorContacts[memberId] || [];
   }
 
   private validateGuarantors(): void {
@@ -787,14 +734,31 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     guarantorsControl.setErrors(Object.keys(errors).length ? errors : null);
   }
 
+  approveGuarantor(guarantorId: number, memberId: string) {
+    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
+    if (control) {
+      control.patchValue({ status: 'APPROVED' });
+      this.addNotification('Guarantor Approved', `Guarantor ${memberId} approved the request.`);
+    }
+  }
+  
+  rejectGuarantor(guarantorId: number, memberId: string) {
+    const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
+    if (control) {
+      control.patchValue({ status: 'REJECTED' });
+      this.addNotification('Guarantor Rejected', `Guarantor ${memberId} rejected the request.`);
+    }
+  }
+
+  // ==================== CALCULATIONS ====================
+
   calculateRepayment(): void {
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
     const modeOfPayment = String(this.applicationForm.get('modeOfPayment')?.value || 'MONTHLY').toUpperCase();
     if (amount > 0 && repaymentTime > 0 && this.selectedGroup) {
-      // Example calculation: simple interest
       const rate = Number(this.selectedGroup.interestRate || 0);
-      this.totalInterest = Math.round((amount * rate * repaymentTime) / 1200); // (amount * rate * months) / 12 / 100
+      this.totalInterest = Math.round((amount * rate * repaymentTime) / 1200);
       this.totalRepayment = amount + this.totalInterest;
       this.repaymentAmount = modeOfPayment === 'ONE_OFF'
         ? this.totalRepayment
@@ -804,7 +768,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       this.totalRepayment = 0;
       this.repaymentAmount = 0;
     }
-    // Update confirmation details
+    
     this.confirmationDetails = {
       amount,
       duration: repaymentTime,
@@ -815,13 +779,139 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       groupName: this.selectedGroup?.name || '',
       memberName: this.selectedMember?.fullName || ''
     };
-    // Patronage refund calculation (stub)
+    
     if (this.selectedGroup?.patronageEligible && this.selectedGroup.patronageRate) {
       this.estimatedAnnualPatronageRefund = Math.round((amount * this.selectedGroup.patronageRate) / 100);
     } else {
       this.estimatedAnnualPatronageRefund = 0;
     }
   }
+
+  // ==================== DOCUMENT METHODS ====================
+
+  onPurposeChange(): void {
+    this.supportingDocuments = [];
+    const purposeControl = this.applicationForm.get('purpose');
+    if (purposeControl?.value) {
+      const purposeExists = this.availablePurposes.some(p => 
+        String(p.name) === String(purposeControl.value) || 
+        String(p.id) === String(purposeControl.value)
+      );
+      if (!purposeExists) {
+        purposeControl.setErrors({ purposeNotFound: true });
+      } else {
+        purposeControl.setErrors(null);
+      }
+    }
+    this.applicationForm.updateValueAndValidity();
+  }
+
+  onDocumentsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files?.length) {
+      return;
+    }
+
+    const selectedDocuments: LoanSupportingDocument[] = Array.from(files).map((file) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type || 'application/octet-stream',
+      uploadedAt: formatDate(new Date(), 'yyyy-MM-dd', 'en-US')
+    }));
+
+    this.supportingDocuments = [...this.supportingDocuments, ...selectedDocuments];
+    input.value = '';
+  }
+
+  removeDocument(index: number): void {
+    this.supportingDocuments = this.supportingDocuments.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  getDocumentSizeLabel(size: number): string {
+    if (!Number.isFinite(size) || size <= 0) {
+      return 'Unknown size';
+    }
+    if (size < 1024) {
+      return `${size} B`;
+    }
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  // ==================== UI HELPERS ====================
+
+  formatCurrency(value: number | undefined): string {
+    if (typeof value !== 'number' || isNaN(value)) return '₦0';
+    return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 });
+  }
+
+  buildMailLink(email?: string): string | null {
+    const text = String(email || '').trim();
+    return text ? `mailto:${text}` : null;
+  }
+
+  getSelectedGroupAccountingEmail(): string {
+    return String(this.selectedGroup?.accountingEmail || '').trim();
+  }
+
+  getSelectedGroupLateFeeSummary(): string {
+    if (!this.selectedGroup) {
+      return '';
+    }
+
+    const percentage = Number(this.selectedGroup.lateFeePercentage || 0);
+    const graceDays = Number(this.selectedGroup.lateFeeGraceDays || 0);
+    return `${percentage}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
+  }
+
+  getSelectedGroupSettlementSummary(): string {
+    if (!this.selectedGroup) {
+      return '';
+    }
+
+    const segments = [
+      this.selectedGroup.principalBankName && this.selectedGroup.principalCollectionAccount
+        ? `Principal: ${this.selectedGroup.principalBankName} (${this.selectedGroup.principalCollectionAccount})`
+        : '',
+      this.selectedGroup.interestBankName && this.selectedGroup.interestCollectionAccount
+        ? `Interest: ${this.selectedGroup.interestBankName} (${this.selectedGroup.interestCollectionAccount})`
+        : '',
+      this.selectedGroup.lateFeeBankName && this.selectedGroup.lateFeeCollectionAccount
+        ? `Late fees: ${this.selectedGroup.lateFeeBankName} (${this.selectedGroup.lateFeeCollectionAccount})`
+        : ''
+    ].filter(Boolean);
+
+    return segments.join(' • ');
+  }
+
+  // ==================== STEPPER NAVIGATION ====================
+
+  nextStep(): void {
+    if (this.stepIndex < 4) {
+      this.stepIndex++;
+    }
+  }
+
+  prevStep(): void {
+    if (this.stepIndex > 0) {
+      this.stepIndex--;
+    }
+  }
+
+  // ==================== NOTIFICATIONS ====================
+
+  addNotification(title: string, message: string) {
+    this.applicationNotifications.unshift({
+      title,
+      message,
+      date: new Date().toLocaleString()
+    });
+  }
+
+  // ==================== SUBMISSION ====================
 
   private validateBeforeSubmit(): boolean {
     this.submitError = '';
@@ -892,36 +982,37 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.calculateRepayment();
     this.submitSuccessMessage = '';
 
-    if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByRank || !this.validateBeforeSubmit()) {
-      // Debug: Log invalid controls and errors
-      const invalidControls = Object.keys(this.applicationForm.controls).filter(key => this.applicationForm.get(key)?.invalid);
-      console.warn('Form invalid. Invalid controls:', invalidControls);
-      invalidControls.forEach(key => {
-        const control = this.applicationForm.get(key);
-        if (control) {
-          console.warn(`Control '${key}' errors:`, control.errors);
+    const memberId = this.applicationForm.get('memberId')?.value;
+    const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
+    const salary = Number(this.selectedMemberSalary || 0);
+    
+    if (memberId && salary > 0) {
+      this.cooperativeService.getLoans().subscribe(loans => {
+        const activeLoans = (loans || []).filter(l => (l.memberId === memberId || l.cooperativeMemberId === memberId) && l.status === 'ACTIVE');
+        const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+        const oneThirdSalary = salary / 3;
+        if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
+          this.submitError = `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`;
+          this.showConfirmation = false;
+          return;
         }
+        
+        if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByLevel || !this.validateBeforeSubmit()) {
+          return;
+        }
+        this.showConfirmation = true;
       });
-      if (!this.selectedGroup) {
-        console.warn('No group selected.');
-      }
-      if (!this.canSubmitByRank) {
-        console.warn('Cannot submit by rank.');
-      }
-      if (!this.validateBeforeSubmit()) {
-        console.warn('Custom validation failed.');
-      }
       return;
     }
 
-    // Show confirmation step before final submission
+    if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByLevel || !this.validateBeforeSubmit()) {
+      return;
+    }
+
     this.showConfirmation = true;
-    // Details already set in calculateRepayment()
-    // Actual submission will be handled in confirmSubmit()
   }
 
   confirmSubmit(): void {
-    // Track application status
     this.applicationStatus = 'PENDING';
     this.addNotification('Application Submitted', 'Your loan application has been submitted and is pending review.');
     if (this.selectedGroup?.requiresGuarantors) {
@@ -929,6 +1020,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     } else {
       this.addNotification('Admin Review', 'Application sent for admin review.');
     }
+    
     this.isSubmitting = true;
     const formValue = this.applicationForm.getRawValue();
     const requiresGuarantors = Boolean(this.selectedGroup?.requiresGuarantors);
@@ -940,11 +1032,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           requestedAt: new Date().toISOString()
         })).filter(item => !!item.memberId && item.guaranteedAmount > 0)
       : [];
+      
     const applicationStage = this.selectedGroup?.requiresGuarantors
       ? 'PENDING_GUARANTOR_APPROVAL'
       : 'READY_FOR_ADMIN_REVIEW';
     const requestDate = this.normalizeRequestDate(formValue.requestDate);
     const modeOfPayment = String(formValue.modeOfPayment || 'MONTHLY').toUpperCase() === 'ONE_OFF' ? 'ONE_OFF' : 'MONTHLY';
+    
     const newLoan = {
       cooperativeMemberId: Number(formValue.memberId),
       cooperativeGroupId: Number(formValue.groupId),
@@ -989,6 +1083,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         statusBeforeOverride: ''
       }]
     };
+    
     this.cooperativeService.addLoan(newLoan as any).subscribe({
       next: () => {
         this.submitSuccessMessage = this.selectedGroup?.requiresGuarantors
@@ -1012,85 +1107,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
-  getGuarantorContacts(memberId: string): any[] {
-    return this.guarantorContacts[memberId] || [];
-  }
+  // ==================== NAVIGATION ====================
 
-  // --- Restored methods (must be inside the class) ---
-  mapEmployeeToProfile(employee: any): CooperativeEmployeeProfile | null {
-    if (!employee) return null;
-    return {
-      employeeId: employee.employeeId || employee.id || '',
-      fullName: employee.fullName || employee.name || '',
-      email: this.resolveBestEmailCandidate(employee.workEmail, employee.email),
-      workEmail: this.resolveBestEmailCandidate(employee.workEmail),
-      monthlySalary: employee.monthlySalary || 0,
-      phone: employee.phone || '',
-      department: employee.department || '',
-      rank: employee.rank,
-      employmentType: employee.employmentType,
-      employmentStartDate: employee.employmentStartDate,
-      // Add other fields as needed
-    };
-  }
-
-  refreshEligibleMembers(): void {
-    // Only ACTIVE members are eligible, and merge employee directory data for accurate display
-    this.eligibleMembers = this.members
-      .filter((member: CooperativeMember) => member.status === 'ACTIVE')
-      .map((member: CooperativeMember) => {
-        // Try to find a matching employee profile
-        const emp = this.employeeDirectory.find(e =>
-          String(e.employeeId) === String(member.employeeId) ||
-          String(e.employeeId) === String(member.id) ||
-          String(e.employeeId) === String(member.memberId) ||
-          (e.fullName && member.fullName && e.fullName.toLowerCase() === member.fullName.toLowerCase())
-        );
-        // If found, update member's fullName and email for display
-        if (emp) {
-          return {
-            ...member,
-            fullName: emp.fullName || member.fullName,
-            email: this.resolveBestEmailCandidate(emp.email, member.email)
-          };
-        }
-        return member;
-      });
-  }
-
-  resolveSelectedMemberEligibility(): void {
-    if (!this.selectedMember) {
-      this.selectedMemberEligibility = undefined;
-      return;
-    }
-    // Find the employee profile for eligibility check
-    const empProfile = this.employeeDirectory.find(e => String(e.employeeId) === String(this.selectedMember?.employeeId));
-    if (empProfile) {
-      this.selectedMemberEligibility = this.cooperativeService.checkMembershipEligibility(empProfile);
+  goBack(): void {
+    if (this.isModal) {
+      this.formCancelled.emit();
     } else {
-      this.selectedMemberEligibility = undefined;
+      this.router.navigate(['/']);
     }
-  }
-
-  resolveSelectedMemberSalary(): void {
-    if (!this.selectedMember) {
-      this.selectedMemberSalary = 0;
-      return;
-    }
-
-    const employeeId = Number(this.selectedMember.employeeId || this.selectedMember.id || this.selectedMember.memberId || 0);
-    const fallbackEmployee = this.employeeDirectory.find(e => String(e.employeeId) === String(employeeId));
-    const fallbackSalary = Number(fallbackEmployee?.monthlySalary || this.selectedMember.monthlySalary || 0);
-
-    if (!Number.isFinite(employeeId) || employeeId <= 0) {
-      this.selectedMemberSalary = fallbackSalary;
-      return;
-    }
-
-    this.employeeLoanService.getSalaryByEmployeeId(employeeId).pipe(
-      catchError(() => of({ baseSalary: fallbackSalary } as { baseSalary?: number; monthlySalary?: number; salary?: number; grossSalary?: number }))
-    ).subscribe((salaryData: { baseSalary?: number; monthlySalary?: number; salary?: number; grossSalary?: number }) => {
-      this.selectedMemberSalary = this.extractSalaryAmount(salaryData) || fallbackSalary;
-    });
   }
 }

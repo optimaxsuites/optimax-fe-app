@@ -16,7 +16,7 @@ interface GroupJoinHistoryRow {
   id: string;
   memberId: string;
   memberName: string;
-  memberCode: string;
+  memberCode: string; // will be formatted as COP-XXX
   groupName: string;
   status: CooperativeGroupMembership['status'];
   requestedAt: string;
@@ -31,6 +31,21 @@ interface GroupJoinHistoryRow {
   styleUrls: ['./cooperative-group-join-history.component.scss']
 })
 export class CooperativeGroupJoinHistoryComponent implements OnInit {
+  // Pagination
+  pageSize = 20;
+  currentPage = 1;
+
+  isLoading = true;
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredApplications.length / this.pageSize));
+  }
+
+  get pagedApplications(): GroupJoinHistoryRow[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredApplications.slice(start, start + this.pageSize);
+  }
+
   currentUuid = uuidV4();
   applications: GroupJoinHistoryRow[] = [];
   statusFilter: GroupJoinStatusFilter = 'ALL';
@@ -44,10 +59,26 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
 
   readonly applicationColumns: TableColumn<GroupJoinHistoryRow>[] = [
     { header: 'Member', field: 'memberName', sortable: true },
-    { header: 'Member ID', field: 'memberCode', sortable: true },
+    { header: 'Member ID', field: 'memberCode', sortable: true, formatter: (row) => this.formatMemberId(row.memberCode) },
     { header: 'Group', field: 'groupName', sortable: true },
-    { header: 'Status', field: 'status', sortable: true, badgeClass: (row) => `status-badge status-${row.status.toLowerCase()}` },
-    { header: 'Requested', sortField: 'requestedAt', sortable: true, formatter: (row) => new Date(row.requestedAt).toLocaleString() },
+    { 
+      header: 'Status', 
+      field: 'status', 
+      sortable: true,
+      formatter: (row) => {
+        if (row.status === 'ACTIVE') return 'Active';
+        if (row.status === 'PENDING') return 'Pending';
+        if (row.status === 'REJECTED') return 'Rejected';
+        return row.status;
+      },
+      badgeClass: (row) => {
+        if (row.status === 'ACTIVE') return 'status-badge status-active';
+        if (row.status === 'PENDING') return 'status-badge status-pending';
+        if (row.status === 'REJECTED') return 'status-badge status-rejected';
+        return 'status-badge';
+      }
+    },
+    { header: 'Requested', sortField: 'requestedAt', sortable: true, formatter: (row) => new Date(row.requestedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) },
     {
       header: 'Reviewed',
       sortField: 'reviewedAt',
@@ -59,6 +90,17 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       formatter: (row) => row.reviewNote || row.rejectionReason || 'No note'
     }
   ];
+
+  private formatMemberId(memberCode: string): string {
+    // If already formatted, return as is
+    if (memberCode && memberCode.startsWith('COP-')) return memberCode;
+    // Try to extract numeric part
+    const num = Number(memberCode);
+    if (!isNaN(num)) {
+      return `COP-${num.toString().padStart(3, '0')}`;
+    }
+    return memberCode || '';
+  }
 
   readonly applicationActions: TableAction<GroupJoinHistoryRow>[] = [
     { id: 'view', label: '', ariaLabel: 'View group join request', className: 'view-btn', icon: 'pi pi-eye' },
@@ -79,13 +121,20 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       this.currentUuid = routeUuid;
     }
 
-    forkJoin({
-      groups: this.cooperativeService.loadGroups(),
-      members: this.cooperativeService.getMembers(),
-      memberships: this.cooperativeService.loadGroupMemberships()
-    }).subscribe(() => {
-      this.loadApplications();
-    });
+      this.isLoading = true;
+      forkJoin({
+        groups: this.cooperativeService.loadGroups(),
+        members: this.cooperativeService.getMembers(),
+        memberships: this.cooperativeService.loadGroupMemberships()
+      }).subscribe({
+        next: () => {
+          this.loadApplications();
+          this.isLoading = false;
+        },
+        error: () => {
+          this.isLoading = false;
+        }
+      });
   }
 
   get filteredApplications(): GroupJoinHistoryRow[] {
@@ -105,6 +154,24 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     });
   }
 
+  goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
   get pendingCount(): number {
     return this.applications.filter(application => application.status === 'PENDING').length;
   }
@@ -119,6 +186,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
 
   setStatusFilter(filter: GroupJoinStatusFilter): void {
     this.statusFilter = filter;
+    this.currentPage = 1; // Reset to first page when filter changes
   }
 
   approveApplication(id: string, note = ''): void {
@@ -133,9 +201,17 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
         const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
         this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
         this.loadApplications();
+        
+        // Clear message after 5 seconds
+        setTimeout(() => {
+          this.actionMessage = '';
+        }, 5000);
       },
       error: () => {
         this.actionMessage = 'Unable to approve the selected join request.';
+        setTimeout(() => {
+          this.actionMessage = '';
+        }, 5000);
       }
     });
   }
@@ -144,6 +220,9 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
       this.actionMessage = 'A rejection reason is required.';
+      setTimeout(() => {
+        this.actionMessage = '';
+      }, 5000);
       return;
     }
 
@@ -158,9 +237,16 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
         const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
         this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
         this.loadApplications();
+        
+        setTimeout(() => {
+          this.actionMessage = '';
+        }, 5000);
       },
       error: () => {
         this.actionMessage = 'Unable to reject the selected join request.';
+        setTimeout(() => {
+          this.actionMessage = '';
+        }, 5000);
       }
     });
   }
