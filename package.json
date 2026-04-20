@@ -107,6 +107,7 @@
     "ng2-pdf-viewer": "^10.4.0",
     "ngx-file-drop": "^16.0.0",
     "ngx-indexed-db": "^17.1.0",
+    "ng-recaptcha": "^13.2.1",
     "ngx-toastr": "^19.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.15",
