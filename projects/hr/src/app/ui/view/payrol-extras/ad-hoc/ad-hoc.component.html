@@ -5,7 +5,12 @@
       <p class="text-[12px] text-gray-500">Manage disputes and verdicts.</p>
     </div>
     <div class="flex items-center gap-2">
-      <app-button *ngIf="isAdmin" text="Create Ad Hocs" class="btn-navigate gap-2" (click)="toggleCreateForm()"></app-button>
+      <app-button
+        *ngIf="isAdmin"
+        text="Create Ad Hocs"
+        class="btn-navigate gap-2"
+        (click)="toggleCreateForm()"
+      ></app-button>
     </div>
   </div>
 
@@ -13,14 +18,24 @@
     <button
       *ngIf="isAdmin"
       class="px-4 py-2 rounded-md text-[13px]"
-      [ngClass]="activeTab === 'all' ? 'bg-customBlue text-white' : 'bg-gray-100 text-gray-600'"
-      (click)="setActiveTab('all')">
+      [ngClass]="
+        activeTab === 'all'
+          ? 'bg-customBlue text-white'
+          : 'bg-gray-100 text-gray-600'
+      "
+      (click)="setActiveTab('all')"
+    >
       All Ad Hocs
     </button>
     <button
       class="px-4 py-2 rounded-md text-[13px]"
-      [ngClass]="activeTab === 'mine' ? 'bg-customBlue text-white' : 'bg-gray-100 text-gray-600'"
-      (click)="setActiveTab('mine')">
+      [ngClass]="
+        activeTab === 'mine'
+          ? 'bg-customBlue text-white'
+          : 'bg-gray-100 text-gray-600'
+      "
+      (click)="setActiveTab('mine')"
+    >
       My Ad Hocs
     </button>
   </div>
@@ -29,7 +44,11 @@
     <div class="flex gap-3 w-1/2">
       <div class="w-full flex gap-2 items-center">
         <label class="text-[12px] text-gray-500">Status</label>
-        <select class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full" [(ngModel)]="statusFilter" (change)="onFilterChange()">
+        <select
+          class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
+          [(ngModel)]="statusFilter"
+          (change)="onFilterChange()"
+        >
           <option value="All">All</option>
           <option value="Open">Applied</option>
           <option value="Responded">Pending</option>
@@ -53,7 +72,7 @@
     [actions]="bonusActions"
     [paginator]="true"
     [rowsPerPage]="10"
-    [tableStyle]="{'min-height': 'fit-content', 'max-height': '800px'}"
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '800px' }"
     [emptyMessage]="'No ad hoc found for period'"
     (actionClick)="handleAction($event)"
   >
@@ -64,9 +83,14 @@
   <div class="flex items-start justify-between text-gray-700">
     <div>
       <p class="text-[18px] font-semibold">Create Ad Hoc</p>
-      <p class="text-[12px] text-gray-500">Log a bonus or adjustment for an employee.</p>
+      <p class="text-[12px] text-gray-500">
+        Log a bonus or adjustment for an employee.
+      </p>
     </div>
-    <button class="border border-customBlue text-customBlue px-3 py-1 rounded-lg text-[12px]" (click)="toggleCreateForm()">
+    <button
+      class="border border-customBlue text-customBlue px-3 py-1 rounded-lg text-[12px]"
+      (click)="toggleCreateForm()"
+    >
       Close
     </button>
   </div>
@@ -76,30 +100,52 @@
       <!-- Employee Selection -->
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Employee</label>
-        <ng-select class=""  [multiple]="true" [(ngModel)]="createForm.employeeId">
+        <ng-select
+          class=""
+          [multiple]="true"
+          [(ngModel)]="createForm.employeeId"
+        >
           <!-- <option *ngFor="let emp of employees" [value]="emp.employeeId">{{ emp.employeeName }}</option> -->
 
-            <ng-option *ngFor="let type of employees" [value]="type.id">{{ type.firstName }} {{ type.lastName }}</ng-option>
-
+          <ng-option *ngFor="let type of employees" [value]="type.id"
+            >{{ type.firstName }} {{ type.lastName }}</ng-option
+          >
         </ng-select>
       </div>
 
       <!-- Amount -->
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Amount (₦)</label>
-        <input type="number" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.amount" />
+        <input
+          type="number"
+          class="bg-white border border-gray-200 rounded-md px-2 py-2"
+          [(ngModel)]="createForm.amount"
+        />
       </div>
 
       <!-- Reason / Description -->
       <div class="col-span-1 md:col-span-2 flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Reason</label>
-        <textarea rows="3" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.reason" placeholder="Enter reason for this ad hoc"></textarea>
+        <textarea
+          rows="3"
+          class="bg-white border border-gray-200 rounded-md px-2 py-2"
+          [(ngModel)]="createForm.reason"
+          placeholder="Enter reason for this ad hoc"
+        ></textarea>
       </div>
     </div>
 
     <div class="flex justify-end gap-2 mt-4">
-      <app-button text="Cancel" class="btn-navigate gap-2" (click)="toggleCreateForm()"></app-button>
-      <app-button text="Submit" class="btn-navigate gap-2" (click)="createAdHoc()"></app-button>
+      <app-button
+        text="Cancel"
+        class="btn-navigate gap-2"
+        (click)="toggleCreateForm()"
+      ></app-button>
+      <app-button
+        text="Submit"
+        class="btn-navigate gap-2"
+        (click)="createAdHoc()"
+      ></app-button>
     </div>
   </div>
 </app-side-modal>
@@ -111,25 +157,31 @@
       <!-- <span class="text-[12px] text-gray-500">{{ selectedQuery?.id }}</span> -->
     </div>
 
-    <div class=" mt-4 grid grid-cols-2 gap-6">
+    <div class="mt-4 grid grid-cols-2 gap-6">
       <div>
         <p class="font-semibold text-gray-700">Employee</p>
-        <p class="text-gray-600">{{ selectedQuery?.employee.firstName }} ({{ selectedQuery?.employee.lastName }})</p>
+        <p class="text-gray-600">
+          {{ selectedQuery.employee.firstName }} ({{
+            selectedQuery.employee.lastName
+          }})
+        </p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Period</p>
-        <p class="text-gray-600">{{ selectedQuery ? formatPeriod(selectedQuery.createdAt) : '' }}</p>
+        <p class="text-gray-600">
+          {{ selectedQuery ? formatPeriod(selectedQuery.createdAt) : "" }}
+        </p>
       </div>
     </div>
 
-    <div class=" mt-4 grid grid-cols-1 gap-3">
-      <p class="font-semibold text-gray-700"> Reason</p>
-        <textarea
-          rows="4"
-          class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
-          readonly
-          [(ngModel)]="selectedQuery.reason"
-        ></textarea>
+    <div class="mt-4 grid grid-cols-1 gap-3">
+      <p class="font-semibold text-gray-700">Reason</p>
+      <textarea
+        rows="4"
+        class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
+        readonly
+        [(ngModel)]="selectedQuery.reason"
+      ></textarea>
     </div>
   </div>
 </app-modal>

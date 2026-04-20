@@ -7,7 +7,6 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
 import { Employee, Payroll } from '../../../domain/payroll.dto';
 import { MailNotificationService } from '../../../service/mailNotification.service';
-import { MessageService } from 'primeng/api';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -86,9 +85,6 @@ openSummary = false;
 showDropdown = false;
 selectedEmployees: any[] = [];
 currentEmployeeInView: any = {};
-payrollInView: any = {};
-canSeeApproveButton = false;
-openApproveModal = false
 
   uniqueLevels: any;
   uniquePositions: any;
@@ -197,19 +193,9 @@ overtimeOverrides: Record<number, number> = {
 ];
 
 
- 
-
-
-payrollActions: TableAction[] = [
-  { id: 'view', label: 'View', icon: 'pi pi-eye' },
-  //  { id: 'edit', label: 'Edit', icon: 'pi pi-pencil' }
+  payrollActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'pi pi-eye' }
   ];
-
-
-
-
-
-
 
   payrollRecords: Payroll[] = [ ] 
 
@@ -231,16 +217,11 @@ employees: any = []
 filteredEmployees: any[] = [];
 employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 triggeredGeneration = false;
-selectedFile: File | null = null;
 
 currentUser: Employee = {} as Employee;
 actionItems: any = []
-  currentUserId: any;
-  canSeeApprovalButton: any;
-  isDocumentRequired: any;
-  canEditRecord: any;
 // payrollRecords: any[] = []
-constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService, private messageService: MessageService) {
+constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService) {
     this.generateYears();
     this.selectedMonth = this.months[new Date().getMonth()];
     
@@ -271,7 +252,6 @@ ngOnInit(){
     // this.handlePeriodChange()
     //    this.fetchEmployees()
   const userId = sessionStorage.getItem('userid')
-  this.currentUserId = userId ? Number(userId) : null;
   this.employeeService.getEmployeeByUserId(Number(userId)).subscribe({  
     next: data => {this.currentUser = data; console.log(data)},
     error: err => console.log(err)
@@ -297,27 +277,6 @@ generatePayrolls(){
         next: response => {
             this.payrollRecords = response
             console.log("records", response)
-            this.payrollInView = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1] : {}
-            console.log(this.payrollInView)
-            const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
-            console.log(currentStage)
-
-            const assignments = currentStage?.assignment || [];
-
-            const currentUserId = this.currentUserId; 
-            this.canSeeApprovalButton = assignments.some(
-              (a: any) => a.userId?.id === currentUserId
-            );
-            this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
-            this.canEditRecord = currentStage?.canEditRecord ?? false;
-            this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
-            if (this.canEditRecord) {
-              this.payrollActions.push({
-                id: 'edit',
-                label: 'Edit',
-                icon: 'pi pi-pencil'
-              });
-            }
             this.filteredEmployeePayroll = this.payrollRecords.length > 0 ? this.payrollRecords[this.payrollRecords.length - 1].employees : []
             console.log("filtered", this.filteredEmployeePayroll)
             this.years =  Array.from(new Set(this.payrollRecords.map((emp: { year: number }) => emp.year))).sort((a, b) => a - b);
@@ -560,10 +519,6 @@ generatePayrolls(){
         console.error('Failed to load image for employee:', err);
       }
     });
-  }
-
-  confirmApprovePayroll(){
-    this.openApproveModal = !this.openApproveModal
   }
 
 
@@ -1157,72 +1112,4 @@ download(format: string) {
       return new Date(year, month - 1, day).toLocaleDateString();
     }
 
-    onFileSelected(event: any) {
-  const file = event.target.files?.[0];
-  this.selectedFile = file ?? null;
-}
-    onApprove() {
-      if (this.isDocumentRequired && !this.selectedFile) {
-        return;
-      }
-
-      const payload = {
-        id: this.payrollInView.payrollApprovalInstance.id,
-        approvalId: this.payrollInView.payrollApprovalInstance.approval.id,
-        currentStageId: this.payrollInView.payrollApprovalInstance.currentStage.id,
-        status: "PENDING",
-        approversAccount: [
-          {
-            "id": 0,
-            "userId": this.currentUser.user,
-            "action": "APPROVED",
-            "comment": "",
-            "createdAt": "2026-04-13T12:50:30.809Z",
-            "completedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ],
-        isCompleted: true,
-        "startedAt": "2026-04-13T12:50:30.809Z",
-        "completedAt": "2026-04-13T12:50:30.809Z",
-        "approvalLookupId": 0,
-        "approvalCode": "string",
-        "moduleName": "string",
-        "serviceName": "string",
-        "resourceName": "string",
-        "operationType": "POST",
-        "referenceType": "string",
-        "referenceId": "string",
-        "targetId": "string",
-        "summary": "string",
-        "payloadJson": "string",
-        "callbackUrl": "string",
-        "callbackMethod": "string",
-        "callbackPayloadJson": "string",
-        "currentStageOrder": 0,
-        "requestedBy": 0,
-        "requestedAt": "2026-04-13T12:50:30.809Z",
-        "actions": [
-          {
-            "id": 0,
-            "approvalInstanceId": this.payrollInView.payrollApprovalInstance.approval.id,
-            "stageId": this.payrollInView.payrollApprovalInstance.currentStage.id,
-            "stageOrder": this.payrollInView.payrollApprovalInstance.currentStage.orderIndex,
-            "actionType": "APPROVED",
-            "actorUserId": this.currentUserId,
-            "actorRoleCode": "string",
-            "comment": "string",
-            "actedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ]
-      };
-
-      console.log(payload)
-      this.payrollService.approvePayroll(this.payrollInView.payrollApprovalInstance.id, payload).subscribe({
-        next: () => {
-          this.openApproveModal = false;
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: 'tl' });
-        },
-        error: err => console.log(err)
-      });
-    }
 }

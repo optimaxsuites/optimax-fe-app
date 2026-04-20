@@ -361,8 +361,8 @@ import { CooperativePaymentModalComponent } from './ui/view/loan-management/coop
     EmployeePaymentReminderComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
