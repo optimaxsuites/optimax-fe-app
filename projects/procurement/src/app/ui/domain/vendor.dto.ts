@@ -20,7 +20,7 @@ export interface VendorDto {
   documents: VendorUploadedDocumentDto[];
   invitedOn: string;
   acceptsTerms: boolean;
-
+  captchaToken: string;
   password: string;
 }
 

@@ -5,6 +5,8 @@ import { QuotationComponent } from './quotation/quotation.component';
 import { ProformaInvoiceComponent } from './proforma-invoice/proforma-invoice.component';
 import { InvoiceComponent } from './invoice/invoice.component';
 import { DispatchNoteComponent } from './dispatch-note/dispatch-note.component';
+// import { IncomingComponent } from './lpo/incoming/incoming.component';
+// import { OutgoingComponent } from './lpo/outgoing/outgoing.component';
 import { PurchaseReqManagementComponent } from './purchase-req-management/purchase-req-management.component';
 import { PrApprovalInboxComponent } from './purchase-req-management/pr-approval-inbox/pr-approval-inbox.component';
 import { VendorListComponent } from './vendor-management/vendor-list/vendor-list.component';

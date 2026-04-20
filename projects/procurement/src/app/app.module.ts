@@ -105,6 +105,7 @@ import { PrListComponent } from './ui/view/purchase-req-management/pr-list/pr-li
 import { VendorPrListComponent } from './ui/view/vendor-portal/vendor-pr-list/vendor-pr-list.component';
 import { PrQuoteReviewComponent } from './ui/view/purchase-req-management/pr-quote-review/pr-quote-review.component';
 // import { SelectModule } from 'primeng/select';
+import { RecaptchaModule } from 'ng-recaptcha';
 
 
 @NgModule({
@@ -208,7 +209,7 @@ import { PrQuoteReviewComponent } from './ui/view/purchase-req-management/pr-quo
     NgChartsModule,
     NgApexchartsModule,
     SelectButtonModule,
-    // SelectModule
+    RecaptchaModule
 ],
   providers: [
     {

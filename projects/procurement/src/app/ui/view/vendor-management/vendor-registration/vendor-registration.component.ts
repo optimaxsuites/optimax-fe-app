@@ -47,25 +47,82 @@ export class VendorRegistrationComponent implements OnInit {
 
   categories: VendorCategoryDto[] = [
     { id: 1, name: 'Office Supplies', des: 'Office consumables and supplies' },
-    { id: 2, name: 'IT Equipment & Hardware', des: 'Computers, hardware and accessories' },
-    { id: 3, name: 'Software & Licensing', des: 'Software products and subscriptions' },
-    { id: 4, name: 'Consulting Services', des: 'Professional and advisory services' },
-    { id: 5, name: 'Construction & Civil Works', des: 'Construction projects and civil works' },
-    { id: 6, name: 'Facility Management', des: 'Facility support and maintenance' },
-    { id: 7, name: 'Security Services', des: 'Physical and corporate security services' },
-    { id: 8, name: 'Logistics & Transportation', des: 'Transportation and delivery services' },
-    { id: 9, name: 'Medical Supplies', des: 'Medical and health-related products' },
-    { id: 10, name: 'Marketing & Advertising', des: 'Branding and promotional services' },
-    { id: 11, name: 'Catering Services', des: 'Food and event catering services' },
-    { id: 12, name: 'Training & Capacity Building', des: 'Training and learning services' },
-    { id: 13, name: 'Electrical & Engineering Services', des: 'Technical and engineering services' },
-    { id: 14, name: 'Printing & Branding', des: 'Printing and design services' },
-    { id: 15, name: 'Telecommunications', des: 'Telecom and communication services' },
+    {
+      id: 2,
+      name: 'IT Equipment & Hardware',
+      des: 'Computers, hardware and accessories',
+    },
+    {
+      id: 3,
+      name: 'Software & Licensing',
+      des: 'Software products and subscriptions',
+    },
+    {
+      id: 4,
+      name: 'Consulting Services',
+      des: 'Professional and advisory services',
+    },
+    {
+      id: 5,
+      name: 'Construction & Civil Works',
+      des: 'Construction projects and civil works',
+    },
+    {
+      id: 6,
+      name: 'Facility Management',
+      des: 'Facility support and maintenance',
+    },
+    {
+      id: 7,
+      name: 'Security Services',
+      des: 'Physical and corporate security services',
+    },
+    {
+      id: 8,
+      name: 'Logistics & Transportation',
+      des: 'Transportation and delivery services',
+    },
+    {
+      id: 9,
+      name: 'Medical Supplies',
+      des: 'Medical and health-related products',
+    },
+    {
+      id: 10,
+      name: 'Marketing & Advertising',
+      des: 'Branding and promotional services',
+    },
+    {
+      id: 11,
+      name: 'Catering Services',
+      des: 'Food and event catering services',
+    },
+    {
+      id: 12,
+      name: 'Training & Capacity Building',
+      des: 'Training and learning services',
+    },
+    {
+      id: 13,
+      name: 'Electrical & Engineering Services',
+      des: 'Technical and engineering services',
+    },
+    {
+      id: 14,
+      name: 'Printing & Branding',
+      des: 'Printing and design services',
+    },
+    {
+      id: 15,
+      name: 'Telecommunications',
+      des: 'Telecom and communication services',
+    },
   ];
 
   uploads: UploadItem[] = [];
 
   model: VendorDto = this.createEmptyVendorModel();
+  captchaToken!: string | null;
 
   constructor(private route: ActivatedRoute) {}
 
@@ -107,7 +164,7 @@ export class VendorRegistrationComponent implements OnInit {
       documents: [],
       invitedOn: now,
       acceptsTerms: false,
-
+      captchaToken: "",
       password: '',
     };
   }
@@ -274,13 +331,17 @@ export class VendorRegistrationComponent implements OnInit {
       {
         type: DocumentType.BankLetter,
         label: 'Bank Letter / Account Proof',
-        required: this.model.documentsRequired.includes(DocumentType.BankLetter),
+        required: this.model.documentsRequired.includes(
+          DocumentType.BankLetter,
+        ),
         hint: 'Upload a bank confirmation letter or account proof.',
       },
       {
         type: DocumentType.SupportingDocument,
         label: 'Supporting Document',
-        required: this.model.documentsRequired.includes(DocumentType.SupportingDocument),
+        required: this.model.documentsRequired.includes(
+          DocumentType.SupportingDocument,
+        ),
         hint: 'Any extra document that supports your profile.',
       },
     ];
@@ -310,7 +371,13 @@ export class VendorRegistrationComponent implements OnInit {
   canProceed(): boolean {
     if (this.step === 1) {
       const p = this.model.companyProfile;
-      return !!p.legalName && !!p.businessType && !!p.address && !!p.state && !!p.country;
+      return (
+        !!p.legalName &&
+        !!p.businessType &&
+        !!p.address &&
+        !!p.state &&
+        !!p.country
+      );
     }
 
     if (this.step === 2) {
@@ -320,12 +387,15 @@ export class VendorRegistrationComponent implements OnInit {
           c.lastName?.trim() &&
           c.email?.trim() &&
           c.phoneNumber?.trim() &&
-          c.role?.trim()
+          c.role?.trim(),
       );
     }
 
     if (this.step === 3) {
-      return this.model.category.length > 0 && !!this.model.capabilityStatement?.trim();
+      return (
+        this.model.category.length > 0 &&
+        !!this.model.capabilityStatement?.trim()
+      );
     }
 
     if (this.step === 4) {
@@ -334,13 +404,17 @@ export class VendorRegistrationComponent implements OnInit {
           b.bankName?.trim() &&
           b.accountName?.trim() &&
           b.accountNumber?.trim() &&
-          b.currency?.trim()
+          b.currency?.trim(),
       );
     }
 
     if (this.step === 5) {
-      const requiredDocs = this.uploads.filter((u) => u.required).map((u) => u.type);
-      return requiredDocs.every((doc) => this.model.documentsSubmitted.includes(doc));
+      const requiredDocs = this.uploads
+        .filter((u) => u.required)
+        .map((u) => u.type);
+      return requiredDocs.every((doc) =>
+        this.model.documentsSubmitted.includes(doc),
+      );
     }
 
     return true;
@@ -374,42 +448,42 @@ export class VendorRegistrationComponent implements OnInit {
   // }
 
   onPickFile(item: UploadItem, event: any): void {
-  const file: File | undefined = event?.files?.[0];
-  if (!file) return;
+    const file: File | undefined = event?.files?.[0];
+    if (!file) return;
 
-  item.file = file;
+    item.file = file;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const fileDataUrl = reader.result as string;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileDataUrl = reader.result as string;
 
-    const existingIndex = this.model.documents.findIndex(
-      (d) => d.documentType === item.type
-    );
+      const existingIndex = this.model.documents.findIndex(
+        (d) => d.documentType === item.type,
+      );
 
-    const doc = {
-      id: Date.now(),
-      documentType: item.type,
-      fileName: file.name,
-      fileDataUrl,
-      uploadedAt: new Date().toISOString(),
+      const doc = {
+        id: Date.now(),
+        documentType: item.type,
+        fileName: file.name,
+        fileDataUrl,
+        uploadedAt: new Date().toISOString(),
+      };
+
+      if (existingIndex >= 0) {
+        this.model.documents[existingIndex] = doc;
+      } else {
+        this.model.documents.push(doc);
+      }
+
+      if (!this.model.documentsSubmitted.includes(item.type)) {
+        this.model.documentsSubmitted.push(item.type);
+      }
+
+      this.persistProgress();
     };
 
-    if (existingIndex >= 0) {
-      this.model.documents[existingIndex] = doc;
-    } else {
-      this.model.documents.push(doc);
-    }
-
-    if (!this.model.documentsSubmitted.includes(item.type)) {
-      this.model.documentsSubmitted.push(item.type);
-    }
-
-    this.persistProgress();
-  };
-
-  reader.readAsDataURL(file);
-}
+    reader.readAsDataURL(file);
+  }
 
   // removeFile(item: UploadItem): void {
   //   item.file = undefined;
@@ -417,36 +491,47 @@ export class VendorRegistrationComponent implements OnInit {
   // }
 
   removeFile(item: UploadItem): void {
-  item.file = undefined;
+    item.file = undefined;
 
-  this.model.documentsSubmitted = this.model.documentsSubmitted.filter(
-    (x) => x !== item.type
-  );
+    this.model.documentsSubmitted = this.model.documentsSubmitted.filter(
+      (x) => x !== item.type,
+    );
 
-  this.model.documents = this.model.documents.filter(
-    (x) => x.documentType !== item.type
-  );
+    this.model.documents = this.model.documents.filter(
+      (x) => x.documentType !== item.type,
+    );
 
-  this.persistProgress();
-}
+    this.persistProgress();
+  }
 
   submitVendor(): void {
     if (!this.canProceed()) return;
+
+    if (!this.captchaToken) {
+      alert('Please complete the captcha');
+      return;
+    }
 
     this.model.status = VendorStatus.UnderReview;
     this.model.aiStatus = VendorAIStatus.Pending;
     this.model.submittedOn = new Date().toISOString();
     this.model.lastUpdatedAt = new Date().toISOString();
 
+     this.model.captchaToken = this.captchaToken;
+
     this.upsertVendor(this.model);
     this.submitted = true;
   }
 
   get selectedCategoryNames(): string {
-  if (!this.model?.category?.length) {
-    return '—';
+    if (!this.model?.category?.length) {
+      return '—';
+    }
+
+    return this.model.category.map((c) => c.name).join(', ');
   }
 
-  return this.model.category.map((c) => c.name).join(', ');
-}
+  onCaptchaResolved(token: string | null) {
+    this.captchaToken = token;
+  }
 }
