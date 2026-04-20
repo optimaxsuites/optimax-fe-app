@@ -1,0 +1,175 @@
+<div class="template-shell">
+
+  <!-- ── Left: Template List ── -->
+  <div class="template-sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Email Templates</span>
+      <button class="new-template-btn" (click)="createNewTemplate()">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        placeholder="Search templates..."
+        class="search-input"
+        [(ngModel)]="templateSearch"
+        (ngModelChange)="filterTemplates()"
+      />
+    </div>
+
+    <!-- Category Sections -->
+    <div class="template-list">
+      <ng-container *ngFor="let category of templateCategories">
+        <div class="category-group" *ngIf="getTemplatesByCategory(category).length > 0">
+          <div class="category-label">{{ category }}</div>
+          <div
+            *ngFor="let tpl of getTemplatesByCategory(category)"
+            class="template-item"
+            [class.template-item--active]="selectedTemplate?.id === tpl.id"
+            (click)="selectTemplate(tpl)"
+          >
+            <div class="template-item__icon template-item__icon--{{ category | lowercase }}">
+              <i class="fas" [ngClass]="getCategoryIcon(category)"></i>
+            </div>
+            <div class="template-item__info">
+              <span class="template-item__name">{{ tpl.name }}</span>
+              <span class="template-item__meta">{{ tpl.subject }}</span>
+            </div>
+            <button
+              class="template-delete-btn"
+              (click)="deleteTemplate(tpl, $event)"
+              title="Delete template"
+            >
+              <i class="fas fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <div *ngIf="filteredTemplates.length === 0" class="list-empty">
+        No templates found
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Editor ── -->
+  <div class="template-editor" *ngIf="selectedTemplate; else noSelection">
+
+    <!-- Editor Header -->
+    <div class="editor-header">
+      <div class="editor-header__left">
+        <input
+          type="text"
+          class="template-name-input"
+          [(ngModel)]="selectedTemplate.name"
+          placeholder="Template name"
+        />
+        <select class="category-select" [(ngModel)]="selectedTemplate.category">
+          <option *ngFor="let cat of templateCategories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+      <div class="editor-header__actions">
+        <button class="btn-preview" (click)="togglePreview()">
+          <i class="fas" [ngClass]="showPreview ? 'fa-pen' : 'fa-eye'"></i>
+          {{ showPreview ? 'Edit' : 'Preview' }}
+        </button>
+        <button class="btn-save" (click)="saveTemplate()">
+          <i class="fas fa-floppy-disk"></i> Save Template
+        </button>
+      </div>
+    </div>
+
+    <!-- Subject Line -->
+    <div class="subject-row">
+      <label class="subject-label">Subject</label>
+      <div class="subject-input-wrap">
+       <input
+            type="text"
+            class="subject-input"
+            [(ngModel)]="selectedTemplate.subject"
+            placeholder="Email subject line..."
+            #subjectInput
+            (focus)="activeField = 'subject'; activeInputRef = subjectInput"
+            (click)="activeField = 'subject'; activeInputRef = subjectInput; handleSubjectClick($event)"
+            (drop)="onSubjectDrop($event)"
+            (dragover)="$event.preventDefault()" 
+            />
+      </div>
+    </div>
+
+    <!-- Placeholder Chips -->
+    <div class="placeholder-bar">
+      <span class="placeholder-bar__label">Insert field:</span>
+      <div class="placeholder-chips">
+        <div
+          *ngFor="let field of placeholderFields"
+          class="placeholder-chip"
+          draggable="true"
+          (dragstart)="onDragStart($event, field)"
+          (click)="insertPlaceholder(field)"
+          [title]="'Click or drag to insert ' + field.label"
+        >
+          <i class="fas fa-grip-vertical drag-icon"></i>
+          {{ field.label }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor / Preview -->
+    <div class="editor-body">
+
+      <!-- Live Preview Mode -->
+      <div *ngIf="showPreview" class="preview-pane">
+        <div class="preview-email">
+          <div class="preview-subject">{{ resolvePreview(selectedTemplate.subject) }}</div>
+          <div class="preview-body" [innerHTML]="resolvePreviewHtml(selectedTemplate.body)"></div>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div *ngIf="!showPreview" class="editor-area">
+        <p-editor
+          [(ngModel)]="selectedTemplate.body"
+          [style]="{ height: '420px', fontFamily: 'inherit' }"
+          styleClass="template-p-editor"
+          (onInit)="onEditorInit($event)"
+          required="true"
+          (onSelectionChange)="onEditorSelectionChange($event)"
+          placeholder="Write your email body here. Click a field above or drag it in to insert a placeholder..."
+        >
+        </p-editor>
+      </div>
+
+    </div>
+
+    <!-- Preview hint -->
+    <div class="editor-footer">
+      <span class="footer-hint">
+        <i class="fas fa-info-circle"></i>
+        Placeholders like <code>candidateName</code> will be replaced with real values when the email is sent.
+      </span>
+    </div>
+
+  </div>
+
+  <!-- No template selected -->
+  <ng-template #noSelection>
+    <div class="no-selection">
+      <i class="fas fa-envelope-open no-selection__icon"></i>
+      <span class="no-selection__text">Select a template to edit</span>
+      <button class="btn-save" (click)="createNewTemplate()">
+        <i class="fas fa-plus"></i> New Template
+      </button>
+    </div>
+  </ng-template>
+
+</div>
+
+<!-- Toast -->
+<p-toast></p-toast>
+
+<!-- Confirm Delete Dialog -->
+<p-confirmDialog header="Delete Template" icon="pi pi-exclamation-triangle"></p-confirmDialog>

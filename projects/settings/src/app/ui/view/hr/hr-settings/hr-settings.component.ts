@@ -8,6 +8,7 @@ import { CompensationComponent } from '../compensation/compensation.component';
 import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.component';
 import { MetadataComponent } from '../metadata/metadata.component';
 import { PayrollComponent } from '../payroll/payroll.component';
+import { MailTemplatesComponent } from '../mail-templates/mail-templates.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -84,6 +85,11 @@ export class HrSettingsComponent {
       icon: 'pi pi-receipt',
       // component: LeaveComponent,
       component: LeaveStrctureComponent
+    },
+     { name: 'Email Templates',
+      subSetting: ['email templates, rejection mail templates, acceptance mail templates, interview invite templates'],
+      icon: 'fas fa-envelope',
+      component: MailTemplatesComponent,
     },
     {
       name: 'Score Sheet',

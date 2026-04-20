@@ -2,7 +2,42 @@ import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
+import { MenuItem } from 'primeng/api';
 
+export interface FormResponse {
+  label: string;
+  value: string;
+}
+ 
+export interface CandidateDocument {
+  name: string;
+  type: 'pdf' | 'docx' | string;
+  size: string;
+  uploadedDate: string;
+  url: string;
+}
+ 
+export interface AiVetting {
+  overallScore: number;
+  skillsMatch: number;
+  experienceFit: number;
+  recommendation: 'Strong Hire' | 'Hire' | 'Maybe' | 'Pass';
+  strengths: string[];
+  concerns: string[];
+  summary: string;
+}
+ 
+export interface Candidate {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  appliedDate: string;
+  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Offered';
+  formResponses: FormResponse[];
+  documents: CandidateDocument[];
+  aiVetting: AiVetting | null;
+}
 @Component({
   selector: 'app-candidate',
   templateUrl: './candidate.component.html',
@@ -11,19 +46,35 @@ import { TableAction, TableColumn } from '../../../shared-component/view/table/t
 })
 export class CandidateComponent implements OnInit {
 
-  viewState: 'job-grid' | 'applicant-list' = 'job-grid';
+  viewState: 'job-grid' | 'applicant-list' | 'applicant-view' = 'job-grid';
   
   allApplications: any[] = []; // Raw JobApplicationDTO[]
   groupedJobs: any[] = []; 
   selectedJob: any = null;
+  selectedCandidate: any = null;
   filteredApplicants: any[] = [];
+  viewCandidateModal: boolean = false;
 
   applicantColumns: TableColumn[] = [
     { header: 'First Name', field: 'firstname', sortable: true },
     { header: 'Last Name', field: 'lastname', sortable: true },
     { header: 'Email', field: 'email', sortable: true },
-    { header: 'Actions', field: 'action', badgeClass: (row) => 'badge-info' }
+    // { header: 'Actions', field: 'action', badgeClass: (row) => 'badge-info' }
   ];
+
+  applicantActions: TableAction[] = [
+    { id: 'view', label: 'View', icon: 'fas fa-eye' },
+    // { id: 'edit', label: 'Edit', icon: 'fas fa-pen-to-square' },
+    // { id: 'delete', label: 'Delete', icon: 'fas fa-trash-can' }
+  ];
+  activeTab = 'form';
+
+   tabs = [
+    { key: 'form',      label: 'Form Response' },
+    { key: 'documents', label: 'Documents'      },
+    { key: 'ai',        label: 'AI Vetting'     },
+  ];
+   actionItems: MenuItem[] | undefined;
 
    constructor(
     private confirmationService: ConfirmationService,
@@ -31,12 +82,35 @@ export class CandidateComponent implements OnInit {
   ) {}
 
    ngOnInit(): void {
-    // Store myCandidates in localStorage if not already present
-    // if (!localStorage.getItem('candidates')) {
-    //   localStorage.setItem('candidates', JSON.stringify(this.myCandidates));
-    // }
-
-    // this.getCandidate();
+    this.actionItems = [
+      // {
+      //   label: 'Interview Invite',
+      //   icon: 'fas fa-calendar-check',
+      //   command: () => this.onSendInterview(this.selectedCandidate)
+      // },
+      {
+        label: 'Shortlist',
+        icon: 'fas fa-bookmark',
+        command: () => this.onShortlist(this.selectedCandidate)
+      },
+      {
+        label: 'Request Docs',
+        icon: 'fas fa-file-arrow-up',
+        command: () => this.onRequestDocs(this.selectedCandidate)
+      },
+      { separator: true },
+      {
+        label: 'Send Offer',
+        icon: 'fas fa-envelope-open-text',
+        command: () => this.onSendOffer(this.selectedCandidate)
+      },
+      {
+        label: 'Reject',
+        icon: 'fas fa-xmark',
+        styleClass: 'text-danger', // Optional: highlight rejection in red
+        command: () => this.onReject(this.selectedCandidate)
+      }
+    ];
 
     this.loadDummyData()
   }
@@ -46,18 +120,73 @@ export class CandidateComponent implements OnInit {
     this.allApplications = [
       {
         id: 101,
-        firstname: 'Jane',
-        lastname: 'Doe',
-        email: 'jane@example.com',
+        firstname: 'Rukayat',
+        lastname: 'Morufu',
+        email: 'RM@example.com',
+        formResponses: [
+          { label: 'Years of Experience', value: '5 years' },
+          { label: 'Current Role', value: 'Product Designer at Paystack' },
+          { label: 'Availability', value: 'Immediately' },
+          { label: 'Expected Salary', value: '₦800,000/month' },
+          { label: 'Preferred Work Mode', value: 'Hybrid' },
+          { label: 'Cover Note', value: 'I am deeply passionate about user-centred design...' },
+        ],
+        documents: [
+          { name: 'Amara_CV.pdf', type: 'pdf', size: '420 KB', uploadedDate: 'Apr 10, 2025', url: '#' },
+          { name: 'Portfolio.pdf', type: 'pdf', size: '2.1 MB', uploadedDate: 'Apr 10, 2025', url: '#' },
+        ],
+        aiVetting: {
+          overallScore: 82,
+          skillsMatch: 88,
+          experienceFit: 79,
+          recommendation: 'Strong Hire',
+          strengths: [
+            'Strong portfolio with enterprise-scale product experience.',
+            'Directly relevant industry experience at a fintech company.',
+            'Excellent written communication evident in cover note.',
+          ],
+          concerns: [
+            'No mention of design system contribution or ownership.',
+            'Expected salary is above current band for the role.',
+          ],
+          summary:
+            'Amara presents as a well-rounded candidate whose background aligns closely with the role requirements. The fintech experience is a strong differentiator. Salary expectations may require negotiation.',
+        },
         jobVacancy: { id: 5, jobTitle: 'Frontend Developer', jobCategory: { name: 'Engineering' }, customFieldsResponce: [{ jobVacancyCustomFields: { label: 'Portfolio' }, value: 'http://jane.dev', type: 'String' }] },
       },
       {
         id: 102,
-        firstname: 'John',
-        lastname: 'Smith',
-        email: 'john@work.com',
+        firstname: 'Galadinma',
+        lastname: 'Christabel',
+        email: 'GC@work.com',
+        formResponses: [
+          { label: 'Years of Experience', value: '3 years' },
+          { label: 'Current Role', value: 'UI Designer at Flutterwave' },
+          { label: 'Availability', value: '2 weeks notice' },
+          { label: 'Expected Salary', value: '₦600,000/month' },
+          { label: 'Preferred Work Mode', value: 'Remote' },
+          { label: 'Cover Note', value: 'My work at Flutterwave has honed my ability to...' },
+        ],
+        documents: [
+          { name: 'Chidi_Resume.pdf', type: 'pdf', size: '310 KB', uploadedDate: 'Apr 12, 2025', url: '#' },
+        ],
+        aiVetting: {
+          overallScore: 67,
+          skillsMatch: 72,
+          experienceFit: 60,
+          recommendation: 'Maybe',
+          strengths: [
+            'Solid UI skills with a recognisable brand on the CV.',
+            'Salary expectations within budget.',
+          ],
+          concerns: [
+            'Limited evidence of UX research or strategy involvement.',
+            'Only one document submitted — no portfolio linked.',
+          ],
+          summary:
+            'Chidi has a solid foundation but may be a level below what the role demands. Worth a screening call to assess depth of UX thinking.',
+        },
         jobVacancy: { id: 5, jobTitle: 'Frontend Developer', jobCategory: { name: 'Engineering' },         customFieldsResponce: [{ jobVacancyCustomFields: { label: 'Years of Exp' }, value: '5', type: 'String' }] },
-
       }
     ];
     this.groupApplicationsByJob();
@@ -81,15 +210,73 @@ export class CandidateComponent implements OnInit {
   }
 
   selectJob(job: any) {
+    console.log("job", job  )
     this.selectedJob = job;
     this.filteredApplicants = job.applicants;
     this.viewState = 'applicant-list';
   }
 
   handleCandidateAction($event: { actionId: string; row: any; }) {
-throw new Error('Method not implemented.');
-}
+      this.selectedCandidate = $event.row;
+      this.viewCandidateModal = true;
+      if ($event.actionId === 'view') {
+        this.viewState = 'applicant-view';
+      }
+  }
 
+  // ─── Actions ──────────────────────────────────────────────────────────────
+ 
+  onReject(candidate: Candidate): void {
+    // TODO: implement reject logic / confirmation dialog
+    console.log('Reject', candidate.id);
+  }
+ 
+  onShortlist(candidate: Candidate): void {
+    // TODO: implement shortlist logic
+    console.log('Shortlist', candidate.id);
+  }
+ 
+  onSendInterview(candidate: Candidate): void {
+    // TODO: open interview invite modal
+    console.log('Interview invite', candidate.id);
+  }
+ 
+  onRequestDocs(candidate: Candidate): void {
+    // TODO: open request docs modal
+    console.log('Request docs', candidate.id);
+  }
+ 
+  onSendOffer(candidate: Candidate): void {
+    // TODO: open offer letter modal
+    console.log('Send offer', candidate.id);
+  }
+ 
+  downloadDocument(doc: CandidateDocument): void {
+    // TODO: trigger download
+    console.log('Download', doc.url);
+  }
+ 
+  runAiVetting(candidate: Candidate): void {
+    // TODO: call AI vetting service
+    console.log('Run AI vetting for', candidate.id);
+  }
+
+
+    getInitials(candidate: any): string {
+     const fullName = `${candidate?.firstname || ''} ${candidate?.lastname || ''}`.trim();
+    return fullName
+      .split(' ')
+      .map(n => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+ 
+  getScoreClass(score: number): string {
+    if (score >= 75) return 'score--high';
+    if (score >= 50) return 'score--medium';
+    return 'score--low';
+  }
 
   // showCandidate: boolean = true;
   // showInterviewInvite: boolean = false;

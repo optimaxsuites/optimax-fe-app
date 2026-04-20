@@ -242,7 +242,7 @@ export class RecruitmentListComponent implements OnInit {
     );
   }
 
-  private formatDateValue(value: any): string {
+   formatDateValue(value: any): string {
     if (!value) return '—';
     if (value instanceof Date) return value.toLocaleDateString();
     if (typeof value === 'number') return new Date(value * 1000).toLocaleDateString();

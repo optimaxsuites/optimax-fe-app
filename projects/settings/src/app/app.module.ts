@@ -99,6 +99,7 @@ import { BankTellerMappingComponent } from './ui/view/hr/payroll/bank-teller-map
 import { DropdownModule } from 'primeng/dropdown';
 import { ApprovalComponent } from './ui/view/user-setting/approval/approval.component';
 import { SmtpSetupComponent } from './ui/view/general/smtp-setup/smtp-setup.component';
+import { MailTemplatesComponent } from './ui/view/hr/mail-templates/mail-templates.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -143,7 +144,8 @@ import { SmtpSetupComponent } from './ui/view/general/smtp-setup/smtp-setup.comp
     TaxationComponent,
     BankTellerMappingComponent,
     ApprovalComponent,
-    SmtpSetupComponent
+    SmtpSetupComponent,
+    MailTemplatesComponent
   ],
   imports: [
     // BrowserModule,

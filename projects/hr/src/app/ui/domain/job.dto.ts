@@ -11,6 +11,9 @@ export interface JobPostingDTO {
     jobVacancyExperience?: JobVacancyExperienceDTO | number | any;
     qualifications?: JobVacancyQualificationDTO | number | string | any;
     jobVacancyCustomFields?: (JobPostingCustomFieldDTO | number)[]; 
+    keyResponsibilities?: string;
+    jobOverview?: string;
+    positionOverview?: string;
 }
 export interface JobPostingCustomFieldDTO {
     id?: number;
