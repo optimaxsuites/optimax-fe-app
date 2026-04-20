@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
+import { UserSessionService } from '../../../../../service/attendance/user-session.service';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -13,6 +14,7 @@ export class CheckinCheckoutComponent implements OnInit {
 
   private attendanceService = inject(AttendancetableService);
   private officeHoursService = inject(OfficeHoursService);
+  private userSession = inject(UserSessionService);
 
   currentTime = new Date();
   status: ClockStatus = 'CLOCKED_OUT';
@@ -25,9 +27,13 @@ export class CheckinCheckoutComponent implements OnInit {
   isGettingLocation = false;
 
   //later, change to reflect each individual employee
-  employeeid = '001';
-  employeeName = 'Chrisha Okorocha';
-  department = 'Engineering';
+  //employeeid = '001';
+  //employeeName = 'Chrisha Okorocha';
+  //department = 'Engineering';
+
+  get currentUser() {
+    return this.userSession.getCurrentUser();
+  }
 
   ngOnInit() {
     setInterval(() => {
@@ -41,9 +47,9 @@ export class CheckinCheckoutComponent implements OnInit {
 
     this.attendanceService.attendance$.subscribe(() => {
       this.hasCompletedToday =
-  this.attendanceService.hasCompletedToday(this.employeeid);
+  this.attendanceService.hasCompletedToday(this.currentUser?.id!);
   this.isAbsentToday =
-    this.attendanceService.isEmployeeBlockedToday(this.employeeid);
+    this.attendanceService.isEmployeeBlockedToday(this.currentUser?.id!);
 });
 
   // Initial check
@@ -66,9 +72,9 @@ export class CheckinCheckoutComponent implements OnInit {
     this.attendanceService.setClockStatus('CLOCKED_IN');
 
     await this.attendanceService.clockAction(
-      this.employeeid,
-      this.employeeName,
-      this.department,
+      this.currentUser!.id,
+      this.currentUser!.name,
+      this.currentUser!.department,
       'IN'
     );
 
@@ -78,9 +84,9 @@ export class CheckinCheckoutComponent implements OnInit {
     this.attendanceService.setClockStatus('CLOCKED_OUT');
 
     this.attendanceService.clockAction(
-      this.employeeid,
-      this.employeeName,
-      this.department,
+      this.currentUser!.id,
+      this.currentUser!.name,
+      this.currentUser!.department,
       'OUT'
     );
   }

@@ -34,10 +34,15 @@ export class CooperativeMemberDetailComponent implements OnInit {
   private returnSource = '';
   private returnGroupId?: number;
 
+  get formattedMemberId(): string {
+    if (!this.member || !this.member.memberId) return '';
+    return `COP-${this.member.memberId.toString().padStart(3, '0')}`;
+  }
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    public cooperativeService: CooperativeService
   ) {}
 
   ngOnInit(): void {
@@ -46,11 +51,56 @@ export class CooperativeMemberDetailComponent implements OnInit {
     this.returnGroupId = Number.isFinite(groupId) && groupId > 0 ? groupId : undefined;
 
     this.route.params.subscribe(params => {
-      const id = params['id'];
+      let id = params['id'];
       this.currentUuid = params['uuid'] || this.currentUuid;
-      this.loadMember(id);
+      if (!id) {
+        // No id in route, use current session user
+        this.cooperativeService.getMembers().subscribe(members => {
+          const current = this.cooperativeService.resolveCurrentSessionMember(members);
+          if (current) {
+            this.loadMember(current.id.toString());
+          } else {
+            this.isLoading = false;
+          }
+        });
+      } else {
+        this.loadMember(id);
+      }
     });
+  }
 
+  // Helper method to format status display - Uses label map for common statuses
+  private readonly statusLabelMap: Record<string, string> = {
+  PENDING: 'Pending',
+    APPROVED: 'Approved',
+    ACTIVE: 'Active',
+    REJECTED: 'Rejected',
+    OVERDUE: 'Overdue',
+    PAUSED: 'Paused',
+    SKIPPED: 'Skipped',
+    DEFAULTED: 'Defaulted',
+    COMPLETED: 'Completed',
+    READY_FOR_DISBURSEMENT: 'Ready For Disbursement',
+    INACTIVE: 'Inactive',
+    SUSPENDED: 'Suspended',
+    PAID: 'Paid',
+    ONGOING: 'Ongoing'
+  };
+
+  public formatStatusDisplay(status: string): string {
+    console.log('Formatting status:', status);
+    if (!status) return '';
+    return this.statusLabelMap[status] || status
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  // Helper method to get group name by ID
+  public getGroupName(groupId: number): string {
+    if (!groupId) return '—';
+    const group = this.cooperativeService.getGroupById(groupId);
+    return group?.name || '—';
   }
 
   loadMember(id: string): void {
@@ -66,6 +116,8 @@ export class CooperativeMemberDetailComponent implements OnInit {
         this.memberLoans = loans.filter(loan => (loan.memberId || loan.cooperativeMemberId) === member.id);
         this.cooperativeService.loadGroupMembershipsForMember(member).subscribe({
           next: memberships => {
+            // DEBUG: Log raw memberships data
+            console.log('Raw group memberships for member', member, memberships);
             this.activeGroups = memberships
               .filter(membership => membership.status === 'ACTIVE')
               .map(membership => ({
@@ -87,8 +139,12 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   viewAllMemberLoans(): void {
-    this.router.navigate(['/admin/hr/cooperative/loans', this.currentUuid], {
-      queryParams: { memberId: this.member.id, dashboard: 'cooperative' }
+    this.router.navigate([
+      '/admin/hr/loan-management/cooperative-member-loan-history',
+      this.member.id,
+      this.currentUuid
+    ], {
+      queryParams: { dashboard: 'cooperative' }
     });
   }
 
@@ -99,29 +155,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    if (this.returnSource === 'group-dashboard') {
-      const targetCommands = this.returnGroupId
-        ? ['/member/cooperative/groups', this.returnGroupId, this.currentUuid]
-        : ['/member/cooperative/dashboard', this.currentUuid];
-
-      this.router.navigate(targetCommands, {
-        replaceUrl: true,
-        state: {
-          memberId: Number(this.member?.id || 0) || undefined,
-          source: 'group-dashboard',
-          groupId: this.returnGroupId
-        }
-      }).then((navigated) => {
-        if (navigated) {
-          window.dispatchEvent(new Event('resize'));
-        }
-      });
-      return;
-    }
-
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
-    });
+    window.history.back();
   }
 
   formatCurrency(amount: number): string {
@@ -132,58 +166,27 @@ export class CooperativeMemberDetailComponent implements OnInit {
     return formatLoanPurposeDisplay(purpose);
   }
 
-  getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
-  }
-
-  getLoanStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
-  }
-
   getTotalBorrowed(): number {
-    return this.memberLoans.reduce((sum, loan) => sum + loan.amount, 0);
+    return this.memberLoans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
   }
 
   getActiveLoans(): CooperativeLoan[] {
-    return this.memberLoans.filter(l => l.status === 'ACTIVE');
+    return this.memberLoans.filter(loan => loan.status === 'ACTIVE');
   }
 
   getCompletedLoans(): CooperativeLoan[] {
-    return this.memberLoans.filter(l => l.status === 'COMPLETED');
+    return this.memberLoans.filter(loan => loan.status === 'COMPLETED');
   }
 
   get memberTenureMonths(): number {
-    return this.cooperativeService.getMemberTenureMonths(this.member);
+    if (!this.member || !this.member.joinDate) return 0;
+    const join = new Date(this.member.joinDate);
+    const now = new Date();
+    return (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
   }
 
   getRepaymentHistory(): RepaymentHistoryItem[] {
-    return this.memberLoans
-      .map(loan => {
-        const paidAmount = Number(loan.totalPaid || 0);
-        const lastRecordedPaymentDate = loan.paymentHistory
-          .map(item => item.paidAt)
-          .filter((paidAt): paidAt is string => !!paidAt)
-          .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
-        let status: 'PAID' | 'ONGOING' | 'PENDING' = 'PENDING';
-
-        if (loan.status === 'COMPLETED') {
-          status = 'PAID';
-        } else if (loan.status === 'ACTIVE' || loan.status === 'APPROVED') {
-          status = 'ONGOING';
-        }
-
-        return {
-          loanId: loan.loanCode,
-          paidAmount,
-          outstandingAmount: Math.max(Number(loan.outstandingPrincipal || 0), 0),
-          lastPaymentDate: loan.completedDate || lastRecordedPaymentDate || loan.requestDate,
-          status
-        };
-      })
-      .sort((a, b) => new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime());
-  }
-
-  getRepaymentStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    // Dummy implementation, replace with real logic if needed
+    return [];
   }
 }

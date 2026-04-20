@@ -37,6 +37,7 @@ export interface LoanApplication {
   employeeId: number;
   amount: number;
   purpose: string;
+  purposeCode?: string;
   repaymentTime: number;
   repaymentAmount: number;
   modeOfPayment: LoanPaymentMode;
@@ -90,6 +91,7 @@ export interface LoanApplication {
   department?: string;
   acknowledgment?: boolean;
   interestRate?: number;
+  defaultInterestRate?: number;
   supportingDocuments?: LoanSupportingDocument[];
   repaymentStartDate?: string;
   repaymentDay?: number;
@@ -232,4 +234,8 @@ export interface LoanApplicationFormData {
   employeeName?: string;
   department?: string;
   monthlySalary?: number;
+  // Fixed/default interest fields for UI logic
+  hasFixedInterest?: boolean;
+  fixedInterestRate?: number;
+  defaultInterestAcknowledged?: boolean;
 }

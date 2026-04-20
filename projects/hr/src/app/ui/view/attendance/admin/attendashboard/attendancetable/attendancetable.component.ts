@@ -113,7 +113,13 @@ private startClosingWatcher() {
 
 openAttendance(record: AttendanceTableRecord) {
   record.overrideOpen = true;
-  this.attendancetableService.openAttendanceForToday(record.id);
+  const actorUserId = parseInt(sessionStorage.getItem('userid') ?? '0')
+  this.attendancetableService.openAttendanceForToday(
+    record.id,
+    actorUserId,
+  //parseInt(sessionStorage.getItem('userid') ?? '0'), //userid from session
+'Attendance opened by admin' //reason
+);
 }
 
 openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {

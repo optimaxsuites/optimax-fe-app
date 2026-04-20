@@ -1,7 +1,9 @@
+@use '../loan-status-badges' as loanStatus;
+
 .member-detail-container {
   padding: 24px;
   min-height: 100vh;
-  background-color: #f8feff;
+  background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
 
   .loading-state {
     display: flex;
@@ -41,26 +43,28 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     background: white;
-    border: 1px solid #e3eef0;
-    border-radius: 12px;
-    padding: 16px 20px;
+    border: 1px solid rgba(46, 98, 118, 0.12);
+    border-radius: 20px;
+    padding: 20px 24px;
+    box-shadow: 0 8px 20px rgba(46, 98, 118, 0.08);
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       min-width: 0;
     }
 
     h1 {
-      color: #2E6276;
+      color: #1a4b5c;
       margin: 0;
       font-size: 1.45rem;
       font-weight: 700;
-      letter-spacing: 0.2px;
-      i {
+      
+      .title-icon {
+        color: #2EB270;
         margin-right: 10px;
       }
     }
@@ -69,14 +73,14 @@
   .profile-summary-card {
     background: white;
     border: 1px solid #e3eef0;
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 20px;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     gap: 18px;
     flex-wrap: wrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
     > span {
       display: inline-flex;
@@ -85,101 +89,96 @@
       background: #f8feff;
       border: 1px solid #d7e7ec;
       border-radius: 999px;
-      padding: 6px 10px;
+      padding: 6px 12px;
       color: #2f3b45;
       font-weight: 600;
       font-size: 0.84rem;
     }
 
     .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
       font-weight: 700;
 
       &.status-active {
-        background: rgba(46, 178, 112, 0.1);
+        background: rgba(46, 178, 112, 0.12);
         color: #1e7e4a;
       }
 
       &.status-inactive {
-        background: rgba(128, 128, 128, 0.1);
+        background: rgba(128, 128, 128, 0.12);
         color: #4d4d4d;
       }
 
       &.status-suspended {
-        background: rgba(233, 55, 55, 0.1);
-        color: #b30000;
+        background: rgba(220, 38, 38, 0.1);
+        color: #dc2626;
       }
     }
   }
 
-  .stats-grid {
+  // Summary Grid Cards - All Blue Gradient (matching group join history)
+  .summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 
-    .stat-card {
+    .summary-card {
       background: white;
-      border-radius: 12px;
-      border: 1px solid #e3eef0;
-      padding: 16px;
+      border-radius: 16px;
+      padding: 16px 20px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 14px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-      .stat-icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        i {
-          color: #fff;
-          font-size: 1.1rem;
-        }
-
-        &.shares-icon {
-          background: #2E6276;
-        }
-
-        &.borrowed-icon {
-          background: #2E6276;
-        }
-
-        &.active-icon {
-          background: #2E6276;
-        }
-
-        &.completed-icon {
-          background: #2E6276;
-        }
-      }
+      border: 1px solid #e3eef0;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
       }
 
-      .stat-content {
-        .stat-label {
-          color: #6b7280;
-          font-size: 0.8rem;
+      .card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2E6276, #4291b1);
+        box-shadow: 0 4px 10px rgba(46, 98, 118, 0.2);
+
+        i {
+          color: white;
+          font-size: 1.3rem;
+        }
+      }
+
+      .card-copy {
+        flex: 1;
+
+        .summary-label {
+          display: block;
+          font-size: 0.7rem;
           text-transform: uppercase;
-          letter-spacing: 0.02em;
-          font-weight: 600;
+          color: #8aadba;
+          letter-spacing: 0.08em;
+          font-weight: 700;
           margin-bottom: 4px;
         }
 
-        .stat-value {
-          color: #2E6276;
-          font-size: 1.35rem;
+        strong {
+          display: block;
+          font-size: 1.5rem;
           font-weight: 700;
+          color: #1a4b5c;
+          line-height: 1.2;
         }
       }
     }
@@ -188,23 +187,23 @@
   .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 24px;
 
     .info-card {
       background: white;
       border: 1px solid #e3eef0;
-      border-radius: 12px;
-      padding: 18px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
       h3 {
-        margin: 0 0 14px;
-        color: #2E6276;
-        font-size: 0.92rem;
+        margin: 0 0 16px;
+        color: #1a4b5c;
+        font-size: 0.9rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding-bottom: 8px;
+        letter-spacing: 0.08em;
+        padding-bottom: 10px;
         border-bottom: 1px solid #edf3f4;
         display: inline-flex;
         align-items: center;
@@ -218,15 +217,15 @@
 
       .info-row {
         display: flex;
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 12px;
+        margin-bottom: 12px;
         align-items: flex-start;
 
         .label {
-          min-width: 92px;
-          color: #6b7280;
+          min-width: 80px;
+          color: #8aadba;
           font-weight: 600;
-          font-size: 0.86rem;
+          font-size: 0.85rem;
         }
 
         .value {
@@ -236,57 +235,75 @@
           word-break: break-word;
         }
       }
+
+      .text-muted {
+        color: #8aadba;
+        font-style: italic;
+        margin: 0;
+      }
     }
   }
 
   .group-membership-tab {
-    .groups-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .group-card {
-      border: 1px solid #e3eef0;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fafdfe;
-      display: grid;
+    .groups-list {
+      display: flex;
+      flex-direction: column;
       gap: 12px;
     }
 
-    .group-card-head {
+    .group-list-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      padding: 16px 20px;
+      background: #fafdfe;
+      border: 1px solid #e3eef0;
+      border-radius: 12px;
+      transition: all 0.2s ease;
 
-      strong {
-        color: #2E6276;
-        font-size: 1rem;
+      &:hover {
+        background: #f8feff;
+        border-color: #b8d4de;
+        transform: translateX(2px);
       }
 
-      span {
-        color: #6b7280;
-        font-size: 0.85rem;
-      }
-    }
+      .group-info {
+        flex: 1;
 
-    .group-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+        .group-name {
+          font-weight: 700;
+          color: #1a4b5c;
+          font-size: 1rem;
+          margin-bottom: 4px;
+        }
 
-      span {
-        display: block;
-        color: #6b7280;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        margin-bottom: 4px;
+        .group-joined {
+          font-size: 0.75rem;
+          color: #8aadba;
+        }
       }
 
-      strong {
-        color: #2E6276;
+      .group-contributions {
+        display: flex;
+        gap: 24px;
+
+        .contribution-item {
+          text-align: right;
+
+          .label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #8aadba;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+          }
+
+          strong {
+            font-size: 1rem;
+            color: #2E6276;
+          }
+        }
       }
     }
   }
@@ -294,22 +311,23 @@
   .tab-content {
     background: white;
     border: 1px solid #e3eef0;
-    border-radius: 12px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
     .section-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
 
       h3 {
         margin: 0;
-        color: #2E6276;
-        font-size: 1rem;
-        letter-spacing: 0.02em;
+        color: #1a4b5c;
+        font-size: 0.95rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -320,16 +338,18 @@
       }
 
       .view-all-btn {
-        background: #2E6276;
+        background: linear-gradient(135deg, #2E6276, #4291b1);
         color: #fff;
         border: none;
         border-radius: 8px;
-        padding: 8px 12px;
-        font-weight: 700;
+        padding: 8px 16px;
+        font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s;
 
         &:hover {
-          background: #4291b1;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
         }
       }
     }
@@ -342,31 +362,30 @@
         border-collapse: collapse;
 
         thead {
-          background: #f4f7f9;
+          background: #f8fcfd;
 
           th {
             text-align: left;
-            padding: 0.75rem 0.9rem;
-            color: #224957;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border-bottom: 1px solid #e6edf2;
+            padding: 12px 16px;
+            color: #1a4b5c;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid #eef3f6;
           }
         }
 
         tbody tr {
-          border-bottom: 1px solid #eef2f6;
-
-          &:nth-child(even) {
-            background: #f9fbfc;
-          }
+          border-bottom: 1px solid #eef3f6;
+          transition: background 0.2s;
 
           &:hover {
-            background: #f8fbfc;
+            background: #f8fcfd;
           }
 
           td {
-            padding: 0.75rem 0.9rem;
+            padding: 12px 16px;
 
             &.loan-id {
               font-family: monospace;
@@ -379,34 +398,34 @@
               font-weight: 600;
             }
 
-            .status-badge {
-              display: inline-block;
-              padding: 3px 8px;
-              border-radius: 12px;
-              font-size: 0.78rem;
-              font-weight: 700;
+            &.group-name {
+              color: #1a4b5c;
+              font-weight: 500;
+            }
 
-              &.status-pending {
-                background: rgba(255, 165, 0, 0.1);
-                color: #b87c00;
-              }
+            .actions-col {
+              white-space: nowrap;
+              
+              .action-icon {
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #2E6276;
 
-              &.status-active,
-              &.status-ongoing,
-              &.status-approved {
-                background: rgba(46, 98, 118, 0.1);
-                color: #1e4a5a;
-              }
+                i {
+                  font-size: 1rem;
+                }
 
-              &.status-completed,
-              &.status-paid {
-                background: rgba(46, 178, 112, 0.1);
-                color: #1e7e4a;
-              }
-
-              &.status-rejected {
-                background: rgba(233, 55, 55, 0.1);
-                color: #b30000;
+                &:hover {
+                  background: rgba(46, 98, 118, 0.1);
+                  transform: scale(1.05);
+                }
               }
             }
           }
@@ -416,23 +435,41 @@
 
     .empty-state {
       text-align: center;
-      color: #8a8a8a;
-      padding: 20px;
+      color: #8aadba;
+      padding: 32px;
 
       i {
         display: block;
-        margin-bottom: 8px;
-        color: #B6D6E2;
-        font-size: 1.5rem;
+        margin-bottom: 12px;
+        color: #c5dee6;
+        font-size: 2rem;
+      }
+
+      &.compact {
+        padding: 24px;
       }
     }
   }
 }
 
+// Status Badge Styles - Using the loan-status-badges mixin
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  
+  @include loanStatus.advanceLoanStatusBadges();
+  text-transform: none !important;
+}
+
 @media (max-width: 1024px) {
   .member-detail-container {
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
+    .summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .info-grid {
@@ -448,11 +485,23 @@
     .detail-header {
       flex-direction: column;
       align-items: flex-start;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .stats-grid {
+    .summary-grid {
       grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .group-list-item {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+
+      .group-contributions {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
   }
 }

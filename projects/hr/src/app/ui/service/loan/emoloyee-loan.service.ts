@@ -154,4 +154,20 @@ export class EmployeeLoanService {
       }
     });
   }
+
+    /**
+   * Retrieve all employee levels from the backend (GET /x/api/v2/hr/levels)
+   */
+  getAllLevels(): Observable<any[]> {
+    const token = sessionStorage.getItem('token');
+    const tenantId = 'optimax';
+    return this.http.get<any[]>(`${this.baseUrl}/x/api/v2/hr/levels`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': tenantId,
+        'Accept': 'application/json'
+      }
+    });
+  }
+  
 }

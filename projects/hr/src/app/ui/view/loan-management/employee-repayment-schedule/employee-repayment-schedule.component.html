@@ -193,10 +193,16 @@
                 {{ formatDate(item.dueDate) }}
               </div>
               <div class="action-buttons-inline" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')">
-                <button class="btn-pay" (click)="openPaymentModal(item)">
+                <button class="btn-pay"
+                        (click)="openPaymentModal(item)"
+                        [disabled]="item.status !== 'PENDING' && item.status !== 'OVERDUE' || isInstallmentExtensionPending(item)"
+                        [title]="isInstallmentExtensionPending(item) ? 'Extension pending/approved for this installment' : 'Make payment for this installment'">
                   <i class="fas fa-credit-card"></i> Pay Now
                 </button>
-                <button class="btn-extend" (click)="openGracePeriodModal(item)">
+                <button class="btn-extend"
+                        (click)="openGracePeriodModal(item)"
+                        [disabled]="item.status !== 'PENDING' && item.status !== 'OVERDUE' || isInstallmentExtensionPending(item)"
+                        [title]="isInstallmentExtensionPending(item) ? 'Extension already requested or approved' : 'Request extension for this installment'">
                   <i class="fas fa-hourglass-half"></i> Extend
                 </button>
               </div>
@@ -240,10 +246,18 @@
                 </span>
               </td>
               <td class="action-buttons-cell">
-                <button class="btn-pay-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openPaymentModal(item)" title="Make Payment">
+                <button class="btn-pay-small"
+                        *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')"
+                        (click)="openPaymentModal(item)"
+                        [disabled]="isInstallmentExtensionPending(item)"
+                        [title]="isInstallmentExtensionPending(item) ? 'Extension pending/approved for this installment' : 'Make Payment'">
                   <i class="fas fa-credit-card"></i>
                 </button>
-                <button class="btn-extend-small" *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" (click)="openGracePeriodModal(item)" title="Request Extension">
+                <button class="btn-extend-small"
+                        *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')"
+                        (click)="openGracePeriodModal(item)"
+                        [disabled]="isInstallmentExtensionPending(item)"
+                        [title]="isInstallmentExtensionPending(item) ? 'Extension already requested or approved' : 'Request Extension'">
                   <i class="fas fa-hourglass-half"></i>
                 </button>
               </td>

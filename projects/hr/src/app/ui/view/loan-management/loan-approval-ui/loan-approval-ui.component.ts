@@ -14,7 +14,8 @@ import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
   formatLoanPurposeDisplay,
-  resolveLoanTotalRepayableAmount
+  resolveLoanTotalRepayableAmount,
+  formatAdvancedLoanCode
 } from '../../../service/loan/loan-display.util';
 
 interface LoanApprovalRow {
@@ -221,7 +222,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   private buildLoanApprovalRow(loan: LoanApplication): LoanApprovalRow {
     return {
       loan,
-      loanCode: loan.loanCode || loan.id,
+      loanCode: formatAdvancedLoanCode(loan.loanCode || loan.id),
       fullName: loan.fullName || 'N/A',
       employeeId: loan.employeeId || 'N/A',
       departmentDisplay: this.formatDepartmentDisplay(loan.department),
@@ -364,14 +365,14 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
 }
 
   getStatusLabel(status: string | undefined): string {
-    switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'AWAITING INTEREST ACCEPTANCE';
-      case 'READY_FOR_DISBURSEMENT':
-        return 'READY FOR DISBURSEMENT';
-      default:
-        return String(status || '').replace(/_/g, ' ');
-    }
+    // Convert status to Title Case for display
+    if (!status) return '';
+    const titleCase = (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    return titleCase(status);
   }
 
   get statusCounts() {
@@ -450,7 +451,11 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   // Approval methods
   openApprovalModal(loan: LoanApplication): void {
     this.selectedLoanForApproval = loan;
-    this.proposedInterestRate = Number(loan.interestRate || this.loanApprovalService.determineInterestRate(loan));
+    if (loan.defaultInterestRate !== undefined && loan.defaultInterestRate !== null) {
+      this.proposedInterestRate = Number(loan.defaultInterestRate);
+    } else {
+      this.proposedInterestRate = Number(loan.interestRate || this.loanApprovalService.determineInterestRate(loan));
+    }
     this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
     this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
     this.repaymentStartDate = loan.repaymentStartDate || this.getMinRepaymentDate();

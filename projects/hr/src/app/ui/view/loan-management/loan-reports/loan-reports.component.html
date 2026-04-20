@@ -137,7 +137,7 @@
         [emptyMessage]="'No loans match your filters'"
         tableClass="reports-table">
         <ng-template appTableBody let-row>
-          <td class="loan-id" [title]="row.loan.loanCode">{{ (row.loan.loanCode || '').length > 11 ? ((row.loan.loanCode || '') | slice:0:11) + '...' : row.loan.loanCode }}</td>
+          <td class="loan-id" [title]="getFormattedLoanId(row.loan)">{{ getFormattedLoanId(row.loan) }}</td>
           <td>
             <div class="employee-info">
               <span class="name">{{ row.loan.fullName }}</span>

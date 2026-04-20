@@ -5,8 +5,8 @@
     <div class="header-left">
       <app-back-button (click)="goBack()"></app-back-button>
       <div class="header-title">
-        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan Purpose Management</h1>
-        <p>Create and manage loan categories available for employee applications</p>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Advanced Loan Purpose Management</h1>
+        <p>Create and manage cooperative loan categories available for member applications</p>
       </div>
     </div>
     <button class="btn-create" type="button" (click)="openCreateModal()">
@@ -72,11 +72,11 @@
           </span>
         </td>
         <td class="actions-cell">
-          <button class="btn-edit" type="button" (click)="openEditModal(purpose)" title="Edit Purpose">
+          <button class="action-btn edit-btn" type="button" (click)="openEditModal(purpose)" title="Edit Purpose">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn-toggle" type="button" (click)="togglePurposeStatus(purpose)" [title]="purpose.isActive ? 'Deactivate' : 'Activate'">
-            <i class="fas" [class.fa-ban]="purpose.isActive" [class.fa-check-circle]="!purpose.isActive"></i>
+          <button class="action-btn delete-btn" type="button" (click)="confirmDelete(purpose)" title="Delete Purpose">
+            <i class="fas fa-trash-alt"></i>
           </button>
         </td>
       </ng-template>
@@ -84,7 +84,7 @@
 
     <div class="no-data" *ngIf="filteredPurposes.length === 0">
       <i class="fas fa-inbox"></i>
-      <p>No loan purposes found</p>
+      <p>No cooperative loan purposes found</p>
       <button type="button" class="btn-create-small" (click)="openCreateModal()">Create your first purpose</button>
     </div>
   </div>
@@ -94,13 +94,45 @@
     <p>Loading purposes...</p>
   </div>
 
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal-container delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <i class="fas fa-trash-alt"></i>
+          Delete Purpose
+        </h2>
+        <button type="button" class="close-btn" (click)="closeDeleteModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div>
+            <h4>Are you sure?</h4>
+            <p>You are about to delete purpose <strong>"{{ purposeToDelete?.name }}"</strong> ({{ purposeToDelete?.code }}).</p>
+            <p class="warning-text">This action cannot be undone. Any loans using this purpose may be affected.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" (click)="closeDeleteModal()">Cancel</button>
+        <button type="button" class="delete-confirm-btn" (click)="deletePurpose()" [disabled]="isDeleting">
+          <i class="fas fa-trash-alt"></i>
+          {{ isDeleting ? 'Deleting...' : 'Delete Purpose' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal for Create/Edit -->
   <div class="modal-overlay" *ngIf="showPurposeModal" (click)="closeModalIfOverlay($event)">
     <div class="modal-container">
       <div class="modal-header">
         <h2>
           <i class="fas" [class.fa-edit]="isEditing" [class.fa-plus-circle]="!isEditing"></i>
-          {{ isEditing ? 'Edit' : 'Create New' }} Loan Purpose
+          {{ isEditing ? 'Edit' : 'Create New' }} Cooperative Loan Purpose
         </h2>
         <button type="button" class="close-btn" (click)="closeModal()">
           <i class="fas fa-times"></i>
@@ -111,7 +143,7 @@
         <div class="modal-body">
           <div class="form-group">
             <label>Purpose Name <span class="required">*</span></label>
-            <input type="text" formControlName="name" placeholder="e.g., Medical Emergency, Home Renovation">
+            <input type="text" formControlName="name" placeholder="e.g., School Fees, Emergency Relief">
             <div class="error-message" *ngIf="nameControl?.invalid && nameControl?.touched">
               <i class="fas fa-exclamation-circle"></i>
               <span>Purpose name is required</span>
@@ -120,7 +152,7 @@
 
           <div class="form-group">
             <label>Purpose Code <span class="required">*</span></label>
-            <input type="text" formControlName="code" placeholder="e.g., MED-103, SAL-001" [readonly]="isEditing">
+            <input type="text" formControlName="code" placeholder="e.g., COOP-001, EDU-010" [readonly]="isEditing">
             <div class="field-hint">
               <i class="fas fa-info-circle"></i>
               Uppercase letters, numbers, and dashes only. Cannot be changed after creation.
@@ -134,7 +166,7 @@
 
           <div class="form-group">
             <label>Description</label>
-            <textarea formControlName="description" rows="3" placeholder="Brief description of this loan purpose..."></textarea>
+            <textarea formControlName="description" rows="3" placeholder="Brief description of this cooperative loan purpose..."></textarea>
           </div>
 
           <div class="form-row">
@@ -157,15 +189,15 @@
           </div>
 
           <div class="checkbox-group">
-            <input type="checkbox" formControlName="requiresDocumentation" id="requiresDoc">
-            <label for="requiresDoc">Requires Documentation</label>
+            <input type="checkbox" formControlName="requiresDocumentation" id="requiresCoopDoc">
+            <label for="requiresCoopDoc">Requires Documentation</label>
           </div>
 
           <div class="form-group" *ngIf="requiresDocumentationControl?.value">
             <label>Required Documentation Types</label>
             <div class="documentation-types">
               <div *ngFor="let i of getDocIndices()" class="doc-type-row">
-                <input type="text" [formControl]="getDocControl(i)" placeholder="e.g., Medical Report, Invoice">
+                <input type="text" [formControl]="getDocControl(i)" placeholder="e.g., Invoice, Approval Letter">
                 <button type="button" class="remove-doc" (click)="removeDocumentationType(i)">
                   <i class="fas fa-trash-alt"></i>
                 </button>
@@ -177,8 +209,8 @@
           </div>
 
           <div class="checkbox-group">
-            <input type="checkbox" formControlName="isActive" id="isActive">
-            <label for="isActive">Active (available for employees to select)</label>
+            <input type="checkbox" formControlName="isActive" id="isCoopActive">
+            <label for="isCoopActive">Active (available for cooperative members to select)</label>
           </div>
         </div>
 

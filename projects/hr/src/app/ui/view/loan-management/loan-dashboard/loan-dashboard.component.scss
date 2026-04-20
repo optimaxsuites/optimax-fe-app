@@ -6,7 +6,7 @@
   border-radius: 30px;
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: none !important;
   letter-spacing: 0.5px;
   min-width: 100px;
   text-align: center;
@@ -1180,17 +1180,24 @@
           transition: all 0.2s ease;
 
           &:nth-child(even) {
-            background-color: #f9fbfc;
-          }
-
-          &:hover {
-            background-color: #f8fbfc;
+        .table-wrapper {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(46, 98, 118, 0.04);
+          margin-top: 18px;
+          overflow-x: auto;
+          border: 1px solid #e3eef0;
+          width: 100%;
+          padding: 0;
+          min-width: 0;
+        }
           }
 
           td {
             padding: 0.75rem 0.9rem;
             color: #495057;
-            vertical-align: middle;
+          min-width: 0;
+          table-layout: auto;
             text-align: center;
 
             &.loan-id {

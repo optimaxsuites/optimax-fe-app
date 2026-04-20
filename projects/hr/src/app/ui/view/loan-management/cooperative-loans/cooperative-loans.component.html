@@ -74,8 +74,8 @@
           <div class="detail-grid secondary">
             <div class="detail-card"><span>Group Code</span><strong>{{ selectedDisbursementGroup?.code || '—' }}</strong></div>
             <div class="detail-card"><span>Group ID</span><strong>{{ selectedDisbursementGroup?.id || loan.groupId || loan.cooperativeGroupId || '—' }}</strong></div>
-            <div class="detail-card"><span>Member ID</span><strong>{{ loan.memberId || loan.cooperativeMemberId || '—' }}</strong></div>
-            <div class="detail-card"><span>Membership ID</span><strong>{{ loan.membershipId || '—' }}</strong></div>
+            <div class="detail-card"><span>Member ID</span><strong>{{ formatMemberId(loan.memberId || loan.cooperativeMemberId) || '—' }}</strong></div>
+            <div class="detail-card"><span>Membership ID</span><strong>{{ formatMembershipId(loan.membershipId, selectedDisbursementGroup?.code, loan.memberId || loan.cooperativeMemberId) || '—' }}</strong></div>
             <div class="detail-card"><span>Accounting Email</span><input type="email" [(ngModel)]="accountingEmail" placeholder="Enter accounting email" /></div>
             <div class="detail-card"><span>Reference</span><input type="text" [(ngModel)]="disbursementInstructionReference" placeholder="Disbursement reference" /></div>
             <div class="detail-card"><span>Funding Bank</span><strong>{{ selectedDisbursementGroup?.principalBankName || 'N/A' }}</strong></div>
@@ -114,7 +114,13 @@
     <div class="loans-header approval-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan Applications</h1>
+        <h1>
+          <i class="fas fa-hand-holding-dollar title-icon"></i>
+          <ng-container *ngIf="memberIdFilter && memberNameForTitle; else defaultTitle">
+            Loan History: {{ memberNameForTitle }}
+          </ng-container>
+          <ng-template #defaultTitle>Loan Applications</ng-template>
+        </h1>
       </div>
       <div class="search-box">
         <input
@@ -242,12 +248,10 @@
         </ng-template>
       </app-table>
 
-      <div class="pagination-bar" *ngIf="filteredLoans.length > pageSize">
-        <span class="pagination-meta">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>
-        <div class="pagination-actions">
-          <button type="button" class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
-          <button type="button" class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
-        </div>
+      <div class="pagination-bar pagination-bar-right" *ngIf="filteredLoans.length > pageSize">
+        <button class="pagination-btn small" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }} · 20 per page</span>
+        <button class="pagination-btn small" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
       </div>
     </div>
 

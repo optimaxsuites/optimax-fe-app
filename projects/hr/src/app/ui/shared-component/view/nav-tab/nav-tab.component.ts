@@ -20,6 +20,7 @@ export class NavTabComponent {
   #sessionStorageCacheKey = '';
 
   ngOnInit(): void {
+    console.log('[NavTabComponent] ngOnInit', this.tabsConfig);
     this.user_role = sessionStorage.getItem('role');
     this.#sessionStorageCacheKey = this.tabsConfig
       .map((tab) => tab.name)

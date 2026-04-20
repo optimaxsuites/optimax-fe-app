@@ -9,69 +9,73 @@
     <div class="detail-header lm-header-card">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-hand-holding-dollar"></i> Member Profile: {{ member.fullName | titlecase }}</h1>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Member Profile: {{ member.fullName | titlecase }}</h1>
       </div>
     </div>
 
     <div class="profile-summary-card">
-      <span><strong>Member ID:</strong> {{ member.memberId }}</span>
+      <span><strong>Member ID:</strong> {{ formattedMemberId }}</span>
       <span><strong>Since:</strong> {{ member.joinDate | date:'MMM yyyy' }}</span>
       <span><strong>Tenure:</strong> {{ memberTenureMonths }} month(s)</span>
-      <span class="status-badge" [ngClass]="getStatusClass(member.status)">{{ member.status }}</span>
+      <span class="status-badge" 
+        [class.status-active]="member.status === 'ACTIVE'" 
+        [class.status-inactive]="member.status === 'INACTIVE'" 
+        [class.status-suspended]="member.status === 'SUSPENDED'">
+        {{ formatStatusDisplay(member.status) }}
+      </span>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon shares-icon"><i class="fas fa-layer-group"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Groups</span>
-          <span class="stat-value">{{ activeGroups.length }}</span>
+    <!-- Summary Grid Cards -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="card-icon tone-total"><i class="fas fa-layer-group"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Groups</span>
+          <strong>{{ activeGroups.length }}</strong>
         </div>
       </div>
-
-      <div class="stat-card">
-        <div class="stat-icon borrowed-icon"><i class="fas fa-naira-sign"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Borrowed</span>
-          <span class="stat-value">{{ formatCurrency(getTotalBorrowed()) }}</span>
+      <div class="summary-card">
+        <div class="card-icon tone-approved"><i class="fas fa-naira-sign"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Borrowed</span>
+          <strong>{{ formatCurrency(getTotalBorrowed()) }}</strong>
         </div>
       </div>
-
-      <div class="stat-card">
-        <div class="stat-icon active-icon"><i class="fas fa-wallet"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Active</span>
-          <span class="stat-value">{{ getActiveLoans().length }} loan{{ getActiveLoans().length === 1 ? '' : 's' }}</span>
+      <div class="summary-card">
+        <div class="card-icon tone-active"><i class="fas fa-wallet"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Active</span>
+          <strong>{{ getActiveLoans().length }}</strong>
         </div>
       </div>
-
-      <div class="stat-card">
-        <div class="stat-icon completed-icon"><i class="fas fa-flag-checkered"></i></div>
-        <div class="stat-content">
-          <span class="stat-label">Completed</span>
-          <span class="stat-value">{{ getCompletedLoans().length }} loan{{ getCompletedLoans().length === 1 ? '' : 's' }}</span>
+      <div class="summary-card">
+        <div class="card-icon tone-closed"><i class="fas fa-flag-checkered"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Completed</span>
+          <strong>{{ getCompletedLoans().length }}</strong>
         </div>
       </div>
     </div>
 
+    <!-- Active Groups List -->
     <div class="tab-content group-membership-tab">
       <div class="section-head">
         <h3><i class="fas fa-layer-group"></i> ACTIVE GROUPS</h3>
       </div>
 
-      <div class="groups-grid" *ngIf="activeGroups.length > 0; else noActiveGroups">
-        <div class="group-card" *ngFor="let group of activeGroups">
-          <div class="group-card-head">
-            <strong>{{ group.groupName }}</strong>
-            <span>Joined {{ group.joinedAt | date:'mediumDate' }}</span>
+      <div class="groups-list" *ngIf="activeGroups.length > 0; else noActiveGroups">
+        <div class="group-list-item" *ngFor="let group of activeGroups">
+          <div class="group-info">
+            <div class="group-name">{{ group.groupName }}</div>
+            <div class="group-joined">Joined {{ group.joinedAt | date:'mediumDate' }}</div>
           </div>
-          <div class="group-metrics">
-            <div>
-              <span>Monthly Contribution</span>
+          <div class="group-contributions">
+            <div class="contribution-item">
+              <span class="label">Monthly</span>
               <strong>{{ formatCurrency(group.monthlyContributionAmount) }}</strong>
             </div>
-            <div>
-              <span>Total Contribution</span>
+            <div class="contribution-item">
+              <span class="label">Total</span>
               <strong>{{ formatCurrency(group.totalContribution) }}</strong>
             </div>
           </div>
@@ -136,6 +140,7 @@
             { header: 'ID' },
             { header: 'Amount' },
             { header: 'Purpose' },
+            { header: 'Group' },
             { header: 'Status' },
             { header: 'Date' },
             { header: 'Actions' }
@@ -148,13 +153,30 @@
             <td class="loan-id">{{ loan.loanCode }}</td>
             <td class="amount">{{ formatCurrency(loan.amount) }}</td>
             <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
+            <td class="group-name">
+              {{ getGroupName(loan.cooperativeGroupId || loan.groupId) }}
+            </td>
             <td>
-              <span class="status-badge" [ngClass]="getLoanStatusClass(loan.status)">
-                {{ loan.status }}
+              <span class="status-badge" 
+                [class.status-pending]="loan.status === 'PENDING'"
+                [class.status-approved]="loan.status === 'APPROVED'"
+                [class.status-ready_for_disbursement]="loan.status === 'READY_FOR_DISBURSEMENT'"
+                [class.status-active]="loan.status === 'ACTIVE'"
+                [class.status-skipped]="loan.status === 'SKIPPED'"
+                [class.status-overdue]="loan.status === 'OVERDUE'"
+                [class.status-paused]="loan.status === 'PAUSED'"
+                [class.status-completed]="loan.status === 'COMPLETED'"
+                [class.status-defaulted]="loan.status === 'DEFAULTED'"
+                [class.status-rejected]="loan.status === 'REJECTED'">
+                {{ formatStatusDisplay(loan.status) }}
               </span>
             </td>
             <td>{{ loan.requestDate | date:'MMM yyyy' }}</td>
-            <td class="actions-col"><i class="fas fa-chevron-right"></i></td>
+            <td class="actions-col">
+              <button class="action-icon view-icon" (click)="viewLoan(loan.id); $event.stopPropagation()" title="View Loan">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
           </ng-template>
         </app-table>
       </div>
@@ -165,7 +187,7 @@
       </div>
     </div>
 
-    <div class="tab-content loans-tab">
+    <div class="tab-content repayment-tab">
       <div class="section-head">
         <h3><i class="fas fa-receipt"></i> REPAYMENT HISTORY</h3>
       </div>
@@ -187,8 +209,11 @@
             <td>{{ formatCurrency(item.outstandingAmount) }}</td>
             <td>{{ item.lastPaymentDate | date:'mediumDate' }}</td>
             <td>
-              <span class="status-badge" [ngClass]="getRepaymentStatusClass(item.status)">
-                {{ item.status }}
+              <span class="status-badge" 
+                [class.status-paid]="item.status === 'PAID'"
+                [class.status-ongoing]="item.status === 'ONGOING'"
+                [class.status-pending]="item.status === 'PENDING'">
+                {{ formatStatusDisplay(item.status) }}
               </span>
             </td>
           </ng-template>

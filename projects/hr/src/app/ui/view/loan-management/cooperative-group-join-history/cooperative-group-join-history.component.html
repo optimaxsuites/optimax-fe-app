@@ -29,7 +29,7 @@
         </article>
         <article class="snapshot-card">
           <span class="label">Requested On</span>
-          <strong>{{ application.requestedAt | date:'mediumDate' }}</strong>
+          <strong>{{ application.requestedAt | date:'MMM d, y' }}</strong>
           <small>{{ application.requestedAt | date:'shortTime' }}</small>
         </article>
       </div>
@@ -57,40 +57,47 @@
   </app-modal>
 
   <div class="page-header lm-header-card">
-    <div>
+    <div class="header-left">
       <app-back-button (click)="goBack()"></app-back-button>
-      <h1><i class="fas fa-hand-holding-dollar"></i> Group Join Requests</h1>
-      <p>Full history of cooperative group applications and admin decisions.</p>
+      <div class="join-requests-header">
+        <i class="fas fa-hand-holding-usd title-icon"></i>
+        <h1>Group Join Requests</h1>
+      </div>
     </div>
+    <p>Full history of cooperative group applications and admin decisions.</p>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card tone-total">
-      <div class="stat-icon total-requests-icon"><i class="fas fa-inbox"></i></div>
+    <div class="stat-card tone-total" (click)="setStatusFilter('ALL')" [class.active-filter]="statusFilter === 'ALL'">
+      <div class="stat-icon"><i class="fas fa-inbox"></i></div>
       <div class="stat-content">
         <span class="stat-label">Total Requests</span>
-        <strong class="stat-value">{{ applications.length }}</strong>
+        <span class="stat-value">{{ applications.length }}</span>
+        <span class="stat-note">All requests</span>
       </div>
     </div>
-    <div class="stat-card pending tone-pending">
-      <div class="stat-icon pending-requests-icon"><i class="fas fa-hourglass-half"></i></div>
+    <div class="stat-card tone-pending" (click)="setStatusFilter('PENDING')" [class.active-filter]="statusFilter === 'PENDING'">
+      <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
       <div class="stat-content">
         <span class="stat-label">Pending</span>
-        <strong class="stat-value">{{ pendingCount }}</strong>
+        <span class="stat-value">{{ pendingCount }}</span>
+        <span class="stat-note">Awaiting review</span>
       </div>
     </div>
-    <div class="stat-card active tone-approved">
-      <div class="stat-icon approved-requests-icon"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-card tone-active" (click)="setStatusFilter('ACTIVE')" [class.active-filter]="statusFilter === 'ACTIVE'">
+      <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
       <div class="stat-content">
         <span class="stat-label">Approved</span>
-        <strong class="stat-value">{{ approvedCount }}</strong>
+        <span class="stat-value">{{ approvedCount }}</span>
+        <span class="stat-note">Active members</span>
       </div>
     </div>
-    <div class="stat-card rejected tone-rejected">
-      <div class="stat-icon rejected-requests-icon"><i class="fas fa-times-circle"></i></div>
+    <div class="stat-card tone-rejected" (click)="setStatusFilter('REJECTED')" [class.active-filter]="statusFilter === 'REJECTED'">
+      <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
       <div class="stat-content">
         <span class="stat-label">Rejected</span>
-        <strong class="stat-value">{{ rejectedCount }}</strong>
+        <span class="stat-value">{{ rejectedCount }}</span>
+        <span class="stat-note">Declined requests</span>
       </div>
     </div>
   </div>
@@ -112,13 +119,25 @@
   <p class="action-message" *ngIf="actionMessage">{{ actionMessage }}</p>
 
   <div class="table-card">
-    <app-table
-      [columns]="applicationColumns"
-      [rows]="filteredApplications"
-      [actions]="applicationActions"
-      [striped]="true"
-      [emptyMessage]="'No group join requests match the current filters.'"
-      (actionClick)="handleApplicationAction($event)">
-    </app-table>
+    <div *ngIf="isLoading" class="table-loading">
+      <span class="simple-spinner"></span>
+      <span>Loading group join history...</span>
+    </div>
+    <ng-container *ngIf="!isLoading">
+      <app-table
+        [columns]="applicationColumns"
+        [rows]="pagedApplications"
+        [actions]="applicationActions"
+        [striped]="true"
+        [emptyMessage]="'No group join requests match the current filters.'"
+        (actionClick)="handleApplicationAction($event)">
+      </app-table>
+
+      <div class="pagination-bar pagination-bar-right">
+        <button class="pagination-btn small" (click)="goToPreviousPage()" [disabled]="totalPages <= 1 || currentPage === 1">Previous</button>
+        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="pagination-btn small" (click)="goToNextPage()" [disabled]="totalPages <= 1 || currentPage === totalPages">Next</button>
+      </div>
+    </ng-container>
   </div>
 </div>

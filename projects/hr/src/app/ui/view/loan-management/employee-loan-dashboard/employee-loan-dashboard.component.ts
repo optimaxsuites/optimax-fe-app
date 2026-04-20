@@ -36,6 +36,20 @@ interface EmployeeLoanHistoryRow {
   styleUrls: ['./employee-loan-dashboard.component.scss']
 })
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
+
+  openGracePeriodRequest(): void {
+    this.router.navigate(['/admin/hr/loan-management/grace-period-requests', this.employeeId]);
+  }
+
+    /**
+     * Checks if a value is a valid date for use with Angular DatePipe.
+     * Accepts Date, string, or number. Returns true if valid, false otherwise.
+     */
+    isValidDate(value: any): boolean {
+      if (!value) return false;
+      const date = value instanceof Date ? value : new Date(value);
+      return !isNaN(date.getTime());
+    }
   employeeName: string = 'Employee Name';
   employeeId: string = 'EMP-123';
   employeeDepartment: string = '';
@@ -378,17 +392,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private readStoredUserRegData(): any | null {
-    const rawValue = sessionStorage.getItem('userRegData') || localStorage.getItem('userRegData');
-
-    if (!rawValue || rawValue === 'undefined' || rawValue === 'null') {
-      return null;
-    }
-
-    try {
-      return JSON.parse(rawValue);
-    } catch {
-      return null;
-    }
+    // Removed all localStorage/sessionStorage usage. No local user registration data is available.
+    return null;
   }
 
   private getEmployeeFullName(employee: any): string {
@@ -616,6 +621,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getOverduePolicySummary(loan: LoanApplication): string {
+    const lateFee = Number(loan.lateFeePercentage ?? 2);
+    const gracePeriod = Math.round(Number(loan.lateFeeGracePeriodDays ?? 15));
+    if (!lateFee && !gracePeriod) {
+      return '';
+    }
     return `${this.getLateFeePercentageDisplay(loan)} late fee after ${this.getLateFeeGracePeriodDisplay(loan)} grace`;
   }
 
@@ -658,20 +668,11 @@ getStatusClass(status: string): string {
 }
 
 getStatusDisplay(status: string): string {
-  switch(status) {
-    case 'PENDING': return 'Pending';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Interest Acceptance';
-    case 'APPROVED': return 'Approved';
-    case 'READY_FOR_DISBURSEMENT': return 'Ready for Disbursement';
-    case 'ACTIVE': return 'Active';
-    case 'REJECTED': return 'Rejected';
-    case 'COMPLETED': return 'Completed';
-    case 'SKIPPED': return 'Skipped';
-    case 'OVERDUE': return 'Overdue';
-    case 'DEFAULTED': return 'Defaulted';
-    case 'PAUSED': return 'Paused';
-    default: return status;
-  }
+  if (!status) return '';
+  return String(status)
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
   viewLoanDetails(loan: LoanApplication): void {

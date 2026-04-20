@@ -398,30 +398,30 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
 
   getStatusDisplay(status: string | undefined): string {
     switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'Awaiting Interest Acceptance';
-      case 'READY_FOR_DISBURSEMENT':
-        return 'Ready for Disbursement';
-      case 'SKIPPED':
-        return 'Skipped';
-      case 'OVERDUE':
-        return 'Overdue';
-      case 'PAUSED':
-        return 'Paused';
-      case 'DEFAULTED':
-        return 'Defaulted';
-      case 'PENDING':
-        return 'Pending';
-      case 'APPROVED':
-        return 'Approved';
-      case 'REJECTED':
-        return 'Rejected';
-      case 'ACTIVE':
-        return 'Active';
-      case 'COMPLETED':
-        return 'Completed';
-      default:
-        return String(status || 'Unknown').replace(/_/g, ' ');
+        case 'AWAITING_INTEREST_ACCEPTANCE':
+          return 'Awaiting Interest Acceptance';
+        case 'READY_FOR_DISBURSEMENT':
+          return 'Ready for Disbursement';
+        case 'SKIPPED':
+          return 'Skipped';
+        case 'OVERDUE':
+          return 'Overdue';
+        case 'PAUSED':
+          return 'Paused';
+        case 'DEFAULTED':
+          return 'Defaulted';
+        case 'PENDING':
+          return 'Pending';
+        case 'APPROVED':
+          return 'Approved';
+        case 'REJECTED':
+          return 'Rejected';
+        case 'ACTIVE':
+          return 'Active';
+        case 'COMPLETED':
+          return 'Completed';
+        default:
+          return String(status || 'Unknown').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
   }
 

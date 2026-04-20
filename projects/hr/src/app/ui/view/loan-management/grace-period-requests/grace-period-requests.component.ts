@@ -18,6 +18,7 @@ export class GracePeriodRequestsComponent implements OnInit {
   @Input() installment: RepaymentScheduleItem | null = null;
   @Input() cooperativeLoan: CooperativeLoan | null = null;
   @Input() cooperativeInstallment: CooperativeRepayment | null = null;
+  @Input() member: any = null;
   @Output() close = new EventEmitter<void>();
   @Output() requestSubmitted = new EventEmitter<void>();
 

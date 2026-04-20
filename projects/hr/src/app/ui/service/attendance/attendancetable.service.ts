@@ -3,6 +3,8 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
 import { OfficeHoursService } from './office-hours.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../shared-component/environments/environment.prod';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -18,14 +20,218 @@ export class AttendancetableService {
 
   private absentTimeout: any;
 private absentInterval: any;
+private apiRecordId: number | null = null;
 
-constructor(private officeHoursService: OfficeHoursService) {
+constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
+  
+  
   this.scheduleAbsentCheck();
 
   // Re-schedule if admin changes office hours
   this.officeHoursService.officeHours$.subscribe(() => {
     this.scheduleAbsentCheck();
   });
+}
+
+
+private getAuthHeaders(): HttpHeaders {
+  const token = sessionStorage.getItem('accessToken')
+             ?? sessionStorage.getItem('token')
+             ?? sessionStorage.getItem('Token')
+             ?? '';
+
+  return new HttpHeaders({ 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  });
+}
+
+//POST
+/*postAttendanceRecord(payload: {
+  employeeId: number;
+  attendanceDate: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  checkInLocation: string;
+  checkOutLocation: string;
+  checkInDistance: number;
+  checkOutDistance: number;
+  status: string;
+  hours: number;
+}): Observable<any> {
+  const body = {
+    id: 0,
+    employeeId: payload.employeeId,
+    attendanceDate: payload.attendanceDate,
+    checkIn: payload.checkIn,
+    checkOut: payload.checkOut,
+    checkInLocation: payload.checkInLocation,
+    checkOutLocation: payload.checkOutLocation,
+    checkInDistance: payload.checkInDistance,
+    checkOutDistance: payload.checkOutDistance,
+    status: payload.status,
+    hours: payload.hours,
+    overrideOpen: false,
+    overrideBy: 0,
+    overrideReason: '',
+    statusBeforeOverride: payload.status,
+    appliedScheduleType: 'OFFICE_HOURS',
+    appliedScheduleId: 0,
+    appliedExpectedStart: payload.checkIn,
+    appliedExpectedEnd: payload.checkOut,
+    appliedShiftName: ''
+  };
+
+  return this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
+    body,
+    { headers: this.getAuthHeaders() }
+  );
+} */
+
+/*private putAttendanceRecord(id: number, payload: any): Observable<any> {
+  return this.http.put<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
+    payload,
+    { headers: this.getAuthHeaders() }
+  );
+}*/
+
+/*private clockInApi(
+  employeeId: number,
+  checkIn: string,
+  checkInLocation: string,
+  checkInDistance: number
+): void {
+  const body = {
+    employeeId,
+    checkIn,
+    checkInLocation,
+    checkInDistance
+  };
+
+  this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
+    body,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      if (res?.id) {
+        this.apiRecordId = res.id;
+        console.log('Clock-in successful, record ID:', this.apiRecordId);
+      } else {
+        console.warn('Clock-in succeeded but no ID returned');
+      }
+    },
+    error: (err) => console.error('Clock-in failed:', err)
+  });
+}*/
+
+private clockInApi(
+  employeeId: number,
+  employeeidStr: string,
+  checkIn: string,
+  checkInLocation: string,
+  checkInDistance: number
+): void {
+  const body = { employeeId, checkIn, checkInLocation, checkInDistance };
+
+  this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
+    body,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      // Store on both the service-level variable AND the local record
+      const returnedId = res?.id ?? res?.attendanceId ?? res?.recordId ?? null;
+
+      if (returnedId) {
+        this.apiRecordId = returnedId;
+
+        // Persist it on the local record so admin can use it later
+        const today = new Date().toISOString().split('T')[0];
+        const records = [...this.attendanceSubject.value];
+        const record = records.find(r => r.id === employeeidStr && r.date === today);
+
+        if (record) {
+          record.apiRecordId = returnedId;
+          this.attendanceSubject.next(records);
+        }
+
+        console.log('Clock-in successful, API record ID:', returnedId);
+      } else {
+        console.warn('Clock-in succeeded but no ID returned in response:', res);
+      }
+    },
+    error: (err) => console.error('Clock-in failed:', err)
+  });
+}
+
+private clockOutApi(
+  employeeId: number,
+  checkOut: string,
+  checkOutLocation: string,
+  checkOutDistance: number
+): void {
+  const body = {
+    employeeId,
+    checkOut,
+    checkOutLocation,
+    checkOutDistance
+  };
+
+  this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
+    body,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      console.log('Clock-out successful:', res);
+      this.apiRecordId = null; // reset for next session
+    },
+    error: (err) => console.error('Clock-out failed:', err)
+  });
+}
+
+overrideOpenApi(
+  apiRecordId: number,
+  actorUserId: number,
+  reason: string
+): void {
+  const body = { actorUserId, reason };
+
+  this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${apiRecordId}/override/open`,
+    body,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => console.log('Override open successful:', res),
+    error: (err) => console.error('Override open failed:', err)
+  });
+}
+
+/*overrideOpenApi(
+  recordId: number,
+  actorUserId: number,
+  reason: string
+): void {
+  const body = { actorUserId, reason };
+
+  this.http.post<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${recordId}/override/open`,
+    body,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => console.log('Override open successful:', res),
+    error: (err) => console.error('Override open failed:', err)
+  });
+}*/
+
+private getTodayRecord(employeeId: string): AttendanceTableRecord | undefined {
+  const today = new Date().toISOString().split('T')[0];
+  return this.attendanceSubject.value.find(
+    r => r.id === employeeId && r.date === today
+  );
 }
 
 private scheduleAbsentCheck() {
@@ -58,42 +264,204 @@ private scheduleAbsentCheck() {
   }
 }
 
-  /*constructor(private officeHoursService: OfficeHoursService) {
-  this.scheduleAbsentCheck();
+async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+
+  if (this.hasCompletedToday(employeeid)) return;
+
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const data = [...this.attendanceSubject.value];
+  const officeHours = this.officeHoursService.getOfficeHours();
+  const closing = this.convertToDateTime(officeHours.closingTime);
+
+  // Find or create local record
+  let record = data.find(r => r.employee === employeeName && r.date === today);
+
+  if (!record) {
+    record = {
+      id: employeeid,
+      employee: employeeName,
+      department: department,
+      date: today,
+      checkIn: null,
+      checkOut: null,
+      checkInLocation: null,
+      checkOutLocation: null,
+      status: 'ABSENT',
+      hours: 0
+    };
+    data.unshift(record);
+  }
+
+  // Capture location first
+  const location = await this.getCurrentLocation();
+
+  // Calculate distance from office
+  let distanceFromOffice = 0;
+  if (location && officeHours.companyLatitude && officeHours.companyLongitude) {
+    distanceFromOffice = this.calculateDistance(
+      location.lat, location.lng,
+      officeHours.companyLatitude, officeHours.companyLongitude
+    );
+  }
+
+  // Update local record
+  if (action === 'IN') {
+    record.checkIn = now.toLocaleTimeString();
+    record.checkInLocation = location
+      ? { address: location.address, lat: location.lat, lng: location.lng }
+      : null;
+
+    if (record.overrideOpen) {
+      record.status = 'PRESENT';
+      record.overrideOpen = false;
+    } else {
+      const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
+      record.status = now <= graceTime ? 'PRESENT' : 'LATE';
+    }
+  }
+
+  if (action === 'OUT') {
+    record.checkOut = now.toLocaleTimeString();
+    record.checkOutLocation = location
+      ? { address: location.address, lat: location.lat, lng: location.lng }
+      : null;
+    record.hours = this.calculateHours(record.checkIn!, record.checkOut);
+
+    if (now > closing) {
+      record.status = 'OVERTIME';
+    }
+  }
+
+  // Push local update
+  this.attendanceSubject.next(data);
+
+  // --- API calls (after local record is fully updated) ---
+const numericEmployeeId = parseInt(employeeid);
+
+if (action === 'IN') {
+  this.clockInApi(numericEmployeeId, employeeid, now.toISOString(), location?.address ?? '', distanceFromOffice);
+} else {
+  this.clockOutApi(numericEmployeeId, now.toISOString(), location?.address ?? '', distanceFromOffice);
 }
 
-private scheduleAbsentCheck() {
-  const now = new Date();
-  const officeHours = this.officeHoursService.getOfficeHours();
-  const [hour, minute] = officeHours.absentTime.split(':').map(Number);
+  // --- API calls (after local record is fully updated) ---
+  /*const numericEmployeeId = parseInt(employeeid);
 
-  const absentTimeToday = new Date();
-  absentTimeToday.setHours(hour, minute, 0, 0);
+  if (action === 'IN') {
 
-  const msUntilAbsentTime = absentTimeToday.getTime() - now.getTime();
+    const body = {
+      id: 0,
+      employeeId: numericEmployeeId,
+      attendanceDate: today,
+      checkIn: now.toISOString(),
+      checkOut: null,
+      checkInLocation: location?.address ?? '',
+      checkOutLocation: '',
+      checkInDistance: distanceFromOffice,
+      checkOutDistance: 0,
+      status: record.status,
+      hours: 0,
+      overrideOpen: record.overrideOpen ?? false,
+      overrideBy: 0,
+      overrideReason: '',
+      statusBeforeOverride: record.status,
+      appliedScheduleType: 'OFFICE_HOURS',
+      appliedScheduleId: 0,
+      appliedExpectedStart: null,
+      appliedExpectedEnd: null,
+      appliedShiftName: ''
+    };
 
-  if (msUntilAbsentTime > 0) {
-    // Fire exactly when absentTime hits
-    setTimeout(() => {
-      this.autoMarkAbsentIfNeeded();
-
-      // Then keep checking every minute as a safety net
-      setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
-    }, msUntilAbsentTime);
+    this.http.post<any>(
+      `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
+      body,
+      { headers: this.getAuthHeaders() }
+    ).subscribe({
+      next: (res) => {
+        if (res?.id) {
+          this.apiRecordId = res.id;
+          console.log('Clock-in posted, API record ID:', this.apiRecordId);
+        } else {
+          console.warn('POST succeeded but no ID returned — PUT may fail on clock-out');
+        }
+      },
+      error: (err) => console.error('Clock-in POST failed:', err)
+    });
 
   } else {
-    // absentTime already passed (e.g. page refreshed after absentTime)
-    this.autoMarkAbsentIfNeeded();
-    setInterval(() => this.autoMarkAbsentIfNeeded(), 60000);
-  }
-}*/
-  /*constructor(private officeHoursService: OfficeHoursService) {
-    setInterval(() => {
-    this.autoMarkAbsentIfNeeded();
-  }, 60000); // every minute
-  }*/
 
-async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+    if (!this.apiRecordId) {
+      console.warn('No API record ID stored — skipping PUT for clock-out');
+      return;
+    }
+
+    const body = {
+      id: this.apiRecordId,
+      employeeId: numericEmployeeId,
+      attendanceDate: today,
+      checkIn: record.checkIn
+        ? new Date(`${today}T${this.toIsoTime(record.checkIn)}`).toISOString()
+        : null,
+      checkOut: now.toISOString(),
+      checkInLocation: record.checkInLocation?.address ?? '',
+      checkOutLocation: location?.address ?? '',
+      checkInDistance: record.checkInLocation
+        ? this.calculateDistance(
+            record.checkInLocation.lat, record.checkInLocation.lng,
+            officeHours.companyLatitude ?? 0, officeHours.companyLongitude ?? 0
+          )
+        : 0,
+      checkOutDistance: distanceFromOffice,
+      status: record.status,
+      hours: record.hours ?? 0,
+      overrideOpen: record.overrideOpen ?? false,
+      overrideBy: 0,
+      overrideReason: record.overrideReason ?? '',
+      statusBeforeOverride: record.status,
+      appliedScheduleType: 'OFFICE_HOURS',
+      appliedScheduleId: 0,
+      appliedExpectedStart: null,
+      appliedExpectedEnd: null,
+      appliedShiftName: ''
+    };
+
+    this.putAttendanceRecord(this.apiRecordId, body).subscribe({
+      next: (res) => {
+        console.log('Clock-out PUT succeeded:', res);
+        this.apiRecordId = null; // reset for next session
+      },
+      error: (err) => console.error('Clock-out PUT failed:', err)
+    });
+  }*/
+}
+
+/*async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+  const now = new Date();
+  const isoNow = now.toISOString();
+  const dateStr = now.toISOString().split('T')[0];
+
+  //call the API
+  const existingRecord = this.getTodayRecord(employeeid); // use your existing helper
+
+  const payload = {
+    employeeId: parseInt(employeeid),       // API expects a number
+    attendanceDate: dateStr,
+    checkIn:  action === 'IN'  ? isoNow : (existingRecord?.checkIn ?? isoNow),
+    checkOut: action === 'OUT' ? isoNow : null,
+    checkInLocation:  existingRecord?.checkInLocation?.address  ?? '',
+    checkOutLocation: existingRecord?.checkOutLocation?.address ?? '',
+    checkInDistance:  existingRecord?.checkInLocation  ? this.getDistance(existingRecord.checkInLocation)  : 0,
+    checkOutDistance: existingRecord?.checkOutLocation ? this.getDistance(existingRecord.checkOutLocation) : 0,
+    status: existingRecord?.status ?? 'PRESENT',
+    hours:  existingRecord?.hours  ? parseFloat(existingRecord.hours) : 0
+  };
+
+  this.postAttendanceRecord(payload).subscribe({
+    next: (res) => console.log('Attendance posted to API:', res),
+    error: (err) => console.error('Failed to post attendance:', err)
+  });
+
 if (this.hasCompletedToday(employeeid)) {
   return; // Block further clocking
 }
@@ -123,7 +491,7 @@ if (this.hasCompletedToday(employeeid)) {
    // Capture location
   const location = await this.getCurrentLocation();
 
-  const now = new Date();
+
   const officeHours = this.officeHoursService.getOfficeHours();
 
   const opening = this.convertToDateTime(officeHours.openingTime);
@@ -181,7 +549,7 @@ if (this.hasCompletedToday(employeeid)) {
   }
 
   this.attendanceSubject.next(data);
-}
+}*/
 
 // helper method
 private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -346,7 +714,33 @@ isEmployeeBlockedToday(employeeId: string): boolean {
   return false;
 }
 
-openAttendanceForToday(employeeId: string) {
+openAttendanceForToday(employeeId: string, actorUserId: number, reason: string) {
+
+  const today = new Date().toISOString().split('T')[0];
+  const records = [...this.attendanceSubject.value];
+  const record = records.find(r => r.id === employeeId && r.date === today);
+
+  if (!record) return;
+
+  record.overrideOpen = true;
+  this.attendanceSubject.next(records);
+
+  // --- API call ---
+  // We need the API record ID — use apiRecordId if same session,
+  // or you'll need to store it per-employee (see note below)
+  if (record.apiRecordId) {
+    this.overrideOpenApi(record.apiRecordId, actorUserId, reason);
+  } else {
+    console.warn(
+      'No API record ID available for override — call may be skipped' +
+      `No API record ID on record for employee ${employeeId} — ` +
+      `override was applied locally but NOT sent to the API. ` +
+      `This happens if the employee clocked in before this session.`
+    );
+  }
+}
+
+/*openAttendanceForToday(employeeId: string) {
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -362,7 +756,7 @@ openAttendanceForToday(employeeId: string) {
   //record.status = 'PRESENT'; // immediately mark PRESENT
 
   this.attendanceSubject.next(records);
-}
+}*/
 
 hasCompletedToday(employeeId: string): boolean {
   const today = new Date().toDateString();
@@ -475,5 +869,9 @@ private getCurrentLocation(): Promise<{ address: string; lat: number; lng: numbe
   });
 }
 
+private toIsoTime(localeTime: string): string {
+  const date = new Date(`1970-01-01 ${localeTime}`);
+  return date.toTimeString().split(' ')[0]; // returns HH:mm:ss
+}
 
 }

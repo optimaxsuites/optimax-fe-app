@@ -1,7 +1,108 @@
 // ==========================================
 // @use rules MUST be at the top
 // ==========================================
-@use '../loan-status-badges' as loanStatus;
+@use '../_loan-status-badges' as loanStatus;
+// Force status badge styles to apply
+// ==========================================
+// FORCE FIXES FOR TABLE ACTIONS AND BADGES
+// ==========================================
+
+// Fix action button spacing
+.loans-table .table-actions,
+app-table .table-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 24px !important;
+  flex-wrap: nowrap !important;
+}
+
+.loans-table .icon-btn,
+app-table .icon-btn {
+  border: none !important;
+  background: transparent !important;
+  color: #2E6276 !important;
+  border-radius: 6px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  margin: 0 6px !important;
+  
+  i {
+    font-size: 1rem !important;
+  }
+  
+  &:hover {
+    background: #f0f6f8 !important;
+  }
+}
+
+// Force status badge colors
+.status-badge,
+.status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.status-pending, .status-badge.status-pending, .status-pill.status-pending {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+}
+
+.status-approved, .status-badge.status-approved, .status-pill.status-approved {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #1e40af !important;
+}
+
+.status-ready_for_disbursement, .status-badge.status-ready_for_disbursement, .status-pill.status-ready_for_disbursement {
+  background: rgba(8, 145, 178, 0.12) !important;
+  color: #0891b2 !important;
+}
+
+.status-active, .status-badge.status-active, .status-pill.status-active {
+  background: rgba(46, 178, 112, 0.12) !important;
+  color: #1e7e4a !important;
+}
+
+.status-rejected, .status-badge.status-rejected, .status-pill.status-rejected {
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #991b1b !important;
+}
+
+.status-completed, .status-badge.status-completed, .status-pill.status-completed {
+  background: rgba(46, 178, 112, 0.12) !important;
+  color: #1e7e4a !important;
+}
+
+.status-skipped, .status-badge.status-skipped, .status-pill.status-skipped {
+  background: rgba(107, 114, 128, 0.12) !important;
+  color: #374151 !important;
+}
+
+.status-overdue, .status-badge.status-overdue, .status-pill.status-overdue {
+  background: rgba(249, 115, 22, 0.12) !important;
+  color: #c2410c !important;
+}
+
+.status-defaulted, .status-badge.status-defaulted, .status-pill.status-defaulted {
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #7f1d1d !important;
+}
+
+.status-paused, .status-badge.status-paused, .status-pill.status-paused {
+  background: rgba(100, 116, 139, 0.12) !important;
+  color: #334155 !important;
+}
 
 .confirmation-modal {
   background:
@@ -58,7 +159,6 @@
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .confirmation-modal h2 {
@@ -87,7 +187,6 @@
     font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
 
   strong {
@@ -190,10 +289,6 @@
     }
   }
 
-  // ==========================================
-  // MEMBERSHIP ONBOARDING CARD - Same style as employee dashboard header
-  // ==========================================
-  
   .membership-onboarding-card {
     display: flex;
     justify-content: space-between;
@@ -244,10 +339,6 @@
     }
   }
 
-  // ==========================================
-  // REDESIGNED BUTTON - Centered and full width
-  // ==========================================
-  
   .apply-membership-button-container {
     width: 100%;
     margin-bottom: 28px;
@@ -326,10 +417,6 @@
     }
   }
 
-  // ==========================================
-  // Command Center Sidebar Styles - Matches Employee Dashboard
-  // ==========================================
-  
   .dashboard-workspace {
     display: grid;
     grid-template-columns: 344px minmax(0, 1fr);
@@ -439,7 +526,6 @@
       }
     }
 
-    // Special styling for Join Group button (matches employee dashboard's new-loan-btn)
     .join-group-btn {
       .action-icon {
         background: #2EB270 !important;
@@ -618,24 +704,9 @@
           font-size: 0.96rem;
         }
       }
-
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
     }
   }
 
-  // ==========================================
-  // Rest of the styles remain the same...
-  // ==========================================
-  
   .modal-content {
     width: min(980px, 100%);
   }
@@ -750,7 +821,6 @@
         background: rgba(255, 255, 255, 0.18);
         font-size: 0.72rem;
         font-weight: 700;
-        text-transform: uppercase;
         letter-spacing: 0.08em;
       }
 
@@ -782,7 +852,6 @@
     .eyebrow {
       display: inline-block;
       font-size: 0.72rem;
-      text-transform: uppercase;
       letter-spacing: 0.1em;
       color: #6a8794;
       font-weight: 700;
@@ -872,7 +941,7 @@
         margin-bottom: 4px;
         color: #6b818d;
         font-size: 0.72rem;
-        text-transform: uppercase;
+        /* text-transform: uppercase; */
         letter-spacing: 0.08em;
         font-weight: 700;
       }
@@ -894,34 +963,6 @@
         margin: 6px 0 0;
         color: #203945;
         font-size: 1.08rem;
-      }
-    }
-
-    .status-pill {
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1.1;
-      max-width: 100%;
-      white-space: normal;
-      word-break: break-word;
-      text-align: center;
-
-      @include loanStatus.advanceLoanStatusBadges(false);
-
-      &.status-default {
-        background: rgba(107, 114, 128, 0.12);
-        color: #4b5563;
-      }
-
-      &.inline-pill {
-        min-width: 0;
-        flex: 0 1 auto;
       }
     }
 
@@ -976,7 +1017,7 @@
         color: #6b818d;
         font-size: 0.72rem;
         font-weight: 700;
-        text-transform: uppercase;
+        /* text-transform: uppercase; */
         letter-spacing: 0.08em;
       }
 
@@ -1238,7 +1279,7 @@
       color: #2E6276;
       margin: 0 0 12px;
       font-size: 1.05rem;
-      text-transform: uppercase;
+      /* text-transform: uppercase; */
       letter-spacing: 0.03em;
     }
   }
@@ -1297,7 +1338,6 @@
           display: block;
           color: #8a8a8a;
           font-size: 0.85rem;
-          text-transform: uppercase;
         }
         .stat-value {
           color: #2E6276;
@@ -1352,7 +1392,7 @@
           border-radius: 999px;
           padding: 4px 10px;
           font-weight: 600;
-          text-transform: uppercase;
+          /* text-transform: uppercase; */
           letter-spacing: 0.03em;
         }
       }
@@ -1453,37 +1493,58 @@
               }
               .status-badge {
                 display: inline-block;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.8rem;
-                font-weight: 600;
-
-                @include loanStatus.advanceLoanStatusBadges();
+                padding: 4px 12px;
+                border-radius: 999px;
+                font-size: 0.75rem;
+                font-weight: 700;
               }
+
+              // .icon-btn {
+              //   border: none;
+              //   background: transparent;
+              //   color: #2E6276;
+              //   border-radius: 6px;
+              //   min-width: 38px;
+              //   min-height: 38px;
+              //   padding: 8px 10px;
+              //   margin: 0 4px;
+              //   cursor: pointer;
+
+              //   &:hover {
+              //     background: #f8feff;
+              //   }
+              // }
+              .table-actions {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    gap: 24px !important;
+                    flex-wrap: nowrap !important;
+                  }
+
 
               .icon-btn {
-                border: none;
-                background: transparent;
-                color: #2E6276;
-                border-radius: 6px;
-                min-width: 38px;
-                min-height: 38px;
-                padding: 8px 10px;
-                cursor: pointer;
-
-                &:hover {
-                  background: #f8feff;
-                }
-              }
-
-              .table-actions {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: 12px;
-                flex-wrap: wrap;
-              }
+                  border: none !important;
+                  background: transparent !important;
+                  color: #2E6276 !important;
+                  border-radius: 6px !important;
+                  width: 36px !important;
+                  height: 36px !important;
+                  display: inline-flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                  cursor: pointer !important;
+                  margin: 0 8px !important;
+                  
+                  i {
+                    font-size: 1rem !important;
+                  }
+                  
+                  &:hover {
+                    background: #f8feff !important;
+                  }
             }
+          }
           }
         }
       }
@@ -1659,19 +1720,6 @@
           font-size: 0.96rem;
         }
       }
-
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-
-        @include loanStatus.advanceLoanStatusBadges();
-      }
     }
   }
 
@@ -1705,7 +1753,7 @@
 
         label {
           font-size: 0.8rem;
-          text-transform: uppercase;
+          /* text-transform: uppercase; */
           letter-spacing: 0.03em;
           color: #6d8089;
           font-weight: 600;

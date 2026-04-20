@@ -304,50 +304,63 @@ export class LoanApprovalService {
   }
 
   approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number, lateFeePercentage?: number, lateFeeGracePeriodDays?: number): Observable<LoanApplication> {
-    console.log('Approving loan - setting status to AWAITING_INTEREST_ACCEPTANCE');
-    
-    return this.updateApplicationStatus(loanId, {
-      status: 'AWAITING_INTEREST_ACCEPTANCE' as LoanStatus,
-      notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`,
-      changedAt: new Date().toISOString(),
-      interestRate: interestRate,
-      lateFeePercentage: lateFeePercentage,
-      lateFeeGracePeriodDays: lateFeeGracePeriodDays,
-      repaymentStartDate: repaymentStartDate,
-      repaymentDay: repaymentDay
-    } as any).pipe(
-      switchMap((loan) => {
-        if (loan && interestRate) {
-          return this.interestAgreementService.getAgreementByLoanId(Number(loan.id)).pipe(
-            switchMap((agreement) => {
-              const agreementPayload = {
-                loanId: loan.id,
-                employeeId: loan.employeeId,
-                proposedInterestRate: interestRate,
-                agreementMethod: 'DASHBOARD' as const,
-                notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`
-              };
+    // Fetch the application to check for default interest
+    return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
+      switchMap((application) => {
+        if (!application) throw new Error('Application not found');
+        // Check if the selected purpose has a default interest rate
+        const hasDefaultInterest = !!application.purposeCode && application.purposeCode !== 'other' && typeof application.defaultInterestRate === 'number' && application.defaultInterestRate > 0;
+        const statusToSet = hasDefaultInterest ? 'APPROVED' : 'AWAITING_INTEREST_ACCEPTANCE';
+        const approvalNotes = hasDefaultInterest
+          ? `Loan auto-approved with default interest rate of ${application.defaultInterestRate}%.`
+          : (notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`);
+        const interestToSet = hasDefaultInterest ? application.defaultInterestRate : interestRate;
 
-              if (agreement?.id && agreement.status !== 'ACCEPTED') {
-                return this.interestAgreementService.updateAgreement(agreement.id, {
-                  proposedInterestRate: agreementPayload.proposedInterestRate,
-                  status: 'PENDING',
-                  agreementMethod: agreementPayload.agreementMethod,
-                  notes: agreementPayload.notes
-                }).pipe(map(() => loan));
-              }
+        return this.updateApplicationStatus(loanId, {
+          status: statusToSet as LoanStatus,
+          notes: approvalNotes,
+          changedAt: new Date().toISOString(),
+          interestRate: interestToSet,
+          lateFeePercentage: lateFeePercentage,
+          lateFeeGracePeriodDays: lateFeeGracePeriodDays,
+          repaymentStartDate: repaymentStartDate,
+          repaymentDay: repaymentDay
+        } as any).pipe(
+          switchMap((loan) => {
+            // Only create interest agreement if NOT auto-approved
+            if (!hasDefaultInterest && loan && interestRate) {
+              return this.interestAgreementService.getAgreementByLoanId(Number(loan.id)).pipe(
+                switchMap((agreement) => {
+                  const agreementPayload = {
+                    loanId: loan.id,
+                    employeeId: loan.employeeId,
+                    proposedInterestRate: interestRate,
+                    agreementMethod: 'DASHBOARD' as const,
+                    notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`
+                  };
 
-              return this.interestAgreementService.createAgreement(agreementPayload).pipe(
-                map(() => loan)
+                  if (agreement?.id && agreement.status !== 'ACCEPTED') {
+                    return this.interestAgreementService.updateAgreement(agreement.id, {
+                      proposedInterestRate: agreementPayload.proposedInterestRate,
+                      status: 'PENDING',
+                      agreementMethod: agreementPayload.agreementMethod,
+                      notes: agreementPayload.notes
+                    }).pipe(map(() => loan));
+                  }
+
+                  return this.interestAgreementService.createAgreement(agreementPayload).pipe(
+                    map(() => loan)
+                  );
+                }),
+                catchError((error) => {
+                  console.error('Interest agreement sync failed after loan approval:', error);
+                  return of(loan);
+                })
               );
-            }),
-            catchError((error) => {
-              console.error('Interest agreement sync failed after loan approval:', error);
-              return of(loan);
-            })
-          );
-        }
-        return of(loan);
+            }
+            return of(loan);
+          })
+        );
       })
     );
   }
@@ -378,7 +391,7 @@ export class LoanApprovalService {
                 employeeId: agreement.employeeId,
                 proposedInterestRate: agreement.proposedInterestRate,
                 agreedInterestRate: acceptedRate,
-                status: 'ACCEPTED',
+                status: 'ACCEPTED', // Fix: use ACCEPTED to match AdvanceInterestAgreement type
                 agreedAt: new Date().toISOString(),
                 agreementMethod: agreement.agreementMethod || 'DASHBOARD',
                 ipAddress: agreement.ipAddress || '0.0.0.0',

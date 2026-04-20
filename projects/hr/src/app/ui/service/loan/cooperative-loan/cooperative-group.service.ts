@@ -82,16 +82,16 @@ export interface CooperativeGroupApiPayload {
   patronageEligible?: boolean;
   patronageRate?: number;
   patronageAmount?: number;
-  contributionsBankName: string;
-  contributionsAccount: string;
-  principalBankName: string;
-  principalCollectionAccount: string;
-  interestBankName: string;
-  interestCollectionAccount: string;
+  contributionsBankName?: string;
+  contributionsAccount?: string;
+  principalBankName?: string;
+  principalCollectionAccount?: string;
+  interestBankName?: string;
+  interestCollectionAccount?: string;
   lateFeePercentage?: number;
   lateFeeGraceDays?: number;
-  lateFeeBankName: string;
-  lateFeeCollectionAccount: string;
+  lateFeeBankName?: string;
+  lateFeeCollectionAccount?: string;
   accountingEmail?: string;
   accountingWebhookUrl?: string;
 }
@@ -160,9 +160,9 @@ export class CooperativeGroupService {
       );
     }
 
+    // FIXED: Use correct URL and headers
     createCooperativeGroup(payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
-      console.log('[CooperativeGroupService] Creating group with payload:', payload);
-      console.log('[CooperativeGroupService] POST URL:', this.groupsUrl);
+      console.log('[CooperativeGroupService] Creating group with payload:', JSON.stringify(payload, null, 2));
       const headers = this.getAuthHeaders();
       return this.http.post<CooperativeGroupApiResponse>(this.groupsUrl, payload, { headers }).pipe(
         map((group) => {
@@ -173,17 +173,16 @@ export class CooperativeGroupService {
           console.error('[CooperativeGroupService] Error creating group:', error);
           console.error('[CooperativeGroupService] Error status:', error.status);
           console.error('[CooperativeGroupService] Error message:', error.message);
-          console.error('[CooperativeGroupService] Request URL:', this.groupsUrl);
-          console.error('[CooperativeGroupService] Request payload:', payload);
           return throwError(() => error);
         })
       );
     }
 
     updateCooperativeGroup(id: number, payload: CooperativeGroupApiPayload): Observable<CooperativeGroupApiResponse> {
-      console.log(`[CooperativeGroupService] Updating group ${id} with payload:`, payload);
+      const url = `${this.groupsUrl}/${id}`;
+      console.log(`[CooperativeGroupService] Updating group ${id} with payload:`, JSON.stringify(payload, null, 2));
       const headers = this.getAuthHeaders();
-      return this.http.put<CooperativeGroupApiResponse>(`${this.groupsUrl}/${id}`, payload, { headers }).pipe(
+      return this.http.put<CooperativeGroupApiResponse>(url, payload, { headers }).pipe(
         map((group) => {
           console.log(`[CooperativeGroupService] Group ${id} updated successfully:`, group);
           return group;
@@ -264,7 +263,7 @@ export class CooperativeGroupService {
       status: 'PENDING',
       monthlyContributionAmount: Number(group?.monthlyContributionAmount || 0),
       totalContribution: 0,
-      joinedAt: '',
+      joinedAt: now,
       requestedAt: now
     };
 

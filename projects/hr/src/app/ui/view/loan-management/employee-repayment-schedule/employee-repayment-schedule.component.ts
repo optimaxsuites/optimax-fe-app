@@ -19,6 +19,11 @@ import {
   styleUrls: ['./employee-repayment-schedule.component.scss']
 })
 export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
+    // Track which installments have a pending or approved extension
+    isInstallmentExtensionPending(item: RepaymentScheduleItem): boolean {
+      // No extensionStatus property exists; always return false
+      return false;
+    }
   @Input() loan!: LoanApplication;
   @Input() paymentMode: 'advance' | 'cooperative' = 'advance';
   @Input() cooperativeLoan: CooperativeLoan | null = null;

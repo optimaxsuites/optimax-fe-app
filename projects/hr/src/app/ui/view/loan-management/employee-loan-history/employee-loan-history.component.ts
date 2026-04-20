@@ -35,6 +35,10 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   viewSource: 'admin' | 'employee' = 'admin';
   historyMode: 'advance' | 'cooperative' = 'advance';
   currentUuid: string = uuidV4();
+
+  get activeLoansCount(): number {
+    return this.employeeLoans.filter(loan => loan.status === 'ACTIVE').length;
+  }
   cooperativeMember: CooperativeMember | null = null;
   private returnGroupId?: number;
   private cooperativeLoanByCode = new Map<string, CooperativeLoan>();

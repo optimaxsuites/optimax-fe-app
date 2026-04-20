@@ -1,9 +1,8 @@
-// loan-purpose.service.ts - CLEAN VERSION (no workarounds, no local storage)
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from '../..//shared-component/environments/environment';
+import { environment } from '../../shared-component/environments/environment';
 
 export interface LoanPurposeData {
   id?: number;
@@ -137,6 +136,21 @@ export class LoanPurposeService {
       }
     }).pipe(
       map(response => this.safeParseResponse(response)),
+      catchError(this.handleError)
+    );
+  }
+
+  // ADD THIS DELETE METHOD
+  deletePurpose(id: number): Observable<void> {
+    const tenantId = 'optimax';
+    const token = sessionStorage.getItem('token');
+    
+    return this.http.delete<void>(`${this.standardPurposeUrl}/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': tenantId
+      }
+    }).pipe(
       catchError(this.handleError)
     );
   }

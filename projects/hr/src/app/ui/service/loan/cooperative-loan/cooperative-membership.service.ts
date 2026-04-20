@@ -181,7 +181,7 @@ export class CooperativeMembershipService {
   }
 
   checkMembershipEligibility(employee: CooperativeEmployeeProfile): CooperativeMembershipEligibility {
-    const policy = this.getTierPolicy(employee.rank);
+    const policy = this.getTierPolicy(employee.level as CooperativeStaffRank);
     // Only block contract/intern or those with active disciplinary issues
     if (employee.employmentType === 'CONTRACT' || employee.employmentType === 'INTERN') {
       return {
@@ -192,7 +192,7 @@ export class CooperativeMembershipService {
         autoApprove: false,
         isOnHold: false,
         isBlocked: true,
-        rank: employee.rank,
+        rank: employee.level as CooperativeStaffRank,
         tenureMonths: 0,
         probationCompleted: true,
         policy,
@@ -208,7 +208,7 @@ export class CooperativeMembershipService {
         autoApprove: false,
         isOnHold: false,
         isBlocked: true,
-        rank: employee.rank,
+        rank: employee.level as CooperativeStaffRank,
         tenureMonths: 0,
         probationCompleted: true,
         policy,
@@ -224,7 +224,7 @@ export class CooperativeMembershipService {
       autoApprove: true,
       isOnHold: false,
       isBlocked: false,
-      rank: employee.rank,
+      rank: employee.level as CooperativeStaffRank,
       tenureMonths: 0,
       probationCompleted: true,
       policy,
@@ -643,8 +643,8 @@ export class CooperativeMembershipService {
     return probationEnd.getTime() <= Date.now();
   }
 
-  private getTierPolicy(rank: CooperativeStaffRank): CooperativeMembershipTierPolicy {
-    switch (rank) {
+  private getTierPolicy(level: CooperativeStaffRank): CooperativeMembershipTierPolicy {
+    switch (level) {
       case 'EXEC':
         return {
           tier: 'EXECUTIVE',

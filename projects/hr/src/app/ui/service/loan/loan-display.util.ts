@@ -4,6 +4,12 @@ export function formatCooperativeLoanCode(raw: string | number | undefined | nul
   if (!code) return '';
   return code.startsWith('COPLO-') ? code : `COPLO-${code}`;
 }
+
+export function formatAdvancedLoanCode(raw: string | number | undefined | null): string {
+  const code = String(raw || '').trim();
+  if (!code) return '';
+  return code.startsWith('ADVLO-') ? code : `ADVLO-${code}`;
+}
 import { LoanApplication, LoanAuditUser, PaymentRecord } from './loan.types';
 
 const loanActorCacheKey = 'advance-loan-actor-name-cache';

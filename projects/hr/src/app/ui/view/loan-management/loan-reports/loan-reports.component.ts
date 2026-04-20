@@ -14,6 +14,7 @@ import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
   formatLoanPurposeDisplay,
+  formatAdvancedLoanCode,
   resolveLoanInterestAmount,
   resolveLoanTotalRepayableAmount
 } from '../../../service/loan/loan-display.util';
@@ -118,6 +119,10 @@ export class LoanReportsComponent implements OnInit {
 
   getLoanInterestAmount(loan: LoanApplication): number {
     return resolveLoanInterestAmount(loan);
+  }
+
+  getFormattedLoanId(loan: LoanApplication): string {
+    return formatAdvancedLoanCode(loan.loanCode || loan.id);
   }
 
   loadLoans(): void {
@@ -526,13 +531,18 @@ export class LoanReportsComponent implements OnInit {
 }
 
   getStatusLabel(status: string | undefined): string {
+    const titleCase = (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
     switch (status) {
       case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'AWAITING INTEREST ACCEPTANCE';
+        return titleCase('AWAITING INTEREST ACCEPTANCE');
       case 'READY_FOR_DISBURSEMENT':
-        return 'READY FOR DISBURSEMENT';
+        return titleCase('READY FOR DISBURSEMENT');
       default:
-        return String(status || '').replace(/_/g, ' ');
+        return titleCase(String(status || ''));
     }
   }
 

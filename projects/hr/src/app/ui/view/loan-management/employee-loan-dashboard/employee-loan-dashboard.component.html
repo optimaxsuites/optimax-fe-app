@@ -110,7 +110,8 @@
                 <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
               </div>
               <p>{{ update.message }}</p>
-              <span class="time">{{ update.changedAt | date:'medium' }}</span>
+              <span class="time" *ngIf="isValidDate(update.changedAt); else invalidChangedAt">{{ update.changedAt | date:'medium' }}</span>
+              <ng-template #invalidChangedAt><span class="time">Invalid date</span></ng-template>
             </div>
           </div>
         </section>
@@ -153,14 +154,19 @@
               tableClass="history-table">
               <ng-template appTableBody let-row>
                 <td class="loan-id" [title]="formatAdvanceLoanDisplayId(row.loan)">{{ row.displayId }}</td>
-                <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
+                <td>
+                  <ng-container *ngIf="isValidDate(row.loan.requestDate); else invalidRequestDate">
+                    {{ row.loan.requestDate | date:'mediumDate' }}
+                  </ng-container>
+                  <ng-template #invalidRequestDate>Invalid date</ng-template>
+                </td>
                 <td class="loan-purpose">{{ row.purposeDisplay }}</td>
                 <td class="loan-amount">{{ row.amountDisplay }}</td>
                 <td>{{ row.loan.interestRate || 0 }}%</td>
                 <td>
                   <div>{{ row.repaymentMonthYear }}</div>
                   <small>{{ row.repaymentDay }}</small>
-                  <div class="policy-summary">{{ row.overduePolicySummary }}</div>
+                  <div class="policy-summary" *ngIf="row.overduePolicySummary">{{ row.overduePolicySummary }}</div>
                 </td>
                 <td class="loan-amount">{{ row.totalRepayableDisplay }}</td>
                 <td>

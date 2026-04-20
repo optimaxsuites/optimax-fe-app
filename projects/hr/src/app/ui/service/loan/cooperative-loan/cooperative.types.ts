@@ -1,3 +1,5 @@
+import { CooperativeLoan } from "../../../domain/loan/cooperative-loan.dto";
+
 export interface CooperativeMember {
   id: number;
   employeeId: number;
@@ -59,6 +61,21 @@ export interface CooperativeLoanGroup {
   accountingEmail?: string;
   accountingWebhookUrl?: string;
   status: 'ACTIVE' | 'INACTIVE';
+}
+
+interface GroupBorrowerRow {
+  memberId: number;
+  memberName: string;
+  loanId: string;
+  status: string;
+  amount: number;
+  totalPaid: number;
+  outstanding: number;
+  progressPercent: number;
+  repaymentStatus: string;
+  nextDueDate: string | null;
+  hasOverdueRepayment: boolean;
+  loan?: CooperativeLoan; // Add this line
 }
 
 export interface CooperativeGroupMembership {
@@ -142,6 +159,7 @@ export interface CooperativeGroupInviteHistoryEntry {
   employeeEmail: string;
   department: string;
   rank: CooperativeStaffRank;
+  level?: string;
   tenureMonths: number;
   sentAt: string;
   subject: string;
@@ -250,7 +268,7 @@ export interface CooperativeEmployeeProfile {
   monthlySalary?: number;
   phone?: string;
   department?: string;
-  rank: CooperativeStaffRank;
+  level?: string;
   employmentType: CooperativeEmploymentType;
   employmentStartDate: string;
   onProbation?: boolean;

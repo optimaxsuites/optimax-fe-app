@@ -12,6 +12,46 @@ import { CooperativeMember } from '../../../service/loan/cooperative-loan/cooper
   styleUrls: ['./cooperative-members.component.scss']
 })
 export class CooperativeMembersComponent implements OnInit {
+        formatDate(value: any): string {
+          if (!value) return '-';
+          const parsed = new Date(value);
+          if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          }
+          return String(value);
+        }
+      readonly pageSize = 20;
+      currentPage = 1;
+      get totalPages(): number {
+        return Math.max(1, Math.ceil(this.filteredMembers.length / this.pageSize));
+      }
+
+      get paginatedMembers(): CooperativeMember[] {
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        return this.filteredMembers.slice(startIndex, startIndex + this.pageSize);
+      }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  get inactiveMembersCount(): number {
+    return this.members.filter(m => m.status === 'INACTIVE').length;
+  }
+    resetFilters(): void {
+      this.searchTerm = '';
+      this.filters = { status: 'ACTIVE', joinDateFrom: '', joinDateTo: '' };
+      this.sortField = 'joinDate';
+      this.sortDirection = 'desc';
+      this.applyFilters();
+    }
+
+    viewMember(id: number): void {
+      this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
+        queryParams: { dashboard: 'cooperative' }
+      });
+    }
   currentUuid = uuidV4();
   members: CooperativeMember[] = [];
   filteredMembers: CooperativeMember[] = [];
@@ -21,8 +61,8 @@ export class CooperativeMembersComponent implements OnInit {
   // Filters
   filters = {
     status: 'ACTIVE',
-    minShares: null as number | null,
-    maxShares: null as number | null
+    joinDateFrom: '',
+    joinDateTo: ''
   };
 
   // Sorting
@@ -30,6 +70,17 @@ export class CooperativeMembersComponent implements OnInit {
   sortDirection: 'asc' | 'desc' = 'desc';
 
   statusOptions = ['ACTIVE', 'INACTIVE', 'SUSPENDED'];
+
+  // Format member ID as COP-XXX (zero-padded)
+  formatMemberId(memberId: number): string {
+    return `COP-${String(memberId).padStart(3, '0')}`;
+  }
+
+  // Title Case for status
+  formatStatus(status: string): string {
+    if (!status) return '';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  }
 
   get activeMembersCount(): number {
     return this.members.filter((member) => member.status === 'ACTIVE').length;
@@ -78,22 +129,22 @@ export class CooperativeMembersComponent implements OnInit {
       results = results.filter(m => m.status === this.filters.status);
     }
 
-    // Shares range
-    if (this.filters.minShares !== null) {
-      results = results.filter(m => m.shareCapital >= this.filters.minShares!);
+    // Date range filter
+    if (this.filters.joinDateFrom) {
+      const from = new Date(this.filters.joinDateFrom);
+      results = results.filter(m => m.joinDate && new Date(m.joinDate) >= from);
     }
-    if (this.filters.maxShares !== null) {
-      results = results.filter(m => m.shareCapital <= this.filters.maxShares!);
+    if (this.filters.joinDateTo) {
+      const to = new Date(this.filters.joinDateTo);
+      to.setDate(to.getDate() + 1);
+      results = results.filter(m => m.joinDate && new Date(m.joinDate) < to);
     }
 
-    this.filteredMembers = this.sortData(results);
-  }
-
-  sortData(data: CooperativeMember[]): CooperativeMember[] {
-    return data.sort((a, b) => {
-      let valueA: any, valueB: any;
-
-      switch(this.sortField) {
+    // Sorting
+    results = results.sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+      switch (this.sortField) {
         case 'memberId':
           valueA = a.memberId;
           valueB = b.memberId;
@@ -102,9 +153,13 @@ export class CooperativeMembersComponent implements OnInit {
           valueA = a.fullName.toLowerCase();
           valueB = b.fullName.toLowerCase();
           break;
-        case 'shareCapital':
-          valueA = a.shareCapital;
-          valueB = b.shareCapital;
+        case 'email':
+          valueA = a.email.toLowerCase();
+          valueB = b.email.toLowerCase();
+          break;
+        case 'phone':
+          valueA = a.phone;
+          valueB = b.phone;
           break;
         case 'status':
           valueA = a.status;
@@ -115,49 +170,16 @@ export class CooperativeMembersComponent implements OnInit {
           valueB = new Date(b.joinDate).getTime();
           break;
         default:
-          return 0;
+          valueA = a.memberId;
+          valueB = b.memberId;
       }
-
       if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
       if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }
 
-  setSort(field: string): void {
-    if (this.sortField === field) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sortField = field;
-      this.sortDirection = 'asc';
-    }
-    this.applyFilters();
-  }
-
-  getSortIcon(field: string): string {
-    if (this.sortField !== field) return 'fa-sort';
-    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
-  }
-
-  resetFilters(): void {
-    this.searchTerm = '';
-    this.filters = { status: 'ACTIVE', minShares: null, maxShares: null };
-    this.sortField = 'joinDate';
-    this.sortDirection = 'desc';
-    this.applyFilters();
-  }
-
-  viewMember(id: number): void {
-    this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
-      queryParams: { dashboard: 'cooperative' }
-    });
-  }
-
-  viewLoanHistory(memberId: number, event: Event): void {
-    event.stopPropagation();
-    this.router.navigate([`/admin/hr/cooperative/members/${memberId}/${this.currentUuid}`], {
-      queryParams: { tab: 'loans', dashboard: 'cooperative' }
-    });
+    this.filteredMembers = results;
+    this.currentPage = 1;
   }
 
   updateMemberStatus(member: CooperativeMember, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'): void {
@@ -209,11 +231,6 @@ export class CooperativeMembersComponent implements OnInit {
     this.updateMemberStatus(member, 'ACTIVE');
   }
 
-  addMember(): void {
-    this.router.navigate(['/admin/hr/cooperative/members/add', this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
-    });
-  }
 
   goBack(): void {
     this.router.navigate(['/admin/hr/loan', this.currentUuid], {
